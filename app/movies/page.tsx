@@ -7,15 +7,13 @@ export default async function MoviesPage() {
   const watchedCountRes = await supabaseServer.from('tracking').select('*', { count: 'exact', head: true }).eq('status', 'watched');
   const wantCountRes = await supabaseServer.from('tracking').select('*', { count: 'exact', head: true }).eq('status', 'want_to_watch');
 
+  const today = new Date().toISOString().split('T')[0];
+
   const upcomingCountRes = await supabaseServer
-    .from('media_items')
-    .select('id', { count: 'exact', head: true })
-    .eq('type', 'movie')
-    .gte('release_date', new Date().toISOString().split('T')[0])
-    .in(
-      'id',
-      await supabaseServer.from('tracking').select('media_item_id').eq('status', 'upcoming').then(res => res.data?.map(r => r.media_item_id) ?? [])
-    );
+    .from('tracking')
+    .select('media_item_id, media_items!inner(id, type, release_date)', { count: 'exact', head: true })
+    .eq('media_items.type', 'movie')
+    .gte('media_items.release_date', today);
 
   const totalTracked = totalCountRes.count ?? 0;
   const watchedCount = watchedCountRes.count ?? 0;
