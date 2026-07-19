@@ -7,39 +7,65 @@ type Movie = {
   title: string;
   date: string;
   rating: number | null;
-  genre: string;
-  language: string;
+  genres: string[];
+  languages: string[];
+  regions: string[];
+  series: string | null;
   status: string;
   summary: string;
   cover_url: string;
-  cast?: string;
+  casts: string[];
 };
 
-export default function MovieCatalog({
-  watched,
-  want,
-}: {
-  watched: Movie[];
-  want: Movie[];
+function Tag({ label }: { label: string }) {
+  return (
+    <span
+      onClick={(e) => {
+        e.stopPropagation(); // Prevent opening modal when clicking a tag
+        // Future: trigger search/filter here
+        console.log('Filter by:', label);
+      }}
+      className="inline-block bg-neutral-800 text-neutral-300 text-[10px] font-medium px-1.5 py-0.5 rounded hover:bg-neutral-700 hover:text-white transition-colors cursor-pointer"
+    >
+      {label}
+    </span>
+  );
+}
+
+export default function MovieCatalog({ 
+  watched, 
+  want, 
+  stats 
+}: { 
+  watched: Movie[], 
+  want: Movie[], 
+  stats?: { total: number, watched: number, want: number, upcoming: number } 
 }) {
+  // If stats passed, use them; otherwise calculate from filtered arrays
+  const totalTracked = stats?.total ?? watched.length + want.filter(m => m.status === 'want_to_watch' || m.status === 'upcoming').length;
+  const totalWatched = stats?.watched ?? watched.length;
+  const totalWant = stats?.want ?? want.filter(m => m.status === 'want_to_watch').length;
+  const totalUpcoming = stats?.upcoming ?? want.filter(m => m.status === 'upcoming').length;
+
   const [selectedMovie, setSelectedMovie] = useState<Movie | null>(null);
 
-  // Dynamic calculations for your live database stats
-  const totalWatched = watched.length;
-  const totalWant = want.filter((m) => m.status === "want_to_watch").length;
-  const totalUpcoming = want.filter((m) => m.status === "upcoming").length;
-  const totalTracked = totalWatched + totalWant + totalUpcoming;
-
-  // ... (keep the useEffect for Escape key) ...
+  useEffect(() => {
+    if (!selectedMovie) return;
+    const handleEsc = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setSelectedMovie(null);
+    };
+    window.addEventListener('keydown', handleEsc);
+    return () => window.removeEventListener('keydown', handleEsc);
+  }, [selectedMovie]);
 
   return (
     <div className="container w-full mx-auto px-6 md:px-8 max-w-7xl pb-16">
       <div className="flex flex-wrap -mx-2 mb-10 mt-6">
         {[
-          { label: "总追踪数", value: totalTracked },
+          { label: "电影总数量", value: totalTracked },
           { label: "已观看电影", value: totalWatched },
           { label: "想看的电影", value: totalWant },
-          { label: "即将上映", value: totalUpcoming },
+          { label: "近期将上映", value: totalUpcoming },
         ].map((stat, idx) => (
           <div key={idx} className="w-full sm:w-1/2 md:w-1/4 p-2">
             <div className="border border-neutral-800 rounded-md p-5">
@@ -66,9 +92,9 @@ export default function MovieCatalog({
         }}
       >
         {selectedMovie && (
-          <div className="modal-panel bg-[#181818] border border-neutral-800 rounded-lg max-w-2xl w-full max-h-[85vh] overflow-y-auto">
+          <div className="modal-panel bg-[#181818] border border-neutral-800 rounded-lg max-w-4xl w-full max-h-[85vh] overflow-y-auto">
             <div className="flex flex-col sm:flex-row">
-              <div className="sm:w-78 shrink-0">
+              <div className="sm:w-84 shrink-0">
                 <div className="h-72 sm:h-full w-full bg-neutral-900 flex items-center justify-center overflow-hidden">
                   {selectedMovie.cover_url ? (
                     <img
@@ -109,38 +135,64 @@ export default function MovieCatalog({
                   </div>
                 </div>
                 <div className="mt-5 space-y-2.5 text-sm">
-                  <div className="flex gap-2">
-                    <span className="text-neutral-500 w-16 flex-shrink-0">
+                  <div className="flex gap-2 items-start">
+                    <span className="text-neutral-500 w-16 shrink-0">
                       类型
                     </span>
-                    <span className="text-neutral-300">
-                      {selectedMovie.genre}
+                    <span className="text-neutral-300 w-1/2 flex flex-wrap gap-1">
+                      {selectedMovie.genres.length > 0
+                        ? selectedMovie.genres.map((g, i) => <Tag key={`mg-${i}`} label={g} />)
+                        : <span className="text-neutral-600">暂无</span>}
                     </span>
                   </div>
-                  <div className="flex gap-2">
-                    <span className="text-neutral-500 w-16 flex-shrink-0">
+                  <div className="flex gap-2 items-start">
+                    <span className="text-neutral-500 w-16 shrink-0">
                       语言
                     </span>
-                    <span className="text-neutral-300">
-                      {selectedMovie.language}
+                    <span className="text-neutral-300 w-1/2 flex flex-wrap gap-1">
+                      {selectedMovie.languages.length > 0
+                        ? selectedMovie.languages.map((l, i) => <Tag key={`ml-${i}`} label={l} />)
+                        : <span className="text-neutral-600">暂无</span>}
                     </span>
                   </div>
-                  <div className="flex gap-2">
-                    <span className="text-neutral-500 w-16 flex-shrink-0">
-                        主演
+                  <div className="flex gap-2 items-start">
+                    <span className="text-neutral-500 w-16 shrink-0">
+                      地区
                     </span>
-                    <span className="text-neutral-300">
-                        {selectedMovie.cast || '暂无'}
+                    <span className="text-neutral-300 w-1/2 flex flex-wrap gap-1">
+                      {selectedMovie.regions.length > 0
+                        ? selectedMovie.regions.map((r, i) => <Tag key={`mr-${i}`} label={r} />)
+                        : <span className="text-neutral-600">暂无</span>}
+                    </span>
+                  </div>
+                  <div className="flex gap-2 items-start">
+                    <span className="text-neutral-500 w-16 shrink-0">
+                      主演
+                    </span>
+                    <span className="text-neutral-300 w-1/2 flex flex-wrap gap-1">
+                        {selectedMovie.casts.length > 0
+                            ? selectedMovie.casts.map((c, i) => <Tag key={`mc-${i}`} label={c} />)
+                            : <span className="text-neutral-600">暂无</span>}
+                    </span>
+                  </div>
+                  <div className="flex gap-2 items-start">
+                    <span className="text-neutral-500 w-16 shrink-0">
+                      系列
+                    </span>
+                    <span className="text-neutral-300 w-1/2 flex flex-wrap gap-1">
+                        {selectedMovie.series != null && selectedMovie.series.length > 0
+                            ? <Tag key={`ms-${selectedMovie.series}`} label={selectedMovie.series} />
+                            : <Tag label="独立电影" />}
                     </span>
                   </div>
                 </div>
                 <div className="mt-5 pt-5 border-t border-neutral-800">
-                  <h4 className="text-xs font-medium uppercase tracking-wider text-neutral-500 mb-2">
+                  <h4 className="text-sm font-medium uppercase tracking-wider text-neutral-500 mb-2">
                     简介
                   </h4>
-                  <p className="text-sm text-neutral-300 leading-relaxed">
-                    {selectedMovie.summary}
-                  </p>
+                  <div className="max-h-[12em] overflow-y-auto pr-2">
+                    <p className="text-sm text-neutral-300 leading-relaxed">{selectedMovie.summary}</p>
+                  </div>
                 </div>
               </div>
             </div>
@@ -180,14 +232,17 @@ function MediaRow({
                 <i className="fas fa-image text-4xl text-neutral-700 opacity-40"></i>
               )}
             </div>
-            <div className="mt-2 flex flex-col space-y-1 flex-grow px-4 py-2">
+            <div className="mt-2 flex flex-col space-y-1 grow px-4 py-2">
               <div className="flex justify-between items-center text-xs">
                 <span className={movie.status === 'upcoming' ? 'text-red-400 font-medium' : 'text-neutral-400'}>{movie.date}</span>
                 <span className="text-neutral-300 font-semibold flex items-center gap-1">
                   {movie.rating ? <><i className="fas fa-star text-yellow-500 text-[10px]"></i>{movie.rating}</> : <span className="text-neutral-400">未评分</span>}
                 </span>
               </div>
-              <p className="text-[11px] text-neutral-400 line-clamp-2">{movie.genre} · {movie.language}</p>
+              <div className="flex flex-wrap gap-1">
+                {(movie.genres?? []).map((g, i) => <Tag key={`g-${i}`} label={g} />)}
+                {(movie.languages?? []).map((l, i) => <Tag key={`l-${i}`} label={l} />)}
+              </div>
             </div>
           </div>
         ))}

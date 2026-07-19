@@ -1,49 +1,92 @@
-import { supabaseServer } from '@/utils/supabase'; // From the step where you setup your client
+import { supabaseServer } from '@/utils/supabase';
 import MovieCatalog from './MovieCatalog';
 
 export default async function MoviesPage() {
-  // Fetch tracking data specifically for movies
-  const { data, error } = await supabaseServer
-    .from('tracking')
+  // ─── STATS (COUNT) ──────────────────────────────────
+  const totalCountRes = await supabaseServer.from('tracking').select('*', { count: 'exact', head: true });
+  const watchedCountRes = await supabaseServer.from('tracking').select('*', { count: 'exact', head: true }).eq('status', 'watched');
+  const wantCountRes = await supabaseServer.from('tracking').select('*', { count: 'exact', head: true }).eq('status', 'want_to_watch');
+
+  const upcomingCountRes = await supabaseServer
+    .from('media_items')
+    .select('id', { count: 'exact', head: true })
+    .eq('type', 'movie')
+    .gte('release_date', new Date().toISOString().split('T')[0])
+    .in(
+      'id',
+      await supabaseServer.from('tracking').select('media_item_id').eq('status', 'upcoming').then(res => res.data?.map(r => r.media_item_id) ?? [])
+    );
+
+  const totalTracked = totalCountRes.count ?? 0;
+  const watchedCount = watchedCountRes.count ?? 0;
+  const wantCount = wantCountRes.count ?? 0;
+  const upcomingCount = upcomingCountRes.count ?? 0;
+
+  // ─── WATCHED MOVIES (LIMIT 10) ──────────────────────
+  const { data: watchedData } = await supabaseServer
+    .from('media_items')
     .select(`
-      status,
-      rating,
-      media_items!inner (
-        id, title, summary, cover_url, release_date, type,
-        media_genres ( genres ( name ) ),
-        media_languages ( languages ( name ) ),
-        media_credits ( people ( name ), role, credit_order )
-      )
+      id, title, summary, cover_url, release_date, type,
+      tracking!inner ( status, rating ),
+      media_genres ( genres ( name ) ),
+      media_languages ( languages ( name ) ),
+      media_regions ( regions ( name ) ),
+      media_credits ( people ( name ), role, credit_order ),
+      media_series ( name )
     `)
-    .eq('media_items.type', 'movie');
+    .eq('type', 'movie')
+    .eq('tracking.status', 'watched')
+    .order('release_date', { ascending: false })
+    .limit(10);
 
-  if (error) {
-    console.error("Supabase Error:", error);
-    return <div>Error loading movies.</div>;
-  }
+  // ─── WANT TO WATCH MOVIES (LIMIT 10) ────────────
+  const { data: wantData } = await supabaseServer
+    .from('media_items')
+    .select(`
+      id, title, summary, cover_url, release_date, type,
+      tracking!inner ( status, rating ),
+      media_genres ( genres ( name ) ),
+      media_languages ( languages ( name ) ),
+      media_regions ( regions ( name ) ),
+      media_credits ( people ( name ), role, credit_order ),
+      media_series ( name )
+    `)
+    .eq('type', 'movie')
+    .eq('tracking.status', 'want_to_watch')
+    .order('release_date', { ascending: false })
+    .limit(10);
 
-  // Format the nested Supabase JSON into a clean, flat object for the UI
-  const formattedMovies = data.map((item: any) => ({
-    id: item.media_items.id,
-    title: item.media_items.title,
-    date: item.media_items.release_date,
-    rating: item.rating,
-    status: item.status,
-    summary: item.media_items.summary,
-    cover_url: item.media_items.cover_url,
-    genre: item.media_items.media_genres.map((g: any) => g.genres.name).join(' · '),
-    language: item.media_items.media_languages.map((l: any) => l.languages.name).join(', '),
-    cast: (item.media_items.media_credits ?? [])
-      .filter((c: any) => c.role === 'actor')
-      .sort((a: any, b: any) => a.credit_order - b.credit_order)
-      .map((c: any) => c.people.name)
-      .join(', ')
-  }));
+  // ─── FORMAT DATA ────────────────────────────────────
+  const formatItem = (item: any) => {
+    const userTracking = item.tracking?.[0] || {};
 
-  const watchedMovies = formattedMovies.filter(m => m.status === 'watched');
-  const wantMovies = formattedMovies.filter(m => m.status === 'want_to_watch' || m.status === 'upcoming');
+    return {
+      id: item.id,
+      title: item.title,
+      date: item.release_date,
+      rating: userTracking.rating,
+      status: userTracking.status,
+      summary: item.summary,
+      cover_url: item.cover_url,
+      genres: (item.media_genres ?? []).map((g: any) => g.genres.name),
+      languages: (item.media_languages ?? []).map((l: any) => l.languages.name),
+      regions: (item.media_regions ?? []).map((r: any) => r.regions.name),
+      series: item.media_series?.name || null,
+      casts: (item.media_credits ?? [])
+        .filter((c: any) => c.role === 'actor')
+        .sort((a: any, b: any) => a.credit_order - b.credit_order)
+        .map((c: any) => c.people.name)
+    };
+  };
+
+  const watchedMovies = (watchedData ?? []).map(formatItem);
+  const wantMovies = (wantData ?? []).map(formatItem);
 
   return (
-    <MovieCatalog watched={watchedMovies} want={wantMovies} />
+    <MovieCatalog 
+      watched={watchedMovies} 
+      want={wantMovies}
+      stats={{ total: totalTracked, watched: watchedCount, want: wantCount, upcoming: upcomingCount }}
+    />
   );
 }
