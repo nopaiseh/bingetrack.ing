@@ -11,7 +11,8 @@ export default async function MoviesPage() {
       media_items!inner (
         id, title, summary, cover_url, release_date, type,
         media_genres ( genres ( name ) ),
-        media_languages ( languages ( name ) )
+        media_languages ( languages ( name ) ),
+        media_credits ( people ( name ), role, credit_order )
       )
     `)
     .eq('media_items.type', 'movie');
@@ -31,7 +32,12 @@ export default async function MoviesPage() {
     summary: item.media_items.summary,
     cover_url: item.media_items.cover_url,
     genre: item.media_items.media_genres.map((g: any) => g.genres.name).join(' · '),
-    language: item.media_items.media_languages.map((l: any) => l.languages.name).join(', ')
+    language: item.media_items.media_languages.map((l: any) => l.languages.name).join(', '),
+    cast: (item.media_items.media_credits ?? [])
+      .filter((c: any) => c.role === 'actor')
+      .sort((a: any, b: any) => a.credit_order - b.credit_order)
+      .map((c: any) => c.people.name)
+      .join(', ')
   }));
 
   const watchedMovies = formattedMovies.filter(m => m.status === 'watched');
