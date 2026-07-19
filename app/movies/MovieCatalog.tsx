@@ -114,7 +114,7 @@ export default function MovieCatalog({
                   </h3>
                   <button
                     onClick={() => setSelectedMovie(null)}
-                    className="text-neutral-500 hover:text-white transition-colors ml-4 -mr-2 -mt-2 p-1"
+                    className="text-neutral-500 hover:text-white transition-colors ml-4 -mr-2 -mt-2 p-1 cursor-pointer"
                   >
                     <i className="fas fa-times text-lg"></i>
                   </button>
