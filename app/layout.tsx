@@ -41,7 +41,7 @@ export default function RootLayout({
                   首页
                 </Link>
                 <Link
-                  href="/movies"
+                  href="/movie"
                   className="text-neutral-400 hover:text-white transition-colors"
                 >
                   电影
