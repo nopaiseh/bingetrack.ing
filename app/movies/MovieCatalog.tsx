@@ -114,7 +114,7 @@ function MediaRow({
               <div className="flex justify-between items-center text-xs">
                 <span className="text-neutral-400">{movie.date}</span>
                 <span className="text-neutral-300 font-semibold flex items-center gap-1">
-                  {movie.rating ? <><i className="fas fa-star text-yellow-500 text-[10px]"></i>{movie.rating}</> : <span className="text-neutral-400">未评分</span>}
+                  {movie.rating ? <><i className="fas fa-star text-yellow-500 text-[10px]"></i>{Number(movie.rating).toFixed(1)}</> : <span className="text-neutral-400">未评分</span>}
                 </span>
               </div>
               <div className="flex flex-wrap gap-1">
