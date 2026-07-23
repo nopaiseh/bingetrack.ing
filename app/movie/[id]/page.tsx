@@ -16,6 +16,7 @@ type Movie = {
   summary: string;
   cover_url: string;
   casts: string[];
+  directors: string[];
 };
 
 type SeriesMovie = {
@@ -67,6 +68,10 @@ async function getMovie(id: string): Promise<Movie | null> {
       .filter((c: any) => c.role === "actor")
       .sort((a: any, b: any) => a.credit_order - b.credit_order)
       .map((c: any) => c.people.name),
+    directors: (data.media_credits ?? [])
+      .filter((c: any) => c.role === "director")
+      .sort((a: any, b: any) => a.credit_order - b.credit_order)
+      .map((c: any) => c.people.name)
   };
 }
 
@@ -220,10 +225,8 @@ export default async function MovieDetailPage({ params }: { params: Promise<{ id
         </div>
 
         {/* --- BOTTOM SECTION: Full Width Metadata Grid --- */}
-        {/* Fixed exactly to 3 columns on large screens */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 border-t border-white/5 pt-10">
           
-          {/* Row 1: Always 3 equal columns */}
           <InfoCard title="类型">
             <div className="flex flex-wrap gap-2">
               {movie.genres?.length > 0 
@@ -248,17 +251,15 @@ export default async function MovieDetailPage({ params }: { params: Promise<{ id
             </div>
           </InfoCard>
 
-          {/* Row 2: Series (1 column) + Cast (2 columns) OR just Cast (3 columns) */}
-          {movie.series && (
-            <InfoCard title="系列">
-              <div className="flex flex-wrap gap-2">
-                <SearchTag label={movie.series} category="series" />
-              </div>
-            </InfoCard>
-          )}
+          <InfoCard title="导演">
+            <div className="flex flex-wrap gap-2">
+              {movie.directors?.length > 0 
+                ? movie.directors.map((d) => <SearchTag key={d} label={d} category="director" />) 
+                : <span className="text-neutral-600 text-sm">-</span>}
+            </div>
+          </InfoCard>
 
-          {/* Dynamic spanning: takes up 2 cols if series exists, 3 cols if it doesn't */}
-          <div className={`p-5 rounded-2xl bg-white/2 border border-white/5 sm:col-span-2 ${movie.series ? 'lg:col-span-2' : 'lg:col-span-3'}`}>
+          <div className={`p-5 rounded-2xl bg-white/2 border border-white/5 sm:col-span-2 lg:col-span-2'}`}>
             <span className="block text-xs font-semibold text-neutral-500 uppercase tracking-widest mb-4">
               主演
             </span>
@@ -280,12 +281,6 @@ export default async function MovieDetailPage({ params }: { params: Promise<{ id
                   《{movie.series}》系列其他作品
                 </h2>
               </div>
-              <Link 
-                href={`/search?series=${encodeURIComponent(movie.series)}`} 
-                className="text-sm font-medium text-neutral-400 hover:text-white transition-colors"
-              >
-                查看全部 (View All)
-              </Link>
             </div>
             
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-x-4 gap-y-8">
