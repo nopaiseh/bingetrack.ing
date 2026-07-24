@@ -1,7 +1,7 @@
-"use client";
-
 import Link from "next/link";
+import ItemCard from "@/components/ItemCard";
 
+// --- 1. 类型定义 ---
 interface Movie {
   id: string | number;
   cover_url?: string;
@@ -20,108 +20,103 @@ interface Stats {
   upcoming: number;
 }
 
-interface TagProps {
-  label: string;
-}
-
 interface MovieCatalogProps {
   watched: Movie[];
   want: Movie[];
   stats?: Stats;
 }
 
-interface MediaRowProps {
-  title: string;
-  items: Movie[];
-}
-
-function Tag({ label }: TagProps) {
-  return (
-    <span className="inline-flex items-center rounded-full border border-neutral-700 bg-neutral-900 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-neutral-300">
-      {label}
-    </span>
-  );
-}
-
+// --- 2. 页面主组件 ---
 export default function MovieCatalog({ 
   watched, 
   want, 
   stats 
 }: MovieCatalogProps) {
-  const totalTracked = stats?.total;
-  const totalWatched = stats?.watched;
-  const totalWant = stats?.want;
-  const totalUpcoming = stats?.upcoming;
+  // 安全的数据解构，提供默认值防止 undefined
+  const statItems = [
+    { label: "电影总数量", value: stats?.total || 0 },
+    { label: "已观看电影", value: stats?.watched || 0 },
+    { label: "想看的电影", value: stats?.want || 0 },
+    { label: "近期将上映", value: stats?.upcoming || 0 },
+  ];
 
   return (
-    <div className="container w-full mx-auto px-6 md:px-8 max-w-7xl pb-16">
-      <div className="flex flex-wrap -mx-2 mb-10 mt-6">
-        {[
-          { label: "电影总数量", value: totalTracked },
-          { label: "已观看电影", value: totalWatched },
-          { label: "想看的电影", value: totalWant },
-          { label: "近期将上映", value: totalUpcoming },
-        ].map((stat, idx) => (
-          <div key={idx} className="w-full sm:w-1/2 md:w-1/4 p-2">
-            <div className="border border-neutral-800 rounded-md p-5">
-              <h2 className="font-medium uppercase text-neutral-500 text-xs tracking-wider">
+    <div className="relative min-h-screen bg-[#0a0a0a] text-neutral-200">
+      {/* 顶部氛围光渲染，与详情页保持风格统一 */}
+      <div className="absolute top-0 inset-x-0 h-[40vh] bg-gradient-to-b from-white/5 to-transparent pointer-events-none -z-10" />
+
+      <div className="container w-full mx-auto px-6 md:px-8 max-w-7xl pt-12 pb-24 relative z-10">
+
+        {/* --- 顶部数据看板区 --- */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-16">
+          {statItems.map((stat, idx) => (
+            <div 
+              key={idx} 
+              className="group flex flex-col p-6 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-sm transition-all duration-300 hover:bg-white/10 hover:border-white/20 hover:-translate-y-1"
+            >
+              <h2 className="font-medium uppercase text-neutral-400 text-xs tracking-widest mb-2">
                 {stat.label}
               </h2>
-              <p className="font-semibold text-2xl mt-1.5">{stat.value}</p>
+              <p className="font-semibold text-3xl tracking-tight text-white group-hover:text-amber-400 transition-colors">
+                {stat.value}
+              </p>
             </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
 
-      <div className="space-y-8">
-        <MediaRow title="我看过" items={watched} />
-        <MediaRow title="我想看" items={want} />
+        {/* --- 列表展示区 --- */}
+        <div className="space-y-12">
+          {/* 这里可以按需传入 href，如果有完整的列表页的话 */}
+          <MediaRow title="我看过" items={watched} viewAllLink="/movies/watched" />
+          <MediaRow title="我想看" items={want} viewAllLink="/movies/want" />
+        </div>
       </div>
     </div>
   );
 }
 
+// --- 3. 抽取的可复用 Row 组件 ---
 function MediaRow({
   title,
   items,
+  viewAllLink
 }: {
   title: string;
   items: Movie[];
+  viewAllLink?: string;
 }) {
-  if (items.length === 0) return null;
+  if (!items || items.length === 0) return null;
 
   return (
-    <div>
-      <div className="flex justify-between items-end mb-3 pr-1">
-        <h2 className="text-lg font-semibold tracking-wide text-neutral-200">
+    <div className="relative group">
+      {/* 标题栏设计：加入“查看全部” */}
+      <div className="flex justify-between items-end mb-5 pr-1 border-b border-white/5 pb-3">
+        <h2 className="text-xl font-bold tracking-wide text-white">
           {title}
         </h2>
-      </div>
-      <div className="flex space-x-4 overflow-x-auto no-scrollbar py-3 px-1 snap-x snap-mandatory scroll-pl-2">
-        {items.map((movie:any) => (
-          <Link href={`/movie/${movie.id}`} 
-            key={movie.id} 
-            className="flex-none w-44 cursor-pointer flex flex-col snap-start bg-[#181818] border border-neutral-800 rounded-md overflow-hidden transition-all duration-300 hover:-translate-y-1.5 hover:border-neutral-700"
+        {viewAllLink && (
+          <Link 
+            href={viewAllLink}
+            className="text-xs font-medium text-neutral-500 hover:text-white transition-colors uppercase tracking-wider"
           >
-            <div className="h-68 w-full bg-neutral-900 relative flex items-center justify-center">
-              {movie.cover_url ? (
-                <img src={movie.cover_url} alt={movie.title} className="w-full h-full object-cover" />
-              ) : (
-                <i className="fas fa-image text-4xl text-neutral-700 opacity-40"></i>
-              )}
-            </div>
-            <div className="flex flex-col space-y-1 grow px-2 py-2">
-              <div className="flex justify-between items-center text-xs">
-                <span className="text-neutral-400">{movie.date}</span>
-                <span className="text-neutral-300 font-semibold flex items-center gap-1">
-                  {movie.rating ? <><i className="fas fa-star text-yellow-500 text-[10px]"></i>{Number(movie.rating).toFixed(1)}</> : <span className="text-neutral-400">未评分</span>}
-                </span>
-              </div>
-              <div className="flex flex-wrap gap-1">
-                {(movie.genres ?? []).map((g:string, i:string) => <Tag key={`g-${i}`} label={g} />)}
-                {(movie.languages ?? []).map((l:string, i:string) => <Tag key={`l-${i}`} label={l} />)}
-              </div>
-            </div>
+            查看全部 &rarr;
+          </Link>
+        )}
+      </div>
+      
+      {/* 桌面端边缘滚动提示（渐变遮罩） */}
+      <div className="absolute right-0 top-[50px] bottom-0 w-24 bg-gradient-to-l from-[#0a0a0a] via-[#0a0a0a]/80 to-transparent pointer-events-none z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-500 hidden md:block" />
+
+      {/* 滑动列表 */}
+      <div className="flex space-x-4 overflow-x-auto no-scrollbar py-4 px-1 snap-x snap-mandatory scroll-pl-2">
+        {/* 修复了 (movie: any) 的类型问题 */}
+        {items.map((movie: Movie) => (
+          <Link 
+            href={`/movie/${movie.id}`} 
+            key={movie.id} 
+            className="flex-none w-44 cursor-pointer flex flex-col snap-start bg-neutral-900/50 border border-white/10 rounded-xl overflow-hidden transition-all duration-300 hover:-translate-y-1.5 hover:border-white/30 hover:shadow-xl hover:shadow-white/5"
+          >
+            <ItemCard item={movie} />
           </Link>
         ))}
       </div>
