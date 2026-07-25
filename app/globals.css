@@ -1,10 +1,10 @@
 @import "tailwindcss";
 
-/* Custom Scrollbar */
+/* 自定义滚动条 */
 .no-scrollbar::-webkit-scrollbar { display: none; }
 .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 
-/* Modal Animations */
+/* 模态框动效 */
 .modal-backdrop {
     opacity: 0;
     visibility: hidden;

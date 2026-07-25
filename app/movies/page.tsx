@@ -1,14 +1,14 @@
 import { supabaseServer } from '@/utils/supabase';
-import MovieCatalog from './MovieCatalog';
+import MoviesCatalog from './MoviesCatalog';
+import { Media } from '@/lib/types/Media';
 
 export default async function MoviesPage() {
-  // ─── STATS (COUNT) ──────────────────────────────────
+  {/* 获取电影统计数据 */}
   const totalCountRes = await supabaseServer.from('tracking').select('*', { count: 'exact', head: true });
   const watchedCountRes = await supabaseServer.from('tracking').select('*', { count: 'exact', head: true }).eq('status', 'watched');
   const wantCountRes = await supabaseServer.from('tracking').select('*', { count: 'exact', head: true }).eq('status', 'want_to_watch');
 
   const today = new Date().toISOString().split('T')[0];
-
   const upcomingCountRes = await supabaseServer
     .from('tracking')
     .select('media_item_id, media_items!inner(id, type, release_date)', { count: 'exact', head: true })
@@ -20,7 +20,7 @@ export default async function MoviesPage() {
   const wantCount = wantCountRes.count ?? 0;
   const upcomingCount = upcomingCountRes.count ?? 0;
 
-  // ─── WATCHED MOVIES (LIMIT 10) ──────────────────────
+  {/* 获取已观看和想看的电影数据 */}
   const { data: watchedData } = await supabaseServer
     .from('media_items')
     .select(`
@@ -37,7 +37,6 @@ export default async function MoviesPage() {
     .order('release_date', { ascending: false })
     .limit(10);
 
-  // ─── WANT TO WATCH MOVIES (LIMIT 10) ────────────
   const { data: wantData } = await supabaseServer
     .from('media_items')
     .select(`
@@ -54,7 +53,7 @@ export default async function MoviesPage() {
     .order('release_date', { ascending: false })
     .limit(10);
 
-  // ─── FORMAT DATA ────────────────────────────────────
+  {/* 格式化电影数据为 Media 类型 */}
   const formatItem = (item: any) => {
     const userTracking = item.tracking?.[0] || {};
 
@@ -77,11 +76,12 @@ export default async function MoviesPage() {
     };
   };
 
-  const watchedMovies = (watchedData ?? []).map(formatItem);
-  const wantMovies = (wantData ?? []).map(formatItem);
+  const watchedMovies = (watchedData ?? []).map(formatItem) as Media[];
+  const wantMovies = (wantData ?? []).map(formatItem) as Media[];
 
+  {/* 渲染 MoviesCatalog 组件并传入数据 */}
   return (
-    <MovieCatalog 
+    <MoviesCatalog 
       watched={watchedMovies} 
       want={wantMovies}
       stats={{ total: totalTracked, watched: watchedCount, want: wantCount, upcoming: upcomingCount }}
