@@ -2,11 +2,25 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 
 export default function Navbar() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const pathname = usePathname();
 
   const closeMenu = () => setIsMobileMenuOpen(false);
+
+  // 导航项目
+  const navItems = [
+    { name: "首页", href: "/" },
+    { name: "电影", href: "/movies" },
+    { name: "电视剧", href: "/series" },
+  ];
+
+  // 检查链接是否为当前活动页面
+  const isActive = (href: string) => {
+    return href === "/" ? pathname === "/" : pathname.startsWith(href);
+  };
 
   return (
     <nav className="fixed w-full z-50 top-0 left-0 bg-[#0a0a0a]/40 backdrop-blur-md border-b border-white/5 transition-all duration-300">
@@ -24,9 +38,19 @@ export default function Navbar() {
 
           {/* 桌面端菜单（移动端隐藏） */}
           <div className="hidden md:flex items-center gap-8 text-sm font-medium">
-            <Link href="/" className="text-neutral-400 hover:text-white transition-colors duration-300">首页</Link>
-            <Link href="/movies" className="text-neutral-400 hover:text-white transition-colors duration-300">电影</Link>
-            <Link href="/series" className="text-neutral-400 hover:text-white transition-colors duration-300">电视剧</Link>
+            {navItems.map((item) => (
+              <Link 
+                key={item.name}
+                href={item.href} 
+                className={`transition-colors duration-300 ${
+                  isActive(item.href)
+                    ? "text-white font-bold" // Active state
+                    : "text-neutral-400 hover:text-white" // Inactive state
+                }`}
+              >
+                {item.name}
+              </Link>
+            ))}
           </div>
         </div>
 
@@ -49,7 +73,6 @@ export default function Navbar() {
             className="md:hidden flex items-center justify-center text-neutral-400 hover:text-white p-2 w-10 h-10 outline-none"
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
           >
-            {/* 根据状态切换图标：打开时显示 X，关闭时显示汉堡包 */}
             <i className={`fas ${isMobileMenuOpen ? 'fa-times text-2xl' : 'fa-bars text-xl'} transition-all duration-300`}></i>
           </button>
         </div>
@@ -62,15 +85,20 @@ export default function Navbar() {
         }`}
       >
         <div className="flex flex-col px-6 gap-4 text-base font-medium">
-          <Link href="/" className="text-neutral-300 hover:text-white block py-2" onClick={closeMenu}>
-            首页
-          </Link>
-          <Link href="/movies" className="text-neutral-300 hover:text-white block py-2" onClick={closeMenu}>
-            电影
-          </Link>
-          <Link href="/series" className="text-neutral-300 hover:text-white block py-2" onClick={closeMenu}>
-            电视剧
-          </Link>
+          {navItems.map((item) => (
+            <Link 
+              key={item.name}
+              href={item.href} 
+              className={`block py-2 ${
+                isActive(item.href)
+                  ? "text-white font-bold" // Active state for mobile
+                  : "text-neutral-300 hover:text-white" // Inactive state for mobile
+              }`} 
+              onClick={closeMenu}
+            >
+              {item.name}
+            </Link>
+          ))}
           
           {/* 移动端搜索框 */}
           <div className="relative mt-2 sm:hidden">

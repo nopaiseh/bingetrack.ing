@@ -12,6 +12,12 @@ function ItemCard({ item }: { item: any }) {
         )}
       </div>
       <div className="flex flex-col space-y-1 grow px-2 py-2">
+        {/* 标题 */}
+        <h3 className="text-sm font-semibold text-white truncate" title={item.title}>
+          {item.title}
+        </h3>
+
+        {/* 上映日期和评分 */}
         <div className="flex justify-between items-center text-xs">
           <span className="text-neutral-400">{item.date || item.release_date}</span>
           <span className="text-neutral-300 font-semibold flex items-center gap-1">

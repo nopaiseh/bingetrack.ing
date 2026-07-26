@@ -1,5 +1,8 @@
+"use client";
+
 import type { Metadata } from "next";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import "./globals.css";
 import Navbar from "@/components/Navbar";
 
@@ -12,6 +15,14 @@ export default function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
+  const pathname = usePathname();
+
+  const navLinks = [
+    { name: "首页", href: "/" },
+    { name: "电影", href: "/movies" },
+    { name: "电视剧", href: "/series" },
+  ];
+
   return (
     <html lang="zh-CN">
       <head>
