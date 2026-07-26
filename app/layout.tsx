@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import "./globals.css";
+import Navbar from "@/components/Navbar";
 
 export const metadata: Metadata = {
   title: "nopaiseh",
@@ -20,49 +21,7 @@ export default function RootLayout({
       <body className="bg-[#0a0a0a] text-neutral-200 font-sans leading-normal tracking-normal selection:bg-neutral-700 selection:text-white flex flex-col">
         
         {/* 全局导航栏 */}
-        <nav className="fixed w-full z-50 top-0 left-0 bg-[#0a0a0a]/40 backdrop-blur-md border-b border-white/4 transition-all duration-300">
-          <div className="flex items-center justify-between w-full mx-auto px-6 md:px-8 h-16 max-w-7xl">
-            
-            <div className="flex items-center gap-10">
-              <Link href="/" className="flex items-center gap-2.5 group cursor-pointer">
-                <i className="fas fa-terminal text-red-500 text-base group-hover:rotate-12 transition-transform duration-300"></i>
-                <span className="text-xl font-bold tracking-[0.18em] lowercase font-mono">
-                  <span className="text-white">nopaiseh</span>
-                  <span className="text-red-500 font-black">.</span>
-                </span>
-              </Link>
-
-              <div className="hidden md:flex items-center gap-8 text-sm font-medium">
-                <Link href="/" className="text-neutral-400 hover:text-white transition-colors duration-300">
-                  首页
-                </Link>
-                <Link href="/movies" className="text-neutral-400 hover:text-white transition-colors duration-300">
-                  电影
-                </Link>
-                <Link href="/series" className="text-neutral-400 hover:text-white transition-colors duration-300">
-                  电视剧
-                </Link>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-5">
-              <div className="relative group hidden sm:block">
-                <div className="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none">
-                  <i className="fas fa-search text-neutral-500 group-focus-within:text-neutral-300 transition-colors"></i>
-                </div>
-                <input
-                  type="text"
-                  placeholder="搜索"
-                  className="bg-white/3 border border-white/10 text-white text-sm rounded-full focus:ring-1 focus:ring-red-500/30 focus:border-red-500/50 block w-44 focus:w-64 pl-10 py-1.5 transition-all duration-500 ease-out placeholder-neutral-600 outline-none shadow-inner"
-                />
-              </div>
-              <div className="md:hidden flex items-center cursor-pointer text-neutral-400 hover:text-white p-2">
-                <i className="fas fa-bars text-xl"></i>
-              </div>
-            </div>
-
-          </div>
-        </nav>
+        <Navbar />
 
         {/* 页面内容 */}
         <main className="flex-1 flex flex-col">{children}</main>
