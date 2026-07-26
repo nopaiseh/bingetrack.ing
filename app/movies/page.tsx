@@ -2,7 +2,7 @@ import { supabaseServer } from '@/utils/supabase';
 import MoviesCatalog from './MoviesCatalog';
 import { Media } from '@/lib/types/Media';
 
-export const revalidate = 3600;
+export const revalidate = 60;
 
 export default async function MoviesPage() {
   {/* 获取电影统计数据 */}

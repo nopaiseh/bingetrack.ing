@@ -47,7 +47,7 @@ export default function RootLayout({
                 </Link>
                 <span className="hidden sm:block text-white/10">|</span>
                 <span className="text-neutral-500 text-xs font-mono">
-                  &copy; 1990 - {new Date().getFullYear()} All Rights Reserved.
+                  &copy; 1990 - {new Date().getFullYear()} 版权所有
                 </span>
               </div>
 

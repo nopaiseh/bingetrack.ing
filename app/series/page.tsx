@@ -2,7 +2,7 @@ import { supabaseServer } from "@/utils/supabase";
 import SeriesCatalog from "./SeriesCatalog" 
 import { Media } from "@/lib/types/Media";
 
-export const revalidate = 3600;
+export const revalidate = 60;
 
 export default async function SeriesPage() {
   const today = new Date().toISOString().split('T')[0];
