@@ -6,18 +6,32 @@ export const revalidate = 3600;
 
 export default async function MoviesPage() {
   {/* 获取电影统计数据 */}
-  const totalCountRes = await supabaseServer.from('tracking').select('*', { count: 'exact', head: true });
-  const watchedCountRes = await supabaseServer.from('tracking').select('*', { count: 'exact', head: true }).eq('status', 'watched');
-  const wantCountRes = await supabaseServer.from('tracking').select('*', { count: 'exact', head: true }).eq('status', 'want_to_watch');
+  const totalCountRes = await supabaseServer
+    .from('media_items')
+    .select('*', { count: 'exact', head: true })
+    .eq('type', 'movie');
+
+  const watchedCountRes = await supabaseServer
+    .from('media_items')
+    .select('id, tracking!inner(status)', { count: 'exact', head: true })
+    .eq('type', 'movie')
+    .eq('tracking.status', 'watched');
+
+  const wantCountRes = await supabaseServer
+    .from('media_items')
+    .select('id, tracking!inner(status)', { count: 'exact', head: true })
+    .eq('type', 'movie')
+    .eq('tracking.status', 'want_to_watch');
 
   const today = new Date().toISOString().split('T')[0];
   const upcomingCountRes = await supabaseServer
-    .from('tracking')
-    .select('media_item_id, media_items!inner(id, type, release_date)', { count: 'exact', head: true })
-    .eq('media_items.type', 'movie')
-    .gte('media_items.release_date', today);
+    .from('media_items')
+    .select('id, tracking!inner(status)', { count: 'exact', head: true })
+    .eq('type', 'movie')
+    .eq('tracking.status', 'want_to_watch')
+    .gte('release_date', today);
 
-  const totalTracked = totalCountRes.count ?? 0;
+  const totalCount = totalCountRes.count ?? 0;
   const watchedCount = watchedCountRes.count ?? 0;
   const wantCount = wantCountRes.count ?? 0;
   const upcomingCount = upcomingCountRes.count ?? 0;
@@ -86,7 +100,7 @@ export default async function MoviesPage() {
     <MoviesCatalog 
       watched={watchedMovies} 
       want={wantMovies}
-      stats={{ total: totalTracked, watched: watchedCount, want: wantCount, upcoming: upcomingCount }}
+      stats={{ total: totalCount, watched: watchedCount, want: wantCount, upcoming: upcomingCount }}
     />
   );
 }

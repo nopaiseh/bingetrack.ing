@@ -3,6 +3,7 @@ import { Media } from "@/lib/types/Media";
 
 export interface MediaCatalogProps {
   watched: Media[];
+  watching?: Media[];
   want: Media[];
   stats?: Stats;
 }
