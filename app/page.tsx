@@ -1,3 +1,5 @@
+export const revalidate = 3600;
+
 export default function Home() {
   return (
     <div className="container mx-auto px-6 max-w-7xl pb-16 mt-10 pt-14">

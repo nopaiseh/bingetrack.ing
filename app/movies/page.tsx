@@ -2,6 +2,8 @@ import { supabaseServer } from '@/utils/supabase';
 import MoviesCatalog from './MoviesCatalog';
 import { Media } from '@/lib/types/Media';
 
+export const revalidate = 3600;
+
 export default async function MoviesPage() {
   {/* 获取电影统计数据 */}
   const totalCountRes = await supabaseServer.from('tracking').select('*', { count: 'exact', head: true });

@@ -4,6 +4,8 @@ import { getMediaList } from "@/lib/functions/GetMediaList";
 import { Media } from "@/lib/types/Media";
 import MediaInformation from "@/components/MediaInformation";
 
+export const revalidate = 3600;
+
 export default async function MovieDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const movie = await getMedia(id);
