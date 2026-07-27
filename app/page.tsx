@@ -1,10 +1,32 @@
-export const revalidate = 3600;
+import { supabaseServer } from "@/utils/supabase";
+import HomeDashboard from "@/components/HomeDashboard";
+import { Summary } from "@/lib/types/Summary";
 
-export default function Home() {
+export const revalidate = 60; 
+
+export default async function HomePage() {
+  const { data: stats } = await supabaseServer
+      .from('release_year_stats')
+      .select('release_year, total_movies, total_series, watched_movies, watched_series, movie_avg_rating, series_avg_rating')
+      .order('release_year', { ascending: false });
+
+  const formatItem = (item: any) => {
+    return {
+      release_year: item.release_year,
+      total_movies: item.total_movies,
+      total_series: item.total_series,
+      watched_movies: item.watched_movies,
+      watched_series: item.watched_series,
+      movie_avg_rating: item.movie_avg_rating,
+      series_avg_rating: item.series_avg_rating
+    };
+  };
+
+  const summary = (stats ?? []).map(formatItem) as Summary[];
+
   return (
-    <div className="container mx-auto px-6 max-w-7xl pb-16 mt-10 pt-14">
-      <h1 className="text-3xl font-bold mb-4">欢迎回来，nopaiseh</h1>
-      <p className="text-neutral-400">请使用上方导航栏查看您的媒体追踪记录。</p>
-    </div>
+    <main>
+      <HomeDashboard summary={summary} />
+    </main>
   );
 }
