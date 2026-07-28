@@ -1,5 +1,5 @@
 import { supabaseServer } from "@/utils/supabase";
-import HomeDashboard from "@/components/HomeDashboard";
+import HomeDashboard from "@/app/HomeDashboard";
 import { Summary } from "@/lib/types/Summary";
 
 export const revalidate = 60; 
