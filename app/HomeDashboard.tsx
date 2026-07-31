@@ -1,11 +1,11 @@
 "use client";
-
 import MediaRow from "@/components/MediaRow";
 import { Media } from "@/lib/types/Media";
 import { Summary } from "@/lib/types/Summary";
 import { useState, useRef, useEffect } from "react";
+import { supabaseBrowser } from "@/utils/supabase-client";
 
-export default function HomeDashboard({ summary, topMovies }: { summary: Summary[], topMovies: Media[] }) {
+export default function HomeDashboard({ summary }: { summary: Summary[] }) {
   const [activeTab, setActiveTab] = useState("总览");
   const tabs = ["总览", "电影", "电视剧"];
 
@@ -17,6 +17,11 @@ export default function HomeDashboard({ summary, topMovies }: { summary: Summary
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  
+  // 前十媒体
+  const [topMovies, setTopMovies] = useState<Media[]>([]);
+  const [isLoadingMovies, setIsLoadingMovies] = useState(false);
+
   const filteredYears = summary
     .map((item) => item.release_year)
     .filter((release_year) =>
@@ -27,22 +32,21 @@ export default function HomeDashboard({ summary, topMovies }: { summary: Summary
     (item) => String(item.release_year) === String(selectedYear),
   );
 
-  // 电影
+  // 电影统计
   const watchedMovies = currentYearData?.watched_movies || 0;
   const totalMovies = currentYearData?.total_movies || 1;
-
   const moviesPercent = Math.min(
     Math.round((watchedMovies / totalMovies) * 100),
     100
   );
 
   const avgMoviesRating = currentYearData?.movie_avg_rating || 0;
-
   const avgMoviesRatingPercent = Math.min(
     Math.round((avgMoviesRating / 10) * 100),
     100
   );
 
+  // 点击外部关闭 Dropdown
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (
@@ -56,6 +60,77 @@ export default function HomeDashboard({ summary, topMovies }: { summary: Summary
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
+
+
+  // 获取前十电影
+  useEffect(() => {
+    async function fetchTopMovies() {
+      setIsLoadingMovies(true);
+      try {
+      let query = supabaseBrowser
+        .from("media_info")
+        .select(
+          `id, title, summary, cover_url, release_date, type, status, rating,
+          media_genres ( genres ( name ) ),
+          media_languages ( languages ( name ) ),
+          media_regions ( regions ( name ) ),
+          media_credits ( people ( name ), role, credit_order )`
+        )
+        .order("rating", { ascending: false })
+        .limit(10);
+
+      if (selectedYear && selectedYear !== "All Time") {
+        query = query
+          .gte("release_date", `${selectedYear}-01-01`)
+          .lte("release_date", `${selectedYear}-12-31`);
+      }
+
+      const { data: topMoviesData, error } = await query;
+
+      console.log("test:" + topMoviesData);
+
+      if (error) {
+        console.error("Supabase query error:", error);
+        return;
+      }
+
+      const formatItem = (item: any) => {
+        const userTracking = item.tracking?.[0] || {};
+
+        return {
+          id: item.id,
+          title: item.title,
+          date: item.release_date,
+          rating: userTracking.rating,
+          status: userTracking.status,
+          summary: item.summary,
+          cover_url: item.cover_url,
+          genres: (item.media_genres ?? []).map((g: any) => g.genres.name),
+          languages: (item.media_languages ?? []).map(
+            (l: any) => l.languages.name,
+          ),
+          regions: (item.media_regions ?? []).map((r: any) => r.regions.name),
+          series: item.media_series?.name || null,
+          casts: (item.media_credits ?? [])
+            .filter((c: any) => c.role === "actor")
+            .sort((a: any, b: any) => a.credit_order - b.credit_order)
+            .map((c: any) => c.people.name),
+        };
+      };
+
+      setTopMovies((topMoviesData ?? []).map(formatItem) as Media[] || []);
+      } catch (error) {
+        console.error("Error fetching top movies:", error);
+      } finally {
+        setIsLoadingMovies(false);
+      }
+    }
+
+    if (activeTab === "电影") {
+      fetchTopMovies();
+    }
+  }, [selectedYear, activeTab]); 
+  // 当 selectedYear 或 activeTab 发生变化时，重新运行
 
   return (
     <div className="container mx-auto px-6 md:px-8 max-w-7xl py-12 flex flex-col gap-6 animate-fade-in pt-24">
@@ -82,10 +157,9 @@ export default function HomeDashboard({ summary, topMovies }: { summary: Summary
 
           {/* 可搜索的年份 Dropdown */}
           <div className="relative" ref={dropdownRef}>
-            <div onClick={() => setIsDropdownOpen(true)} className="flex items-center gap-2 bg-[#121212] border border-white/10 hover:border-white/20 transition-all pl-4 pr-3 py-2.5 rounded-xl cursor-text w-32 group">
+            <div onClick={() => setIsDropdownOpen(true)} className="flex items-center gap-2 bg-[#121212] border border-white/10 hover:border-white/20 transition-all pl-4 pr-3 py-2.5 rounded-xl cursor-text w-35 group">
               <i className="far fa-calendar-alt text-red-500 group-hover:text-red-400 transition-colors"></i>
 
-              {/* 动态：未打开时显示选中的年份，打开时允许输入 */}
               <input type="text" value={isDropdownOpen ? searchQuery : selectedYear} onChange={(e) => setSearchQuery(e.target.value)} placeholder={selectedYear} className="bg-transparent w-full text-neutral-300 font-mono text-sm outline-none placeholder:text-neutral-600"/>
               <i className={`fas fa-chevron-down text-xs text-neutral-500 transition-transform duration-300 ${isDropdownOpen ? "rotate-180" : ""}`}></i>
             </div>
@@ -175,7 +249,7 @@ export default function HomeDashboard({ summary, topMovies }: { summary: Summary
               {/* 电影观看记录 */}
               <div className="col-span-1 md:col-span-3 bg-white/5 border border-white/10 rounded-2xl p-6 flex flex-col justify-center transition-all duration-300 hover:-translate-y-1 hover:bg-white/10 hover:border-white/20 hover:shadow-xl hover:shadow-black/50 group">
                 <div className="text-neutral-500 mb-4 flex justify-between items-center">
-                  <i className="text-xl">这一年上映的电影，我看了</i>
+                  <i className="text-xl">{selectedYear}上映的电影，我看了</i>
                 </div>
                 <div>
                   <div className="flex items-baseline gap-2 mb-2">
@@ -189,7 +263,7 @@ export default function HomeDashboard({ summary, topMovies }: { summary: Summary
                   <div className="w-full h-2 bg-white/10 rounded-full overflow-hidden">
                     <div
                       className="h-full bg-linear-to-r from-red-600 to-red-400 shadow-[0_0_12px_rgba(239,68,68,0.4)] rounded-full"
-                      style={{ width: `${moviesPercent}%` }}
+                      style={{ width: `${moviesPercent}%`, transition: 'width 1s cubic-bezier(0.4, 0, 0.2, 1)' }}
                     ></div>
                   </div>
                 </div>
@@ -209,7 +283,7 @@ export default function HomeDashboard({ summary, topMovies }: { summary: Summary
                   <div className="w-full h-2 bg-white/10 rounded-full overflow-hidden">
                     <div
                       className="h-full bg-linear-to-r from-red-600 to-red-400 shadow-[0_0_12px_rgba(239,68,68,0.4)] rounded-full"
-                      style={{ width: `${avgMoviesRatingPercent}%` }}
+                      style={{ width: `${avgMoviesRatingPercent}%`, transition: 'width 1s cubic-bezier(0.4, 0, 0.2, 1)' }}
                     ></div>
                   </div>
                 </div>
@@ -217,7 +291,6 @@ export default function HomeDashboard({ summary, topMovies }: { summary: Summary
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
-
               <div className="bg-white/5 border border-white/10 rounded-2xl p-6 flex flex-col justify-center transition-all duration-300 hover:-translate-y-1 hover:bg-white/10 hover:border-white/20 hover:shadow-xl hover:shadow-black/50 group">
                 <div className="text-sm text-neutral-400 mb-4 flex items-center gap-2">
                   <div className="flex items-center gap-3 text-sm text-neutral-400 mb-5">
@@ -235,50 +308,39 @@ export default function HomeDashboard({ summary, topMovies }: { summary: Summary
                     <div className="flex-1 h-1.5 bg-white/10 rounded-full overflow-hidden">
                       <div className="h-full bg-neutral-300 w-[40%]"></div>
                     </div>
-                    <span className="text-xs text-neutral-500 w-8 text-right">
-                      40%
-                    </span>
+                    <span className="text-xs text-neutral-500 w-8 text-right">40%</span>
                   </div>
                   <div className="flex items-center gap-3">
                     <span className="text-sm w-14">🇨🇳 中国</span>
                     <div className="flex-1 h-1.5 bg-white/10 rounded-full overflow-hidden">
                       <div className="h-full bg-neutral-300 w-[25%]"></div>
                     </div>
-                    <span className="text-xs text-neutral-500 w-8 text-right">
-                      25%
-                    </span>
+                    <span className="text-xs text-neutral-500 w-8 text-right">25%</span>
                   </div>
                   <div className="flex items-center gap-3">
                     <span className="text-sm w-14">🇯🇵 日本</span>
                     <div className="flex-1 h-1.5 bg-white/10 rounded-full overflow-hidden">
                       <div className="h-full bg-neutral-300 w-[15%]"></div>
                     </div>
-                    <span className="text-xs text-neutral-500 w-8 text-right">
-                      15%
-                    </span>
+                    <span className="text-xs text-neutral-500 w-8 text-right">15%</span>
                   </div>
                   <div className="flex items-center gap-3">
                     <span className="text-sm w-14">🇰🇷 韩国</span>
                     <div className="flex-1 h-1.5 bg-white/10 rounded-full overflow-hidden">
                       <div className="h-full bg-neutral-300 w-[12%]"></div>
                     </div>
-                    <span className="text-xs text-neutral-500 w-8 text-right">
-                      12%
-                    </span>
+                    <span className="text-xs text-neutral-500 w-8 text-right">12%</span>
                   </div>
                   <div className="flex items-center gap-3">
                     <span className="text-sm w-14">🇬🇧 英国</span>
                     <div className="flex-1 h-1.5 bg-white/10 rounded-full overflow-hidden">
                       <div className="h-full bg-neutral-300 w-[8%]"></div>
                     </div>
-                    <span className="text-xs text-neutral-500 w-8 text-right">
-                      8%
-                    </span>
+                    <span className="text-xs text-neutral-500 w-8 text-right">8%</span>
                   </div>
                 </div>
               </div>
 
-              {/* 2. Top Languages */}
               <div className="bg-white/5 border border-white/10 rounded-2xl p-6 flex flex-col justify-center transition-all duration-300 hover:-translate-y-1 hover:bg-white/10 hover:border-white/20 hover:shadow-xl hover:shadow-black/50 group">
                 <div className="text-sm text-neutral-400 mb-4 flex items-center gap-2">
                   <div className="flex items-center gap-3 text-sm text-neutral-400 mb-5">
@@ -296,50 +358,39 @@ export default function HomeDashboard({ summary, topMovies }: { summary: Summary
                     <div className="flex-1 h-1.5 bg-white/10 rounded-full overflow-hidden">
                       <div className="h-full bg-neutral-300 w-[45%]"></div>
                     </div>
-                    <span className="text-xs text-neutral-500 w-8 text-right">
-                      45%
-                    </span>
+                    <span className="text-xs text-neutral-500 w-8 text-right">45%</span>
                   </div>
                   <div className="flex items-center gap-3">
                     <span className="text-sm w-14">🗣️ 中文</span>
                     <div className="flex-1 h-1.5 bg-white/10 rounded-full overflow-hidden">
                       <div className="h-full bg-neutral-300 w-[25%]"></div>
                     </div>
-                    <span className="text-xs text-neutral-500 w-8 text-right">
-                      25%
-                    </span>
+                    <span className="text-xs text-neutral-500 w-8 text-right">25%</span>
                   </div>
                   <div className="flex items-center gap-3">
                     <span className="text-sm w-14">🗣️ 日语</span>
                     <div className="flex-1 h-1.5 bg-white/10 rounded-full overflow-hidden">
                       <div className="h-full bg-neutral-300 w-[15%]"></div>
                     </div>
-                    <span className="text-xs text-neutral-500 w-8 text-right">
-                      15%
-                    </span>
+                    <span className="text-xs text-neutral-500 w-8 text-right">15%</span>
                   </div>
                   <div className="flex items-center gap-3">
                     <span className="text-sm w-14">🗣️ 韩语</span>
                     <div className="flex-1 h-1.5 bg-white/10 rounded-full overflow-hidden">
                       <div className="h-full bg-neutral-300 w-[10%]"></div>
                     </div>
-                    <span className="text-xs text-neutral-500 w-8 text-right">
-                      10%
-                    </span>
+                    <span className="text-xs text-neutral-500 w-8 text-right">10%</span>
                   </div>
                   <div className="flex items-center gap-3">
                     <span className="text-sm w-14">🗣️ 法语</span>
                     <div className="flex-1 h-1.5 bg-white/10 rounded-full overflow-hidden">
                       <div className="h-full bg-neutral-300 w-[5%]"></div>
                     </div>
-                    <span className="text-xs text-neutral-500 w-8 text-right">
-                      5%
-                    </span>
+                    <span className="text-xs text-neutral-500 w-8 text-right">5%</span>
                   </div>
                 </div>
               </div>
 
-              {/* 3. Top Genres */}
               <div className="bg-white/5 border border-white/10 rounded-2xl p-6 flex flex-col justify-center transition-all duration-300 hover:-translate-y-1 hover:bg-white/10 hover:border-white/20 hover:shadow-xl hover:shadow-black/50 group">
                 <div className="text-sm text-neutral-400 mb-4 flex items-center gap-2">
                   <div className="flex items-center gap-3 text-sm text-neutral-400 mb-5">
@@ -357,63 +408,60 @@ export default function HomeDashboard({ summary, topMovies }: { summary: Summary
                     <div className="flex-1 h-1.5 bg-white/10 rounded-full overflow-hidden">
                       <div className="h-full bg-neutral-300 w-[35%]"></div>
                     </div>
-                    <span className="text-xs text-neutral-500 w-8 text-right">
-                      35%
-                    </span>
+                    <span className="text-xs text-neutral-500 w-8 text-right">35%</span>
                   </div>
                   <div className="flex items-center gap-3">
                     <span className="text-sm w-14">👽 科幻</span>
                     <div className="flex-1 h-1.5 bg-white/10 rounded-full overflow-hidden">
                       <div className="h-full bg-neutral-300 w-[25%]"></div>
                     </div>
-                    <span className="text-xs text-neutral-500 w-8 text-right">
-                      25%
-                    </span>
+                    <span className="text-xs text-neutral-500 w-8 text-right">25%</span>
                   </div>
                   <div className="flex items-center gap-3">
                     <span className="text-sm w-14">😂 喜剧</span>
                     <div className="flex-1 h-1.5 bg-white/10 rounded-full overflow-hidden">
                       <div className="h-full bg-neutral-300 w-[20%]"></div>
                     </div>
-                    <span className="text-xs text-neutral-500 w-8 text-right">
-                      20%
-                    </span>
+                    <span className="text-xs text-neutral-500 w-8 text-right">20%</span>
                   </div>
                   <div className="flex items-center gap-3">
                     <span className="text-sm w-14">🎭 剧情</span>
                     <div className="flex-1 h-1.5 bg-white/10 rounded-full overflow-hidden">
                       <div className="h-full bg-neutral-300 w-[12%]"></div>
                     </div>
-                    <span className="text-xs text-neutral-500 w-8 text-right">
-                      12%
-                    </span>
+                    <span className="text-xs text-neutral-500 w-8 text-right">12%</span>
                   </div>
                   <div className="flex items-center gap-3">
                     <span className="text-sm w-14">👻 恐怖</span>
                     <div className="flex-1 h-1.5 bg-white/10 rounded-full overflow-hidden">
                       <div className="h-full bg-neutral-300 w-[8%]"></div>
                     </div>
-                    <span className="text-xs text-neutral-500 w-8 text-right">
-                      8%
-                    </span>
+                    <span className="text-xs text-neutral-500 w-8 text-right">8%</span>
                   </div>
                 </div>
               </div>
             </div>
 
-            <div className="space-y-12">
-              <MediaRow title="这一年最好看的电影" items={topMovies} viewAllLink="/movies/watched" />
+            <div className="space-y-12 mt-4">
+              {/* 前十电影 */}
+              {isLoadingMovies ? (
+                <div className="flex justify-center items-center py-12 text-neutral-500 animate-pulse">
+                  <i className="fas fa-circle-notch fa-spin mr-3"></i>
+                  正在加载{selectedYear}最佳电影...
+                </div>
+              ) : (
+                <MediaRow title="这一年最好看的电影" items={topMovies} viewAllLink={`/movies/watched?year=${selectedYear}`}/>
+              )}
             </div>
           </div>
         )}
 
-        {/* 当 activeTab 是 "电视剧" 时显示 */}
+        {/* 电视剧 */}
         {activeTab === "电视剧" && (
           <div key="tv-shows" className="animate-fade-in">
             <h2 className="text-2xl font-bold text-white mb-6">
               电视剧追剧记录
             </h2>
-            {/* 电视剧内容 */}
             <div className="col-span-2 md:col-span-1 bg-white/5 border border-white/10 rounded-2xl p-6 flex flex-col justify-between group">
               <div className="text-neutral-500 mb-4 flex justify-between items-center">
                 <i className="fas fa-list-check text-xl"></i>
@@ -426,7 +474,6 @@ export default function HomeDashboard({ summary, topMovies }: { summary: Summary
                   <span className="text-4xl font-black text-white">42</span>
                   <span className="text-sm text-neutral-400">/ 60 部计划</span>
                 </div>
-                {/* 极简进度条 */}
                 <div className="w-full h-2 bg-white/10 rounded-full overflow-hidden">
                   <div className="h-full bg-red-500 w-[70%] rounded-full"></div>
                 </div>
