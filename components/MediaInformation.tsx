@@ -61,7 +61,7 @@ function StatusBadge({ isWatched }: { isWatched: boolean }) {
 
 function MetadataRow({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <div className="flex flex-col sm:flex-row sm:items-start gap-3 sm:gap-8 py-2 border-b border-white/3 last:border-0 transition-colors hover:bg-white/1">
+    <div className="flex flex-col sm:flex-row sm:items-start gap-3 sm:gap-8 py-2 border-b border-white/3 last:border-0 transition-colors hover:bg-white/1 items-center">
       <span className="text-base font-medium text-neutral-500 w-16 shrink-0 sm:pt-1 tracking-widest">
         {label}
       </span>
@@ -126,7 +126,7 @@ export default function MediaInformation({
           {/* 右侧信息区，包括标题和元数据 */}
           <div className="flex-1 flex flex-col pt-4 md:pt-8">
             <div className="mb-4 md:mb-6">
-              <h1 className="text-4xl md:text-5xl lg:text-6xl font-extrabold tracking-tight mb-6 leading-tight bg-clip-text text-transparent bg-linear-to-br from-white to-neutral-500 drop-shadow-lg">
+              <h1 className="text-3xl md:text-4xl font-bold tracking-tight mt-4 mb-6 text-white text-balance">
                 {media.title}
               </h1>
 
@@ -176,7 +176,7 @@ export default function MediaInformation({
             <span className="w-1 h-4 bg-white/20 rounded-full"></span>
             剧情简介
           </h3>
-          <p className="text-neutral-300/80 leading-loose tracking-wide text-base text-justify wrap-break-word">
+          <p className="text-neutral-300/80 leading-loose tracking-wide text-base text-left wrap-break-word">
             {media.summary || "暂无简介。"}
           </p>
         </div>

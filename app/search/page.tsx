@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { supabaseServer } from "@/utils/supabase";
+import { getSupabaseServer } from "@/utils/supabase";
 import { mapSupabaseToMedia, SupabaseMediaItem } from "@/lib/functions/mediaMapper";
 import MediaRow from "@/components/MediaRow";
 import { Media } from "@/lib/types/Media";
@@ -62,7 +62,7 @@ export default async function SearchPage({
     );
   }
 
-  const query = supabaseServer
+  const query = getSupabaseServer()
     .from("media_info")
     .select(
       `id, title, summary, cover_url, release_date, type, rating, status,
