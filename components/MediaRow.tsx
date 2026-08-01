@@ -32,7 +32,7 @@ function ItemCard({ item }: { item: any }) {
           </span>
         </div>
         
-        {/* 标签区域 (Genres & Languages) */}
+        {/* 标签区域 */}
         <div className="flex flex-wrap gap-1">
           {(item.genres ?? []).map((g: string, i: number) => (
             <span key={`g-${i}`} className="inline-flex items-center px-1 py-1 rounded-md bg-white/3 border border-white/10 text-neutral-300 text-xs font-medium tracking-wide transition-all hover:bg-white/10 hover:text-white hover:border-white/20 hover:shadow-sm">

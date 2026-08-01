@@ -14,6 +14,8 @@ export default function SeriesCatalog({
     { label: "近期将播出", value: stats?.totalUpcomingEpisodes || 0 },
   ];
 
+  console.log(watched);
+
   return (
     <div className="relative bg-[#0a0a0a] text-neutral-200 pt-14">
       <div className="absolute top-0 inset-x-0 h-[40vh] bg-linear-to-b from-white/5 to-transparent pointer-events-none -z-10" />

@@ -36,10 +36,14 @@ export default async function SeriesPage() {
   const totalUpcomingEpisodesCount = totalUpcomingEpisodesCountRes.count ?? 0;
 
   {/* 获取已看过、正在看和想看的电视剧数据 */}
-  const { data: watchedData } = await supabaseServer
-    .rpc("get_watched_tv_series")
-    .order("release_date", { ascending: false })
+  const { data: watchedData, error } = await supabaseServer
+    .rpc("get_tv_series_by_status", { p_status: "watched" })
+    .order("release_years", { ascending: false })
     .limit(10);
+
+  if (error) {
+    console.error("Error fetching TV series:", error);
+  }
 
   {/* 格式化电影数据为 Media 类型 */}
   const formatItem = (item: any) => {
@@ -48,13 +52,13 @@ export default async function SeriesPage() {
     return {
       id: item.id,
       title: item.title,
-      date: item.release_date,
-      rating: userTracking.rating,
+      date: item.release_years,
+      rating: item.average_rating,
       status: userTracking.status,
       summary: item.summary,
       cover_url: item.cover_url,
-      genres: (item.media_genres ?? []).map((g: any) => g.genres.name),
-      languages: (item.media_languages ?? []).map((l: any) => l.languages.name),
+      genres: (item.genres ?? []),
+      languages: (item.languages ?? []),
       regions: (item.media_regions ?? []).map((r: any) => r.regions.name),
       series: item.media_series?.name || null,
       casts: (item.media_credits ?? [])
