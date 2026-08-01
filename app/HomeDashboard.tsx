@@ -200,7 +200,7 @@ export default function HomeDashboard({ summary }: { summary: Summary[] }) {
           };
         };
 
-        setTopMovies((topSeriesData ?? []).map(formatItem) as Media[] || []);
+        setTopSeries((topSeriesData ?? []).map(formatItem) as Media[] || []);
       } catch (error) {
         console.error("Error fetching top series:", error);
       } finally {
@@ -531,7 +531,7 @@ export default function HomeDashboard({ summary }: { summary: Summary[] }) {
                   正在加载{selectedYear}最佳电影...
                 </div>
               ) : (
-                <MediaRow title="影史精选" items={topMovies} viewAllLink={`/movies/watched?year=${selectedYear}`}/>
+                <MediaRow title="影史精选" items={topMovies} viewAllLink={`/movies/watched?year=${selectedYear}`} type="movies" />
               )}
             </div>
           </div>
@@ -745,7 +745,7 @@ export default function HomeDashboard({ summary }: { summary: Summary[] }) {
                   正在加载{selectedYear}最佳电视剧...
                 </div>
               ) : (
-                <MediaRow title="影史精选" items={topSeries} viewAllLink={`/movies/watched?year=${selectedYear}`}/>
+                <MediaRow title="影史精选" items={topSeries} viewAllLink={`/movies/watched?year=${selectedYear}`} type="series" />
               )}
             </div>
           </div>

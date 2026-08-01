@@ -54,7 +54,7 @@ export default async function SeriesPage() {
       title: item.title,
       date: item.release_years,
       rating: item.average_rating,
-      status: userTracking.status,
+      status: item.status,
       summary: item.summary,
       cover_url: item.cover_url,
       genres: (item.genres ?? []),

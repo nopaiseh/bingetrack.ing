@@ -37,9 +37,9 @@ export default function SeriesCatalog({
 
         {/* 电视剧列表展示区 */}
         <div className="space-y-12">
-          <MediaRow title="我看过" items={watched} viewAllLink="/series/watched" />
-          <MediaRow title="正在看" items={watching || []} viewAllLink="/series/watching" />
-          <MediaRow title="我想看" items={want} viewAllLink="/series/wantToWatch" />
+          <MediaRow title="我看过" items={watched} viewAllLink="/series/watched" type="series" />
+          <MediaRow title="正在看" items={watching || []} viewAllLink="/series/watching" type="series" />
+          <MediaRow title="我想看" items={want} viewAllLink="/series/wantToWatch" type="series" />
         </div>
       </div>
     </div>      

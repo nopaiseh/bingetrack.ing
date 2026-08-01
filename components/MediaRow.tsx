@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { Media } from "@/lib/types/Media";
 
-function ItemCard({ item }: { item: any }) {
+function ItemCard({ item }: { item: Media }) {
   return (
     <>
       <div className="h-68 w-full bg-neutral-900 relative flex items-center justify-center">
@@ -19,7 +19,7 @@ function ItemCard({ item }: { item: any }) {
 
         {/* 上映日期和评分 */}
         <div className="flex justify-between items-center text-xs">
-          <span className="text-neutral-400">{item.date || item.release_date}</span>
+          <span className="text-neutral-400">{item.date}</span>
           <span className="text-neutral-300 font-semibold flex items-center gap-1">
             {item.rating ? (
               <>
@@ -53,11 +53,13 @@ function ItemCard({ item }: { item: any }) {
 export default function MediaRow({
   title,
   items,
-  viewAllLink
+  viewAllLink,
+  type
 }: {
   title: string;
   items: Media[];
   viewAllLink?: string;
+  type: string;
 }) {
   if (!items || items.length === 0) return null;
 
@@ -78,7 +80,7 @@ export default function MediaRow({
       {/* 滑动列表 */}
       <div className="flex space-x-4 overflow-x-auto no-scrollbar py-4 px-1 snap-x snap-mandatory scroll-pl-2">
         {items.map((media: Media) => (
-          <Link href={`/movies/${media.id}`} key={media.id} className="flex-none w-44 cursor-pointer flex flex-col snap-start bg-neutral-900/50 border border-white/10 rounded-xl overflow-hidden transition-all duration-300 hover:-translate-y-1.5 hover:border-white/30 hover:shadow-xl hover:shadow-white/5">
+          <Link href={`/${type}/${media.id}`} key={media.id} className="flex-none w-44 cursor-pointer flex flex-col snap-start bg-neutral-900/50 border border-white/10 rounded-xl overflow-hidden transition-all duration-300 hover:-translate-y-1.5 hover:border-white/30 hover:shadow-xl hover:shadow-white/5">
             <ItemCard item={media} />
           </Link>
         ))}
