@@ -1,4 +1,4 @@
-import { supabaseServer } from '@/utils/supabase';
+import { getSupabaseServer } from '@/utils/supabase';
 import MoviesCatalog from './MoviesCatalog';
 import { Media } from '@/lib/types/Media';
 import { mapSupabaseToMedia, SupabaseMediaItem } from '@/lib/functions/mediaMapper';
@@ -7,25 +7,25 @@ export const revalidate = 60;
 
 export default async function MoviesPage() {
   {/* 获取电影统计数据 */}
-  const totalCountRes = await supabaseServer
+  const totalCountRes = await getSupabaseServer()
     .from('media_items')
     .select('*', { count: 'exact', head: true })
     .eq('type', 'movie');
 
-  const watchedCountRes = await supabaseServer
+  const watchedCountRes = await getSupabaseServer()
     .from('media_items')
     .select('id, tracking!inner(status)', { count: 'exact', head: true })
     .eq('type', 'movie')
     .eq('tracking.status', 'watched');
 
-  const wantCountRes = await supabaseServer
+  const wantCountRes = await getSupabaseServer()
     .from('media_items')
     .select('id, tracking!inner(status)', { count: 'exact', head: true })
     .eq('type', 'movie')
     .eq('tracking.status', 'want_to_watch');
 
   const today = new Date().toISOString().split('T')[0];
-  const upcomingCountRes = await supabaseServer
+  const upcomingCountRes = await getSupabaseServer()
     .from('media_items')
     .select('id, tracking!inner(status)', { count: 'exact', head: true })
     .eq('type', 'movie')
@@ -38,7 +38,7 @@ export default async function MoviesPage() {
   const upcomingCount = upcomingCountRes.count ?? 0;
 
   {/* 获取已观看和想看的电影数据 */}
-  const { data: watchedData } = (await supabaseServer
+  const { data: watchedData } = (await getSupabaseServer()
     .from('media_items')
     .select(`
       id, title, summary, cover_url, release_date, type,
@@ -54,7 +54,7 @@ export default async function MoviesPage() {
     .order('release_date', { ascending: false })
     .limit(10)) as { data: SupabaseMediaItem[] | null; error: unknown };
 
-  const { data: wantData } = (await supabaseServer
+  const { data: wantData } = (await getSupabaseServer()
     .from('media_items')
     .select(`
       id, title, summary, cover_url, release_date, type,

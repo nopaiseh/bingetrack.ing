@@ -5,7 +5,7 @@ import { Summary } from "@/lib/types/Summary";
 export const revalidate = 60;
 
 export default async function HomePage() {
-  const { data: summary } = (await supabaseServer
+  const { data: summary } = (await getSupabaseServer()
     .from("release_year_stats")
     .select(
       "release_year, total_movies, total_series, watched_movies, watched_series, movie_avg_rating, series_avg_rating",

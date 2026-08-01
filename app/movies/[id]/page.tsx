@@ -6,8 +6,8 @@ import MediaInformation from "@/components/MediaInformation";
 
 export const revalidate = 60;
 
-export default async function MovieDetailPage({ params }: { params: { id: string } }) {
-  const { id } = params;
+export default async function MovieDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
   const movie = await getMedia(id, "movies");
   if (!movie) notFound();
   const relatedMedia: Media[] | null = movie.series ? await getMediaList({ seriesName: movie.series, currentId: movie.id }) : null;

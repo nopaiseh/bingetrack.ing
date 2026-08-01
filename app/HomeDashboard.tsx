@@ -4,7 +4,7 @@ import { Media } from "@/lib/types/Media";
 import { Summary } from "@/lib/types/Summary";
 import { mapSupabaseToMedia, SupabaseMediaItem } from "@/lib/functions/mediaMapper";
 import { useState, useRef, useEffect } from "react";
-import { supabaseBrowser } from "@/utils/supabase-client";
+import { getSupabaseBrowser } from "@/utils/supabase-client";
 
 export default function HomeDashboard({ summary }: { summary: Summary[] }) {
   const [activeTab, setActiveTab] = useState("总览");
@@ -83,7 +83,7 @@ export default function HomeDashboard({ summary }: { summary: Summary[] }) {
     async function fetchTopMovies() {
       setIsLoadingMedia(true);
       try {
-        let query = supabaseBrowser
+        let query = getSupabaseBrowser()
           .from("media_info")
           .select(
             `id, title, summary, cover_url, release_date, type, status, rating,
@@ -132,7 +132,7 @@ export default function HomeDashboard({ summary }: { summary: Summary[] }) {
     async function fetchTopSeries() {
       setIsLoadingMedia(true);
       try {
-        let query = supabaseBrowser
+        let query = getSupabaseBrowser()
           .from("media_info")
           .select(
             `id, title, summary, cover_url, release_date, type, status, rating,

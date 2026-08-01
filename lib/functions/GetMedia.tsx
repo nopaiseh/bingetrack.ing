@@ -1,4 +1,4 @@
-import { supabaseServer } from "@/utils/supabase";
+import { getSupabaseServer } from "@/utils/supabase";
 import { Media } from "@/lib/types/Media";
 import { mapSupabaseToMedia, MediaType, SupabaseMediaItem } from "@/lib/functions/mediaMapper";
 
@@ -9,7 +9,7 @@ export async function getMedia(
   let response;
 
   if (type === "movies") {
-    response = await supabaseServer
+    response = await getSupabaseServer()
       .from("media_items")
       .select(`
         id, title, summary, cover_url, release_date, type,
@@ -23,7 +23,7 @@ export async function getMedia(
       .eq("id", id)
       .single();
   } else {
-    response = await supabaseServer
+    response = await getSupabaseServer()
       .rpc("get_tv_series_by_id", { p_id: id })
       .order("release_years", { ascending: false })
       .eq("id", id)

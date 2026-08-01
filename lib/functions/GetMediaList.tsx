@@ -1,4 +1,4 @@
-import { supabaseServer } from "@/utils/supabase";
+import { getSupabaseServer } from "@/utils/supabase";
 import { Media } from "@/lib/types/Media";
 import { mapSupabaseToMedia, SupabaseMediaItem } from "@/lib/functions/mediaMapper";
 
@@ -9,7 +9,7 @@ export async function getMediaList({
   seriesName: string;
   currentId: string;
 }): Promise<Media[] | null> {
-  const { data, error } = (await supabaseServer
+  const { data, error } = (await getSupabaseServer()
     .from("media_items")
     .select(`
       id, title, cover_url, release_date, type,

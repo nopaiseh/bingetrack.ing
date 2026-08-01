@@ -1,4 +1,4 @@
-import { supabaseServer } from "@/utils/supabase";
+import { getSupabaseServer } from "@/utils/supabase";
 import SeriesCatalog from "./SeriesCatalog";
 import { Media } from "@/lib/types/Media";
 import { mapSupabaseToMedia, SupabaseMediaItem } from "@/lib/functions/mediaMapper";
@@ -9,22 +9,22 @@ export default async function SeriesPage() {
   const today = new Date().toISOString().split('T')[0];
 
   {/* 获取电视剧统计数据 */}
-  const totalSeriesCountRes = await supabaseServer
+  const totalSeriesCountRes = await getSupabaseServer()
     .from("media_items")
     .select("*", { count: "exact", head: true })
     .eq("type", "tv_series");
 
-  const totalSeasonsCountRes = await supabaseServer
+  const totalSeasonsCountRes = await getSupabaseServer()
     .from("media_items")
     .select("*", { count: "exact", head: true })
     .eq("type", "tv_season");
 
-  const totalEpisodesCountRes = await supabaseServer
+  const totalEpisodesCountRes = await getSupabaseServer()
     .from("media_items")
     .select("*", { count: "exact", head: true })
     .eq("type", "tv_episode");
 
-  const totalUpcomingEpisodesCountRes = await supabaseServer
+  const totalUpcomingEpisodesCountRes = await getSupabaseServer()
     .from("media_items")
     .select("*", { count: "exact", head: true })
     .eq("type", "tv_episode")
@@ -37,7 +37,7 @@ export default async function SeriesPage() {
   const totalUpcomingEpisodesCount = totalUpcomingEpisodesCountRes.count ?? 0;
 
   {/* 获取已看过、正在看和想看的电视剧数据 */}
-  const { data: watchedData, error } = (await supabaseServer
+  const { data: watchedData, error } = (await getSupabaseServer()
     .rpc("get_tv_series_by_status", { p_status: "watched" })
     .order("release_years", { ascending: false })
     .limit(10)) as {
