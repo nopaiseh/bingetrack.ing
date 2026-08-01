@@ -1,6 +1,29 @@
-import { createClient } from '@supabase/supabase-js'
+import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+let supabaseBrowserClient: SupabaseClient | null = null;
 
-export const supabaseBrowser = createClient(supabaseUrl, supabaseAnonKey)
+function getSupabaseBrowserUrl() {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  if (!supabaseUrl) {
+    throw new Error('NEXT_PUBLIC_SUPABASE_URL must be defined for browser Supabase access.');
+  }
+  return supabaseUrl;
+}
+
+function getSupabaseAnonKey() {
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  if (!supabaseAnonKey) {
+    throw new Error('NEXT_PUBLIC_SUPABASE_ANON_KEY must be defined for browser Supabase access.');
+  }
+  return supabaseAnonKey;
+}
+
+export function getSupabaseBrowser(): SupabaseClient {
+  if (!supabaseBrowserClient) {
+    supabaseBrowserClient = createClient(
+      getSupabaseBrowserUrl(),
+      getSupabaseAnonKey(),
+    );
+  }
+  return supabaseBrowserClient;
+}

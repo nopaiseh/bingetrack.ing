@@ -4,8 +4,8 @@ import MediaInformation from "@/components/MediaInformation";
 
 export const revalidate = 60;
 
-export default async function SeriesDetailPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = await params;
+export default async function SeriesDetailPage({ params }: { params: { id: string } }) {
+  const { id } = params;
   const series = await getMedia(id, "series");
   if (!series) notFound();
 

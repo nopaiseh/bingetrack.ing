@@ -1,6 +1,7 @@
 import { supabaseServer } from "@/utils/supabase";
-import SeriesCatalog from "./SeriesCatalog" 
+import SeriesCatalog from "./SeriesCatalog";
 import { Media } from "@/lib/types/Media";
+import { mapSupabaseToMedia, SupabaseMediaItem } from "@/lib/functions/mediaMapper";
 
 export const revalidate = 60;
 
@@ -36,39 +37,21 @@ export default async function SeriesPage() {
   const totalUpcomingEpisodesCount = totalUpcomingEpisodesCountRes.count ?? 0;
 
   {/* 获取已看过、正在看和想看的电视剧数据 */}
-  const { data: watchedData, error } = await supabaseServer
+  const { data: watchedData, error } = (await supabaseServer
     .rpc("get_tv_series_by_status", { p_status: "watched" })
     .order("release_years", { ascending: false })
-    .limit(10);
+    .limit(10)) as {
+    data: SupabaseMediaItem[] | null;
+    error: unknown;
+  };
 
   if (error) {
     console.error("Error fetching TV series:", error);
   }
 
-  {/* 格式化电影数据为 Media 类型 */}
-  const formatItem = (item: any) => {
-    const userTracking = item.tracking?.[0] || {};
-
-    return {
-      id: item.id,
-      title: item.title,
-      date: item.release_years,
-      rating: item.average_rating,
-      status: item.status,
-      summary: item.summary,
-      cover_url: item.cover_url,
-      genres: (item.genres ?? []),
-      languages: (item.languages ?? []),
-      regions: (item.media_regions ?? []).map((r: any) => r.regions.name),
-      series: item.media_series?.name || null,
-      casts: (item.media_credits ?? [])
-        .filter((c: any) => c.role === 'actor')
-        .sort((a: any, b: any) => a.credit_order - b.credit_order)
-        .map((c: any) => c.people.name)
-    };
-  };
-
-  const watchedSeries = (watchedData ?? []).map(formatItem) as Media[];
+  const watchedSeries = (watchedData ?? []).map((item) =>
+    mapSupabaseToMedia(item, "series"),
+  ) as Media[];
 
    {/* 渲染 SeriesCatalog 组件并传入数据 */}
   return (

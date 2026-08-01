@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import { Media } from "@/lib/types/Media";
 
@@ -6,7 +7,13 @@ function ItemCard({ item }: { item: Media }) {
     <>
       <div className="h-68 w-full bg-neutral-900 relative flex items-center justify-center">
         {item.cover_url ? (
-          <img src={item.cover_url} alt={item.title} className="w-full h-full object-cover" />
+          <Image
+            src={item.cover_url}
+            alt={item.title}
+            fill
+            className="object-cover"
+            sizes="176px"
+          />
         ) : (
           <i className="fas fa-image text-4xl text-neutral-700 opacity-40"></i>
         )}
@@ -54,12 +61,12 @@ export default function MediaRow({
   title,
   items,
   viewAllLink,
-  type
+  type,
 }: {
   title: string;
   items: Media[];
   viewAllLink?: string;
-  type: string;
+  type?: "movies" | "series";
 }) {
   if (!items || items.length === 0) return null;
 
@@ -79,11 +86,18 @@ export default function MediaRow({
       
       {/* 滑动列表 */}
       <div className="flex space-x-4 overflow-x-auto no-scrollbar py-4 px-1 snap-x snap-mandatory scroll-pl-2">
-        {items.map((media: Media) => (
-          <Link href={`/${type}/${media.id}`} key={media.id} className="flex-none w-44 cursor-pointer flex flex-col snap-start bg-neutral-900/50 border border-white/10 rounded-xl overflow-hidden transition-all duration-300 hover:-translate-y-1.5 hover:border-white/30 hover:shadow-xl hover:shadow-white/5">
-            <ItemCard item={media} />
-          </Link>
-        ))}
+        {items.map((media: Media) => {
+          const mediaType = type ?? media.type ?? "movies";
+          return (
+            <Link
+              href={`/${mediaType}/${media.id}`}
+              key={media.id}
+              className="flex-none w-44 cursor-pointer flex flex-col snap-start bg-neutral-900/50 border border-white/10 rounded-xl overflow-hidden transition-all duration-300 hover:-translate-y-1.5 hover:border-white/30 hover:shadow-xl hover:shadow-white/5"
+            >
+              <ItemCard item={media} />
+            </Link>
+          );
+        })}
       </div>
     </div>
   );

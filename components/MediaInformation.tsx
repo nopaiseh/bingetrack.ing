@@ -1,6 +1,5 @@
 import Image from "next/image";
 import Link from "next/link";
-import { Suspense } from "react";
 import { Media } from "@/lib/types/Media";
 import MediaRow from "./MediaRow";
 import SearchTag from "./SearchTag";
@@ -184,11 +183,14 @@ export default function MediaInformation({
 
         {/* 系列作品展示区 */}
         {media.series && (
-          <Suspense fallback={<div className="h-48 mt-20 flex items-center justify-center text-neutral-600">正在加载系列作品...</div>}>
-            <div className="space-y-12">
-              <MediaRow title={"《" + media.series + "》系列其他作品"} items={relatedMedia || []} viewAllLink="/movies/watched"/>
-            </div>
-          </Suspense>
+          <div className="space-y-12">
+            <MediaRow
+              title={"《" + media.series + "》系列其他作品"}
+              items={relatedMedia || []}
+              viewAllLink="/movies/watched"
+              type={media.type ?? "movies"}
+            />
+          </div>
         )}
       </div>
     </>

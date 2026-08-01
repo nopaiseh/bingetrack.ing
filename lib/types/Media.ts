@@ -12,5 +12,5 @@ export type Media = {
   cover_url: string;
   casts?: string[];
   directors?: string[];
-  seriesMovie?: Media[];
+  type?: "movies" | "series";
 };

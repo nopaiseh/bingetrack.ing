@@ -1,6 +1,7 @@
 import { supabaseServer } from '@/utils/supabase';
 import MoviesCatalog from './MoviesCatalog';
 import { Media } from '@/lib/types/Media';
+import { mapSupabaseToMedia, SupabaseMediaItem } from '@/lib/functions/mediaMapper';
 
 export const revalidate = 60;
 
@@ -37,7 +38,7 @@ export default async function MoviesPage() {
   const upcomingCount = upcomingCountRes.count ?? 0;
 
   {/* 获取已观看和想看的电影数据 */}
-  const { data: watchedData } = await supabaseServer
+  const { data: watchedData } = (await supabaseServer
     .from('media_items')
     .select(`
       id, title, summary, cover_url, release_date, type,
@@ -51,9 +52,9 @@ export default async function MoviesPage() {
     .eq('type', 'movie')
     .eq('tracking.status', 'watched')
     .order('release_date', { ascending: false })
-    .limit(10);
+    .limit(10)) as { data: SupabaseMediaItem[] | null; error: unknown };
 
-  const { data: wantData } = await supabaseServer
+  const { data: wantData } = (await supabaseServer
     .from('media_items')
     .select(`
       id, title, summary, cover_url, release_date, type,
@@ -67,33 +68,10 @@ export default async function MoviesPage() {
     .eq('type', 'movie')
     .eq('tracking.status', 'want_to_watch')
     .order('release_date', { ascending: false })
-    .limit(10);
+    .limit(10)) as { data: SupabaseMediaItem[] | null; error: unknown };
 
-  {/* 格式化电影数据为 Media 类型 */}
-  const formatItem = (item: any) => {
-    const userTracking = item.tracking?.[0] || {};
-
-    return {
-      id: item.id,
-      title: item.title,
-      date: item.release_date,
-      rating: userTracking.rating,
-      status: userTracking.status,
-      summary: item.summary,
-      cover_url: item.cover_url,
-      genres: (item.media_genres ?? []).map((g: any) => g.genres.name),
-      languages: (item.media_languages ?? []).map((l: any) => l.languages.name),
-      regions: (item.media_regions ?? []).map((r: any) => r.regions.name),
-      series: item.media_series?.name || null,
-      casts: (item.media_credits ?? [])
-        .filter((c: any) => c.role === 'actor')
-        .sort((a: any, b: any) => a.credit_order - b.credit_order)
-        .map((c: any) => c.people.name)
-    };
-  };
-
-  const watchedMovies = (watchedData ?? []).map(formatItem) as Media[];
-  const wantMovies = (wantData ?? []).map(formatItem) as Media[];
+  const watchedMovies = (watchedData ?? []).map((item) => mapSupabaseToMedia(item, 'movies')) as Media[];
+  const wantMovies = (wantData ?? []).map((item) => mapSupabaseToMedia(item, 'movies')) as Media[];
 
   {/* 渲染 MoviesCatalog 组件并传入数据 */}
   return (

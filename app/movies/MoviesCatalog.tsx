@@ -34,8 +34,8 @@ export default function MoviesCatalog({
 
         {/* 电影列表展示区 */}
         <div className="space-y-12">
-          <MediaRow title="我看过" items={watched} viewAllLink="/movies/watched" type="movies" />
-          <MediaRow title="我想看" items={want} viewAllLink="/movies/want" type="movies" />
+          <MediaRow title="我看过" items={watched ?? []} viewAllLink="/movies/watched" type="movies" />
+          <MediaRow title="我想看" items={want ?? []} viewAllLink="/movies/want" type="movies" />
         </div>
       </div>
     </div>

@@ -57,16 +57,17 @@ export default function Navbar() {
         {/* 右侧：搜索和汉堡包按钮 */}
         <div className="flex items-center gap-5">
           {/* 搜索框 */}
-          <div className="relative group hidden sm:block">
+          <form action="/search" className="relative group hidden sm:block">
             <div className="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none">
               <i className="fas fa-search text-neutral-500 group-focus-within:text-neutral-300 transition-colors"></i>
             </div>
             <input
+              name="q"
               type="text"
               placeholder="搜索"
               className="bg-white/5 border border-white/10 text-white text-sm rounded-full focus:ring-1 focus:ring-red-500/30 focus:border-red-500/50 block w-44 focus:w-64 pl-10 py-1.5 transition-all duration-500 ease-out placeholder-neutral-600 outline-none shadow-inner"
             />
-          </div>
+          </form>
 
           {/* 移动端汉堡包/关闭按钮*/}
           <button 
@@ -101,12 +102,17 @@ export default function Navbar() {
           ))}
           
           {/* 移动端搜索框 */}
-          <div className="relative mt-2 sm:hidden">
+          <form action="/search" className="relative mt-2 sm:hidden">
             <div className="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none">
               <i className="fas fa-search text-neutral-500"></i>
             </div>
-            <input type="text" placeholder="搜索" className="bg-white/5 border border-white/10 text-white text-sm rounded-lg block w-full pl-10 py-2.5 outline-none focus:border-red-500/50"/>
-          </div>
+            <input
+              name="q"
+              type="text"
+              placeholder="搜索"
+              className="bg-white/5 border border-white/10 text-white text-sm rounded-lg block w-full pl-10 py-2.5 outline-none focus:border-red-500/50"
+            />
+          </form>
         </div>
       </div>
     </nav>

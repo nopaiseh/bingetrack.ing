@@ -2,6 +2,7 @@
 import MediaRow from "@/components/MediaRow";
 import { Media } from "@/lib/types/Media";
 import { Summary } from "@/lib/types/Summary";
+import { mapSupabaseToMedia, SupabaseMediaItem } from "@/lib/functions/mediaMapper";
 import { useState, useRef, useEffect } from "react";
 import { supabaseBrowser } from "@/utils/supabase-client";
 
@@ -101,38 +102,19 @@ export default function HomeDashboard({ summary }: { summary: Summary[] }) {
             .lte("release_date", `${selectedYear}-12-31`);
         }
 
-        const { data: topMoviesData, error } = await query;
+        const { data: topMoviesData, error } = (await query) as {
+          data: SupabaseMediaItem[] | null;
+          error: unknown;
+        };
 
         if (error) {
           console.error("Supabase query error: ", error);
           return;
         }
 
-        const formatItem = (item: any) => {
-          const userTracking = item.tracking?.[0] || {};
-
-          return {
-            id: item.id,
-            title: item.title,
-            date: item.release_date,
-            rating: item.rating,
-            status: item.status,
-            summary: item.summary,
-            cover_url: item.cover_url,
-            genres: (item.media_genres ?? []).map((g: any) => g.genres.name),
-            languages: (item.media_languages ?? []).map(
-              (l: any) => l.languages.name,
-            ),
-            regions: (item.media_regions ?? []).map((r: any) => r.regions.name),
-            series: item.media_series?.name || null,
-            casts: (item.media_credits ?? [])
-              .filter((c: any) => c.role === "actor")
-              .sort((a: any, b: any) => a.credit_order - b.credit_order)
-              .map((c: any) => c.people.name),
-          };
-        };
-
-        setTopMovies((topMoviesData ?? []).map(formatItem) as Media[] || []);
+        setTopMovies(
+          (topMoviesData ?? []).map((item) => mapSupabaseToMedia(item, "movies")) as Media[],
+        );
       } catch (error) {
         console.error("Error fetching top movies:", error);
       } finally {
@@ -169,38 +151,21 @@ export default function HomeDashboard({ summary }: { summary: Summary[] }) {
             .lte("release_date", `${selectedYear}-12-31`);
         }
 
-        const { data: topSeriesData, error } = await query;
+        const { data: topSeriesData, error } = (await query) as {
+          data: SupabaseMediaItem[] | null;
+          error: unknown;
+        };
 
         if (error) {
           console.error("Supabase query error: ", error);
           return;
         }
 
-        const formatItem = (item: any) => {
-          const userTracking = item.tracking?.[0] || {};
-
-          return {
-            id: item.id,
-            title: item.title,
-            date: item.release_date,
-            rating: item.rating,
-            status: item.status,
-            summary: item.summary,
-            cover_url: item.cover_url,
-            genres: (item.media_genres ?? []).map((g: any) => g.genres.name),
-            languages: (item.media_languages ?? []).map(
-              (l: any) => l.languages.name,
-            ),
-            regions: (item.media_regions ?? []).map((r: any) => r.regions.name),
-            series: item.media_series?.name || null,
-            casts: (item.media_credits ?? [])
-              .filter((c: any) => c.role === "actor")
-              .sort((a: any, b: any) => a.credit_order - b.credit_order)
-              .map((c: any) => c.people.name),
-          };
-        };
-
-        setTopSeries((topSeriesData ?? []).map(formatItem) as Media[] || []);
+        setTopSeries(
+          (topSeriesData ?? []).map((item) =>
+            mapSupabaseToMedia(item, "series"),
+          ) as Media[],
+        );
       } catch (error) {
         console.error("Error fetching top series:", error);
       } finally {

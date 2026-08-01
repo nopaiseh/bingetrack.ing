@@ -1,11 +1,11 @@
 import MediaRow from "@/components/MediaRow";
 import { MediaCatalogProps } from "@/lib/interfaces/MediaCatalogProps";
 
-export default function SeriesCatalog({ 
+export default function SeriesCatalog({
   watched,
   watching,
   want,
-  stats 
+  stats,
 }: MediaCatalogProps) {
   const statItems = [
     { label: "影剧总数量", value: stats?.totalSeries || 0 },
@@ -13,8 +13,6 @@ export default function SeriesCatalog({
     { label: "剧集总数量", value: stats?.totalEpisodes || 0 },
     { label: "近期将播出", value: stats?.totalUpcomingEpisodes || 0 },
   ];
-
-  console.log(watched);
 
   return (
     <div className="relative bg-[#0a0a0a] text-neutral-200 pt-14">
@@ -37,9 +35,9 @@ export default function SeriesCatalog({
 
         {/* 电视剧列表展示区 */}
         <div className="space-y-12">
-          <MediaRow title="我看过" items={watched} viewAllLink="/series/watched" type="series" />
-          <MediaRow title="正在看" items={watching || []} viewAllLink="/series/watching" type="series" />
-          <MediaRow title="我想看" items={want} viewAllLink="/series/wantToWatch" type="series" />
+          <MediaRow title="我看过" items={watched ?? []} viewAllLink="/series/watched" type="series" />
+          <MediaRow title="正在看" items={watching ?? []} viewAllLink="/series/watching" type="series" />
+          <MediaRow title="我想看" items={want ?? []} viewAllLink="/series/wantToWatch" type="series" />
         </div>
       </div>
     </div>      
