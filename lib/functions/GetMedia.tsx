@@ -24,9 +24,7 @@ export async function getMedia(
       .single();
   } else {
     response = await getSupabaseServer()
-      .rpc("get_tv_series_by_id", { p_id: id })
-      .order("release_years", { ascending: false })
-      .eq("id", id)
+      .rpc("get_tv_series_details", { p_id: id })
       .single();
   }
 
