@@ -185,7 +185,7 @@ export default function MediaInformation({
         {media.series && (
           <div className="space-y-12">
             <MediaRow
-              title={"《" + media.series + "》系列其他作品"}
+              title={"《" + media.series + "》系列其他电影"}
               items={relatedMedia || []}
               viewAllLink="/movies/watched"
               type={media.type ?? "movies"}

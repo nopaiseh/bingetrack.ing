@@ -10,7 +10,7 @@ export default async function MovieDetailPage({ params }: { params: Promise<{ id
   const { id } = await params;
   const movie = await getMedia(id, "movies");
   if (!movie) notFound();
-  const relatedMedia: Media[] | null = movie.series ? await getMediaList({ seriesName: movie.series, currentId: movie.id }) : null;
+  const relatedMedia: Media[] | null = movie.series ? await getMediaList({ seriesName: movie.series, currentId: movie.id, mode: "movies" }) : null;
 
   return (
     <div className="relative bg-[#060606] text-neutral-200 selection:bg-neutral-700 selection:text-white font-sans overflow-hidden">
