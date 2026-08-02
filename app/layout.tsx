@@ -19,7 +19,8 @@ export default function RootLayout({
         <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet"/>
       </head>
 
-      <body className="bg-[#0a0a0a] text-neutral-200 font-sans leading-normal tracking-normal selection:bg-neutral-700 selection:text-white flex flex-col">
+      {/* 1. Global Selection Color: Changed to a subtle indigo highlight instead of neutral gray */}
+      <body className="bg-[#0a0a0a] text-neutral-200 font-sans leading-normal tracking-normal selection:bg-indigo-500/30 selection:text-indigo-100 flex flex-col min-h-screen">
         
         {/* 全局导航栏 */}
         <Navbar />
@@ -29,10 +30,9 @@ export default function RootLayout({
 
         {/* 全局页脚 */}
         <footer className="relative bg-[#0a0a0a] mt-auto py-6 overflow-hidden border-t border-white/5">
-          
-          {/* 顶部边框光晕 */}
-          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-3/4 h-px bg-linear-to-r from-transparent via-red-500/30 to-transparent"></div>
-          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-1/4 h-px bg-linear-to-r from-transparent via-red-500/80 to-transparent blur-[2px]"></div>
+
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-3/4 h-px bg-linear-to-r from-transparent via-white-500/30 to-transparent"></div>
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-1/4 h-px bg-linear-to-r from-transparent via-white-500/80 to-transparent blur-[2px]"></div>
 
           <div className="container mx-auto px-6 md:px-8 max-w-7xl">
             <div className="flex flex-col lg:flex-row items-center justify-between gap-6">
@@ -40,7 +40,7 @@ export default function RootLayout({
               {/* 左侧：品牌与版权 */}
               <div className="flex flex-col sm:flex-row items-center gap-3 md:gap-4 shrink-0">
                 <Link href="/" className="flex items-center gap-2 group cursor-pointer opacity-90 hover:opacity-100 transition-opacity duration-300">
-                  <i className="fas fa-terminal text-red-500/90 text-sm group-hover:rotate-12 transition-transform duration-300"></i>
+                  <i className="fas fa-terminal text-red-500 text-sm group-hover:rotate-12 transition-transform duration-300"></i>
                   <span className="text-base font-bold tracking-[0.18em] lowercase font-mono">
                     <span className="text-white">nopaiseh</span>
                     <span className="text-red-500 font-black">.</span>
@@ -48,7 +48,7 @@ export default function RootLayout({
                 </Link>
                 <span className="hidden sm:block text-white/10">|</span>
                 <span className="text-neutral-500 text-xs font-mono">
-                  &copy; 1990 - {new Date().getFullYear()} 版权所有
+                  &copy; 1990 - {new Date().getFullYear()} 个人媒体记录平台
                 </span>
               </div>
 
@@ -69,24 +69,9 @@ export default function RootLayout({
 
                 <span className="hidden md:block text-white/10">|</span>
 
-                {/* TMDB */}
-                <div className="flex items-center gap-2 text-xs text-neutral-500 bg-white/2 px-2.5 py-1 rounded-md border border-white/5">
-                  <span className="scale-90 whitespace-nowrap">海报提供</span>
-                  <a href="https://www.themoviedb.org/" target="_blank" rel="noreferrer" className="opacity-70 hover:opacity-100 transition-opacity duration-300 flex items-center py-0.5">
-                    <div className="relative h-2.5 w-16">
-                      <Image
-                        src="https://www.themoviedb.org/assets/2/v4/logos/v2/blue_short-8e7b30f73a4020692ccca9c88bafe5dcb6f8a62a4c6bc55cd9ba82bb2cd95f6c.svg"
-                        alt="TMDB Logo"
-                        fill
-                        className="object-contain"
-                      />
-                    </div>
-                  </a>
-                </div>
-
                 {/* Github */}
                 <a href="https://github.com/nopaiseh/nopaiseh" target="_blank" rel="noreferrer" className="text-neutral-400 hover:text-white transition-colors duration-300" aria-label="在GitHub上查看源码">
-                  <i className="fab fa-github text-lg"></i>
+                  <i className="fab fa-github text-lg hover:text-indigo-400 transition-colors"></i>
                 </a>
               </div>
 

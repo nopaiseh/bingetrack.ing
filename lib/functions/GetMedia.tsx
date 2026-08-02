@@ -12,7 +12,7 @@ export async function getMedia(
     response = await getSupabaseServer()
       .from("media_items")
       .select(`
-        id, title, summary, cover_url, release_date, type,
+        id, title, summary, cover_url, release_date, type, runtime,
         tracking!inner ( status, rating ),
         media_genres ( genres ( name ) ),
         media_languages ( languages ( name ) ),

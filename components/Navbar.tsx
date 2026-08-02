@@ -14,7 +14,7 @@ export default function Navbar() {
   const navItems = [
     { name: "首页", href: "/" },
     { name: "电影", href: "/movies" },
-    { name: "电视剧", href: "/series" },
+    { name: "电视剧", href: "/series" }
   ];
 
   // 检查链接是否为当前活动页面

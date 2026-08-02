@@ -8,7 +8,7 @@ export default function MoviesCatalog({
 }: MediaCatalogProps) {
   const statItems = [
     { label: "电影总数量", value: stats?.total || 0 },
-    { label: "已观看电影", value: stats?.watched || 0 },
+    { label: "已看的电影", value: stats?.watched || 0 },
     { label: "想看的电影", value: stats?.want || 0 },
     { label: "近期将上映", value: stats?.upcoming || 0 },
   ];

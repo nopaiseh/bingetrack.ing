@@ -150,11 +150,11 @@ export default function MediaInformation({
                   </span>
                 )}
 
-                {media.series && (
+                {media.runtime && (
                   <>
                     <span className="text-neutral-700 hidden sm:inline">•</span>
-                    <Link href={`/search?series=${encodeURIComponent(media.series)}`} className="text-neutral-400 hover:text-white transition-colors underline underline-offset-4 decoration-white/20 hover:decoration-white/80">
-                      {media.series}
+                    <Link href={`/search?runtime=${encodeURIComponent(media.runtime.toString())}`} className="text-neutral-400 hover:text-white transition-colors underline underline-offset-4 decoration-white/20 hover:decoration-white/80">
+                      {media.runtime} 分钟
                     </Link>
                   </>
                 )}

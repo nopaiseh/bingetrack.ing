@@ -7,6 +7,7 @@ export type SupabaseMediaItem = {
   title?: string;
   release_date?: string;
   release_years?: number | string;
+  runtime?: number | null;
   type?: string;
   summary?: string;
   cover_url?: string;
@@ -85,6 +86,7 @@ export function mapSupabaseToMedia(
       item.release_years != null
         ? String(item.release_years)
         : item.release_date ?? "",
+    runtime: item.runtime ?? null,
     rating:
       item.average_rating ?? item.rating ?? item.tracking?.[0]?.rating ?? null,
     genres,

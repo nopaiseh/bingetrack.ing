@@ -2,6 +2,7 @@ export type Media = {
   id: string;
   title: string;
   date: string;
+  runtime?: number | null;
   rating: number | null;
   genres: string[];
   languages: string[];

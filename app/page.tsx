@@ -8,7 +8,7 @@ export default async function HomePage() {
   const { data: summary } = (await getSupabaseServer()
     .from("release_year_stats")
     .select(
-      "release_year, total_movies, total_series, watched_movies, watched_series, movie_avg_rating, series_avg_rating",
+      "release_year, total_movies, total_series, watched_movies, watched_series, movie_avg_rating, series_avg_rating, total_runtime, total_movies_runtime, total_series_runtime",
     )
     .order("release_year", { ascending: false })) as {
     data: Summary[] | null;

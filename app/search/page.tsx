@@ -1,146 +1,171 @@
+"use client";
+
+import { useState } from "react";
+import Image from "next/image";
 import Link from "next/link";
-import { getSupabaseServer } from "@/utils/supabase";
-import { mapSupabaseToMedia, SupabaseMediaItem } from "@/lib/functions/mediaMapper";
-import MediaRow from "@/components/MediaRow";
-import { Media } from "@/lib/types/Media";
 
-interface SearchParams {
-  q?: string;
-  genre?: string;
-  region?: string;
-  language?: string;
-  director?: string;
-  cast?: string;
-  series?: string;
-}
+// Mock Data for filters
+const GENRES = ["动作", "科幻", "喜剧", "剧情", "恐怖", "悬疑", "爱情", "动画"];
+const REGIONS = ["🇺🇸 美国", "🇨🇳 中国", "🇯🇵 日本", "🇰🇷 韩国", "🇬🇧 英国"];
+const YEARS = ["2026", "2025", "2024", "2023", "2020以前"];
 
-const categoryLabels: Record<string, string> = {
-  genre: "类型",
-  region: "地区",
-  language: "语言",
-  director: "导演",
-  cast: "主演",
-  series: "系列",
-};
+export default function SearchPage() {
+  const [query, setQuery] = useState("");
+  const [selectedGenres, setSelectedGenres] = useState<string[]>([]);
+  const [selectedRegions, setSelectedRegions] = useState<string[]>([]);
+  const [selectedYears, setSelectedYears] = useState<string[]>([]);
+  
+  // The magic toggles for AND/OR logic within categories
+  const [genreLogic, setGenreLogic] = useState<"OR" | "AND">("OR");
 
-export const revalidate = 60;
-
-export default async function SearchPage({
-  searchParams,
-}: {
-  searchParams?: SearchParams;
-}) {
-  const category = searchParams?.genre
-    ? "genre"
-    : searchParams?.region
-    ? "region"
-    : searchParams?.language
-    ? "language"
-    : searchParams?.director
-    ? "director"
-    : searchParams?.cast
-    ? "cast"
-    : searchParams?.series
-    ? "series"
-    : searchParams?.q
-    ? "q"
-    : undefined;
-
-  const queryValue =
-    (category && searchParams?.[category as keyof SearchParams]) ||
-    searchParams?.q ||
-    "";
-
-  if (!queryValue) {
-    return (
-      <main className="container mx-auto px-6 md:px-8 max-w-7xl py-16">
-        <h1 className="text-3xl font-bold text-white mb-4">搜索</h1>
-        <p className="text-neutral-400">
-          请输入关键词进行搜索，或者从页面中的标签进入筛选结果。
-        </p>
-      </main>
-    );
-  }
-
-  const query = getSupabaseServer()
-    .from("media_info")
-    .select(
-      `id, title, summary, cover_url, release_date, type, rating, status,
-      media_genres ( genres ( name ) ),
-      media_languages ( languages ( name ) ),
-      media_regions ( regions ( name ) ),
-      media_credits ( people ( name ), role, credit_order ),
-      media_series ( name )`,
-    )
-    .limit(50);
-
-  const filterQuery = (builder: typeof query) => {
-    switch (category) {
-      case "genre":
-        return builder.eq("media_genres.genres.name", queryValue);
-      case "region":
-        return builder.eq("media_regions.regions.name", queryValue);
-      case "language":
-        return builder.eq("media_languages.languages.name", queryValue);
-      case "director":
-        return builder.eq("media_credits.people.name", queryValue).eq(
-          "media_credits.role",
-          "director",
-        );
-      case "cast":
-        return builder.eq("media_credits.people.name", queryValue).eq(
-          "media_credits.role",
-          "actor",
-        );
-      case "series":
-        return builder.eq("media_series.name", queryValue);
-      default:
-        return builder.or(
-          `title.ilike.%${queryValue}%,summary.ilike.%${queryValue}%`,
-        );
+  const toggleSelection = (item: string, list: string[], setList: (val: string[]) => void) => {
+    if (list.includes(item)) {
+      setList(list.filter((i) => i !== item));
+    } else {
+      setList([...list, item]);
     }
   };
 
-  const { data, error } = (await filterQuery(query)) as {
-    data: SupabaseMediaItem[] | null;
-    error: unknown;
-  };
-  const results = (data ?? []).map((item) => {
-    const type = item.type === "tv_series" ? "series" : "movies";
-    return mapSupabaseToMedia(item, type as "movies" | "series");
-  }) as Media[];
-
   return (
-    <main className="container mx-auto px-6 md:px-8 max-w-7xl py-16">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-white mb-2">搜索结果</h1>
-        <p className="text-neutral-400">
-          {category && category !== "q"
-            ? `${categoryLabels[category] || "关键词"}: ${queryValue}`
-            : `搜索关键词: ${queryValue}`}
-        </p>
-      </div>
+    <div className="min-h-screen bg-[#060606] text-neutral-200 pt-24 pb-12 selection:bg-neutral-700 selection:text-white">
+      <div className="container mx-auto px-6 md:px-8 max-w-7xl">
+        
+        {/* Main Search Bar */}
+        <div className="relative mb-12 group">
+          <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none">
+            <i className="fas fa-search text-neutral-500 group-focus-within:text-red-500 transition-colors"></i>
+          </div>
+          <input
+            type="text"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="搜索电影、电视剧、导演或演员..."
+            className="w-full bg-white/5 border border-white/10 focus:border-red-500/50 rounded-2xl py-5 pl-12 pr-6 text-lg text-white placeholder:text-neutral-600 outline-none transition-all shadow-inner focus:bg-white/[0.07]"
+          />
+          {query && (
+            <button 
+              onClick={() => setQuery("")}
+              className="absolute inset-y-0 right-0 pr-5 flex items-center text-neutral-500 hover:text-white"
+            >
+              <i className="fas fa-times-circle"></i>
+            </button>
+          )}
+        </div>
 
-      {error ? (
-        <div className="rounded-2xl bg-red-500/10 border border-red-500/20 p-6 text-red-200">
-          无法加载搜索结果，请稍后重试。
-        </div>
-      ) : results.length === 0 ? (
-        <div className="rounded-2xl bg-white/5 border border-white/10 p-6 text-neutral-300">
-          没有找到匹配的内容。
-        </div>
-      ) : (
-        <div className="space-y-12">
-          <MediaRow title="匹配结果" items={results} type="movies" />
-        </div>
-      )}
+        <div className="flex flex-col lg:flex-row gap-10">
+          
+          {/* LEFT SIDEBAR: Filters */}
+          <aside className="w-full lg:w-72 shrink-0 flex flex-col gap-8">
+            <div className="flex items-center justify-between border-b border-white/10 pb-4">
+              <h2 className="text-lg font-bold text-white flex items-center gap-2">
+                <i className="fas fa-sliders-h text-neutral-400"></i> 高级筛选
+              </h2>
+              <button 
+                onClick={() => { setSelectedGenres([]); setSelectedRegions([]); setSelectedYears([]); }}
+                className="text-xs text-neutral-500 hover:text-red-400 transition-colors"
+              >
+                重置全部
+              </button>
+            </div>
 
-      <div className="mt-10 text-sm text-neutral-500">
-        <p>提示: 点击页面中的标签可以快速过滤同类内容。</p>
-        <Link href="/" className="text-red-400 hover:text-red-300">
-          返回首页
-        </Link>
+            {/* Filter Group: Genres */}
+            <div className="flex flex-col gap-4">
+              <div className="flex items-center justify-between">
+                <h3 className="text-sm font-medium text-neutral-400">类型</h3>
+                {/* AND / OR Logic Toggle */}
+                <div className="flex bg-black/40 rounded-lg p-1 border border-white/5">
+                  <button 
+                    onClick={() => setGenreLogic("OR")}
+                    className={`text-[10px] px-2 py-1 rounded-md transition-colors ${genreLogic === "OR" ? "bg-white/15 text-white" : "text-neutral-500 hover:text-neutral-300"}`}
+                  >
+                    匹配任意
+                  </button>
+                  <button 
+                    onClick={() => setGenreLogic("AND")}
+                    className={`text-[10px] px-2 py-1 rounded-md transition-colors ${genreLogic === "AND" ? "bg-white/15 text-white" : "text-neutral-500 hover:text-neutral-300"}`}
+                  >
+                    匹配全部
+                  </button>
+                </div>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {GENRES.map((genre) => (
+                  <button
+                    key={genre}
+                    onClick={() => toggleSelection(genre, selectedGenres, setSelectedGenres)}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-300 border ${
+                      selectedGenres.includes(genre)
+                        ? "bg-red-500/20 border-red-500/50 text-red-400 shadow-[0_0_12px_rgba(239,68,68,0.2)]"
+                        : "bg-white/5 border-white/10 text-neutral-400 hover:bg-white/10 hover:text-white hover:border-white/20"
+                    }`}
+                  >
+                    {genre}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Filter Group: Regions */}
+            <div className="flex flex-col gap-4">
+              <h3 className="text-sm font-medium text-neutral-400">地区 (匹配任意)</h3>
+              <div className="flex flex-wrap gap-2">
+                {REGIONS.map((region) => (
+                  <button
+                    key={region}
+                    onClick={() => toggleSelection(region, selectedRegions, setSelectedRegions)}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-300 border ${
+                      selectedRegions.includes(region)
+                        ? "bg-white/20 border-white/40 text-white"
+                        : "bg-white/5 border-white/10 text-neutral-400 hover:bg-white/10 hover:text-white"
+                    }`}
+                  >
+                    {region}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+             {/* Filter Group: Years */}
+             <div className="flex flex-col gap-4">
+              <h3 className="text-sm font-medium text-neutral-400">年份</h3>
+              <div className="flex flex-wrap gap-2">
+                {YEARS.map((year) => (
+                  <button
+                    key={year}
+                    onClick={() => toggleSelection(year, selectedYears, setSelectedYears)}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-300 border ${
+                      selectedYears.includes(year)
+                        ? "bg-white/20 border-white/40 text-white"
+                        : "bg-white/5 border-white/10 text-neutral-400 hover:bg-white/10 hover:text-white"
+                    }`}
+                  >
+                    {year}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </aside>
+
+          {/* RIGHT CONTENT: Results Grid */}
+          <main className="flex-1">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-xl font-bold text-white">搜索结果</h2>
+              <span className="text-sm text-neutral-500">找到 42 部作品</span>
+            </div>
+
+            {/* Placeholder Grid for Results */}
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 md:gap-6">
+              {/* Dummy items to show layout */}
+              {[1, 2, 3, 4, 5, 6].map((i) => (
+                <div key={i} className="aspect-2/3 bg-white/5 border border-white/10 rounded-xl flex items-center justify-center text-neutral-600 animate-pulse">
+                  海报占位
+                </div>
+              ))}
+            </div>
+          </main>
+
+        </div>
       </div>
-    </main>
+    </div>
   );
 }
