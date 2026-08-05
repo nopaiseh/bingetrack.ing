@@ -5,15 +5,17 @@ import { Summary } from "@/lib/types/Summary";
 export const revalidate = 60;
 
 export default async function HomePage() {
-  const { data: summary } = (await getSupabaseServer()
+  const { data: summary, error } = (await getSupabaseServer()
     .from("release_year_stats")
-    .select(
-      "release_year, total_movies, total_series, watched_movies, watched_series, movie_avg_rating, series_avg_rating, total_runtime, total_movies_runtime, total_series_runtime",
-    )
+    .select("*")
     .order("release_year", { ascending: false })) as {
     data: Summary[] | null;
     error: unknown;
   };
+
+  if (error) {
+    console.error("Failed to fetch release year stats:", error);
+  }
 
   return (
     <main>

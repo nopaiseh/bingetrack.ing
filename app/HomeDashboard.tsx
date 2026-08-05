@@ -10,9 +10,7 @@ export default function HomeDashboard({ summary }: { summary: Summary[] }) {
   const [activeTab, setActiveTab] = useState("总览");
   const tabs = ["总览", "电影", "电视剧"];
 
-  const [selectedYear, setSelectedYear] = useState(
-    "All Time",
-  );
+  const [selectedYear, setSelectedYear] = useState("All Time");
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const [searchQuery, setSearchQuery] = useState("");
@@ -75,7 +73,6 @@ export default function HomeDashboard({ summary }: { summary: Summary[] }) {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-
   // 获取前十电影
   useEffect(() => {
     async function fetchTopMovies() {
@@ -123,7 +120,7 @@ export default function HomeDashboard({ summary }: { summary: Summary[] }) {
     if (activeTab === "电影") {
       fetchTopMovies();
     }
-  }, [selectedYear, activeTab]); // 当 selectedYear 或 activeTab 发生变化时，重新运行
+  }, [selectedYear, activeTab]);
 
   // 获取前十电视剧
   useEffect(() => {
@@ -174,7 +171,7 @@ export default function HomeDashboard({ summary }: { summary: Summary[] }) {
     if (activeTab === "电视剧") {
       fetchTopSeries();
     }
-  }, [selectedYear, activeTab]); // 当 selectedYear 或 activeTab 发生变化时，重新运行
+  }, [selectedYear, activeTab]);
 
   return (
     <div className="container mx-auto px-6 md:px-8 max-w-7xl py-12 flex flex-col gap-6 animate-fade-in pt-24">
@@ -258,189 +255,298 @@ export default function HomeDashboard({ summary }: { summary: Summary[] }) {
 
       <div className="w-full">
         {activeTab === "总览" && (
-          <div key="overview" className="animate-fade-in flex flex-col gap-8 md:gap-12">
-            {/* --- 第一层：屏幕沉浸时长 --- */}
-            <div className="bg-white/5 border border-white/10 rounded-2xl p-6 md:p-8 hover:bg-white/[0.07] transition-all duration-300 flex flex-col gap-6 relative overflow-hidden group">
-              {/* 模块头部 */}
-              <div className="flex justify-between items-center border-b border-white/5 pb-4 relative z-10">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center text-white border border-white/10">
-                    <i className="fas fa-stopwatch text-lg"></i>
+          <div
+            key="overview"
+            className="animate-fade-in flex flex-col gap-4 md:gap-6"
+          >
+            {/* 整体总览核心数据区 - 独立卡片化 */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
+              {/* 总计已看时长 */}
+              <div className="bg-white/5 border border-white/10 rounded-2xl p-6 flex flex-col justify-between transition-all duration-300 hover:-translate-y-1 hover:bg-white/10 hover:border-white/20 hover:shadow-xl hover:shadow-black/50 group">
+                <div>
+                  <div className="text-sm text-neutral-400 mb-2 flex items-center gap-2">
+                    <div className="bg-white/10 p-2 rounded-lg flex items-center justify-center group-hover:bg-red-500/10 group-hover:text-red-400 transition-colors duration-300">
+                      <i className="fas fa-play-circle text-sm"></i>
+                    </div>
+                    <span className="font-medium tracking-wide">
+                      沉浸总时长
+                    </span>
                   </div>
-                  <h3 className="text-xl font-bold text-white">屏幕沉浸时长</h3>
-                </div>
-              </div>
-
-              {/* 核心数据区 */}
-              <div className="grid grid-cols-1 lg:grid-cols-4 gap-8 md:gap-12 items-center relative z-10">
-                {/* 左侧：总时长 (在大屏下增加右侧分割线和内边距，让左右分界更高级) */}
-                <div className="lg:col-span-1 flex flex-col justify-center lg:border-r lg:border-white/10 lg:pr-8">
-                  <div className="text-sm text-neutral-400 mb-2">总计花费</div>
                   <div className="flex items-baseline gap-2 mb-2">
-                    <span className="text-6xl font-black text-white tracking-tighter">
-                      {Math.round((currentYearData?.total_runtime ?? 0) / 60)}
+                    <span className="text-5xl font-black text-white tracking-tighter">
+                      {Math.round((currentYearData?.total_watched_runtime ?? 0) / 60)}
                     </span>
                     <span className="text-neutral-500 font-medium">小时</span>
                   </div>
-                  <p className="text-xs text-neutral-500">
-                    相当于连续不眠不休看了约{" "}
-                    {Math.round(
-                      (currentYearData?.total_runtime ?? 0) / 60 / 24,
-                    )}{" "}
-                    天
-                  </p>
                 </div>
+                <p className="text-xs text-neutral-500 mt-4 border-t border-white/5 pt-4">
+                  相当于连续不眠不休看了约 {Math.round((currentYearData?.total_watched_runtime ?? 0) / 60 / 24)} 天
+                </p>
+              </div>
 
-                {/* 右侧：电影 vs 电视剧 对比图表 */}
-                <div className="lg:col-span-3 flex flex-col justify-center gap-5">
-                  <div className="flex justify-between items-end">
-                    {/* 电影数据 (左) */}
-                    <div className="flex flex-col gap-1.5">
-                      <span className="text-red-400 text-sm font-medium flex items-center gap-2">
-                        <i className="fas fa-film"></i> 电影
-                      </span>
-                      <div className="flex items-baseline gap-1.5">
-                        <span className="text-5xl font-bold text-white">
-                          {Math.round(
-                            (currentYearData?.total_movies_runtime ?? 0) / 60,
-                          )}
-                        </span>
-                        <span className="text-xs text-neutral-500">
-                          小时 (
-                          {Math.round(
-                            ((currentYearData?.total_movies_runtime ?? 0) /
-                              (currentYearData?.total_runtime ?? 1)) *
-                              100,
-                          )}
-                          %)
-                        </span>
-                      </div>
+              {/* 剩余未看总时长 */}
+              <div className="bg-white/5 border border-white/10 rounded-2xl p-6 flex flex-col justify-between transition-all duration-300 hover:-translate-y-1 hover:bg-white/10 hover:border-white/20 hover:shadow-xl hover:shadow-black/50 group">
+                <div>
+                  <div className="text-sm text-neutral-400 mb-2 flex items-center gap-2">
+                    <div className="bg-white/10 p-2 rounded-lg flex items-center justify-center group-hover:bg-red-500/10 group-hover:text-red-400 transition-colors duration-300">
+                      <i className="fas fa-layer-group text-sm"></i>
                     </div>
-
-                    {/* 电视剧数据 (右) - 修正了文字顺序 */}
-                    <div className="flex flex-col items-end gap-1.5">
-                      <span className="text-indigo-400 text-sm font-medium flex items-center gap-2">
-                        电视剧 <i className="fas fa-tv"></i>
-                      </span>
-                      <div className="flex items-baseline gap-1.5">
-                        <span className="text-5xl font-bold text-white">
-                          {Math.round(
-                            (currentYearData?.total_series_runtime ?? 0) / 60,
-                          )}
-                        </span>
-                        <span className="text-xs text-neutral-500">
-                          小时 (
-                          {Math.round(
-                            ((currentYearData?.total_series_runtime ?? 0) /
-                              (currentYearData?.total_runtime ?? 1)) *
-                              100,
-                          )}
-                          %)
-                        </span>
-                      </div>
-                    </div>
+                    <span className="font-medium tracking-wide">
+                      片库待看时长
+                    </span>
                   </div>
-
-                  {/* 堆叠比例条 (Stacked Bar Chart) */}
-                  <div className="w-full h-3 bg-black/40 rounded-full overflow-hidden flex border border-white/10 shadow-inner">
-                    {/* 电影比例 */}
-                    <div
-                      className="h-full bg-linear-to-r from-red-600 to-red-400 relative"
-                      style={{
-                        width: `${Math.round(((currentYearData?.total_movies_runtime ?? 0) / (currentYearData?.total_runtime ?? 1)) * 100)}%`,
-                      }}
-                    >
-                      <div className="absolute inset-0 bg-white/20 w-full h-px"></div>
-                    </div>
-                    {/* 分割线 */}
-                    <div className="w-0.5 h-full bg-[#0a0a0a] z-10"></div>
-                    {/* 电视剧比例 */}
-                    <div
-                      className="h-full bg-linear-to-l from-indigo-600 to-indigo-400 relative"
-                      style={{
-                        width: `${Math.round(((currentYearData?.total_series_runtime ?? 0) / (currentYearData?.total_runtime ?? 1)) * 100)}%`,
-                      }}
-                    >
-                      <div className="absolute inset-0 bg-white/20 w-full h-px"></div>
-                    </div>
+                  <div className="flex items-baseline gap-2 mb-2">
+                    <span className="text-5xl font-black text-neutral-300 tracking-tighter">
+                      {Math.round((currentYearData?.total_unwatched_runtime ?? 0) / 60)}
+                    </span>
+                    <span className="text-neutral-500 font-medium">小时</span>
                   </div>
+                </div>
+                <p className="text-xs text-neutral-500 mt-4 border-t border-white/5 pt-4">
+                  数据库中尚未消化的总精神食粮
+                </p>
+              </div>
+
+              {/* 整体库存消化进度 */}
+              <div className="bg-white/5 border border-white/10 rounded-2xl p-6 flex flex-col justify-between transition-all duration-300 hover:-translate-y-1 hover:bg-white/10 hover:border-white/20 hover:shadow-xl hover:shadow-black/50 group">
+                <div>
+                  <div className="text-sm text-neutral-400 mb-2 flex items-center gap-2">
+                    <div className="bg-white/10 p-2 rounded-lg flex items-center justify-center group-hover:bg-red-500/10 group-hover:text-red-400 transition-colors duration-300">
+                      <i className="fas fa-chart-pie text-sm"></i>
+                    </div>
+                    <span className="font-medium tracking-wide">
+                      片库完成进度
+                    </span>
+                  </div>
+                  <div className="flex items-baseline gap-2 mb-4">
+                    <span className="text-5xl font-black text-white tracking-tighter">
+                      {Math.round(((currentYearData?.total_watched_runtime ?? 0) / (currentYearData?.total_runtime ?? 0)) * 100)}%
+                    </span>
+                    <span className="text-neutral-500 font-medium">已完成</span>
+                  </div>
+                </div>
+                <div className="w-full h-2 bg-white/10 rounded-full overflow-hidden mt-2">
+                  <div
+                    className="h-full bg-linear-to-r from-red-600 to-red-400 shadow-[0_0_12px_rgba(239,68,68,0.4)] rounded-full"
+                    style={{ width: `${Math.round(((currentYearData?.total_watched_runtime ?? 0) / (currentYearData?.total_runtime ?? 0)) * 100)}%` }}
+                  ></div>
                 </div>
               </div>
             </div>
 
-            {/* --- 第二层：动态活跃度轨迹 --- */}
-            <div className="bg-white/5 border border-white/10 rounded-2xl p-6 md:p-8 hover:bg-white/[0.07] transition-all duration-300">
-              <div className="flex flex-col md:flex-row md:items-end justify-between mb-8 gap-4">
-                <div>
-                  <h3 className="text-xl font-bold text-white mb-1">
-                    {selectedYear === "All Time"
-                      ? "消费轨迹 (全时段)"
-                      : `${selectedYear} 消费轨迹`}
-                  </h3>
-                  <p className="text-sm text-neutral-500">
-                    {selectedYear === "All Time"
-                      ? "回顾你历年的精神食粮摄入趋势"
-                      : "回顾你这一年中每个月的摄入节奏"}
-                  </p>
+            {/* ---------------- 电影看板 ---------------- */}
+            <div className="bg-white/5 border border-white/10 rounded-2xl p-6 flex flex-col gap-6 transition-all duration-300 hover:-translate-y-1 hover:bg-white/10 hover:border-white/20 hover:shadow-xl hover:shadow-black/50 group">
+              <div className="flex items-center border-b border-white/5 pb-3 gap-2">
+                <div className="bg-white/10 p-2 rounded-lg flex items-center justify-center group-hover:bg-red-500/10 group-hover:text-red-400 transition-colors duration-300">
+                  <i className="fas fa-film text-sm"></i>
                 </div>
-                <div className="text-right">
-                  <div className="text-xs text-neutral-500 mb-1">
-                    {selectedYear === "All Time" ? "巅峰年份" : "巅峰月份"}
+                <span className="font-medium tracking-wide">电影看板</span>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div>
+                  <div className="text-xs text-neutral-500 mb-1">时长</div>
+                  <div className="text-3xl font-bold text-white">
+                    {Math.round(
+                      (currentYearData?.movies_watched_runtime ?? 0) / 60,
+                    )}
+                    h
+                    <span className="text-sm text-neutral-500 font-normal">
+                      {" "}
+                      /{" "}
+                      {Math.round(
+                        (currentYearData?.movies_unwatched_runtime ?? 0) / 60,
+                      )}
+                      h
+                    </span>
                   </div>
-                  <div className="text-xl font-bold text-white">
-                    {selectedYear === "All Time" ? "2025 年" : "8 月"}
+                </div>
+                <div>
+                  <div className="text-xs text-neutral-500 mb-1">已看总量</div>
+                  <div className="text-3xl font-bold text-white">
+                    {currentYearData?.watched_movies ?? 0}
+                    <span className="text-sm text-neutral-500 font-normal">
+                      {" "}
+                      / {currentYearData?.total_movies ?? 0} 部
+                    </span>
                   </div>
                 </div>
               </div>
 
-              <div className="h-24 w-full flex items-end justify-between gap-1 md:gap-2">
-                {selectedYear === "All Time"
-                  ? ["2022", "2023", "2024", "2025", "2026"].map(
-                      (year, index) => (
-                        <div
-                          key={year}
-                          className="flex flex-col items-center flex-1 gap-2 group"
-                        >
-                          <div
-                            className={`w-full rounded-t-sm transition-all duration-500 ${index === 3 ? "bg-white/40 h-full" : "bg-white/10 h-1/2 group-hover:bg-white/20"}`}
-                          ></div>
-                          <span className="text-[10px] text-neutral-500 group-hover:text-white transition-colors">
-                            {year}
-                          </span>
-                        </div>
-                      ),
-                    )
-                  : [
-                      "1月",
-                      "2月",
-                      "3月",
-                      "4月",
-                      "5月",
-                      "6月",
-                      "7月",
-                      "8月",
-                      "9月",
-                      "10月",
-                      "11月",
-                      "12月",
-                    ].map((month, index) => (
-                      <div
-                        key={month}
-                        className="flex flex-col items-center flex-1 gap-2 group"
-                      >
-                        <div
-                          className={`w-full rounded-t-sm transition-all duration-500 ${index === 7 ? "bg-white/40 h-full" : "bg-white/10 h-1/3 group-hover:bg-white/20"}`}
-                        ></div>
-                        <span className="text-[10px] text-neutral-500 hidden sm:block group-hover:text-white transition-colors">
-                          {month}
+              {/* 电影进度条 */}
+              <div className="w-full h-2 bg-white/10 rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-linear-to-r from-red-600 to-red-400 shadow-[0_0_12px_rgba(239,68,68,0.4)] rounded-full"
+                  style={{ width: `${moviesPercent}%` }}
+                ></div>
+              </div>
+            </div>
+
+            {/* ---------------- 电视剧看板 ---------------- */}
+            <div className="bg-white/5 border border-white/10 rounded-2xl p-6 flex flex-col gap-6 transition-all duration-300 hover:-translate-y-1 hover:bg-white/10 hover:border-white/20 hover:shadow-xl hover:shadow-black/50 group">
+              <div className="flex items-center border-b border-white/5 pb-3 gap-2">
+                <div className="bg-white/10 p-2 rounded-lg flex items-center justify-center group-hover:bg-red-500/10 group-hover:text-red-400 transition-colors duration-300">
+                  <i className="fas fa-tv text-sm"></i>
+                </div>
+                <span className="font-medium tracking-wide">电视剧看板</span>
+              </div>
+
+              {/* 顶部：总时长统计 */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div>
+                  <div className="text-xs text-neutral-500 mb-1">
+                    时长
+                  </div>
+                  <div className="text-3xl font-bold text-white">
+                    {Math.round(
+                      (currentYearData?.series_watched_runtime ?? 0) / 60,
+                    )}
+                    h
+                    <span className="text-sm text-neutral-500 font-normal">
+                      {" "}
+                      /{" "}
+                      {Math.round(
+                        (currentYearData?.total_series_runtime ?? 0) / 60,
+                      )}
+                      h
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* 状态明细拆分 */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mt-2">
+                {/* 1. 已看状态 (Watched) */}
+                <div className="bg-black/20 border border-white/5 rounded-xl p-5 flex flex-col gap-4 transition-all duration-300 hover:bg-white/5 hover:border-red-500/30">
+                  <div className="text-neutral-400 font-bold flex items-center gap-2 border-b border-white/5 pb-2">
+                    <i className="fas fa-check-circle"></i> 已看过
+                  </div>
+                  <div className="flex flex-col gap-3 mt-1">
+                    <div className="flex justify-between items-end">
+                      <span className="text-sm text-neutral-400">
+                        剧数
+                      </span>
+                      <span className="text-2xl font-bold text-white">
+                        {currentYearData?.watched_series ?? 0}{" "}
+                        <span className="text-xs text-neutral-500 font-normal">
+                          部
                         </span>
-                      </div>
-                    ))}
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-end">
+                      <span className="text-sm text-neutral-400">
+                        季数
+                      </span>
+                      <span className="text-2xl font-bold text-white">
+                        {currentYearData?.watched_seasons ?? 0}{" "}
+                        <span className="text-xs text-neutral-500 font-normal">
+                          季
+                        </span>
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-end">
+                      <span className="text-sm text-neutral-400">
+                        集数
+                      </span>
+                      <span className="text-2xl font-bold text-white">
+                        {currentYearData?.watched_series_episodes ?? 0}{" "}
+                        <span className="text-xs text-neutral-500 font-normal">
+                          集
+                        </span>
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 2. 追看状态 (Watching) */}
+                <div className="bg-black/20 border border-white/5 rounded-xl p-5 flex flex-col gap-4 transition-all duration-300 hover:bg-white/5 hover:border-red-500/30">
+                  <div className="text-neutral-400 font-bold flex items-center gap-2 border-b border-white/5 pb-2">
+                    <i className="fas fa-play-circle"></i> 正在看
+                  </div>
+                  <div className="flex flex-col gap-3 mt-1">
+                    <div className="flex justify-between items-end">
+                      <span className="text-sm text-neutral-400">
+                        剧数
+                      </span>
+                      <span className="text-2xl font-bold text-white">
+                        {currentYearData?.watching_series ?? 0}{" "}
+                        <span className="text-xs text-neutral-500 font-normal">
+                          部
+                        </span>
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-end">
+                      <span className="text-sm text-neutral-400">
+                        季数
+                      </span>
+                      <span className="text-2xl font-bold text-white">
+                        {currentYearData?.watching_seasons ?? 0}{" "}
+                        <span className="text-xs text-neutral-500 font-normal">
+                          季
+                        </span>
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-end">
+                      <span className="text-sm text-neutral-400">
+                        集数
+                      </span>
+                      <span className="text-2xl font-bold text-white">
+                        {0}{" "}
+                        <span className="text-xs text-neutral-500 font-normal">
+                          集
+                        </span>
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 3. 未看状态 (Unwatched) */}
+                <div className="bg-black/20 border border-white/5 rounded-xl p-5 flex flex-col gap-4 transition-all duration-300 hover:bg-white/5 hover:border-red-500/30">
+                  <div className="text-neutral-400 font-bold flex items-center gap-2 border-b border-white/5 pb-2">
+                    <i className="fas fa-pause-circle"></i> 想要看
+                  </div>
+                  <div className="flex flex-col gap-3 mt-1">
+                    <div className="flex justify-between items-end">
+                      <span className="text-sm text-neutral-400">
+                        剧数
+                      </span>
+                      <span className="text-2xl font-bold text-white">
+                        {currentYearData?.unwatched_series ?? 0}{" "}
+                        <span className="text-xs text-neutral-500 font-normal">
+                          部
+                        </span>
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-end">
+                      <span className="text-sm text-neutral-400">
+                        季数
+                      </span>
+                      <span className="text-2xl font-bold text-white">
+                        {currentYearData?.unwatched_seasons ?? 0}{" "}
+                        <span className="text-xs text-neutral-500 font-normal">
+                          季
+                        </span>
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-end">
+                      <span className="text-sm text-neutral-400">
+                        集数
+                      </span>
+                      <span className="text-2xl font-bold text-white">
+                        {currentYearData?.unwatched_episodes ?? 0}{" "}
+                        <span className="text-xs text-neutral-500 font-normal">
+                          集
+                        </span>
+                      </span>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
         )}
 
+        {/* ======================= 以下为电影和电视剧代码，未做更改 ======================= */}
         {activeTab === "电影" && (
           <div
             key="movies"

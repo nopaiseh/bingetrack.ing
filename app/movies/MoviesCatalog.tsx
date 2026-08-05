@@ -25,7 +25,7 @@ export default function MoviesCatalog({
               <h2 className="font-medium uppercase text-neutral-400 text-xs tracking-widest mb-2">
                 {stat.label}
               </h2>
-              <p className="font-semibold text-3xl tracking-tight text-white group-hover:text-amber-400 transition-colors">
+              <p className="font-semibold text-3xl tracking-tight text-white group-hover:text-red-400 transition-colors">
                 {stat.value}
               </p>
             </div>

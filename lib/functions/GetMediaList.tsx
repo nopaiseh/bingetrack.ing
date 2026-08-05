@@ -28,27 +28,7 @@ export async function getMediaList({
       .order("release_date", { ascending: true });
   } else if (mode === "series") {
     response = await getSupabaseServer()
-      .from("tv_seasons")
-      .select(`
-        season_number,
-        media_items!inner (
-          id,
-          title,
-          cover_url,
-          release_date,
-          type
-        ),
-        tv_episodes (
-          episode_number,
-          media_items!inner (
-            id,
-            title,
-            release_date,
-            runtime
-          )
-        )
-      `)
-      .eq("series_id", currentId)
+      .rpc("get_tv_seasons_by_series", { p_series_id: currentId })
       .order("season_number", { ascending: true });
   }
 
@@ -57,8 +37,9 @@ export async function getMediaList({
     error: unknown;
   };
 
+  console.log("getMediaList response:", data, error);
 
   if (error || !data || data.length === 0) return null;
 
-  return data.map((item) => mapSupabaseToMedia(item, "movies"));
+  return data.map((item) => mapSupabaseToMedia(item, mode));
 }

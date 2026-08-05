@@ -24,6 +24,7 @@ export type SupabaseMediaItem = {
   genres?: string[];
   languages?: string[];
   regions?: string[];
+  season_number?: number;
 };
 
 function hasNameField(value: unknown): value is { name?: unknown } {
