@@ -33,11 +33,9 @@ export async function getMediaList({
   }
 
   const { data, error } = response as {
-    data: any[] | null;
+    data: SupabaseMediaItem[] | null;
     error: unknown;
   };
-
-  console.log("getMediaList response:", data, error);
 
   if (error || !data || data.length === 0) return null;
 

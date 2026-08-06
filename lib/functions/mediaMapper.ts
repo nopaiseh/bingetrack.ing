@@ -7,6 +7,7 @@ export type SupabaseMediaItem = {
   title?: string;
   release_date?: string;
   release_years?: number | string;
+  release_year_range?: string;
   runtime?: number | null;
   type?: string;
   summary?: string;
@@ -84,6 +85,9 @@ export function mapSupabaseToMedia(
     id: String(item.id),
     title: item.title ?? "",
     date:
+      item.release_year_range != null
+        ? String(item.release_year_range)
+        :
       item.release_years != null
         ? String(item.release_years)
         : item.release_date ?? "",
