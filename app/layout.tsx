@@ -19,7 +19,6 @@ export default function RootLayout({
         <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet"/>
       </head>
 
-      {/* 1. Global Selection Color: Changed to a subtle indigo highlight instead of neutral gray */}
       <body className="bg-[#0a0a0a] text-neutral-200 font-sans leading-normal tracking-normal selection:bg-indigo-500/30 selection:text-indigo-100 flex flex-col min-h-screen">
         
         {/* 全局导航栏 */}
@@ -43,7 +42,7 @@ export default function RootLayout({
                   <i className="fas fa-terminal text-red-500 text-sm group-hover:rotate-12 transition-transform duration-300"></i>
                   <span className="font-mono text-xl text-white font-light tracking-tight">
                     <span className="text-white">bingewatch</span>
-                    <span className="text-red-500 font-black">.</span>ing
+                    <span className="text-red-500 font-black -mx-0.5">.</span>ing
                   </span>
                 </Link>
                 <span className="hidden sm:block text-white/10">|</span>

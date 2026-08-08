@@ -32,7 +32,7 @@ export default function Navbar() {
             <i className="fas fa-terminal text-red-500 text-base group-hover:rotate-12 transition-transform duration-300"></i>
             <span className="font-mono text-xl text-white font-light tracking-tight">
               <span className="text-white">bingewatch</span>
-              <span className="text-red-500 font-black">.</span>ing
+              <span className="text-red-500 font-black -mx-0.5">.</span>ing
             </span>
           </Link>
 
