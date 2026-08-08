@@ -15,7 +15,7 @@ export default async function MovieDetailPage({ params }: { params: Promise<{ id
   return (
     <div className="relative bg-[#060606] text-neutral-200 selection:bg-neutral-700 selection:text-white font-sans overflow-hidden">
       {/* 页面内容容器 */}
-      <MediaInformation media={movie} relatedMedia={relatedMedia} />
+      <MediaInformation media={movie} relatedMedia={relatedMedia} seasons={null} />
     </div>
   );
 }
