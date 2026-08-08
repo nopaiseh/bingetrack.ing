@@ -11,11 +11,18 @@ export default async function SeriesDetailPage({ params }: { params: Promise<{ i
   const series = await getMedia(id, "series");
   if (!series) notFound();
   const relatedMedia: Media[] | null =  await getMediaList({ seriesName: "", currentId: series.id, mode: "series" });
+  const seasons = [
+    { id: 1, name: '第一季', year: 2009, episodeCount: 20 },
+    { id: 2, name: '第二季', year: 2011, episodeCount: 20 },
+    { id: 3, name: '第三季', year: 2012, episodeCount: 24 },
+    { id: 4, name: '第四季', year: 2014, episodeCount: 24 },
+    { id: 5, name: '第五季', year: 2020, episodeCount: 36 },
+  ];
 
   return (
     <div className="relative bg-[#060606] text-neutral-200 selection:bg-neutral-700 selection:text-white font-sans overflow-hidden">
       {/* 页面内容容器 */}
-      <MediaInformation media={series} relatedMedia={relatedMedia} />
+      <MediaInformation media={series} relatedMedia={relatedMedia} seasons={seasons} />
     </div>
   );
 }

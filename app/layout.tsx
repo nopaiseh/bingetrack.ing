@@ -1,11 +1,11 @@
 import type { Metadata } from "next";
-import Image from "next/image";
 import Link from "next/link";
-import "./globals.css";
+import { GeistMono } from 'geist/font/mono';
 import Navbar from "@/components/Navbar";
+import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "nopaiseh",
+  title: "bingewatch.ing - 个人媒体记录平台",
 };
 
 export default function RootLayout({
@@ -14,7 +14,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="zh-CN">
+    <html lang="zh-CN" className={`${GeistMono.variable}`}>
       <head>
         <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet"/>
       </head>
@@ -41,9 +41,9 @@ export default function RootLayout({
               <div className="flex flex-col sm:flex-row items-center gap-3 md:gap-4 shrink-0">
                 <Link href="/" className="flex items-center gap-2 group cursor-pointer opacity-90 hover:opacity-100 transition-opacity duration-300">
                   <i className="fas fa-terminal text-red-500 text-sm group-hover:rotate-12 transition-transform duration-300"></i>
-                  <span className="text-base font-bold tracking-[0.18em] lowercase font-mono">
-                    <span className="text-white">nopaiseh</span>
-                    <span className="text-red-500 font-black">.</span>
+                  <span className="font-mono text-xl text-white font-light tracking-tight">
+                    <span className="text-white">bingewatch</span>
+                    <span className="text-red-500 font-black">.</span>ing
                   </span>
                 </Link>
                 <span className="hidden sm:block text-white/10">|</span>

@@ -18,6 +18,9 @@ const config: Config = {
       animation: {
         'fade-in': 'fadeIn 0.5s ease-out forwards', 
       },
+      fontFamily: {
+        mono: ['var(--font-geist-mono)'], 
+      },
     },
   },
   plugins: [],

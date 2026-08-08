@@ -111,9 +111,11 @@ export function MediaMetadata({ media }: { media: Media }) {
 export default function MediaInformation({
   media,
   relatedMedia,
+  seasons
 }: {
   media: Media;
   relatedMedia: Media[] | null;
+  seasons: any[] | null; // Define the type for seasons if possible
 }) {
   return (
     <>
@@ -180,6 +182,34 @@ export default function MediaInformation({
             {media.summary || "暂无简介。"}
           </p>
         </div>
+      
+      {seasons && (
+        <>
+      <div className="flex items-center gap-2 mb-2">
+        <div className="w-1 h-4 bg-red-500 rounded-sm"></div> {/* 使用类似 Tailwind green-400 的颜色匹配剧情简介前的竖条 */}
+        <h3 className="text-zinc-200 font-bold text-lg">剧集列表</h3>
+      </div>
+
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+        {seasons.map((season) => (
+          <button
+            key={season.id}
+            className="group flex flex-col text-left bg-transparent border border-zinc-800 rounded-lg p-4 cursor-pointer hover:border-zinc-500 hover:bg-zinc-900/30 transition-all duration-200"
+            // onClick={() => handleSeasonClick(season.id)} // 预留点击事件
+          >
+            <h4 className="text-zinc-200 font-medium text-base mb-2 group-hover:text-white">
+              {season.name}
+            </h4>
+            <div className="flex items-center text-xs text-zinc-500 space-x-2 mt-auto">
+              <span>{season.year}</span>
+              <span>•</span>
+              <span>{season.episodeCount} 集</span>
+            </div>
+          </button>
+        ))}
+      </div>
+      </>
+      )}
 
         {/* 系列作品展示区 */}
         {media.series && (

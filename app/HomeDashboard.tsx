@@ -181,7 +181,7 @@ export default function HomeDashboard({ summary }: { summary: Summary[] }) {
       {/* 头部控制区 */}
       <div className="flex flex-col gap-6 md:gap-8 mb-4">
         <div>
-          <h1 className="text-4xl md:text-6xl font-black tracking-tight flex items-baseline gap-3">
+          <h1 className="text-4xl md:text-6xl font-mono font-bold tracking-tighter flex items-baseline gap-3">
             <span className="text-transparent bg-clip-text bg-linear-to-r from-red-500 to-red-700">
               {selectedYear}
             </span>
@@ -275,7 +275,7 @@ export default function HomeDashboard({ summary }: { summary: Summary[] }) {
                     </span>
                   </div>
                   <div className="flex items-baseline gap-2 mb-2">
-                    <span className="text-5xl font-black text-white tracking-tighter">
+                    <span className="text-5xl font-mono text-white tracking-tighter">
                       {Math.round(
                         (currentYearData?.total_watched_runtime ?? 0) / 60,
                       )}
@@ -304,7 +304,7 @@ export default function HomeDashboard({ summary }: { summary: Summary[] }) {
                     </span>
                   </div>
                   <div className="flex items-baseline gap-2 mb-2">
-                    <span className="text-5xl font-black text-neutral-300 tracking-tighter">
+                    <span className="text-5xl font-mono text-neutral-300 tracking-tighter">
                       {Math.round(
                         (currentYearData?.total_unwatched_runtime ?? 0) / 60,
                       )}
@@ -329,7 +329,7 @@ export default function HomeDashboard({ summary }: { summary: Summary[] }) {
                     </span>
                   </div>
                   <div className="flex items-baseline gap-2 mb-4">
-                    <span className="text-5xl font-black text-white tracking-tighter">
+                    <span className="text-5xl font-mono text-white tracking-tighter">
                       {Math.round(
                         ((currentYearData?.total_watched_runtime ?? 0) /
                           (currentYearData?.total_runtime ?? 0)) *
@@ -365,7 +365,7 @@ export default function HomeDashboard({ summary }: { summary: Summary[] }) {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 <div>
                   <div className="text-xs text-neutral-500 mb-1">时长</div>
-                  <div className="text-3xl font-bold text-white">
+                  <div className="text-3xl font-mono text-white">
                     {Math.round(
                       (currentYearData?.movies_watched_runtime ?? 0) / 60,
                     )}
@@ -381,7 +381,7 @@ export default function HomeDashboard({ summary }: { summary: Summary[] }) {
                 </div>
                 <div>
                   <div className="text-xs text-neutral-500 mb-1">已看总量</div>
-                  <div className="text-3xl font-bold text-white">
+                  <div className="text-3xl font-mono text-white">
                     {currentYearData?.watched_movies ?? 0}
                     <span className="text-sm text-neutral-500 font-normal">
                       {" "}
@@ -415,7 +415,7 @@ export default function HomeDashboard({ summary }: { summary: Summary[] }) {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 <div>
                   <div className="text-xs text-neutral-500 mb-1">时长</div>
-                  <div className="text-3xl font-bold text-white">
+                  <div className="text-3xl font-mono text-white">
                     {Math.round(
                       (currentYearData?.series_watched_runtime ?? 0) / 60,
                     )}
@@ -441,7 +441,7 @@ export default function HomeDashboard({ summary }: { summary: Summary[] }) {
                   <div className="flex flex-col gap-3 mt-1">
                     <div className="flex justify-between items-end">
                       <span className="text-sm text-neutral-400">剧数</span>
-                      <span className="text-2xl font-bold text-white">
+                      <span className="text-2xl font-mono text-white">
                         {currentYearData?.watched_series ?? 0}{" "}
                         <span className="text-xs text-neutral-500 font-normal">
                           部
@@ -450,7 +450,7 @@ export default function HomeDashboard({ summary }: { summary: Summary[] }) {
                     </div>
                     <div className="flex justify-between items-end">
                       <span className="text-sm text-neutral-400">季数</span>
-                      <span className="text-2xl font-bold text-white">
+                      <span className="text-2xl font-mono text-white">
                         {currentYearData?.watched_seasons ?? 0}{" "}
                         <span className="text-xs text-neutral-500 font-normal">
                           季
@@ -459,7 +459,7 @@ export default function HomeDashboard({ summary }: { summary: Summary[] }) {
                     </div>
                     <div className="flex justify-between items-end">
                       <span className="text-sm text-neutral-400">集数</span>
-                      <span className="text-2xl font-bold text-white">
+                      <span className="text-2xl font-mono text-white">
                         {currentYearData?.watched_series_episodes ?? 0}{" "}
                         <span className="text-xs text-neutral-500 font-normal">
                           集
@@ -477,7 +477,7 @@ export default function HomeDashboard({ summary }: { summary: Summary[] }) {
                   <div className="flex flex-col gap-3 mt-1">
                     <div className="flex justify-between items-end">
                       <span className="text-sm text-neutral-400">剧数</span>
-                      <span className="text-2xl font-bold text-white">
+                      <span className="text-2xl font-mono text-white">
                         {currentYearData?.watching_series ?? 0}{" "}
                         <span className="text-xs text-neutral-500 font-normal">
                           部
@@ -486,7 +486,7 @@ export default function HomeDashboard({ summary }: { summary: Summary[] }) {
                     </div>
                     <div className="flex justify-between items-end">
                       <span className="text-sm text-neutral-400">季数</span>
-                      <span className="text-2xl font-bold text-white">
+                      <span className="text-2xl font-mono text-white">
                         {currentYearData?.watching_seasons ?? 0}{" "}
                         <span className="text-xs text-neutral-500 font-normal">
                           季
@@ -495,7 +495,7 @@ export default function HomeDashboard({ summary }: { summary: Summary[] }) {
                     </div>
                     <div className="flex justify-between items-end">
                       <span className="text-sm text-neutral-400">集数</span>
-                      <span className="text-2xl font-bold text-white">
+                      <span className="text-2xl font-mono text-white">
                         {0}{" "}
                         <span className="text-xs text-neutral-500 font-normal">
                           集
@@ -513,7 +513,7 @@ export default function HomeDashboard({ summary }: { summary: Summary[] }) {
                   <div className="flex flex-col gap-3 mt-1">
                     <div className="flex justify-between items-end">
                       <span className="text-sm text-neutral-400">剧数</span>
-                      <span className="text-2xl font-bold text-white">
+                      <span className="text-2xl font-mono text-white">
                         {currentYearData?.unwatched_series ?? 0}{" "}
                         <span className="text-xs text-neutral-500 font-normal">
                           部
@@ -522,7 +522,7 @@ export default function HomeDashboard({ summary }: { summary: Summary[] }) {
                     </div>
                     <div className="flex justify-between items-end">
                       <span className="text-sm text-neutral-400">季数</span>
-                      <span className="text-2xl font-bold text-white">
+                      <span className="text-2xl font-mono text-white">
                         {currentYearData?.unwatched_seasons ?? 0}{" "}
                         <span className="text-xs text-neutral-500 font-normal">
                           季
@@ -531,7 +531,7 @@ export default function HomeDashboard({ summary }: { summary: Summary[] }) {
                     </div>
                     <div className="flex justify-between items-end">
                       <span className="text-sm text-neutral-400">集数</span>
-                      <span className="text-2xl font-bold text-white">
+                      <span className="text-2xl font-mono text-white">
                         {currentYearData?.unwatched_episodes ?? 0}{" "}
                         <span className="text-xs text-neutral-500 font-normal">
                           集
@@ -558,7 +558,7 @@ export default function HomeDashboard({ summary }: { summary: Summary[] }) {
                 </div>
                 <div>
                   <div className="flex items-baseline gap-2 mb-2">
-                    <span className="text-4xl font-black text-white">
+                    <span className="text-4xl font-mono text-white">
                       {currentYearData?.watched_movies}
                     </span>
                     <span className="text-sm text-neutral-400">
@@ -583,7 +583,7 @@ export default function HomeDashboard({ summary }: { summary: Summary[] }) {
                 </div>
                 <div>
                   <div className="flex items-baseline gap-2 mb-2">
-                    <span className="text-4xl font-black text-white">
+                    <span className="text-4xl font-mono text-white">
                       {currentYearData?.movie_avg_rating || 0}
                     </span>
                     <span className="text-sm text-neutral-500">/ 10</span>
@@ -816,7 +816,7 @@ export default function HomeDashboard({ summary }: { summary: Summary[] }) {
                 </div>
                 <div>
                   <div className="flex items-baseline gap-2 mb-2">
-                    <span className="text-4xl font-black text-white">
+                    <span className="text-4xl font-mono text-white">
                       {currentYearData?.watched_series}
                     </span>
                     <span className="text-sm text-neutral-400">
@@ -841,7 +841,7 @@ export default function HomeDashboard({ summary }: { summary: Summary[] }) {
                 </div>
                 <div>
                   <div className="flex items-baseline gap-2 mb-2">
-                    <span className="text-4xl font-black text-white">
+                    <span className="text-4xl font-mono text-white">
                       {currentYearData?.series_avg_rating || 0}
                     </span>
                     <span className="text-sm text-neutral-500">/ 10</span>

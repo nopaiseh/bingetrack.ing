@@ -11,6 +11,7 @@
   "dependencies": {
     "@supabase/ssr": "^0.12.3",
     "@supabase/supabase-js": "^2.110.7",
+    "geist": "^1.7.2",
     "next": "^16.2.10",
     "postcss": "^8.5.19",
     "react": "19.2.4",
@@ -25,5 +26,9 @@
     "eslint-config-next": "16.2.10",
     "tailwindcss": "^4",
     "typescript": "^5"
+  },
+  "allowScripts": {
+    "sharp@0.34.5": true,
+    "unrs-resolver@1.12.2": true
   }
 }

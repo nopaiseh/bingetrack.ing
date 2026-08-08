@@ -30,9 +30,9 @@ export default function Navbar() {
         <div className="flex items-center gap-10">
           <Link href="/" className="flex items-center gap-2.5 group cursor-pointer" onClick={closeMenu}>
             <i className="fas fa-terminal text-red-500 text-base group-hover:rotate-12 transition-transform duration-300"></i>
-            <span className="text-xl font-bold tracking-[0.18em] lowercase font-mono">
-              <span className="text-white">nopaiseh</span>
-              <span className="text-red-500 font-black">.</span>
+            <span className="font-mono text-xl text-white font-light tracking-tight">
+              <span className="text-white">bingewatch</span>
+              <span className="text-red-500 font-black">.</span>ing
             </span>
           </Link>
 
