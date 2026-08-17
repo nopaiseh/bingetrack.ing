@@ -17,6 +17,11 @@ export default async function SeriesDetailPage({ params }: { params: Promise<{ i
     { id: 3, name: '第三季', year: 2012, episodeCount: 24 },
     { id: 4, name: '第四季', year: 2014, episodeCount: 24 },
     { id: 5, name: '第五季', year: 2020, episodeCount: 36 },
+    { id: 6, name: '第一季', year: 2009, episodeCount: 20 },
+    { id: 7, name: '第二季', year: 2011, episodeCount: 20 },
+    { id: 8, name: '第三季', year: 2012, episodeCount: 24 },
+    { id: 9, name: '第四季', year: 2014, episodeCount: 24 },
+    { id: 10, name: '第五季', year: 2020, episodeCount: 36 },
   ];
 
   return (

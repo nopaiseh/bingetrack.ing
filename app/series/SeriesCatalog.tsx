@@ -9,8 +9,8 @@ export default function SeriesCatalog({
 }: MediaCatalogProps) {
   const statItems = [
     { label: "影剧总数量", value: stats?.totalSeries || 0 },
-    { label: "剧季总数量", value: stats?.totalSeasons || 0 },
-    { label: "剧集总数量", value: stats?.totalEpisodes || 0 },
+    { label: "已看的影剧", value: stats?.totalSeasons || 0 },
+    { label: "想看的影剧", value: stats?.totalEpisodes || 0 },
     { label: "近期将播出", value: stats?.totalUpcomingEpisodes || 0 },
   ];
 
