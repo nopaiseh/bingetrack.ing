@@ -2,10 +2,7 @@
 import MediaRow from "@/components/MediaRow";
 import { Media } from "@/lib/types/Media";
 import { Summary } from "@/lib/types/Summary";
-import {
-  mapSupabaseToMedia,
-  SupabaseMediaItem,
-} from "@/lib/functions/mediaMapper";
+import { mapSupabaseToMedia, SupabaseMediaItem } from "@/lib/functions/mediaMapper";
 import { useState, useRef, useEffect } from "react";
 import { getSupabaseBrowser } from "@/utils/supabase-client";
 

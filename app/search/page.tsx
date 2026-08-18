@@ -1,30 +1,9 @@
 "use client";
 
-import { useState, KeyboardEvent } from "react";
+import { useState, useEffect, KeyboardEvent } from "react";
+import { getSupabaseBrowser } from "@/utils/supabase-client";
 
-// 1. BUTTON CATEGORIES (Short lists, highly visual)
-const BUTTON_CATEGORIES = [
-  {
-    id: "mediaType",
-    label: "分类",
-    options: ["电影", "电视剧", "剧季", "剧集"],
-    multiSelect: true,
-  },
-  {
-    id: "genre",
-    label: "剧情",
-    options: ["剧情", "喜剧", "动作", "恐怖", "爱情", "科幻", "惊悚", "战争", "犯罪", "悬疑", "奇幻"],
-    multiSelect: true,
-  },
-  {
-    id: "sort",
-    label: "排序",
-    options: ["最近更新", "最多播放", "最高评分"],
-    multiSelect: false, // Single select makes more sense for sorting
-  },
-];
-
-// 2. DROPDOWN CATEGORIES (Long lists)
+// DROPDOWN CATEGORIES (Long lists) remain outside as they are static
 const DROPDOWN_CATEGORIES = [
   {
     id: "region",
@@ -48,6 +27,9 @@ export default function SearchPage() {
   const [showAdvanced, setShowAdvanced] = useState(true);
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
 
+  const [genreOptions, setGenreOptions] = useState<string[]>([]);
+  const [regionOptions, setRegionOptions] = useState<string[]>([]);
+
   const [filters, setFilters] = useState<Record<string, string[]>>({
     mediaType: [],
     genre: [],
@@ -58,6 +40,65 @@ export default function SearchPage() {
   });
 
   const [customInputs, setCustomInputs] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    const fetchGenres = async () => {
+      const { data, error } = await getSupabaseBrowser()
+        .from("genres")
+        .select("name")
+        .order("name", { ascending: true });
+
+      if (data && !error) {
+        setGenreOptions(data.map((g) => g.name));
+      } else if (error) {
+        console.error("Error fetching genres:", error.message);
+      }
+    };
+
+    fetchGenres();
+
+    const fetchRegions = async () => {
+      const { data, error } = await getSupabaseBrowser()
+        .from("regions")
+        .select("name")
+        .order("name", { ascending: true });
+
+      if (data && !error) {
+        setRegionOptions(data.map((r) => r.name));
+      } else if (error) {
+        console.error("Error fetching regions:", error.message);
+      }
+    };
+
+    fetchRegions();
+  }, []);
+
+  const BUTTON_CATEGORIES = [
+    {
+      id: "mediaType",
+      label: "分类",
+      options: ["电影", "电视剧", "剧季", "剧集"],
+      multiSelect: true,
+    },
+    {
+      id: "genre",
+      label: "类型",
+      options: genreOptions,
+      multiSelect: true,
+    },
+    {
+      id: "region",
+      label: "地区",
+      options: regionOptions,
+      multiSelect: true,
+    },
+    {
+      id: "sort",
+      label: "排序",
+      options: ["最近更新", "最多播放", "最高评分"],
+      multiSelect: false,
+    },
+  ];
 
   const toggleFilter = (categoryId: string, value: string, isMultiSelect = true) => {
     setFilters((prev) => {
@@ -157,7 +198,7 @@ export default function SearchPage() {
               <div className="flex flex-col">
                 
                 {/* --- PART 1: EXPOSED BUTTON ROWS --- */}
-                {BUTTON_CATEGORIES.map((category, index) => {
+                {BUTTON_CATEGORIES.map((category) => {
                   const activeSelections = filters[category.id] || [];
                   const isAllSelected = activeSelections.length === 0;
                   const customActiveOptions = activeSelections.filter((val) => !category.options.includes(val));
@@ -190,23 +231,6 @@ export default function SearchPage() {
                             </button>
                           );
                         })}
-                        {/* Custom Input for Buttons Row */}
-                        <div className="relative flex items-center ml-2">
-                          <input
-                            type="text"
-                            placeholder="自定义..."
-                            value={customInputs[category.id] || ""}
-                            onChange={(e) => setCustomInputs((prev) => ({ ...prev, [category.id]: e.target.value }))}
-                            onKeyDown={(e) => handleKeyDown(e, category.id)}
-                            className="w-24 bg-white/5 border border-white/10 focus:border-red-500/50 rounded-md pl-3 pr-8 py-1.5 text-[13px] text-white placeholder:text-neutral-600 outline-none transition-all focus:bg-white/10"
-                          />
-                          <button
-                            onClick={() => addCustomInput(category.id)}
-                            className={`absolute right-1 p-1 rounded-md transition-colors ${customInputs[category.id]?.trim() ? "text-red-500 hover:bg-red-500/20" : "text-neutral-600 pointer-events-none"}`}
-                          >
-                            <i className="fas fa-plus text-[10px]"></i>
-                          </button>
-                        </div>
                       </div>
                     </div>
                   );
