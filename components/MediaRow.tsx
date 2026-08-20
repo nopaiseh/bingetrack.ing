@@ -19,12 +19,12 @@ function ItemCard({ item }: { item: Media }) {
         )}
       </div>
       <div className="flex flex-col space-y-1 grow px-2 py-2">
-        {/* 标题 */}
+        
         <h3 className="text-sm font-semibold text-white truncate" title={item.title}>
           {item.title}
         </h3>
 
-        {/* 上映日期和评分 */}
+        
         <div className="flex justify-between items-center text-xs">
           <span className="text-neutral-400">{item.date}</span>
           <span className="text-neutral-300 font-semibold flex items-center gap-1">
@@ -39,7 +39,7 @@ function ItemCard({ item }: { item: Media }) {
           </span>
         </div>
         
-        {/* 标签区域 */}
+        
         <div className="flex flex-wrap gap-1">
           {(item.genres ?? []).map((g: string, i: number) => (
             <span key={`g-${i}`} className="inline-flex items-center px-1 py-1 rounded-md bg-white/3 border border-white/10 text-neutral-300 text-xs font-medium tracking-wide transition-all hover:bg-white/10 hover:text-white hover:border-white/20 hover:shadow-sm">
@@ -72,7 +72,7 @@ export default function MediaRow({
 
   return (
     <div className="relative group">
-      {/* 标题和查看全部链接 */}
+      
       <div className="flex justify-between items-end mb-5 pr-1 border-b border-white/5 pb-3">
         <h2 className="text-xl font-bold tracking-wide text-white">
           {title}
@@ -84,7 +84,7 @@ export default function MediaRow({
         )}
       </div>
       
-      {/* 滑动列表 */}
+      
       <div className="flex space-x-4 overflow-x-auto no-scrollbar py-4 px-1 snap-x snap-mandatory scroll-pl-2">
         {items.map((media: Media) => {
           const mediaType = type ?? media.type ?? "movies";

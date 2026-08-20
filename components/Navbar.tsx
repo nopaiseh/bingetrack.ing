@@ -10,14 +10,12 @@ export default function Navbar() {
 
   const closeMenu = () => setIsMobileMenuOpen(false);
 
-  // 导航项目
   const navItems = [
     { name: "首页", href: "/" },
     { name: "电影", href: "/movies" },
     { name: "电视剧", href: "/series" }
   ];
 
-  // 检查链接是否为当前活动页面
   const isActive = (href: string) => {
     return href === "/" ? pathname === "/" : pathname.startsWith(href);
   };
@@ -26,7 +24,7 @@ export default function Navbar() {
     <nav className="fixed w-full z-50 top-0 left-0 bg-[#0a0a0a]/40 backdrop-blur-md border-b border-white/5 transition-all duration-300">
       <div className="flex items-center justify-between w-full mx-auto px-6 md:px-8 h-16 max-w-7xl">
         
-        {/* 左侧：Logo 和 桌面端链接 */}
+        
         <div className="flex items-center gap-10">
           <Link href="/" className="flex items-center gap-2.5 group cursor-pointer" onClick={closeMenu}>
             <i className="fas fa-terminal text-red-500 text-base group-hover:rotate-12 transition-transform duration-300"></i>
@@ -36,7 +34,7 @@ export default function Navbar() {
             </span>
           </Link>
 
-          {/* 桌面端菜单（移动端隐藏） */}
+          
           <div className="hidden md:flex items-center gap-8 text-sm font-medium">
             {navItems.map((item) => (
               <Link 
@@ -44,8 +42,8 @@ export default function Navbar() {
                 href={item.href} 
                 className={`transition-colors duration-300 ${
                   isActive(item.href)
-                    ? "text-white font-bold" // Active state
-                    : "text-neutral-400 hover:text-white" // Inactive state
+                    ? "text-white font-bold"
+                    : "text-neutral-400 hover:text-white"
                 }`}
               >
                 {item.name}
@@ -54,9 +52,9 @@ export default function Navbar() {
           </div>
         </div>
 
-        {/* 右侧：搜索和汉堡包按钮 */}
+        
         <div className="flex items-center gap-5">
-          {/* 搜索框 */}
+          
           <form action="/search" className="relative group hidden sm:block">
             <div className="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none">
               <i className="fas fa-search text-neutral-500 group-focus-within:text-neutral-300 transition-colors"></i>
@@ -69,7 +67,7 @@ export default function Navbar() {
             />
           </form>
 
-          {/* 移动端汉堡包/关闭按钮*/}
+          
           <button 
             className="md:hidden flex items-center justify-center text-neutral-400 hover:text-white p-2 w-10 h-10 outline-none"
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
@@ -79,7 +77,7 @@ export default function Navbar() {
         </div>
       </div>
 
-      {/* 移动端下拉菜单 */}
+      
       <div 
         className={`md:hidden overflow-hidden transition-all duration-300 ease-in-out bg-[#0a0a0a]/95 backdrop-blur-xl border-b border-white/10 ${
           isMobileMenuOpen ? "max-h-64 opacity-100 py-4" : "max-h-0 opacity-0 py-0 border-transparent"
@@ -92,16 +90,16 @@ export default function Navbar() {
               href={item.href} 
               className={`block py-2 ${
                 isActive(item.href)
-                  ? "text-white font-bold" // Active state for mobile
-                  : "text-neutral-300 hover:text-white" // Inactive state for mobile
-              }`} 
+                  ? "text-white font-bold"
+                  : "text-neutral-300 hover:text-white"
+              }`}
               onClick={closeMenu}
             >
               {item.name}
             </Link>
           ))}
           
-          {/* 移动端搜索框 */}
+          
           <form action="/search" className="relative mt-2 sm:hidden">
             <div className="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none">
               <i className="fas fa-search text-neutral-500"></i>

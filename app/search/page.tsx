@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import Image from "next/image"; // 新增 next/image
+import Image from "next/image";
 import { getSupabaseBrowser } from "@/utils/supabase-client";
 import { Media } from "@/lib/types/Media";
 
@@ -46,95 +46,61 @@ export default function SearchPage() {
     fetchOptions();
   }, []);
 
-  // 更新后的数据获取逻辑
   useEffect(() => {
     const fetchMedia = async () => {
       setIsLoading(true);
       const db = getSupabaseBrowser();
-      
-      // 1. 使用 Promise.all 并行获取电影和电视剧
-      const [moviesRes, seriesRes] = await Promise.all([
-        db.from("media_items")
-          .select(`
-            id, title, summary, cover_url, release_date, type, runtime,
-            tracking ( status, rating ),
-            media_genres ( genres ( name ) ),
-            media_languages ( languages ( name ) ),
-            media_regions ( regions ( name ) ),
-            media_credits ( people ( name ), role, credit_order ),
-            media_series ( name )
-          `)
-          .neq("type", "tv_series")
-          .neq("type", "tv_season")
-          .neq("type", "tv_episode"),
-          
-        db.from("tv_series_stats")
-          .select(`
-            id, title, summary, cover_url, earliest_release_date, type, status, average_rating, release_year_range,
-            media_genres ( genres ( name ) ),
-            media_languages ( languages ( name ) )
-          `)
-      ]);
 
-      let combinedMedia: Media[] = [];
+      type MediaViewRow = {
+        id: string | number;
+        title?: string;
+        summary?: string;
+        cover_url?: string;
+        sort_date?: string | null;
+        type?: "movie" | "tv_series" | string;
+        rating?: number | null;
+        status?: string;
+        date?: string;
+        genres?: string[] | null;
+        languages?: string[] | null;
+        regions?: string[] | null;
+        casts?: string[] | null;
+        directors?: string[] | null;
+      };
 
-      // 2. 处理电影数据 (Movies)
-      if (moviesRes.data && !moviesRes.error) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const formattedMovies: Media[] = moviesRes.data.map((item: any) => {
-          const trackingData = Array.isArray(item.tracking) ? item.tracking[0] : item.tracking;
-          return {
-            id: item.id,
-            title: item.title,
-            date: item.release_date, 
-            runtime: item.runtime,
-            rating: trackingData?.rating || null,
-            status: trackingData?.status || undefined,
-            summary: item.summary,
-            cover_url: item.cover_url,
-            type: item.type,
-            series: item.media_series?.name || null,
-            genres: item.media_genres?.map((g: any) => g.genres?.name).filter(Boolean) || [],
-            languages: item.media_languages?.map((l: any) => l.languages?.name).filter(Boolean) || [],
-            regions: item.media_regions?.map((r: any) => r.regions?.name).filter(Boolean) || [],
-            casts: item.media_credits?.filter((c: any) => c.role === "演员").map((c: any) => c.people?.name).filter(Boolean) || [],
-            directors: item.media_credits?.filter((c: any) => c.role === "导演" || c.role === "Director").map((c: any) => c.people?.name).filter(Boolean) || [],
-          };
-        });
-        combinedMedia = [...combinedMedia, ...formattedMovies];
-      } else if (moviesRes.error) {
-        console.error("Error fetching movies:", moviesRes.error);
-      }
+      // 构建搜索 / 筛选的 query 参数并调用受控 API
+      const params = new URLSearchParams();
+      if (query) params.set("q", query);
+      // 类型过滤（示例，若 filters.type 有值则优先使用第一个）
+      if (filters.type && filters.type.length > 0) params.set("type", filters.type[0].toLowerCase() === "电影" ? "movie" : "tv_series");
+      // 其它过滤参数（genre/region/language/year）
+      if (filters.genre && filters.genre.length > 0) params.set("genre", filters.genre[0]);
+      if (filters.region && filters.region.length > 0) params.set("region", filters.region[0]);
+      if (filters.language && filters.language.length > 0) params.set("language", filters.language[0]);
+      if (filters.year && filters.year.length > 0) params.set("year", filters.year[0]);
 
-      // 3. 处理电视剧数据 (TV Series)
-      if (seriesRes.data && !seriesRes.error) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const formattedSeries: Media[] = seriesRes.data.map((item: any) => {
-          return {
-            id: item.id,
-            title: item.title,
-            // 电视剧可能用到 release_year_range，但为了兼容 UI 的 substring(0,4)，映射 earliest_release_date 作为基准日期
-            date: item.earliest_release_date, 
-            rating: item.average_rating || null,
-            status: item.status || undefined,
-            summary: item.summary,
-            cover_url: item.cover_url,
-            type: item.type, // 例如 "tv_series"
-            genres: item.media_genres?.map((g: any) => g.genres?.name).filter(Boolean) || [],
-            languages: item.media_languages?.map((l: any) => l.languages?.name).filter(Boolean) || [],
-            // 电视剧视图中没有查询这些字段，默认为空
-            regions: [], 
-            casts: [],
-            directors: [],
-          };
-        });
-        combinedMedia = [...combinedMedia, ...formattedSeries];
-      } else if (seriesRes.error) {
-        console.error("Error fetching tv series:", seriesRes.error);
-      }
+      setIsLoading(true);
+      const res = await fetch(`/api/media?${params.toString()}`);
+      const data = await res.json();
 
-      // 4. 在前端统一排序
-      // 因为合并了两个表的数据，无法在 Supabase 直接 order，我们在 JavaScript 中执行初始的“按日期降序”
+      const combinedMedia: Media[] = (data ?? []).map((item: any) => ({
+        id: String(item.id),
+        title: item.title ?? "",
+        date: item.sort_date ?? item.date ?? item.release_date ?? "",
+        runtime: item.runtime ?? null,
+        rating: item.rating ?? item.average_rating ?? null,
+        genres: item.genres ?? [],
+        languages: item.languages ?? [],
+        regions: item.regions ?? [],
+        series: item.series ?? null,
+        status: item.status ?? undefined,
+        summary: item.summary ?? "",
+        cover_url: item.cover_url ?? "",
+        casts: item.casts ?? [],
+        directors: item.directors ?? [],
+        type: item.type === "movie" ? "movies" : item.type === "tv_series" ? "series" : undefined,
+      } as Media));
+
       combinedMedia.sort((a, b) => {
         const dateA = new Date(a.date || 0).getTime();
         const dateB = new Date(b.date || 0).getTime();
@@ -146,7 +112,7 @@ export default function SearchPage() {
     };
 
     fetchMedia();
-  }, []); // 后续需要接入筛选时，可以将 filters 作为依赖项，并在上面加上前端过滤逻辑
+  }, []);
 
   const BUTTON_CATEGORIES = [
     { id: "type", label: "分类", options: ["电影", "电视剧", "导演", "演员"], multiSelect: true },
@@ -413,7 +379,7 @@ export default function SearchPage() {
               mediaItems.map((item) => (
                 <div key={item.id} className="group flex flex-col bg-zinc-900 border border-zinc-800/50 rounded-xl overflow-hidden cursor-pointer shadow-lg shadow-black/50 transition-all duration-300 hover:border-zinc-600 hover:-translate-y-1">
                   
-                  {/* 图片区域 */}
+                  
                   <div className="w-full aspect-[2/3] bg-neutral-900 relative flex items-center justify-center overflow-hidden">
                     {item.cover_url ? (
                       <Image
@@ -428,14 +394,14 @@ export default function SearchPage() {
                     )}
                   </div>
                   
-                  {/* 文字与标签区域 */}
+                  
                   <div className="flex flex-col space-y-1 grow px-2 py-2">
-                    {/* 标题 */}
+                    
                     <h3 className="text-sm font-semibold text-white truncate" title={item.title}>
                       {item.title}
                     </h3>
 
-                    {/* 上映日期和评分 */}
+                    
                     <div className="flex justify-between items-center text-xs">
                       <span className="text-neutral-400">{item.date ? item.date.substring(0, 4) : "未知"}</span>
                       <span className="text-neutral-300 font-semibold flex items-center gap-1">
@@ -450,7 +416,7 @@ export default function SearchPage() {
                       </span>
                     </div>
                     
-                    {/* 标签区域 */}
+                    
                     <div className="flex flex-wrap gap-1 mt-1">
                       {(item.genres ?? []).slice(0, 3).map((g: string, i: number) => (
                         <span key={`g-${i}`} className="inline-flex items-center px-1.5 py-0.5 rounded-md bg-white/[0.03] border border-white/10 text-neutral-300 text-[10px] font-medium tracking-wide transition-all hover:bg-white/10 hover:text-white hover:border-white/20">

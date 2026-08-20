@@ -21,13 +21,13 @@ export default function RootLayout({
 
       <body className="bg-[#0a0a0a] text-neutral-200 font-sans leading-normal tracking-normal selection:bg-indigo-500/30 selection:text-indigo-100 flex flex-col min-h-screen">
         
-        {/* 全局导航栏 */}
+        
         <Navbar />
 
-        {/* 页面内容 */}
+        
         <main className="flex-1 flex flex-col">{children}</main>
 
-        {/* 全局页脚 */}
+        
         <footer className="relative bg-[#0a0a0a] mt-auto py-6 overflow-hidden border-t border-white/5">
 
           <div className="absolute top-0 left-1/2 -translate-x-1/2 w-3/4 h-px bg-linear-to-r from-transparent via-white-500/30 to-transparent"></div>
@@ -36,7 +36,7 @@ export default function RootLayout({
           <div className="container mx-auto px-6 md:px-8 max-w-7xl">
             <div className="flex flex-col lg:flex-row items-center justify-between gap-6">
               
-              {/* 左侧：品牌与版权 */}
+              
               <div className="flex flex-col sm:flex-row items-center gap-3 md:gap-4 shrink-0">
                 <Link href="/" className="flex items-center gap-2 group cursor-pointer opacity-90 hover:opacity-100 transition-opacity duration-300">
                   <i className="fas fa-terminal text-red-500 text-sm group-hover:rotate-12 transition-transform duration-300"></i>
@@ -51,9 +51,9 @@ export default function RootLayout({
                 </span>
               </div>
 
-              {/* 右侧：致谢信息 */}
+              
               <div className="flex flex-wrap items-center justify-center lg:justify-end gap-4 md:gap-5">
-                {/* 技术栈 */}
+                
                 <div className="flex items-center gap-2">
                   <a href="https://nextjs.org/" target="_blank" rel="noreferrer" className="px-2 py-1 rounded bg-white/2 border border-white/5 text-neutral-400 text-[10px] font-mono hover:text-white hover:border-white/20 hover:bg-white/5 transition-all">
                     Next.js
@@ -68,7 +68,7 @@ export default function RootLayout({
 
                 <span className="hidden md:block text-white/10">|</span>
 
-                {/* Github */}
+                
                 <a href="https://github.com/nopaiseh/nopaiseh" target="_blank" rel="noreferrer" className="text-neutral-400 hover:text-white transition-colors duration-300" aria-label="在GitHub上查看源码">
                   <i className="fab fa-github text-lg hover:text-indigo-400 transition-colors"></i>
                 </a>
