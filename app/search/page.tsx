@@ -1,12 +1,18 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react"; // <-- 新增 Suspense
 import Image from "next/image";
+import { useSearchParams } from "next/navigation"; // <-- 新增 useSearchParams
 import { getSupabaseBrowser } from "@/utils/supabase-client";
 import { Media } from "@/lib/types/Media";
 
-export default function SearchPage() {
-  const [query, setQuery] = useState("");
+// 将原本的 SearchPage 内容放入内部组件
+function SearchContent() {
+  const searchParams = useSearchParams();
+  const initialQuery = searchParams.get("q") || ""; // <-- 从 URL 读取初始关键词
+
+  // 初始化时直接使用 URL 里的关键词
+  const [query, setQuery] = useState(initialQuery);
   const [showAdvanced, setShowAdvanced] = useState(true);
 
   const [genreOptions, setGenreOptions] = useState<string[]>([]);
@@ -17,7 +23,6 @@ export default function SearchPage() {
   const [mediaItems, setMediaItems] = useState<Media[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  // 1. 添加 status 到初始过滤状态中
   const [filters, setFilters] = useState<Record<string, string[]>>({
     type: [],
     status: [], 
@@ -27,6 +32,15 @@ export default function SearchPage() {
     year: [], 
     sort: ["date_desc"], 
   });
+
+  // 监听 URL 变化：如果用户在别的页面点击搜索，URL 改变时更新本地 state
+  useEffect(() => {
+    const urlQuery = searchParams.get("q") || "";
+    if (urlQuery !== query) {
+      setQuery(urlQuery);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
 
   useEffect(() => {
     const fetchOptions = async () => {
@@ -48,82 +62,77 @@ export default function SearchPage() {
   }, []);
 
   useEffect(() => {
-      const fetchMedia = async () => {
-        setIsLoading(true);
+    const fetchMedia = async () => {
+      setIsLoading(true);
 
-        // 构建搜索 / 筛选的 query 参数并调用受控 API
-        const params = new URLSearchParams();
-        if (query) params.set("q", query);
-        
-        if (filters.type && filters.type.length > 0) {
-          params.set("type", filters.type[0].toLowerCase() === "电影" ? "movie" : "tv_series");
-        }
-        
-        if (filters.status && filters.status.length > 0) {
-          const statusMap: Record<string, string> = { "想看": "want_to_watch", "在看": "watching", "已看": "watched" };
-          const mappedStatus = statusMap[filters.status[0]];
-          if (mappedStatus) params.set("status", mappedStatus);
-        }
+      const params = new URLSearchParams();
+      if (query) params.set("q", query);
+      
+      if (filters.type && filters.type.length > 0) {
+        params.set("type", filters.type[0].toLowerCase() === "电影" ? "movie" : "tv_series");
+      }
+      
+      if (filters.status && filters.status.length > 0) {
+        const statusMap: Record<string, string> = { "想看": "want_to_watch", "在看": "watching", "已看": "watched" };
+        const mappedStatus = statusMap[filters.status[0]];
+        if (mappedStatus) params.set("status", mappedStatus);
+      }
 
-        // 使用 .join(",") 将多选项用逗号拼接成字符串发送 (例如: "动作,科幻")
-        if (filters.genre && filters.genre.length > 0) params.set("genre", filters.genre.join(","));
-        if (filters.region && filters.region.length > 0) params.set("region", filters.region.join(","));
-        if (filters.language && filters.language.length > 0) params.set("language", filters.language.join(","));
+      if (filters.genre && filters.genre.length > 0) params.set("genre", filters.genre.join(","));
+      if (filters.region && filters.region.length > 0) params.set("region", filters.region.join(","));
+      if (filters.language && filters.language.length > 0) params.set("language", filters.language.join(","));
 
-        // 分别发送开始年份和结束年份
-        if (filters.year && filters.year.length === 2) {
-          if (filters.year[0]) params.set("startYear", filters.year[0]);
-          if (filters.year[1]) params.set("endYear", filters.year[1]);
-        }
+      if (filters.year && filters.year.length === 2) {
+        if (filters.year[0]) params.set("startYear", filters.year[0]);
+        if (filters.year[1]) params.set("endYear", filters.year[1]);
+      }
 
-        // 加上排序参数！(之前漏掉了这一行)
-        if (filters.sort && filters.sort.length > 0) {
-          params.set("sort", filters.sort[0]);
-        }
+      if (filters.sort && filters.sort.length > 0) {
+        params.set("sort", filters.sort[0]);
+      }
 
-        try {
-          const res = await fetch(`/api/media?${params.toString()}`);
-          const json = await res.json();
+      try {
+        const res = await fetch(`/api/media?${params.toString()}`);
+        const json = await res.json();
 
-          const dataArray = Array.isArray(json) ? json : (json.rows ?? json.data ?? []);
+        const dataArray = Array.isArray(json) ? json : (json.rows ?? json.data ?? []);
 
-          const combinedMedia: Media[] = dataArray.map((item: any) => ({
-            id: String(item.id),
-            title: item.title ?? "",
-            date: item.sort_date ?? item.date ?? item.release_date ?? "",
-            runtime: item.runtime ?? null,
-            rating: item.rating ?? item.average_rating ?? null,
-            genres: item.genres ?? [],
-            languages: item.languages ?? [],
-            regions: item.regions ?? [],
-            series: item.series ?? null,
-            status: item.status ?? undefined,
-            summary: item.summary ?? "",
-            cover_url: item.cover_url ?? "",
-            casts: item.casts ?? [],
-            directors: item.directors ?? [],
-            type: item.type === "movie" ? "movies" : item.type === "tv_series" ? "series" : undefined,
-          } as Media));
+        const combinedMedia: Media[] = dataArray.map((item: any) => ({
+          id: String(item.id),
+          title: item.title ?? "",
+          date: item.sort_date ?? item.date ?? item.release_date ?? "",
+          runtime: item.runtime ?? null,
+          rating: item.rating ?? item.average_rating ?? null,
+          genres: item.genres ?? [],
+          languages: item.languages ?? [],
+          regions: item.regions ?? [],
+          series: item.series ?? null,
+          status: item.status ?? undefined,
+          summary: item.summary ?? "",
+          cover_url: item.cover_url ?? "",
+          casts: item.casts ?? [],
+          directors: item.directors ?? [],
+          type: item.type === "movie" ? "movies" : item.type === "tv_series" ? "series" : undefined,
+        } as Media));
 
-          combinedMedia.sort((a, b) => {
-            const dateA = new Date(a.date || 0).getTime();
-            const dateB = new Date(b.date || 0).getTime();
-            return dateB - dateA;
-          });
+        combinedMedia.sort((a, b) => {
+          const dateA = new Date(a.date || 0).getTime();
+          const dateB = new Date(b.date || 0).getTime();
+          return dateB - dateA;
+        });
 
-          setMediaItems(combinedMedia);
-        } catch (error) {
-          console.error("Failed to fetch media:", error);
-          setMediaItems([]);
-        } finally {
-          setIsLoading(false);
-        }
-      };
+        setMediaItems(combinedMedia);
+      } catch (error) {
+        console.error("Failed to fetch media:", error);
+        setMediaItems([]);
+      } finally {
+        setIsLoading(false);
+      }
+    };
 
-      fetchMedia();
-    }, [query, filters]);
+    fetchMedia();
+  }, [query, filters]);
 
-  // 3. 将“状态”添加到 UI 的筛选按钮列表中
   const BUTTON_CATEGORIES = [
     { id: "type", label: "分类", options: ["电影", "电视剧", "导演", "演员"], multiSelect: true },
     { id: "status", label: "状态", options: ["想看", "在看", "已看"], multiSelect: true },
@@ -363,7 +372,6 @@ export default function SearchPage() {
             <div className="flex items-center gap-4">
                {hasActiveFilters && (
                   <button 
-                    // 确保清空筛选时也重置 status
                     onClick={() => setFilters({ type: [], status: [], genre: [], region: [], language: [], year: [], sort: ["date_desc"] })}
                     className="text-sm text-zinc-500 hover:text-red-500 transition-colors"
                   >
@@ -453,5 +461,14 @@ export default function SearchPage() {
         </main>
       </div>
     </div>
+  );
+}
+
+// 导出带有 Suspense 的主页面组件 (Next.js App Router 规定用到 useSearchParams 的必须包裹)
+export default function SearchPageWrapper() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-black flex items-center justify-center text-white">Loading...</div>}>
+      <SearchContent />
+    </Suspense>
   );
 }
