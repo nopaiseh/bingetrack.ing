@@ -5,7 +5,6 @@ import Image from "next/image";
 import { getSupabaseBrowser } from "@/utils/supabase-client";
 import { Media } from "@/lib/types/Media";
 
-
 export default function SearchPage() {
   const [query, setQuery] = useState("");
   const [showAdvanced, setShowAdvanced] = useState(true);
@@ -18,8 +17,10 @@ export default function SearchPage() {
   const [mediaItems, setMediaItems] = useState<Media[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
+  // 1. 添加 status 到初始过滤状态中
   const [filters, setFilters] = useState<Record<string, string[]>>({
     type: [],
+    status: [], 
     genre: [],
     region: [],
     language: [],
@@ -47,75 +48,85 @@ export default function SearchPage() {
   }, []);
 
   useEffect(() => {
-    const fetchMedia = async () => {
-      setIsLoading(true);
-      const db = getSupabaseBrowser();
+      const fetchMedia = async () => {
+        setIsLoading(true);
 
-      type MediaViewRow = {
-        id: string | number;
-        title?: string;
-        summary?: string;
-        cover_url?: string;
-        sort_date?: string | null;
-        type?: "movie" | "tv_series" | string;
-        rating?: number | null;
-        status?: string;
-        date?: string;
-        genres?: string[] | null;
-        languages?: string[] | null;
-        regions?: string[] | null;
-        casts?: string[] | null;
-        directors?: string[] | null;
+        // 构建搜索 / 筛选的 query 参数并调用受控 API
+        const params = new URLSearchParams();
+        if (query) params.set("q", query);
+        
+        if (filters.type && filters.type.length > 0) {
+          params.set("type", filters.type[0].toLowerCase() === "电影" ? "movie" : "tv_series");
+        }
+        
+        if (filters.status && filters.status.length > 0) {
+          const statusMap: Record<string, string> = { "想看": "want_to_watch", "在看": "watching", "已看": "watched" };
+          const mappedStatus = statusMap[filters.status[0]];
+          if (mappedStatus) params.set("status", mappedStatus);
+        }
+
+        // 使用 .join(",") 将多选项用逗号拼接成字符串发送 (例如: "动作,科幻")
+        if (filters.genre && filters.genre.length > 0) params.set("genre", filters.genre.join(","));
+        if (filters.region && filters.region.length > 0) params.set("region", filters.region.join(","));
+        if (filters.language && filters.language.length > 0) params.set("language", filters.language.join(","));
+
+        // 分别发送开始年份和结束年份
+        if (filters.year && filters.year.length === 2) {
+          if (filters.year[0]) params.set("startYear", filters.year[0]);
+          if (filters.year[1]) params.set("endYear", filters.year[1]);
+        }
+
+        // 加上排序参数！(之前漏掉了这一行)
+        if (filters.sort && filters.sort.length > 0) {
+          params.set("sort", filters.sort[0]);
+        }
+
+        try {
+          const res = await fetch(`/api/media?${params.toString()}`);
+          const json = await res.json();
+
+          const dataArray = Array.isArray(json) ? json : (json.rows ?? json.data ?? []);
+
+          const combinedMedia: Media[] = dataArray.map((item: any) => ({
+            id: String(item.id),
+            title: item.title ?? "",
+            date: item.sort_date ?? item.date ?? item.release_date ?? "",
+            runtime: item.runtime ?? null,
+            rating: item.rating ?? item.average_rating ?? null,
+            genres: item.genres ?? [],
+            languages: item.languages ?? [],
+            regions: item.regions ?? [],
+            series: item.series ?? null,
+            status: item.status ?? undefined,
+            summary: item.summary ?? "",
+            cover_url: item.cover_url ?? "",
+            casts: item.casts ?? [],
+            directors: item.directors ?? [],
+            type: item.type === "movie" ? "movies" : item.type === "tv_series" ? "series" : undefined,
+          } as Media));
+
+          combinedMedia.sort((a, b) => {
+            const dateA = new Date(a.date || 0).getTime();
+            const dateB = new Date(b.date || 0).getTime();
+            return dateB - dateA;
+          });
+
+          setMediaItems(combinedMedia);
+        } catch (error) {
+          console.error("Failed to fetch media:", error);
+          setMediaItems([]);
+        } finally {
+          setIsLoading(false);
+        }
       };
 
-      // 构建搜索 / 筛选的 query 参数并调用受控 API
-      const params = new URLSearchParams();
-      if (query) params.set("q", query);
-      // 类型过滤（示例，若 filters.type 有值则优先使用第一个）
-      if (filters.type && filters.type.length > 0) params.set("type", filters.type[0].toLowerCase() === "电影" ? "movie" : "tv_series");
-      // 其它过滤参数（genre/region/language/year）
-      if (filters.genre && filters.genre.length > 0) params.set("genre", filters.genre[0]);
-      if (filters.region && filters.region.length > 0) params.set("region", filters.region[0]);
-      if (filters.language && filters.language.length > 0) params.set("language", filters.language[0]);
-      if (filters.year && filters.year.length > 0) params.set("year", filters.year[0]);
+      fetchMedia();
+    }, [query, filters]);
 
-      setIsLoading(true);
-      const res = await fetch(`/api/media?${params.toString()}`);
-      const data = await res.json();
-
-      const combinedMedia: Media[] = (data ?? []).map((item: any) => ({
-        id: String(item.id),
-        title: item.title ?? "",
-        date: item.sort_date ?? item.date ?? item.release_date ?? "",
-        runtime: item.runtime ?? null,
-        rating: item.rating ?? item.average_rating ?? null,
-        genres: item.genres ?? [],
-        languages: item.languages ?? [],
-        regions: item.regions ?? [],
-        series: item.series ?? null,
-        status: item.status ?? undefined,
-        summary: item.summary ?? "",
-        cover_url: item.cover_url ?? "",
-        casts: item.casts ?? [],
-        directors: item.directors ?? [],
-        type: item.type === "movie" ? "movies" : item.type === "tv_series" ? "series" : undefined,
-      } as Media));
-
-      combinedMedia.sort((a, b) => {
-        const dateA = new Date(a.date || 0).getTime();
-        const dateB = new Date(b.date || 0).getTime();
-        return dateB - dateA;
-      });
-
-      setMediaItems(combinedMedia);
-      setIsLoading(false);
-    };
-
-    fetchMedia();
-  }, []);
-
+  // 3. 将“状态”添加到 UI 的筛选按钮列表中
   const BUTTON_CATEGORIES = [
     { id: "type", label: "分类", options: ["电影", "电视剧", "导演", "演员"], multiSelect: true },
+    { id: "status", label: "状态", options: ["想看", "在看", "已看"], multiSelect: true },
     { id: "genre", label: "类型", options: genreOptions, multiSelect: true },
     { id: "region", label: "地区", options: regionOptions, multiSelect: true },
     { id: "language", label: "语言", options: languageOptions, multiSelect: true },
@@ -352,7 +363,8 @@ export default function SearchPage() {
             <div className="flex items-center gap-4">
                {hasActiveFilters && (
                   <button 
-                    onClick={() => setFilters({ type: [], genre: [], region: [], language: [], year: [], sort: ["date_desc"] })}
+                    // 确保清空筛选时也重置 status
+                    onClick={() => setFilters({ type: [], status: [], genre: [], region: [], language: [], year: [], sort: ["date_desc"] })}
                     className="text-sm text-zinc-500 hover:text-red-500 transition-colors"
                   >
                     清空筛选
