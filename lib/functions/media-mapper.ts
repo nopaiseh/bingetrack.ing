@@ -6,6 +6,8 @@ export type SupabaseMediaItem = {
   id: string;
   title?: string;
   release_date?: string;
+  sort_date?: string;
+  release_year?: string | number | null;
   release_years?: number | string;
   release_year_range?: string;
   runtime?: number | null;
@@ -22,9 +24,11 @@ export type SupabaseMediaItem = {
   media_regions?: Array<{ regions: { name?: string } }>;
   media_series?: Array<{ name?: string }> | { name?: string };
   media_credits?: Array<{ people?: { name?: string }; role?: string; credit_order?: number | null }>;
-  genres?: string[];
-  languages?: string[];
-  regions?: string[];
+  genres?: string[] | null;
+  languages?: string[] | null;
+  regions?: string[] | null;
+  casts?: string[] | null;
+  directors?: string[] | null;
   season_number?: number;
 };
 
@@ -44,6 +48,10 @@ function flattenRelationNames(value: unknown): string[] {
     return Object.values(value).flatMap(flattenRelationNames);
   }
   return [];
+}
+
+function normalizeStringArray(values?: string[] | null): string[] {
+  return (values ?? []).filter((value): value is string => typeof value === "string" && value.length > 0);
 }
 
 function formatCredits(
@@ -69,41 +77,32 @@ export function mapSupabaseToMedia(
   item: SupabaseMediaItem,
   mediaType: MediaType,
 ): Media {
-  const genres = Array.isArray(item.genres)
-    ? item.genres.filter((name): name is string => typeof name === "string")
-    : flattenRelationNames(item.media_genres);
-
-  const languages = Array.isArray(item.languages)
-    ? item.languages.filter((name): name is string => typeof name === "string")
-    : flattenRelationNames(item.media_languages);
-
-  const regions = Array.isArray(item.regions)
-    ? item.regions.filter((name): name is string => typeof name === "string")
-    : flattenRelationNames(item.media_regions);
+  const genres = item.genres ? normalizeStringArray(item.genres) : flattenRelationNames(item.media_genres);
+  const languages = item.languages ? normalizeStringArray(item.languages) : flattenRelationNames(item.media_languages);
+  const regions = item.regions ? normalizeStringArray(item.regions) : flattenRelationNames(item.media_regions);
 
   return {
     id: String(item.id),
     title: item.title ?? "",
-    date:
-      item.release_year_range != null
-        ? String(item.release_year_range)
-        :
-      item.release_years != null
-        ? String(item.release_years)
-        : item.release_date ?? "",
+    date: String(
+      item.sort_date ??
+      item.release_year_range ??
+      item.release_year ??
+      item.release_years ??
+      item.release_date ??
+      "",
+    ),
     runtime: item.runtime ?? null,
-    rating:
-      item.average_rating ?? item.rating ?? item.tracking?.[0]?.rating ?? null,
+    rating: item.rating ?? item.average_rating ?? item.tracking?.[0]?.rating ?? null,
     genres,
     languages,
     regions,
     series: parseSeriesName(item.media_series),
-    status:
-      item.calculated_status ?? item.status ?? item.tracking?.[0]?.status ?? "",
+    status: item.status ?? item.calculated_status ?? item.tracking?.[0]?.status ?? "",
     summary: item.summary ?? "",
     cover_url: item.cover_url ?? "",
-    casts: formatCredits(item.media_credits, "actor"),
-    directors: formatCredits(item.media_credits, "director"),
+    casts: item.casts ? normalizeStringArray(item.casts) : formatCredits(item.media_credits, "actor"),
+    directors: item.directors ? normalizeStringArray(item.directors) : formatCredits(item.media_credits, "director"),
     type: mediaType,
   };
 }

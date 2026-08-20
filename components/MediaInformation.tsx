@@ -108,14 +108,21 @@ export function MediaMetadata({ media }: { media: Media }) {
   );
 }
 
+type SeasonInfo = {
+  id: number;
+  name: string;
+  year: number;
+  episodeCount: number;
+};
+
 export default function MediaInformation({
   media,
   relatedMedia,
-  seasons
+  seasons,
 }: {
   media: Media;
   relatedMedia: Media[] | null;
-  seasons: any[] | null; // Define the type for seasons if possible
+  seasons: SeasonInfo[] | null;
 }) {
   return (
     <>
@@ -125,7 +132,7 @@ export default function MediaInformation({
         <div className="flex flex-col md:flex-row gap-12 lg:gap-20">
           <MediaPoster media={media} />
 
-          {/* 右侧信息区，包括标题和元数据 */}
+          
           <div className="flex-1 flex flex-col pt-4 md:pt-8">
             <div className="mb-4 md:mb-6">
               <h1 className="text-3xl md:text-4xl font-bold tracking-tight mt-4 mb-6 text-white text-balance">
@@ -167,12 +174,12 @@ export default function MediaInformation({
               </div>
             </div>
 
-            {/* 元数据区，包括类型、地区、语言、导演和主演 */}
+            
             <MediaMetadata media={media} />
           </div>
         </div>
 
-        {/* 剧情简介展示区 */}
+        
         <div className="mb-12 mt-12">
           <h3 className="text-md font-semibold text-neutral-400 uppercase tracking-widest flex items-center gap-2 mb-2">
             <span className="w-1 h-4 bg-white/20 rounded-full"></span>
@@ -186,7 +193,7 @@ export default function MediaInformation({
       {seasons && (
         <>
       <div className="flex items-center gap-2 mb-2">
-        <div className="w-1 h-4 bg-red-500 rounded-sm"></div> {/* 使用类似 Tailwind green-400 的颜色匹配剧情简介前的竖条 */}
+        <div className="w-1 h-4 bg-red-500 rounded-sm"></div> 
         <h3 className="text-zinc-200 font-bold text-lg">剧集列表</h3>
       </div>
 
@@ -195,7 +202,7 @@ export default function MediaInformation({
           <button
             key={season.id}
             className="group flex flex-col text-left bg-transparent border border-zinc-800 rounded-lg p-4 cursor-pointer hover:border-zinc-500 hover:bg-zinc-900/30 transition-all duration-200"
-            // onClick={() => handleSeasonClick(season.id)} // 预留点击事件
+
           >
             <h4 className="text-zinc-200 font-medium text-base mb-2 group-hover:text-white">
               {season.name}
@@ -211,7 +218,7 @@ export default function MediaInformation({
       </>
       )}
 
-        {/* 系列作品展示区 */}
+        
         {media.series && (
           <div className="space-y-12">
             <MediaRow

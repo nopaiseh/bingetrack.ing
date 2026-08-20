@@ -1,12 +1,11 @@
 "use client";
 import MediaRow from "@/components/MediaRow";
 import { Media } from "@/lib/types/Media";
-import { Summary } from "@/lib/types/Summary";
-import { mapSupabaseToMedia, SupabaseMediaItem } from "@/lib/functions/mediaMapper";
+import { Summary } from "@/lib/types/media-summary";
 import { useState, useRef, useEffect } from "react";
-import { getSupabaseBrowser } from "@/utils/supabase-client";
 
-export default function HomeDashboard({ summary }: { summary: Summary[] }) {
+// 接收服务端传入的 topMovies / topSeries，避免在客户端重复查询
+export default function HomeDashboard({ summary, topMovies, topSeries }: { summary: Summary[]; topMovies: Media[]; topSeries: Media[] }) {
   const [activeTab, setActiveTab] = useState("总览");
   const tabs = ["总览", "电影", "电视剧"];
 
@@ -15,9 +14,6 @@ export default function HomeDashboard({ summary }: { summary: Summary[] }) {
   const dropdownRef = useRef<HTMLDivElement>(null);
   const [searchQuery, setSearchQuery] = useState("");
 
-  const [topMovies, setTopMovies] = useState<Media[]>([]);
-  const [topSeries, setTopSeries] = useState<Media[]>([]);
-  const [isLoadingMedia, setIsLoadingMedia] = useState(false);
 
   const filteredYears = summary
     .map((item) => item.release_year)
@@ -29,7 +25,6 @@ export default function HomeDashboard({ summary }: { summary: Summary[] }) {
     (item) => String(item.release_year) === String(selectedYear),
   );
 
-  // 电影统计
   const watchedMovies = currentYearData?.watched_movies || 0;
   const totalMovies = currentYearData?.total_movies || 1;
   const moviesPercent = Math.min(
@@ -43,7 +38,6 @@ export default function HomeDashboard({ summary }: { summary: Summary[] }) {
     100,
   );
 
-  // 电视剧统计
   const watchedSeries = currentYearData?.watched_series || 0;
   const totalSeries = currentYearData?.total_series || 1;
   const seriesPercent = Math.min(
@@ -57,7 +51,6 @@ export default function HomeDashboard({ summary }: { summary: Summary[] }) {
     100,
   );
 
-  // 点击外部关闭 Dropdown
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (
@@ -72,110 +65,11 @@ export default function HomeDashboard({ summary }: { summary: Summary[] }) {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // 获取前十电影
-  useEffect(() => {
-    async function fetchTopMovies() {
-      setIsLoadingMedia(true);
-      try {
-        let query = getSupabaseBrowser()
-          .from("media_info")
-          .select(
-            `id, title, summary, cover_url, release_date, type, status, rating,
-            media_genres ( genres ( name ) ),
-            media_languages ( languages ( name ) ),
-            media_regions ( regions ( name ) ),
-            media_credits ( people ( name ), role, credit_order )`,
-          )
-          .eq("type", "movie")
-          .order("rating", { ascending: false })
-          .limit(10);
 
-        if (selectedYear && selectedYear !== "All Time") {
-          query = query
-            .gte("release_date", `${selectedYear}-01-01`)
-            .lte("release_date", `${selectedYear}-12-31`);
-        }
-
-        const { data: topMoviesData, error } = (await query) as {
-          data: SupabaseMediaItem[] | null;
-          error: unknown;
-        };
-
-        if (error) {
-          console.error("Supabase query error: ", error);
-          return;
-        }
-
-        setTopMovies(
-          (topMoviesData ?? []).map((item) =>
-            mapSupabaseToMedia(item, "movies"),
-          ) as Media[],
-        );
-      } catch (error) {
-        console.error("Error fetching top movies:", error);
-      } finally {
-        setIsLoadingMedia(false);
-      }
-    }
-
-    if (activeTab === "电影") {
-      fetchTopMovies();
-    }
-  }, [selectedYear, activeTab]);
-
-  // 获取前十电视剧
-  useEffect(() => {
-    async function fetchTopSeries() {
-      setIsLoadingMedia(true);
-      try {
-        let query = getSupabaseBrowser()
-          .from("tv_series_stats")
-          .select(
-            `id, title, summary, cover_url, earliest_release_date, type, status, average_rating, release_year_range,
-            media_genres ( genres ( name ) ),
-            media_languages ( languages ( name ) )`
-          )
-          // Order by the dynamically calculated average rating from the episodes
-          .order("average_rating", { ascending: false, nullsFirst: false })
-          .limit(10);
-
-        // Filter by the dynamically calculated earliest episode release date
-        if (selectedYear && selectedYear !== "All Time") {
-          query = query
-            .gte("earliest_release_date", `${selectedYear}-01-01`)
-            .lte("earliest_release_date", `${selectedYear}-12-31`);
-        }
-
-        const { data: topSeriesData, error } = (await query) as {
-          data: SupabaseMediaItem[] | null;
-          error: unknown;
-        };
-
-        if (error) {
-          console.error("Supabase query error: ", error);
-          return;
-        }
-
-        setTopSeries(
-          (topSeriesData ?? []).map((item) =>
-            mapSupabaseToMedia(item, "series"),
-          ) as Media[],
-        );
-      } catch (error) {
-        console.error("Error fetching top series:", error);
-      } finally {
-        setIsLoadingMedia(false);
-      }
-    }
-
-    if (activeTab === "电视剧") {
-      fetchTopSeries();
-    }
-  }, [selectedYear, activeTab]);
 
   return (
     <div className="container mx-auto px-6 md:px-8 max-w-7xl py-12 flex flex-col gap-6 animate-fade-in pt-24">
-      {/* 头部控制区 */}
+      
       <div className="flex flex-col gap-6 md:gap-8 mb-4">
         <div>
           <h1 className="text-4xl md:text-6xl font-mono font-bold tracking-tighter flex items-baseline gap-3">
@@ -187,7 +81,7 @@ export default function HomeDashboard({ summary }: { summary: Summary[] }) {
         </div>
 
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-white/5 pb-5">
-          {/* 选项卡 */}
+          
           <div className="flex gap-1 bg-[#121212] p-1.5 rounded-xl border border-white/10 shadow-inner">
             {tabs.map((tab) => (
               <button
@@ -200,7 +94,7 @@ export default function HomeDashboard({ summary }: { summary: Summary[] }) {
             ))}
           </div>
 
-          {/* 可搜索的年份 Dropdown */}
+          
           <div className="relative" ref={dropdownRef}>
             <div
               onClick={() => setIsDropdownOpen(true)}
@@ -258,9 +152,9 @@ export default function HomeDashboard({ summary }: { summary: Summary[] }) {
             key="overview"
             className="animate-fade-in flex flex-col gap-4 md:gap-6"
           >
-            {/* 整体总览核心数据区 */}
+            
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
-              {/* 总计已看时长 */}
+              
               <div className="bg-white/5 border border-white/10 rounded-2xl p-6 flex flex-col justify-between transition-all duration-300 hover:-translate-y-1 hover:bg-white/10 hover:border-white/20 hover:shadow-xl hover:shadow-black/50 group">
                 <div>
                   <div className="text-sm text-neutral-400 mb-2 flex items-center gap-2">
@@ -289,7 +183,7 @@ export default function HomeDashboard({ summary }: { summary: Summary[] }) {
                 </p>
               </div>
 
-              {/* 剩余未看总时长 */}
+              
               <div className="bg-white/5 border border-white/10 rounded-2xl p-6 flex flex-col justify-between transition-all duration-300 hover:-translate-y-1 hover:bg-white/10 hover:border-white/20 hover:shadow-xl hover:shadow-black/50 group">
                 <div>
                   <div className="text-sm text-neutral-400 mb-2 flex items-center gap-2">
@@ -314,7 +208,7 @@ export default function HomeDashboard({ summary }: { summary: Summary[] }) {
                 </p>
               </div>
 
-              {/* 整体库存消化进度 */}
+              
               <div className="bg-white/5 border border-white/10 rounded-2xl p-6 flex flex-col justify-between transition-all duration-300 hover:-translate-y-1 hover:bg-white/10 hover:border-white/20 hover:shadow-xl hover:shadow-black/50 group">
                 <div>
                   <div className="text-sm text-neutral-400 mb-2 flex items-center gap-2">
@@ -348,7 +242,7 @@ export default function HomeDashboard({ summary }: { summary: Summary[] }) {
               </div>
             </div>
 
-            {/* ---------------- 电影看板 ---------------- */}
+            
             <div className="bg-white/5 border border-white/10 rounded-2xl p-6 flex flex-col gap-6 transition-all duration-300 hover:-translate-y-1 hover:bg-white/10 hover:border-white/20 hover:shadow-xl hover:shadow-black/50 group">
               <div className="flex items-center border-b border-white/5 pb-3 gap-2">
                 <div className="bg-white/10 p-2 rounded-lg flex items-center justify-center group-hover:bg-red-500/10 group-hover:text-red-400 transition-colors duration-300">
@@ -388,7 +282,7 @@ export default function HomeDashboard({ summary }: { summary: Summary[] }) {
                 </div>
               </div>
 
-              {/* 电影进度条 */}
+              
               <div className="w-full h-2 bg-white/10 rounded-full overflow-hidden">
                 <div
                   className="h-full bg-linear-to-r from-red-600 to-red-400 shadow-[0_0_12px_rgba(239,68,68,0.4)] rounded-full"
@@ -397,7 +291,7 @@ export default function HomeDashboard({ summary }: { summary: Summary[] }) {
               </div>
             </div>
 
-            {/* ---------------- 电视剧看板 ---------------- */}
+            
             <div className="bg-white/5 border border-white/10 rounded-2xl p-6 flex flex-col gap-6 transition-all duration-300 hover:-translate-y-1 hover:bg-white/10 hover:border-white/20 hover:shadow-xl hover:shadow-black/50 group">
               <div className="flex items-center border-b border-white/5 pb-3 gap-2">
                 <div className="bg-white/10 p-2 rounded-lg flex items-center justify-center group-hover:bg-red-500/10 group-hover:text-red-400 transition-colors duration-300">
@@ -408,7 +302,7 @@ export default function HomeDashboard({ summary }: { summary: Summary[] }) {
                 </span>
               </div>
 
-              {/* 顶部：总时长统计 */}
+              
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 <div>
                   <div className="text-xs text-neutral-500 mb-1">时长</div>
@@ -428,9 +322,9 @@ export default function HomeDashboard({ summary }: { summary: Summary[] }) {
                 </div>
               </div>
 
-              {/* 状态明细拆分 */}
+              
               <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mt-2">
-                {/* 1. 已看状态 */}
+                
                 <div className="bg-black/20 border border-white/5 rounded-xl p-5 flex flex-col gap-4 transition-all duration-300 hover:bg-white/5 hover:border-red-500/30">
                   <div className="text-neutral-400 font-bold text-sm flex items-center gap-2 border-b border-white/5 pb-2">
                     <i className="fas fa-check-circle" /> 已看过
@@ -466,7 +360,7 @@ export default function HomeDashboard({ summary }: { summary: Summary[] }) {
                   </div>
                 </div>
 
-                {/* 2. 追看状态 (Watching) */}
+                
                 <div className="bg-black/20 border border-white/5 rounded-xl p-5 flex flex-col gap-4 transition-all duration-300 hover:bg-white/5 hover:border-red-500/30">
                   <div className="text-neutral-400 font-bold text-sm flex items-center gap-2 border-b border-white/5 pb-2">
                     <i className="fas fa-play-circle" /> 正在看
@@ -502,7 +396,7 @@ export default function HomeDashboard({ summary }: { summary: Summary[] }) {
                   </div>
                 </div>
 
-                {/* 3. 未看状态 (Unwatched) */}
+                
                 <div className="bg-black/20 border border-white/5 rounded-xl p-5 flex flex-col gap-4 transition-all duration-300 hover:bg-white/5 hover:border-red-500/30">
                   <div className="text-neutral-400 font-bold text-sm flex items-center gap-2 border-b border-white/5 pb-2">
                     <i className="fas fa-pause-circle" /> 想要看
@@ -548,7 +442,7 @@ export default function HomeDashboard({ summary }: { summary: Summary[] }) {
             className="animate-fade-in flex flex-col gap-4 md:gap-6"
           >
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4 md:gap-6">
-              {/* 电影观看记录 */}
+              
               <div className="col-span-1 md:col-span-3 bg-white/5 border border-white/10 rounded-2xl p-6 flex flex-col justify-center transition-all duration-300 hover:-translate-y-1 hover:bg-white/10 hover:border-white/20 hover:shadow-xl hover:shadow-black/50 group">
                 <div className="text-neutral-500 mb-4 flex justify-between items-center">
                   <i className="text-xl">{selectedYear}上映的电影，我看了</i>
@@ -781,32 +675,24 @@ export default function HomeDashboard({ summary }: { summary: Summary[] }) {
             </div>
 
             <div className="space-y-12 mt-4">
-              {/* 前十电影 */}
-              {isLoadingMedia ? (
-                <div className="flex justify-center items-center py-12 text-neutral-500 animate-pulse">
-                  <i className="fas fa-circle-notch fa-spin mr-3" />
-                  正在加载{selectedYear}最佳电影...
-                </div>
-              ) : (
-                <MediaRow
-                  title="影史精选"
-                  items={topMovies}
-                  viewAllLink={`/movies/watched?year=${selectedYear}`}
-                  type="movies"
-                />
-              )}
+              <MediaRow
+                title="影史精选"
+                items={topMovies}
+                viewAllLink={`/movies/watched?year=${selectedYear}`}
+                type="movies"
+              />
             </div>
           </div>
         )}
 
-        {/* 电视剧 */}
+        
         {activeTab === "电视剧" && (
           <div
             key="tv-series"
             className="animate-fade-in flex flex-col gap-4 md:gap-6"
           >
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4 md:gap-6">
-              {/* 电视剧观看记录 */}
+              
               <div className="col-span-1 md:col-span-3 bg-white/5 border border-white/10 rounded-2xl p-6 flex flex-col justify-center transition-all duration-300 hover:-translate-y-1 hover:bg-white/10 hover:border-white/20 hover:shadow-xl hover:shadow-black/50 group">
                 <div className="text-neutral-500 mb-4 flex justify-between items-center">
                   <i className="text-xl">{selectedYear}上映的电视剧，我看了</i>
@@ -1039,20 +925,12 @@ export default function HomeDashboard({ summary }: { summary: Summary[] }) {
             </div>
 
             <div className="space-y-12 mt-4">
-              {/* 前十电视剧 */}
-              {isLoadingMedia ? (
-                <div className="flex justify-center items-center py-12 text-neutral-500 animate-pulse">
-                  <i className="fas fa-circle-notch fa-spin mr-3" />
-                  正在加载{selectedYear}最佳电视剧...
-                </div>
-              ) : (
-                <MediaRow
-                  title="影史精选"
-                  items={topSeries}
-                  viewAllLink={`/series/watched?year=${selectedYear}`}
-                  type="series"
-                />
-              )}
+              <MediaRow
+                title="影史精选"
+                items={topSeries}
+                viewAllLink={`/series/watched?year=${selectedYear}`}
+                type="series"
+              />
             </div>
           </div>
         )}

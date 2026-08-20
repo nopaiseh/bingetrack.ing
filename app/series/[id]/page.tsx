@@ -1,16 +1,15 @@
 import { notFound } from "next/navigation";
-import { getMedia } from "@/lib/functions/GetMedia";
+import { getMediaById, getRelatedBySeries } from "@/lib/functions/media-repo";
 import MediaInformation from "@/components/MediaInformation";
-import { getMediaList } from "@/lib/functions/GetMediaList";
 import { Media } from "@/lib/types/Media";
 
 export const revalidate = 60;
 
 export default async function SeriesDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const series = await getMedia(id, "series");
+  const series = await getMediaById(id, "series");
   if (!series) notFound();
-  const relatedMedia: Media[] | null =  await getMediaList({ seriesName: "", currentId: series.id, mode: "series" });
+  const relatedMedia: Media[] | null =  await getRelatedBySeries("", series.id, "series");
   const seasons = [
     { id: 1, name: '第一季', year: 2009, episodeCount: 20 },
     { id: 2, name: '第二季', year: 2011, episodeCount: 20 },
@@ -26,7 +25,7 @@ export default async function SeriesDetailPage({ params }: { params: Promise<{ i
 
   return (
     <div className="relative bg-[#060606] text-neutral-200 selection:bg-neutral-700 selection:text-white font-sans overflow-hidden">
-      {/* 页面内容容器 */}
+      
       <MediaInformation media={series} relatedMedia={relatedMedia} seasons={seasons} />
     </div>
   );
