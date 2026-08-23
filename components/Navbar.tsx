@@ -14,7 +14,7 @@ export default function Navbar() {
   const navItems = [
     { name: "首页", href: "/" },
     { name: "电影", href: "/movies" },
-    { name: "电视剧", href: "/series" }
+    { name: "电视剧", href: "/series" },
   ];
 
   const isActive = (href: string) => {
@@ -23,22 +23,29 @@ export default function Navbar() {
 
   // 处理搜索提交
   const handleSearch = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    const formData = new FormData(e.currentTarget);
-    const q = formData.get("q") as string;
-    
-    if (q && q.trim()) {
-      router.push(`/search?q=${encodeURIComponent(q.trim())}`);
-      closeMenu(); // 如果是在移动端搜索，顺便关掉菜单
-    }
-  };
+  e.preventDefault(); // 阻止表单默认的刷新提交
+  
+  // 获取表单里 name="q" 的 input 的值
+  const formData = new FormData(e.currentTarget);
+  const query = formData.get("q")?.toString().trim() || "";
+
+  // 核心逻辑：有字就带参数搜，没字就直接去片库浏览
+  if (query) {
+    router.push(`/search?q=${encodeURIComponent(query)}`);
+  } else {
+    router.push('/search'); 
+  }
+};
 
   return (
     <nav className="fixed w-full z-50 top-0 left-0 bg-[#0a0a0a]/40 backdrop-blur-md border-b border-white/5 transition-all duration-300">
       <div className="flex items-center justify-between w-full mx-auto px-6 md:px-8 h-16 max-w-7xl">
-        
         <div className="flex items-center gap-10">
-          <Link href="/" className="flex items-center gap-2.5 group cursor-pointer" onClick={closeMenu}>
+          <Link
+            href="/"
+            className="flex items-center gap-2.5 group cursor-pointer"
+            onClick={closeMenu}
+          >
             <i className="fas fa-terminal text-red-500 text-base group-hover:rotate-12 transition-transform duration-300"></i>
             <span className="font-mono text-xl text-white font-light tracking-tight">
               <span className="text-white">bingewatch</span>
@@ -48,9 +55,9 @@ export default function Navbar() {
 
           <div className="hidden md:flex items-center gap-8 text-sm font-medium">
             {navItems.map((item) => (
-              <Link 
+              <Link
                 key={item.name}
-                href={item.href} 
+                href={item.href}
                 className={`transition-colors duration-300 ${
                   isActive(item.href)
                     ? "text-white font-bold"
@@ -64,12 +71,17 @@ export default function Navbar() {
         </div>
 
         <div className="flex items-center gap-5">
-          
           {/* 桌面端搜索框：加上 onSubmit */}
-          <form onSubmit={handleSearch} className="relative group hidden sm:block">
-            <div className="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none">
+          <form
+            onSubmit={handleSearch}
+            className="relative group hidden sm:block"
+          >
+            <button
+              type="submit"
+              className="absolute inset-y-0 left-0 flex items-center pl-3.5 cursor-pointer z-10"
+            >
               <i className="fas fa-search text-neutral-500 group-focus-within:text-neutral-300 transition-colors"></i>
-            </div>
+            </button>
             <input
               name="q"
               type="text"
@@ -78,25 +90,29 @@ export default function Navbar() {
             />
           </form>
 
-          <button 
+          <button
             className="md:hidden flex items-center justify-center text-neutral-400 hover:text-white p-2 w-10 h-10 outline-none"
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
           >
-            <i className={`fas ${isMobileMenuOpen ? 'fa-times text-2xl' : 'fa-bars text-xl'} transition-all duration-300`}></i>
+            <i
+              className={`fas ${isMobileMenuOpen ? "fa-times text-2xl" : "fa-bars text-xl"} transition-all duration-300`}
+            ></i>
           </button>
         </div>
       </div>
 
-      <div 
+      <div
         className={`md:hidden overflow-hidden transition-all duration-300 ease-in-out bg-[#0a0a0a]/95 backdrop-blur-xl border-b border-white/10 ${
-          isMobileMenuOpen ? "max-h-64 opacity-100 py-4" : "max-h-0 opacity-0 py-0 border-transparent"
+          isMobileMenuOpen
+            ? "max-h-64 opacity-100 py-4"
+            : "max-h-0 opacity-0 py-0 border-transparent"
         }`}
       >
         <div className="flex flex-col px-6 gap-4 text-base font-medium">
           {navItems.map((item) => (
-            <Link 
+            <Link
               key={item.name}
-              href={item.href} 
+              href={item.href}
               className={`block py-2 ${
                 isActive(item.href)
                   ? "text-white font-bold"
@@ -107,12 +123,18 @@ export default function Navbar() {
               {item.name}
             </Link>
           ))}
-          
-          {/* 移动端搜索框：加上 onSubmit */}
-          <form onSubmit={handleSearch} className="relative mt-2 sm:hidden">
-            <div className="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none">
-              <i className="fas fa-search text-neutral-500"></i>
-            </div>
+
+          <form
+            onSubmit={handleSearch}
+            className="relative mt-2 sm:hidden group"
+          >
+            <button
+              type="submit"
+              className="absolute inset-y-0 left-0 flex items-center pl-3.5 cursor-pointer z-10"
+            >
+              <i className="fas fa-search text-neutral-500 group-focus-within:text-white group-hover:text-white transition-colors"></i>
+            </button>
+
             <input
               name="q"
               type="text"

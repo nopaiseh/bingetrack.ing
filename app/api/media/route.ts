@@ -1,21 +1,24 @@
 import { NextResponse } from "next/server";
-import { fetchMediaListServer } from "@/lib/functions/media-repo";
+import { searchMediaServer } from "@/lib/functions/media-repo";
 
 export async function GET(request: Request) {
   try {
-    const url = new URL(request.url);
-    const q = url.searchParams.get("q") || undefined;
-    const type = url.searchParams.get("type") || undefined;
-    const genre = url.searchParams.get("genre") || undefined;
-    const region = url.searchParams.get("region") || undefined;
-    const language = url.searchParams.get("language") || undefined;
-    const year = url.searchParams.get("year") || undefined;
-    const sort = url.searchParams.get("sort") || undefined;
-    const limit = Number(url.searchParams.get("limit") || 50);
-    const offset = Number(url.searchParams.get("offset") || 0);
+    const { searchParams } = new URL(request.url);
+    
+    const params = {
+      q: searchParams.get("q") || undefined,
+      type: searchParams.get("type") || undefined,
+      status: searchParams.get("status") || undefined,
+      genre: searchParams.get("genre") || undefined,
+      region: searchParams.get("region") || undefined,
+      language: searchParams.get("language") || undefined,
+      startYear: searchParams.get("startYear") || undefined,
+      endYear: searchParams.get("endYear") || undefined,
+      sort: searchParams.get("sort") || undefined,
+    };
 
-    const { rows, total } = await fetchMediaListServer({ type, genre, region, language, year, q, sort, limit, offset });
-    return NextResponse.json({ rows, total, limit, offset });
+    const results = await searchMediaServer(params);
+    return NextResponse.json(results);
   } catch (err) {
     return NextResponse.json({ error: String(err) }, { status: 500 });
   }

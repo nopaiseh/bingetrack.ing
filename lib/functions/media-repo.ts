@@ -147,21 +147,18 @@ export async function fetchTopMediaServer(mediaType: "movie" | "tv_series", year
   }));
 }
 
-// 修复函数签名，使其能接收包含所有过滤条件的对象
 export async function searchMediaServer(opts: any = {}): Promise<{ rows: Media[]; total: number }> {
   return fetchMediaListServer(opts);
 }
 
-// 支持过滤、分页和排序的通用查询
-// 支持过滤、分页和排序的通用查询
 export async function fetchMediaListServer(opts: {
-  type?: "movie" | "tv_series" | string;
+  type?: string | null;
+  status?: string | null;
   genre?: string | null;
   region?: string | null;
   language?: string | null;
   startYear?: string | null; 
-  endYear?: string | null;   
-  status?: string | null;
+  endYear?: string | null;
   q?: string | null;
   sort?: string | null; 
   limit?: number;
@@ -169,11 +166,11 @@ export async function fetchMediaListServer(opts: {
 }): Promise<{ rows: Media[]; total: number }> {
   const db = getSupabaseServer();
   const {
-    type, genre, region, language, startYear, endYear, status, q, sort, limit = 50, offset = 0,
+    type, status, genre, region, language, startYear, endYear, q, sort, limit = 50, offset = 0,
   } = opts || {};
 
   // 1. 初始化缓存变量
-  const cacheKey = JSON.stringify({ type, genre, region, language, startYear, endYear, status, q, sort, limit, offset });
+  const cacheKey = JSON.stringify({ type, status, genre, region, language, startYear, endYear, q, sort, limit, offset });
   const now = Date.now();
 
   // 2. 内存缓存读取机制
@@ -192,17 +189,12 @@ export async function fetchMediaListServer(opts: {
   const applyFilters = (qBuilder: any) => {
     let queryObj = qBuilder;
     
-    if (type) queryObj = queryObj.eq("type", type);
+    if (type) queryObj = queryObj.in("type", type.split(","));
+    if (status) queryObj = queryObj.in("status", status.split(","));
     
-    if (status) {
-      if (status === 'untracked') queryObj = queryObj.is("status", null);
-      else queryObj = queryObj.eq("status", status);
-    }
-
-    // 将逗号分隔的字符串还原为数组，Supabase 的 .contains 原生支持数组匹配多项
-    if (genre) queryObj = queryObj.contains("genres", genre.split(","));
-    if (region) queryObj = queryObj.contains("regions", region.split(","));
-    if (language) queryObj = queryObj.contains("languages", language.split(","));
+    if (genre) queryObj = queryObj.overlaps("genres", genre.split(","));
+    if (region) queryObj = queryObj.overlaps("regions", region.split(","));
+    if (language) queryObj = queryObj.overlaps("languages", language.split(","));
 
     // 灵活应用年份区间过滤
     if (startYear) queryObj = queryObj.gte("sort_date", `${startYear}-01-01`);
@@ -217,16 +209,13 @@ export async function fetchMediaListServer(opts: {
       if (sort) {
         const [field, order] = sort.split("_");
         const ascending = order === "asc";
-        // 如果排序字段是日期
+        
         if (field === "date") {
-          queryObj = queryObj.order("sort_date", { ascending });
-        } 
-        // 如果排序字段是评分
-        else if (field === "rating") {
-          queryObj = queryObj.order("rating", { ascending });
+          queryObj = queryObj.order("sort_date", { ascending, nullsFirst: false });
+        } else if (field === "rating") {
+          queryObj = queryObj.order("rating", { ascending, nullsFirst: false });
         }
       } else {
-        // 默认按日期降序
         queryObj = queryObj.order("sort_date", { ascending: false, nullsFirst: false });
       }
     }

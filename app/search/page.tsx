@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useEffect, Suspense } from "react"; // <-- 新增 Suspense
+import Link from "next/link";
+import { useState, useEffect, Suspense } from "react";
 import Image from "next/image";
-import { useSearchParams } from "next/navigation"; // <-- 新增 useSearchParams
+import { useSearchParams } from "next/navigation";
 import { getSupabaseBrowser } from "@/utils/supabase-client";
 import { Media } from "@/lib/types/Media";
 
@@ -69,13 +70,19 @@ function SearchContent() {
       if (query) params.set("q", query);
       
       if (filters.type && filters.type.length > 0) {
-        params.set("type", filters.type[0].toLowerCase() === "电影" ? "movie" : "tv_series");
+        const typeMap: Record<string, string> = { "电影": "movie", "电视剧": "tv_series" };
+        const mappedTypes = filters.type.map(t => typeMap[t]).filter(Boolean);
+        if (mappedTypes.length > 0) {
+          params.set("type", mappedTypes.join(","));
+        }
       }
       
       if (filters.status && filters.status.length > 0) {
         const statusMap: Record<string, string> = { "想看": "want_to_watch", "在看": "watching", "已看": "watched" };
-        const mappedStatus = statusMap[filters.status[0]];
-        if (mappedStatus) params.set("status", mappedStatus);
+        const mappedStatuses = filters.status.map(s => statusMap[s]).filter(Boolean);
+        if (mappedStatuses.length > 0) {
+          params.set("status", mappedStatuses.join(","));
+        }
       }
 
       if (filters.genre && filters.genre.length > 0) params.set("genre", filters.genre.join(","));
@@ -112,14 +119,8 @@ function SearchContent() {
           cover_url: item.cover_url ?? "",
           casts: item.casts ?? [],
           directors: item.directors ?? [],
-          type: item.type === "movie" ? "movies" : item.type === "tv_series" ? "series" : undefined,
+          type: item.type
         } as Media));
-
-        combinedMedia.sort((a, b) => {
-          const dateA = new Date(a.date || 0).getTime();
-          const dateB = new Date(b.date || 0).getTime();
-          return dateB - dateA;
-        });
 
         setMediaItems(combinedMedia);
       } catch (error) {
@@ -397,8 +398,11 @@ function SearchContent() {
               ))
             ) : mediaItems.length > 0 ? (
               mediaItems.map((item) => (
-                <div key={item.id} className="group flex flex-col bg-zinc-900 border border-zinc-800/50 rounded-xl overflow-hidden cursor-pointer shadow-lg shadow-black/50 transition-all duration-300 hover:border-zinc-600 hover:-translate-y-1">
-                  
+                <Link 
+                  key={item.id} 
+                  href={`/${item.type}/${item.id}`} 
+                  className="group flex flex-col bg-zinc-900 border border-zinc-800/50 rounded-xl overflow-hidden cursor-pointer shadow-lg shadow-black/50 transition-all duration-300 hover:border-zinc-600 hover:-translate-y-1"
+                >  
                   
                   <div className="w-full aspect-[2/3] bg-neutral-900 relative flex items-center justify-center overflow-hidden">
                     {item.cover_url ? (
@@ -450,7 +454,7 @@ function SearchContent() {
                       ))}
                     </div>
                   </div>
-                </div>
+                </Link>
               ))
             ) : (
               <div className="col-span-full py-20 text-center text-zinc-500">
