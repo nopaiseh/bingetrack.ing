@@ -15,6 +15,8 @@ export async function GET(request: Request) {
       startYear: searchParams.get("startYear") || undefined,
       endYear: searchParams.get("endYear") || undefined,
       sort: searchParams.get("sort") || undefined,
+      limit: searchParams.get("limit") ? parseInt(searchParams.get("limit")!) : undefined,
+      offset: searchParams.get("offset") ? parseInt(searchParams.get("offset")!) : undefined,
     };
 
     const results = await searchMediaServer(params);

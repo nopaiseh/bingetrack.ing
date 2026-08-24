@@ -1,108 +1,33 @@
-import { Media } from "@/lib/types/Media";
+import { Media, ViewAllMediaRow } from "@/lib/types";
 
-export type MediaType = "movies" | "series";
-
-export type SupabaseMediaItem = {
-  id: string;
-  title?: string;
-  release_date?: string;
-  sort_date?: string;
-  release_year?: string | number | null;
-  release_years?: number | string;
-  release_year_range?: string;
-  runtime?: number | null;
-  type?: string;
-  summary?: string;
-  cover_url?: string;
-  average_rating?: number | null;
-  rating?: number | null;
-  status?: string;
-  calculated_status?: string;
-  tracking?: Array<{ status?: string; rating?: number | null }>;
-  media_genres?: Array<{ genres: { name?: string } }>;
-  media_languages?: Array<{ languages: { name?: string } }>;
-  media_regions?: Array<{ regions: { name?: string } }>;
-  media_series?: Array<{ name?: string }> | { name?: string };
-  media_credits?: Array<{ people?: { name?: string }; role?: string; credit_order?: number | null }>;
-  genres?: string[] | null;
-  languages?: string[] | null;
-  regions?: string[] | null;
-  casts?: string[] | null;
-  directors?: string[] | null;
-  season_number?: number;
-};
-
-function hasNameField(value: unknown): value is { name?: unknown } {
-  return typeof value === "object" && value !== null && "name" in value;
-}
-
-function flattenRelationNames(value: unknown): string[] {
-  if (!value) return [];
-  if (Array.isArray(value)) {
-    return value.flatMap(flattenRelationNames);
-  }
-  if (hasNameField(value) && typeof value.name === "string") {
-    return [value.name];
-  }
-  if (typeof value === "object" && value !== null) {
-    return Object.values(value).flatMap(flattenRelationNames);
-  }
-  return [];
-}
-
-function normalizeStringArray(values?: string[] | null): string[] {
-  return (values ?? []).filter((value): value is string => typeof value === "string" && value.length > 0);
-}
-
-function formatCredits(
-  credits: SupabaseMediaItem["media_credits"],
-  role: string,
-): string[] {
-  return (credits ?? [])
-    .filter((credit) => credit.role === role)
-    .sort((a, b) => (a.credit_order ?? 0) - (b.credit_order ?? 0))
-    .map((credit) => credit.people?.name)
-    .filter((name): name is string => typeof name === "string");
-}
-
-function parseSeriesName(value: SupabaseMediaItem["media_series"]): string | null {
-  if (!value) return null;
-  if (Array.isArray(value)) {
-    return value[0]?.name ?? null;
-  }
-  return value.name ?? null;
-}
-
-export function mapSupabaseToMedia(
-  item: SupabaseMediaItem,
-  mediaType: MediaType,
+/**
+ * Maps a flat row from the `v_all_media` view to the frontend `Media` object.
+ */
+export function mapViewRowToMedia(
+  item: ViewAllMediaRow,
+  overrideSeries?: string | null,
+  overrideType?: "movies" | "series",
 ): Media {
-  const genres = item.genres ? normalizeStringArray(item.genres) : flattenRelationNames(item.media_genres);
-  const languages = item.languages ? normalizeStringArray(item.languages) : flattenRelationNames(item.media_languages);
-  const regions = item.regions ? normalizeStringArray(item.regions) : flattenRelationNames(item.media_regions);
+  const mediaType: "movies" | "series" =
+    overrideType ??
+    (item.type === "movie" || item.type === "movies" ? "movies" : "series");
 
   return {
     id: String(item.id),
     title: item.title ?? "",
-    date: String(
-      item.sort_date ??
-      item.release_year_range ??
-      item.release_year ??
-      item.release_years ??
-      item.release_date ??
-      "",
-    ),
+    date: String(item.sort_date ?? item.release_year ?? item.release_date ?? ""),
+    release_year: item.release_year ?? "",
     runtime: item.runtime ?? null,
-    rating: item.rating ?? item.average_rating ?? item.tracking?.[0]?.rating ?? null,
-    genres,
-    languages,
-    regions,
-    series: parseSeriesName(item.media_series),
-    status: item.status ?? item.calculated_status ?? item.tracking?.[0]?.status ?? "",
+    rating: item.rating ?? item.average_rating ?? null,
+    genres: item.genres ?? [],
+    languages: item.languages ?? [],
+    regions: item.regions ?? [],
+    status: item.status || undefined,
     summary: item.summary ?? "",
     cover_url: item.cover_url ?? "",
-    casts: item.casts ? normalizeStringArray(item.casts) : formatCredits(item.media_credits, "actor"),
-    directors: item.directors ? normalizeStringArray(item.directors) : formatCredits(item.media_credits, "director"),
+    casts: item.casts ?? [],
+    directors: item.directors ?? [],
     type: mediaType,
+    series: overrideSeries !== undefined ? overrideSeries : (item.series ?? null),
   };
 }

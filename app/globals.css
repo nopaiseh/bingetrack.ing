@@ -4,25 +4,6 @@
 .no-scrollbar::-webkit-scrollbar { display: none; }
 .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 
-/* 模态框动效 */
-.modal-backdrop {
-    opacity: 0;
-    visibility: hidden;
-    transition: opacity 200ms ease, visibility 200ms ease;
-}
-.modal-backdrop.active {
-    opacity: 1;
-    visibility: visible;
-}
-.modal-panel {
-    transform: scale(0.95);
-    opacity: 0;
-    transition: transform 200ms ease, opacity 200ms ease;
-}
-.modal-backdrop.active .modal-panel {
-    transform: scale(1);
-    opacity: 1;
-}
 
 /* 极简滚动条 */
 .custom-scrollbar::-webkit-scrollbar {

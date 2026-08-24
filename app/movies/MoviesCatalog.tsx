@@ -1,5 +1,5 @@
 import MediaRow from "@/components/MediaRow";
-import { MediaCatalogProps } from "@/lib/interfaces/MediaCatalogProps";
+import { MediaCatalogProps } from "@/lib/types";
 
 export default function MoviesCatalog({
   watched,
@@ -34,8 +34,8 @@ export default function MoviesCatalog({
 
         
         <div className="space-y-12">
-          <MediaRow title="我看过" items={watched ?? []} viewAllLink="/movies/watched" type="movies" />
-          <MediaRow title="我想看" items={want ?? []} viewAllLink="/movies/want" type="movies" />
+          <MediaRow title="我已看" items={watched ?? []} viewAllLink="/search?type=电影&status=已看" type="movies" />
+          <MediaRow title="我想看" items={want ?? []} viewAllLink="/search?type=电影&status=想看" type="movies" />
         </div>
       </div>
     </div>

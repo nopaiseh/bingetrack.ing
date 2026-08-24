@@ -1,6 +1,6 @@
 import { getSupabaseServer } from "@/utils/supabase";
 import HomeDashboard from "@/app/HomeDashboard";
-import { Summary } from "@/lib/types/media-summary";
+import { Summary } from "@/lib/types";
 import { fetchTopMediaServer } from "@/lib/functions/media-repo";
 
 export const revalidate = 60;
@@ -13,8 +13,8 @@ export default async function HomePage() {
     fetchTopMediaServer("tv_series", null, 10),
   ]);
 
-  const summary = (summaryRes && (summaryRes as any).data) || [];
-  const error = (summaryRes && (summaryRes as any).error) || null;
+  const summary = (summaryRes?.data as Summary[] | null) ?? [];
+  const error = summaryRes?.error ?? null;
 
   if (error) {
     console.error("Failed to fetch release year stats:", error);
@@ -22,7 +22,7 @@ export default async function HomePage() {
 
   return (
     <main>
-      <HomeDashboard summary={summary as Summary[]} topMovies={topMovies ?? []} topSeries={topSeries ?? []} />
+      <HomeDashboard summary={summary} topMovies={topMovies ?? []} topSeries={topSeries ?? []} />
     </main>
   );
 }

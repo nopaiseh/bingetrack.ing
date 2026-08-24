@@ -1,6 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import { Media } from "@/lib/types/Media";
+import { Media } from "@/lib/types";
 
 function ItemCard({ item }: { item: Media }) {
   return (

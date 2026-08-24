@@ -1,6 +1,6 @@
 import { getSupabaseServer } from "@/utils/supabase";
-import { MediaType } from "@/lib/functions/media-mapper";
-import { Media } from "@/lib/types/Media";
+import { mapViewRowToMedia } from "@/lib/functions/media-mapper";
+import { Media, ViewAllMediaRow, FetchMediaListOptions } from "@/lib/types";
 
 /*
   媒体仓库（server-side helpers）
@@ -10,15 +10,19 @@ import { Media } from "@/lib/types/Media";
   - 所有导出的函数均为服务端使用（使用 getSupabaseServer），若需要浏览器端查询，请使用 utils/supabase-client 中的客户端 API。
 */
 
-// 获取单条媒体详情（优先使用已存在的 getMedia 逻辑，作为向后兼容的包装）
-export async function getMediaById(id: string, type: string): Promise<Media | null> {
+declare global {
+  var _mediaRepoCache: Map<string, { ts: number; data: Media[]; total?: number }> | undefined;
+}
+
+// 获取单条媒体详情
+export async function getMediaById(id: string): Promise<Media | null> {
   const db = getSupabaseServer();
-  
+
   // 1. 从视图中直接拉取所有扁平化、计算好的数据
   const { data: viewData, error: viewError } = await db
-    .from('v_all_media')
-    .select('*')
-    .eq('id', id)
+    .from("v_all_media")
+    .select("*")
+    .eq("id", id)
     .single();
 
   if (viewError || !viewData) {
@@ -28,90 +32,59 @@ export async function getMediaById(id: string, type: string): Promise<Media | nu
 
   // 2. 因为视图里没有 series 字段，我们查一下原表补齐系列名称
   const { data: seriesData } = await db
-    .from('media_items')
-    .select('media_series(name)')
-    .eq('id', id)
+    .from("media_items")
+    .select("media_series(name)")
+    .eq("id", id)
     .single();
 
-  const seriesObj = Array.isArray(seriesData?.media_series) 
-    ? seriesData?.media_series[0] 
+  const seriesObj = Array.isArray(seriesData?.media_series)
+    ? seriesData?.media_series[0]
     : seriesData?.media_series;
 
-  // 3. 直接赋值，再也不用做复杂的 map 和 sort 了
-  return {
-    id: String(viewData.id),
-    title: viewData.title || "",
-    date: viewData.sort_date || "",
-    release_year: viewData.release_year || "",
-    runtime: viewData.runtime || null,
-    rating: viewData.rating || null,
-    genres: viewData.genres || [],
-    languages: viewData.languages || [],
-    regions: viewData.regions || [],
-    status: viewData.status || undefined,
-    summary: viewData.summary || "",
-    cover_url: viewData.cover_url || "",
-    casts: viewData.casts || [],
-    directors: viewData.directors || [],
-    type: viewData.type === 'movie' ? 'movies' : 'series',
-    series: seriesObj?.name || null,
-  };
+  return mapViewRowToMedia(viewData as ViewAllMediaRow, seriesObj?.name ?? null);
 }
 
 // 2. 获取同系列相关作品
-export async function getRelatedBySeries(seriesName: string, currentId: string, mode: string): Promise<Media[]> {
+export async function getRelatedBySeries(seriesName: string, currentId: string): Promise<Media[]> {
+  if (!seriesName) return [];
+
   const db = getSupabaseServer();
-  
+
   // 第一步：从基础表中查询出属于该系列的所有作品的 ID (排除当前正在看的这部)
   const { data: seriesItems, error: seriesError } = await db
-    .from('media_items')
-    .select('id, media_series!inner(name)')
-    .eq('media_series.name', seriesName)
-    .neq('id', currentId);
+    .from("media_items")
+    .select("id, media_series!inner(name)")
+    .eq("media_series.name", seriesName)
+    .neq("id", currentId);
 
   if (seriesError || !seriesItems || seriesItems.length === 0) {
     if (seriesError) console.error(`Failed to fetch related media IDs for series ${seriesName}:`, seriesError);
     return [];
   }
 
-  // 提取出所有相关的 ID
-  const relatedIds = seriesItems.map(item => item.id);
+  const relatedIds = seriesItems.map((item) => item.id);
 
-  // 第二步：拿着这些 ID，去 v_all_media 视图中拉取完整的富媒体数据 (包含 genres, languages, rating 等)
+  // 第二步：拿着这些 ID，去 v_all_media 视图中拉取完整的富媒体数据
   const { data, error } = await db
-    .from('v_all_media')
-    .select('*')
-    .in('id', relatedIds)
-    .order('sort_date', { ascending: true }); // 按时间顺序排列
+    .from("v_all_media")
+    .select("*")
+    .in("id", relatedIds)
+    .order("sort_date", { ascending: true });
 
   if (error || !data) {
     console.error(`Failed to fetch related media details for series ${seriesName}:`, error);
     return [];
   }
 
-  // 映射数据返回
-  return data.map((viewData: any) => ({
-    id: String(viewData.id),
-    title: viewData.title || "",
-    date: viewData.sort_date || "",
-    release_year: viewData.release_year || "",
-    runtime: viewData.runtime || null,
-    rating: viewData.rating || null,
-    genres: viewData.genres || [],
-    languages: viewData.languages || [],
-    regions: viewData.regions || [],
-    status: viewData.status || undefined,
-    summary: viewData.summary || "",
-    cover_url: viewData.cover_url || "",
-    casts: viewData.casts || [],
-    directors: viewData.directors || [],
-    type: viewData.type === 'movie' ? 'movies' : 'series',
-    series: seriesName, // 我们已经知道它属于这个系列，直接填入即可
-  }));
+  return data.map((item: ViewAllMediaRow) => mapViewRowToMedia(item, seriesName));
 }
 
 // 从视图中获取前 N 条媒体（按评分降序），用于首页/看板显示
-export async function fetchTopMediaServer(mediaType: "movie" | "tv_series", year?: string | null, limit = 10): Promise<Media[]> {
+export async function fetchTopMediaServer(
+  mediaType: "movie" | "tv_series",
+  year?: string | null,
+  limit = 10,
+): Promise<Media[]> {
   const db = getSupabaseServer();
   let query = db
     .from("v_all_media")
@@ -127,46 +100,17 @@ export async function fetchTopMediaServer(mediaType: "movie" | "tv_series", year
   const { data, error } = await query;
   if (error || !data) return [];
 
-  // 使用扁平化映射适应新视图
-  return data.map((item: any) => ({
-    id: String(item.id),
-    title: item.title || "",
-    date: item.sort_date || "",
-    release_year: item.release_year || "",
-    runtime: item.runtime || null,
-    rating: item.rating || null,
-    genres: item.genres || [],
-    languages: item.languages || [],
-    regions: item.regions || [],
-    status: item.status || undefined,
-    summary: item.summary || "",
-    cover_url: item.cover_url || "",
-    casts: item.casts || [],
-    directors: item.directors || [],
-    type: item.type === "movie" ? "movies" : "series",
-  }));
+  return data.map((item: ViewAllMediaRow) => mapViewRowToMedia(item));
 }
 
-export async function searchMediaServer(opts: any = {}): Promise<{ rows: Media[]; total: number }> {
+export async function searchMediaServer(opts: FetchMediaListOptions = {}): Promise<{ rows: Media[]; total: number }> {
   return fetchMediaListServer(opts);
 }
 
-export async function fetchMediaListServer(opts: {
-  type?: string | null;
-  status?: string | null;
-  genre?: string | null;
-  region?: string | null;
-  language?: string | null;
-  startYear?: string | null; 
-  endYear?: string | null;
-  q?: string | null;
-  sort?: string | null; 
-  limit?: number;
-  offset?: number;
-}): Promise<{ rows: Media[]; total: number }> {
+export async function fetchMediaListServer(opts: FetchMediaListOptions = {}): Promise<{ rows: Media[]; total: number }> {
   const db = getSupabaseServer();
   const {
-    type, status, genre, region, language, startYear, endYear, q, sort, limit = 50, offset = 0,
+    type, status, genre, region, language, startYear, endYear, q, sort, limit = 30, offset = 0,
   } = opts || {};
 
   // 1. 初始化缓存变量
@@ -174,10 +118,12 @@ export async function fetchMediaListServer(opts: {
   const now = Date.now();
 
   // 2. 内存缓存读取机制
-  if (!(global as any)._mediaRepoCache) (global as any)._mediaRepoCache = new Map();
-  const cache: Map<string, { ts: number; data: Media[]; total?: number }> = (global as any)._mediaRepoCache;
+  if (!globalThis._mediaRepoCache) {
+    globalThis._mediaRepoCache = new Map();
+  }
+  const cache = globalThis._mediaRepoCache;
   const cached = cache.get(cacheKey);
-  
+
   if (cached && now - cached.ts < 30 * 1000) {
     return { rows: cached.data, total: cached.total ?? 0 };
   }
@@ -186,88 +132,92 @@ export async function fetchMediaListServer(opts: {
   let dataQuery = db.from("v_all_media").select("*");
   let countQuery = db.from("v_all_media").select("id", { count: "exact", head: true });
 
-  const applyFilters = (qBuilder: any) => {
-    let queryObj = qBuilder;
-    
-    if (type) queryObj = queryObj.in("type", type.split(","));
-    if (status) queryObj = queryObj.in("status", status.split(","));
-    
-    if (genre) queryObj = queryObj.overlaps("genres", genre.split(","));
-    if (region) queryObj = queryObj.overlaps("regions", region.split(","));
-    if (language) queryObj = queryObj.overlaps("languages", language.split(","));
+  if (type) {
+    const types = type.split(",");
+    dataQuery = dataQuery.in("type", types);
+    countQuery = countQuery.in("type", types);
+  }
+  if (status) {
+    const statuses = status.split(",");
+    dataQuery = dataQuery.in("status", statuses);
+    countQuery = countQuery.in("status", statuses);
+  }
+  if (genre) {
+    const genres = genre.split(",");
+    dataQuery = dataQuery.overlaps("genres", genres);
+    countQuery = countQuery.overlaps("genres", genres);
+  }
+  if (region) {
+    const regions = region.split(",");
+    dataQuery = dataQuery.overlaps("regions", regions);
+    countQuery = countQuery.overlaps("regions", regions);
+  }
+  if (language) {
+    const languages = language.split(",");
+    dataQuery = dataQuery.overlaps("languages", languages);
+    countQuery = countQuery.overlaps("languages", languages);
+  }
+  if (startYear) {
+    dataQuery = dataQuery.gte("sort_date", `${startYear}-01-01`);
+    countQuery = countQuery.gte("sort_date", `${startYear}-01-01`);
+  }
+  if (endYear) {
+    dataQuery = dataQuery.lte("sort_date", `${endYear}-12-31`);
+    countQuery = countQuery.lte("sort_date", `${endYear}-12-31`);
+  }
+  if (typeof q === "string" && q.trim().length > 0) {
+    const queryText = `%${q.trim()}%`;
+    dataQuery = dataQuery.ilike("title", queryText);
+    countQuery = countQuery.ilike("title", queryText);
+  }
 
-    // 灵活应用年份区间过滤
-    if (startYear) queryObj = queryObj.gte("sort_date", `${startYear}-01-01`);
-    if (endYear) queryObj = queryObj.lte("sort_date", `${endYear}-12-31`);
+  if (sort) {
+    const [field, order] = sort.split("_");
+    const ascending = order === "asc";
 
-    if (typeof q === "string" && q.trim().length > 0) {
-      const value = q.trim();
-      queryObj = queryObj.ilike("title", `%${value}%`);
+    if (field === "date") {
+      dataQuery = dataQuery.order("sort_date", { ascending, nullsFirst: false });
+    } else if (field === "rating") {
+      dataQuery = dataQuery.order("rating", { ascending, nullsFirst: false });
     }
+  } else {
+    dataQuery = dataQuery.order("sort_date", { ascending: false, nullsFirst: false });
+  }
 
-    if (qBuilder === dataQuery) {
-      if (sort) {
-        const [field, order] = sort.split("_");
-        const ascending = order === "asc";
-        
-        if (field === "date") {
-          queryObj = queryObj.order("sort_date", { ascending, nullsFirst: false });
-        } else if (field === "rating") {
-          queryObj = queryObj.order("rating", { ascending, nullsFirst: false });
-        }
-      } else {
-        queryObj = queryObj.order("sort_date", { ascending: false, nullsFirst: false });
-      }
-    }
-
-    return queryObj;
-  };
-
-  dataQuery = applyFilters(dataQuery);
-  countQuery = applyFilters(countQuery);
   dataQuery = dataQuery.range(offset, Math.max(0, offset + limit - 1));
 
+  if (limit) {
+    const from = offset;
+    const to = offset + limit - 1;
+    dataQuery = dataQuery.range(from, to); 
+  }
+
   const [dataRes, countRes] = await Promise.all([dataQuery, countQuery]);
-  
+
   const total = countRes.count ?? 0;
   const data = dataRes.data;
 
   if (!data) return { rows: [], total };
 
-  // 使用扁平化映射
-  const results: Media[] = data.map((item: any) => ({
-    id: String(item.id),
-    title: item.title || "",
-    date: item.sort_date || "",
-    release_year: item.release_year || "",
-    runtime: item.runtime || null,
-    rating: item.rating || null,
-    genres: item.genres || [],
-    languages: item.languages || [],
-    regions: item.regions || [],
-    status: item.status || undefined,
-    summary: item.summary || "",
-    cover_url: item.cover_url || "",
-    casts: item.casts || [],
-    directors: item.directors || [],
-    type: item.type === "movie" ? "movies" : "series",
-  }));
-  
+  const results: Media[] = data.map((item: ViewAllMediaRow) => mapViewRowToMedia(item));
+
   // 4. 写入内存缓存 (保留 30 秒)
   cache.set(cacheKey, { ts: now, data: results, total });
 
   return { rows: results, total };
 }
 
-// 统计信息查询（例如 Movies 页面需要的 total/watched/want/upcoming）
+// 统计信息查询（例如 Movies / Series 页面需要的 total/watched/want/upcoming）
 export async function fetchStatsServer(mediaType: "movie" | "tv_series") {
   const db = getSupabaseServer();
   const today = new Date().toISOString().split("T")[0];
 
-  const totalRes = await db.from("v_all_media").select("id", { count: "exact", head: true }).eq("type", mediaType);
-  const watchedRes = await db.from("v_all_media").select("id", { count: "exact", head: true }).eq("type", mediaType).eq("status", "watched");
-  const wantRes = await db.from("v_all_media").select("id", { count: "exact", head: true }).eq("type", mediaType).eq("status", "want_to_watch");
-  const upcomingRes = await db.from("v_all_media").select("id", { count: "exact", head: true }).eq("type", mediaType).gte("sort_date", today);
+  const [totalRes, watchedRes, wantRes, upcomingRes] = await Promise.all([
+    db.from("v_all_media").select("id", { count: "exact", head: true }).eq("type", mediaType),
+    db.from("v_all_media").select("id", { count: "exact", head: true }).eq("type", mediaType).eq("status", "watched"),
+    db.from("v_all_media").select("id", { count: "exact", head: true }).eq("type", mediaType).eq("status", "want_to_watch"),
+    db.from("v_all_media").select("id", { count: "exact", head: true }).eq("type", mediaType).gte("sort_date", today),
+  ]);
 
   return {
     total: totalRes.count ?? 0,
