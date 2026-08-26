@@ -33,33 +33,25 @@ const GENRE_TOP5: DistributionItem[] = [
   { name: "👻 恐怖", percent: 8 },
 ];
 
-function DistributionCard({
-  title,
-  icon,
-  items,
-}: {
-  title: string;
-  icon: string;
-  items: DistributionItem[];
-}) {
+function DistributionCard({ title, icon, items }: { title: string; icon: string; items: DistributionItem[] }) {
   return (
-    <div className="bg-white/5 border border-white/10 rounded-2xl p-6 flex flex-col justify-center transition-all duration-300 hover:-translate-y-1 hover:bg-white/10 hover:border-white/20 hover:shadow-xl hover:shadow-black/50 group">
+    <div className="bg-white/5 backdrop-blur-2xl border border-white/10 rounded-2xl p-6 flex flex-col justify-center transition-all duration-300 shadow-[0_10px_30px_rgba(0,0,0,0.2)] hover:-translate-y-1 hover:bg-white/10 hover:border-white/20 hover:shadow-[0_15px_40px_rgba(0,0,0,0.3)] group">
       <div className="text-sm text-neutral-400 mb-4 flex items-center gap-2">
         <div className="flex items-center gap-3 text-sm text-neutral-400 mb-5">
-          <div className="bg-white/10 p-2 rounded-lg flex items-center justify-center group-hover:bg-red-500/10 group-hover:text-red-400 transition-colors duration-300">
+          <div className="bg-white/10 p-2 rounded-lg flex items-center justify-center group-hover:bg-red-500/15 group-hover:text-red-400 transition-colors duration-300 shadow-[0_4px_10px_rgba(0,0,0,0.1)] group-hover:shadow-[0_4px_10px_rgba(248,113,113,0.2)]">
             <i className={`fas ${icon} text-sm`} />
           </div>
-          <span className="font-medium tracking-wide">{title}</span>
+          <span className="font-medium tracking-wide text-white/80 group-hover:text-white transition-colors">{title}</span>
         </div>
       </div>
       <div className="flex flex-col gap-3">
         {items.map((item) => (
           <div key={item.name} className="flex items-center gap-3">
-            <span className="text-sm w-14">{item.name}</span>
-            <div className="flex-1 h-1.5 bg-white/10 rounded-full overflow-hidden">
-              <div className="h-full bg-neutral-300" style={{ width: `${item.percent}%` }} />
+            <span className="text-sm w-14 text-white/70">{item.name}</span>
+            <div className="flex-1 h-1.5 bg-white/10 rounded-full overflow-hidden shadow-inner">
+              <div className="h-full bg-neutral-300/80" style={{ width: `${item.percent}%` }} />
             </div>
-            <span className="text-xs text-neutral-500 w-8 text-right">{item.percent}%</span>
+            <span className="text-xs text-white/50 w-8 text-right">{item.percent}%</span>
           </div>
         ))}
       </div>
@@ -96,20 +88,20 @@ function CategoryHeaderCards({
 }) {
   return (
     <div className="grid grid-cols-1 md:grid-cols-4 gap-4 md:gap-6">
-      <div className="col-span-1 md:col-span-3 bg-white/5 border border-white/10 rounded-2xl p-6 flex flex-col justify-center transition-all duration-300 hover:-translate-y-1 hover:bg-white/10 hover:border-white/20 hover:shadow-xl hover:shadow-black/50 group">
-        <div className="text-neutral-500 mb-4 flex justify-between items-center">
-          <i className="text-xl">{year}上映的{categoryName}，我看了</i>
+      <div className="col-span-1 md:col-span-3 bg-white/5 backdrop-blur-2xl border border-white/10 rounded-2xl p-6 flex flex-col justify-center transition-all duration-300 shadow-[0_10px_30px_rgba(0,0,0,0.2)] hover:-translate-y-1 hover:bg-white/10 hover:border-white/20 hover:shadow-[0_15px_40px_rgba(0,0,0,0.3)] group">
+        <div className="text-white/60 mb-4 flex justify-between items-center drop-shadow-[0_0_5px_rgba(255,255,255,0.1)]">
+          <i className="text-xl font-medium">{year} {categoryName} 阅览进度</i>
         </div>
         <div>
           <div className="flex items-baseline gap-2 mb-2">
-            <span className="text-4xl font-mono text-white">{watchedCount}</span>
-            <span className="text-sm text-neutral-400">
-              / {totalCount} 部{categoryName}
+            <span className="text-4xl font-mono text-white drop-shadow-[0_0_8px_rgba(255,255,255,0.2)]">{watchedCount}</span>
+            <span className="text-sm text-white/50 font-medium">
+              / {totalCount} 部库藏 (已看 / 总数)
             </span>
           </div>
-          <div className="w-full h-2 bg-white/10 rounded-full overflow-hidden">
+          <div className="w-full h-2 bg-white/10 rounded-full overflow-hidden shadow-inner">
             <div
-              className="h-full bg-linear-to-r from-red-600 to-red-400 shadow-[0_0_12px_rgba(239,68,68,0.4)] rounded-full"
+              className="h-full bg-linear-to-r from-red-600 to-red-400 shadow-[0_0_12px_rgba(239,68,68,0.5)] rounded-full"
               style={{
                 width: `${watchedPercent}%`,
                 transition: "width 1s cubic-bezier(0.4, 0, 0.2, 1)",
@@ -119,18 +111,18 @@ function CategoryHeaderCards({
         </div>
       </div>
 
-      <div className="col-span-1 md:col-span-1 bg-white/5 border border-white/10 rounded-2xl p-6 flex flex-col justify-center transition-all duration-300 hover:-translate-y-1 hover:bg-white/10 hover:border-white/20 hover:shadow-xl hover:shadow-black/50 group">
-        <div className="text-neutral-500 mb-4 flex justify-between items-center">
-          <i className="text-xl">平均{categoryName}评分</i>
+      <div className="col-span-1 md:col-span-1 bg-white/5 backdrop-blur-2xl border border-white/10 rounded-2xl p-6 flex flex-col justify-center transition-all duration-300 shadow-[0_10px_30px_rgba(0,0,0,0.2)] hover:-translate-y-1 hover:bg-white/10 hover:border-white/20 hover:shadow-[0_15px_40px_rgba(0,0,0,0.3)] group">
+        <div className="text-white/60 mb-4 flex justify-between items-center drop-shadow-[0_0_5px_rgba(255,255,255,0.1)]">
+          <i className="text-xl font-medium">平均{categoryName}评分</i>
         </div>
         <div>
           <div className="flex items-baseline gap-2 mb-2">
-            <span className="text-4xl font-mono text-white">{avgRating || 0}</span>
-            <span className="text-sm text-neutral-500">/ 10</span>
+            <span className="text-4xl font-mono text-white drop-shadow-[0_0_8px_rgba(255,255,255,0.2)]">{avgRating || 0}</span>
+            <span className="text-sm text-white/50 font-medium">/ 10</span>
           </div>
-          <div className="w-full h-2 bg-white/10 rounded-full overflow-hidden">
+          <div className="w-full h-2 bg-white/10 rounded-full overflow-hidden shadow-inner">
             <div
-              className="h-full bg-linear-to-r from-red-600 to-red-400 shadow-[0_0_12px_rgba(239,68,68,0.4)] rounded-full"
+              className="h-full bg-linear-to-r from-red-600 to-red-400 shadow-[0_0_12px_rgba(239,68,68,0.5)] rounded-full"
               style={{
                 width: `${avgRatingPercent}%`,
                 transition: "width 1s cubic-bezier(0.4, 0, 0.2, 1)",
@@ -143,43 +135,48 @@ function CategoryHeaderCards({
   );
 }
 
-function SeriesStatusCard({
+// Unified Status Card to handle both Movies and Series
+function MediaStatusCard({
   title,
   icon,
-  seriesCount,
+  count,
   seasonsCount,
   episodesCount,
 }: {
   title: string;
   icon: string;
-  seriesCount: number;
-  seasonsCount: number;
-  episodesCount: number;
+  count: number;
+  seasonsCount?: number;
+  episodesCount?: number;
 }) {
   return (
-    <div className="bg-black/20 border border-white/5 rounded-xl p-5 flex flex-col gap-4 transition-all duration-300 hover:bg-white/5 hover:border-red-500/30">
-      <div className="text-neutral-400 font-bold text-sm flex items-center gap-2 border-b border-white/5 pb-2">
+    <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-xl p-5 flex flex-col gap-4 transition-all duration-300 shadow-[0_4px_15px_rgba(0,0,0,0.1)] hover:bg-white/10 hover:border-red-400/40 hover:-translate-y-1 hover:shadow-[0_8px_25px_rgba(248,113,113,0.15)] group">
+      <div className="text-white/70 font-bold text-sm flex items-center gap-2 border-b border-white/10 pb-2 group-hover:text-red-300 transition-colors">
         <i className={`fas ${icon}`} /> {title}
       </div>
       <div className="flex flex-col gap-3 mt-1">
         <div className="flex justify-between items-end">
-          <span className="text-sm text-neutral-400">剧数</span>
-          <span className="text-2xl font-mono text-white">
-            {seriesCount} <span className="text-xs text-neutral-500 font-normal">部</span>
+          <span className="text-sm text-white/50">部数</span>
+          <span className="text-2xl font-mono text-white drop-shadow-[0_0_5px_rgba(255,255,255,0.2)]">
+            {count} <span className="text-xs text-white/40 font-normal">部</span>
           </span>
         </div>
-        <div className="flex justify-between items-end">
-          <span className="text-sm text-neutral-400">季数</span>
-          <span className="text-2xl font-mono text-white">
-            {seasonsCount} <span className="text-xs text-neutral-500 font-normal">季</span>
-          </span>
-        </div>
-        <div className="flex justify-between items-end">
-          <span className="text-sm text-neutral-400">集数</span>
-          <span className="text-2xl font-mono text-white">
-            {episodesCount} <span className="text-xs text-neutral-500 font-normal">集</span>
-          </span>
-        </div>
+        {seasonsCount !== undefined && (
+          <div className="flex justify-between items-end">
+            <span className="text-sm text-white/50">季数</span>
+            <span className="text-2xl font-mono text-white drop-shadow-[0_0_5px_rgba(255,255,255,0.2)]">
+              {seasonsCount} <span className="text-xs text-white/40 font-normal">季</span>
+            </span>
+          </div>
+        )}
+        {episodesCount !== undefined && (
+          <div className="flex justify-between items-end">
+            <span className="text-sm text-white/50">集数</span>
+            <span className="text-2xl font-mono text-white drop-shadow-[0_0_5px_rgba(255,255,255,0.2)]">
+              {episodesCount} <span className="text-xs text-white/40 font-normal">集</span>
+            </span>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -190,7 +187,7 @@ export default function HomeDashboard({
   topMovies,
   topSeries,
 }: {
-  summary: Summary[];
+  summary: any[]; // Adjust type to match your extended Summary data model
   topMovies: Media[];
   topSeries: Media[];
 }) {
@@ -212,15 +209,20 @@ export default function HomeDashboard({
     (item) => String(item.release_year) === String(selectedYear),
   );
 
+  // Derive movie totals strictly from 2 tracking states (Watched + Unwatched)
   const watchedMovies = currentYearData?.watched_movies || 0;
-  const totalMovies = currentYearData?.total_movies || 1;
+  const unwatchedMovies = currentYearData?.unwatched_movies || 0;
+  const totalMovies = watchedMovies + unwatchedMovies || 1;
   const moviesPercent = Math.min(Math.round((watchedMovies / totalMovies) * 100), 100);
 
   const avgMoviesRating = currentYearData?.movie_avg_rating || 0;
   const avgMoviesRatingPercent = Math.min(Math.round((avgMoviesRating / 10) * 100), 100);
 
+  // Derive series totals strictly from 3 tracking states
   const watchedSeries = currentYearData?.watched_series || 0;
-  const totalSeries = currentYearData?.total_series || 1;
+  const watchingSeries = currentYearData?.watching_series || 0;
+  const unwatchedSeries = currentYearData?.unwatched_series || 0;
+  const totalSeries = watchedSeries + watchingSeries + unwatchedSeries || 1;
   const seriesPercent = Math.min(Math.round((watchedSeries / totalSeries) * 100), 100);
 
   const avgSeriesRating = currentYearData?.series_avg_rating || 0;
@@ -242,23 +244,24 @@ export default function HomeDashboard({
       <div className="flex flex-col gap-6 md:gap-8 mb-4">
         <div>
           <h1 className="text-4xl md:text-6xl font-mono font-bold tracking-tighter flex items-baseline gap-3">
-            <span className="text-transparent bg-clip-text bg-linear-to-r from-red-500 to-red-700">
+            <span className="text-transparent bg-clip-text bg-linear-to-r from-red-500 to-red-400 drop-shadow-[0_0_15px_rgba(248,113,113,0.3)]">
               {selectedYear}
             </span>
-            <span className="text-white">记录回顾</span>
+            <span className="text-white drop-shadow-[0_0_10px_rgba(255,255,255,0.2)]">记录回顾</span>
           </h1>
         </div>
 
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-white/5 pb-5">
-          <div className="flex gap-1 bg-[#121212] p-1.5 rounded-xl border border-white/10 shadow-inner">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-white/10 pb-5">
+          {/* Frosted Glass Tabs */}
+          <div className="flex gap-1 bg-white/5 backdrop-blur-2xl p-1.5 rounded-xl border border-white/10 shadow-[0_4px_15px_rgba(0,0,0,0.2)]">
             {tabs.map((tab) => (
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab)}
                 className={`px-5 py-2 rounded-lg text-sm font-medium transition-all duration-300 ${
                   activeTab === tab
-                    ? "bg-white/10 text-white shadow-sm ring-1 ring-white/5"
-                    : "text-neutral-400 hover:text-white hover:bg-white/5"
+                    ? "bg-white/15 text-white shadow-[0_2px_10px_rgba(0,0,0,0.2)] ring-1 ring-white/20 drop-shadow-[0_0_5px_rgba(255,255,255,0.3)]"
+                    : "text-white/60 hover:text-white hover:bg-white/10"
                 }`}
               >
                 {tab}
@@ -267,27 +270,29 @@ export default function HomeDashboard({
           </div>
 
           <div className="relative" ref={dropdownRef}>
+            {/* Frosted Glass Dropdown Trigger */}
             <div
               onClick={() => setIsDropdownOpen(true)}
-              className="flex items-center gap-2 bg-[#121212] border border-white/10 hover:border-white/20 transition-all pl-4 pr-3 py-2.5 rounded-xl cursor-text w-35 group"
+              className="flex items-center gap-2 bg-white/5 backdrop-blur-2xl border border-white/10 hover:bg-white/10 hover:border-white/20 shadow-[0_4px_15px_rgba(0,0,0,0.2)] hover:shadow-[0_6px_20px_rgba(0,0,0,0.3)] transition-all pl-4 pr-3 py-2.5 rounded-xl cursor-text w-35 group"
             >
-              <i className="far fa-calendar-alt text-red-500 group-hover:text-red-400 transition-colors" />
+              <i className="far fa-calendar-alt text-red-500 group-hover:text-red-400 transition-colors group-hover:drop-shadow-[0_0_5px_rgba(248,113,113,0.5)]" />
               <input
                 type="text"
                 value={isDropdownOpen ? searchQuery : selectedYear}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder={selectedYear}
-                className="bg-transparent w-full text-neutral-300 font-mono text-sm outline-none placeholder:text-neutral-600"
+                className="bg-transparent w-full text-white/90 font-mono text-sm outline-none placeholder:text-white/40"
               />
               <i
-                className={`fas fa-chevron-down text-xs text-neutral-500 transition-transform duration-300 ${
-                  isDropdownOpen ? "rotate-180" : ""
+                className={`fas fa-chevron-down text-xs text-white/50 transition-transform duration-300 ${
+                  isDropdownOpen ? "rotate-180 text-white" : "group-hover:text-white"
                 }`}
               />
             </div>
 
+            {/* Frosted Glass Dropdown Menu */}
             {isDropdownOpen && (
-              <div className="absolute right-0 top-full mt-2 w-32 bg-[#141414] border border-white/10 rounded-xl shadow-2xl overflow-hidden z-50">
+              <div className="absolute right-0 top-full mt-2 w-32 bg-black/60 backdrop-blur-3xl border border-white/10 rounded-xl shadow-[0_15px_40px_rgba(0,0,0,0.5)] overflow-hidden z-50 animate-in fade-in slide-in-from-top-2">
                 <div className="max-h-64 overflow-y-auto custom-scrollbar flex flex-col">
                   {filteredYears.length > 0 ? (
                     filteredYears.map((year) => (
@@ -300,15 +305,15 @@ export default function HomeDashboard({
                         }}
                         className={`w-full text-left px-5 py-3 text-sm font-mono transition-colors shrink-0 ${
                           selectedYear === String(year)
-                            ? "bg-red-500/10 text-red-500 font-bold border-l-2 border-red-500"
-                            : "text-neutral-400 hover:bg-white/5 hover:text-white border-l-2 border-transparent"
+                            ? "bg-red-500/15 text-red-400 font-bold border-l-2 border-red-400 drop-shadow-[0_0_5px_rgba(248,113,113,0.3)]"
+                            : "text-white/60 hover:bg-white/10 hover:text-white border-l-2 border-transparent"
                         }`}
                       >
                         {year}
                       </button>
                     ))
                   ) : (
-                    <div className="px-5 py-4 text-sm font-mono text-neutral-500 text-center">
+                    <div className="px-5 py-4 text-sm font-mono text-white/50 text-center">
                       无结果
                     </div>
                   )}
@@ -323,64 +328,63 @@ export default function HomeDashboard({
         {activeTab === "总览" && (
           <div key="overview" className="animate-fade-in flex flex-col gap-4 md:gap-6">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
-              <div className="bg-white/5 border border-white/10 rounded-2xl p-6 flex flex-col justify-between transition-all duration-300 hover:-translate-y-1 hover:bg-white/10 hover:border-white/20 hover:shadow-xl hover:shadow-black/50 group">
+              
+              <div className="bg-white/5 backdrop-blur-2xl border border-white/10 rounded-2xl p-6 flex flex-col justify-between transition-all duration-300 shadow-[0_10px_30px_rgba(0,0,0,0.2)] hover:-translate-y-1 hover:bg-white/10 hover:border-white/20 hover:shadow-[0_15px_40px_rgba(0,0,0,0.3)] group">
                 <div>
-                  <div className="text-sm text-neutral-400 mb-2 flex items-center gap-2">
-                    <div className="bg-white/10 p-2 rounded-lg flex items-center justify-center group-hover:bg-red-500/10 group-hover:text-red-400 transition-colors duration-300">
+                  <div className="text-sm text-white/60 mb-2 flex items-center gap-2">
+                    <div className="bg-white/10 p-2 rounded-lg flex items-center justify-center group-hover:bg-red-500/15 group-hover:text-red-400 transition-colors duration-300 shadow-[0_4px_10px_rgba(0,0,0,0.1)] group-hover:shadow-[0_4px_10px_rgba(248,113,113,0.2)]">
                       <i className="fas fa-play-circle text-sm" />
                     </div>
-                    <span className="text-sm font-bold text-neutral-300 tracking-wide">
-                      沉浸总时长
+                    <span className="text-sm font-bold text-white/80 group-hover:text-white transition-colors tracking-wide">
+                      已看总时长
                     </span>
                   </div>
                   <div className="flex items-baseline gap-2 mb-2">
-                    <span className="text-5xl font-mono text-white tracking-tighter">
+                    <span className="text-5xl font-mono text-white tracking-tighter drop-shadow-[0_0_10px_rgba(255,255,255,0.2)]">
                       {Math.round((currentYearData?.total_watched_runtime ?? 0) / 60)}
                     </span>
-                    <span className="text-neutral-500 font-medium">小时</span>
+                    <span className="text-white/50 font-medium">小时</span>
                   </div>
                 </div>
-                <p className="text-xs text-neutral-500 mt-4 border-t border-white/5 pt-4">
-                  相当于连续不眠不休看了约{" "}
-                  {Math.round((currentYearData?.total_watched_runtime ?? 0) / 60 / 24)}{" "}
-                  天
+                <p className="text-xs text-white/50 mt-4 border-t border-white/10 pt-4">
+                  相当于连续不眠不休看了约 {Math.round((currentYearData?.total_watched_runtime ?? 0) / 60 / 24)} 天
                 </p>
               </div>
 
-              <div className="bg-white/5 border border-white/10 rounded-2xl p-6 flex flex-col justify-between transition-all duration-300 hover:-translate-y-1 hover:bg-white/10 hover:border-white/20 hover:shadow-xl hover:shadow-black/50 group">
+              <div className="bg-white/5 backdrop-blur-2xl border border-white/10 rounded-2xl p-6 flex flex-col justify-between transition-all duration-300 shadow-[0_10px_30px_rgba(0,0,0,0.2)] hover:-translate-y-1 hover:bg-white/10 hover:border-white/20 hover:shadow-[0_15px_40px_rgba(0,0,0,0.3)] group">
                 <div>
-                  <div className="text-sm text-neutral-400 mb-2 flex items-center gap-2">
-                    <div className="bg-white/10 p-2 rounded-lg flex items-center justify-center group-hover:bg-red-500/10 group-hover:text-red-400 transition-colors duration-300">
+                  <div className="text-sm text-white/60 mb-2 flex items-center gap-2">
+                    <div className="bg-white/10 p-2 rounded-lg flex items-center justify-center group-hover:bg-red-500/15 group-hover:text-red-400 transition-colors duration-300 shadow-[0_4px_10px_rgba(0,0,0,0.1)] group-hover:shadow-[0_4px_10px_rgba(248,113,113,0.2)]">
                       <i className="fas fa-layer-group text-sm"></i>
                     </div>
-                    <span className="text-sm font-bold text-neutral-300 tracking-wide">
-                      片库待看时长
+                    <span className="text-sm font-bold text-white/80 group-hover:text-white transition-colors tracking-wide">
+                      待看时长
                     </span>
                   </div>
                   <div className="flex items-baseline gap-2 mb-2">
-                    <span className="text-5xl font-mono text-neutral-300 tracking-tighter">
+                    <span className="text-5xl font-mono text-white tracking-tighter drop-shadow-[0_0_10px_rgba(255,255,255,0.2)]">
                       {Math.round((currentYearData?.total_unwatched_runtime ?? 0) / 60)}
                     </span>
-                    <span className="text-neutral-500 font-medium">小时</span>
+                    <span className="text-white/50 font-medium">小时</span>
                   </div>
                 </div>
-                <p className="text-xs text-neutral-500 mt-4 border-t border-white/5 pt-4">
-                  数据库中尚未消化的总精神食粮
+                <p className="text-xs text-white/50 mt-4 border-t border-white/10 pt-4">
+                  正在看与想要看的精神食粮储备
                 </p>
               </div>
 
-              <div className="bg-white/5 border border-white/10 rounded-2xl p-6 flex flex-col justify-between transition-all duration-300 hover:-translate-y-1 hover:bg-white/10 hover:border-white/20 hover:shadow-xl hover:shadow-black/50 group">
+              <div className="bg-white/5 backdrop-blur-2xl border border-white/10 rounded-2xl p-6 flex flex-col justify-between transition-all duration-300 shadow-[0_10px_30px_rgba(0,0,0,0.2)] hover:-translate-y-1 hover:bg-white/10 hover:border-white/20 hover:shadow-[0_15px_40px_rgba(0,0,0,0.3)] group">
                 <div>
-                  <div className="text-sm text-neutral-400 mb-2 flex items-center gap-2">
-                    <div className="bg-white/10 p-2 rounded-lg flex items-center justify-center group-hover:bg-red-500/10 group-hover:text-red-400 transition-colors duration-300">
+                  <div className="text-sm text-white/60 mb-2 flex items-center gap-2">
+                    <div className="bg-white/10 p-2 rounded-lg flex items-center justify-center group-hover:bg-red-500/15 group-hover:text-red-400 transition-colors duration-300 shadow-[0_4px_10px_rgba(0,0,0,0.1)] group-hover:shadow-[0_4px_10px_rgba(248,113,113,0.2)]">
                       <i className="fas fa-chart-pie text-sm" />
                     </div>
-                    <span className="text-sm font-bold text-neutral-300 tracking-wide">
+                    <span className="text-sm font-bold text-white/80 group-hover:text-white transition-colors tracking-wide">
                       片库完成进度
                     </span>
                   </div>
                   <div className="flex items-baseline gap-2 mb-4">
-                    <span className="text-5xl font-mono text-white tracking-tighter">
+                    <span className="text-5xl font-mono text-white tracking-tighter drop-shadow-[0_0_10px_rgba(255,255,255,0.2)]">
                       {Math.round(
                         ((currentYearData?.total_watched_runtime ?? 0) /
                           (currentYearData?.total_runtime ?? 1)) *
@@ -388,12 +392,12 @@ export default function HomeDashboard({
                       )}
                       %
                     </span>
-                    <span className="text-neutral-500 font-medium">已完成</span>
+                    <span className="text-white/50 font-medium">已完成</span>
                   </div>
                 </div>
-                <div className="w-full h-2 bg-white/10 rounded-full overflow-hidden mt-2">
+                <div className="w-full h-2 bg-white/10 rounded-full overflow-hidden mt-2 shadow-inner">
                   <div
-                    className="h-full bg-linear-to-r from-red-600 to-red-400 shadow-[0_0_12px_rgba(239,68,68,0.4)] rounded-full"
+                    className="h-full bg-linear-to-r from-red-600 to-red-400 shadow-[0_0_12px_rgba(239,68,68,0.5)] rounded-full"
                     style={{
                       width: `${Math.round(((currentYearData?.total_watched_runtime ?? 0) / (currentYearData?.total_runtime ?? 1)) * 100)}%`,
                     }}
@@ -402,91 +406,87 @@ export default function HomeDashboard({
               </div>
             </div>
 
-            <div className="bg-white/5 border border-white/10 rounded-2xl p-6 flex flex-col gap-6 transition-all duration-300 hover:-translate-y-1 hover:bg-white/10 hover:border-white/20 hover:shadow-xl hover:shadow-black/50 group">
-              <div className="flex items-center border-b border-white/5 pb-3 gap-2">
-                <div className="bg-white/10 p-2 rounded-lg flex items-center justify-center group-hover:bg-red-500/10 group-hover:text-red-400 transition-colors duration-300">
-                  <i className="fas fa-film text-sm" />
+            {/* Movies Section (Updated to 2 columns) */}
+            <div className="bg-white/5 backdrop-blur-2xl border border-white/10 rounded-2xl p-6 flex flex-col gap-6 transition-all duration-300 shadow-[0_10px_30px_rgba(0,0,0,0.2)] hover:-translate-y-1 hover:bg-white/10 hover:border-white/20 hover:shadow-[0_15px_40px_rgba(0,0,0,0.3)] group">
+              <div className="flex justify-between items-center border-b border-white/10 pb-3">
+                <div className="flex items-center gap-2">
+                  <div className="bg-white/10 p-2 rounded-lg flex items-center justify-center group-hover:bg-red-500/15 group-hover:text-red-400 transition-colors duration-300 shadow-[0_4px_10px_rgba(0,0,0,0.1)] group-hover:shadow-[0_4px_10px_rgba(248,113,113,0.2)]">
+                    <i className="fas fa-film text-sm" />
+                  </div>
+                  <span className="text-sm font-bold text-white/80 group-hover:text-white transition-colors tracking-wide">
+                    电影看板
+                  </span>
                 </div>
-                <span className="text-sm font-bold text-neutral-300 tracking-wide">
-                  电影看板
+                <span className="text-xs font-mono text-white/50">
+                  总计: {totalMovies} 部
                 </span>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                <div>
-                  <div className="text-xs text-neutral-500 mb-1">时长</div>
-                  <div className="text-3xl font-mono text-white">
-                    {Math.round((currentYearData?.movies_watched_runtime ?? 0) / 60)}
-                    <span className="text-sm text-neutral-500 font-normal">
-                      {" "}
-                      / {Math.round((currentYearData?.total_movies_runtime ?? 0) / 60)} 小时
-                    </span>
-                  </div>
-                </div>
-                <div>
-                  <div className="text-xs text-neutral-500 mb-1">已看总量</div>
-                  <div className="text-3xl font-mono text-white">
-                    {currentYearData?.watched_movies ?? 0}
-                    <span className="text-sm text-neutral-500 font-normal">
-                      {" "}
-                      / {currentYearData?.total_movies ?? 0} 部
-                    </span>
-                  </div>
-                </div>
+              {/* Grid set to grid-cols-2 as requested */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                <MediaStatusCard
+                  title="已看过"
+                  icon="fa-check-circle"
+                  count={watchedMovies}
+                />
+                <MediaStatusCard
+                  title="想要看"
+                  icon="fa-pause-circle"
+                  count={unwatchedMovies}
+                />
               </div>
 
-              <div className="w-full h-2 bg-white/10 rounded-full overflow-hidden">
+              <div className="w-full h-1.5 bg-white/10 rounded-full overflow-hidden shadow-inner">
                 <div
-                  className="h-full bg-linear-to-r from-red-600 to-red-400 shadow-[0_0_12px_rgba(239,68,68,0.4)] rounded-full"
+                  className="h-full bg-linear-to-r from-red-600 to-red-400 shadow-[0_0_12px_rgba(239,68,68,0.5)] rounded-full"
                   style={{ width: `${moviesPercent}%` }}
                 />
               </div>
             </div>
 
-            <div className="bg-white/5 border border-white/10 rounded-2xl p-6 flex flex-col gap-6 transition-all duration-300 hover:-translate-y-1 hover:bg-white/10 hover:border-white/20 hover:shadow-xl hover:shadow-black/50 group">
-              <div className="flex items-center border-b border-white/5 pb-3 gap-2">
-                <div className="bg-white/10 p-2 rounded-lg flex items-center justify-center group-hover:bg-red-500/10 group-hover:text-red-400 transition-colors duration-300">
-                  <i className="fas fa-tv text-sm"></i>
+            {/* Series Section */}
+            <div className="bg-white/5 backdrop-blur-2xl border border-white/10 rounded-2xl p-6 flex flex-col gap-6 transition-all duration-300 shadow-[0_10px_30px_rgba(0,0,0,0.2)] hover:-translate-y-1 hover:bg-white/10 hover:border-white/20 hover:shadow-[0_15px_40px_rgba(0,0,0,0.3)] group">
+              <div className="flex justify-between items-center border-b border-white/10 pb-3">
+                <div className="flex items-center gap-2">
+                  <div className="bg-white/10 p-2 rounded-lg flex items-center justify-center group-hover:bg-red-500/15 group-hover:text-red-400 transition-colors duration-300 shadow-[0_4px_10px_rgba(0,0,0,0.1)] group-hover:shadow-[0_4px_10px_rgba(248,113,113,0.2)]">
+                    <i className="fas fa-tv text-sm"></i>
+                  </div>
+                  <span className="text-sm font-bold text-white/80 group-hover:text-white transition-colors tracking-wide">
+                    电视剧看板
+                  </span>
                 </div>
-                <span className="text-sm font-bold text-neutral-300 tracking-wide">
-                  电视剧看板
+                <span className="text-xs font-mono text-white/50">
+                  总计: {totalSeries} 部
                 </span>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                <div>
-                  <div className="text-xs text-neutral-500 mb-1">时长</div>
-                  <div className="text-3xl font-mono text-white">
-                    {Math.round((currentYearData?.series_watched_runtime ?? 0) / 60)}
-                    <span className="text-sm text-neutral-500 font-normal">
-                      {" "}
-                      / {Math.round((currentYearData?.total_series_runtime ?? 0) / 60)} 小时
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mt-2">
-                <SeriesStatusCard
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+                <MediaStatusCard
                   title="已看过"
                   icon="fa-check-circle"
-                  seriesCount={currentYearData?.watched_series ?? 0}
+                  count={watchedSeries}
                   seasonsCount={currentYearData?.watched_seasons ?? 0}
                   episodesCount={currentYearData?.watched_series_episodes ?? 0}
                 />
-                <SeriesStatusCard
+                <MediaStatusCard
                   title="正在看"
                   icon="fa-play-circle"
-                  seriesCount={currentYearData?.watching_series ?? 0}
+                  count={watchingSeries}
                   seasonsCount={currentYearData?.watching_seasons ?? 0}
-                  episodesCount={0}
                 />
-                <SeriesStatusCard
+                <MediaStatusCard
                   title="想要看"
                   icon="fa-pause-circle"
-                  seriesCount={currentYearData?.unwatched_series ?? 0}
+                  count={unwatchedSeries}
                   seasonsCount={currentYearData?.unwatched_seasons ?? 0}
                   episodesCount={currentYearData?.unwatched_episodes ?? 0}
+                />
+              </div>
+              
+              <div className="w-full h-1.5 bg-white/10 rounded-full overflow-hidden shadow-inner">
+                <div
+                  className="h-full bg-linear-to-r from-red-600 to-red-400 shadow-[0_0_12px_rgba(239,68,68,0.5)] rounded-full"
+                  style={{ width: `${seriesPercent}%` }}
                 />
               </div>
             </div>
@@ -498,8 +498,8 @@ export default function HomeDashboard({
             <CategoryHeaderCards
               year={selectedYear}
               categoryName="电影"
-              watchedCount={currentYearData?.watched_movies ?? 0}
-              totalCount={currentYearData?.total_movies ?? 0}
+              watchedCount={watchedMovies}
+              totalCount={totalMovies}
               watchedPercent={moviesPercent}
               avgRating={avgMoviesRating}
               avgRatingPercent={avgMoviesRatingPercent}
@@ -523,8 +523,8 @@ export default function HomeDashboard({
             <CategoryHeaderCards
               year={selectedYear}
               categoryName="电视剧"
-              watchedCount={currentYearData?.watched_series ?? 0}
-              totalCount={currentYearData?.total_series ?? 0}
+              watchedCount={watchedSeries}
+              totalCount={totalSeries}
               watchedPercent={seriesPercent}
               avgRating={avgSeriesRating}
               avgRatingPercent={avgSeriesRatingPercent}

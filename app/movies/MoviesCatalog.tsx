@@ -14,9 +14,9 @@ export default function MoviesCatalog({
   ];
 
   return (
-    <div className="relative bg-[#0a0a0a] text-neutral-200 pt-14">
+    <div className="relative text-neutral-200 pt-14">
       <div className="absolute top-0 inset-x-0 h-[40vh] bg-linear-to-b from-white/5 to-transparent pointer-events-none -z-10" />
-      <div className="container w-full mx-auto px-6 md:px-8 max-w-7xl pt-12 pb-12 relative z-10">
+      <div className="container w-full mx-auto px-6 md:px-8 max-w-7xl pt-12 pb-12 relative z-[1]">
 
         
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-16">

@@ -2,12 +2,12 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation"; // <-- 新增 useRouter
+import { usePathname, useRouter } from "next/navigation";
 
 export default function Navbar() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const pathname = usePathname();
-  const router = useRouter(); // <-- 初始化 router
+  const router = useRouter();
 
   const closeMenu = () => setIsMobileMenuOpen(false);
 
@@ -21,24 +21,21 @@ export default function Navbar() {
     return href === "/" ? pathname === "/" : pathname.startsWith(href);
   };
 
-  // 处理搜索提交
-  const handleSearch = (e: React.FormEvent<HTMLFormElement>) => {
-  e.preventDefault(); // 阻止表单默认的刷新提交
-  
-  // 获取表单里 name="q" 的 input 的值
-  const formData = new FormData(e.currentTarget);
-  const query = formData.get("q")?.toString().trim() || "";
+  const handleSearch = (e: React.SubmitEvent<HTMLFormElement>) => {
+    e.preventDefault();
 
-  // 核心逻辑：有字就带参数搜，没字就直接去片库浏览
-  if (query) {
-    router.push(`/search?q=${encodeURIComponent(query)}`);
-  } else {
-    router.push('/search'); 
-  }
-};
+    const formData = new FormData(e.currentTarget);
+    const query = formData.get("q")?.toString().trim() || "";
+
+    if (query) {
+      router.push(`/search?q=${encodeURIComponent(query)}`);
+    } else {
+      router.push("/search");
+    }
+  };
 
   return (
-    <nav className="fixed w-full z-50 top-0 left-0 bg-[#0a0a0a]/40 backdrop-blur-md border-b border-white/5 transition-all duration-300">
+    <nav className="fixed w-full z-50 top-0 left-0 bg-white/5 backdrop-blur-2xl border-b border-white/10 shadow-[0_4px_20px_rgba(0,0,0,0.2)] transition-all duration-300">
       <div className="flex items-center justify-between w-full mx-auto px-6 md:px-8 h-16 max-w-7xl">
         <div className="flex items-center gap-10">
           <Link
@@ -46,10 +43,17 @@ export default function Navbar() {
             className="flex items-center gap-2.5 group cursor-pointer"
             onClick={closeMenu}
           >
-            <i className="fas fa-terminal text-red-500 text-base group-hover:rotate-12 transition-transform duration-300"></i>
-            <span className="font-mono text-xl text-white font-light tracking-tight">
-              <span className="text-white">bingewatch</span>
-              <span className="text-red-500 font-black -mx-0.5">.</span>ing
+            <i className="fas fa-terminal text-red-500 text-base group-hover:rotate-12 group-hover:drop-shadow-[0_0_10px_rgba(239,68,68,0.8)] transition-all duration-300"></i>
+            <span className="font-mono text-xl font-light tracking-tight drop-shadow-[0_0_12px_rgba(255,255,255,0.1)]">
+              <span className="bg-clip-text text-transparent bg-linear-to-br from-white via-white/80 to-white/50">
+                bingewatch
+              </span>
+              <span className="text-red-500 font-black -mx-0.5 drop-shadow-[0_0_8px_rgba(239,68,68,0.8)]">
+                .
+              </span>
+              <span className="bg-clip-text text-transparent bg-linear-to-br from-white/90 to-white/40">
+                ing
+              </span>
             </span>
           </Link>
 
@@ -58,10 +62,10 @@ export default function Navbar() {
               <Link
                 key={item.name}
                 href={item.href}
-                className={`transition-colors duration-300 ${
+                className={`transition-all duration-300 ${
                   isActive(item.href)
-                    ? "text-white font-bold"
-                    : "text-neutral-400 hover:text-white"
+                    ? "text-red-500 font-bold drop-shadow-[0_0_12px_rgba(239,68,68,0.8)] scale-105" 
+                    : "text-white/60 hover:text-red-400 hover:drop-shadow-[0_0_10px_rgba(239,68,68,0.6)]" 
                 }`}
               >
                 {item.name}
@@ -71,7 +75,6 @@ export default function Navbar() {
         </div>
 
         <div className="flex items-center gap-5">
-          {/* 桌面端搜索框：加上 onSubmit */}
           <form
             onSubmit={handleSearch}
             className="relative group hidden sm:block"
@@ -80,31 +83,41 @@ export default function Navbar() {
               type="submit"
               className="absolute inset-y-0 left-0 flex items-center pl-3.5 cursor-pointer z-10"
             >
-              <i className="fas fa-search text-neutral-500 group-focus-within:text-neutral-300 transition-colors"></i>
+              <i className="fas fa-search text-white/50 group-focus-within:text-white group-focus-within:drop-shadow-[0_0_8px_rgba(255,255,255,0.8)] transition-all duration-300"></i>
             </button>
             <input
               name="q"
               type="text"
               placeholder="搜索"
-              className="bg-white/5 border border-white/10 text-white text-sm rounded-full focus:ring-1 focus:ring-red-500/30 focus:border-red-500/50 block w-44 focus:w-64 pl-10 py-1.5 transition-all duration-500 ease-out placeholder-neutral-600 outline-none shadow-inner"
+              className="bg-white/5 backdrop-blur-2xl border border-white/10 text-white text-sm rounded-full 
+              focus:bg-white/10 focus:ring-1 focus:ring-white/30 focus:border-white/30 
+              block w-44 focus:w-64 pl-10 py-1.5 transition-all duration-500 ease-out 
+              placeholder-white/40 outline-none 
+              shadow-[0_4px_15px_rgba(0,0,0,0.2)] 
+              focus:shadow-[0_4px_25px_rgba(255,255,255,0.05)]"
             />
           </form>
 
           <button
-            className="md:hidden flex items-center justify-center text-neutral-400 hover:text-white p-2 w-10 h-10 outline-none"
+            className="md:hidden flex items-center justify-center text-white/70 hover:text-white p-2 w-10 h-10 outline-none 
+            bg-white/5 backdrop-blur-2xl border border-white/10 rounded-full 
+            shadow-[0_4px_15px_rgba(0,0,0,0.2)] 
+            hover:bg-white/10 hover:border-white/20 hover:shadow-[0_6px_20px_rgba(255,255,255,0.05)] transition-all duration-300"
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
           >
             <i
-              className={`fas ${isMobileMenuOpen ? "fa-times text-2xl" : "fa-bars text-xl"} transition-all duration-300`}
+              className={`fas ${
+                isMobileMenuOpen ? "fa-times text-xl" : "fa-bars text-lg"
+              } drop-shadow-[0_0_8px_rgba(255,255,255,0.3)] transition-all duration-300`}
             ></i>
           </button>
         </div>
       </div>
 
       <div
-        className={`md:hidden overflow-hidden transition-all duration-300 ease-in-out bg-[#0a0a0a]/95 backdrop-blur-xl border-b border-white/10 ${
+        className={`md:hidden overflow-hidden transition-all duration-500 ease-in-out bg-white/5 backdrop-blur-3xl border-b border-white/10 shadow-[0_15px_40px_rgba(0,0,0,0.2)] ${
           isMobileMenuOpen
-            ? "max-h-64 opacity-100 py-4"
+            ? "max-h-72 opacity-100 py-4"
             : "max-h-0 opacity-0 py-0 border-transparent"
         }`}
       >
@@ -113,10 +126,10 @@ export default function Navbar() {
             <Link
               key={item.name}
               href={item.href}
-              className={`block py-2 ${
+              className={`block py-2 transition-all ${
                 isActive(item.href)
-                  ? "text-white font-bold"
-                  : "text-neutral-300 hover:text-white"
+                  ? "text-red-500 font-bold drop-shadow-[0_0_12px_rgba(239,68,68,0.8)] translate-x-2"
+                  : "text-white/60 hover:text-red-400 hover:drop-shadow-[0_0_10px_rgba(239,68,68,0.6)] hover:translate-x-1"
               }`}
               onClick={closeMenu}
             >
@@ -132,14 +145,18 @@ export default function Navbar() {
               type="submit"
               className="absolute inset-y-0 left-0 flex items-center pl-3.5 cursor-pointer z-10"
             >
-              <i className="fas fa-search text-neutral-500 group-focus-within:text-white group-hover:text-white transition-colors"></i>
+              <i className="fas fa-search text-white/50 group-focus-within:text-white group-focus-within:drop-shadow-[0_0_8px_rgba(255,255,255,0.8)] transition-all duration-300"></i>
             </button>
 
             <input
               name="q"
               type="text"
               placeholder="搜索"
-              className="bg-white/5 border border-white/10 text-white text-sm rounded-lg block w-full pl-10 py-2.5 outline-none focus:border-red-500/50"
+              className="bg-white/5 backdrop-blur-2xl border border-white/10 text-white text-sm rounded-xl block w-full pl-10 py-2.5 outline-none 
+              focus:bg-white/10 focus:border-white/30 focus:ring-1 focus:ring-white/30
+              shadow-[0_4px_15px_rgba(0,0,0,0.2)] 
+              focus:shadow-[0_6px_25px_rgba(255,255,255,0.05)] 
+              placeholder-white/40 transition-all duration-300"
             />
           </form>
         </div>

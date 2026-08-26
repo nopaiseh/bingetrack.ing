@@ -21,8 +21,7 @@ export default async function SeriesDetailPage({ params }: { params: Promise<{ i
   ];
 
   return (
-    <div className="relative bg-[#060606] text-neutral-200 selection:bg-neutral-700 selection:text-white font-sans overflow-hidden">
-      
+    <div className="relative min-h-screen text-white/90 selection:bg-red-500/30 selection:text-white font-sans overflow-hidden">
       <MediaInformation media={series} relatedMedia={relatedMedia} seasons={seasons} />
     </div>
   );

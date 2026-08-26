@@ -8,12 +8,10 @@ import { getSupabaseBrowser } from "@/utils/supabase-client";
 import { Media, ViewAllMediaRow } from "@/lib/types";
 import { mapViewRowToMedia } from "@/lib/functions/media-mapper";
 
-// 将原本的 SearchPage 内容放入内部组件
 function SearchContent() {
   const searchParams = useSearchParams();
   const urlQuery = searchParams.get("q") || "";
 
-  // 状态与 URL 同步（无需在 effect 中直接调用 setState）
   const [query, setQuery] = useState(urlQuery);
   const [prevUrlQuery, setPrevUrlQuery] = useState(urlQuery);
 
@@ -52,17 +50,13 @@ function SearchContent() {
   
   const lastElementRef = useCallback(
     (node: HTMLDivElement | null) => {
-      // 如果正在加载中，不触发
       if (isLoading || isLoadingMore) return; 
       
-      // 如果之前有观察者，先断开
       if (observer.current) observer.current.disconnect();
       
-      // 创建新的观察者
       observer.current = new IntersectionObserver(
         (entries) => {
           if (entries[0].isIntersecting && hasMore) {
-            console.log("🚀 触底啦，加载第", page + 1, "页！");
             setPage((prevPage) => prevPage + 1);
           }
         },
@@ -101,24 +95,15 @@ function SearchContent() {
         [
           db.from("genres").select("name").order("name", { ascending: true }),
           db.from("regions").select("name").order("name", { ascending: true }),
-          db
-            .from("languages")
-            .select("name")
-            .order("name", { ascending: true }),
-          db
-            .from("release_year_stats")
-            .select("release_year")
-            .neq("release_year", "All Time")
-            .order("release_year", { ascending: false }),
+          db.from("languages").select("name").order("name", { ascending: true }),
+          db.from("release_year_stats").select("release_year").neq("release_year", "All Time").order("release_year", { ascending: false }),
         ],
       );
 
       if (genresRes.data) setGenreOptions(genresRes.data.map((g) => g.name));
       if (regionsRes.data) setRegionOptions(regionsRes.data.map((r) => r.name));
-      if (languagesRes.data)
-        setLanguageOptions(languagesRes.data.map((l) => l.name));
-      if (yearsRes.data)
-        setYearOptions(yearsRes.data.map((y) => String(y.release_year)));
+      if (languagesRes.data) setLanguageOptions(languagesRes.data.map((l) => l.name));
+      if (yearsRes.data) setYearOptions(yearsRes.data.map((y) => String(y.release_year)));
     };
 
     fetchOptions();
@@ -126,55 +111,34 @@ function SearchContent() {
 
   useEffect(() => {
     const fetchMedia = async () => {
-      if (page === 1) {
-        setIsLoading(true);
-      } else {
-        setIsLoadingMore(true);
-      }
+      if (page === 1) setIsLoading(true);
+      else setIsLoadingMore(true);
 
       const params = new URLSearchParams();
       if (query) params.set("q", query);
 
       if (filters.type && filters.type.length > 0) {
-        const typeMap: Record<string, string> = {
-          电影: "movie",
-          电视剧: "tv_series",
-        };
+        const typeMap: Record<string, string> = { 电影: "movie", 电视剧: "tv_series" };
         const mappedTypes = filters.type.map((t) => typeMap[t]).filter(Boolean);
-        if (mappedTypes.length > 0) {
-          params.set("type", mappedTypes.join(","));
-        }
+        if (mappedTypes.length > 0) params.set("type", mappedTypes.join(","));
       }
 
       if (filters.status && filters.status.length > 0) {
-        const statusMap: Record<string, string> = {
-          想看: "want_to_watch",
-          在看: "watching",
-          已看: "watched",
-        };
-        const mappedStatuses = filters.status
-          .map((s) => statusMap[s])
-          .filter(Boolean);
-        if (mappedStatuses.length > 0) {
-          params.set("status", mappedStatuses.join(","));
-        }
+        const statusMap: Record<string, string> = { 想看: "want_to_watch", 在看: "watching", 已看: "watched" };
+        const mappedStatuses = filters.status.map((s) => statusMap[s]).filter(Boolean);
+        if (mappedStatuses.length > 0) params.set("status", mappedStatuses.join(","));
       }
 
-      if (filters.genre && filters.genre.length > 0)
-        params.set("genre", filters.genre.join(","));
-      if (filters.region && filters.region.length > 0)
-        params.set("region", filters.region.join(","));
-      if (filters.language && filters.language.length > 0)
-        params.set("language", filters.language.join(","));
+      if (filters.genre && filters.genre.length > 0) params.set("genre", filters.genre.join(","));
+      if (filters.region && filters.region.length > 0) params.set("region", filters.region.join(","));
+      if (filters.language && filters.language.length > 0) params.set("language", filters.language.join(","));
 
       if (filters.year && filters.year.length === 2) {
         if (filters.year[0]) params.set("startYear", filters.year[0]);
         if (filters.year[1]) params.set("endYear", filters.year[1]);
       }
 
-      if (filters.sort && filters.sort.length > 0) {
-        params.set("sort", filters.sort[0]);
-      }
+      if (filters.sort && filters.sort.length > 0) params.set("sort", filters.sort[0]);
 
       params.set("limit", LIMIT.toString());
       params.set("offset", ((page - 1) * LIMIT).toString());
@@ -182,24 +146,13 @@ function SearchContent() {
       try {
         const res = await fetch(`/api/media?${params.toString()}`);
         const json = await res.json();
+        const dataArray: ViewAllMediaRow[] = Array.isArray(json) ? json : (json.rows ?? json.data ?? []);
+        const combinedMedia: Media[] = dataArray.map((item) => mapViewRowToMedia(item));
 
-        const dataArray: ViewAllMediaRow[] = Array.isArray(json)
-          ? json
-          : (json.rows ?? json.data ?? []);
+        if (combinedMedia.length < LIMIT) setHasMore(false);
 
-        const combinedMedia: Media[] = dataArray.map((item) =>
-          mapViewRowToMedia(item),
-        );
-
-        if (combinedMedia.length < LIMIT) {
-          setHasMore(false);
-        }
-
-        if (page === 1) {
-          setMediaItems(combinedMedia);
-        } else {
-          setMediaItems((prev) => [...prev, ...combinedMedia]);
-        }
+        if (page === 1) setMediaItems(combinedMedia);
+        else setMediaItems((prev) => [...prev, ...combinedMedia]);
       } catch (error) {
         console.error("Failed to fetch media:", error);
         setMediaItems([]);
@@ -213,49 +166,24 @@ function SearchContent() {
   }, [query, filters, page]);
 
   const BUTTON_CATEGORIES = [
-    {
-      id: "type",
-      label: "分类",
-      options: ["电影", "电视剧"],
-      multiSelect: true,
-    },
-    {
-      id: "status",
-      label: "状态",
-      options: ["想看", "在看", "已看"],
-      multiSelect: true,
-    },
+    { id: "type", label: "分类", options: ["电影", "电视剧"], multiSelect: true },
+    { id: "status", label: "状态", options: ["想看", "在看", "已看"], multiSelect: true },
     { id: "genre", label: "类型", options: genreOptions, multiSelect: true },
     { id: "region", label: "地区", options: regionOptions, multiSelect: true },
-    {
-      id: "language",
-      label: "语言",
-      options: languageOptions,
-      multiSelect: true,
-    },
+    { id: "language", label: "语言", options: languageOptions, multiSelect: true },
   ];
 
-  const toggleFilter = (
-    categoryId: string,
-    value: string,
-    isMultiSelect = true,
-    allOptions: string[] = [],
-  ) => {
+  const toggleFilter = (categoryId: string, value: string, isMultiSelect = true, allOptions: string[] = []) => {
     setFilters((prev) => {
       const currentSelected = prev[categoryId] || [];
       if (value === "全部") return { ...prev, [categoryId]: [] };
       if (!isMultiSelect) return { ...prev, [categoryId]: [value] };
 
       if (currentSelected.includes(value)) {
-        return {
-          ...prev,
-          [categoryId]: currentSelected.filter((item) => item !== value),
-        };
+        return { ...prev, [categoryId]: currentSelected.filter((item) => item !== value) };
       } else {
         const newSelected = [...currentSelected, value];
-        const hasSelectedAll =
-          allOptions.length > 0 &&
-          allOptions.every((opt) => newSelected.includes(opt));
+        const hasSelectedAll = allOptions.length > 0 && allOptions.every((opt) => newSelected.includes(opt));
         if (hasSelectedAll) return { ...prev, [categoryId]: [] };
         return { ...prev, [categoryId]: newSelected };
       }
@@ -292,8 +220,7 @@ function SearchContent() {
 
   const hasActiveFilters = Object.entries(filters).some(([key, arr]) => {
     if (key === "sort") return false;
-    if (key === "year")
-      return arr.length > 0 && (arr[0] !== "" || arr[1] !== "");
+    if (key === "year") return arr.length > 0 && (arr[0] !== "" || arr[1] !== "");
     return arr.length > 0;
   });
 
@@ -303,77 +230,69 @@ function SearchContent() {
   ];
 
   return (
-    <div className="min-h-screen bg-black text-zinc-200 pt-24 pb-12 selection:bg-red-600/30 selection:text-white font-sans">
-      <div className="container mx-auto px-6 md:px-8 max-w-7xl">
+    <div className="min-h-screen text-neutral-200 pt-24 pb-12 selection:bg-red-500/30 selection:text-white font-sans relative">
+      <div className="container mx-auto px-6 md:px-8 max-w-7xl relative z-[1]">
+        
+        {/* Search Input Section */}
         <div className="mb-8">
           <div className="relative group">
-            <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none">
-              <i className="fas fa-search text-zinc-500 group-focus-within:text-red-500 transition-colors duration-300"></i>
+            <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none z-10">
+              <i className="fas fa-search text-white/50 group-focus-within:text-red-400 group-focus-within:drop-shadow-[0_0_5px_rgba(248,113,113,0.6)] transition-all duration-300"></i>
             </div>
+            {/* Lighter Frosted Glass Search Input (UNCHANGED) */}
             <input
               type="text"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="搜索电影、电视剧、导演或演员..."
-              className="w-full bg-[#0a0a0a] border border-zinc-800 focus:border-red-600 focus:ring-1 focus:ring-red-600/50 rounded-2xl py-5 pl-12 pr-40 text-lg text-white placeholder:text-zinc-600 outline-none transition-all shadow-inner"
+              className="w-full bg-white/5 backdrop-blur-2xl border border-white/10 focus:border-red-400/50 focus:ring-1 focus:ring-red-400/50 focus:bg-white/10 rounded-2xl py-5 pl-12 pr-40 text-lg text-white placeholder-white/40 outline-none transition-all duration-500 shadow-[0_4px_20px_rgba(0,0,0,0.2)] focus:shadow-[0_6px_30px_rgba(248,113,113,0.2)] relative z-0"
             />
 
-            <div className="absolute inset-y-0 right-0 pr-4 flex items-center gap-3">
+            <div className="absolute inset-y-0 right-0 pr-4 flex items-center gap-3 z-10">
               {query && (
-                <button
-                  onClick={() => setQuery("")}
-                  className="text-zinc-500 hover:text-white transition-colors"
-                >
+                <button onClick={() => setQuery("")} className="text-white/50 hover:text-red-400 hover:drop-shadow-[0_0_5px_rgba(248,113,113,0.6)] transition-all duration-300">
                   <i className="fas fa-times-circle text-lg"></i>
                 </button>
               )}
-              <div className="h-6 w-px bg-zinc-800"></div>
+              <div className="h-6 w-px bg-white/20"></div>
+              {/* Lighter Frosted Glass Advanced Filter Button */}
               <button
                 onClick={() => setShowAdvanced(!showAdvanced)}
-                className={`relative flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all duration-300 ${
+                className={`relative flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all duration-300 backdrop-blur-2xl ${
                   showAdvanced
-                    ? "bg-red-600/10 text-red-500 border border-red-600/30 hover:bg-red-600/20"
-                    : "bg-zinc-900 text-zinc-400 border border-zinc-800 hover:bg-zinc-800 hover:text-white"
+                    ? "bg-red-500/15 text-red-400 border border-red-400/40 shadow-[0_4px_15px_rgba(248,113,113,0.2)] drop-shadow-[0_0_3px_rgba(248,113,113,0.3)]"
+                    : "bg-white/5 text-white/70 border border-white/10 shadow-[0_4px_15px_rgba(0,0,0,0.2)] hover:bg-white/10 hover:text-white hover:border-white/20 hover:drop-shadow-[0_0_8px_rgba(255,255,255,0.5)] hover:shadow-[0_6px_20px_rgba(0,0,0,0.3)]"
                 }`}
               >
                 <i className="fas fa-sliders-h"></i>
                 {showAdvanced ? "收起筛选" : "高级筛选"}
                 {!showAdvanced && hasActiveFilters && (
-                  <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-600 rounded-full border-2 border-black animate-pulse"></span>
+                  <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-400 rounded-full border border-black/50 shadow-[0_0_8px_rgba(248,113,113,0.8)] animate-pulse"></span>
                 )}
               </button>
             </div>
           </div>
 
+          {/* Lighter Frosted Glass Filter Panel */}
           {showAdvanced && (
-            <div className="mt-4 p-6 bg-[#0a0a0a] border border-zinc-800/80 rounded-2xl shadow-2xl transition-all duration-300 origin-top animate-in slide-in-from-top-2 fade-in">
+            <div className="mt-4 p-6 bg-white/5 backdrop-blur-2xl border border-white/10 rounded-2xl shadow-[0_15px_50px_rgba(0,0,0,0.5)] transition-all duration-300 origin-top animate-in slide-in-from-top-2 fade-in">
               <div className="flex flex-col">
                 {BUTTON_CATEGORIES.map((category) => {
                   const activeSelections = filters[category.id] || [];
                   const isAllSelected = activeSelections.length === 0;
 
                   return (
-                    <div
-                      key={category.id}
-                      className="flex items-start py-4 border-b border-zinc-800/60"
-                    >
-                      <span className="text-zinc-500 text-sm font-medium w-16 shrink-0 mt-1.5 tracking-wider">
+                    <div key={category.id} className="flex items-start py-4 border-b border-white/10">
+                      <span className="text-white/60 text-sm font-medium w-16 shrink-0 mt-1.5 tracking-wider drop-shadow-[0_0_5px_rgba(255,255,255,0.1)]">
                         {category.label}
                       </span>
                       <div className="flex flex-wrap gap-x-3 gap-y-2 flex-1 items-center">
                         <button
-                          onClick={() =>
-                            toggleFilter(
-                              category.id,
-                              "全部",
-                              category.multiSelect,
-                              category.options,
-                            )
-                          }
-                          className={`px-4 py-1.5 rounded-lg text-[13px] transition-all duration-200 ${
+                          onClick={() => toggleFilter(category.id, "全部", category.multiSelect, category.options)}
+                          className={`px-4 py-1.5 rounded-lg text-[13px] transition-all duration-300 backdrop-blur-2xl ${
                             isAllSelected
-                              ? "bg-red-600 text-white font-medium shadow-[0_0_15px_rgba(220,38,38,0.3)]"
-                              : "bg-transparent text-zinc-400 border border-transparent hover:border-zinc-700 hover:text-zinc-200"
+                              ? "bg-red-500/15 text-red-400 font-bold border border-red-400/40 shadow-[0_4px_10px_rgba(248,113,113,0.2)] drop-shadow-[0_0_3px_rgba(248,113,113,0.3)]"
+                              : "bg-white/5 text-white/70 border border-white/10 shadow-[0_4px_10px_rgba(0,0,0,0.2)] hover:bg-white/10 hover:text-white hover:border-white/20 hover:shadow-[0_6px_15px_rgba(0,0,0,0.3)] hover:drop-shadow-[0_0_8px_rgba(255,255,255,0.5)]"
                           }`}
                         >
                           全部
@@ -384,18 +303,11 @@ function SearchContent() {
                           return (
                             <button
                               key={option}
-                              onClick={() =>
-                                toggleFilter(
-                                  category.id,
-                                  option,
-                                  category.multiSelect,
-                                  category.options,
-                                )
-                              }
-                              className={`group flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-[13px] transition-all duration-200 ${
+                              onClick={() => toggleFilter(category.id, option, category.multiSelect, category.options)}
+                              className={`group flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-[13px] transition-all duration-300 backdrop-blur-2xl ${
                                 isSelected
-                                  ? "bg-red-600 text-white font-medium shadow-[0_0_15px_rgba(220,38,38,0.3)]"
-                                  : "bg-zinc-900 border border-zinc-800 text-zinc-400 hover:border-zinc-600 hover:text-zinc-200"
+                                  ? "bg-red-500/15 text-red-400 font-bold border border-red-400/40 shadow-[0_4px_10px_rgba(248,113,113,0.2)] drop-shadow-[0_0_3px_rgba(248,113,113,0.3)]"
+                                  : "bg-white/5 text-white/70 border border-white/10 shadow-[0_4px_10px_rgba(0,0,0,0.2)] hover:bg-white/10 hover:text-white hover:border-white/20 hover:shadow-[0_6px_15px_rgba(0,0,0,0.3)] hover:drop-shadow-[0_0_8px_rgba(255,255,255,0.5)]"
                               }`}
                             >
                               {option}
@@ -410,20 +322,17 @@ function SearchContent() {
                   );
                 })}
 
-                <div className="flex items-center py-4 border-b border-zinc-800/60">
-                  <span className="text-zinc-500 text-sm font-medium w-16 shrink-0 tracking-wider">
+                <div className="flex items-center py-4 border-b border-white/10">
+                  <span className="text-white/60 text-sm font-medium w-16 shrink-0 tracking-wider drop-shadow-[0_0_5px_rgba(255,255,255,0.1)]">
                     年份
                   </span>
                   <div className="flex items-center gap-4">
                     <button
-                      onClick={() =>
-                        setFilters((prev) => ({ ...prev, year: [] }))
-                      }
-                      className={`px-4 py-1.5 rounded-lg text-[13px] transition-all duration-200 ${
-                        !filters.year?.length ||
-                        (filters.year[0] === "" && filters.year[1] === "")
-                          ? "bg-red-600 text-white font-medium shadow-[0_0_15px_rgba(220,38,38,0.3)]"
-                          : "bg-transparent text-zinc-400 border border-transparent hover:border-zinc-700 hover:text-zinc-200"
+                      onClick={() => setFilters((prev) => ({ ...prev, year: [] }))}
+                      className={`px-4 py-1.5 rounded-lg text-[13px] transition-all duration-300 backdrop-blur-2xl ${
+                        !filters.year?.length || (filters.year[0] === "" && filters.year[1] === "")
+                          ? "bg-red-500/15 text-red-400 font-bold border border-red-400/40 shadow-[0_4px_10px_rgba(248,113,113,0.2)] drop-shadow-[0_0_3px_rgba(248,113,113,0.3)]"
+                          : "bg-white/5 text-white/70 border border-white/10 shadow-[0_4px_10px_rgba(0,0,0,0.2)] hover:bg-white/10 hover:text-white hover:border-white/20 hover:shadow-[0_6px_15px_rgba(0,0,0,0.3)] hover:drop-shadow-[0_0_8px_rgba(255,255,255,0.5)]"
                       }`}
                     >
                       全部
@@ -433,76 +342,59 @@ function SearchContent() {
                       <div className="relative group">
                         <select
                           value={filters.year?.[0] || ""}
-                          onChange={(e) =>
-                            handleYearChange("start", e.target.value)
-                          }
-                          className="appearance-none bg-zinc-900 border border-zinc-800 text-zinc-300 text-[13px] rounded-lg pl-3 pr-8 py-1.5 focus:border-red-600 outline-none hover:border-zinc-600 transition-colors cursor-pointer min-w-25"
+                          onChange={(e) => handleYearChange("start", e.target.value)}
+                          className="appearance-none bg-white/5 backdrop-blur-2xl border border-white/10 text-white text-[13px] rounded-lg pl-3 pr-8 py-1.5 focus:border-red-400/50 focus:bg-white/10 outline-none hover:bg-white/10 hover:border-white/20 hover:shadow-[0_6px_15px_rgba(0,0,0,0.3)] transition-all cursor-pointer min-w-25 shadow-[0_4px_10px_rgba(0,0,0,0.2)]"
                         >
-                          <option value="" disabled hidden>
-                            开始年份
-                          </option>
+                          <option value="" disabled hidden className="bg-neutral-900 text-neutral-300">开始年份</option>
                           {yearOptions.map((y) => (
-                            <option key={y} value={y}>
-                              {y}
-                            </option>
+                            <option key={y} value={y} className="bg-neutral-900 text-neutral-300">{y}</option>
                           ))}
                         </select>
-                        <i className="fas fa-chevron-down absolute right-3 top-1/2 -translate-y-1/2 text-[10px] text-zinc-500 group-hover:text-zinc-300 pointer-events-none transition-colors"></i>
+                        <i className="fas fa-chevron-down absolute right-3 top-1/2 -translate-y-1/2 text-[10px] text-white/50 group-hover:text-white pointer-events-none transition-colors"></i>
                       </div>
 
-                      <span className="text-zinc-600 text-[13px] font-medium px-1">
-                        至
-                      </span>
+                      <span className="text-white/60 text-[13px] font-medium px-1">至</span>
 
                       <div className="relative group">
                         <select
                           value={filters.year?.[1] || ""}
-                          onChange={(e) =>
-                            handleYearChange("end", e.target.value)
-                          }
-                          className="appearance-none bg-zinc-900 border border-zinc-800 text-zinc-300 text-[13px] rounded-lg pl-3 pr-8 py-1.5 focus:border-red-600 outline-none hover:border-zinc-600 transition-colors cursor-pointer min-w-25"
+                          onChange={(e) => handleYearChange("end", e.target.value)}
+                          className="appearance-none bg-white/5 backdrop-blur-2xl border border-white/10 text-white text-[13px] rounded-lg pl-3 pr-8 py-1.5 focus:border-red-400/50 focus:bg-white/10 outline-none hover:bg-white/10 hover:border-white/20 hover:shadow-[0_6px_15px_rgba(0,0,0,0.3)] transition-all cursor-pointer min-w-25 shadow-[0_4px_10px_rgba(0,0,0,0.2)]"
                         >
-                          <option value="" disabled hidden>
-                            最终年份
-                          </option>
+                          <option value="" disabled hidden className="bg-neutral-900 text-neutral-300">最终年份</option>
                           {yearOptions.map((y) => (
-                            <option key={y} value={y}>
-                              {y}
-                            </option>
+                            <option key={y} value={y} className="bg-neutral-900 text-neutral-300">{y}</option>
                           ))}
                         </select>
-                        <i className="fas fa-chevron-down absolute right-3 top-1/2 -translate-y-1/2 text-[10px] text-zinc-500 group-hover:text-zinc-300 pointer-events-none transition-colors"></i>
+                        <i className="fas fa-chevron-down absolute right-3 top-1/2 -translate-y-1/2 text-[10px] text-white/50 group-hover:text-white pointer-events-none transition-colors"></i>
                       </div>
                     </div>
                   </div>
                 </div>
 
                 <div className="flex items-start py-4">
-                  <span className="text-zinc-500 text-sm font-medium w-16 shrink-0 mt-1.5 tracking-wider">
+                  <span className="text-white/60 text-sm font-medium w-16 shrink-0 mt-1.5 tracking-wider drop-shadow-[0_0_5px_rgba(255,255,255,0.1)]">
                     排序
                   </span>
                   <div className="flex flex-wrap gap-x-3 gap-y-2 flex-1 items-center">
                     {SORT_OPTIONS.map((option) => {
                       const currentSort = filters.sort?.[0] || "date_desc";
-                      const [currentField, currentOrder] =
-                        currentSort.split("_");
+                      const [currentField, currentOrder] = currentSort.split("_");
                       const isSelected = currentField === option.id;
 
                       return (
                         <button
                           key={option.id}
                           onClick={() => handleSortToggle(option.id)}
-                          className={`group flex items-center gap-2 px-4 py-1.5 rounded-lg text-[13px] transition-all duration-200 ${
+                          className={`group flex items-center gap-2 px-4 py-1.5 rounded-lg text-[13px] transition-all duration-300 backdrop-blur-2xl ${
                             isSelected
-                              ? "bg-red-600 text-white font-medium shadow-[0_0_15px_rgba(220,38,38,0.3)]"
-                              : "bg-zinc-900 border border-zinc-800 text-zinc-400 hover:border-zinc-600 hover:text-zinc-200"
+                              ? "bg-red-500/15 text-red-400 font-bold border border-red-400/40 shadow-[0_4px_10px_rgba(248,113,113,0.2)] drop-shadow-[0_0_3px_rgba(248,113,113,0.3)]"
+                              : "bg-white/5 text-white/70 border border-white/10 shadow-[0_4px_10px_rgba(0,0,0,0.2)] hover:bg-white/10 hover:text-white hover:border-white/20 hover:shadow-[0_6px_15px_rgba(0,0,0,0.3)] hover:drop-shadow-[0_0_8px_rgba(255,255,255,0.5)]"
                           }`}
                         >
                           {option.label}
                           {isSelected && (
-                            <i
-                              className={`fas fa-arrow-${currentOrder === "desc" ? "down" : "up"} text-[11px] transition-transform`}
-                            ></i>
+                            <i className={`fas fa-arrow-${currentOrder === "desc" ? "down" : "up"} text-[11px] transition-transform`}></i>
                           )}
                         </button>
                       );
@@ -516,11 +408,10 @@ function SearchContent() {
 
         <main className="w-full">
           <div className="flex items-center justify-between mb-8">
-            <h2 className="text-2xl font-bold text-white tracking-wide">
+            <h2 className="text-2xl font-bold text-white tracking-wide drop-shadow-[0_0_10px_rgba(255,255,255,0.2)]">
               {query ? (
                 <>
-                  <span className="text-red-500">&quot;{query}&quot;</span>{" "}
-                  的搜索结果
+                  <span className="text-red-400 drop-shadow-[0_0_5px_rgba(248,113,113,0.5)]">&quot;{query}&quot;</span> 的搜索结果
                 </>
               ) : (
                 "全部媒体"
@@ -529,143 +420,136 @@ function SearchContent() {
             <div className="flex items-center gap-4">
               {hasActiveFilters && (
                 <button
-                  onClick={() =>
-                    setFilters({
-                      type: [],
-                      status: [],
-                      genre: [],
-                      region: [],
-                      language: [],
-                      year: [],
-                      sort: ["date_desc"],
-                    })
-                  }
-                  className="text-sm text-zinc-500 hover:text-red-500 transition-colors"
+                  onClick={() => setFilters({ type: [], status: [], genre: [], region: [], language: [], year: [], sort: ["date_desc"] })}
+                  className="text-sm text-white/60 hover:text-red-400 hover:drop-shadow-[0_0_5px_rgba(248,113,113,0.5)] transition-all duration-300"
                 >
                   清空筛选
                 </button>
               )}
-              <span className="text-sm px-3 py-1 bg-zinc-900 rounded-full border border-zinc-800 text-zinc-400">
+              {/* Lighter Frosted Glass Pill for Item Count */}
+              <span className="text-sm px-4 py-1.5 bg-white/5 backdrop-blur-2xl rounded-full border border-white/10 text-white font-medium shadow-[0_4px_10px_rgba(0,0,0,0.2)] drop-shadow-[0_0_8px_rgba(255,255,255,0.1)] transition-all">
                 {isLoading ? "加载中..." : `找到 ${mediaItems.length} 部作品`}
               </span>
             </div>
           </div>
 
+          {/* Lighter Frosted Glass Media Posters Grid */}
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 md:gap-6">
             {isLoading ? (
               [...Array(12)].map((_, i) => (
-                <div
-                  key={i}
-                  className="flex flex-col bg-zinc-900 border border-zinc-800/50 rounded-xl overflow-hidden animate-pulse"
-                >
-                  <div className="w-full aspect-2/3 bg-zinc-800/50"></div>
+                <div key={i} className="flex flex-col bg-white/5 backdrop-blur-2xl border border-white/10 rounded-xl overflow-hidden shadow-[0_10px_30px_rgba(0,0,0,0.2)] animate-pulse">
+                  <div className="w-full aspect-2/3 bg-white/5"></div>
                   <div className="p-3 space-y-2">
-                    <div className="h-4 bg-zinc-800 rounded w-3/4"></div>
-                    <div className="h-3 bg-zinc-800 rounded w-1/2"></div>
+                    <div className="h-4 bg-white/10 rounded w-3/4"></div>
+                    <div className="h-3 bg-white/10 rounded w-1/2"></div>
                   </div>
                 </div>
               ))
             ) : mediaItems.length > 0 ? (
-              mediaItems.map((item) => (
-                <Link
-                  key={item.id}
-                  href={`/${item.type}/${item.id}`}
-                  className="group flex flex-col bg-zinc-900 border border-zinc-800/50 rounded-xl overflow-hidden cursor-pointer shadow-lg shadow-black/50 transition-all duration-300 hover:border-zinc-600 hover:-translate-y-1"
-                >
-                  <div className="w-full aspect-2/3 bg-neutral-900 relative flex items-center justify-center overflow-hidden">
-                    {item.cover_url ? (
-                      <Image
-                        src={item.cover_url}
-                        alt={item.title}
-                        fill
-                        className="object-cover transition-transform duration-500 group-hover:scale-105"
-                        sizes="(max-width: 768px) 50vw, (max-width: 1200px) 25vw, 16vw"
-                      />
-                    ) : (
-                      <i className="fas fa-image text-4xl text-neutral-700 opacity-40"></i>
-                    )}
-                  </div>
-
-                  <div className="flex flex-col space-y-1 grow px-2 py-2">
-                    <h3
-                      className="text-sm font-semibold text-white truncate"
-                      title={item.title}
-                    >
-                      {item.title}
-                    </h3>
-
-                    <div className="flex justify-between items-center text-xs">
-                      <span className="text-neutral-400">
-                        {item.date ? item.date.substring(0, 4) : "未知"}
-                      </span>
-                      <span className="text-neutral-300 font-semibold flex items-center gap-1">
-                        {item.rating ? (
-                          <>
-                            <i className="fas fa-star text-yellow-500 text-[10px]"></i>
-                            {Number(item.rating).toFixed(1)}
-                          </>
-                        ) : (
-                          <span className="text-neutral-400">未评分</span>
-                        )}
-                      </span>
+              <>
+                {mediaItems.map((item, index) => (
+                  <Link
+                    key={item.id}
+                    href={`/${item.type}/${item.id}`}
+                    /* Interactive Lighter Frosted Glass Poster Container */
+                    className="group flex flex-col bg-white/5 backdrop-blur-2xl border border-white/10 rounded-xl overflow-hidden cursor-pointer shadow-[0_10px_30px_rgba(0,0,0,0.2)] transition-all duration-300 hover:border-red-400/40 hover:bg-white/10 hover:-translate-y-1.5 hover:shadow-[0_15px_40px_rgba(248,113,113,0.2)] animate-in fade-in zoom-in-95 duration-500"
+                    style={{ animationDelay: `${(index % LIMIT) * 50}ms`, animationFillMode: "both" }}
+                  >
+                    <div className="w-full aspect-2/3 relative flex items-center justify-center overflow-hidden bg-black/60">
+                      {item.cover_url ? (
+                        <Image
+                          src={item.cover_url}
+                          alt={item.title}
+                          fill
+                          className="object-cover transition-transform duration-500 group-hover:scale-110"
+                          sizes="(max-width: 768px) 50vw, (max-width: 1200px) 25vw, 16vw"
+                        />
+                      ) : (
+                        <i className="fas fa-image text-4xl text-white/20 drop-shadow-md"></i>
+                      )}
                     </div>
 
-                    <div className="flex flex-wrap gap-1 mt-1">
-                      {(item.genres ?? [])
-                        .slice(0, 3)
-                        .map((g: string, i: number) => (
+                    <div className="flex flex-col space-y-1.5 grow px-3 py-2.5">
+                      <h3 className="text-sm font-bold text-white truncate drop-shadow-[0_0_8px_rgba(255,255,255,0.2)] group-hover:text-red-300 group-hover:drop-shadow-[0_0_5px_rgba(248,113,113,0.6)] transition-colors duration-300" title={item.title}>
+                        {item.title}
+                      </h3>
+
+                      <div className="flex justify-between items-center text-xs">
+                        <span className="text-white/60 font-medium">
+                          {item.date ? item.date.substring(0, 4) : "未知"}
+                        </span>
+                        <span className="text-white font-bold flex items-center gap-1 drop-shadow-sm">
+                          {item.rating ? (
+                            <>
+                              <i className="fas fa-star text-yellow-500/90 text-[10px] drop-shadow-[0_0_5px_rgba(234,179,8,0.6)]"></i>
+                              {Number(item.rating).toFixed(1)}
+                            </>
+                          ) : (
+                            <span className="text-white/50">未评分</span>
+                          )}
+                        </span>
+                      </div>
+
+                      <div className="flex flex-wrap gap-1.5 mt-1.5">
+                        {(item.genres ?? []).slice(0, 3).map((g: string, i: number) => (
                           <span
                             key={`g-${i}`}
-                            className="inline-flex items-center px-1.5 py-0.5 rounded-md bg-white/3 border border-white/10 text-neutral-300 text-[10px] font-medium tracking-wide transition-all hover:bg-white/10 hover:text-white hover:border-white/20"
+                            className="inline-flex items-center px-1.5 py-0.5 rounded-md bg-white/5 backdrop-blur-md border border-white/10 text-white/70 text-[10px] font-medium tracking-wide transition-all duration-300 group-hover:bg-red-500/15 group-hover:text-red-300 group-hover:border-red-400/30 group-hover:shadow-[0_4px_10px_rgba(248,113,113,0.2)]"
                           >
                             {g}
                           </span>
                         ))}
-                      {(item.languages ?? [])
-                        .slice(0, 2)
-                        .map((l: string, i: number) => (
+                        {(item.languages ?? []).slice(0, 2).map((l: string, i: number) => (
                           <span
                             key={`l-${i}`}
-                            className="inline-flex items-center px-1.5 py-0.5 rounded-md bg-white/3 border border-white/10 text-neutral-300 text-[10px] font-medium tracking-wide transition-all hover:bg-white/10 hover:text-white hover:border-white/20"
+                            className="inline-flex items-center px-1.5 py-0.5 rounded-md bg-white/5 backdrop-blur-md border border-white/10 text-white/70 text-[10px] font-medium tracking-wide transition-all duration-300 group-hover:bg-red-500/15 group-hover:text-red-300 group-hover:border-red-400/30 group-hover:shadow-[0_4px_10px_rgba(248,113,113,0.2)]"
                           >
                             {l}
                           </span>
                         ))}
+                      </div>
                     </div>
-                  </div>
-                </Link>
-              ))
+                  </Link>
+                ))}
+
+                {/* Skeletons generated dynamically inside the grid during infinite scroll */}
+                {isLoadingMore && (
+                  [...Array(6)].map((_, i) => (
+                    <div key={`loading-more-${i}`} className="flex flex-col bg-white/5 backdrop-blur-2xl border border-white/10 rounded-xl overflow-hidden shadow-[0_10px_30px_rgba(0,0,0,0.2)] animate-pulse">
+                      <div className="w-full aspect-2/3 bg-white/5"></div>
+                      <div className="p-3 space-y-2">
+                        <div className="h-4 bg-white/10 rounded w-3/4"></div>
+                        <div className="h-3 bg-white/10 rounded w-1/2"></div>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </>
             ) : (
-              <div className="col-span-full py-20 text-center text-zinc-500">
+              <div className="col-span-full py-20 text-center text-white/50 backdrop-blur-sm font-medium">
                 暂无符合条件的作品
               </div>
             )}
           </div>
+          
+          {/* Intersection Observer Target */}
           {mediaItems.length > 0 && (
-            <div
-              ref={lastElementRef} 
-              className="w-full py-10 flex justify-center items-center"
-            >
-              {isLoadingMore ? (
-                <div className="flex flex-col items-center gap-3 text-zinc-500">
-                  <i className="fas fa-circle-notch fa-spin text-xl text-red-600"></i>
-                  <span className="text-sm">加载更多中...</span>
-                </div>
-              ) : !hasMore ? (
-                <div className="text-zinc-600 text-sm font-medium">
+            <div ref={lastElementRef} className="w-full py-10 flex justify-center items-center h-20">
+              {!hasMore && (
+                <div className="text-white/50 text-sm font-medium tracking-wide backdrop-blur-sm animate-in fade-in duration-500">
                   — 到底啦，所有的作品都在这了 —
                 </div>
-              ) : null}
+              )}
             </div>
           )}
         </main>
       </div>
+
+      {/* Lighter Frosted Glass Scroll to Top Button */}
       <button
         onClick={scrollToTop}
-        className={`fixed bottom-8 right-8 w-12 h-12 rounded-full bg-red-600 hover:bg-red-500 text-white flex items-center justify-center shadow-[0_0_20px_rgba(220,38,38,0.3)] transition-all duration-300 z-50 ${
-          showScrollTop
-            ? "opacity-100 translate-y-0"
-            : "opacity-0 translate-y-10 pointer-events-none"
+        className={`fixed bottom-22 right-12 w-12 h-12 rounded-full bg-white/5 backdrop-blur-2xl border border-white/10 text-white/70 flex items-center justify-center shadow-[0_4px_15px_rgba(0,0,0,0.2)] transition-all duration-300 z-50 hover:bg-white/10 hover:text-red-400 hover:border-red-400/50 hover:shadow-[0_6px_25px_rgba(248,113,113,0.3)] hover:drop-shadow-[0_0_5px_rgba(248,113,113,0.5)] hover:scale-105 ${
+          showScrollTop ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10 pointer-events-none"
         }`}
       >
         <i className="fas fa-arrow-up text-lg"></i>
@@ -674,13 +558,12 @@ function SearchContent() {
   );
 }
 
-// 导出带有 Suspense 的主页面组件 (Next.js App Router 规定用到 useSearchParams 的必须包裹)
 export default function SearchPageWrapper() {
   return (
     <Suspense
       fallback={
-        <div className="min-h-screen bg-black flex items-center justify-center text-white">
-          Loading...
+        <div className="min-h-screen flex items-center justify-center text-white/60">
+          <i className="fas fa-circle-notch fa-spin text-2xl text-red-400 drop-shadow-[0_0_5px_rgba(248,113,113,0.5)]"></i>
         </div>
       }
     >
