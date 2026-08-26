@@ -22,22 +22,23 @@ export default function RootLayout({
       <body className="text-neutral-200 font-sans leading-normal tracking-normal selection:bg-red-500/30 selection:text-white flex flex-col min-h-screen relative">
         
         {/* --- 1. THE UNDER-LAYER (What sits behind the glass) --- */}
-        <div className="fixed inset-0 z-[-2] bg-[#050505] overflow-hidden pointer-events-none">
-          {/* Ambient red lights glowing from all 4 corners */}
-          <div className="absolute top-[-20%] left-[-10%] w-[40vw] h-[40vw] rounded-full bg-red-500/20 blur-[120px]"></div>
-          <div className="absolute top-[-20%] right-[-10%] w-[40vw] h-[40vw] rounded-full bg-red-500/15 blur-[100px]"></div>
-          <div className="absolute bottom-[-20%] left-[-10%] w-[40vw] h-[40vw] rounded-full bg-red-500/15 blur-[100px]"></div>
-          <div className="absolute bottom-[-20%] right-[-10%] w-[40vw] h-[40vw] rounded-full bg-red-500/20 blur-[120px]"></div>
+        {/* Deepened base gradient to keep the overall backdrop darker and calmer */}
+        <div className="fixed inset-0 z-[-2] bg-linear-to-br from-[#0c0202] via-[#050202] to-[#0a0202] overflow-hidden pointer-events-none">
           
-          {/* NEW: Massive central core glow to illuminate the middle of the screen */}
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[60vw] h-[60vw] rounded-full bg-red-500/15 blur-[150px]"></div>
+          {/* Main ambient glow - reduced opacity from 15% down to 6% for a much duller, softer red tint */}
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[250vw] h-[250vh] md:w-[150vw] md:h-[150vh] rounded-[100%] bg-red-600/6 blur-[140px] md:blur-[220px]"></div>
+          
+          {/* Subtle corner safety glows - reduced opacity to 4% */}
+          <div className="absolute -top-[50%] -left-[50%] w-[150vw] h-[150vw] bg-red-700/4 blur-[120px] md:blur-[180px] rounded-full"></div>
+          <div className="absolute -bottom-[50%] -right-[50%] w-[150vw] h-[150vw] bg-red-700/4 blur-[120px] md:blur-[180px] rounded-full"></div>
 
-          {/* Dotted grid texture */}
-          <div className="absolute inset-0 bg-[radial-gradient(rgba(255,255,255,0.15)_1px,transparent_1px)] bg-[length:24px_24px] opacity-60"></div>
+          {/* Dotted grid texture - reduced opacity so it stays subtle */}
+          <div className="absolute inset-0 bg-[radial-gradient(rgba(255,255,255,0.1)_1px,transparent_1px)] bg-[length:24px_24px] opacity-40"></div>
         </div>
 
         {/* --- 2. THE FULL-SCREEN HEAVY GLASS PANE --- */}
-        <div className="fixed inset-0 z-[-1] bg-black/20 backdrop-blur-xl border-x border-white/5 shadow-[inset_0_0_80px_rgba(0,0,0,0.6)] pointer-events-none"></div>
+        {/* Slightly deepened glass overlay (bg-black/30) to smooth out the background glow further */}
+        <div className="fixed inset-0 z-[-1] bg-black/30 backdrop-blur-xl border-x border-white/5 shadow-[inset_0_0_100px_rgba(0,0,0,0.2)] pointer-events-none"></div>
 
         <Navbar />
 

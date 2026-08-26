@@ -8,6 +8,108 @@ import { getSupabaseBrowser } from "@/utils/supabase-client";
 import { Media, ViewAllMediaRow } from "@/lib/types";
 import { mapViewRowToMedia } from "@/lib/functions/media-mapper";
 
+// --- NEW: Premium Skeleton Component ---
+function MediaCardSkeleton() {
+  return (
+    <div className="flex flex-col bg-white/5 backdrop-blur-2xl border border-white/10 rounded-xl overflow-hidden shadow-[0_10px_30px_rgba(0,0,0,0.2)]">
+      <div className="w-full aspect-2/3 bg-white/5 animate-pulse relative overflow-hidden">
+        {/* Soft shimmer gradient */}
+        <div className="absolute inset-0 bg-linear-to-tr from-transparent via-white/5 to-transparent animate-pulse" />
+      </div>
+      <div className="flex flex-col space-y-3 grow px-3 py-3">
+        <div className="h-4 w-3/4 bg-white/10 rounded-md animate-pulse"></div>
+        <div className="flex justify-between items-center mt-1">
+          <div className="h-3 w-8 bg-white/5 rounded-md animate-pulse"></div>
+          <div className="h-3 w-10 bg-white/5 rounded-md animate-pulse"></div>
+        </div>
+        <div className="flex gap-1.5 mt-1">
+          <div className="h-4 w-10 bg-white/5 rounded-md animate-pulse"></div>
+          <div className="h-4 w-12 bg-white/5 rounded-md animate-pulse"></div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// --- NEW: Isolated Media Card for Image Loading State ---
+function SearchMediaCard({ item, index, LIMIT }: { item: Media; index: number; LIMIT: number }) {
+  const [isImageLoaded, setIsImageLoaded] = useState(false);
+
+  return (
+    <Link
+      href={`/${item.type}/${item.id}`}
+      className="group flex flex-col bg-white/5 backdrop-blur-2xl border border-white/10 rounded-xl overflow-hidden cursor-pointer shadow-[0_10px_30px_rgba(0,0,0,0.2)] transition-all duration-300 hover:border-red-400/40 hover:bg-white/10 hover:-translate-y-1.5 hover:shadow-[0_15px_40px_rgba(248,113,113,0.2)] animate-in fade-in zoom-in-95 duration-500"
+      style={{ animationDelay: `${(index % LIMIT) * 50}ms`, animationFillMode: "both" }}
+    >
+      <div className="w-full aspect-2/3 relative flex items-center justify-center overflow-hidden bg-black/40">
+        {item.cover_url ? (
+          <>
+            {/* Elegant pulse while image file downloads */}
+            {!isImageLoaded && (
+              <div className="absolute inset-0 bg-white/5 animate-pulse z-0" />
+            )}
+            
+            <Image
+              src={item.cover_url}
+              alt={item.title}
+              fill
+              className={`object-cover transition-all duration-700 z-10 group-hover:scale-110 ${
+                isImageLoaded ? "opacity-100 blur-none" : "opacity-0 blur-md scale-105"
+              }`}
+              sizes="(max-width: 768px) 50vw, (max-width: 1200px) 25vw, 16vw"
+              onLoad={() => setIsImageLoaded(true)}
+            />
+          </>
+        ) : (
+          <i className="fas fa-image text-4xl text-white/20 drop-shadow-md"></i>
+        )}
+      </div>
+
+      <div className="flex flex-col space-y-1.5 grow px-3 py-2.5">
+        <h3 className="text-sm font-bold text-white truncate drop-shadow-[0_0_8px_rgba(255,255,255,0.2)] group-hover:text-red-300 group-hover:drop-shadow-[0_0_5px_rgba(248,113,113,0.6)] transition-colors duration-300" title={item.title}>
+          {item.title}
+        </h3>
+
+        <div className="flex justify-between items-center text-xs">
+          <span className="text-white/60 font-medium">
+            {item.date ? item.date.substring(0, 4) : "未知"}
+          </span>
+          <span className="text-white font-bold flex items-center gap-1 drop-shadow-sm">
+            {item.rating ? (
+              <>
+                <i className="fas fa-star text-yellow-500/90 text-[10px] drop-shadow-[0_0_5px_rgba(234,179,8,0.6)]"></i>
+                {Number(item.rating).toFixed(1)}
+              </>
+            ) : (
+              <span className="text-white/50">未评分</span>
+            )}
+          </span>
+        </div>
+
+        <div className="flex flex-wrap gap-1.5 mt-1.5">
+          {(item.genres ?? []).slice(0, 3).map((g: string, i: number) => (
+            <span
+              key={`g-${i}`}
+              className="inline-flex items-center px-1.5 py-0.5 rounded-md bg-white/5 backdrop-blur-md border border-white/10 text-white/70 text-[10px] font-medium tracking-wide transition-all duration-300 group-hover:bg-red-500/15 group-hover:text-red-300 group-hover:border-red-400/30 group-hover:shadow-[0_4px_10px_rgba(248,113,113,0.2)]"
+            >
+              {g}
+            </span>
+          ))}
+          {(item.languages ?? []).slice(0, 2).map((l: string, i: number) => (
+            <span
+              key={`l-${i}`}
+              className="inline-flex items-center px-1.5 py-0.5 rounded-md bg-white/5 backdrop-blur-md border border-white/10 text-white/70 text-[10px] font-medium tracking-wide transition-all duration-300 group-hover:bg-red-500/15 group-hover:text-red-300 group-hover:border-red-400/30 group-hover:shadow-[0_4px_10px_rgba(248,113,113,0.2)]"
+            >
+              {l}
+            </span>
+          ))}
+        </div>
+      </div>
+    </Link>
+  );
+}
+
+
 function SearchContent() {
   const searchParams = useSearchParams();
   const urlQuery = searchParams.get("q") || "";
@@ -239,7 +341,7 @@ function SearchContent() {
             <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none z-10">
               <i className="fas fa-search text-white/50 group-focus-within:text-red-400 group-focus-within:drop-shadow-[0_0_5px_rgba(248,113,113,0.6)] transition-all duration-300"></i>
             </div>
-            {/* Lighter Frosted Glass Search Input (UNCHANGED) */}
+            
             <input
               type="text"
               value={query}
@@ -255,7 +357,7 @@ function SearchContent() {
                 </button>
               )}
               <div className="h-6 w-px bg-white/20"></div>
-              {/* Lighter Frosted Glass Advanced Filter Button */}
+              
               <button
                 onClick={() => setShowAdvanced(!showAdvanced)}
                 className={`relative flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all duration-300 backdrop-blur-2xl ${
@@ -273,7 +375,6 @@ function SearchContent() {
             </div>
           </div>
 
-          {/* Lighter Frosted Glass Filter Panel */}
           {showAdvanced && (
             <div className="mt-4 p-6 bg-white/5 backdrop-blur-2xl border border-white/10 rounded-2xl shadow-[0_15px_50px_rgba(0,0,0,0.5)] transition-all duration-300 origin-top animate-in slide-in-from-top-2 fade-in">
               <div className="flex flex-col">
@@ -426,102 +527,29 @@ function SearchContent() {
                   清空筛选
                 </button>
               )}
-              {/* Lighter Frosted Glass Pill for Item Count */}
               <span className="text-sm px-4 py-1.5 bg-white/5 backdrop-blur-2xl rounded-full border border-white/10 text-white font-medium shadow-[0_4px_10px_rgba(0,0,0,0.2)] drop-shadow-[0_0_8px_rgba(255,255,255,0.1)] transition-all">
                 {isLoading ? "加载中..." : `找到 ${mediaItems.length} 部作品`}
               </span>
             </div>
           </div>
 
-          {/* Lighter Frosted Glass Media Posters Grid */}
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 md:gap-6">
+            {/* Show 12 sleek skeletons on initial load */}
             {isLoading ? (
               [...Array(12)].map((_, i) => (
-                <div key={i} className="flex flex-col bg-white/5 backdrop-blur-2xl border border-white/10 rounded-xl overflow-hidden shadow-[0_10px_30px_rgba(0,0,0,0.2)] animate-pulse">
-                  <div className="w-full aspect-2/3 bg-white/5"></div>
-                  <div className="p-3 space-y-2">
-                    <div className="h-4 bg-white/10 rounded w-3/4"></div>
-                    <div className="h-3 bg-white/10 rounded w-1/2"></div>
-                  </div>
-                </div>
+                <MediaCardSkeleton key={`loading-initial-${i}`} />
               ))
             ) : mediaItems.length > 0 ? (
               <>
+                {/* Render the extracted card component for individual image loading state */}
                 {mediaItems.map((item, index) => (
-                  <Link
-                    key={item.id}
-                    href={`/${item.type}/${item.id}`}
-                    /* Interactive Lighter Frosted Glass Poster Container */
-                    className="group flex flex-col bg-white/5 backdrop-blur-2xl border border-white/10 rounded-xl overflow-hidden cursor-pointer shadow-[0_10px_30px_rgba(0,0,0,0.2)] transition-all duration-300 hover:border-red-400/40 hover:bg-white/10 hover:-translate-y-1.5 hover:shadow-[0_15px_40px_rgba(248,113,113,0.2)] animate-in fade-in zoom-in-95 duration-500"
-                    style={{ animationDelay: `${(index % LIMIT) * 50}ms`, animationFillMode: "both" }}
-                  >
-                    <div className="w-full aspect-2/3 relative flex items-center justify-center overflow-hidden bg-black/60">
-                      {item.cover_url ? (
-                        <Image
-                          src={item.cover_url}
-                          alt={item.title}
-                          fill
-                          className="object-cover transition-transform duration-500 group-hover:scale-110"
-                          sizes="(max-width: 768px) 50vw, (max-width: 1200px) 25vw, 16vw"
-                        />
-                      ) : (
-                        <i className="fas fa-image text-4xl text-white/20 drop-shadow-md"></i>
-                      )}
-                    </div>
-
-                    <div className="flex flex-col space-y-1.5 grow px-3 py-2.5">
-                      <h3 className="text-sm font-bold text-white truncate drop-shadow-[0_0_8px_rgba(255,255,255,0.2)] group-hover:text-red-300 group-hover:drop-shadow-[0_0_5px_rgba(248,113,113,0.6)] transition-colors duration-300" title={item.title}>
-                        {item.title}
-                      </h3>
-
-                      <div className="flex justify-between items-center text-xs">
-                        <span className="text-white/60 font-medium">
-                          {item.date ? item.date.substring(0, 4) : "未知"}
-                        </span>
-                        <span className="text-white font-bold flex items-center gap-1 drop-shadow-sm">
-                          {item.rating ? (
-                            <>
-                              <i className="fas fa-star text-yellow-500/90 text-[10px] drop-shadow-[0_0_5px_rgba(234,179,8,0.6)]"></i>
-                              {Number(item.rating).toFixed(1)}
-                            </>
-                          ) : (
-                            <span className="text-white/50">未评分</span>
-                          )}
-                        </span>
-                      </div>
-
-                      <div className="flex flex-wrap gap-1.5 mt-1.5">
-                        {(item.genres ?? []).slice(0, 3).map((g: string, i: number) => (
-                          <span
-                            key={`g-${i}`}
-                            className="inline-flex items-center px-1.5 py-0.5 rounded-md bg-white/5 backdrop-blur-md border border-white/10 text-white/70 text-[10px] font-medium tracking-wide transition-all duration-300 group-hover:bg-red-500/15 group-hover:text-red-300 group-hover:border-red-400/30 group-hover:shadow-[0_4px_10px_rgba(248,113,113,0.2)]"
-                          >
-                            {g}
-                          </span>
-                        ))}
-                        {(item.languages ?? []).slice(0, 2).map((l: string, i: number) => (
-                          <span
-                            key={`l-${i}`}
-                            className="inline-flex items-center px-1.5 py-0.5 rounded-md bg-white/5 backdrop-blur-md border border-white/10 text-white/70 text-[10px] font-medium tracking-wide transition-all duration-300 group-hover:bg-red-500/15 group-hover:text-red-300 group-hover:border-red-400/30 group-hover:shadow-[0_4px_10px_rgba(248,113,113,0.2)]"
-                          >
-                            {l}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  </Link>
+                  <SearchMediaCard key={item.id} item={item} index={index} LIMIT={LIMIT} />
                 ))}
 
-                {/* Skeletons generated dynamically inside the grid during infinite scroll */}
+                {/* Show 6 sleek skeletons dynamically at the bottom during infinite scroll */}
                 {isLoadingMore && (
                   [...Array(6)].map((_, i) => (
-                    <div key={`loading-more-${i}`} className="flex flex-col bg-white/5 backdrop-blur-2xl border border-white/10 rounded-xl overflow-hidden shadow-[0_10px_30px_rgba(0,0,0,0.2)] animate-pulse">
-                      <div className="w-full aspect-2/3 bg-white/5"></div>
-                      <div className="p-3 space-y-2">
-                        <div className="h-4 bg-white/10 rounded w-3/4"></div>
-                        <div className="h-3 bg-white/10 rounded w-1/2"></div>
-                      </div>
-                    </div>
+                    <MediaCardSkeleton key={`loading-more-${i}`} />
                   ))
                 )}
               </>
@@ -532,7 +560,6 @@ function SearchContent() {
             )}
           </div>
           
-          {/* Intersection Observer Target */}
           {mediaItems.length > 0 && (
             <div ref={lastElementRef} className="w-full py-10 flex justify-center items-center h-20">
               {!hasMore && (
@@ -545,7 +572,6 @@ function SearchContent() {
         </main>
       </div>
 
-      {/* Lighter Frosted Glass Scroll to Top Button */}
       <button
         onClick={scrollToTop}
         className={`fixed bottom-22 right-12 w-12 h-12 rounded-full bg-white/5 backdrop-blur-2xl border border-white/10 text-white/70 flex items-center justify-center shadow-[0_4px_15px_rgba(0,0,0,0.2)] transition-all duration-300 z-50 hover:bg-white/10 hover:text-red-400 hover:border-red-400/50 hover:shadow-[0_6px_25px_rgba(248,113,113,0.3)] hover:drop-shadow-[0_0_5px_rgba(248,113,113,0.5)] hover:scale-105 ${
