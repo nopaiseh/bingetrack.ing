@@ -5,6 +5,12 @@ export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
     
+    const parseBoundedInteger = (value: string | null, fallback: number, min: number, max: number) => {
+      if (value === null) return fallback;
+      const parsed = Number(value);
+      return Number.isSafeInteger(parsed) ? Math.min(max, Math.max(min, parsed)) : fallback;
+    };
+
     const params = {
       q: searchParams.get("q") || undefined,
       type: searchParams.get("type") || undefined,
@@ -15,8 +21,8 @@ export async function GET(request: Request) {
       startYear: searchParams.get("startYear") || undefined,
       endYear: searchParams.get("endYear") || undefined,
       sort: searchParams.get("sort") || undefined,
-      limit: searchParams.get("limit") ? parseInt(searchParams.get("limit")!) : undefined,
-      offset: searchParams.get("offset") ? parseInt(searchParams.get("offset")!) : undefined,
+      limit: parseBoundedInteger(searchParams.get("limit"), 30, 1, 100),
+      offset: parseBoundedInteger(searchParams.get("offset"), 0, 0, 100_000),
     };
 
     const results = await searchMediaServer(params);

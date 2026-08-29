@@ -2,44 +2,30 @@
 
 import { useState, useRef, useEffect } from "react";
 import MediaRow from "@/components/MediaRow";
-import { Media, Summary } from "@/lib/types";
+import { DistributionItem, Media, MediaDistribution, MediaDistributions, Summary } from "@/lib/types";
+import {
+  CalendarDays,
+  ChartPie,
+  CheckCircle,
+  ChevronDown,
+  CircleEllipsis,
+  Film,
+  Globe2,
+  Languages,
+  Layers3,
+  PauseCircle,
+  PlayCircle,
+  Tv,
+  type LucideIcon,
+} from "lucide-react";
 
-interface DistributionItem {
-  name: string;
-  percent: number;
-}
-
-const REGION_TOP5: DistributionItem[] = [
-  { name: "🇺🇸 美国", percent: 40 },
-  { name: "🇨🇳 中国", percent: 25 },
-  { name: "🇯🇵 日本", percent: 15 },
-  { name: "🇰🇷 韩国", percent: 12 },
-  { name: "🇬🇧 英国", percent: 8 },
-];
-
-const LANGUAGE_TOP5: DistributionItem[] = [
-  { name: "🗣️ 英语", percent: 45 },
-  { name: "🗣️ 中文", percent: 25 },
-  { name: "🗣️ 日语", percent: 15 },
-  { name: "🗣️ 韩语", percent: 10 },
-  { name: "🗣️ 法语", percent: 5 },
-];
-
-const GENRE_TOP5: DistributionItem[] = [
-  { name: "💥 动作", percent: 35 },
-  { name: "👽 科幻", percent: 25 },
-  { name: "😂 喜剧", percent: 20 },
-  { name: "🎭 剧情", percent: 12 },
-  { name: "👻 恐怖", percent: 8 },
-];
-
-function DistributionCard({ title, icon, items }: { title: string; icon: string; items: DistributionItem[] }) {
+function DistributionCard({ title, icon: Icon, items }: { title: string; icon: LucideIcon; items: DistributionItem[] }) {
   return (
     <div className="bg-white/5 backdrop-blur-2xl border border-white/10 rounded-2xl p-6 flex flex-col justify-center transition-all duration-300 shadow-[0_10px_30px_rgba(0,0,0,0.2)] hover:-translate-y-1 hover:bg-white/10 hover:border-white/20 hover:shadow-[0_15px_40px_rgba(0,0,0,0.3)] group">
       <div className="text-sm text-neutral-400 mb-4 flex items-center gap-2">
         <div className="flex items-center gap-3 text-sm text-neutral-400 mb-5">
           <div className="bg-white/10 p-2 rounded-lg flex items-center justify-center group-hover:bg-red-500/15 group-hover:text-red-400 transition-colors duration-300 shadow-[0_4px_10px_rgba(0,0,0,0.1)] group-hover:shadow-[0_4px_10px_rgba(248,113,113,0.2)]">
-            <i className={`fas ${icon} text-sm`} />
+            <Icon className="size-4" aria-hidden="true" />
           </div>
           <span className="font-medium tracking-wide text-white/80 group-hover:text-white transition-colors">{title}</span>
         </div>
@@ -47,24 +33,25 @@ function DistributionCard({ title, icon, items }: { title: string; icon: string;
       <div className="flex flex-col gap-3">
         {items.map((item) => (
           <div key={item.name} className="flex items-center gap-3">
-            <span className="text-sm w-14 text-white/70">{item.name}</span>
+            <span className="w-20 truncate text-sm text-white/70" title={item.name}>{item.name}</span>
             <div className="flex-1 h-1.5 bg-white/10 rounded-full overflow-hidden shadow-inner">
               <div className="h-full bg-neutral-300/80" style={{ width: `${item.percent}%` }} />
             </div>
             <span className="text-xs text-white/50 w-8 text-right">{item.percent}%</span>
           </div>
         ))}
+        {items.length === 0 && <span className="py-6 text-center text-sm text-white/40">暂无数据</span>}
       </div>
     </div>
   );
 }
 
-function DistributionTop5Cards() {
+function DistributionTop5Cards({ distribution }: { distribution: MediaDistribution }) {
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
-      <DistributionCard title="影视产地分布 Top 5" icon="fa-globe-asia" items={REGION_TOP5} />
-      <DistributionCard title="主要语言 Top 5" icon="fa-language" items={LANGUAGE_TOP5} />
-      <DistributionCard title="主要类型 Top 5" icon="fa-ellipsis" items={GENRE_TOP5} />
+      <DistributionCard title="影视产地分布 Top 5" icon={Globe2} items={distribution.regions} />
+      <DistributionCard title="主要语言 Top 5" icon={Languages} items={distribution.languages} />
+      <DistributionCard title="主要类型 Top 5" icon={CircleEllipsis} items={distribution.genres} />
     </div>
   );
 }
@@ -138,13 +125,13 @@ function CategoryHeaderCards({
 // Unified Status Card to handle both Movies and Series
 function MediaStatusCard({
   title,
-  icon,
+  icon: Icon,
   count,
   seasonsCount,
   episodesCount,
 }: {
   title: string;
-  icon: string;
+  icon: LucideIcon;
   count: number;
   seasonsCount?: number;
   episodesCount?: number;
@@ -152,7 +139,7 @@ function MediaStatusCard({
   return (
     <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-xl p-5 flex flex-col gap-4 transition-all duration-300 shadow-[0_4px_15px_rgba(0,0,0,0.1)] hover:bg-white/10 hover:border-red-400/40 hover:-translate-y-1 hover:shadow-[0_8px_25px_rgba(248,113,113,0.15)] group">
       <div className="text-white/70 font-bold text-sm flex items-center gap-2 border-b border-white/10 pb-2 group-hover:text-red-300 transition-colors">
-        <i className={`fas ${icon}`} /> {title}
+        <Icon className="size-4" aria-hidden="true" /> {title}
       </div>
       <div className="flex flex-col gap-3 mt-1">
         <div className="flex justify-between items-end">
@@ -186,10 +173,12 @@ export default function HomeDashboard({
   summary,
   topMovies,
   topSeries,
+  distributions,
 }: {
-  summary: any[]; // Adjust type to match your extended Summary data model
+  summary: Summary[];
   topMovies: Media[];
   topSeries: Media[];
+  distributions: MediaDistributions;
 }) {
   const [activeTab, setActiveTab] = useState("总览");
   const tabs = ["总览", "电影", "电视剧"];
@@ -208,6 +197,8 @@ export default function HomeDashboard({
   const currentYearData = summary.find(
     (item) => String(item.release_year) === String(selectedYear),
   );
+  const movieDistribution = distributions.movies[selectedYear] ?? distributions.movies["All Time"];
+  const seriesDistribution = distributions.series[selectedYear] ?? distributions.series["All Time"];
 
   // Derive movie totals strictly from 2 tracking states (Watched + Unwatched)
   const watchedMovies = currentYearData?.watched_movies || 0;
@@ -275,7 +266,7 @@ export default function HomeDashboard({
               onClick={() => setIsDropdownOpen(true)}
               className="flex items-center gap-2 bg-white/5 backdrop-blur-2xl border border-white/10 hover:bg-white/10 hover:border-white/20 shadow-[0_4px_15px_rgba(0,0,0,0.2)] hover:shadow-[0_6px_20px_rgba(0,0,0,0.3)] transition-all pl-4 pr-3 py-2.5 rounded-xl cursor-text w-35 group"
             >
-              <i className="far fa-calendar-alt text-red-500 group-hover:text-red-400 transition-colors group-hover:drop-shadow-[0_0_5px_rgba(248,113,113,0.5)]" />
+              <CalendarDays className="size-4 text-red-500 group-hover:text-red-400 transition-colors group-hover:drop-shadow-[0_0_5px_rgba(248,113,113,0.5)]" aria-hidden="true" />
               <input
                 type="text"
                 value={isDropdownOpen ? searchQuery : selectedYear}
@@ -283,10 +274,11 @@ export default function HomeDashboard({
                 placeholder={selectedYear}
                 className="bg-transparent w-full text-white/90 font-mono text-sm outline-none placeholder:text-white/40"
               />
-              <i
-                className={`fas fa-chevron-down text-xs text-white/50 transition-transform duration-300 ${
+              <ChevronDown
+                className={`size-3 text-white/50 transition-transform duration-300 ${
                   isDropdownOpen ? "rotate-180 text-white" : "group-hover:text-white"
                 }`}
+                aria-hidden="true"
               />
             </div>
 
@@ -333,7 +325,7 @@ export default function HomeDashboard({
                 <div>
                   <div className="text-sm text-white/60 mb-2 flex items-center gap-2">
                     <div className="bg-white/10 p-2 rounded-lg flex items-center justify-center group-hover:bg-red-500/15 group-hover:text-red-400 transition-colors duration-300 shadow-[0_4px_10px_rgba(0,0,0,0.1)] group-hover:shadow-[0_4px_10px_rgba(248,113,113,0.2)]">
-                      <i className="fas fa-play-circle text-sm" />
+                      <PlayCircle className="size-4" aria-hidden="true" />
                     </div>
                     <span className="text-sm font-bold text-white/80 group-hover:text-white transition-colors tracking-wide">
                       已看总时长
@@ -355,7 +347,7 @@ export default function HomeDashboard({
                 <div>
                   <div className="text-sm text-white/60 mb-2 flex items-center gap-2">
                     <div className="bg-white/10 p-2 rounded-lg flex items-center justify-center group-hover:bg-red-500/15 group-hover:text-red-400 transition-colors duration-300 shadow-[0_4px_10px_rgba(0,0,0,0.1)] group-hover:shadow-[0_4px_10px_rgba(248,113,113,0.2)]">
-                      <i className="fas fa-layer-group text-sm"></i>
+                      <Layers3 className="size-4" aria-hidden="true" />
                     </div>
                     <span className="text-sm font-bold text-white/80 group-hover:text-white transition-colors tracking-wide">
                       待看时长
@@ -377,7 +369,7 @@ export default function HomeDashboard({
                 <div>
                   <div className="text-sm text-white/60 mb-2 flex items-center gap-2">
                     <div className="bg-white/10 p-2 rounded-lg flex items-center justify-center group-hover:bg-red-500/15 group-hover:text-red-400 transition-colors duration-300 shadow-[0_4px_10px_rgba(0,0,0,0.1)] group-hover:shadow-[0_4px_10px_rgba(248,113,113,0.2)]">
-                      <i className="fas fa-chart-pie text-sm" />
+                      <ChartPie className="size-4" aria-hidden="true" />
                     </div>
                     <span className="text-sm font-bold text-white/80 group-hover:text-white transition-colors tracking-wide">
                       片库完成进度
@@ -411,7 +403,7 @@ export default function HomeDashboard({
               <div className="flex justify-between items-center border-b border-white/10 pb-3">
                 <div className="flex items-center gap-2">
                   <div className="bg-white/10 p-2 rounded-lg flex items-center justify-center group-hover:bg-red-500/15 group-hover:text-red-400 transition-colors duration-300 shadow-[0_4px_10px_rgba(0,0,0,0.1)] group-hover:shadow-[0_4px_10px_rgba(248,113,113,0.2)]">
-                    <i className="fas fa-film text-sm" />
+                    <Film className="size-4" aria-hidden="true" />
                   </div>
                   <span className="text-sm font-bold text-white/80 group-hover:text-white transition-colors tracking-wide">
                     电影看板
@@ -426,12 +418,12 @@ export default function HomeDashboard({
               <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                 <MediaStatusCard
                   title="已看过"
-                  icon="fa-check-circle"
+                  icon={CheckCircle}
                   count={watchedMovies}
                 />
                 <MediaStatusCard
                   title="想要看"
-                  icon="fa-pause-circle"
+                  icon={PauseCircle}
                   count={unwatchedMovies}
                 />
               </div>
@@ -449,7 +441,7 @@ export default function HomeDashboard({
               <div className="flex justify-between items-center border-b border-white/10 pb-3">
                 <div className="flex items-center gap-2">
                   <div className="bg-white/10 p-2 rounded-lg flex items-center justify-center group-hover:bg-red-500/15 group-hover:text-red-400 transition-colors duration-300 shadow-[0_4px_10px_rgba(0,0,0,0.1)] group-hover:shadow-[0_4px_10px_rgba(248,113,113,0.2)]">
-                    <i className="fas fa-tv text-sm"></i>
+                    <Tv className="size-4" aria-hidden="true" />
                   </div>
                   <span className="text-sm font-bold text-white/80 group-hover:text-white transition-colors tracking-wide">
                     电视剧看板
@@ -463,20 +455,20 @@ export default function HomeDashboard({
               <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
                 <MediaStatusCard
                   title="已看过"
-                  icon="fa-check-circle"
+                  icon={CheckCircle}
                   count={watchedSeries}
                   seasonsCount={currentYearData?.watched_seasons ?? 0}
                   episodesCount={currentYearData?.watched_series_episodes ?? 0}
                 />
                 <MediaStatusCard
                   title="正在看"
-                  icon="fa-play-circle"
+                  icon={PlayCircle}
                   count={watchingSeries}
                   seasonsCount={currentYearData?.watching_seasons ?? 0}
                 />
                 <MediaStatusCard
                   title="想要看"
-                  icon="fa-pause-circle"
+                  icon={PauseCircle}
                   count={unwatchedSeries}
                   seasonsCount={currentYearData?.unwatched_seasons ?? 0}
                   episodesCount={currentYearData?.unwatched_episodes ?? 0}
@@ -505,7 +497,7 @@ export default function HomeDashboard({
               avgRatingPercent={avgMoviesRatingPercent}
             />
 
-            <DistributionTop5Cards />
+            <DistributionTop5Cards distribution={movieDistribution} />
 
             <div className="space-y-12 mt-4">
               <MediaRow
@@ -530,7 +522,7 @@ export default function HomeDashboard({
               avgRatingPercent={avgSeriesRatingPercent}
             />
 
-            <DistributionTop5Cards />
+            <DistributionTop5Cards distribution={seriesDistribution} />
 
             <div className="space-y-12 mt-4">
               <MediaRow

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
+import { Menu, Search, Terminal, X } from "lucide-react";
 
 export default function Navbar() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -43,7 +44,7 @@ export default function Navbar() {
             className="flex items-center gap-2.5 group cursor-pointer"
             onClick={closeMenu}
           >
-            <i className="fas fa-terminal text-red-500 text-base group-hover:rotate-12 group-hover:drop-shadow-[0_0_10px_rgba(239,68,68,0.8)] transition-all duration-300"></i>
+            <Terminal className="size-4 text-red-500 group-hover:rotate-12 group-hover:drop-shadow-[0_0_10px_rgba(239,68,68,0.8)] transition-all duration-300" aria-hidden="true" />
             <span className="font-mono text-xl font-light tracking-tight drop-shadow-[0_0_12px_rgba(255,255,255,0.1)]">
               <span className="bg-clip-text text-transparent bg-linear-to-br from-white via-white/80 to-white/50">
                 bingewatch
@@ -83,7 +84,7 @@ export default function Navbar() {
               type="submit"
               className="absolute inset-y-0 left-0 flex items-center pl-3.5 cursor-pointer z-10"
             >
-              <i className="fas fa-search text-white/50 group-focus-within:text-white group-focus-within:drop-shadow-[0_0_8px_rgba(255,255,255,0.8)] transition-all duration-300"></i>
+              <Search className="size-4 text-white/50 group-focus-within:text-white group-focus-within:drop-shadow-[0_0_8px_rgba(255,255,255,0.8)] transition-all duration-300" aria-hidden="true" />
             </button>
             <input
               name="q"
@@ -105,11 +106,7 @@ export default function Navbar() {
             hover:bg-white/10 hover:border-white/20 hover:shadow-[0_6px_20px_rgba(255,255,255,0.05)] transition-all duration-300"
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
           >
-            <i
-              className={`fas ${
-                isMobileMenuOpen ? "fa-times text-xl" : "fa-bars text-lg"
-              } drop-shadow-[0_0_8px_rgba(255,255,255,0.3)] transition-all duration-300`}
-            ></i>
+            {isMobileMenuOpen ? <X className="size-5" aria-hidden="true" /> : <Menu className="size-5" aria-hidden="true" />}
           </button>
         </div>
       </div>
@@ -145,7 +142,7 @@ export default function Navbar() {
               type="submit"
               className="absolute inset-y-0 left-0 flex items-center pl-3.5 cursor-pointer z-10"
             >
-              <i className="fas fa-search text-white/50 group-focus-within:text-white group-focus-within:drop-shadow-[0_0_8px_rgba(255,255,255,0.8)] transition-all duration-300"></i>
+              <Search className="size-4 text-white/50 group-focus-within:text-white group-focus-within:drop-shadow-[0_0_8px_rgba(255,255,255,0.8)] transition-all duration-300" aria-hidden="true" />
             </button>
 
             <input

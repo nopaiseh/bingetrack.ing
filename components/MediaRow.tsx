@@ -1,8 +1,13 @@
+"use client";
+
 import Image from "next/image";
 import Link from "next/link";
+import { ImageIcon, Star } from "lucide-react";
+import { useState } from "react";
 import { Media } from "@/lib/types";
 
 function ItemCard({ item }: { item: Media }) {
+  const [isImageLoaded, setIsImageLoaded] = useState(false);
   // Combine genres and languages, then limit to a maximum of 4 items
   const tags = [...(item.genres ?? []), ...(item.languages ?? [])].slice(0, 4);
 
@@ -10,15 +15,21 @@ function ItemCard({ item }: { item: Media }) {
     <>
       <div className="w-full aspect-[2/3] relative flex items-center justify-center overflow-hidden bg-black/60">
         {item.cover_url ? (
-          <Image
-            src={item.cover_url}
-            alt={item.title}
-            fill
-            className="object-cover transition-transform duration-500 group-hover:scale-110"
-            sizes="176px"
-          />
+          <>
+            {!isImageLoaded && <div className="absolute inset-0 animate-pulse bg-white/8" />}
+            <Image
+              src={item.cover_url}
+              alt={item.title}
+              fill
+              className={`object-cover transition-[opacity,transform,filter] duration-500 group-hover:scale-110 ${
+                isImageLoaded ? "opacity-100 blur-none" : "opacity-0 blur-sm"
+              }`}
+              sizes="176px"
+              onLoad={() => setIsImageLoaded(true)}
+            />
+          </>
         ) : (
-          <i className="fas fa-image text-4xl text-white/20 drop-shadow-md"></i>
+          <ImageIcon className="size-10 text-white/20 drop-shadow-md" aria-hidden="true" />
         )}
       </div>
       
@@ -34,7 +45,7 @@ function ItemCard({ item }: { item: Media }) {
           <span className="text-white font-bold flex items-center gap-1 drop-shadow-sm">
             {item.rating ? (
               <>
-                <i className="fas fa-star text-yellow-500/90 text-[10px] drop-shadow-[0_0_5px_rgba(234,179,8,0.6)]"></i>
+                <Star className="size-3 fill-current text-yellow-500/90 drop-shadow-[0_0_5px_rgba(234,179,8,0.6)]" aria-hidden="true" />
                 {Number(item.rating).toFixed(1)}
               </>
             ) : (

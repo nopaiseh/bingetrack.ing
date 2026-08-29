@@ -1,6 +1,7 @@
 import { getSupabaseServer } from "@/utils/supabase";
+import { getSupabaseBrowser } from "@/utils/supabase-client";
 import { mapViewRowToMedia } from "@/lib/functions/media-mapper";
-import { Media, ViewAllMediaRow, FetchMediaListOptions } from "@/lib/types";
+import { DistributionItem, Media, MediaDistribution, MediaDistributions, ViewAllMediaRow, FetchMediaListOptions } from "@/lib/types";
 
 /*
   媒体仓库（server-side helpers）
@@ -103,18 +104,114 @@ export async function fetchTopMediaServer(
   return data.map((item: ViewAllMediaRow) => mapViewRowToMedia(item));
 }
 
+type DistributionSourceRow = Pick<ViewAllMediaRow, "type" | "sort_date" | "release_year" | "regions" | "languages" | "genres">;
+
+type DistributionCounts = {
+  regions: Map<string, number>;
+  languages: Map<string, number>;
+  genres: Map<string, number>;
+};
+
+const EMPTY_DISTRIBUTION: MediaDistribution = { regions: [], languages: [], genres: [] };
+
+function createDistributionCounts(): DistributionCounts {
+  return { regions: new Map(), languages: new Map(), genres: new Map() };
+}
+
+function incrementCounts(target: Map<string, number>, values: string[] | null | undefined) {
+  const uniqueValues = new Set((values ?? []).map((value) => value.trim()).filter(Boolean));
+  for (const value of uniqueValues) {
+    target.set(value, (target.get(value) ?? 0) + 1);
+  }
+}
+
+function topFive(counts: Map<string, number>): DistributionItem[] {
+  const total = Array.from(counts.values()).reduce((sum, count) => sum + count, 0);
+  if (total === 0) return [];
+
+  return Array.from(counts.entries())
+    .sort((left, right) => right[1] - left[1] || left[0].localeCompare(right[0], "zh-CN"))
+    .slice(0, 5)
+    .map(([name, count]) => ({ name, count, percent: Math.round((count / total) * 100) }));
+}
+
+function finalizeDistribution(counts: DistributionCounts): MediaDistribution {
+  return {
+    regions: topFive(counts.regions),
+    languages: topFive(counts.languages),
+    genres: topFive(counts.genres),
+  };
+}
+
+export async function fetchMediaDistributionsServer(): Promise<MediaDistributions> {
+  const db = getSupabaseServer();
+  const pageSize = 1000;
+  const rows: DistributionSourceRow[] = [];
+
+  for (let offset = 0; ; offset += pageSize) {
+    const { data, error } = await db
+      .from("v_all_media")
+      .select("type, sort_date, release_year, regions, languages, genres")
+      .range(offset, offset + pageSize - 1);
+
+    if (error) {
+      console.error("Failed to fetch media distribution data:", error);
+      return { movies: { "All Time": EMPTY_DISTRIBUTION }, series: { "All Time": EMPTY_DISTRIBUTION } };
+    }
+
+    const page = (data ?? []) as DistributionSourceRow[];
+    rows.push(...page);
+    if (page.length < pageSize) break;
+  }
+
+  const countsByType: Record<"movies" | "series", Map<string, DistributionCounts>> = {
+    movies: new Map([["All Time", createDistributionCounts()]]),
+    series: new Map([["All Time", createDistributionCounts()]]),
+  };
+
+  for (const row of rows) {
+    const mediaType = row.type === "movie" || row.type === "movies" ? "movies" : row.type === "tv_series" || row.type === "series" ? "series" : null;
+    if (!mediaType) continue;
+
+    const year = String(row.release_year ?? row.sort_date?.slice(0, 4) ?? "").trim();
+    const buckets = [countsByType[mediaType].get("All Time")!];
+    if (year) {
+      if (!countsByType[mediaType].has(year)) countsByType[mediaType].set(year, createDistributionCounts());
+      buckets.push(countsByType[mediaType].get(year)!);
+    }
+
+    for (const bucket of buckets) {
+      incrementCounts(bucket.regions, row.regions);
+      incrementCounts(bucket.languages, row.languages);
+      incrementCounts(bucket.genres, row.genres);
+    }
+  }
+
+  return {
+    movies: Object.fromEntries(Array.from(countsByType.movies, ([year, counts]) => [year, finalizeDistribution(counts)])),
+    series: Object.fromEntries(Array.from(countsByType.series, ([year, counts]) => [year, finalizeDistribution(counts)])),
+  };
+}
+
 export async function searchMediaServer(opts: FetchMediaListOptions = {}): Promise<{ rows: Media[]; total: number }> {
-  return fetchMediaListServer(opts);
+  return fetchMediaList(opts, true);
 }
 
 export async function fetchMediaListServer(opts: FetchMediaListOptions = {}): Promise<{ rows: Media[]; total: number }> {
-  const db = getSupabaseServer();
+  return fetchMediaList(opts, false);
+}
+
+async function fetchMediaList(
+  opts: FetchMediaListOptions,
+  usePublicClient: boolean,
+): Promise<{ rows: Media[]; total: number }> {
+  const db = usePublicClient ? getSupabaseBrowser() : getSupabaseServer();
   const {
     type, status, genre, region, language, startYear, endYear, q, sort, limit = 30, offset = 0,
   } = opts || {};
 
   // 1. 初始化缓存变量
-  const cacheKey = JSON.stringify({ type, status, genre, region, language, startYear, endYear, q, sort, limit, offset });
+  const cacheKey = JSON.stringify({ access: usePublicClient ? "public" : "service", type, status, genre, region, language, startYear, endYear, q, sort, limit, offset });
   const now = Date.now();
 
   // 2. 内存缓存读取机制
@@ -184,13 +281,7 @@ export async function fetchMediaListServer(opts: FetchMediaListOptions = {}): Pr
     dataQuery = dataQuery.order("sort_date", { ascending: false, nullsFirst: false });
   }
 
-  dataQuery = dataQuery.range(offset, Math.max(0, offset + limit - 1));
-
-  if (limit) {
-    const from = offset;
-    const to = offset + limit - 1;
-    dataQuery = dataQuery.range(from, to); 
-  }
+  dataQuery = dataQuery.range(offset, offset + limit - 1);
 
   const [dataRes, countRes] = await Promise.all([dataQuery, countQuery]);
 
@@ -212,9 +303,10 @@ export async function fetchStatsServer(mediaType: "movie" | "tv_series") {
   const db = getSupabaseServer();
   const today = new Date().toISOString().split("T")[0];
 
-  const [totalRes, watchedRes, wantRes, upcomingRes] = await Promise.all([
+  const [totalRes, watchedRes, watchingRes, wantRes, upcomingRes] = await Promise.all([
     db.from("v_all_media").select("id", { count: "exact", head: true }).eq("type", mediaType),
     db.from("v_all_media").select("id", { count: "exact", head: true }).eq("type", mediaType).eq("status", "watched"),
+    db.from("v_all_media").select("id", { count: "exact", head: true }).eq("type", mediaType).eq("status", "watching"),
     db.from("v_all_media").select("id", { count: "exact", head: true }).eq("type", mediaType).eq("status", "want_to_watch"),
     db.from("v_all_media").select("id", { count: "exact", head: true }).eq("type", mediaType).gte("sort_date", today),
   ]);
@@ -222,6 +314,7 @@ export async function fetchStatsServer(mediaType: "movie" | "tv_series") {
   return {
     total: totalRes.count ?? 0,
     watched: watchedRes.count ?? 0,
+    watching: watchingRes.count ?? 0,
     want: wantRes.count ?? 0,
     upcoming: upcomingRes.count ?? 0,
   };

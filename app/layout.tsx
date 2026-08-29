@@ -15,10 +15,6 @@ export default function RootLayout({
 }) {
   return (
     <html lang="zh-CN" className={`${GeistMono.variable}`}>
-      <head>
-        <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet"/>
-      </head>
-
       <body className="text-neutral-200 font-sans leading-normal tracking-normal selection:bg-red-500/30 selection:text-white flex flex-col min-h-screen relative">
         
         {/* --- 1. THE UNDER-LAYER (What sits behind the glass) --- */}

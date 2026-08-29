@@ -1,7 +1,8 @@
 import Image from "next/image";
 import Link from "next/link";
+import { ImageIcon } from "lucide-react";
+import type { ReactNode } from "react";
 import { Media } from "@/lib/types";
-import MediaRow from "./MediaRow";
 import SearchTag from "./SearchTag";
 
 export function CinematicBackground({ imageUrl }: { imageUrl: string }) {
@@ -23,7 +24,6 @@ export function CinematicBackground({ imageUrl }: { imageUrl: string }) {
         fill 
         // Opacity at 30% combined with mix-blend-screen creates a perfect ambient glow
         className="object-cover opacity-20 blur-[80px] saturate-150 scale-125" 
-        priority
       />
     </div>
   );
@@ -33,7 +33,7 @@ function MediaPoster({ media }: { media: Media }) {
   return (
     <div className="w-full md:w-72 shrink-0 flex flex-col gap-6">
       {/* Frosted Glass Back Button */}
-      <Link href="/movies" className="group inline-flex items-center text-sm font-medium text-white/70 hover:text-white hover:drop-shadow-[0_0_8px_rgba(255,255,255,0.5)] transition-all w-fit bg-white/5 backdrop-blur-2xl px-4 py-2 rounded-xl border border-white/10 shadow-[0_4px_15px_rgba(0,0,0,0.2)] hover:bg-white/10 hover:border-white/20 hover:shadow-[0_6px_20px_rgba(0,0,0,0.3)]">
+      <Link href={media.type === "series" ? "/series" : "/movies"} className="group inline-flex items-center text-sm font-medium text-white/70 hover:text-white hover:drop-shadow-[0_0_8px_rgba(255,255,255,0.5)] transition-all w-fit bg-white/5 backdrop-blur-2xl px-4 py-2 rounded-xl border border-white/10 shadow-[0_4px_15px_rgba(0,0,0,0.2)] hover:bg-white/10 hover:border-white/20 hover:shadow-[0_6px_20px_rgba(0,0,0,0.3)]">
         <span className="mr-2 group-hover:-translate-x-1 transition-transform duration-300">←</span>
         返回列表
       </Link>
@@ -44,7 +44,7 @@ function MediaPoster({ media }: { media: Media }) {
           <Image src={media.cover_url} alt={media.title} fill sizes="(max-width: 768px) 100vw, 288px" className="object-cover transition-transform duration-700 hover:scale-105" priority/>
         ) : (
           <div className="w-full h-full flex flex-col items-center justify-center text-white/30 gap-2">
-            <i className="fas fa-image text-4xl drop-shadow-md"></i>
+            <ImageIcon className="size-10 drop-shadow-md" aria-hidden="true" />
             <span className="text-sm">暂无海报</span>
           </div>
         )}
@@ -133,12 +133,12 @@ type SeasonInfo = {
 
 export default function MediaInformation({
   media,
-  relatedMedia,
   seasons,
+  relatedContent,
 }: {
   media: Media;
-  relatedMedia: Media[] | null;
   seasons: SeasonInfo[] | null;
+  relatedContent?: ReactNode;
 }) {
   return (
     <>
@@ -234,16 +234,7 @@ export default function MediaInformation({
         </div>
       )}
         
-        {media.series && (
-          <div className="space-y-12">
-            <MediaRow
-              title={"《" + media.series + "》系列其他电影"}
-              items={relatedMedia || []}
-              viewAllLink="/movies/watched"
-              type={media.type ?? "movies"}
-            />
-          </div>
-        )}
+        {relatedContent}
       </div>
     </>
   );

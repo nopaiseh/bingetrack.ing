@@ -5,8 +5,8 @@ import { useState, useEffect, Suspense, useCallback, useRef } from "react";
 import Image from "next/image";
 import { useSearchParams } from "next/navigation";
 import { getSupabaseBrowser } from "@/utils/supabase-client";
-import { Media, ViewAllMediaRow } from "@/lib/types";
-import { mapViewRowToMedia } from "@/lib/functions/media-mapper";
+import { Media } from "@/lib/types";
+import { ArrowDown, ArrowUp, ChevronDown, ImageIcon, LoaderCircle, Search, SlidersHorizontal, Star, X } from "lucide-react";
 
 // --- NEW: Premium Skeleton Component ---
 function MediaCardSkeleton() {
@@ -32,14 +32,13 @@ function MediaCardSkeleton() {
 }
 
 // --- NEW: Isolated Media Card for Image Loading State ---
-function SearchMediaCard({ item, index, LIMIT }: { item: Media; index: number; LIMIT: number }) {
+function SearchMediaCard({ item }: { item: Media }) {
   const [isImageLoaded, setIsImageLoaded] = useState(false);
 
   return (
     <Link
       href={`/${item.type}/${item.id}`}
-      className="group flex flex-col bg-white/5 backdrop-blur-2xl border border-white/10 rounded-xl overflow-hidden cursor-pointer shadow-[0_10px_30px_rgba(0,0,0,0.2)] transition-all duration-300 hover:border-red-400/40 hover:bg-white/10 hover:-translate-y-1.5 hover:shadow-[0_15px_40px_rgba(248,113,113,0.2)] animate-in fade-in zoom-in-95 duration-500"
-      style={{ animationDelay: `${(index % LIMIT) * 50}ms`, animationFillMode: "both" }}
+      className="group flex flex-col bg-white/5 backdrop-blur-2xl border border-white/10 rounded-xl overflow-hidden cursor-pointer shadow-[0_10px_30px_rgba(0,0,0,0.2)] transition-all duration-300 hover:border-red-400/40 hover:bg-white/10 hover:-translate-y-1.5 hover:shadow-[0_15px_40px_rgba(248,113,113,0.2)]"
     >
       <div className="w-full aspect-2/3 relative flex items-center justify-center overflow-hidden bg-black/40">
         {item.cover_url ? (
@@ -61,7 +60,7 @@ function SearchMediaCard({ item, index, LIMIT }: { item: Media; index: number; L
             />
           </>
         ) : (
-          <i className="fas fa-image text-4xl text-white/20 drop-shadow-md"></i>
+          <ImageIcon className="size-10 text-white/20 drop-shadow-md" aria-hidden="true" />
         )}
       </div>
 
@@ -77,7 +76,7 @@ function SearchMediaCard({ item, index, LIMIT }: { item: Media; index: number; L
           <span className="text-white font-bold flex items-center gap-1 drop-shadow-sm">
             {item.rating ? (
               <>
-                <i className="fas fa-star text-yellow-500/90 text-[10px] drop-shadow-[0_0_5px_rgba(234,179,8,0.6)]"></i>
+                <Star className="size-3 fill-current text-yellow-500/90 drop-shadow-[0_0_5px_rgba(234,179,8,0.6)]" aria-hidden="true" />
                 {Number(item.rating).toFixed(1)}
               </>
             ) : (
@@ -115,6 +114,7 @@ function SearchContent() {
   const urlQuery = searchParams.get("q") || "";
 
   const [query, setQuery] = useState(urlQuery);
+  const [debouncedQuery, setDebouncedQuery] = useState(urlQuery);
   const [prevUrlQuery, setPrevUrlQuery] = useState(urlQuery);
 
   if (urlQuery !== prevUrlQuery) {
@@ -167,16 +167,20 @@ function SearchContent() {
       
       if (node) observer.current.observe(node);
     },
-    [isLoading, isLoadingMore, hasMore, page]
+    [isLoading, isLoadingMore, hasMore]
   );
 
   const LIMIT = 30;
 
-  useEffect(() => {
+  const resetPagination = () => {
     setPage(1);
     setHasMore(true);
-    setMediaItems([]);
-  }, [query, filters]);
+  };
+
+  useEffect(() => {
+    const timeoutId = window.setTimeout(() => setDebouncedQuery(query), 300);
+    return () => window.clearTimeout(timeoutId);
+  }, [query]);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -212,12 +216,14 @@ function SearchContent() {
   }, []);
 
   useEffect(() => {
+    const controller = new AbortController();
+
     const fetchMedia = async () => {
       if (page === 1) setIsLoading(true);
       else setIsLoadingMore(true);
 
       const params = new URLSearchParams();
-      if (query) params.set("q", query);
+      if (debouncedQuery) params.set("q", debouncedQuery);
 
       if (filters.type && filters.type.length > 0) {
         const typeMap: Record<string, string> = { 电影: "movie", 电视剧: "tv_series" };
@@ -246,26 +252,30 @@ function SearchContent() {
       params.set("offset", ((page - 1) * LIMIT).toString());
 
       try {
-        const res = await fetch(`/api/media?${params.toString()}`);
-        const json = await res.json();
-        const dataArray: ViewAllMediaRow[] = Array.isArray(json) ? json : (json.rows ?? json.data ?? []);
-        const combinedMedia: Media[] = dataArray.map((item) => mapViewRowToMedia(item));
+        const res = await fetch(`/api/media?${params.toString()}`, { signal: controller.signal });
+        if (!res.ok) throw new Error(`Media request failed with status ${res.status}`);
+        const json: { rows?: Media[] } = await res.json();
+        const combinedMedia = json.rows ?? [];
 
         if (combinedMedia.length < LIMIT) setHasMore(false);
 
         if (page === 1) setMediaItems(combinedMedia);
         else setMediaItems((prev) => [...prev, ...combinedMedia]);
       } catch (error) {
+        if (error instanceof DOMException && error.name === "AbortError") return;
         console.error("Failed to fetch media:", error);
         setMediaItems([]);
       } finally {
-        setIsLoading(false);
-        setIsLoadingMore(false);
+        if (!controller.signal.aborted) {
+          setIsLoading(false);
+          setIsLoadingMore(false);
+        }
       }
     };
 
     fetchMedia();
-  }, [query, filters, page]);
+    return () => controller.abort();
+  }, [debouncedQuery, filters, page]);
 
   const BUTTON_CATEGORIES = [
     { id: "type", label: "分类", options: ["电影", "电视剧"], multiSelect: true },
@@ -276,6 +286,7 @@ function SearchContent() {
   ];
 
   const toggleFilter = (categoryId: string, value: string, isMultiSelect = true, allOptions: string[] = []) => {
+    resetPagination();
     setFilters((prev) => {
       const currentSelected = prev[categoryId] || [];
       if (value === "全部") return { ...prev, [categoryId]: [] };
@@ -293,6 +304,7 @@ function SearchContent() {
   };
 
   const handleSortToggle = (fieldId: string) => {
+    resetPagination();
     setFilters((prev) => {
       const currentSort = prev.sort[0] || "date_desc";
       const [currentField, currentOrder] = currentSort.split("_");
@@ -306,6 +318,7 @@ function SearchContent() {
   };
 
   const handleYearChange = (type: "start" | "end", value: string) => {
+    resetPagination();
     setFilters((prev) => {
       const currentStart = prev.year?.[0] || "";
       const currentEnd = prev.year?.[1] || "";
@@ -339,21 +352,27 @@ function SearchContent() {
         <div className="mb-8">
           <div className="relative group">
             <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none z-10">
-              <i className="fas fa-search text-white/50 group-focus-within:text-red-400 group-focus-within:drop-shadow-[0_0_5px_rgba(248,113,113,0.6)] transition-all duration-300"></i>
+              <Search className="size-4 text-white/50 group-focus-within:text-red-400 group-focus-within:drop-shadow-[0_0_5px_rgba(248,113,113,0.6)] transition-all duration-300" aria-hidden="true" />
             </div>
             
             <input
               type="text"
               value={query}
-              onChange={(e) => setQuery(e.target.value)}
+              onChange={(e) => {
+                resetPagination();
+                setQuery(e.target.value);
+              }}
               placeholder="搜索电影、电视剧、导演或演员..."
               className="w-full bg-white/5 backdrop-blur-2xl border border-white/10 focus:border-red-400/50 focus:ring-1 focus:ring-red-400/50 focus:bg-white/10 rounded-2xl py-5 pl-12 pr-40 text-lg text-white placeholder-white/40 outline-none transition-all duration-500 shadow-[0_4px_20px_rgba(0,0,0,0.2)] focus:shadow-[0_6px_30px_rgba(248,113,113,0.2)] relative z-0"
             />
 
             <div className="absolute inset-y-0 right-0 pr-4 flex items-center gap-3 z-10">
               {query && (
-                <button onClick={() => setQuery("")} className="text-white/50 hover:text-red-400 hover:drop-shadow-[0_0_5px_rgba(248,113,113,0.6)] transition-all duration-300">
-                  <i className="fas fa-times-circle text-lg"></i>
+                <button onClick={() => {
+                  resetPagination();
+                  setQuery("");
+                }} className="text-white/50 hover:text-red-400 hover:drop-shadow-[0_0_5px_rgba(248,113,113,0.6)] transition-all duration-300">
+                  <X className="size-5" aria-hidden="true" />
                 </button>
               )}
               <div className="h-6 w-px bg-white/20"></div>
@@ -366,7 +385,7 @@ function SearchContent() {
                     : "bg-white/5 text-white/70 border border-white/10 shadow-[0_4px_15px_rgba(0,0,0,0.2)] hover:bg-white/10 hover:text-white hover:border-white/20 hover:drop-shadow-[0_0_8px_rgba(255,255,255,0.5)] hover:shadow-[0_6px_20px_rgba(0,0,0,0.3)]"
                 }`}
               >
-                <i className="fas fa-sliders-h"></i>
+                <SlidersHorizontal className="size-4" aria-hidden="true" />
                 {showAdvanced ? "收起筛选" : "高级筛选"}
                 {!showAdvanced && hasActiveFilters && (
                   <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-400 rounded-full border border-black/50 shadow-[0_0_8px_rgba(248,113,113,0.8)] animate-pulse"></span>
@@ -413,7 +432,7 @@ function SearchContent() {
                             >
                               {option}
                               {isSelected && (
-                                <i className="fas fa-times text-[10px] opacity-60 group-hover:opacity-100 transition-opacity ml-1"></i>
+                                <X className="ml-1 size-3 opacity-60 group-hover:opacity-100 transition-opacity" aria-hidden="true" />
                               )}
                             </button>
                           );
@@ -429,7 +448,10 @@ function SearchContent() {
                   </span>
                   <div className="flex items-center gap-4">
                     <button
-                      onClick={() => setFilters((prev) => ({ ...prev, year: [] }))}
+                      onClick={() => {
+                        resetPagination();
+                        setFilters((prev) => ({ ...prev, year: [] }));
+                      }}
                       className={`px-4 py-1.5 rounded-lg text-[13px] transition-all duration-300 backdrop-blur-2xl ${
                         !filters.year?.length || (filters.year[0] === "" && filters.year[1] === "")
                           ? "bg-red-500/15 text-red-400 font-bold border border-red-400/40 shadow-[0_4px_10px_rgba(248,113,113,0.2)] drop-shadow-[0_0_3px_rgba(248,113,113,0.3)]"
@@ -451,7 +473,7 @@ function SearchContent() {
                             <option key={y} value={y} className="bg-neutral-900 text-neutral-300">{y}</option>
                           ))}
                         </select>
-                        <i className="fas fa-chevron-down absolute right-3 top-1/2 -translate-y-1/2 text-[10px] text-white/50 group-hover:text-white pointer-events-none transition-colors"></i>
+                        <ChevronDown className="absolute right-3 top-1/2 size-3 -translate-y-1/2 text-white/50 group-hover:text-white pointer-events-none transition-colors" aria-hidden="true" />
                       </div>
 
                       <span className="text-white/60 text-[13px] font-medium px-1">至</span>
@@ -467,7 +489,7 @@ function SearchContent() {
                             <option key={y} value={y} className="bg-neutral-900 text-neutral-300">{y}</option>
                           ))}
                         </select>
-                        <i className="fas fa-chevron-down absolute right-3 top-1/2 -translate-y-1/2 text-[10px] text-white/50 group-hover:text-white pointer-events-none transition-colors"></i>
+                        <ChevronDown className="absolute right-3 top-1/2 size-3 -translate-y-1/2 text-white/50 group-hover:text-white pointer-events-none transition-colors" aria-hidden="true" />
                       </div>
                     </div>
                   </div>
@@ -495,7 +517,7 @@ function SearchContent() {
                         >
                           {option.label}
                           {isSelected && (
-                            <i className={`fas fa-arrow-${currentOrder === "desc" ? "down" : "up"} text-[11px] transition-transform`}></i>
+                            currentOrder === "desc" ? <ArrowDown className="size-3" aria-hidden="true" /> : <ArrowUp className="size-3" aria-hidden="true" />
                           )}
                         </button>
                       );
@@ -521,29 +543,37 @@ function SearchContent() {
             <div className="flex items-center gap-4">
               {hasActiveFilters && (
                 <button
-                  onClick={() => setFilters({ type: [], status: [], genre: [], region: [], language: [], year: [], sort: ["date_desc"] })}
+                  onClick={() => {
+                    resetPagination();
+                    setFilters({ type: [], status: [], genre: [], region: [], language: [], year: [], sort: ["date_desc"] });
+                  }}
                   className="text-sm text-white/60 hover:text-red-400 hover:drop-shadow-[0_0_5px_rgba(248,113,113,0.5)] transition-all duration-300"
                 >
                   清空筛选
                 </button>
               )}
-              <span className="text-sm px-4 py-1.5 bg-white/5 backdrop-blur-2xl rounded-full border border-white/10 text-white font-medium shadow-[0_4px_10px_rgba(0,0,0,0.2)] drop-shadow-[0_0_8px_rgba(255,255,255,0.1)] transition-all">
+              <span className="min-w-32 text-center text-sm px-4 py-1.5 bg-white/5 backdrop-blur-2xl rounded-full border border-white/10 text-white font-medium shadow-[0_4px_10px_rgba(0,0,0,0.2)] drop-shadow-[0_0_8px_rgba(255,255,255,0.1)] transition-all">
                 {isLoading ? "加载中..." : `找到 ${mediaItems.length} 部作品`}
               </span>
             </div>
           </div>
 
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 md:gap-6">
+          <div
+            className={`relative grid min-h-[32rem] grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 md:gap-6 transition-opacity duration-200 ${
+              isLoading && mediaItems.length > 0 ? "opacity-60" : "opacity-100"
+            }`}
+            aria-busy={isLoading}
+          >
             {/* Show 12 sleek skeletons on initial load */}
-            {isLoading ? (
+            {isLoading && mediaItems.length === 0 ? (
               [...Array(12)].map((_, i) => (
                 <MediaCardSkeleton key={`loading-initial-${i}`} />
               ))
             ) : mediaItems.length > 0 ? (
               <>
                 {/* Render the extracted card component for individual image loading state */}
-                {mediaItems.map((item, index) => (
-                  <SearchMediaCard key={item.id} item={item} index={index} LIMIT={LIMIT} />
+                {mediaItems.map((item) => (
+                  <SearchMediaCard key={`${item.type}-${item.id}`} item={item} />
                 ))}
 
                 {/* Show 6 sleek skeletons dynamically at the bottom during infinite scroll */}
@@ -578,7 +608,7 @@ function SearchContent() {
           showScrollTop ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10 pointer-events-none"
         }`}
       >
-        <i className="fas fa-arrow-up text-lg"></i>
+        <ArrowUp className="size-5" aria-hidden="true" />
       </button>
     </div>
   );
@@ -589,7 +619,7 @@ export default function SearchPageWrapper() {
     <Suspense
       fallback={
         <div className="min-h-screen flex items-center justify-center text-white/60">
-          <i className="fas fa-circle-notch fa-spin text-2xl text-red-400 drop-shadow-[0_0_5px_rgba(248,113,113,0.5)]"></i>
+          <LoaderCircle className="size-6 animate-spin text-red-400 drop-shadow-[0_0_5px_rgba(248,113,113,0.5)]" aria-hidden="true" />
         </div>
       }
     >

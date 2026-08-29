@@ -62,6 +62,7 @@ export type MediaSummary = Summary;
 export interface Stats {
   total?: number;
   watched?: number;
+  watching?: number;
   want?: number;
   upcoming?: number;
 
@@ -77,6 +78,20 @@ export interface MediaCatalogProps {
   want?: Media[];
   stats?: Stats;
 }
+
+export interface DistributionItem {
+  name: string;
+  percent: number;
+  count: number;
+}
+
+export interface MediaDistribution {
+  regions: DistributionItem[];
+  languages: DistributionItem[];
+  genres: DistributionItem[];
+}
+
+export type MediaDistributions = Record<MediaType, Record<string, MediaDistribution>>;
 
 export interface ViewAllMediaRow {
   id: string | number;
