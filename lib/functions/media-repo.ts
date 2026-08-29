@@ -79,18 +79,15 @@ export async function getRelatedBySeries(seriesName: string, currentId: string):
     .from("v_all_media")
     .select("*")
     .in("id", relatedIds)
-    .order("sort_date", { ascending: true });
+    .order("sort_date", { ascending: true, nullsFirst: false })
+    .order("id", { ascending: true });
 
   if (error || !data) {
     console.error(`Failed to fetch related media details for series ${seriesName}:`, error);
     return [];
   }
 
-  const relatedById = new Map(data.map((item: ViewAllMediaRow) => [String(item.id), item]));
-  return relatedIds.flatMap((id) => {
-    const item = relatedById.get(id);
-    return item ? [mapViewRowToMedia(item, [seriesName])] : [];
-  });
+  return data.map((item: ViewAllMediaRow) => mapViewRowToMedia(item, [seriesName]));
 }
 
 type SeasonRow = {
@@ -100,13 +97,17 @@ type SeasonRow = {
     id: string;
     media_items: {
       release_date: string | null;
-      tracking: Array<{ status: string | null }> | null;
+      tracking: { status: string | null } | Array<{ status: string | null }> | null;
     } | Array<{
       release_date: string | null;
-      tracking: Array<{ status: string | null }> | null;
+      tracking: { status: string | null } | Array<{ status: string | null }> | null;
     }> | null;
   }> | null;
 };
+
+function firstRelated<T>(value: T | T[] | null | undefined): T | undefined {
+  return Array.isArray(value) ? value[0] : value ?? undefined;
+}
 
 export async function getSeasonsBySeriesId(seriesId: string): Promise<SeasonInfo[]> {
   const db = getSupabaseServer();
@@ -146,7 +147,7 @@ export async function getSeasonsBySeriesId(seriesId: string): Promise<SeasonInfo
     const mediaItem = seasonMedia.get(season.id);
     const watchedEpisodeCount = (season.tv_episodes ?? []).filter((episode) => {
       const episodeMedia = Array.isArray(episode.media_items) ? episode.media_items[0] : episode.media_items;
-      return episodeMedia?.tracking?.[0]?.status === "watched";
+      return firstRelated(episodeMedia?.tracking)?.status === "watched";
     }).length;
 
     return {
@@ -173,14 +174,14 @@ type EpisodeRow = {
     cover_url: string | null;
     release_date: string | null;
     runtime: number | null;
-    tracking: Array<{ status: string | null; rating: number | null }> | null;
+    tracking: { status: string | null; rating: number | null } | Array<{ status: string | null; rating: number | null }> | null;
   } | Array<{
     title: string | null;
     summary: string | null;
     cover_url: string | null;
     release_date: string | null;
     runtime: number | null;
-    tracking: Array<{ status: string | null; rating: number | null }> | null;
+    tracking: { status: string | null; rating: number | null } | Array<{ status: string | null; rating: number | null }> | null;
   }> | null;
 };
 
@@ -193,11 +194,11 @@ type SeasonHeaderRow = {
     media_items: {
       release_date: string | null;
       runtime: number | null;
-      tracking: Array<{ status: string | null; rating: number | null }> | null;
+      tracking: { status: string | null; rating: number | null } | Array<{ status: string | null; rating: number | null }> | null;
     } | Array<{
       release_date: string | null;
       runtime: number | null;
-      tracking: Array<{ status: string | null; rating: number | null }> | null;
+      tracking: { status: string | null; rating: number | null } | Array<{ status: string | null; rating: number | null }> | null;
     }> | null;
   }> | null;
 };
@@ -239,7 +240,7 @@ export async function getSeasonEpisodes(
   const season = seasonData as SeasonHeaderRow;
   const allEpisodes = (season.tv_episodes ?? []).map((episode) => {
     const mediaItem = Array.isArray(episode.media_items) ? episode.media_items[0] : episode.media_items;
-    const tracking = mediaItem?.tracking?.[0];
+    const tracking = firstRelated(mediaItem?.tracking);
     return {
       id: episode.id,
       episodeNumber: episode.episode_number,
@@ -278,7 +279,7 @@ export async function getSeasonEpisodes(
     const episode = episodeMap.get(id);
     if (!episode) return [];
     const mediaItem = Array.isArray(episode.media_items) ? episode.media_items[0] : episode.media_items;
-    const tracking = mediaItem?.tracking?.[0];
+    const tracking = firstRelated(mediaItem?.tracking);
     return [{
       id: episode.id,
       episodeNumber: episode.episode_number,
