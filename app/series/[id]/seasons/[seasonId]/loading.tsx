@@ -7,10 +7,14 @@ export default function Loading() {
     <div className="min-h-screen pb-16 pt-24">
       <div className="container mx-auto max-w-7xl space-y-6 px-6 md:px-8" aria-label="正在加载本季剧集">
         <Pulse className="h-10 w-44" />
-        <div className="glass-panel space-y-4 rounded-3xl p-8">
-          <Pulse className="h-4 w-36" />
-          <Pulse className="h-12 w-52" />
-          <Pulse className="h-4 w-28" />
+        <div className="glass-panel flex flex-col gap-6 rounded-3xl p-8 sm:flex-row">
+          <Pulse className="aspect-2/3 w-36 shrink-0 sm:w-48" />
+          <div className="flex-1 space-y-4 py-2">
+            <Pulse className="h-4 w-40" />
+            <Pulse className="h-12 w-64 max-w-full" />
+            <Pulse className="h-4 w-44" />
+            <Pulse className="mt-6 h-20 w-full" />
+          </div>
         </div>
         <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
           {Array.from({ length: 4 }, (_, index) => <Pulse key={index} className="h-24" />)}

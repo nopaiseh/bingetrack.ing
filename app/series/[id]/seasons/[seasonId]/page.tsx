@@ -125,17 +125,26 @@ export default async function SeasonPage({
           <ChevronLeft className="size-4" /> 返回《{series.title}》
         </Link>
 
-        <header className="relative mb-6 overflow-hidden rounded-3xl border border-white/10 bg-white/5 p-6 backdrop-blur-2xl md:p-8">
-          {series.cover_url && <Image src={series.cover_url} alt="" fill priority className="-z-10 object-cover opacity-10 blur-2xl" sizes="100vw" />}
-          <p className="mb-2 text-sm font-medium tracking-widest text-red-400">{series.title}</p>
-          <div className="flex flex-col justify-between gap-5 md:flex-row md:items-end">
-            <div>
-              <h1 className="text-3xl font-bold text-white md:text-5xl">第 {seasonData.season.seasonNumber} 季</h1>
-              <p className="mt-3 text-sm text-white/50">
-                {seasonData.season.releaseYearRange ? `${seasonData.season.releaseYearRange} · ` : ""}{seasonData.season.episodeCount} 集
-              </p>
+        <header className="glass-panel relative mb-6 overflow-hidden rounded-3xl p-6 md:p-8">
+          {(seasonData.season.coverUrl || series.cover_url) && <Image src={seasonData.season.coverUrl || series.cover_url} alt="" fill priority className="-z-10 object-cover opacity-10 blur-2xl" sizes="100vw" />}
+          <div className="flex flex-col gap-6 sm:flex-row md:gap-8">
+            <div className="relative aspect-2/3 w-36 shrink-0 overflow-hidden rounded-2xl border border-white/15 bg-black/30 shadow-[0_12px_35px_rgba(0,0,0,0.35)] sm:w-48">
+              {seasonData.season.coverUrl ? (
+                <Image src={seasonData.season.coverUrl} alt={`${seasonData.season.title} 海报`} fill priority className="object-cover" sizes="(min-width: 640px) 192px, 144px" />
+              ) : (
+                <div className="flex h-full items-center justify-center text-white/25"><ImageIcon className="size-9" aria-hidden="true" /></div>
+              )}
             </div>
-            <div className="flex items-center gap-2">
+            <div className="min-w-0 flex-1">
+              <p className="mb-2 text-sm font-medium tracking-widest text-red-400">{series.title} · 第 {seasonData.season.seasonNumber} 季</p>
+              <div className="flex flex-col justify-between gap-5 lg:flex-row lg:items-end">
+                <div>
+                  <h1 className="text-3xl font-bold text-white md:text-5xl">{seasonData.season.title}</h1>
+                  <p className="mt-3 text-sm text-white/50">
+                    {seasonData.season.releaseYearRange ? `${seasonData.season.releaseYearRange} · ` : ""}{seasonData.season.episodeCount} 集
+                  </p>
+                </div>
+                <div className="flex items-center gap-2">
               {previousSeason && <Link href={`/series/${id}/seasons/${previousSeason.id}`} className="rounded-xl border border-white/10 bg-black/20 p-2.5 text-white/60 hover:bg-white/10 hover:text-white" aria-label={`上一季：第 ${previousSeason.seasonNumber} 季`}><ChevronLeft className="size-4" /></Link>}
               <div className="flex max-w-72 gap-1 overflow-x-auto rounded-xl border border-white/10 bg-black/20 p-1">
                 {seasons.map((season) => (
@@ -145,16 +154,18 @@ export default async function SeasonPage({
                 ))}
               </div>
               {nextSeason && <Link href={`/series/${id}/seasons/${nextSeason.id}`} className="rounded-xl border border-white/10 bg-black/20 p-2.5 text-white/60 hover:bg-white/10 hover:text-white" aria-label={`下一季：第 ${nextSeason.seasonNumber} 季`}><ChevronRight className="size-4" /></Link>}
+                </div>
+              </div>
+              {seasonData.season.summary && (
+                <div className="mt-6 border-t border-white/10 pt-5">
+                  <h2 className="text-xs font-semibold uppercase tracking-widest text-white/45">本季简介</h2>
+                  <p className="mt-2 whitespace-pre-line text-sm leading-7 text-white/70 md:text-base">
+                    {seasonData.season.summary}
+                  </p>
+                </div>
+              )}
             </div>
           </div>
-          {seasonData.season.summary && (
-            <div className="mt-6 border-t border-white/10 pt-5">
-              <h2 className="text-xs font-semibold uppercase tracking-widest text-white/45">本季简介</h2>
-              <p className="mt-2 whitespace-pre-line text-sm leading-7 text-white/70 md:text-base">
-                {seasonData.season.summary}
-              </p>
-            </div>
-          )}
         </header>
 
         <section className="mb-6 grid grid-cols-2 gap-3 md:grid-cols-4" aria-label="本季统计">

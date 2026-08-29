@@ -22,6 +22,8 @@ export interface Media {
 export interface SeasonInfo {
   id: string;
   seasonNumber: number;
+  title: string;
+  coverUrl: string;
   episodeCount: number;
   releaseYearRange?: string;
   summary?: string;
