@@ -222,9 +222,12 @@ function SearchContent() {
 
       if (filters.type && filters.type.length > 0) {
         const typeMap: Record<string, string> = { 电影: "movie", 电视剧: "tv_series" };
+        const creditRoleMap: Record<string, string> = { 导演: "director", 演员: "actor" };
         const mappedTypes = filters.type.map((t) => typeMap[t]).filter(Boolean);
+        const mappedCreditRoles = filters.type.map((t) => creditRoleMap[t]).filter(Boolean);
         if (mappedTypes.length > 0) params.set("type", mappedTypes.join(","));
         if (filters.type.includes("系列")) params.set("series", "true");
+        if (mappedCreditRoles.length > 0) params.set("creditRole", mappedCreditRoles.join(","));
       }
 
       if (filters.status && filters.status.length > 0) {
@@ -281,7 +284,7 @@ function SearchContent() {
   };
 
   const BUTTON_CATEGORIES = [
-    { id: "type", label: "分类", options: ["电影", "电视剧", "系列"], multiSelect: true },
+    { id: "type", label: "分类", options: ["电影", "电视剧", "系列", "导演", "演员"], multiSelect: true },
     { id: "status", label: "状态", options: ["想看", "在看", "已看"], multiSelect: true },
     { id: "genre", label: "类型", options: genreOptions, multiSelect: true },
     { id: "region", label: "地区", options: regionOptions, multiSelect: true },
@@ -562,7 +565,9 @@ function SearchContent() {
           </div>
 
           <div
-            className={`relative grid min-h-128 grid-cols-2 gap-4 transition-opacity duration-200 sm:grid-cols-3 md:gap-6 lg:grid-cols-5 xl:grid-cols-6 ${
+            className={`relative grid grid-cols-2 items-start gap-4 transition-opacity duration-200 sm:grid-cols-3 md:gap-6 lg:grid-cols-5 xl:grid-cols-6 ${
+              isLoading && mediaItems.length === 0 ? "min-h-128" : ""
+            } ${
               isLoading && mediaItems.length > 0 ? "opacity-60" : "opacity-100"
             }`}
             aria-busy={isLoading}

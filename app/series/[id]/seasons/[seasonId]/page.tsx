@@ -188,7 +188,7 @@ export default async function SeasonPage({
           <div className="flex items-center gap-2 overflow-x-auto">
             <ListFilter className="ml-1 size-4 shrink-0 text-white/35" />
             {(["all", "watched", "unwatched"] as const).map((value) => (
-              <Link key={value} href={seasonHref({ page: 1, status: value })} className={`shrink-0 rounded-xl border px-3 py-1.5 text-sm shadow-sm backdrop-blur-xl transition-all ${status === value ? "border-red-300/25 bg-red-400/20 text-red-200 shadow-red-950/20 ring-1 ring-inset ring-red-200/10" : "border-white/8 bg-white/[0.04] text-white/55 hover:border-white/15 hover:bg-white/10 hover:text-white"}`}>
+              <Link key={value} href={seasonHref({ page: 1, status: value })} className={`shrink-0 rounded-xl border px-3 py-1.5 text-sm shadow-sm backdrop-blur-xl transition-all ${status === value ? "border-red-300/25 bg-red-400/20 text-red-200 shadow-red-950/20 ring-1 ring-inset ring-red-200/10" : "border-white/8 bg-white/4 text-white/55 hover:border-white/15 hover:bg-white/10 hover:text-white"}`}>
                 {{ all: "全部", watched: "已看", unwatched: "未看" }[value]}
               </Link>
             ))}

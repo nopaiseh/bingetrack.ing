@@ -149,6 +149,7 @@ export interface ViewAllMediaRow {
 export interface FetchMediaListOptions {
   type?: string | null;
   seriesOnly?: boolean;
+  creditRole?: string | null;
   status?: string | null;
   genre?: string | null;
   region?: string | null;

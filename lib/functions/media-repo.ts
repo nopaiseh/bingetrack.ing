@@ -432,11 +432,11 @@ async function fetchMediaList(
 ): Promise<{ rows: Media[]; total: number }> {
   const db = usePublicClient ? getSupabaseBrowser() : getSupabaseServer();
   const {
-    type, seriesOnly = false, status, genre, region, language, startYear, endYear, q, sort, limit = 30, offset = 0,
+    type, seriesOnly = false, creditRole, status, genre, region, language, startYear, endYear, q, sort, limit = 30, offset = 0,
   } = opts || {};
 
   // 1. 初始化缓存变量
-  const cacheKey = JSON.stringify({ access: usePublicClient ? "public" : "service", type, seriesOnly, status, genre, region, language, startYear, endYear, q, sort, limit, offset });
+  const cacheKey = JSON.stringify({ access: usePublicClient ? "public" : "service", type, seriesOnly, creditRole, status, genre, region, language, startYear, endYear, q, sort, limit, offset });
   const now = Date.now();
 
   // 2. 内存缓存读取机制
@@ -454,11 +454,16 @@ async function fetchMediaList(
   let dataQuery = db.from("v_all_media").select("*");
   let countQuery = db.from("v_all_media").select("id", { count: "exact", head: true });
 
+  const types = type?.split(",").filter(Boolean) ?? [];
+  const creditRoles = creditRole?.split(",").filter((role) => role === "director" || role === "actor") ?? [];
+  const hasQuery = typeof q === "string" && q.trim().length > 0;
+  const queryText = hasQuery ? `%${q.trim()}%` : "";
+
   let seriesItemIds: string[] = [];
   if (seriesOnly) {
     let seriesQuery = db.from("media_items").select("id, media_series!inner(name)");
-    if (typeof q === "string" && q.trim().length > 0) {
-      seriesQuery = seriesQuery.ilike("media_series.name", `%${q.trim()}%`);
+    if (hasQuery) {
+      seriesQuery = seriesQuery.ilike("media_series.name", queryText);
     }
 
     const { data: seriesItems, error: seriesError } = await seriesQuery;
@@ -468,31 +473,33 @@ async function fetchMediaList(
     }
 
     seriesItemIds = (seriesItems ?? []).map((item) => item.id);
-    if (seriesItemIds.length === 0 && !type) {
-      cache.set(cacheKey, { ts: now, data: [], total: 0 });
-      return { rows: [], total: 0 };
-    }
   }
 
-  const types = type?.split(",").filter(Boolean) ?? [];
-  const hasQuery = typeof q === "string" && q.trim().length > 0;
   let classificationHandlesQuery = false;
 
-  if (seriesOnly && types.length > 0 && hasQuery) {
-    const { data: titleItems, error: titleError } = await db
-      .from("v_all_media")
-      .select("id")
-      .in("type", types)
-      .ilike("title", `%${q.trim()}%`);
+  if (hasQuery && (types.length > 0 || seriesOnly || creditRoles.length > 0)) {
+    const [titleResult, creditResult] = await Promise.all([
+      types.length > 0
+        ? db.from("v_all_media").select("id").in("type", types).ilike("title", queryText)
+        : Promise.resolve({ data: [], error: null }),
+      creditRoles.length > 0
+        ? db
+            .from("media_credits")
+            .select("media_item_id, people!inner(name)")
+            .in("role", creditRoles)
+            .ilike("people.name", queryText)
+        : Promise.resolve({ data: [], error: null }),
+    ]);
 
-    if (titleError) {
-      console.error("Failed to filter media titles by type:", titleError);
+    if (titleResult.error || creditResult.error) {
+      console.error("Failed to filter media by search category:", titleResult.error ?? creditResult.error);
       return { rows: [], total: 0 };
     }
 
     const matchingIds = Array.from(new Set([
-      ...seriesItemIds,
-      ...(titleItems ?? []).map((item) => item.id),
+      ...(seriesOnly ? seriesItemIds : []),
+      ...(titleResult.data ?? []).map((item) => String(item.id)),
+      ...(creditResult.data ?? []).map((credit) => credit.media_item_id),
     ]));
     if (matchingIds.length === 0) {
       cache.set(cacheKey, { ts: now, data: [], total: 0 });
@@ -545,7 +552,6 @@ async function fetchMediaList(
     countQuery = countQuery.lte("sort_date", `${endYear}-12-31`);
   }
   if (!classificationHandlesQuery && !seriesOnly && hasQuery) {
-    const queryText = `%${q.trim()}%`;
     dataQuery = dataQuery.ilike("title", queryText);
     countQuery = countQuery.ilike("title", queryText);
   }

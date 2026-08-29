@@ -63,7 +63,7 @@ function StatusBadge({ status }: { status?: string }) {
     return (
       <div className="flex cursor-default items-center gap-1.5 rounded-full border border-sky-400/30 bg-sky-400/15 px-3 py-1.5 text-xs font-bold text-sky-300 shadow-[0_4px_10px_rgba(56,189,248,0.18)] backdrop-blur-2xl">
         <span className="size-2 rounded-full bg-sky-300 shadow-[0_0_8px_rgba(125,211,252,0.8)]" />
-        正在观看
+        正在看
       </div>
     );
   }
@@ -73,7 +73,7 @@ function StatusBadge({ status }: { status?: string }) {
       <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
         <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
       </svg>
-      未观看
+      想要看
     </div>
   );
 }
@@ -97,7 +97,7 @@ export function MediaMetadata({ media, includePeople = true, releaseDateLabel }:
       {releaseDateLabel !== undefined && (
         <MetadataRow label="上映">
           {releaseDateLabel
-            ? <span className="inline-flex items-center rounded-lg border border-white/[0.08] bg-white/[0.03] px-3.5 py-1.5 text-sm font-medium tracking-wide text-neutral-300">{releaseDateLabel}</span>
+            ? <span className="inline-flex items-center rounded-lg border border-white/8 bg-white/3 px-3.5 py-1.5 text-sm font-medium tracking-wide text-neutral-300">{releaseDateLabel}</span>
             : <span className="text-sm text-white/30 sm:pt-1">-</span>}
         </MetadataRow>
       )}

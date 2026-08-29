@@ -30,14 +30,12 @@ function getSearchViewAllLink(type: "电影" | "电视剧", year: string) {
 
 function DistributionCard({ title, icon: Icon, items }: { title: string; icon: LucideIcon; items: DistributionItem[] }) {
   return (
-    <div className="glass-card rounded-2xl p-6 flex flex-col justify-center transition-all duration-300 shadow-[0_10px_30px_rgba(0,0,0,0.2)] hover:-translate-y-1 hover:bg-white/10 hover:border-white/20 hover:shadow-[0_15px_40px_rgba(0,0,0,0.3)] group">
-      <div className="text-sm text-neutral-400 mb-4 flex items-center gap-2">
-        <div className="flex items-center gap-3 text-sm text-neutral-400 mb-5">
-          <div className="bg-white/10 p-2 rounded-lg flex items-center justify-center group-hover:bg-red-500/15 group-hover:text-red-400 transition-colors duration-300 shadow-[0_4px_10px_rgba(0,0,0,0.1)] group-hover:shadow-[0_4px_10px_rgba(248,113,113,0.2)]">
-            <Icon className="size-4" aria-hidden="true" />
-          </div>
-          <span className="font-medium tracking-wide text-white/80 group-hover:text-white transition-colors">{title}</span>
+    <div className="glass-card h-full rounded-2xl p-6 transition-all duration-300 shadow-[0_10px_30px_rgba(0,0,0,0.2)] hover:-translate-y-1 hover:bg-white/10 hover:border-white/20 hover:shadow-[0_15px_40px_rgba(0,0,0,0.3)] group">
+      <div className="mb-5 flex h-8 items-center gap-3 text-sm text-neutral-400">
+        <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-white/10 transition-colors duration-300 shadow-[0_4px_10px_rgba(0,0,0,0.1)] group-hover:bg-red-500/15 group-hover:text-red-400 group-hover:shadow-[0_4px_10px_rgba(248,113,113,0.2)]">
+          <Icon className="size-4" aria-hidden="true" />
         </div>
+        <span className="font-medium tracking-wide text-white/80 transition-colors group-hover:text-white">{title}</span>
       </div>
       <div className="flex flex-col gap-3">
         {items.map((item) => (
@@ -57,7 +55,7 @@ function DistributionCard({ title, icon: Icon, items }: { title: string; icon: L
 
 function DistributionTop5Cards({ distribution }: { distribution: MediaDistribution }) {
   return (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
+    <div className="grid grid-cols-1 items-stretch gap-4 md:grid-cols-3 md:gap-6">
       <DistributionCard title="影视产地分布 Top 5" icon={Globe2} items={distribution.regions} />
       <DistributionCard title="主要语言 Top 5" icon={Languages} items={distribution.languages} />
       <DistributionCard title="主要类型 Top 5" icon={CircleEllipsis} items={distribution.genres} />
@@ -463,7 +461,7 @@ export default function HomeDashboard({
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
                 <MediaStatusCard
-                  title="已看过"
+                  title="已观看"
                   icon={CheckCircle}
                   count={watchedSeries}
                   seasonsCount={currentYearData?.watched_seasons ?? 0}

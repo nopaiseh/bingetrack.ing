@@ -15,6 +15,7 @@ export async function GET(request: Request) {
       q: searchParams.get("q") || undefined,
       type: searchParams.get("type") || undefined,
       seriesOnly: searchParams.get("series") === "true",
+      creditRole: searchParams.get("creditRole") || undefined,
       status: searchParams.get("status") || undefined,
       genre: searchParams.get("genre") || undefined,
       region: searchParams.get("region") || undefined,
