@@ -415,11 +415,11 @@ async function fetchMediaList(
 ): Promise<{ rows: Media[]; total: number }> {
   const db = usePublicClient ? getSupabaseBrowser() : getSupabaseServer();
   const {
-    type, status, genre, region, language, startYear, endYear, q, sort, limit = 30, offset = 0,
+    type, seriesOnly = false, status, genre, region, language, startYear, endYear, q, sort, limit = 30, offset = 0,
   } = opts || {};
 
   // 1. 初始化缓存变量
-  const cacheKey = JSON.stringify({ access: usePublicClient ? "public" : "service", type, status, genre, region, language, startYear, endYear, q, sort, limit, offset });
+  const cacheKey = JSON.stringify({ access: usePublicClient ? "public" : "service", type, seriesOnly, status, genre, region, language, startYear, endYear, q, sort, limit, offset });
   const now = Date.now();
 
   // 2. 内存缓存读取机制
@@ -437,8 +437,65 @@ async function fetchMediaList(
   let dataQuery = db.from("v_all_media").select("*");
   let countQuery = db.from("v_all_media").select("id", { count: "exact", head: true });
 
-  if (type) {
-    const types = type.split(",");
+  let seriesItemIds: string[] = [];
+  if (seriesOnly) {
+    let seriesQuery = db.from("media_items").select("id, media_series!inner(name)");
+    if (typeof q === "string" && q.trim().length > 0) {
+      seriesQuery = seriesQuery.ilike("media_series.name", `%${q.trim()}%`);
+    }
+
+    const { data: seriesItems, error: seriesError } = await seriesQuery;
+    if (seriesError) {
+      console.error("Failed to filter media by series:", seriesError);
+      return { rows: [], total: 0 };
+    }
+
+    seriesItemIds = (seriesItems ?? []).map((item) => item.id);
+    if (seriesItemIds.length === 0 && !type) {
+      cache.set(cacheKey, { ts: now, data: [], total: 0 });
+      return { rows: [], total: 0 };
+    }
+  }
+
+  const types = type?.split(",").filter(Boolean) ?? [];
+  const hasQuery = typeof q === "string" && q.trim().length > 0;
+  let classificationHandlesQuery = false;
+
+  if (seriesOnly && types.length > 0 && hasQuery) {
+    const { data: titleItems, error: titleError } = await db
+      .from("v_all_media")
+      .select("id")
+      .in("type", types)
+      .ilike("title", `%${q.trim()}%`);
+
+    if (titleError) {
+      console.error("Failed to filter media titles by type:", titleError);
+      return { rows: [], total: 0 };
+    }
+
+    const matchingIds = Array.from(new Set([
+      ...seriesItemIds,
+      ...(titleItems ?? []).map((item) => item.id),
+    ]));
+    if (matchingIds.length === 0) {
+      cache.set(cacheKey, { ts: now, data: [], total: 0 });
+      return { rows: [], total: 0 };
+    }
+
+    dataQuery = dataQuery.in("id", matchingIds);
+    countQuery = countQuery.in("id", matchingIds);
+    classificationHandlesQuery = true;
+  } else if (seriesOnly && types.length > 0) {
+    const typeFilter = `type.in.(${types.join(",")})`;
+    const filters = seriesItemIds.length > 0
+      ? `${typeFilter},id.in.(${seriesItemIds.join(",")})`
+      : typeFilter;
+    dataQuery = dataQuery.or(filters);
+    countQuery = countQuery.or(filters);
+  } else if (seriesOnly) {
+    dataQuery = dataQuery.in("id", seriesItemIds);
+    countQuery = countQuery.in("id", seriesItemIds);
+  } else if (types.length > 0) {
     dataQuery = dataQuery.in("type", types);
     countQuery = countQuery.in("type", types);
   }
@@ -470,7 +527,7 @@ async function fetchMediaList(
     dataQuery = dataQuery.lte("sort_date", `${endYear}-12-31`);
     countQuery = countQuery.lte("sort_date", `${endYear}-12-31`);
   }
-  if (typeof q === "string" && q.trim().length > 0) {
+  if (!classificationHandlesQuery && !seriesOnly && hasQuery) {
     const queryText = `%${q.trim()}%`;
     dataQuery = dataQuery.ilike("title", queryText);
     countQuery = countQuery.ilike("title", queryText);

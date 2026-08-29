@@ -14,6 +14,7 @@ export async function GET(request: Request) {
     const params = {
       q: searchParams.get("q") || undefined,
       type: searchParams.get("type") || undefined,
+      seriesOnly: searchParams.get("series") === "true",
       status: searchParams.get("status") || undefined,
       genre: searchParams.get("genre") || undefined,
       region: searchParams.get("region") || undefined,

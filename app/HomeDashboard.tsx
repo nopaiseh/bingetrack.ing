@@ -19,6 +19,15 @@ import {
   type LucideIcon,
 } from "lucide-react";
 
+function getSearchViewAllLink(type: "电影" | "电视剧", year: string) {
+  const params = new URLSearchParams({ type, sort: "rating_desc" });
+  if (year !== "All Time") {
+    params.set("startYear", year);
+    params.set("endYear", year);
+  }
+  return `/search?${params.toString()}`;
+}
+
 function DistributionCard({ title, icon: Icon, items }: { title: string; icon: LucideIcon; items: DistributionItem[] }) {
   return (
     <div className="glass-card rounded-2xl p-6 flex flex-col justify-center transition-all duration-300 shadow-[0_10px_30px_rgba(0,0,0,0.2)] hover:-translate-y-1 hover:bg-white/10 hover:border-white/20 hover:shadow-[0_15px_40px_rgba(0,0,0,0.3)] group">
@@ -503,7 +512,7 @@ export default function HomeDashboard({
               <MediaRow
                 title="影史精选"
                 items={topMovies}
-                viewAllLink={`/movies/watched?year=${selectedYear}`}
+                viewAllLink={getSearchViewAllLink("电影", selectedYear)}
                 type="movies"
               />
             </div>
@@ -528,7 +537,7 @@ export default function HomeDashboard({
               <MediaRow
                 title="影史精选"
                 items={topSeries}
-                viewAllLink={`/series/watched?year=${selectedYear}`}
+                viewAllLink={getSearchViewAllLink("电视剧", selectedYear)}
                 type="series"
               />
             </div>
