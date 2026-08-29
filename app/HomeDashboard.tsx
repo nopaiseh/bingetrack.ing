@@ -19,6 +19,12 @@ import {
   type LucideIcon,
 } from "lucide-react";
 
+const EMPTY_MEDIA_DISTRIBUTION: MediaDistribution = {
+  regions: [],
+  languages: [],
+  genres: [],
+};
+
 function getSearchViewAllLink(type: "电影" | "电视剧", year: string) {
   const params = new URLSearchParams({ type, sort: "rating_desc" });
   if (year !== "All Time") {
@@ -211,8 +217,8 @@ export default function HomeDashboard({
   const currentYearData = summary.find(
     (item) => String(item.release_year) === String(selectedYear),
   );
-  const movieDistribution = distributions.movies[selectedYear] ?? distributions.movies["All Time"];
-  const seriesDistribution = distributions.series[selectedYear] ?? distributions.series["All Time"];
+  const movieDistribution = distributions.movies[selectedYear] ?? EMPTY_MEDIA_DISTRIBUTION;
+  const seriesDistribution = distributions.series[selectedYear] ?? EMPTY_MEDIA_DISTRIBUTION;
 
   // Derive movie totals strictly from 2 tracking states (Watched + Unwatched)
   const watchedMovies = currentYearData?.watched_movies || 0;
