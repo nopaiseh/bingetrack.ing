@@ -18,6 +18,55 @@ declare global {
 const MEDIA_CACHE_TTL_MS = 30_000;
 const MEDIA_CACHE_MAX_ENTRIES = 200;
 
+type SeriesReleaseYearRow = {
+  series_id: string;
+  tv_episodes: Array<{
+    media_items: { release_date: string | null } | Array<{ release_date: string | null }> | null;
+  }> | null;
+};
+
+async function addSeriesReleaseYearRanges(
+  db: ReturnType<typeof getSupabaseServer>,
+  items: Media[],
+): Promise<Media[]> {
+  const seriesIds = items
+    .filter((item) => item.type === "series")
+    .map((item) => item.id);
+  if (seriesIds.length === 0) return items;
+
+  const { data, error } = await db
+    .from("tv_seasons")
+    .select("series_id, tv_episodes(media_items(release_date))")
+    .in("series_id", seriesIds);
+
+  if (error || !data) {
+    if (error) console.error("Failed to fetch series release year ranges:", error);
+    return items;
+  }
+
+  const yearsBySeries = new Map<string, number[]>();
+  for (const season of data as SeriesReleaseYearRow[]) {
+    const years = yearsBySeries.get(season.series_id) ?? [];
+    for (const episode of season.tv_episodes ?? []) {
+      const releaseDate = firstRelated(episode.media_items)?.release_date;
+      const year = releaseDate?.match(/^(\d{4})-/)?.[1];
+      if (year) years.push(Number(year));
+    }
+    yearsBySeries.set(season.series_id, years);
+  }
+
+  return items.map((item) => {
+    const years = yearsBySeries.get(item.id);
+    if (!years?.length) return item;
+    const firstYear = Math.min(...years);
+    const lastYear = Math.max(...years);
+    return {
+      ...item,
+      release_year: firstYear === lastYear ? String(firstYear) : `${firstYear} - ${lastYear}`,
+    };
+  });
+}
+
 // 获取单条媒体详情
 export async function getMediaById(id: string): Promise<Media | null> {
   const db = getSupabaseServer();
@@ -380,7 +429,7 @@ export async function fetchTopMediaServer(
       return [];
     }
 
-    return (seriesData as ViewAllMediaRow[])
+    const rankedSeries = (seriesData as ViewAllMediaRow[])
       .map((item) => {
         const ratings = ratingsBySeries.get(String(item.id)) ?? [];
         const yearRating = ratings.length > 0
@@ -390,6 +439,7 @@ export async function fetchTopMediaServer(
       })
       .sort((left, right) => (right.rating ?? -1) - (left.rating ?? -1))
       .slice(0, limit);
+    return addSeriesReleaseYearRanges(db, rankedSeries);
   }
 
   let query = db
@@ -406,7 +456,8 @@ export async function fetchTopMediaServer(
   const { data, error } = await query;
   if (error || !data) return [];
 
-  return data.map((item: ViewAllMediaRow) => mapViewRowToMedia(item));
+  const items = data.map((item: ViewAllMediaRow) => mapViewRowToMedia(item));
+  return mediaType === "tv_series" ? addSeriesReleaseYearRanges(db, items) : items;
 }
 
 type DistributionSourceRow = Pick<ViewAllMediaRow, "type" | "sort_date" | "release_year" | "regions" | "languages" | "genres">;
@@ -666,7 +717,8 @@ async function fetchMediaList(
 
   if (!data) return { rows: [], total };
 
-  const results: Media[] = data.map((item: ViewAllMediaRow) => mapViewRowToMedia(item));
+  const mappedResults: Media[] = data.map((item: ViewAllMediaRow) => mapViewRowToMedia(item));
+  const results = await addSeriesReleaseYearRanges(db, mappedResults);
 
   // Keep the short-lived process cache bounded on long-running server instances.
   if (cache.size >= MEDIA_CACHE_MAX_ENTRIES) {

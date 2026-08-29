@@ -6,7 +6,7 @@ import { ImageIcon, Star } from "lucide-react";
 import { useState } from "react";
 import { Media } from "@/lib/types";
 
-function ItemCard({ item }: { item: Media }) {
+function ItemCard({ item, type }: { item: Media; type: "movies" | "series" }) {
   const [isImageLoaded, setIsImageLoaded] = useState(false);
   // Combine genres and languages, then limit to a maximum of 4 items
   const tags = [...(item.genres ?? []), ...(item.languages ?? [])].slice(0, 4);
@@ -40,7 +40,9 @@ function ItemCard({ item }: { item: Media }) {
 
         <div className="flex justify-between items-center text-xs">
           <span className="text-white/60 font-medium">
-            {item.date ? item.date.substring(0, 4) : "未知"}
+            {type === "series"
+              ? item.release_year || (item.date ? item.date.substring(0, 4) : "未知")
+              : item.date ? item.date.substring(0, 4) : "未知"}
           </span>
           <span className="text-white font-bold flex items-center gap-1 drop-shadow-sm">
             {item.rating ? (
@@ -107,7 +109,7 @@ export default function MediaRow({
               key={media.id}
               className="glass-card group flex w-44 flex-none snap-start cursor-pointer flex-col overflow-hidden rounded-xl transition-all duration-300 hover:-translate-y-1.5 hover:border-red-400/40 hover:bg-white/10 hover:shadow-[0_15px_40px_rgba(248,113,113,0.2)]"
             >
-              <ItemCard item={media} />
+              <ItemCard item={media} type={mediaType} />
             </Link>
           );
         })}
