@@ -199,6 +199,8 @@ export default function HomeDashboard({
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [displayedTopMovies, setDisplayedTopMovies] = useState(topMovies);
+  const [displayedTopSeries, setDisplayedTopSeries] = useState(topSeries);
 
   const filteredYears = summary
     .map((item) => item.release_year)
@@ -245,6 +247,31 @@ export default function HomeDashboard({
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
+
+  useEffect(() => {
+    if (selectedYear === "All Time") {
+      return;
+    }
+
+    const controller = new AbortController();
+    const loadTopMedia = async () => {
+      try {
+        const [moviesResponse, seriesResponse] = await Promise.all([
+          fetch(`/api/top-media?type=movie&year=${encodeURIComponent(selectedYear)}&limit=10`, { signal: controller.signal }),
+          fetch(`/api/top-media?type=tv_series&year=${encodeURIComponent(selectedYear)}&limit=10`, { signal: controller.signal }),
+        ]);
+        if (!moviesResponse.ok || !seriesResponse.ok) throw new Error("Failed to load top media");
+        const [movies, series] = await Promise.all([moviesResponse.json(), seriesResponse.json()]);
+        setDisplayedTopMovies(movies);
+        setDisplayedTopSeries(series);
+      } catch (error) {
+        if ((error as Error).name !== "AbortError") console.error(error);
+      }
+    };
+
+    void loadTopMedia();
+    return () => controller.abort();
+  }, [selectedYear]);
 
   return (
     <div className="container mx-auto px-6 md:px-8 max-w-7xl py-12 flex flex-col gap-6 animate-fade-in pt-24">
@@ -514,7 +541,7 @@ export default function HomeDashboard({
             <div className="space-y-12 mt-4">
               <MediaRow
                 title="影史精选"
-                items={topMovies}
+                items={selectedYear === "All Time" ? topMovies : displayedTopMovies}
                 viewAllLink={getSearchViewAllLink("电影", selectedYear)}
                 type="movies"
               />
@@ -539,7 +566,7 @@ export default function HomeDashboard({
             <div className="space-y-12 mt-4">
               <MediaRow
                 title="影史精选"
-                items={topSeries}
+                items={selectedYear === "All Time" ? topSeries : displayedTopSeries}
                 viewAllLink={getSearchViewAllLink("电视剧", selectedYear)}
                 type="series"
               />

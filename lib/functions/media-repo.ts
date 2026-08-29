@@ -329,6 +329,69 @@ export async function fetchTopMediaServer(
   limit = 10,
 ): Promise<Media[]> {
   const db = getSupabaseServer();
+
+  if (mediaType === "tv_series" && year) {
+    type YearEpisodeRow = {
+      tv_seasons: { series_id: string } | Array<{ series_id: string }> | null;
+      media_items: {
+        tracking: { rating: number | null } | Array<{ rating: number | null }> | null;
+      } | Array<{
+        tracking: { rating: number | null } | Array<{ rating: number | null }> | null;
+      }> | null;
+    };
+
+    // A series belongs to a year when at least one of its episodes was released
+    // in that year. Its ranking score is the mean of ratings on only those
+    // episodes (unrated episodes do not contribute to the mean).
+    const { data: episodeData, error: episodeError } = await db
+      .from("tv_episodes")
+      .select("tv_seasons!inner(series_id), media_items!inner(release_date, tracking(rating))")
+      .gte("media_items.release_date", `${year}-01-01`)
+      .lte("media_items.release_date", `${year}-12-31`);
+
+    if (episodeError || !episodeData) {
+      if (episodeError) console.error(`Failed to fetch TV episodes released in ${year}:`, episodeError);
+      return [];
+    }
+
+    const ratingsBySeries = new Map<string, number[]>();
+    for (const episode of episodeData as YearEpisodeRow[]) {
+      const season = firstRelated(episode.tv_seasons);
+      const mediaItem = firstRelated(episode.media_items);
+      if (!season?.series_id) continue;
+
+      const ratings = ratingsBySeries.get(season.series_id) ?? [];
+      const rating = firstRelated(mediaItem?.tracking)?.rating;
+      if (rating !== null && rating !== undefined) ratings.push(rating);
+      ratingsBySeries.set(season.series_id, ratings);
+    }
+
+    const seriesIds = Array.from(ratingsBySeries.keys());
+    if (seriesIds.length === 0) return [];
+
+    const { data: seriesData, error: seriesError } = await db
+      .from("v_all_media")
+      .select("*")
+      .eq("type", "tv_series")
+      .in("id", seriesIds);
+
+    if (seriesError || !seriesData) {
+      if (seriesError) console.error(`Failed to fetch TV series released in ${year}:`, seriesError);
+      return [];
+    }
+
+    return (seriesData as ViewAllMediaRow[])
+      .map((item) => {
+        const ratings = ratingsBySeries.get(String(item.id)) ?? [];
+        const yearRating = ratings.length > 0
+          ? ratings.reduce((sum, rating) => sum + rating, 0) / ratings.length
+          : null;
+        return { ...mapViewRowToMedia(item), rating: yearRating };
+      })
+      .sort((left, right) => (right.rating ?? -1) - (left.rating ?? -1))
+      .slice(0, limit);
+  }
+
   let query = db
     .from("v_all_media")
     .select("*")
