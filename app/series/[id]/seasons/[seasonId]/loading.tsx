@@ -22,8 +22,8 @@ export default function Loading() {
         <Pulse className="h-16 w-full" />
         <div className="space-y-3">
           {Array.from({ length: 6 }, (_, index) => (
-            <div key={index} className="glass-card flex h-40 overflow-hidden rounded-2xl">
-              <Pulse className="h-full w-28 rounded-none sm:w-36" />
+            <div key={index} className="glass-card flex flex-col overflow-hidden rounded-2xl sm:h-54 sm:flex-row">
+              <Pulse className="aspect-video w-full shrink-0 rounded-none sm:aspect-auto sm:h-full sm:w-60 md:w-72" />
               <div className="flex-1 space-y-3 p-5">
                 <Pulse className="h-5 w-2/5" />
                 <Pulse className="h-3 w-1/3" />

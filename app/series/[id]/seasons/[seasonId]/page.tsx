@@ -25,15 +25,15 @@ function EpisodeCard({ episode }: { episode: EpisodeInfo }) {
   const watched = episode.status === "watched";
 
   return (
-    <article className="glass-card group flex min-h-36 overflow-hidden rounded-2xl transition-colors duration-300 hover:border-red-400/30 hover:bg-white/8">
-      <div className="relative w-32 shrink-0 bg-black/30 sm:w-52 md:w-64">
+    <article className="glass-card group flex flex-col overflow-hidden rounded-2xl transition-colors duration-300 hover:border-red-400/30 hover:bg-white/8 sm:min-h-54 sm:flex-row">
+      <div className="relative aspect-video w-full shrink-0 bg-black/30 sm:aspect-auto sm:w-60 md:w-72">
         {episode.coverUrl ? (
           <Image
             src={episode.coverUrl}
             alt=""
             fill
             className="object-cover"
-            sizes="(min-width: 768px) 256px, (min-width: 640px) 208px, 128px"
+            sizes="(min-width: 768px) 288px, (min-width: 640px) 240px, calc(100vw - 48px)"
           />
         ) : (
           <div className="flex h-full items-center justify-center text-white/20">
@@ -108,8 +108,10 @@ export default async function SeasonPage({
     const value = params.toString();
     return value ? `?${value}` : "";
   };
+  const seasonHref = (values: { page?: number; status?: StatusFilter; order?: EpisodeOrder } = {}) =>
+    `/series/${id}/seasons/${seasonId}${queryString(values)}`;
 
-  if (page > totalPages) redirect(`/series/${id}/seasons/${seasonId}${queryString({ page: totalPages })}`);
+  if (page > totalPages) redirect(seasonHref({ page: totalPages }));
 
   const currentSeasonIndex = seasons.findIndex((season) => season.id === seasonId);
   const previousSeason = currentSeasonIndex > 0 ? seasons[currentSeasonIndex - 1] : null;
@@ -186,14 +188,14 @@ export default async function SeasonPage({
           <div className="flex items-center gap-2 overflow-x-auto">
             <ListFilter className="ml-1 size-4 shrink-0 text-white/35" />
             {(["all", "watched", "unwatched"] as const).map((value) => (
-              <Link key={value} href={queryString({ page: 1, status: value })} className={`shrink-0 rounded-xl border px-3 py-1.5 text-sm shadow-sm backdrop-blur-xl transition-all ${status === value ? "border-red-300/25 bg-red-400/20 text-red-200 shadow-red-950/20 ring-1 ring-inset ring-red-200/10" : "border-white/8 bg-white/[0.04] text-white/55 hover:border-white/15 hover:bg-white/10 hover:text-white"}`}>
+              <Link key={value} href={seasonHref({ page: 1, status: value })} className={`shrink-0 rounded-xl border px-3 py-1.5 text-sm shadow-sm backdrop-blur-xl transition-all ${status === value ? "border-red-300/25 bg-red-400/20 text-red-200 shadow-red-950/20 ring-1 ring-inset ring-red-200/10" : "border-white/8 bg-white/[0.04] text-white/55 hover:border-white/15 hover:bg-white/10 hover:text-white"}`}>
                 {{ all: "全部", watched: "已看", unwatched: "未看" }[value]}
               </Link>
             ))}
           </div>
           <div className="flex items-center gap-2 text-sm">
             <span className="text-white/35">集数</span>
-            <Link href={queryString({ page: 1, order: order === "asc" ? "desc" : "asc" })} className="glass-control rounded-xl px-3 py-1.5 text-white/65 transition-all hover:border-white/20 hover:bg-white/12 hover:text-white">
+            <Link href={seasonHref({ page: 1, order: order === "asc" ? "desc" : "asc" })} className="glass-control rounded-xl px-3 py-1.5 text-white/65 transition-all hover:border-white/20 hover:bg-white/12 hover:text-white">
               {order === "asc" ? "升序 ↑" : "降序 ↓"}
             </Link>
             <span className="ml-auto text-white/35 sm:ml-2">{seasonData.total} 集</span>
@@ -210,13 +212,13 @@ export default async function SeasonPage({
 
         {totalPages > 1 && (
           <nav className="mt-10 flex flex-wrap items-center justify-center gap-2" aria-label="剧集分页">
-            {page > 1 && <Link href={queryString({ page: page - 1 })} className="rounded-xl border border-white/10 bg-white/5 p-2.5 text-white/60 hover:bg-white/10 hover:text-white" aria-label="上一页"><ChevronLeft className="size-4" /></Link>}
+            {page > 1 && <Link href={seasonHref({ page: page - 1 })} className="rounded-xl border border-white/10 bg-white/5 p-2.5 text-white/60 hover:bg-white/10 hover:text-white" aria-label="上一页"><ChevronLeft className="size-4" /></Link>}
             {pageNumbers(page, totalPages).map((pageNumber) => (
-              <Link key={pageNumber} href={queryString({ page: pageNumber })} className={`min-w-10 rounded-xl border px-3 py-2 text-center text-sm ${pageNumber === page ? "border-red-400/30 bg-red-500/15 text-red-300" : "border-white/10 bg-white/5 text-white/50 hover:bg-white/10 hover:text-white"}`}>
+              <Link key={pageNumber} href={seasonHref({ page: pageNumber })} className={`min-w-10 rounded-xl border px-3 py-2 text-center text-sm ${pageNumber === page ? "border-red-400/30 bg-red-500/15 text-red-300" : "border-white/10 bg-white/5 text-white/50 hover:bg-white/10 hover:text-white"}`}>
                 {pageNumber}
               </Link>
             ))}
-            {page < totalPages && <Link href={queryString({ page: page + 1 })} className="rounded-xl border border-white/10 bg-white/5 p-2.5 text-white/60 hover:bg-white/10 hover:text-white" aria-label="下一页"><ChevronRight className="size-4" /></Link>}
+            {page < totalPages && <Link href={seasonHref({ page: page + 1 })} className="rounded-xl border border-white/10 bg-white/5 p-2.5 text-white/60 hover:bg-white/10 hover:text-white" aria-label="下一页"><ChevronRight className="size-4" /></Link>}
           </nav>
         )}
       </div>

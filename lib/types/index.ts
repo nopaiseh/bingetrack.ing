@@ -25,6 +25,7 @@ export interface SeasonInfo {
   title: string;
   coverUrl: string;
   episodeCount: number;
+  watchedEpisodeCount: number;
   releaseYearRange?: string;
   summary?: string;
 }

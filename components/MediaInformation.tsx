@@ -47,8 +47,8 @@ function MediaPoster({ media }: { media: Media }) {
   );
 }
 
-function StatusBadge({ isWatched }: { isWatched: boolean }) {
-  if (isWatched) {
+function StatusBadge({ status }: { status?: string }) {
+  if (status === "watched") {
     return (
       <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 text-xs font-bold backdrop-blur-2xl shadow-[0_4px_10px_rgba(16,185,129,0.2)] drop-shadow-[0_0_5px_rgba(16,185,129,0.4)] cursor-default transition-all">
         <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
@@ -57,16 +57,25 @@ function StatusBadge({ isWatched }: { isWatched: boolean }) {
         已观看
       </div>
     );
-  } else {
+  }
+
+  if (status === "watching") {
     return (
-      <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/5 text-white/60 border border-white/10 text-xs font-medium backdrop-blur-2xl shadow-[0_4px_10px_rgba(0,0,0,0.2)] hover:bg-white/10 hover:text-white hover:border-white/20 hover:shadow-[0_6px_15px_rgba(0,0,0,0.3)] hover:drop-shadow-[0_0_5px_rgba(255,255,255,0.5)] transition-all cursor-pointer">
-        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
-        </svg>
-        未观看
+      <div className="flex cursor-default items-center gap-1.5 rounded-full border border-sky-400/30 bg-sky-400/15 px-3 py-1.5 text-xs font-bold text-sky-300 shadow-[0_4px_10px_rgba(56,189,248,0.18)] backdrop-blur-2xl">
+        <span className="size-2 rounded-full bg-sky-300 shadow-[0_0_8px_rgba(125,211,252,0.8)]" />
+        正在观看
       </div>
     );
   }
+
+  return (
+    <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/5 text-white/60 border border-white/10 text-xs font-medium backdrop-blur-2xl shadow-[0_4px_10px_rgba(0,0,0,0.2)] hover:bg-white/10 hover:text-white hover:border-white/20 hover:shadow-[0_6px_15px_rgba(0,0,0,0.3)] hover:drop-shadow-[0_0_5px_rgba(255,255,255,0.5)] transition-all cursor-pointer">
+      <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+      </svg>
+      未观看
+    </div>
+  );
 }
 
 function MetadataRow({ label, children }: { label: string; children: React.ReactNode }) {
@@ -88,7 +97,7 @@ export function MediaMetadata({ media, includePeople = true, releaseDateLabel }:
       {releaseDateLabel !== undefined && (
         <MetadataRow label="上映">
           {releaseDateLabel
-            ? <span className="glass-control inline-flex items-center rounded-lg px-3.5 py-1.5 text-sm font-medium tracking-wide text-neutral-300">{releaseDateLabel}</span>
+            ? <span className="inline-flex items-center rounded-lg border border-white/[0.08] bg-white/[0.03] px-3.5 py-1.5 text-sm font-medium tracking-wide text-neutral-300">{releaseDateLabel}</span>
             : <span className="text-sm text-white/30 sm:pt-1">-</span>}
         </MetadataRow>
       )}
@@ -139,6 +148,7 @@ export default function MediaInformation({
   backHref,
   backLabel,
   releaseDateLabel,
+  displayStatus,
 }: {
   media: Media;
   seasons: SeasonInfo[] | null;
@@ -146,6 +156,7 @@ export default function MediaInformation({
   backHref?: string;
   backLabel?: string;
   releaseDateLabel?: string;
+  displayStatus?: string;
 }) {
   const defaultBackHref = media.type === "series" ? "/series" : "/movies";
   const defaultBackLabel = media.type === "series" ? "返回电视剧列表" : "返回电影列表";
@@ -160,11 +171,11 @@ export default function MediaInformation({
           {backLabel ?? defaultBackLabel}
         </Link>
 
-        <div className={seasons ? "glass-panel rounded-3xl p-6 md:p-8" : ""}>
-          <div className={`flex flex-col gap-8 md:flex-row ${seasons ? "lg:gap-12" : "gap-12 lg:gap-20"}`}>
+        <div className="glass-panel rounded-3xl p-6 md:p-8">
+          <div className="flex flex-col gap-8 md:flex-row lg:gap-12">
             <MediaPoster media={media} />
 
-            <div className={`flex flex-1 flex-col ${seasons ? "" : "pt-4 md:pt-8"}`}>
+            <div className="flex flex-1 flex-col">
             <div className="mb-4 md:mb-8">
               <h1 className="text-3xl md:text-5xl font-bold tracking-tight mt-4 mb-6 text-white text-balance drop-shadow-[0_0_15px_rgba(255,255,255,0.3)]">
                 {media.title}
@@ -194,44 +205,30 @@ export default function MediaInformation({
                 )}
 
                 <div className="md:ml-auto md:order-last">
-                  <StatusBadge isWatched={media.status === "watched"} />
+                  <StatusBadge status={displayStatus ?? media.status} />
                 </div>
               </div>
             </div>
 
-              <MediaMetadata media={media} includePeople={!seasons} releaseDateLabel={releaseDateLabel} />
+              <MediaMetadata media={media} includePeople={false} releaseDateLabel={releaseDateLabel} />
             </div>
           </div>
 
-          {seasons && (
-            <div className="mt-8 border-t border-white/10 pt-6">
-              <div className="mb-6">
-                <MediaCredits media={media} />
-              </div>
-              <div className="border-t border-white/10 pt-6">
-                <div className="mb-3 flex items-center gap-2">
-                  <div className="h-5 w-1 rounded-sm bg-red-400 shadow-[0_0_8px_rgba(248,113,113,0.6)]" />
-                  <h2 className="text-sm font-bold tracking-widest text-white/90">剧情简介</h2>
-                </div>
-                <p className="text-left text-sm leading-7 tracking-wide text-white/70 wrap-break-word md:text-base">
-                  {media.summary || "暂无简介。"}
-                </p>
-              </div>
+          <div className="mt-8 border-t border-white/10 pt-6">
+            <div className="mb-6">
+              <MediaCredits media={media} />
             </div>
-          )}
+            <div className="border-t border-white/10 pt-6">
+              <div className="mb-3 flex items-center gap-2">
+                <div className="h-5 w-1 rounded-sm bg-red-400 shadow-[0_0_8px_rgba(248,113,113,0.6)]" />
+                <h2 className="text-sm font-bold tracking-widest text-white/90">剧情简介</h2>
+              </div>
+              <p className="text-left text-sm leading-7 tracking-wide text-white/70 wrap-break-word md:text-base">
+                {media.summary || "暂无简介。"}
+              </p>
+            </div>
+          </div>
         </div>
-
-        {!seasons && <div className="glass-panel mb-12 mt-12 rounded-2xl p-6 md:p-8">
-          <div className="flex items-center gap-2 mb-4">
-            <div className="w-1 h-5 bg-red-400 rounded-sm shadow-[0_0_8px_rgba(248,113,113,0.6)]"></div> 
-            <h3 className="text-white/90 font-bold text-lg drop-shadow-[0_0_5px_rgba(255,255,255,0.2)] tracking-widest">
-              剧情简介
-            </h3>
-          </div>
-          <p className="text-white/70 leading-loose tracking-wide text-base text-left wrap-break-word">
-            {media.summary || "暂无简介。"}
-          </p>
-        </div>}
       
       {seasons && (
         <div className="mb-12 mt-12">
@@ -278,7 +275,7 @@ export default function MediaInformation({
         </div>
       )}
         
-        {relatedContent}
+        {relatedContent && <div className={seasons ? "" : "mt-12"}>{relatedContent}</div>}
       </div>
     </>
   );

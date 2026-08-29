@@ -34,6 +34,15 @@ export default async function SeriesDetailPage({
   const releaseYearRange = firstEpisodeYear !== null && lastEpisodeYear !== null
     ? (firstEpisodeYear === lastEpisodeYear ? String(firstEpisodeYear) : `${firstEpisodeYear} - ${lastEpisodeYear}`)
     : series.date?.slice(0, 4) ?? "";
+  const totalEpisodes = seasons.reduce((total, season) => total + season.episodeCount, 0);
+  const watchedEpisodes = seasons.reduce((total, season) => total + season.watchedEpisodeCount, 0);
+  const episodeDerivedStatus = totalEpisodes === 0
+    ? series.status
+    : watchedEpisodes === totalEpisodes
+      ? "watched"
+      : watchedEpisodes > 0
+        ? "watching"
+        : "unwatched";
 
   return (
     <div className="relative min-h-screen text-white/90 selection:bg-red-500/30 selection:text-white font-sans overflow-hidden">
@@ -43,6 +52,7 @@ export default async function SeriesDetailPage({
         backHref={returnToSearch ? query.from : undefined}
         backLabel={returnToSearch ? "返回搜索页" : undefined}
         releaseDateLabel={releaseYearRange}
+        displayStatus={episodeDerivedStatus}
         relatedContent={series.series ? (
           <Suspense fallback={<RelatedMediaLoadingSkeleton />}>
             <RelatedSeries seriesName={series.series} currentId={series.id} />

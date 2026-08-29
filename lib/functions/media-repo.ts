@@ -85,7 +85,13 @@ type SeasonRow = {
   season_number: number;
   tv_episodes: Array<{
     id: string;
-    media_items: { release_date: string | null } | Array<{ release_date: string | null }> | null;
+    media_items: {
+      release_date: string | null;
+      tracking: Array<{ status: string | null }> | null;
+    } | Array<{
+      release_date: string | null;
+      tracking: Array<{ status: string | null }> | null;
+    }> | null;
   }> | null;
 };
 
@@ -93,7 +99,7 @@ export async function getSeasonsBySeriesId(seriesId: string): Promise<SeasonInfo
   const db = getSupabaseServer();
   const { data, error } = await db
     .from("tv_seasons")
-    .select("id, season_number, tv_episodes(id, media_items(release_date))")
+    .select("id, season_number, tv_episodes(id, media_items(release_date, tracking(status)))")
     .eq("series_id", seriesId)
     .order("season_number", { ascending: true });
 
@@ -125,6 +131,10 @@ export async function getSeasonsBySeriesId(seriesId: string): Promise<SeasonInfo
     const firstYear = releaseDates[0]?.slice(0, 4);
     const lastYear = releaseDates.at(-1)?.slice(0, 4);
     const mediaItem = seasonMedia.get(season.id);
+    const watchedEpisodeCount = (season.tv_episodes ?? []).filter((episode) => {
+      const episodeMedia = Array.isArray(episode.media_items) ? episode.media_items[0] : episode.media_items;
+      return episodeMedia?.tracking?.[0]?.status === "watched";
+    }).length;
 
     return {
       id: season.id,
@@ -132,6 +142,7 @@ export async function getSeasonsBySeriesId(seriesId: string): Promise<SeasonInfo
       title: mediaItem?.title ?? `第 ${season.season_number} 季`,
       coverUrl: mediaItem?.cover_url ?? "",
       episodeCount: season.tv_episodes?.length ?? 0,
+      watchedEpisodeCount,
       releaseYearRange: firstYear && lastYear
         ? (firstYear === lastYear ? firstYear : `${firstYear} - ${lastYear}`)
         : undefined,
@@ -282,6 +293,7 @@ export async function getSeasonEpisodes(
       title: seasonMedia?.title ?? `第 ${season.season_number} 季`,
       coverUrl: seasonMedia?.cover_url ?? "",
       episodeCount: allEpisodes.length,
+      watchedEpisodeCount: watchedCount,
       releaseYearRange: firstYear && lastYear ? (firstYear === lastYear ? firstYear : `${firstYear} - ${lastYear}`) : undefined,
       summary: seasonMedia?.summary ?? "",
     },
