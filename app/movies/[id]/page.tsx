@@ -10,11 +10,18 @@ export const revalidate = 60;
 
 async function RelatedMovies({ seriesName, currentId }: { seriesName: string; currentId: string }) {
   const relatedMedia: Media[] = await getRelatedBySeries(seriesName, currentId);
-  return <MediaRow title={`《${seriesName}》系列其他电影`} items={relatedMedia} type="movies" />;
+  return <MediaRow title={`《${seriesName}》系列`} items={relatedMedia} type="movies" />;
 }
 
-export default async function MovieDetailPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = await params;
+export default async function MovieDetailPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ from?: string }>;
+}) {
+  const [{ id }, query] = await Promise.all([params, searchParams]);
+  const returnToSearch = query.from === "/search" || query.from?.startsWith("/search?");
   const movie = await getMediaById(id);
   if (!movie) notFound();
 
@@ -25,6 +32,8 @@ export default async function MovieDetailPage({ params }: { params: Promise<{ id
       <MediaInformation
         media={movie}
         seasons={null}
+        backHref={returnToSearch ? query.from : undefined}
+        backLabel={returnToSearch ? "返回搜索页" : undefined}
         relatedContent={movie.series ? (
           <Suspense fallback={<RelatedMediaLoadingSkeleton />}>
             <RelatedMovies seriesName={movie.series} currentId={movie.id} />

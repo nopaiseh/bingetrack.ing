@@ -19,6 +19,35 @@ export interface Media {
   type?: MediaType;
 }
 
+export interface SeasonInfo {
+  id: string;
+  seasonNumber: number;
+  episodeCount: number;
+  releaseYearRange?: string;
+  summary?: string;
+}
+
+export interface EpisodeInfo {
+  id: string;
+  episodeNumber: number;
+  title: string;
+  summary: string;
+  coverUrl: string;
+  releaseDate: string | null;
+  runtime: number | null;
+  status: string | null;
+  rating: number | null;
+}
+
+export interface SeasonEpisodePage {
+  season: SeasonInfo;
+  episodes: EpisodeInfo[];
+  total: number;
+  watchedCount: number;
+  totalRuntime: number;
+  averageRating: number | null;
+}
+
 export interface Summary {
   release_year: number | string;
 

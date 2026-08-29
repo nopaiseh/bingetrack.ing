@@ -105,7 +105,7 @@ export default function MediaRow({
             <Link
               href={`/${mediaType}/${media.id}`}
               key={media.id}
-              className="group flex-none w-44 cursor-pointer flex flex-col snap-start bg-white/5 backdrop-blur-2xl border border-white/10 rounded-xl overflow-hidden shadow-[0_10px_30px_rgba(0,0,0,0.2)] transition-all duration-300 hover:border-red-400/40 hover:bg-white/10 hover:-translate-y-1.5 hover:shadow-[0_15px_40px_rgba(248,113,113,0.2)]"
+              className="glass-card group flex w-44 flex-none snap-start cursor-pointer flex-col overflow-hidden rounded-xl transition-all duration-300 hover:-translate-y-1.5 hover:border-red-400/40 hover:bg-white/10 hover:shadow-[0_15px_40px_rgba(248,113,113,0.2)]"
             >
               <ItemCard item={media} />
             </Link>

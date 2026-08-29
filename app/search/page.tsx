@@ -3,15 +3,23 @@
 import Link from "next/link";
 import { useState, useEffect, Suspense, useCallback, useRef } from "react";
 import Image from "next/image";
-import { useSearchParams } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { getSupabaseBrowser } from "@/utils/supabase-client";
 import { Media } from "@/lib/types";
-import { ArrowDown, ArrowUp, ChevronDown, ImageIcon, LoaderCircle, Search, SlidersHorizontal, Star, X } from "lucide-react";
+import { ArrowDown, ArrowUp, ChevronDown, ChevronLeft, ChevronRight, ImageIcon, LoaderCircle, Search, SlidersHorizontal, Star, X } from "lucide-react";
+
+const PAGE_SIZE = 30;
+
+function pageNumbers(current: number, total: number) {
+  const start = Math.max(1, Math.min(current - 2, total - 4));
+  const end = Math.min(total, start + 4);
+  return Array.from({ length: end - start + 1 }, (_, index) => start + index);
+}
 
 // --- NEW: Premium Skeleton Component ---
 function MediaCardSkeleton() {
   return (
-    <div className="flex flex-col bg-white/5 backdrop-blur-2xl border border-white/10 rounded-xl overflow-hidden shadow-[0_10px_30px_rgba(0,0,0,0.2)]">
+    <div className="glass-card flex flex-col overflow-hidden rounded-xl">
       <div className="w-full aspect-2/3 bg-white/5 animate-pulse relative overflow-hidden">
         {/* Soft shimmer gradient */}
         <div className="absolute inset-0 bg-linear-to-tr from-transparent via-white/5 to-transparent animate-pulse" />
@@ -32,13 +40,13 @@ function MediaCardSkeleton() {
 }
 
 // --- NEW: Isolated Media Card for Image Loading State ---
-function SearchMediaCard({ item }: { item: Media }) {
+function SearchMediaCard({ item, returnHref }: { item: Media; returnHref: string }) {
   const [isImageLoaded, setIsImageLoaded] = useState(false);
 
   return (
     <Link
-      href={`/${item.type}/${item.id}`}
-      className="group flex flex-col bg-white/5 backdrop-blur-2xl border border-white/10 rounded-xl overflow-hidden cursor-pointer shadow-[0_10px_30px_rgba(0,0,0,0.2)] transition-all duration-300 hover:border-red-400/40 hover:bg-white/10 hover:-translate-y-1.5 hover:shadow-[0_15px_40px_rgba(248,113,113,0.2)]"
+      href={`/${item.type}/${item.id}?from=${encodeURIComponent(returnHref)}`}
+      className="glass-card group flex cursor-pointer flex-col overflow-hidden rounded-xl transition-all duration-300 hover:-translate-y-1.5 hover:border-red-400/40 hover:bg-white/10 hover:shadow-[0_15px_40px_rgba(248,113,113,0.2)]"
     >
       <div className="w-full aspect-2/3 relative flex items-center justify-center overflow-hidden bg-black/40">
         {item.cover_url ? (
@@ -110,8 +118,13 @@ function SearchMediaCard({ item }: { item: Media }) {
 
 
 function SearchContent() {
+  const router = useRouter();
+  const pathname = usePathname();
   const searchParams = useSearchParams();
   const urlQuery = searchParams.get("q") || "";
+  const requestedPage = Number(searchParams.get("page") ?? "1");
+  const page = Number.isSafeInteger(requestedPage) && requestedPage > 0 ? requestedPage : 1;
+  const returnHref = searchParams.size > 0 ? `${pathname}?${searchParams.toString()}` : pathname;
 
   const [query, setQuery] = useState(urlQuery);
   const [debouncedQuery, setDebouncedQuery] = useState(urlQuery);
@@ -143,39 +156,22 @@ function SearchContent() {
 
   const [mediaItems, setMediaItems] = useState<Media[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [isLoadingMore, setIsLoadingMore] = useState(false);
-  const [page, setPage] = useState(1);
-  const [hasMore, setHasMore] = useState(true);
+  const [total, setTotal] = useState(0);
   const [showScrollTop, setShowScrollTop] = useState(false);
-  
-  const observer = useRef<IntersectionObserver | null>(null);
-  
-  const lastElementRef = useCallback(
-    (node: HTMLDivElement | null) => {
-      if (isLoading || isLoadingMore) return; 
-      
-      if (observer.current) observer.current.disconnect();
-      
-      observer.current = new IntersectionObserver(
-        (entries) => {
-          if (entries[0].isIntersecting && hasMore) {
-            setPage((prevPage) => prevPage + 1);
-          }
-        },
-        { rootMargin: "200px" }
-      );
-      
-      if (node) observer.current.observe(node);
-    },
-    [isLoading, isLoadingMore, hasMore]
-  );
+  const resultsRef = useRef<HTMLElement | null>(null);
 
-  const LIMIT = 30;
+  const updatePage = useCallback((nextPage: number, replace = false) => {
+    const params = new URLSearchParams(searchParams.toString());
+    if (nextPage > 1) params.set("page", String(nextPage));
+    else params.delete("page");
+    const href = params.size > 0 ? `${pathname}?${params.toString()}` : pathname;
+    if (replace) router.replace(href, { scroll: false });
+    else router.push(href, { scroll: false });
+  }, [pathname, router, searchParams]);
 
-  const resetPagination = () => {
-    setPage(1);
-    setHasMore(true);
-  };
+  const resetPagination = useCallback(() => {
+    if (page > 1) updatePage(1, true);
+  }, [page, updatePage]);
 
   useEffect(() => {
     const timeoutId = window.setTimeout(() => setDebouncedQuery(query), 300);
@@ -219,8 +215,7 @@ function SearchContent() {
     const controller = new AbortController();
 
     const fetchMedia = async () => {
-      if (page === 1) setIsLoading(true);
-      else setIsLoadingMore(true);
+      setIsLoading(true);
 
       const params = new URLSearchParams();
       if (debouncedQuery) params.set("q", debouncedQuery);
@@ -248,27 +243,23 @@ function SearchContent() {
 
       if (filters.sort && filters.sort.length > 0) params.set("sort", filters.sort[0]);
 
-      params.set("limit", LIMIT.toString());
-      params.set("offset", ((page - 1) * LIMIT).toString());
+      params.set("limit", PAGE_SIZE.toString());
+      params.set("offset", ((page - 1) * PAGE_SIZE).toString());
 
       try {
         const res = await fetch(`/api/media?${params.toString()}`, { signal: controller.signal });
         if (!res.ok) throw new Error(`Media request failed with status ${res.status}`);
-        const json: { rows?: Media[] } = await res.json();
-        const combinedMedia = json.rows ?? [];
-
-        if (combinedMedia.length < LIMIT) setHasMore(false);
-
-        if (page === 1) setMediaItems(combinedMedia);
-        else setMediaItems((prev) => [...prev, ...combinedMedia]);
+        const json: { rows?: Media[]; total?: number } = await res.json();
+        setMediaItems(json.rows ?? []);
+        setTotal(json.total ?? 0);
       } catch (error) {
         if (error instanceof DOMException && error.name === "AbortError") return;
         console.error("Failed to fetch media:", error);
         setMediaItems([]);
+        setTotal(0);
       } finally {
         if (!controller.signal.aborted) {
           setIsLoading(false);
-          setIsLoadingMore(false);
         }
       }
     };
@@ -276,6 +267,17 @@ function SearchContent() {
     fetchMedia();
     return () => controller.abort();
   }, [debouncedQuery, filters, page]);
+
+  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+
+  useEffect(() => {
+    if (!isLoading && page > totalPages) updatePage(totalPages, true);
+  }, [isLoading, page, totalPages, updatePage]);
+
+  const goToPage = (nextPage: number) => {
+    updatePage(nextPage);
+    resultsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
 
   const BUTTON_CATEGORIES = [
     { id: "type", label: "分类", options: ["电影", "电视剧"], multiSelect: true },
@@ -346,7 +348,7 @@ function SearchContent() {
 
   return (
     <div className="min-h-screen text-neutral-200 pt-24 pb-12 selection:bg-red-500/30 selection:text-white font-sans relative">
-      <div className="container mx-auto px-6 md:px-8 max-w-7xl relative z-[1]">
+      <div className="container mx-auto px-6 md:px-8 max-w-7xl relative z-1">
         
         {/* Search Input Section */}
         <div className="mb-8">
@@ -363,7 +365,7 @@ function SearchContent() {
                 setQuery(e.target.value);
               }}
               placeholder="搜索电影、电视剧、导演或演员..."
-              className="w-full bg-white/5 backdrop-blur-2xl border border-white/10 focus:border-red-400/50 focus:ring-1 focus:ring-red-400/50 focus:bg-white/10 rounded-2xl py-5 pl-12 pr-40 text-lg text-white placeholder-white/40 outline-none transition-all duration-500 shadow-[0_4px_20px_rgba(0,0,0,0.2)] focus:shadow-[0_6px_30px_rgba(248,113,113,0.2)] relative z-0"
+              className="glass-control relative z-0 w-full rounded-2xl py-5 pl-12 pr-40 text-lg text-white outline-none transition-all duration-500 placeholder:text-white/50 focus:border-red-400/50 focus:bg-white/10 focus:ring-1 focus:ring-red-400/50 focus:shadow-[0_6px_30px_rgba(248,113,113,0.2)]"
             />
 
             <div className="absolute inset-y-0 right-0 pr-4 flex items-center gap-3 z-10">
@@ -371,7 +373,7 @@ function SearchContent() {
                 <button onClick={() => {
                   resetPagination();
                   setQuery("");
-                }} className="text-white/50 hover:text-red-400 hover:drop-shadow-[0_0_5px_rgba(248,113,113,0.6)] transition-all duration-300">
+                }} className="text-white/50 hover:text-red-400 hover:drop-shadow-[0_0_5px_rgba(248,113,113,0.6)] transition-all duration-300" aria-label="清除搜索">
                   <X className="size-5" aria-hidden="true" />
                 </button>
               )}
@@ -395,7 +397,7 @@ function SearchContent() {
           </div>
 
           {showAdvanced && (
-            <div className="mt-4 p-6 bg-white/5 backdrop-blur-2xl border border-white/10 rounded-2xl shadow-[0_15px_50px_rgba(0,0,0,0.5)] transition-all duration-300 origin-top animate-in slide-in-from-top-2 fade-in">
+            <div className="glass-panel mt-4 rounded-2xl p-6 transition-all duration-300 origin-top animate-in slide-in-from-top-2 fade-in">
               <div className="flex flex-col">
                 {BUTTON_CATEGORIES.map((category) => {
                   const activeSelections = filters[category.id] || [];
@@ -529,7 +531,7 @@ function SearchContent() {
           )}
         </div>
 
-        <main className="w-full">
+        <main ref={resultsRef} className="w-full scroll-mt-24">
           <div className="flex items-center justify-between mb-8">
             <h2 className="text-2xl font-bold text-white tracking-wide drop-shadow-[0_0_10px_rgba(255,255,255,0.2)]">
               {query ? (
@@ -553,36 +555,26 @@ function SearchContent() {
                 </button>
               )}
               <span className="min-w-32 text-center text-sm px-4 py-1.5 bg-white/5 backdrop-blur-2xl rounded-full border border-white/10 text-white font-medium shadow-[0_4px_10px_rgba(0,0,0,0.2)] drop-shadow-[0_0_8px_rgba(255,255,255,0.1)] transition-all">
-                {isLoading ? "加载中..." : `找到 ${mediaItems.length} 部作品`}
+                {isLoading ? "加载中..." : `找到 ${total} 部作品`}
               </span>
             </div>
           </div>
 
           <div
-            className={`relative grid min-h-[32rem] grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 md:gap-6 transition-opacity duration-200 ${
+            className={`relative grid min-h-128 grid-cols-2 gap-4 transition-opacity duration-200 sm:grid-cols-3 md:gap-6 lg:grid-cols-5 xl:grid-cols-6 ${
               isLoading && mediaItems.length > 0 ? "opacity-60" : "opacity-100"
             }`}
             aria-busy={isLoading}
           >
-            {/* Show 12 sleek skeletons on initial load */}
+            {/* Match the final page geometry while results are loading. */}
             {isLoading && mediaItems.length === 0 ? (
-              [...Array(12)].map((_, i) => (
+              [...Array(PAGE_SIZE)].map((_, i) => (
                 <MediaCardSkeleton key={`loading-initial-${i}`} />
               ))
             ) : mediaItems.length > 0 ? (
-              <>
-                {/* Render the extracted card component for individual image loading state */}
-                {mediaItems.map((item) => (
-                  <SearchMediaCard key={`${item.type}-${item.id}`} item={item} />
-                ))}
-
-                {/* Show 6 sleek skeletons dynamically at the bottom during infinite scroll */}
-                {isLoadingMore && (
-                  [...Array(6)].map((_, i) => (
-                    <MediaCardSkeleton key={`loading-more-${i}`} />
-                  ))
-                )}
-              </>
+              mediaItems.map((item) => (
+                <SearchMediaCard key={`${item.type}-${item.id}`} item={item} returnHref={returnHref} />
+              ))
             ) : (
               <div className="col-span-full py-20 text-center text-white/50 backdrop-blur-sm font-medium">
                 暂无符合条件的作品
@@ -590,14 +582,20 @@ function SearchContent() {
             )}
           </div>
           
-          {mediaItems.length > 0 && (
-            <div ref={lastElementRef} className="w-full py-10 flex justify-center items-center h-20">
-              {!hasMore && (
-                <div className="text-white/50 text-sm font-medium tracking-wide backdrop-blur-sm animate-in fade-in duration-500">
-                  — 到底啦，所有的作品都在这了 —
-                </div>
-              )}
-            </div>
+          {totalPages > 1 && !isLoading && (
+            <nav className="mt-10 flex flex-wrap items-center justify-center gap-2" aria-label="搜索结果分页">
+              <button onClick={() => goToPage(page - 1)} disabled={page === 1} className="glass-control rounded-xl p-2.5 text-white/65 transition-all hover:bg-white/10 hover:text-white disabled:pointer-events-none disabled:opacity-30" aria-label="上一页">
+                <ChevronLeft className="size-4" aria-hidden="true" />
+              </button>
+              {pageNumbers(page, totalPages).map((pageNumber) => (
+                <button key={pageNumber} onClick={() => goToPage(pageNumber)} aria-current={pageNumber === page ? "page" : undefined} className={`min-w-10 rounded-xl border px-3 py-2 text-center text-sm transition-all ${pageNumber === page ? "border-red-400/30 bg-red-500/15 text-red-300" : "border-white/10 bg-white/5 text-white/55 hover:bg-white/10 hover:text-white"}`}>
+                  {pageNumber}
+                </button>
+              ))}
+              <button onClick={() => goToPage(page + 1)} disabled={page === totalPages} className="glass-control rounded-xl p-2.5 text-white/65 transition-all hover:bg-white/10 hover:text-white disabled:pointer-events-none disabled:opacity-30" aria-label="下一页">
+                <ChevronRight className="size-4" aria-hidden="true" />
+              </button>
+            </nav>
           )}
         </main>
       </div>

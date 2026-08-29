@@ -4,7 +4,7 @@ function Pulse({ className }: { className: string }) {
 
 function PosterSkeleton() {
   return (
-    <div className="w-44 shrink-0 overflow-hidden rounded-xl border border-white/10 bg-white/5">
+    <div className="glass-card w-44 shrink-0 overflow-hidden rounded-xl">
       <Pulse className="aspect-2/3 w-full rounded-none" />
       <div className="space-y-2 p-3">
         <Pulse className="h-4 w-3/4" />
@@ -34,7 +34,7 @@ export function CatalogLoadingSkeleton() {
     <div className="container mx-auto max-w-7xl px-6 pb-12 pt-26 md:px-8" aria-label="正在加载媒体目录">
       <div className="mb-16 grid grid-cols-2 gap-4 md:grid-cols-4">
         {Array.from({ length: 4 }, (_, index) => (
-          <div key={index} className="space-y-3 rounded-2xl border border-white/10 bg-white/5 p-6">
+          <div key={index} className="glass-card space-y-3 rounded-2xl p-6">
             <Pulse className="h-3 w-24" />
             <Pulse className="h-9 w-16" />
           </div>

@@ -22,7 +22,7 @@ export default function SeriesCatalog({
         
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-16">
           {statItems.map((stat, idx) => (
-            <div key={idx} className="group flex flex-col p-6 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-sm transition-all duration-300 hover:bg-white/10 hover:border-white/20 hover:-translate-y-1">
+            <div key={idx} className="glass-card group flex flex-col rounded-2xl p-6 transition-all duration-300 hover:-translate-y-1 hover:border-white/20 hover:bg-white/10">
               <h2 className="font-medium uppercase text-neutral-400 text-xs tracking-widest mb-2">
                 {stat.label}
               </h2>

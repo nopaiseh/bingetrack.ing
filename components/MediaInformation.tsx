@@ -2,7 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { ImageIcon } from "lucide-react";
 import type { ReactNode } from "react";
-import { Media } from "@/lib/types";
+import { Media, SeasonInfo } from "@/lib/types";
 import SearchTag from "./SearchTag";
 
 export function CinematicBackground({ imageUrl }: { imageUrl: string }) {
@@ -29,13 +29,13 @@ export function CinematicBackground({ imageUrl }: { imageUrl: string }) {
   );
 }
 
-function MediaPoster({ media }: { media: Media }) {
+function MediaPoster({ media, backHref, backLabel }: { media: Media; backHref: string; backLabel: string }) {
   return (
     <div className="w-full md:w-72 shrink-0 flex flex-col gap-6">
       {/* Frosted Glass Back Button */}
-      <Link href={media.type === "series" ? "/series" : "/movies"} className="group inline-flex items-center text-sm font-medium text-white/70 hover:text-white hover:drop-shadow-[0_0_8px_rgba(255,255,255,0.5)] transition-all w-fit bg-white/5 backdrop-blur-2xl px-4 py-2 rounded-xl border border-white/10 shadow-[0_4px_15px_rgba(0,0,0,0.2)] hover:bg-white/10 hover:border-white/20 hover:shadow-[0_6px_20px_rgba(0,0,0,0.3)]">
+      <Link href={backHref} className="group inline-flex items-center text-sm font-medium text-white/70 hover:text-white hover:drop-shadow-[0_0_8px_rgba(255,255,255,0.5)] transition-all w-fit bg-white/5 backdrop-blur-2xl px-4 py-2 rounded-xl border border-white/10 shadow-[0_4px_15px_rgba(0,0,0,0.2)] hover:bg-white/10 hover:border-white/20 hover:shadow-[0_6px_20px_rgba(0,0,0,0.3)]">
         <span className="mr-2 group-hover:-translate-x-1 transition-transform duration-300">←</span>
-        返回列表
+        {backLabel}
       </Link>
 
       {/* Lighter Frosted Glass Poster */}
@@ -124,29 +124,29 @@ export function MediaMetadata({ media }: { media: Media }) {
   );
 }
 
-type SeasonInfo = {
-  id: number;
-  name: string;
-  year: number;
-  episodeCount: number;
-};
-
 export default function MediaInformation({
   media,
   seasons,
   relatedContent,
+  backHref,
+  backLabel,
 }: {
   media: Media;
   seasons: SeasonInfo[] | null;
   relatedContent?: ReactNode;
+  backHref?: string;
+  backLabel?: string;
 }) {
+  const defaultBackHref = media.type === "series" ? "/series" : "/movies";
+  const defaultBackLabel = media.type === "series" ? "返回电视剧列表" : "返回电影列表";
+
   return (
     <>
       <CinematicBackground imageUrl={media.cover_url} />
 
       <div className="container mx-auto px-6 md:px-8 max-w-7xl pt-24 pb-12 relative z-10">
         <div className="flex flex-col md:flex-row gap-12 lg:gap-20">
-          <MediaPoster media={media} />
+          <MediaPoster media={media} backHref={backHref ?? defaultBackHref} backLabel={backLabel ?? defaultBackLabel} />
 
           <div className="flex-1 flex flex-col pt-4 md:pt-8">
             <div className="mb-4 md:mb-8">
@@ -193,7 +193,7 @@ export default function MediaInformation({
           </div>
         </div>
 
-        <div className="mb-12 mt-12 bg-white/5 backdrop-blur-2xl border border-white/10 p-6 md:p-8 rounded-2xl shadow-[0_15px_40px_rgba(0,0,0,0.2)]">
+        <div className="glass-panel mb-12 mt-12 rounded-2xl p-6 md:p-8">
           <div className="flex items-center gap-2 mb-4">
             <div className="w-1 h-5 bg-red-400 rounded-sm shadow-[0_0_8px_rgba(248,113,113,0.6)]"></div> 
             <h3 className="text-white/90 font-bold text-lg drop-shadow-[0_0_5px_rgba(255,255,255,0.2)] tracking-widest">
@@ -216,20 +216,30 @@ export default function MediaInformation({
 
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
             {seasons.map((season) => (
-              <button
+              <Link
                 key={season.id}
-                className="group flex flex-col text-left bg-white/5 backdrop-blur-2xl border border-white/10 rounded-xl p-5 cursor-pointer shadow-[0_10px_30px_rgba(0,0,0,0.2)] hover:border-red-400/40 hover:bg-white/10 hover:-translate-y-1.5 hover:shadow-[0_15px_40px_rgba(248,113,113,0.2)] transition-all duration-300"
+                href={`/series/${media.id}/seasons/${season.id}`}
+                className="glass-card group flex cursor-pointer flex-col rounded-xl p-5 text-left transition-all duration-300 hover:-translate-y-1.5 hover:border-red-400/40 hover:bg-white/10 hover:shadow-[0_15px_40px_rgba(248,113,113,0.2)]"
               >
                 <h4 className="text-white/80 font-bold text-base mb-2 group-hover:text-red-300 group-hover:drop-shadow-[0_0_5px_rgba(248,113,113,0.6)] transition-colors">
-                  {season.name}
+                  第 {season.seasonNumber} 季
                 </h4>
                 <div className="flex items-center text-xs text-white/50 space-x-2 mt-auto font-mono">
-                  <span>{season.year}</span>
-                  <span>•</span>
+                  {season.releaseYearRange && (
+                    <>
+                      <span>{season.releaseYearRange}</span>
+                      <span>•</span>
+                    </>
+                  )}
                   <span>{season.episodeCount} 集</span>
                 </div>
-              </button>
+              </Link>
             ))}
+            {seasons.length === 0 && (
+              <div className="col-span-full rounded-xl border border-white/10 bg-white/5 px-6 py-10 text-center text-sm text-white/40">
+                暂无季集数据
+              </div>
+            )}
           </div>
         </div>
       )}

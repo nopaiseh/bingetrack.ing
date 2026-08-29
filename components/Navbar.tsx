@@ -36,7 +36,7 @@ export default function Navbar() {
   };
 
   return (
-    <nav className="fixed w-full z-50 top-0 left-0 bg-white/5 backdrop-blur-2xl border-b border-white/10 shadow-[0_4px_20px_rgba(0,0,0,0.2)] transition-all duration-300">
+    <nav className="glass-panel fixed left-0 top-0 z-50 w-full border-x-0 border-t-0 transition-all duration-300">
       <div className="flex items-center justify-between w-full mx-auto px-6 md:px-8 h-16 max-w-7xl">
         <div className="flex items-center gap-10">
           <Link
@@ -82,6 +82,7 @@ export default function Navbar() {
           >
             <button
               type="submit"
+              aria-label="搜索"
               className="absolute inset-y-0 left-0 flex items-center pl-3.5 cursor-pointer z-10"
             >
               <Search className="size-4 text-white/50 group-focus-within:text-white group-focus-within:drop-shadow-[0_0_8px_rgba(255,255,255,0.8)] transition-all duration-300" aria-hidden="true" />
@@ -90,7 +91,7 @@ export default function Navbar() {
               name="q"
               type="text"
               placeholder="搜索"
-              className="bg-white/5 backdrop-blur-2xl border border-white/10 text-white text-sm rounded-full 
+              className="glass-control text-white text-sm rounded-full 
               focus:bg-white/10 focus:ring-1 focus:ring-white/30 focus:border-white/30 
               block w-44 focus:w-64 pl-10 py-1.5 transition-all duration-500 ease-out 
               placeholder-white/40 outline-none 
@@ -100,10 +101,10 @@ export default function Navbar() {
           </form>
 
           <button
-            className="md:hidden flex items-center justify-center text-white/70 hover:text-white p-2 w-10 h-10 outline-none 
-            bg-white/5 backdrop-blur-2xl border border-white/10 rounded-full 
-            shadow-[0_4px_15px_rgba(0,0,0,0.2)] 
+            className="glass-control md:hidden flex items-center justify-center text-white/70 hover:text-white p-2 w-10 h-10 outline-none rounded-full 
             hover:bg-white/10 hover:border-white/20 hover:shadow-[0_6px_20px_rgba(255,255,255,0.05)] transition-all duration-300"
+            aria-label={isMobileMenuOpen ? "关闭导航菜单" : "打开导航菜单"}
+            aria-expanded={isMobileMenuOpen}
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
           >
             {isMobileMenuOpen ? <X className="size-5" aria-hidden="true" /> : <Menu className="size-5" aria-hidden="true" />}
@@ -140,6 +141,7 @@ export default function Navbar() {
           >
             <button
               type="submit"
+              aria-label="搜索"
               className="absolute inset-y-0 left-0 flex items-center pl-3.5 cursor-pointer z-10"
             >
               <Search className="size-4 text-white/50 group-focus-within:text-white group-focus-within:drop-shadow-[0_0_8px_rgba(255,255,255,0.8)] transition-all duration-300" aria-hidden="true" />
@@ -149,7 +151,7 @@ export default function Navbar() {
               name="q"
               type="text"
               placeholder="搜索"
-              className="bg-white/5 backdrop-blur-2xl border border-white/10 text-white text-sm rounded-xl block w-full pl-10 py-2.5 outline-none 
+              className="glass-control text-white text-sm rounded-xl block w-full pl-10 py-2.5 outline-none 
               focus:bg-white/10 focus:border-white/30 focus:ring-1 focus:ring-white/30
               shadow-[0_4px_15px_rgba(0,0,0,0.2)] 
               focus:shadow-[0_6px_25px_rgba(255,255,255,0.05)] 

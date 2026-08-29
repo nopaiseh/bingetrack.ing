@@ -1,7 +1,7 @@
 import { getSupabaseServer } from "@/utils/supabase";
 import { getSupabaseBrowser } from "@/utils/supabase-client";
 import { mapViewRowToMedia } from "@/lib/functions/media-mapper";
-import { DistributionItem, Media, MediaDistribution, MediaDistributions, ViewAllMediaRow, FetchMediaListOptions } from "@/lib/types";
+import { DistributionItem, EpisodeInfo, Media, MediaDistribution, MediaDistributions, SeasonEpisodePage, SeasonInfo, ViewAllMediaRow, FetchMediaListOptions } from "@/lib/types";
 
 /*
   媒体仓库（server-side helpers）
@@ -78,6 +78,214 @@ export async function getRelatedBySeries(seriesName: string, currentId: string):
   }
 
   return data.map((item: ViewAllMediaRow) => mapViewRowToMedia(item, seriesName));
+}
+
+type SeasonRow = {
+  id: string;
+  season_number: number;
+  tv_episodes: Array<{
+    id: string;
+    media_items: { release_date: string | null } | Array<{ release_date: string | null }> | null;
+  }> | null;
+};
+
+export async function getSeasonsBySeriesId(seriesId: string): Promise<SeasonInfo[]> {
+  const db = getSupabaseServer();
+  const { data, error } = await db
+    .from("tv_seasons")
+    .select("id, season_number, tv_episodes(id, media_items(release_date))")
+    .eq("series_id", seriesId)
+    .order("season_number", { ascending: true });
+
+  if (error) {
+    console.error(`Failed to fetch seasons for series ${seriesId}:`, error);
+    return [];
+  }
+
+  const seasonRows = (data ?? []) as SeasonRow[];
+  const seasonIds = seasonRows.map((season) => season.id);
+  const { data: mediaItems, error: mediaItemsError } = seasonIds.length > 0
+    ? await db.from("media_items").select("id, summary").in("id", seasonIds)
+    : { data: [], error: null };
+
+  if (mediaItemsError) {
+    console.error(`Failed to fetch season summaries for series ${seriesId}:`, mediaItemsError);
+  }
+
+  const summaries = new Map((mediaItems ?? []).map((item) => [item.id, item.summary ?? ""]));
+
+  return seasonRows.map((season) => {
+    const releaseDates = (season.tv_episodes ?? [])
+      .map((episode) => {
+        const mediaItem = Array.isArray(episode.media_items) ? episode.media_items[0] : episode.media_items;
+        return mediaItem?.release_date;
+      })
+      .filter((date): date is string => Boolean(date && /^\d{4}-\d{2}-\d{2}$/.test(date)))
+      .sort();
+    const firstYear = releaseDates[0]?.slice(0, 4);
+    const lastYear = releaseDates.at(-1)?.slice(0, 4);
+
+    return {
+      id: season.id,
+      seasonNumber: season.season_number,
+      episodeCount: season.tv_episodes?.length ?? 0,
+      releaseYearRange: firstYear && lastYear
+        ? (firstYear === lastYear ? firstYear : `${firstYear} - ${lastYear}`)
+        : undefined,
+      summary: summaries.get(season.id) ?? "",
+    };
+  });
+}
+
+type EpisodeRow = {
+  id: string;
+  episode_number: number;
+  media_items: {
+    title: string | null;
+    summary: string | null;
+    cover_url: string | null;
+    release_date: string | null;
+    runtime: number | null;
+    tracking: Array<{ status: string | null; rating: number | null }> | null;
+  } | Array<{
+    title: string | null;
+    summary: string | null;
+    cover_url: string | null;
+    release_date: string | null;
+    runtime: number | null;
+    tracking: Array<{ status: string | null; rating: number | null }> | null;
+  }> | null;
+};
+
+type SeasonHeaderRow = {
+  id: string;
+  season_number: number;
+  tv_episodes: Array<{
+    id: string;
+    episode_number: number;
+    media_items: {
+      release_date: string | null;
+      runtime: number | null;
+      tracking: Array<{ status: string | null; rating: number | null }> | null;
+    } | Array<{
+      release_date: string | null;
+      runtime: number | null;
+      tracking: Array<{ status: string | null; rating: number | null }> | null;
+    }> | null;
+  }> | null;
+};
+
+export async function getSeasonEpisodes(
+  seriesId: string,
+  seasonId: string,
+  page: number,
+  pageSize: number,
+  status: "all" | "watched" | "unwatched" = "all",
+  order: "asc" | "desc" = "asc",
+): Promise<SeasonEpisodePage | null> {
+  const db = getSupabaseServer();
+  const [seasonResult, seasonMediaResult] = await Promise.all([
+    db
+      .from("tv_seasons")
+      .select("id, season_number, tv_episodes(id, episode_number, media_items(release_date, runtime, tracking(status, rating)))")
+      .eq("id", seasonId)
+      .eq("series_id", seriesId)
+      .maybeSingle(),
+    db
+      .from("media_items")
+      .select("summary")
+      .eq("id", seasonId)
+      .maybeSingle(),
+  ]);
+  const { data: seasonData, error: seasonError } = seasonResult;
+  const { data: seasonMedia, error: seasonMediaError } = seasonMediaResult;
+
+  if (seasonError || !seasonData) {
+    if (seasonError) console.error(`Failed to fetch season ${seasonId}:`, seasonError);
+    return null;
+  }
+
+  if (seasonMediaError) {
+    console.error(`Failed to fetch summary for season ${seasonId}:`, seasonMediaError);
+  }
+
+  const season = seasonData as SeasonHeaderRow;
+  const allEpisodes = (season.tv_episodes ?? []).map((episode) => {
+    const mediaItem = Array.isArray(episode.media_items) ? episode.media_items[0] : episode.media_items;
+    const tracking = mediaItem?.tracking?.[0];
+    return {
+      id: episode.id,
+      episodeNumber: episode.episode_number,
+      releaseDate: mediaItem?.release_date ?? null,
+      runtime: mediaItem?.runtime ?? null,
+      status: tracking?.status ?? null,
+      rating: tracking?.rating ?? null,
+    };
+  });
+  const watchedCount = allEpisodes.filter((episode) => episode.status === "watched").length;
+  const totalRuntime = allEpisodes.reduce((sum, episode) => sum + (episode.runtime ?? 0), 0);
+  const ratings = allEpisodes.map((episode) => episode.rating).filter((rating): rating is number => rating !== null);
+  const averageRating = ratings.length > 0 ? ratings.reduce((sum, rating) => sum + rating, 0) / ratings.length : null;
+  const filteredEpisodes = allEpisodes
+    .filter((episode) => status === "all" || (status === "watched" ? episode.status === "watched" : episode.status !== "watched"))
+    .sort((left, right) => order === "asc" ? left.episodeNumber - right.episodeNumber : right.episodeNumber - left.episodeNumber);
+  const offset = (page - 1) * pageSize;
+  const pageIds = filteredEpisodes.slice(offset, offset + pageSize).map((episode) => episode.id);
+
+  let episodeRows: EpisodeRow[] = [];
+  if (pageIds.length > 0) {
+    const { data, error } = await db
+      .from("tv_episodes")
+      .select("id, episode_number, media_items(title, summary, cover_url, release_date, runtime, tracking(status, rating))")
+      .in("id", pageIds);
+
+    if (error) {
+      console.error(`Failed to fetch episodes for season ${seasonId}:`, error);
+      return null;
+    }
+    episodeRows = (data ?? []) as EpisodeRow[];
+  }
+
+  const episodeMap = new Map(episodeRows.map((episode) => [episode.id, episode]));
+  const episodes: EpisodeInfo[] = pageIds.flatMap((id) => {
+    const episode = episodeMap.get(id);
+    if (!episode) return [];
+    const mediaItem = Array.isArray(episode.media_items) ? episode.media_items[0] : episode.media_items;
+    const tracking = mediaItem?.tracking?.[0];
+    return [{
+      id: episode.id,
+      episodeNumber: episode.episode_number,
+      title: mediaItem?.title ?? `第 ${episode.episode_number} 集`,
+      summary: mediaItem?.summary ?? "",
+      coverUrl: mediaItem?.cover_url ?? "",
+      releaseDate: mediaItem?.release_date ?? null,
+      runtime: mediaItem?.runtime ?? null,
+      status: tracking?.status ?? null,
+      rating: tracking?.rating ?? null,
+    }];
+  });
+
+  const dates = allEpisodes
+    .map((episode) => episode.releaseDate)
+    .filter((date): date is string => Boolean(date))
+    .sort();
+  const firstYear = dates[0]?.slice(0, 4);
+  const lastYear = dates.at(-1)?.slice(0, 4);
+
+  return {
+    season: {
+      id: season.id,
+      seasonNumber: season.season_number,
+      episodeCount: allEpisodes.length,
+      releaseYearRange: firstYear && lastYear ? (firstYear === lastYear ? firstYear : `${firstYear} - ${lastYear}`) : undefined,
+      summary: seasonMedia?.summary ?? "",
+    },
+    episodes,
+    total: filteredEpisodes.length,
+    watchedCount,
+    totalRuntime,
+    averageRating,
+  };
 }
 
 // 从视图中获取前 N 条媒体（按评分降序），用于首页/看板显示

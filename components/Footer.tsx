@@ -3,7 +3,7 @@ import { Terminal } from "lucide-react";
 
 export default function Footer() {
   return (
-    <footer className="relative z-1 bg-white/5 backdrop-blur-2xl mt-auto py-6 overflow-hidden border-t border-white/10 shadow-[0_-4px_20px_rgba(0,0,0,0.2)] transition-all duration-300">
+    <footer className="glass-panel relative z-1 mt-auto overflow-hidden border-x-0 border-b-0 py-6 transition-all duration-300">
       
       {/* Subdued fixed white gradient syntax for dark theme */}
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-3/4 h-px bg-linear-to-r from-transparent via-white/10 to-transparent"></div>
