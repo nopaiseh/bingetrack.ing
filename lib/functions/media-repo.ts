@@ -15,6 +15,11 @@ declare global {
   var _mediaRepoCache: Map<string, { ts: number; data: Media[]; total?: number }> | undefined;
 }
 
+const MEDIA_VIEW_COLUMNS = "id,title,sort_date,release_date,release_year,runtime,rating,average_rating,genres,languages,regions,status,summary,cover_url,casts,directors,type,series" as const;
+
+const MEDIA_CACHE_TTL_MS = 30_000;
+const MEDIA_CACHE_MAX_ENTRIES = 200;
+
 // 获取单条媒体详情
 export async function getMediaById(id: string): Promise<Media | null> {
   const db = getSupabaseServer();
@@ -22,7 +27,7 @@ export async function getMediaById(id: string): Promise<Media | null> {
   // 1. 从视图中直接拉取所有扁平化、计算好的数据
   const { data: viewData, error: viewError } = await db
     .from("v_all_media")
-    .select("*")
+    .select(MEDIA_VIEW_COLUMNS)
     .eq("id", id)
     .single();
 
@@ -77,7 +82,7 @@ export async function getRelatedBySeries(seriesName: string, currentId: string):
   // 第二步：拿着这些 ID，去 v_all_media 视图中拉取完整的富媒体数据
   const { data, error } = await db
     .from("v_all_media")
-    .select("*")
+    .select(MEDIA_VIEW_COLUMNS)
     .in("id", relatedIds)
     .order("sort_date", { ascending: true, nullsFirst: false })
     .order("id", { ascending: true });
@@ -328,7 +333,7 @@ export async function fetchTopMediaServer(
   const db = getSupabaseServer();
   let query = db
     .from("v_all_media")
-    .select("*")
+    .select(MEDIA_VIEW_COLUMNS)
     .eq("type", mediaType)
     .order("rating", { ascending: false, nullsFirst: false })
     .limit(limit);
@@ -460,12 +465,13 @@ async function fetchMediaList(
   const cache = globalThis._mediaRepoCache;
   const cached = cache.get(cacheKey);
 
-  if (cached && now - cached.ts < 30 * 1000) {
+  if (cached && now - cached.ts < MEDIA_CACHE_TTL_MS) {
     return { rows: cached.data, total: cached.total ?? 0 };
   }
+  if (cached) cache.delete(cacheKey);
 
   // 3. 构造查询
-  let dataQuery = db.from("v_all_media").select("*");
+  let dataQuery = db.from("v_all_media").select(MEDIA_VIEW_COLUMNS);
   let countQuery = db.from("v_all_media").select("id", { count: "exact", head: true });
 
   const types = type?.split(",").filter(Boolean) ?? [];
@@ -589,6 +595,11 @@ async function fetchMediaList(
 
   const [dataRes, countRes] = await Promise.all([dataQuery, countQuery]);
 
+  if (dataRes.error || countRes.error) {
+    console.error("Failed to fetch media list:", dataRes.error ?? countRes.error);
+    return { rows: [], total: 0 };
+  }
+
   const total = countRes.count ?? 0;
   const data = dataRes.data;
 
@@ -596,7 +607,15 @@ async function fetchMediaList(
 
   const results: Media[] = data.map((item: ViewAllMediaRow) => mapViewRowToMedia(item));
 
-  // 4. 写入内存缓存 (保留 30 秒)
+  // Keep the short-lived process cache bounded on long-running server instances.
+  if (cache.size >= MEDIA_CACHE_MAX_ENTRIES) {
+    for (const [key, entry] of cache) {
+      if (now - entry.ts >= MEDIA_CACHE_TTL_MS || cache.size >= MEDIA_CACHE_MAX_ENTRIES) {
+        cache.delete(key);
+      }
+      if (cache.size < MEDIA_CACHE_MAX_ENTRIES) break;
+    }
+  }
   cache.set(cacheKey, { ts: now, data: results, total });
 
   return { rows: results, total };

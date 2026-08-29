@@ -89,8 +89,6 @@ export interface Summary {
   unwatched_episodes: number;
 }
 
-export type MediaSummary = Summary;
-
 export interface Stats {
   total?: number;
   watched?: number;

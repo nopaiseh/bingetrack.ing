@@ -28,6 +28,11 @@ function getSearchViewAllLink(type: "电影" | "电视剧", year: string) {
   return `/search?${params.toString()}`;
 }
 
+function percent(value: number, total: number) {
+  if (total <= 0) return 0;
+  return Math.min(Math.max(Math.round((value / total) * 100), 0), 100);
+}
+
 function DistributionCard({ title, icon: Icon, items }: { title: string; icon: LucideIcon; items: DistributionItem[] }) {
   return (
     <div className="glass-card h-full rounded-2xl p-6 transition-all duration-300 shadow-[0_10px_30px_rgba(0,0,0,0.2)] hover:-translate-y-1 hover:bg-white/10 hover:border-white/20 hover:shadow-[0_15px_40px_rgba(0,0,0,0.3)] group">
@@ -210,21 +215,25 @@ export default function HomeDashboard({
   // Derive movie totals strictly from 2 tracking states (Watched + Unwatched)
   const watchedMovies = currentYearData?.watched_movies || 0;
   const unwatchedMovies = currentYearData?.unwatched_movies || 0;
-  const totalMovies = watchedMovies + unwatchedMovies || 1;
-  const moviesPercent = Math.min(Math.round((watchedMovies / totalMovies) * 100), 100);
+  const totalMovies = watchedMovies + unwatchedMovies;
+  const moviesPercent = percent(watchedMovies, totalMovies);
 
   const avgMoviesRating = currentYearData?.movie_avg_rating || 0;
-  const avgMoviesRatingPercent = Math.min(Math.round((avgMoviesRating / 10) * 100), 100);
+  const avgMoviesRatingPercent = percent(avgMoviesRating, 10);
 
   // Derive series totals strictly from 3 tracking states
   const watchedSeries = currentYearData?.watched_series || 0;
   const watchingSeries = currentYearData?.watching_series || 0;
   const unwatchedSeries = currentYearData?.unwatched_series || 0;
-  const totalSeries = watchedSeries + watchingSeries + unwatchedSeries || 1;
-  const seriesPercent = Math.min(Math.round((watchedSeries / totalSeries) * 100), 100);
+  const totalSeries = watchedSeries + watchingSeries + unwatchedSeries;
+  const seriesPercent = percent(watchedSeries, totalSeries);
 
   const avgSeriesRating = currentYearData?.series_avg_rating || 0;
-  const avgSeriesRatingPercent = Math.min(Math.round((avgSeriesRating / 10) * 100), 100);
+  const avgSeriesRatingPercent = percent(avgSeriesRating, 10);
+
+  const watchedRuntime = currentYearData?.total_watched_runtime ?? 0;
+  const totalRuntime = currentYearData?.total_runtime ?? 0;
+  const runtimePercent = percent(watchedRuntime, totalRuntime);
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -384,11 +393,7 @@ export default function HomeDashboard({
                   </div>
                   <div className="flex items-baseline gap-2 mb-4">
                     <span className="text-5xl font-mono text-white tracking-tighter drop-shadow-[0_0_10px_rgba(255,255,255,0.2)]">
-                      {Math.round(
-                        ((currentYearData?.total_watched_runtime ?? 0) /
-                          (currentYearData?.total_runtime ?? 1)) *
-                          100,
-                      )}
+                      {runtimePercent}
                       %
                     </span>
                     <span className="text-white/50 font-medium">已完成</span>
@@ -398,7 +403,7 @@ export default function HomeDashboard({
                   <div
                     className="h-full bg-linear-to-r from-red-600 to-red-400 shadow-[0_0_12px_rgba(239,68,68,0.5)] rounded-full"
                     style={{
-                      width: `${Math.round(((currentYearData?.total_watched_runtime ?? 0) / (currentYearData?.total_runtime ?? 1)) * 100)}%`,
+                      width: `${runtimePercent}%`,
                     }}
                   />
                 </div>

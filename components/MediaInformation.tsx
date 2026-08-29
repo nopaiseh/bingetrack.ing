@@ -22,6 +22,7 @@ export function CinematicBackground({ imageUrl }: { imageUrl: string }) {
         src={imageUrl} 
         alt="cinematic background" 
         fill 
+        sizes="100vw"
         // Opacity at 30% combined with mix-blend-screen creates a perfect ambient glow
         className="object-cover opacity-20 blur-[80px] saturate-150 scale-125" 
       />
