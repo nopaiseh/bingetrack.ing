@@ -15,8 +15,6 @@ declare global {
   var _mediaRepoCache: Map<string, { ts: number; data: Media[]; total?: number }> | undefined;
 }
 
-const MEDIA_VIEW_COLUMNS = "id,title,sort_date,release_date,release_year,runtime,rating,average_rating,genres,languages,regions,status,summary,cover_url,casts,directors,type,series" as const;
-
 const MEDIA_CACHE_TTL_MS = 30_000;
 const MEDIA_CACHE_MAX_ENTRIES = 200;
 
@@ -27,7 +25,7 @@ export async function getMediaById(id: string): Promise<Media | null> {
   // 1. 从视图中直接拉取所有扁平化、计算好的数据
   const { data: viewData, error: viewError } = await db
     .from("v_all_media")
-    .select(MEDIA_VIEW_COLUMNS)
+    .select("*")
     .eq("id", id)
     .single();
 
@@ -82,7 +80,7 @@ export async function getRelatedBySeries(seriesName: string, currentId: string):
   // 第二步：拿着这些 ID，去 v_all_media 视图中拉取完整的富媒体数据
   const { data, error } = await db
     .from("v_all_media")
-    .select(MEDIA_VIEW_COLUMNS)
+    .select("*")
     .in("id", relatedIds)
     .order("sort_date", { ascending: true, nullsFirst: false })
     .order("id", { ascending: true });
@@ -333,7 +331,7 @@ export async function fetchTopMediaServer(
   const db = getSupabaseServer();
   let query = db
     .from("v_all_media")
-    .select(MEDIA_VIEW_COLUMNS)
+    .select("*")
     .eq("type", mediaType)
     .order("rating", { ascending: false, nullsFirst: false })
     .limit(limit);
@@ -471,7 +469,7 @@ async function fetchMediaList(
   if (cached) cache.delete(cacheKey);
 
   // 3. 构造查询
-  let dataQuery = db.from("v_all_media").select(MEDIA_VIEW_COLUMNS);
+  let dataQuery = db.from("v_all_media").select("*");
   let countQuery = db.from("v_all_media").select("id", { count: "exact", head: true });
 
   const types = type?.split(",").filter(Boolean) ?? [];
