@@ -119,6 +119,14 @@ export function MediaMetadata({ media, includePeople = true, releaseDateLabel }:
           : <span className="text-white/30 text-sm sm:pt-1">-</span>}
       </MetadataRow>
 
+      {media.series && media.series.length > 0 && (
+        <MetadataRow label="系列">
+          {media.series.map((seriesName) => (
+            <SearchTag key={seriesName} label={seriesName} category="series" />
+          ))}
+        </MetadataRow>
+      )}
+
       {includePeople && <MediaCredits media={media} />}
     </div>
   );

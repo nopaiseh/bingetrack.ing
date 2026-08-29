@@ -31,18 +31,26 @@ export async function getMediaById(id: string): Promise<Media | null> {
     return null;
   }
 
-  // 2. 因为视图里没有 series 字段，我们查一下原表补齐系列名称
-  const { data: seriesData } = await db
-    .from("media_items")
-    .select("media_series(name)")
-    .eq("id", id)
-    .single();
+  // 2. The view does not expose collection memberships, so load every linked
+  // series from the many-to-many junction table in display order.
+  const { data: seriesData, error: seriesError } = await db
+    .from("media_item_series")
+    .select("position, media_series(name)")
+    .eq("media_item_id", id)
+    .order("position", { ascending: true, nullsFirst: false });
 
-  const seriesObj = Array.isArray(seriesData?.media_series)
-    ? seriesData?.media_series[0]
-    : seriesData?.media_series;
+  if (seriesError) {
+    console.error(`Failed to fetch series memberships for media ${id}:`, seriesError);
+  }
 
-  return mapViewRowToMedia(viewData as ViewAllMediaRow, seriesObj?.name ?? null);
+  const seriesNames = (seriesData ?? []).flatMap((membership) => {
+    const linkedSeries = Array.isArray(membership.media_series)
+      ? membership.media_series[0]
+      : membership.media_series;
+    return linkedSeries?.name ? [linkedSeries.name] : [];
+  });
+
+  return mapViewRowToMedia(viewData as ViewAllMediaRow, seriesNames);
 }
 
 // 2. 获取同系列相关作品
@@ -53,17 +61,18 @@ export async function getRelatedBySeries(seriesName: string, currentId: string):
 
   // 第一步：从基础表中查询出属于该系列的所有作品的 ID (排除当前正在看的这部)
   const { data: seriesItems, error: seriesError } = await db
-    .from("media_items")
-    .select("id, media_series!inner(name)")
+    .from("media_item_series")
+    .select("media_item_id, media_series!inner(name)")
     .eq("media_series.name", seriesName)
-    .neq("id", currentId);
+    .neq("media_item_id", currentId)
+    .order("position", { ascending: true, nullsFirst: false });
 
   if (seriesError || !seriesItems || seriesItems.length === 0) {
     if (seriesError) console.error(`Failed to fetch related media IDs for series ${seriesName}:`, seriesError);
     return [];
   }
 
-  const relatedIds = seriesItems.map((item) => item.id);
+  const relatedIds = seriesItems.map((item) => item.media_item_id);
 
   // 第二步：拿着这些 ID，去 v_all_media 视图中拉取完整的富媒体数据
   const { data, error } = await db
@@ -77,7 +86,11 @@ export async function getRelatedBySeries(seriesName: string, currentId: string):
     return [];
   }
 
-  return data.map((item: ViewAllMediaRow) => mapViewRowToMedia(item, seriesName));
+  const relatedById = new Map(data.map((item: ViewAllMediaRow) => [String(item.id), item]));
+  return relatedIds.flatMap((id) => {
+    const item = relatedById.get(id);
+    return item ? [mapViewRowToMedia(item, [seriesName])] : [];
+  });
 }
 
 type SeasonRow = {
@@ -461,7 +474,9 @@ async function fetchMediaList(
 
   let seriesItemIds: string[] = [];
   if (seriesOnly) {
-    let seriesQuery = db.from("media_items").select("id, media_series!inner(name)");
+    let seriesQuery = db
+      .from("media_item_series")
+      .select("media_item_id, media_series!inner(name)");
     if (hasQuery) {
       seriesQuery = seriesQuery.ilike("media_series.name", queryText);
     }
@@ -472,7 +487,7 @@ async function fetchMediaList(
       return { rows: [], total: 0 };
     }
 
-    seriesItemIds = (seriesItems ?? []).map((item) => item.id);
+    seriesItemIds = Array.from(new Set((seriesItems ?? []).map((item) => item.media_item_id)));
   }
 
   let classificationHandlesQuery = false;

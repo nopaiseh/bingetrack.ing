@@ -9,10 +9,15 @@ type SearchTagCategory =
   | "series";
 
 function getSearchHref(label: string, category: SearchTagCategory) {
-  if (category === "director" || category === "cast") {
+  if (category === "director" || category === "cast" || category === "series") {
+    const type = category === "director"
+      ? "导演"
+      : category === "cast"
+        ? "演员"
+        : "系列";
     const params = new URLSearchParams({
       q: label,
-      type: category === "director" ? "导演" : "演员",
+      type,
     });
     return `/search?${params.toString()}`;
   }

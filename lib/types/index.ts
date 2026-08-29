@@ -10,7 +10,7 @@ export interface Media {
   genres: string[];
   languages: string[];
   regions?: string[];
-  series?: string | null;
+  series?: string[];
   status?: string;
   summary?: string;
   cover_url: string;
@@ -143,7 +143,7 @@ export interface ViewAllMediaRow {
   casts?: string[] | null;
   directors?: string[] | null;
   type?: string | null;
-  series?: string | null;
+  series?: string[] | null;
 }
 
 export interface FetchMediaListOptions {

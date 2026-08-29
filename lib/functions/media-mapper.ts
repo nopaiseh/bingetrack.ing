@@ -5,7 +5,7 @@ import { Media, ViewAllMediaRow } from "@/lib/types";
  */
 export function mapViewRowToMedia(
   item: ViewAllMediaRow,
-  overrideSeries?: string | null,
+  overrideSeries?: string[] | null,
   overrideType?: "movies" | "series",
 ): Media {
   const mediaType: "movies" | "series" =
@@ -28,6 +28,6 @@ export function mapViewRowToMedia(
     casts: item.casts ?? [],
     directors: item.directors ?? [],
     type: mediaType,
-    series: overrideSeries !== undefined ? overrideSeries : (item.series ?? null),
+    series: overrideSeries ?? item.series ?? [],
   };
 }

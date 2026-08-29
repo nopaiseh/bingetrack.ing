@@ -1,16 +1,25 @@
 import { notFound } from "next/navigation";
 import { getMediaById, getRelatedBySeries, getSeasonsBySeriesId } from "@/lib/functions/media-repo";
 import MediaInformation from "@/components/MediaInformation";
-import { Media } from "@/lib/types";
 import MediaRow from "@/components/MediaRow";
 import { RelatedMediaLoadingSkeleton } from "@/components/LoadingSkeletons";
 import { Suspense } from "react";
 
 export const revalidate = 60;
 
-async function RelatedSeries({ seriesName, currentId }: { seriesName: string; currentId: string }) {
-  const relatedMedia: Media[] = await getRelatedBySeries(seriesName, currentId);
-  return <MediaRow title={`《${seriesName}》系列`} items={relatedMedia} type="series" />;
+async function RelatedSeries({ seriesNames, currentId }: { seriesNames: string[]; currentId: string }) {
+  const relatedGroups = await Promise.all(seriesNames.map(async (seriesName) => ({
+    seriesName,
+    items: await getRelatedBySeries(seriesName, currentId),
+  })));
+
+  return (
+    <div className="space-y-12">
+      {relatedGroups.map(({ seriesName, items }) => (
+        <MediaRow key={seriesName} title={`《${seriesName}》系列`} items={items} type="series" />
+      ))}
+    </div>
+  );
 }
 
 export default async function SeriesDetailPage({
@@ -53,9 +62,9 @@ export default async function SeriesDetailPage({
         backLabel={returnToSearch ? "返回搜索页" : undefined}
         releaseDateLabel={releaseYearRange}
         displayStatus={episodeDerivedStatus}
-        relatedContent={series.series ? (
+        relatedContent={series.series && series.series.length > 0 ? (
           <Suspense fallback={<RelatedMediaLoadingSkeleton />}>
-            <RelatedSeries seriesName={series.series} currentId={series.id} />
+            <RelatedSeries seriesNames={series.series} currentId={series.id} />
           </Suspense>
         ) : null}
       />
