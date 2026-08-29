@@ -34,6 +34,7 @@ export default async function MovieDetailPage({
         seasons={null}
         backHref={returnToSearch ? query.from : undefined}
         backLabel={returnToSearch ? "返回搜索页" : undefined}
+        releaseDateLabel={movie.date}
         relatedContent={movie.series ? (
           <Suspense fallback={<RelatedMediaLoadingSkeleton />}>
             <RelatedMovies seriesName={movie.series} currentId={movie.id} />

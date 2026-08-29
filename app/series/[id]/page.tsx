@@ -28,6 +28,13 @@ export default async function SeriesDetailPage({
   ]);
   if (!series) notFound();
 
+  const episodeYears = seasons.flatMap((season) => season.releaseYearRange?.match(/\d{4}/g) ?? []);
+  const firstEpisodeYear = episodeYears.length > 0 ? Math.min(...episodeYears.map(Number)) : null;
+  const lastEpisodeYear = episodeYears.length > 0 ? Math.max(...episodeYears.map(Number)) : null;
+  const releaseYearRange = firstEpisodeYear !== null && lastEpisodeYear !== null
+    ? (firstEpisodeYear === lastEpisodeYear ? String(firstEpisodeYear) : `${firstEpisodeYear} - ${lastEpisodeYear}`)
+    : series.date?.slice(0, 4) ?? "";
+
   return (
     <div className="relative min-h-screen text-white/90 selection:bg-red-500/30 selection:text-white font-sans overflow-hidden">
       <MediaInformation
@@ -35,6 +42,7 @@ export default async function SeriesDetailPage({
         seasons={seasons}
         backHref={returnToSearch ? query.from : undefined}
         backLabel={returnToSearch ? "返回搜索页" : undefined}
+        releaseDateLabel={releaseYearRange}
         relatedContent={series.series ? (
           <Suspense fallback={<RelatedMediaLoadingSkeleton />}>
             <RelatedSeries seriesName={series.series} currentId={series.id} />
