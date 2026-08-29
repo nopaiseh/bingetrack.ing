@@ -460,7 +460,12 @@ export async function fetchTopMediaServer(
   return mediaType === "tv_series" ? addSeriesReleaseYearRanges(db, items) : items;
 }
 
-type DistributionSourceRow = Pick<ViewAllMediaRow, "type" | "sort_date" | "release_year" | "regions" | "languages" | "genres">;
+type DistributionSourceRow = Pick<ViewAllMediaRow, "id" | "type" | "sort_date" | "release_year" | "regions" | "languages" | "genres">;
+
+type DistributionEpisodeRow = {
+  tv_seasons: { series_id: string } | Array<{ series_id: string }> | null;
+  media_items: { release_date: string | null } | Array<{ release_date: string | null }> | null;
+};
 
 type DistributionCounts = {
   regions: Map<string, number>;
@@ -503,11 +508,12 @@ export async function fetchMediaDistributionsServer(): Promise<MediaDistribution
   const db = getSupabaseServer();
   const pageSize = 1000;
   const rows: DistributionSourceRow[] = [];
+  const episodeRows: DistributionEpisodeRow[] = [];
 
   for (let offset = 0; ; offset += pageSize) {
     const { data, error } = await db
       .from("v_all_media")
-      .select("type, sort_date, release_year, regions, languages, genres")
+      .select("id, type, sort_date, release_year, regions, languages, genres")
       .range(offset, offset + pageSize - 1);
 
     if (error) {
@@ -520,6 +526,36 @@ export async function fetchMediaDistributionsServer(): Promise<MediaDistribution
     if (page.length < pageSize) break;
   }
 
+  // A TV series can span multiple release years. Use episode dates so these
+  // buckets follow the same year semantics as the dashboard's series filter.
+  for (let offset = 0; ; offset += pageSize) {
+    const { data, error } = await db
+      .from("tv_episodes")
+      .select("tv_seasons!inner(series_id), media_items!inner(release_date)")
+      .not("media_items.release_date", "is", null)
+      .range(offset, offset + pageSize - 1);
+
+    if (error) {
+      console.error("Failed to fetch TV episode release years for media distributions:", error);
+      break;
+    }
+
+    const page = (data ?? []) as DistributionEpisodeRow[];
+    episodeRows.push(...page);
+    if (page.length < pageSize) break;
+  }
+
+  const releaseYearsBySeries = new Map<string, Set<string>>();
+  for (const episode of episodeRows) {
+    const seriesId = firstRelated(episode.tv_seasons)?.series_id;
+    const releaseYear = firstRelated(episode.media_items)?.release_date?.match(/^(\d{4})-/)?.[1];
+    if (!seriesId || !releaseYear) continue;
+
+    const years = releaseYearsBySeries.get(seriesId) ?? new Set<string>();
+    years.add(releaseYear);
+    releaseYearsBySeries.set(seriesId, years);
+  }
+
   const countsByType: Record<"movies" | "series", Map<string, DistributionCounts>> = {
     movies: new Map([["All Time", createDistributionCounts()]]),
     series: new Map([["All Time", createDistributionCounts()]]),
@@ -529,9 +565,14 @@ export async function fetchMediaDistributionsServer(): Promise<MediaDistribution
     const mediaType = row.type === "movie" || row.type === "movies" ? "movies" : row.type === "tv_series" || row.type === "series" ? "series" : null;
     if (!mediaType) continue;
 
-    const year = String(row.release_year ?? row.sort_date?.slice(0, 4) ?? "").trim();
     const buckets = [countsByType[mediaType].get("All Time")!];
-    if (year) {
+
+    const fallbackYear = String(row.release_year ?? row.sort_date?.slice(0, 4) ?? "").trim();
+    const releaseYears = mediaType === "series"
+      ? releaseYearsBySeries.get(String(row.id)) ?? (fallbackYear ? new Set([fallbackYear]) : new Set<string>())
+      : fallbackYear ? new Set([fallbackYear]) : new Set<string>();
+
+    for (const year of releaseYears) {
       if (!countsByType[mediaType].has(year)) countsByType[mediaType].set(year, createDistributionCounts());
       buckets.push(countsByType[mediaType].get(year)!);
     }
