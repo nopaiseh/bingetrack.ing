@@ -92,6 +92,15 @@ function MetadataRow({ label, children }: { label: string; children: React.React
   );
 }
 
+function SectionHeading({ children }: { children: ReactNode }) {
+  return (
+    <div className="mb-3 flex items-center gap-2">
+      <div className="h-5 w-1 rounded-sm bg-red-400 shadow-[0_0_8px_rgba(248,113,113,0.6)]" />
+      <h2 className="text-sm font-bold tracking-widest text-white/90">{children}</h2>
+    </div>
+  );
+}
+
 export function MediaMetadata({ media, includePeople = true, releaseDateLabel }: { media: Media; includePeople?: boolean; releaseDateLabel?: string }) {
   return (
     <div className="flex flex-col">
@@ -135,18 +144,24 @@ export function MediaMetadata({ media, includePeople = true, releaseDateLabel }:
 
 function MediaCredits({ media }: { media: Media }) {
   return (
-    <>
-      <MetadataRow label="导演">
-        {media.directors && media.directors.length > 0
-          ? media.directors.map((director) => <SearchTag key={director} label={director} category="director" />)
-          : <span className="text-sm text-white/30 sm:pt-1">-</span>}
-      </MetadataRow>
-      <MetadataRow label="主演">
-        {media.casts && media.casts.length > 0
-          ? media.casts.map((castMember) => <SearchTag key={castMember} label={castMember} category="cast" />)
-          : <span className="text-sm text-white/30 sm:pt-1">-</span>}
-      </MetadataRow>
-    </>
+    <div className="flex flex-col gap-6">
+      <div>
+        <SectionHeading>导演</SectionHeading>
+        <div className="flex flex-wrap gap-2.5">
+          {media.directors && media.directors.length > 0
+            ? media.directors.map((director) => <SearchTag key={director} label={director} category="director" />)
+            : <span className="text-sm text-white/30">-</span>}
+        </div>
+      </div>
+      <div>
+        <SectionHeading>主演</SectionHeading>
+        <div className="flex flex-wrap gap-2.5">
+          {media.casts && media.casts.length > 0
+            ? media.casts.map((castMember) => <SearchTag key={castMember} label={castMember} category="cast" />)
+            : <span className="text-sm text-white/30">-</span>}
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -228,10 +243,7 @@ export default function MediaInformation({
               <MediaCredits media={media} />
             </div>
             <div className="border-t border-white/10 pt-6">
-              <div className="mb-3 flex items-center gap-2">
-                <div className="h-5 w-1 rounded-sm bg-red-400 shadow-[0_0_8px_rgba(248,113,113,0.6)]" />
-                <h2 className="text-sm font-bold tracking-widest text-white/90">剧情简介</h2>
-              </div>
+              <SectionHeading>剧情简介</SectionHeading>
               <p className="text-left text-sm leading-7 tracking-wide text-white/70 wrap-break-word md:text-base">
                 {media.summary || "暂无简介。"}
               </p>
