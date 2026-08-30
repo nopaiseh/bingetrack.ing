@@ -13,7 +13,7 @@ function ItemCard({ item, type }: { item: Media; type: "movies" | "series" }) {
 
   return (
     <>
-      <div className="w-full aspect-[2/3] relative flex items-center justify-center overflow-hidden bg-black/60">
+      <div className="w-full aspect-2/3 relative flex items-center justify-center overflow-hidden bg-black/60">
         {item.cover_url ? (
           <>
             {!isImageLoaded && <div className="absolute inset-0 animate-pulse bg-white/8" />}
@@ -61,7 +61,7 @@ function ItemCard({ item, type }: { item: Media; type: "movies" | "series" }) {
             <span
               key={`tag-${i}`}
               title={tag} 
-              className="w-fit min-w-[36px] shrink truncate text-center px-1.5 py-0.5 rounded-md bg-white/5 backdrop-blur-md border border-white/10 text-white/70 text-[9px] sm:text-[10px] font-medium tracking-wide transition-all duration-300 group-hover:bg-red-500/15 group-hover:text-red-300 group-hover:border-red-400/30 group-hover:shadow-[0_4px_10px_rgba(248,113,113,0.2)]"
+              className="w-fit min-w-9 shrink truncate text-center px-1.5 py-0.5 rounded-md bg-white/5 backdrop-blur-md border border-white/10 text-white/70 text-[9px] sm:text-[10px] font-medium tracking-wide transition-all duration-300 group-hover:bg-red-500/15 group-hover:text-red-300 group-hover:border-red-400/30 group-hover:shadow-[0_4px_10px_rgba(248,113,113,0.2)]"
             >
               {tag}
             </span>

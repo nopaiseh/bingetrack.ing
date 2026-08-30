@@ -47,7 +47,7 @@ export default function Navbar() {
             <Terminal className="size-4 text-red-500 group-hover:rotate-12 group-hover:drop-shadow-[0_0_10px_rgba(239,68,68,0.8)] transition-all duration-300" aria-hidden="true" />
             <span className="font-mono text-xl font-light tracking-tight drop-shadow-[0_0_12px_rgba(255,255,255,0.1)]">
               <span className="bg-clip-text text-transparent bg-linear-to-br from-white via-white/80 to-white/50">
-                bingewatch
+                bingetrack
               </span>
               <span className="text-red-500 font-black -mx-0.5 drop-shadow-[0_0_8px_rgba(239,68,68,0.8)]">
                 .
