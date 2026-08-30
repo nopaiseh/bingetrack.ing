@@ -186,19 +186,19 @@ export default async function SeasonPage({
 
         <div className="glass-panel sticky top-20 z-20 mb-6 flex flex-col justify-between gap-3 rounded-2xl p-3 sm:flex-row sm:items-center">
           <div className="flex items-center gap-2 overflow-x-auto">
-            <ListFilter className="ml-1 size-4 shrink-0 text-white/35" />
+            <ListFilter className="ml-1 size-4 shrink-0 text-white/60" />
             {(["all", "watched", "unwatched"] as const).map((value) => (
-              <Link key={value} href={seasonHref({ page: 1, status: value })} className={`shrink-0 rounded-xl border px-3 py-1.5 text-sm shadow-sm backdrop-blur-xl transition-all ${status === value ? "border-red-300/25 bg-red-400/20 text-red-200 shadow-red-950/20 ring-1 ring-inset ring-red-200/10" : "border-white/8 bg-white/4 text-white/55 hover:border-white/15 hover:bg-white/10 hover:text-white"}`}>
+              <Link key={value} href={seasonHref({ page: 1, status: value })} className={`shrink-0 rounded-lg border px-4 py-1.5 text-[13px] backdrop-blur-2xl transition-all duration-300 ${status === value ? "border-red-400/40 bg-red-500/15 font-bold text-red-400 shadow-[0_4px_10px_rgba(248,113,113,0.2)] drop-shadow-[0_0_3px_rgba(248,113,113,0.3)]" : "border-white/10 bg-white/5 text-white/70 shadow-[0_4px_10px_rgba(0,0,0,0.2)] hover:border-white/20 hover:bg-white/10 hover:text-white hover:shadow-[0_6px_15px_rgba(0,0,0,0.3)] hover:drop-shadow-[0_0_8px_rgba(255,255,255,0.5)]"}`}>
                 {{ all: "全部", watched: "已看", unwatched: "未看" }[value]}
               </Link>
             ))}
           </div>
           <div className="flex items-center gap-2 text-sm">
-            <span className="text-white/35">集数</span>
-            <Link href={seasonHref({ page: 1, order: order === "asc" ? "desc" : "asc" })} className="glass-control rounded-xl px-3 py-1.5 text-white/65 transition-all hover:border-white/20 hover:bg-white/12 hover:text-white">
+            <span className="text-white/60">集数</span>
+            <Link href={seasonHref({ page: 1, order: order === "asc" ? "desc" : "asc" })} className="rounded-lg border border-red-400/40 bg-red-500/15 px-4 py-1.5 text-[13px] font-bold text-red-400 shadow-[0_4px_10px_rgba(248,113,113,0.2)] backdrop-blur-2xl drop-shadow-[0_0_3px_rgba(248,113,113,0.3)] transition-all duration-300 hover:bg-red-500/25">
               {order === "asc" ? "升序 ↑" : "降序 ↓"}
             </Link>
-            <span className="ml-auto text-white/35 sm:ml-2">{seasonData.total} 集</span>
+            <span className="ml-auto text-white/60 sm:ml-2">{seasonData.total} 集</span>
           </div>
         </div>
 

@@ -1,5 +1,14 @@
 import { Media, ViewAllMediaRow } from "@/lib/types";
 
+const nameCollator = new Intl.Collator(undefined, {
+  numeric: true,
+  sensitivity: "base",
+});
+
+function sortNames(names: string[] | null | undefined): string[] {
+  return [...(names ?? [])].sort(nameCollator.compare);
+}
+
 /**
  * Maps a flat row from the `v_all_media` view to the frontend `Media` object.
  */
@@ -19,15 +28,15 @@ export function mapViewRowToMedia(
     release_year: item.release_year ?? "",
     runtime: item.runtime ?? null,
     rating: item.rating ?? item.average_rating ?? null,
-    genres: item.genres ?? [],
-    languages: item.languages ?? [],
-    regions: item.regions ?? [],
+    genres: sortNames(item.genres),
+    languages: sortNames(item.languages),
+    regions: sortNames(item.regions),
     status: item.status || undefined,
     summary: item.summary ?? "",
     cover_url: item.cover_url ?? "",
     casts: item.casts ?? [],
     directors: item.directors ?? [],
     type: mediaType,
-    series: overrideSeries ?? item.series ?? [],
+    series: sortNames(overrideSeries ?? item.series),
   };
 }
