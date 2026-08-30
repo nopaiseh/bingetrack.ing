@@ -101,7 +101,7 @@ function CategoryHeaderCards({
           <div className="flex items-baseline gap-2 mb-2">
             <span className="text-4xl font-mono text-white drop-shadow-[0_0_8px_rgba(255,255,255,0.2)]">{watchedCount}</span>
             <span className="text-sm text-white/50 font-medium">
-              / {totalCount} 部库藏 (已看 / 总数)
+              / {totalCount} 部 (已看 / 总数)
             </span>
           </div>
           <div className="w-full h-2 bg-white/10 rounded-full overflow-hidden shadow-inner">

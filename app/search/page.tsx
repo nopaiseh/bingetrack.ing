@@ -543,7 +543,7 @@ function SearchContent() {
                   <span className="text-red-400 drop-shadow-[0_0_5px_rgba(248,113,113,0.5)]">&quot;{query}&quot;</span> 的搜索结果
                 </>
               ) : (
-                "全部媒体"
+                "搜索结果"
               )}
             </h2>
             <div className="flex items-center gap-4">
