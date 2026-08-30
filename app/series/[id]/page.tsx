@@ -16,7 +16,7 @@ async function RelatedSeries({ seriesNames, currentId }: { seriesNames: string[]
   return (
     <div className="space-y-12">
       {relatedGroups.map(({ seriesName, items }) => (
-        <MediaRow key={seriesName} title={`《${seriesName}》系列`} items={items} type="series" />
+        <MediaRow key={seriesName} title={`《${seriesName}》系列`} items={items} />
       ))}
     </div>
   );

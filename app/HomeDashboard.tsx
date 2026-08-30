@@ -462,7 +462,7 @@ export default function HomeDashboard({
               {/* Grid set to grid-cols-2 as requested */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                 <MediaStatusCard
-                  title="已看过"
+                  title="已观看"
                   icon={CheckCircle}
                   count={watchedMovies}
                 />
