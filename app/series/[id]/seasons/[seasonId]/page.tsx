@@ -17,7 +17,7 @@ import type { EpisodeInfo } from "@/lib/types";
 
 export const revalidate = 60;
 
-const PAGE_SIZE = 30;
+const PAGE_SIZE = 10;
 type StatusFilter = "all" | "watched" | "unwatched";
 type EpisodeOrder = "asc" | "desc";
 
@@ -25,15 +25,15 @@ function EpisodeCard({ episode }: { episode: EpisodeInfo }) {
   const watched = episode.status === "watched";
 
   return (
-    <article className="glass-card group flex flex-col overflow-hidden rounded-2xl transition-colors duration-300 hover:border-red-400/30 hover:bg-white/8 sm:min-h-54 sm:flex-row">
-      <div className="relative aspect-video w-full shrink-0 bg-black/30 sm:aspect-auto sm:w-60 md:w-72">
+    <article className="glass-card group flex flex-col overflow-hidden rounded-2xl transition-colors duration-300 hover:border-red-400/30 hover:bg-white/8 sm:min-h-64 sm:flex-row">
+      <div className="relative aspect-video w-full shrink-0 bg-black/30 sm:aspect-auto sm:w-64 md:w-80">
         {episode.coverUrl ? (
           <Image
             src={episode.coverUrl}
             alt=""
             fill
             className="object-cover"
-            sizes="(min-width: 768px) 288px, (min-width: 640px) 240px, calc(100vw - 48px)"
+            sizes="(min-width: 768px) 320px, (min-width: 640px) 256px, calc(100vw - 48px)"
           />
         ) : (
           <div className="flex h-full items-center justify-center text-white/20">
