@@ -26,14 +26,14 @@ function EpisodeCard({ episode }: { episode: EpisodeInfo }) {
 
   return (
     <article className="glass-card group flex flex-col overflow-hidden rounded-2xl transition-colors duration-300 hover:border-red-400/30 hover:bg-white/8 sm:min-h-64 sm:flex-row">
-      <div className="relative aspect-video w-full shrink-0 bg-black/30 sm:aspect-auto sm:w-64 md:w-80">
+      <div className="relative aspect-video w-full shrink-0 bg-black/30 sm:aspect-auto sm:w-72 md:w-88">
         {episode.coverUrl ? (
           <Image
             src={episode.coverUrl}
             alt=""
             fill
             className="object-cover"
-            sizes="(min-width: 768px) 320px, (min-width: 640px) 256px, calc(100vw - 48px)"
+            sizes="(min-width: 768px) 352px, (min-width: 640px) 288px, calc(100vw - 48px)"
           />
         ) : (
           <div className="flex h-full items-center justify-center text-white/20">
@@ -130,9 +130,9 @@ export default async function SeasonPage({
         <header className="glass-panel relative mb-6 overflow-hidden rounded-3xl p-6 md:p-8">
           {(seasonData.season.coverUrl || series.cover_url) && <Image src={seasonData.season.coverUrl || series.cover_url} alt="" fill priority className="-z-10 object-cover opacity-10 blur-2xl" sizes="100vw" />}
           <div className="flex flex-col gap-6 sm:flex-row md:gap-8">
-            <div className="relative aspect-2/3 w-36 shrink-0 overflow-hidden rounded-2xl border border-white/15 bg-black/30 shadow-[0_12px_35px_rgba(0,0,0,0.35)] sm:w-48">
+            <div className="relative aspect-2/3 w-full max-w-72 shrink-0 self-center overflow-hidden rounded-2xl border border-white/15 bg-black/30 shadow-[0_12px_35px_rgba(0,0,0,0.35)] md:w-72 md:self-start">
               {seasonData.season.coverUrl ? (
-                <Image src={seasonData.season.coverUrl} alt={`${seasonData.season.title} 海报`} fill priority className="object-cover" sizes="(min-width: 640px) 192px, 144px" />
+                <Image src={seasonData.season.coverUrl} alt={`${seasonData.season.title} 海报`} fill priority className="object-cover" sizes="(max-width: 768px) 100vw, 288px" />
               ) : (
                 <div className="flex h-full items-center justify-center text-white/25"><ImageIcon className="size-9" aria-hidden="true" /></div>
               )}
