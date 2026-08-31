@@ -37,7 +37,7 @@ export default function Navbar() {
 
   return (
     <nav className="glass-panel fixed left-0 top-0 z-50 w-full border-x-0 border-t-0 transition-all duration-300">
-      <div className="flex items-center justify-between w-full mx-auto px-6 md:px-8 h-16 max-w-7xl">
+      <div className="flex h-16 w-full max-w-7xl items-center justify-between px-4 sm:px-6 lg:mx-auto lg:px-8">
         <div className="flex items-center gap-10">
           <Link
             href="/"
@@ -58,7 +58,7 @@ export default function Navbar() {
             </span>
           </Link>
 
-          <div className="hidden md:flex items-center gap-8 text-sm font-medium">
+          <div className="hidden lg:flex items-center gap-8 text-sm font-medium">
             {navItems.map((item) => (
               <Link
                 key={item.name}
@@ -93,7 +93,7 @@ export default function Navbar() {
               placeholder="搜索"
               className="glass-control text-white text-sm rounded-full 
               focus:bg-white/10 focus:ring-1 focus:ring-white/30 focus:border-white/30 
-              block w-44 focus:w-64 pl-10 py-1.5 transition-all duration-500 ease-out 
+              block w-36 focus:w-52 sm:w-44 lg:focus:w-64 pl-10 py-2.5 transition-all duration-500 ease-out
               placeholder-white/40 outline-none 
               shadow-[0_4px_15px_rgba(0,0,0,0.2)] 
               focus:shadow-[0_4px_25px_rgba(255,255,255,0.05)]"
@@ -101,7 +101,7 @@ export default function Navbar() {
           </form>
 
           <button
-            className="glass-control md:hidden flex items-center justify-center text-white/70 hover:text-white p-2 w-10 h-10 outline-none rounded-full 
+            className="glass-control flex size-11 items-center justify-center rounded-full p-2 text-white/70 outline-none hover:text-white lg:hidden
             hover:bg-white/10 hover:border-white/20 hover:shadow-[0_6px_20px_rgba(255,255,255,0.05)] transition-all duration-300"
             aria-label={isMobileMenuOpen ? "关闭导航菜单" : "打开导航菜单"}
             aria-expanded={isMobileMenuOpen}
@@ -113,13 +113,13 @@ export default function Navbar() {
       </div>
 
       <div
-        className={`md:hidden overflow-hidden transition-all duration-500 ease-in-out bg-white/5 backdrop-blur-3xl border-b border-white/10 shadow-[0_15px_40px_rgba(0,0,0,0.2)] ${
+        className={`overflow-hidden border-b border-white/10 bg-white/5 shadow-[0_15px_40px_rgba(0,0,0,0.2)] backdrop-blur-3xl transition-all duration-500 ease-in-out lg:hidden ${
           isMobileMenuOpen
             ? "max-h-72 opacity-100 py-4"
             : "max-h-0 opacity-0 py-0 border-transparent"
         }`}
       >
-        <div className="flex flex-col px-6 gap-4 text-base font-medium">
+        <div className="flex flex-col gap-4 px-4 text-base font-medium sm:px-6">
           {navItems.map((item) => (
             <Link
               key={item.name}

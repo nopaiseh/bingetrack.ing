@@ -32,7 +32,7 @@ export function CinematicBackground({ imageUrl }: { imageUrl: string }) {
 
 function MediaPoster({ media }: { media: Media }) {
   return (
-    <div className="w-full max-w-72 shrink-0 self-center md:w-72 md:self-start">
+    <div className="w-full max-w-72 shrink-0 self-center lg:w-72 lg:self-start">
       {/* Lighter Frosted Glass Poster */}
       <div className="aspect-2/3 w-full bg-white/5 backdrop-blur-2xl rounded-xl overflow-hidden border border-white/10 shadow-[0_15px_40px_rgba(0,0,0,0.3)] relative">
         {media.cover_url ? (
@@ -189,19 +189,19 @@ export default function MediaInformation({
     <>
       <CinematicBackground imageUrl={media.cover_url} />
 
-      <div className="container mx-auto px-6 md:px-8 max-w-7xl pt-24 pb-12 relative z-10">
+      <div className="container relative z-10 mx-auto max-w-7xl px-4 pb-12 pt-24 sm:px-6 lg:px-8">
         <Link href={backHref ?? defaultBackHref} className="glass-control group mb-6 inline-flex w-fit items-center rounded-xl px-4 py-2 text-sm font-medium text-white/70 transition-all hover:border-white/20 hover:bg-white/10 hover:text-white">
           <span className="mr-2 transition-transform duration-300 group-hover:-translate-x-1">←</span>
           {backLabel ?? defaultBackLabel}
         </Link>
 
-        <div className="glass-panel rounded-3xl p-6 md:p-8">
-          <div className="flex flex-col gap-8 md:flex-row lg:gap-12">
+        <div className="glass-panel rounded-3xl p-5 sm:p-6 lg:p-8">
+          <div className="flex flex-col gap-8 lg:flex-row lg:gap-12">
             <MediaPoster media={media} />
 
             <div className="flex flex-1 flex-col">
             <div className="mb-4 md:mb-8">
-              <h1 className="text-3xl md:text-5xl font-bold tracking-tight mt-4 mb-6 text-white text-balance drop-shadow-[0_0_15px_rgba(255,255,255,0.3)]">
+              <h1 className="text-balance mb-6 mt-4 text-3xl font-bold tracking-tight text-white drop-shadow-[0_0_15px_rgba(255,255,255,0.3)] sm:text-4xl lg:text-5xl">
                 {media.title}
               </h1>
 

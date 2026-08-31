@@ -41,7 +41,7 @@ function percent(value: number, total: number) {
 
 function DistributionCard({ title, icon: Icon, items }: { title: string; icon: LucideIcon; items: DistributionItem[] }) {
   return (
-    <div className="glass-card h-full rounded-2xl p-6 transition-all duration-300 shadow-[0_10px_30px_rgba(0,0,0,0.2)] hover:-translate-y-1 hover:bg-white/10 hover:border-white/20 hover:shadow-[0_15px_40px_rgba(0,0,0,0.3)] group">
+    <div className="glass-card group h-full rounded-2xl p-4 shadow-[0_10px_30px_rgba(0,0,0,0.2)] transition-all duration-300 hover:-translate-y-1 hover:border-white/20 hover:bg-white/10 hover:shadow-[0_15px_40px_rgba(0,0,0,0.3)] sm:p-5 lg:p-6">
       <div className="mb-5 flex h-8 items-center gap-3 text-sm text-neutral-400">
         <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-white/10 transition-colors duration-300 shadow-[0_4px_10px_rgba(0,0,0,0.1)] group-hover:bg-red-500/15 group-hover:text-red-400 group-hover:shadow-[0_4px_10px_rgba(248,113,113,0.2)]">
           <Icon className="size-4" aria-hidden="true" />
@@ -66,7 +66,7 @@ function DistributionCard({ title, icon: Icon, items }: { title: string; icon: L
 
 function DistributionTop5Cards({ distribution }: { distribution: MediaDistribution }) {
   return (
-    <div className="grid grid-cols-1 items-stretch gap-4 md:grid-cols-3 md:gap-6">
+    <div className="grid grid-cols-1 items-stretch gap-4 md:grid-cols-2 md:gap-6 lg:grid-cols-3">
       <DistributionCard title="影视产地分布 Top 5" icon={Globe2} items={distribution.regions} />
       <DistributionCard title="主要语言 Top 5" icon={Languages} items={distribution.languages} />
       <DistributionCard title="主要类型 Top 5" icon={CircleEllipsis} items={distribution.genres} />
@@ -92,8 +92,8 @@ function CategoryHeaderCards({
   avgRatingPercent: number;
 }) {
   return (
-    <div className="grid grid-cols-1 md:grid-cols-4 gap-4 md:gap-6">
-      <div className="col-span-1 md:col-span-3 glass-card rounded-2xl p-6 flex flex-col justify-center transition-all duration-300 shadow-[0_10px_30px_rgba(0,0,0,0.2)] hover:-translate-y-1 hover:bg-white/10 hover:border-white/20 hover:shadow-[0_15px_40px_rgba(0,0,0,0.3)] group">
+    <div className="grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-6 lg:grid-cols-4">
+      <div className="glass-card group col-span-1 flex flex-col justify-center rounded-2xl p-4 shadow-[0_10px_30px_rgba(0,0,0,0.2)] transition-all duration-300 hover:-translate-y-1 hover:border-white/20 hover:bg-white/10 hover:shadow-[0_15px_40px_rgba(0,0,0,0.3)] sm:p-5 lg:col-span-3 lg:p-6">
         <div className="text-white/60 mb-4 flex justify-between items-center drop-shadow-[0_0_5px_rgba(255,255,255,0.1)]">
           <i className="text-xl font-medium">{year} {categoryName} 阅览进度</i>
         </div>
@@ -116,7 +116,7 @@ function CategoryHeaderCards({
         </div>
       </div>
 
-      <div className="col-span-1 md:col-span-1 glass-card rounded-2xl p-6 flex flex-col justify-center transition-all duration-300 shadow-[0_10px_30px_rgba(0,0,0,0.2)] hover:-translate-y-1 hover:bg-white/10 hover:border-white/20 hover:shadow-[0_15px_40px_rgba(0,0,0,0.3)] group">
+      <div className="glass-card group col-span-1 flex flex-col justify-center rounded-2xl p-4 shadow-[0_10px_30px_rgba(0,0,0,0.2)] transition-all duration-300 hover:-translate-y-1 hover:border-white/20 hover:bg-white/10 hover:shadow-[0_15px_40px_rgba(0,0,0,0.3)] sm:p-5 lg:p-6">
         <div className="text-white/60 mb-4 flex justify-between items-center drop-shadow-[0_0_5px_rgba(255,255,255,0.1)]">
           <i className="text-xl font-medium">平均{categoryName}评分</i>
         </div>
@@ -155,7 +155,7 @@ function MediaStatusCard({
   episodesCount?: number;
 }) {
   return (
-    <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-xl p-5 flex flex-col gap-4 transition-all duration-300 shadow-[0_4px_15px_rgba(0,0,0,0.1)] hover:bg-white/10 hover:border-red-400/40 hover:-translate-y-1 hover:shadow-[0_8px_25px_rgba(248,113,113,0.15)] group">
+    <div className="group flex flex-col gap-4 rounded-xl border border-white/10 bg-white/5 p-4 shadow-[0_4px_15px_rgba(0,0,0,0.1)] backdrop-blur-xl transition-all duration-300 hover:-translate-y-1 hover:border-red-400/40 hover:bg-white/10 hover:shadow-[0_8px_25px_rgba(248,113,113,0.15)] sm:p-5">
       <div className="text-white/70 font-bold text-sm flex items-center gap-2 border-b border-white/10 pb-2 group-hover:text-red-300 transition-colors">
         <Icon className="size-4" aria-hidden="true" /> {title}
       </div>
@@ -280,10 +280,10 @@ export default function HomeDashboard({
   }, [selectedYear]);
 
   return (
-    <div className="container mx-auto px-6 md:px-8 max-w-7xl py-12 flex flex-col gap-6 animate-fade-in pt-24">
+    <div className="container mx-auto flex max-w-7xl animate-fade-in flex-col gap-6 px-4 py-12 pt-24 sm:px-6 lg:px-8">
       <div className="flex flex-col gap-6 md:gap-8 mb-4">
         <div>
-          <h1 className="text-4xl md:text-6xl font-mono font-bold tracking-tighter flex items-baseline gap-3">
+          <h1 className="flex flex-col gap-1 font-mono text-4xl font-bold tracking-tighter sm:flex-row sm:flex-wrap sm:items-baseline sm:gap-3 lg:text-6xl">
             <span className="text-transparent bg-clip-text bg-linear-to-r from-red-500 to-red-400 drop-shadow-[0_0_15px_rgba(248,113,113,0.3)]">
               {selectedYear}
             </span>
@@ -368,9 +368,9 @@ export default function HomeDashboard({
       <div className="w-full">
         {activeTab === "总览" && (
           <div key="overview" className="animate-fade-in flex flex-col gap-4 md:gap-6">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-6 lg:grid-cols-3">
               
-              <div className="glass-card rounded-2xl p-6 flex flex-col justify-between transition-all duration-300 shadow-[0_10px_30px_rgba(0,0,0,0.2)] hover:-translate-y-1 hover:bg-white/10 hover:border-white/20 hover:shadow-[0_15px_40px_rgba(0,0,0,0.3)] group">
+              <div className="glass-card group flex flex-col justify-between rounded-2xl p-4 shadow-[0_10px_30px_rgba(0,0,0,0.2)] transition-all duration-300 hover:-translate-y-1 hover:border-white/20 hover:bg-white/10 hover:shadow-[0_15px_40px_rgba(0,0,0,0.3)] sm:p-5 lg:p-6">
                 <div>
                   <div className="text-sm text-white/60 mb-2 flex items-center gap-2">
                     <div className="bg-white/10 p-2 rounded-lg flex items-center justify-center group-hover:bg-red-500/15 group-hover:text-red-400 transition-colors duration-300 shadow-[0_4px_10px_rgba(0,0,0,0.1)] group-hover:shadow-[0_4px_10px_rgba(248,113,113,0.2)]">
@@ -392,7 +392,7 @@ export default function HomeDashboard({
                 </p>
               </div>
 
-              <div className="glass-card rounded-2xl p-6 flex flex-col justify-between transition-all duration-300 shadow-[0_10px_30px_rgba(0,0,0,0.2)] hover:-translate-y-1 hover:bg-white/10 hover:border-white/20 hover:shadow-[0_15px_40px_rgba(0,0,0,0.3)] group">
+              <div className="glass-card group flex flex-col justify-between rounded-2xl p-4 shadow-[0_10px_30px_rgba(0,0,0,0.2)] transition-all duration-300 hover:-translate-y-1 hover:border-white/20 hover:bg-white/10 hover:shadow-[0_15px_40px_rgba(0,0,0,0.3)] sm:p-5 lg:p-6">
                 <div>
                   <div className="text-sm text-white/60 mb-2 flex items-center gap-2">
                     <div className="bg-white/10 p-2 rounded-lg flex items-center justify-center group-hover:bg-red-500/15 group-hover:text-red-400 transition-colors duration-300 shadow-[0_4px_10px_rgba(0,0,0,0.1)] group-hover:shadow-[0_4px_10px_rgba(248,113,113,0.2)]">
@@ -414,7 +414,7 @@ export default function HomeDashboard({
                 </p>
               </div>
 
-              <div className="glass-card rounded-2xl p-6 flex flex-col justify-between transition-all duration-300 shadow-[0_10px_30px_rgba(0,0,0,0.2)] hover:-translate-y-1 hover:bg-white/10 hover:border-white/20 hover:shadow-[0_15px_40px_rgba(0,0,0,0.3)] group">
+              <div className="glass-card group flex flex-col justify-between rounded-2xl p-4 shadow-[0_10px_30px_rgba(0,0,0,0.2)] transition-all duration-300 hover:-translate-y-1 hover:border-white/20 hover:bg-white/10 hover:shadow-[0_15px_40px_rgba(0,0,0,0.3)] sm:p-5 lg:p-6">
                 <div>
                   <div className="text-sm text-white/60 mb-2 flex items-center gap-2">
                     <div className="bg-white/10 p-2 rounded-lg flex items-center justify-center group-hover:bg-red-500/15 group-hover:text-red-400 transition-colors duration-300 shadow-[0_4px_10px_rgba(0,0,0,0.1)] group-hover:shadow-[0_4px_10px_rgba(248,113,113,0.2)]">
@@ -444,7 +444,7 @@ export default function HomeDashboard({
             </div>
 
             {/* Movies Section (Updated to 2 columns) */}
-            <div className="glass-card rounded-2xl p-6 flex flex-col gap-6 transition-all duration-300 shadow-[0_10px_30px_rgba(0,0,0,0.2)] hover:-translate-y-1 hover:bg-white/10 hover:border-white/20 hover:shadow-[0_15px_40px_rgba(0,0,0,0.3)] group">
+            <div className="glass-card group flex flex-col gap-6 rounded-2xl p-4 shadow-[0_10px_30px_rgba(0,0,0,0.2)] transition-all duration-300 hover:-translate-y-1 hover:border-white/20 hover:bg-white/10 hover:shadow-[0_15px_40px_rgba(0,0,0,0.3)] sm:p-5 lg:p-6">
               <div className="flex justify-between items-center border-b border-white/10 pb-3">
                 <div className="flex items-center gap-2">
                   <div className="bg-white/10 p-2 rounded-lg flex items-center justify-center group-hover:bg-red-500/15 group-hover:text-red-400 transition-colors duration-300 shadow-[0_4px_10px_rgba(0,0,0,0.1)] group-hover:shadow-[0_4px_10px_rgba(248,113,113,0.2)]">
@@ -482,7 +482,7 @@ export default function HomeDashboard({
             </div>
 
             {/* Series Section */}
-            <div className="glass-card rounded-2xl p-6 flex flex-col gap-6 transition-all duration-300 shadow-[0_10px_30px_rgba(0,0,0,0.2)] hover:-translate-y-1 hover:bg-white/10 hover:border-white/20 hover:shadow-[0_15px_40px_rgba(0,0,0,0.3)] group">
+            <div className="glass-card group flex flex-col gap-6 rounded-2xl p-4 shadow-[0_10px_30px_rgba(0,0,0,0.2)] transition-all duration-300 hover:-translate-y-1 hover:border-white/20 hover:bg-white/10 hover:shadow-[0_15px_40px_rgba(0,0,0,0.3)] sm:p-5 lg:p-6">
               <div className="flex justify-between items-center border-b border-white/10 pb-3">
                 <div className="flex items-center gap-2">
                   <div className="bg-white/10 p-2 rounded-lg flex items-center justify-center group-hover:bg-red-500/15 group-hover:text-red-400 transition-colors duration-300 shadow-[0_4px_10px_rgba(0,0,0,0.1)] group-hover:shadow-[0_4px_10px_rgba(248,113,113,0.2)]">
@@ -497,7 +497,7 @@ export default function HomeDashboard({
                 </span>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+              <div className="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3">
                 <MediaStatusCard
                   title="已观看"
                   icon={CheckCircle}

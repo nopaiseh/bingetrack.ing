@@ -25,15 +25,15 @@ function EpisodeCard({ episode }: { episode: EpisodeInfo }) {
   const watched = episode.status === "watched";
 
   return (
-    <article className="glass-card group flex flex-col overflow-hidden rounded-2xl transition-colors duration-300 hover:border-red-400/30 hover:bg-white/8 sm:min-h-64 sm:flex-row">
-      <div className="relative aspect-video w-full shrink-0 bg-black/30 sm:aspect-auto sm:w-72 md:w-88">
+    <article className="glass-card group flex flex-col overflow-hidden rounded-2xl transition-colors duration-300 hover:border-red-400/30 hover:bg-white/8 lg:min-h-64 lg:flex-row">
+      <div className="relative aspect-video w-full shrink-0 bg-black/30 lg:aspect-auto lg:w-88">
         {episode.coverUrl ? (
           <Image
             src={episode.coverUrl}
             alt=""
             fill
             className="object-cover"
-            sizes="(min-width: 768px) 352px, (min-width: 640px) 288px, calc(100vw - 48px)"
+            sizes="(min-width: 1024px) 352px, calc(100vw - 48px)"
           />
         ) : (
           <div className="flex h-full items-center justify-center text-white/20">
@@ -122,15 +122,15 @@ export default async function SeasonPage({
 
   return (
     <div className="min-h-screen pb-16 pt-24 text-neutral-200">
-      <div className="container mx-auto max-w-7xl px-6 md:px-8">
+      <div className="container mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <Link href={`/series/${id}`} className="mb-6 inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm text-white/60 backdrop-blur-xl transition-colors hover:bg-white/10 hover:text-white">
           <ChevronLeft className="size-4" /> 返回《{series.title}》
         </Link>
 
-        <header className="glass-panel relative mb-6 overflow-hidden rounded-3xl p-6 md:p-8">
+        <header className="glass-panel relative mb-6 overflow-hidden rounded-3xl p-5 sm:p-6 lg:p-8">
           {(seasonData.season.coverUrl || series.cover_url) && <Image src={seasonData.season.coverUrl || series.cover_url} alt="" fill priority className="-z-10 object-cover opacity-10 blur-2xl" sizes="100vw" />}
-          <div className="flex flex-col gap-6 sm:flex-row md:gap-8">
-            <div className="relative aspect-2/3 w-full max-w-72 shrink-0 self-center overflow-hidden rounded-2xl border border-white/15 bg-black/30 shadow-[0_12px_35px_rgba(0,0,0,0.35)] md:w-72 md:self-start">
+          <div className="flex flex-col gap-6 lg:flex-row lg:gap-8">
+            <div className="relative aspect-2/3 w-full max-w-72 shrink-0 self-center overflow-hidden rounded-2xl border border-white/15 bg-black/30 shadow-[0_12px_35px_rgba(0,0,0,0.35)] lg:w-72 lg:self-start">
               {seasonData.season.coverUrl ? (
                 <Image src={seasonData.season.coverUrl} alt={`${seasonData.season.title} 海报`} fill priority className="object-cover" sizes="(max-width: 768px) 100vw, 288px" />
               ) : (
@@ -170,7 +170,7 @@ export default async function SeasonPage({
           </div>
         </header>
 
-        <section className="mb-6 grid grid-cols-2 gap-3 md:grid-cols-4" aria-label="本季统计">
+        <section className="mb-6 grid grid-cols-2 gap-3 lg:grid-cols-4" aria-label="本季统计">
           {[
             ["观看进度", `${seasonData.watchedCount} / ${seasonData.season.episodeCount}`],
             ["完成比例", `${watchedPercent}%`],

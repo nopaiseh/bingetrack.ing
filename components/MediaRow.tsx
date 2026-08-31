@@ -24,7 +24,7 @@ function ItemCard({ item, type }: { item: Media; type: "movies" | "series" }) {
               className={`object-cover transition-[opacity,transform,filter] duration-500 group-hover:scale-110 ${
                 isImageLoaded ? "opacity-100 blur-none" : "opacity-0 blur-sm"
               }`}
-              sizes="176px"
+              sizes="(max-width: 639px) 144px, 176px"
               onLoad={() => setIsImageLoaded(true)}
             />
           </>
@@ -100,14 +100,14 @@ export default function MediaRow({
       </div>
       
       {/* FIX: Changed py-4 to pt-4 pb-12 and added -mb-8 to offset the extra padding visually so the layout doesn't break */}
-      <div className="flex space-x-4 overflow-x-auto no-scrollbar pt-4 pb-12 -mb-8 px-1 snap-x snap-mandatory scroll-pl-2">
+      <div className="no-scrollbar -mb-8 flex snap-x snap-mandatory space-x-4 overflow-x-auto px-1 pb-12 pr-5 pt-4 scroll-pl-2">
         {items.map((media: Media) => {
           const mediaType = type ?? media.type ?? "movies";
           return (
             <Link
               href={`/${mediaType}/${media.id}`}
               key={media.id}
-              className="glass-card group flex w-44 flex-none snap-start cursor-pointer flex-col overflow-hidden rounded-xl transition-all duration-300 hover:-translate-y-1.5 hover:border-red-400/40 hover:bg-white/10 hover:shadow-[0_15px_40px_rgba(248,113,113,0.2)]"
+              className="glass-card group flex w-36 flex-none snap-start cursor-pointer flex-col overflow-hidden rounded-xl transition-all duration-300 hover:-translate-y-1.5 hover:border-red-400/40 hover:bg-white/10 hover:shadow-[0_15px_40px_rgba(248,113,113,0.2)] sm:w-44"
             >
               <ItemCard item={media} type={mediaType} />
             </Link>

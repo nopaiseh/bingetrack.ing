@@ -4,7 +4,7 @@ function Pulse({ className }: { className: string }) {
 
 function PosterSkeleton() {
   return (
-    <div className="glass-card w-44 shrink-0 overflow-hidden rounded-xl">
+    <div className="glass-card w-36 shrink-0 overflow-hidden rounded-xl sm:w-44">
       <Pulse className="aspect-2/3 w-full rounded-none" />
       <div className="space-y-2 p-3">
         <Pulse className="h-4 w-3/4" />
@@ -31,10 +31,10 @@ function PosterRowSkeleton() {
 
 export function CatalogLoadingSkeleton() {
   return (
-    <div className="container mx-auto max-w-7xl px-6 pb-12 pt-26 md:px-8" aria-label="正在加载媒体目录">
-      <div className="mb-16 grid grid-cols-2 gap-4 md:grid-cols-4">
+    <div className="container mx-auto max-w-7xl px-4 pb-12 pt-26 sm:px-6 lg:px-8" aria-label="正在加载媒体目录">
+      <div className="mb-10 grid grid-cols-2 gap-4 md:mb-12 lg:mb-16 lg:grid-cols-4">
         {Array.from({ length: 4 }, (_, index) => (
-          <div key={index} className="glass-card space-y-3 rounded-2xl p-6">
+          <div key={index} className="glass-card space-y-3 rounded-2xl p-4 sm:p-5 lg:p-6">
             <Pulse className="h-3 w-24" />
             <Pulse className="h-9 w-16" />
           </div>
@@ -50,9 +50,9 @@ export function CatalogLoadingSkeleton() {
 
 export function HomeLoadingSkeleton() {
   return (
-    <div className="container mx-auto flex max-w-7xl flex-col gap-8 px-6 pb-12 pt-24 md:px-8" aria-label="正在加载首页">
+    <div className="container mx-auto flex max-w-7xl flex-col gap-8 px-4 pb-12 pt-24 sm:px-6 lg:px-8" aria-label="正在加载首页">
       <Pulse className="h-14 w-72 max-w-full" />
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
         {Array.from({ length: 3 }, (_, index) => <Pulse key={index} className="h-40" />)}
       </div>
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
@@ -66,9 +66,9 @@ export function HomeLoadingSkeleton() {
 
 export function DetailLoadingSkeleton() {
   return (
-    <div className="container mx-auto max-w-7xl px-6 pb-12 pt-24 md:px-8" aria-label="正在加载媒体详情">
-      <div className="flex flex-col gap-12 md:flex-row lg:gap-20">
-        <div className="w-full shrink-0 space-y-6 md:w-72">
+    <div className="container mx-auto max-w-7xl px-4 pb-12 pt-24 sm:px-6 lg:px-8" aria-label="正在加载媒体详情">
+      <div className="flex flex-col gap-12 lg:flex-row lg:gap-20">
+        <div className="w-full shrink-0 space-y-6 lg:w-72">
           <Pulse className="h-10 w-28" />
           <Pulse className="aspect-2/3 w-full" />
         </div>

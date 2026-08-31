@@ -63,7 +63,7 @@ function SearchMediaCard({ item, returnHref }: { item: Media; returnHref: string
               className={`object-cover transition-all duration-700 z-10 group-hover:scale-110 ${
                 isImageLoaded ? "opacity-100 blur-none" : "opacity-0 blur-md scale-105"
               }`}
-              sizes="(max-width: 768px) 50vw, (max-width: 1200px) 25vw, 16vw"
+              sizes="(max-width: 639px) 50vw, (max-width: 1023px) 33vw, (max-width: 1279px) 20vw, 16vw"
               onLoad={() => setIsImageLoaded(true)}
             />
           </>
@@ -72,7 +72,7 @@ function SearchMediaCard({ item, returnHref }: { item: Media; returnHref: string
         )}
       </div>
 
-      <div className="flex flex-col space-y-1.5 grow px-3 py-2.5">
+      <div className="flex min-h-28 grow flex-col space-y-1.5 px-3 py-2.5">
         <h3 className="text-sm font-bold text-white truncate drop-shadow-[0_0_8px_rgba(255,255,255,0.2)] group-hover:text-red-300 group-hover:drop-shadow-[0_0_5px_rgba(248,113,113,0.6)] transition-colors duration-300" title={item.title}>
           {item.title}
         </h3>
@@ -182,7 +182,7 @@ function SearchContent() {
     const handleScroll = () => {
       setShowScrollTop(window.scrollY > 500);
     };
-    window.addEventListener("scroll", handleScroll);
+    window.addEventListener("scroll", handleScroll, { passive: true });
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
@@ -352,11 +352,11 @@ function SearchContent() {
 
   return (
     <div className="min-h-screen text-neutral-200 pt-24 pb-12 selection:bg-red-500/30 selection:text-white font-sans relative">
-      <div className="container mx-auto px-6 md:px-8 max-w-7xl relative z-1">
+      <div className="container relative z-1 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         
         {/* Search Input Section */}
         <div className="mb-8">
-          <div className="relative group">
+          <div className="group relative grid gap-2 sm:block">
             <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none z-10">
               <Search className="size-4 text-white/50 group-focus-within:text-red-400 group-focus-within:drop-shadow-[0_0_5px_rgba(248,113,113,0.6)] transition-all duration-300" aria-hidden="true" />
             </div>
@@ -369,10 +369,10 @@ function SearchContent() {
                 setQuery(e.target.value);
               }}
               placeholder="搜索电影、电视剧、导演或演员..."
-              className="glass-control relative z-0 w-full rounded-2xl py-5 pl-12 pr-40 text-lg text-white outline-none transition-all duration-500 placeholder:text-white/50 focus:border-red-400/50 focus:bg-white/10 focus:ring-1 focus:ring-red-400/50 focus:shadow-[0_6px_30px_rgba(248,113,113,0.2)]"
+              className="glass-control relative z-0 w-full rounded-2xl py-4 pl-12 pr-12 text-base text-white outline-none transition-all duration-500 placeholder:text-white/50 focus:border-red-400/50 focus:bg-white/10 focus:ring-1 focus:ring-red-400/50 focus:shadow-[0_6px_30px_rgba(248,113,113,0.2)] sm:py-5 sm:pr-40 sm:text-lg"
             />
 
-            <div className="absolute inset-y-0 right-0 pr-4 flex items-center gap-3 z-10">
+            <div className="z-10 flex min-h-11 items-center justify-end gap-3 sm:absolute sm:inset-y-0 sm:right-0 sm:pr-4">
               {query && (
                 <button onClick={() => {
                   resetPagination();
@@ -381,11 +381,11 @@ function SearchContent() {
                   <X className="size-5" aria-hidden="true" />
                 </button>
               )}
-              <div className="h-6 w-px bg-white/20"></div>
+              <div className="hidden h-6 w-px bg-white/20 sm:block"></div>
               
               <button
                 onClick={() => setShowAdvanced(!showAdvanced)}
-                className={`relative flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all duration-300 backdrop-blur-2xl ${
+                className={`relative flex min-h-11 items-center gap-2 rounded-xl px-4 py-2 text-sm font-medium transition-all duration-300 backdrop-blur-2xl ${
                   showAdvanced
                     ? "bg-red-500/15 text-red-400 border border-red-400/40 shadow-[0_4px_15px_rgba(248,113,113,0.2)] drop-shadow-[0_0_3px_rgba(248,113,113,0.3)]"
                     : "bg-white/5 text-white/70 border border-white/10 shadow-[0_4px_15px_rgba(0,0,0,0.2)] hover:bg-white/10 hover:text-white hover:border-white/20 hover:drop-shadow-[0_0_8px_rgba(255,255,255,0.5)] hover:shadow-[0_6px_20px_rgba(0,0,0,0.3)]"
@@ -401,21 +401,21 @@ function SearchContent() {
           </div>
 
           {showAdvanced && (
-            <div className="glass-panel mt-4 rounded-2xl p-6 transition-all duration-300 origin-top animate-in slide-in-from-top-2 fade-in">
+            <div className="glass-panel mt-4 origin-top rounded-2xl p-4 transition-all duration-300 animate-in slide-in-from-top-2 fade-in sm:p-6">
               <div className="flex flex-col">
                 {BUTTON_CATEGORIES.map((category) => {
                   const activeSelections = filters[category.id] || [];
                   const isAllSelected = activeSelections.length === 0;
 
                   return (
-                    <div key={category.id} className="flex items-start py-4 border-b border-white/10">
+                    <div key={category.id} className="flex flex-col items-start gap-3 border-b border-white/10 py-4 sm:flex-row sm:gap-0">
                       <span className="text-white/60 text-sm font-medium w-16 shrink-0 mt-1.5 tracking-wider drop-shadow-[0_0_5px_rgba(255,255,255,0.1)]">
                         {category.label}
                       </span>
                       <div className="flex flex-wrap gap-x-3 gap-y-2 flex-1 items-center">
                         <button
                           onClick={() => toggleFilter(category.id, "全部", category.multiSelect, category.options)}
-                          className={`px-4 py-1.5 rounded-lg text-[13px] transition-all duration-300 backdrop-blur-2xl ${
+                          className={`min-h-10 rounded-lg px-4 py-1.5 text-[13px] transition-all duration-300 backdrop-blur-2xl ${
                             isAllSelected
                               ? "bg-red-500/15 text-red-400 font-bold border border-red-400/40 shadow-[0_4px_10px_rgba(248,113,113,0.2)] drop-shadow-[0_0_3px_rgba(248,113,113,0.3)]"
                               : "bg-white/5 text-white/70 border border-white/10 shadow-[0_4px_10px_rgba(0,0,0,0.2)] hover:bg-white/10 hover:text-white hover:border-white/20 hover:shadow-[0_6px_15px_rgba(0,0,0,0.3)] hover:drop-shadow-[0_0_8px_rgba(255,255,255,0.5)]"
@@ -430,7 +430,7 @@ function SearchContent() {
                             <button
                               key={option}
                               onClick={() => toggleFilter(category.id, option, category.multiSelect, category.options)}
-                              className={`group flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-[13px] transition-all duration-300 backdrop-blur-2xl ${
+                              className={`group flex min-h-10 items-center gap-1.5 rounded-lg px-4 py-1.5 text-[13px] transition-all duration-300 backdrop-blur-2xl ${
                                 isSelected
                                   ? "bg-red-500/15 text-red-400 font-bold border border-red-400/40 shadow-[0_4px_10px_rgba(248,113,113,0.2)] drop-shadow-[0_0_3px_rgba(248,113,113,0.3)]"
                                   : "bg-white/5 text-white/70 border border-white/10 shadow-[0_4px_10px_rgba(0,0,0,0.2)] hover:bg-white/10 hover:text-white hover:border-white/20 hover:shadow-[0_6px_15px_rgba(0,0,0,0.3)] hover:drop-shadow-[0_0_8px_rgba(255,255,255,0.5)]"
@@ -448,17 +448,17 @@ function SearchContent() {
                   );
                 })}
 
-                <div className="flex items-center py-4 border-b border-white/10">
+                <div className="flex flex-col items-start gap-3 border-b border-white/10 py-4 sm:flex-row sm:items-center sm:gap-0">
                   <span className="text-white/60 text-sm font-medium w-16 shrink-0 tracking-wider drop-shadow-[0_0_5px_rgba(255,255,255,0.1)]">
                     年份
                   </span>
-                  <div className="flex items-center gap-4">
+                  <div className="flex w-full flex-col items-start gap-3 sm:w-auto sm:flex-row sm:items-center sm:gap-4">
                     <button
                       onClick={() => {
                         resetPagination();
                         setFilters((prev) => ({ ...prev, year: [] }));
                       }}
-                      className={`px-4 py-1.5 rounded-lg text-[13px] transition-all duration-300 backdrop-blur-2xl ${
+                      className={`min-h-10 rounded-lg px-4 py-1.5 text-[13px] transition-all duration-300 backdrop-blur-2xl ${
                         !filters.year?.length || (filters.year[0] === "" && filters.year[1] === "")
                           ? "bg-red-500/15 text-red-400 font-bold border border-red-400/40 shadow-[0_4px_10px_rgba(248,113,113,0.2)] drop-shadow-[0_0_3px_rgba(248,113,113,0.3)]"
                           : "bg-white/5 text-white/70 border border-white/10 shadow-[0_4px_10px_rgba(0,0,0,0.2)] hover:bg-white/10 hover:text-white hover:border-white/20 hover:shadow-[0_6px_15px_rgba(0,0,0,0.3)] hover:drop-shadow-[0_0_8px_rgba(255,255,255,0.5)]"
@@ -467,12 +467,12 @@ function SearchContent() {
                       全部
                     </button>
 
-                    <div className="flex items-center gap-2">
+                    <div className="grid w-full grid-cols-[1fr_auto_1fr] items-center gap-2 sm:flex sm:w-auto">
                       <div className="relative group">
                         <select
                           value={filters.year?.[0] || ""}
                           onChange={(e) => handleYearChange("start", e.target.value)}
-                          className="appearance-none bg-white/5 backdrop-blur-2xl border border-white/10 text-white text-[13px] rounded-lg pl-3 pr-8 py-1.5 focus:border-red-400/50 focus:bg-white/10 outline-none hover:bg-white/10 hover:border-white/20 hover:shadow-[0_6px_15px_rgba(0,0,0,0.3)] transition-all cursor-pointer min-w-25 shadow-[0_4px_10px_rgba(0,0,0,0.2)]"
+                          className="min-h-10 w-full min-w-0 cursor-pointer appearance-none rounded-lg border border-white/10 bg-white/5 py-1.5 pl-3 pr-8 text-[13px] text-white shadow-[0_4px_10px_rgba(0,0,0,0.2)] backdrop-blur-2xl transition-all outline-none hover:border-white/20 hover:bg-white/10 hover:shadow-[0_6px_15px_rgba(0,0,0,0.3)] focus:border-red-400/50 focus:bg-white/10 sm:min-w-25"
                         >
                           <option value="" disabled hidden className="bg-neutral-900 text-neutral-300">开始年份</option>
                           {yearOptions.map((y) => (
@@ -488,7 +488,7 @@ function SearchContent() {
                         <select
                           value={filters.year?.[1] || ""}
                           onChange={(e) => handleYearChange("end", e.target.value)}
-                          className="appearance-none bg-white/5 backdrop-blur-2xl border border-white/10 text-white text-[13px] rounded-lg pl-3 pr-8 py-1.5 focus:border-red-400/50 focus:bg-white/10 outline-none hover:bg-white/10 hover:border-white/20 hover:shadow-[0_6px_15px_rgba(0,0,0,0.3)] transition-all cursor-pointer min-w-25 shadow-[0_4px_10px_rgba(0,0,0,0.2)]"
+                          className="min-h-10 w-full min-w-0 cursor-pointer appearance-none rounded-lg border border-white/10 bg-white/5 py-1.5 pl-3 pr-8 text-[13px] text-white shadow-[0_4px_10px_rgba(0,0,0,0.2)] backdrop-blur-2xl transition-all outline-none hover:border-white/20 hover:bg-white/10 hover:shadow-[0_6px_15px_rgba(0,0,0,0.3)] focus:border-red-400/50 focus:bg-white/10 sm:min-w-25"
                         >
                           <option value="" disabled hidden className="bg-neutral-900 text-neutral-300">最终年份</option>
                           {yearOptions.map((y) => (
@@ -501,7 +501,7 @@ function SearchContent() {
                   </div>
                 </div>
 
-                <div className="flex items-start py-4">
+                <div className="flex flex-col items-start gap-3 py-4 sm:flex-row sm:gap-0">
                   <span className="text-white/60 text-sm font-medium w-16 shrink-0 mt-1.5 tracking-wider drop-shadow-[0_0_5px_rgba(255,255,255,0.1)]">
                     排序
                   </span>
@@ -515,7 +515,7 @@ function SearchContent() {
                         <button
                           key={option.id}
                           onClick={() => handleSortToggle(option.id)}
-                          className={`group flex items-center gap-2 px-4 py-1.5 rounded-lg text-[13px] transition-all duration-300 backdrop-blur-2xl ${
+                          className={`group flex min-h-10 items-center gap-2 rounded-lg px-4 py-1.5 text-[13px] transition-all duration-300 backdrop-blur-2xl ${
                             isSelected
                               ? "bg-red-500/15 text-red-400 font-bold border border-red-400/40 shadow-[0_4px_10px_rgba(248,113,113,0.2)] drop-shadow-[0_0_3px_rgba(248,113,113,0.3)]"
                               : "bg-white/5 text-white/70 border border-white/10 shadow-[0_4px_10px_rgba(0,0,0,0.2)] hover:bg-white/10 hover:text-white hover:border-white/20 hover:shadow-[0_6px_15px_rgba(0,0,0,0.3)] hover:drop-shadow-[0_0_8px_rgba(255,255,255,0.5)]"
@@ -536,7 +536,7 @@ function SearchContent() {
         </div>
 
         <main ref={resultsRef} className="w-full scroll-mt-24">
-          <div className="flex items-center justify-between mb-8">
+          <div className="mb-8 flex flex-col items-start justify-between gap-3 sm:flex-row sm:items-center">
             <h2 className="text-2xl font-bold text-white tracking-wide drop-shadow-[0_0_10px_rgba(255,255,255,0.2)]">
               {query ? (
                 <>
@@ -546,7 +546,7 @@ function SearchContent() {
                 "搜索结果"
               )}
             </h2>
-            <div className="flex items-center gap-4">
+            <div className="flex w-full flex-wrap items-center justify-between gap-3 sm:w-auto sm:justify-end sm:gap-4">
               {hasActiveFilters && (
                 <button
                   onClick={() => {
@@ -608,7 +608,7 @@ function SearchContent() {
 
       <button
         onClick={scrollToTop}
-        className={`fixed bottom-22 right-12 w-12 h-12 rounded-full bg-white/5 backdrop-blur-2xl border border-white/10 text-white/70 flex items-center justify-center shadow-[0_4px_15px_rgba(0,0,0,0.2)] transition-all duration-300 z-50 hover:bg-white/10 hover:text-red-400 hover:border-red-400/50 hover:shadow-[0_6px_25px_rgba(248,113,113,0.3)] hover:drop-shadow-[0_0_5px_rgba(248,113,113,0.5)] hover:scale-105 ${
+        className={`fixed bottom-22 right-4 z-50 flex size-12 items-center justify-center rounded-full border border-white/10 bg-white/5 text-white/70 shadow-[0_4px_15px_rgba(0,0,0,0.2)] backdrop-blur-2xl transition-all duration-300 hover:scale-105 hover:border-red-400/50 hover:bg-white/10 hover:text-red-400 hover:shadow-[0_6px_25px_rgba(248,113,113,0.3)] hover:drop-shadow-[0_0_5px_rgba(248,113,113,0.5)] sm:right-8 lg:right-12 ${
           showScrollTop ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10 pointer-events-none"
         }`}
       >
