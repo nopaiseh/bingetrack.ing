@@ -1,12 +1,11 @@
 "use client";
 
-import Link from "next/link";
 import { useState, useEffect, Suspense, useCallback, useRef } from "react";
-import Image from "next/image";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { getSupabaseBrowser } from "@/utils/supabase-client";
 import { Media } from "@/lib/types";
-import { ArrowDown, ArrowUp, ChevronDown, ChevronLeft, ChevronRight, ImageIcon, LoaderCircle, Search, SlidersHorizontal, Star, X } from "lucide-react";
+import { SearchMediaCard, SearchMediaCardSkeleton } from "@/components/SearchMediaCard";
+import { ArrowDown, ArrowUp, ChevronDown, ChevronLeft, ChevronRight, LoaderCircle, Search, SlidersHorizontal, X } from "lucide-react";
 
 const PAGE_SIZE = 30;
 
@@ -15,107 +14,6 @@ function pageNumbers(current: number, total: number) {
   const end = Math.min(total, start + 4);
   return Array.from({ length: end - start + 1 }, (_, index) => start + index);
 }
-
-// --- NEW: Premium Skeleton Component ---
-function MediaCardSkeleton() {
-  return (
-    <div className="glass-card flex flex-col overflow-hidden rounded-xl">
-      <div className="w-full aspect-2/3 bg-white/5 animate-pulse relative overflow-hidden">
-        {/* Soft shimmer gradient */}
-        <div className="absolute inset-0 bg-linear-to-tr from-transparent via-white/5 to-transparent animate-pulse" />
-      </div>
-      <div className="flex flex-col space-y-3 grow px-3 py-3">
-        <div className="h-4 w-3/4 bg-white/10 rounded-md animate-pulse"></div>
-        <div className="flex justify-between items-center mt-1">
-          <div className="h-3 w-8 bg-white/5 rounded-md animate-pulse"></div>
-          <div className="h-3 w-10 bg-white/5 rounded-md animate-pulse"></div>
-        </div>
-        <div className="flex gap-1.5 mt-1">
-          <div className="h-4 w-10 bg-white/5 rounded-md animate-pulse"></div>
-          <div className="h-4 w-12 bg-white/5 rounded-md animate-pulse"></div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// --- NEW: Isolated Media Card for Image Loading State ---
-function SearchMediaCard({ item, returnHref }: { item: Media; returnHref: string }) {
-  const [isImageLoaded, setIsImageLoaded] = useState(false);
-
-  return (
-    <Link
-      href={`/${item.type}/${item.id}?from=${encodeURIComponent(returnHref)}`}
-      className="glass-card group flex cursor-pointer flex-col overflow-hidden rounded-xl transition-all duration-300 hover:-translate-y-1.5 hover:border-red-400/40 hover:bg-white/10 hover:shadow-[0_15px_40px_rgba(248,113,113,0.2)]"
-    >
-      <div className="w-full aspect-2/3 relative flex items-center justify-center overflow-hidden bg-black/40">
-        {item.cover_url ? (
-          <>
-            {/* Elegant pulse while image file downloads */}
-            {!isImageLoaded && (
-              <div className="absolute inset-0 bg-white/5 animate-pulse z-0" />
-            )}
-            
-            <Image
-              src={item.cover_url}
-              alt={item.title}
-              fill
-              className={`object-cover transition-all duration-700 z-10 group-hover:scale-110 ${
-                isImageLoaded ? "opacity-100 blur-none" : "opacity-0 blur-md scale-105"
-              }`}
-              sizes="(max-width: 639px) 50vw, (max-width: 1023px) 33vw, (max-width: 1279px) 20vw, 16vw"
-              onLoad={() => setIsImageLoaded(true)}
-            />
-          </>
-        ) : (
-          <ImageIcon className="size-10 text-white/20 drop-shadow-md" aria-hidden="true" />
-        )}
-      </div>
-
-      <div className="flex min-h-28 grow flex-col space-y-1.5 px-3 py-2.5">
-        <h3 className="text-sm font-bold text-white truncate drop-shadow-[0_0_8px_rgba(255,255,255,0.2)] group-hover:text-red-300 group-hover:drop-shadow-[0_0_5px_rgba(248,113,113,0.6)] transition-colors duration-300" title={item.title}>
-          {item.title}
-        </h3>
-
-        <div className="flex justify-between items-center text-xs">
-          <span className="text-white/60 font-medium">
-            {item.date ? item.date.substring(0, 4) : "未知"}
-          </span>
-          <span className="text-white font-bold flex items-center gap-1 drop-shadow-sm">
-            {item.rating ? (
-              <>
-                <Star className="size-3 fill-current text-yellow-500/90 drop-shadow-[0_0_5px_rgba(234,179,8,0.6)]" aria-hidden="true" />
-                {Number(item.rating).toFixed(1)}
-              </>
-            ) : (
-              <span className="text-white/50">未评分</span>
-            )}
-          </span>
-        </div>
-
-        <div className="flex flex-wrap gap-1.5 mt-1.5">
-          {(item.genres ?? []).slice(0, 3).map((g: string, i: number) => (
-            <span
-              key={`g-${i}`}
-              className="inline-flex items-center px-1.5 py-0.5 rounded-md bg-white/5 backdrop-blur-md border border-white/10 text-white/70 text-[10px] font-medium tracking-wide transition-all duration-300 group-hover:bg-red-500/15 group-hover:text-red-300 group-hover:border-red-400/30 group-hover:shadow-[0_4px_10px_rgba(248,113,113,0.2)]"
-            >
-              {g}
-            </span>
-          ))}
-          {(item.languages ?? []).slice(0, 2).map((l: string, i: number) => (
-            <span
-              key={`l-${i}`}
-              className="inline-flex items-center px-1.5 py-0.5 rounded-md bg-white/5 backdrop-blur-md border border-white/10 text-white/70 text-[10px] font-medium tracking-wide transition-all duration-300 group-hover:bg-red-500/15 group-hover:text-red-300 group-hover:border-red-400/30 group-hover:shadow-[0_4px_10px_rgba(248,113,113,0.2)]"
-            >
-              {l}
-            </span>
-          ))}
-        </div>
-      </div>
-    </Link>
-  );
-}
-
 
 function SearchContent() {
   const router = useRouter();
@@ -156,6 +54,7 @@ function SearchContent() {
 
   const [mediaItems, setMediaItems] = useState<Media[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [requestError, setRequestError] = useState<string | null>(null);
   const [total, setTotal] = useState(0);
   const [showScrollTop, setShowScrollTop] = useState(false);
   const resultsRef = useRef<HTMLElement | null>(null);
@@ -251,6 +150,7 @@ function SearchContent() {
       params.set("offset", ((page - 1) * PAGE_SIZE).toString());
 
       try {
+        setRequestError(null);
         const res = await fetch(`/api/media?${params.toString()}`, { signal: controller.signal });
         if (!res.ok) throw new Error(`Media request failed with status ${res.status}`);
         const json: { rows?: Media[]; total?: number } = await res.json();
@@ -259,6 +159,7 @@ function SearchContent() {
       } catch (error) {
         if (error instanceof DOMException && error.name === "AbortError") return;
         console.error("Failed to fetch media:", error);
+        setRequestError("暂时无法加载搜索结果，请稍后重试。");
         setMediaItems([]);
         setTotal(0);
       } finally {
@@ -559,10 +460,16 @@ function SearchContent() {
                 </button>
               )}
               <span className="min-w-32 text-center text-sm px-4 py-1.5 bg-white/5 backdrop-blur-2xl rounded-full border border-white/10 text-white font-medium shadow-[0_4px_10px_rgba(0,0,0,0.2)] drop-shadow-[0_0_8px_rgba(255,255,255,0.1)] transition-all">
-                {isLoading ? "加载中..." : `找到 ${total} 部作品`}
+                {isLoading ? "加载中..." : requestError ? "加载失败" : `找到 ${total} 部作品`}
               </span>
             </div>
           </div>
+
+          {requestError && (
+            <div role="alert" className="mb-6 rounded-xl border border-red-400/30 bg-red-500/10 px-4 py-3 text-sm text-red-200">
+              {requestError}
+            </div>
+          )}
 
           <div
             className={`relative grid grid-cols-2 items-start gap-4 transition-opacity duration-200 sm:grid-cols-3 md:gap-6 lg:grid-cols-5 xl:grid-cols-6 ${
@@ -575,9 +482,9 @@ function SearchContent() {
             {/* Match the final page geometry while results are loading. */}
             {isLoading && mediaItems.length === 0 ? (
               [...Array(PAGE_SIZE)].map((_, i) => (
-                <MediaCardSkeleton key={`loading-initial-${i}`} />
+                <SearchMediaCardSkeleton key={`loading-initial-${i}`} />
               ))
-            ) : mediaItems.length > 0 ? (
+            ) : requestError ? null : mediaItems.length > 0 ? (
               mediaItems.map((item) => (
                 <SearchMediaCard key={`${item.type}-${item.id}`} item={item} returnHref={returnHref} />
               ))

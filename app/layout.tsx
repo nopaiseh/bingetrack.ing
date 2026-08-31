@@ -2,10 +2,24 @@ import type { Metadata } from "next";
 import { GeistMono } from 'geist/font/mono';
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import { SITE_URL } from "@/lib/site";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "bingetrack.ing - 个人媒体记录平台",
+  metadataBase: new URL(SITE_URL),
+  title: {
+    default: "bingetrack.ing - 个人媒体记录平台",
+    template: "%s | bingetrack.ing",
+  },
+  description: "记录、检索并回顾电影与电视剧观看历程。",
+  applicationName: "bingetrack.ing",
+  openGraph: {
+    type: "website",
+    locale: "zh_CN",
+    siteName: "bingetrack.ing",
+    title: "bingetrack.ing - 个人媒体记录平台",
+    description: "记录、检索并回顾电影与电视剧观看历程。",
+  },
 };
 
 export default function RootLayout({

@@ -1,13 +1,12 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useEffect } from "react";
 import MediaRow from "@/components/MediaRow";
+import DashboardYearPicker from "@/components/DashboardYearPicker";
 import { DistributionItem, Media, MediaDistribution, MediaDistributions, Summary } from "@/lib/types";
 import {
-  CalendarDays,
   ChartPie,
   CheckCircle,
-  ChevronDown,
   CircleEllipsis,
   Film,
   Globe2,
@@ -202,17 +201,9 @@ export default function HomeDashboard({
   const tabs = ["总览", "电影", "电视剧"];
 
   const [selectedYear, setSelectedYear] = useState("All Time");
-  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const dropdownRef = useRef<HTMLDivElement>(null);
-  const [searchQuery, setSearchQuery] = useState("");
   const [displayedTopMovies, setDisplayedTopMovies] = useState(topMovies);
   const [displayedTopSeries, setDisplayedTopSeries] = useState(topSeries);
-
-  const filteredYears = summary
-    .map((item) => item.release_year)
-    .filter((release_year) =>
-      String(release_year).toLowerCase().includes(searchQuery.toLowerCase()),
-    );
+  const [topMediaError, setTopMediaError] = useState<string | null>(null);
 
   const currentYearData = summary.find(
     (item) => String(item.release_year) === String(selectedYear),
@@ -244,17 +235,6 @@ export default function HomeDashboard({
   const runtimePercent = percent(watchedRuntime, totalRuntime);
 
   useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        setIsDropdownOpen(false);
-        setSearchQuery("");
-      }
-    }
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
-
-  useEffect(() => {
     if (selectedYear === "All Time") {
       return;
     }
@@ -262,6 +242,7 @@ export default function HomeDashboard({
     const controller = new AbortController();
     const loadTopMedia = async () => {
       try {
+        setTopMediaError(null);
         const [moviesResponse, seriesResponse] = await Promise.all([
           fetch(`/api/top-media?type=movie&year=${encodeURIComponent(selectedYear)}&limit=10`, { signal: controller.signal }),
           fetch(`/api/top-media?type=tv_series&year=${encodeURIComponent(selectedYear)}&limit=10`, { signal: controller.signal }),
@@ -271,7 +252,10 @@ export default function HomeDashboard({
         setDisplayedTopMovies(movies);
         setDisplayedTopSeries(series);
       } catch (error) {
-        if ((error as Error).name !== "AbortError") console.error(error);
+        if ((error as Error).name !== "AbortError") {
+          console.error(error);
+          setTopMediaError("年度精选暂时无法加载，请稍后重试。");
+        }
       }
     };
 
@@ -293,11 +277,13 @@ export default function HomeDashboard({
 
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-white/10 pb-5">
           {/* Frosted Glass Tabs */}
-          <div className="flex gap-1 glass-control rounded-xl p-1.5">
+          <div className="flex gap-1 glass-control rounded-xl p-1.5" role="tablist" aria-label="仪表板视图">
             {tabs.map((tab) => (
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab)}
+                role="tab"
+                aria-selected={activeTab === tab}
                 className={`px-5 py-2 rounded-lg text-sm font-medium transition-all duration-300 ${
                   activeTab === tab
                     ? "bg-white/15 text-white shadow-[0_2px_10px_rgba(0,0,0,0.2)] ring-1 ring-white/20 drop-shadow-[0_0_5px_rgba(255,255,255,0.3)]"
@@ -309,63 +295,20 @@ export default function HomeDashboard({
             ))}
           </div>
 
-          <div className="relative" ref={dropdownRef}>
-            {/* Frosted Glass Dropdown Trigger */}
-            <div
-              onClick={() => setIsDropdownOpen(true)}
-              className="glass-control group flex w-35 cursor-text items-center gap-2 rounded-xl py-2.5 pl-4 pr-3 transition-all hover:border-white/20 hover:bg-white/10 hover:shadow-[0_6px_20px_rgba(0,0,0,0.3)]"
-            >
-              <CalendarDays className="size-4 text-red-500 group-hover:text-red-400 transition-colors group-hover:drop-shadow-[0_0_5px_rgba(248,113,113,0.5)]" aria-hidden="true" />
-              <input
-                type="text"
-                value={isDropdownOpen ? searchQuery : selectedYear}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder={selectedYear}
-                className="bg-transparent w-full text-white/90 font-mono text-sm outline-none placeholder:text-white/40"
-              />
-              <ChevronDown
-                className={`size-3 text-white/50 transition-transform duration-300 ${
-                  isDropdownOpen ? "rotate-180 text-white" : "group-hover:text-white"
-                }`}
-                aria-hidden="true"
-              />
-            </div>
-
-            {/* Frosted Glass Dropdown Menu */}
-            {isDropdownOpen && (
-              <div className="glass-panel absolute right-0 top-full z-50 mt-2 w-32 overflow-hidden rounded-xl animate-in fade-in slide-in-from-top-2">
-                <div className="max-h-64 overflow-y-auto custom-scrollbar flex flex-col">
-                  {filteredYears.length > 0 ? (
-                    filteredYears.map((year) => (
-                      <button
-                        key={String(year)}
-                        onClick={() => {
-                          setSelectedYear(String(year));
-                          setSearchQuery("");
-                          setIsDropdownOpen(false);
-                        }}
-                        className={`w-full text-left px-5 py-3 text-sm font-mono transition-colors shrink-0 ${
-                          selectedYear === String(year)
-                            ? "bg-red-500/15 text-red-400 font-bold border-l-2 border-red-400 drop-shadow-[0_0_5px_rgba(248,113,113,0.3)]"
-                            : "text-white/60 hover:bg-white/10 hover:text-white border-l-2 border-transparent"
-                        }`}
-                      >
-                        {year}
-                      </button>
-                    ))
-                  ) : (
-                    <div className="px-5 py-4 text-sm font-mono text-white/50 text-center">
-                      无结果
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-          </div>
+          <DashboardYearPicker
+            years={summary.map((item) => item.release_year)}
+            selectedYear={selectedYear}
+            onSelect={setSelectedYear}
+          />
         </div>
       </div>
 
       <div className="w-full">
+        {topMediaError && selectedYear !== "All Time" && (
+          <div role="alert" className="mb-6 rounded-xl border border-red-400/30 bg-red-500/10 px-4 py-3 text-sm text-red-200">
+            {topMediaError}
+          </div>
+        )}
         {activeTab === "总览" && (
           <div key="overview" className="animate-fade-in flex flex-col gap-4 md:gap-6">
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-6 lg:grid-cols-3">

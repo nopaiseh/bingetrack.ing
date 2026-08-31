@@ -1,23 +1,19 @@
 import { NextResponse } from "next/server";
 import { fetchTopMediaServer } from "@/lib/functions/media-repo";
+import { ApiValidationError, parseTopMediaParams } from "@/lib/api/media-params";
 
 export async function GET(request: Request) {
   try {
-    const { searchParams } = new URL(request.url);
-    const type = searchParams.get("type");
-    const year = searchParams.get("year");
-    const requestedLimit = Number(searchParams.get("limit") ?? 10);
-    const limit = Number.isSafeInteger(requestedLimit)
-      ? Math.min(20, Math.max(1, requestedLimit))
-      : 10;
-
-    if (type !== "movie" && type !== "tv_series") {
-      return NextResponse.json({ error: "Invalid media type" }, { status: 400 });
-    }
-
-    const items = await fetchTopMediaServer(type, year || null, limit);
-    return NextResponse.json(items);
+    const { type, year, limit } = parseTopMediaParams(new URL(request.url).searchParams);
+    const items = await fetchTopMediaServer(type, year, limit);
+    return NextResponse.json(items, {
+      headers: { "Cache-Control": "public, s-maxage=60, stale-while-revalidate=300" },
+    });
   } catch (error) {
-    return NextResponse.json({ error: String(error) }, { status: 500 });
+    if (error instanceof ApiValidationError) {
+      return NextResponse.json({ error: error.message }, { status: 400 });
+    }
+    console.error("Top media API request failed:", error);
+    return NextResponse.json({ error: "Unable to load top media" }, { status: 503 });
   }
 }

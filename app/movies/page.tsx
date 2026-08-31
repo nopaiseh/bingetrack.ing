@@ -1,5 +1,11 @@
 import MoviesCatalog from './MoviesCatalog';
 import { fetchMediaListServer, fetchStatsServer } from '@/lib/functions/media-repo';
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "电影",
+  description: "浏览已看、想看与即将上映的电影记录。",
+};
 
 export const revalidate = 60;
 

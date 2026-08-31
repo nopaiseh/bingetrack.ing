@@ -4,8 +4,22 @@ import MediaInformation from "@/components/MediaInformation";
 import MediaRow from "@/components/MediaRow";
 import { RelatedMediaLoadingSkeleton } from "@/components/LoadingSkeletons";
 import { Suspense } from "react";
+import { cache } from "react";
+import type { Metadata } from "next";
 
 export const revalidate = 60;
+
+const getCachedMediaById = cache(getMediaById);
+
+export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
+  const { id } = await params;
+  const series = await getCachedMediaById(id);
+  if (!series) return { title: "电视剧未找到" };
+  return {
+    title: series.title,
+    description: series.summary?.slice(0, 160) || `查看《${series.title}》的季度、剧集与观看记录。`,
+  };
+}
 
 async function RelatedSeries({ seriesNames, currentId }: { seriesNames: string[]; currentId: string }) {
   const relatedGroups = await Promise.all(seriesNames.map(async (seriesName) => ({
@@ -32,7 +46,7 @@ export default async function SeriesDetailPage({
   const [{ id }, query] = await Promise.all([params, searchParams]);
   const returnToSearch = query.from === "/search" || query.from?.startsWith("/search?");
   const [series, seasons] = await Promise.all([
-    getMediaById(id),
+    getCachedMediaById(id),
     getSeasonsBySeriesId(id),
   ]);
   if (!series) notFound();

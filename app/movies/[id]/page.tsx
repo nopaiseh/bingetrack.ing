@@ -4,8 +4,22 @@ import MediaInformation from "@/components/MediaInformation";
 import MediaRow from "@/components/MediaRow";
 import { RelatedMediaLoadingSkeleton } from "@/components/LoadingSkeletons";
 import { Suspense } from "react";
+import { cache } from "react";
+import type { Metadata } from "next";
 
 export const revalidate = 60;
+
+const getCachedMediaById = cache(getMediaById);
+
+export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
+  const { id } = await params;
+  const movie = await getCachedMediaById(id);
+  if (!movie) return { title: "电影未找到" };
+  return {
+    title: movie.title,
+    description: movie.summary?.slice(0, 160) || `查看《${movie.title}》的观看记录与详细信息。`,
+  };
+}
 
 async function RelatedMovies({ seriesNames, currentId }: { seriesNames: string[]; currentId: string }) {
   const relatedGroups = await Promise.all(seriesNames.map(async (seriesName) => ({
@@ -31,7 +45,7 @@ export default async function MovieDetailPage({
 }) {
   const [{ id }, query] = await Promise.all([params, searchParams]);
   const returnToSearch = query.from === "/search" || query.from?.startsWith("/search?");
-  const movie = await getMediaById(id);
+  const movie = await getCachedMediaById(id);
   if (!movie) notFound();
 
   return (

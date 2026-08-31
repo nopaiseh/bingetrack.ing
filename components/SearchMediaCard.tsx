@@ -1,0 +1,69 @@
+"use client";
+
+import { useState } from "react";
+import Image from "next/image";
+import Link from "next/link";
+import { ImageIcon, Star } from "lucide-react";
+import type { Media } from "@/lib/types";
+
+export function SearchMediaCardSkeleton() {
+  return (
+    <div className="glass-card flex flex-col overflow-hidden rounded-xl">
+      <div className="relative aspect-2/3 w-full overflow-hidden bg-white/5 animate-pulse">
+        <div className="absolute inset-0 bg-linear-to-tr from-transparent via-white/5 to-transparent animate-pulse" />
+      </div>
+      <div className="flex grow flex-col space-y-3 px-3 py-3">
+        <div className="h-4 w-3/4 rounded-md bg-white/10 animate-pulse" />
+        <div className="mt-1 flex items-center justify-between">
+          <div className="h-3 w-8 rounded-md bg-white/5 animate-pulse" />
+          <div className="h-3 w-10 rounded-md bg-white/5 animate-pulse" />
+        </div>
+        <div className="mt-1 flex gap-1.5">
+          <div className="h-4 w-10 rounded-md bg-white/5 animate-pulse" />
+          <div className="h-4 w-12 rounded-md bg-white/5 animate-pulse" />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export function SearchMediaCard({ item, returnHref }: { item: Media; returnHref: string }) {
+  const [isImageLoaded, setIsImageLoaded] = useState(false);
+
+  return (
+    <Link href={`/${item.type}/${item.id}?from=${encodeURIComponent(returnHref)}`} className="glass-card group flex cursor-pointer flex-col overflow-hidden rounded-xl transition-all duration-300 hover:-translate-y-1.5 hover:border-red-400/40 hover:bg-white/10 hover:shadow-[0_15px_40px_rgba(248,113,113,0.2)]">
+      <div className="relative flex aspect-2/3 w-full items-center justify-center overflow-hidden bg-black/40">
+        {item.cover_url ? (
+          <>
+            {!isImageLoaded && <div className="absolute inset-0 z-0 bg-white/5 animate-pulse" />}
+            <Image
+              src={item.cover_url}
+              alt={item.title}
+              fill
+              className={`z-10 object-cover transition-all duration-700 group-hover:scale-110 ${isImageLoaded ? "opacity-100 blur-none" : "scale-105 opacity-0 blur-md"}`}
+              sizes="(max-width: 639px) 50vw, (max-width: 1023px) 33vw, (max-width: 1279px) 20vw, 16vw"
+              onLoad={() => setIsImageLoaded(true)}
+            />
+          </>
+        ) : (
+          <ImageIcon className="size-10 text-white/20 drop-shadow-md" aria-hidden="true" />
+        )}
+      </div>
+
+      <div className="flex min-h-28 grow flex-col space-y-1.5 px-3 py-2.5">
+        <h3 className="truncate text-sm font-bold text-white transition-colors duration-300 drop-shadow-[0_0_8px_rgba(255,255,255,0.2)] group-hover:text-red-300 group-hover:drop-shadow-[0_0_5px_rgba(248,113,113,0.6)]" title={item.title}>{item.title}</h3>
+        <div className="flex items-center justify-between text-xs">
+          <span className="font-medium text-white/60">{item.date ? item.date.substring(0, 4) : "未知"}</span>
+          <span className="flex items-center gap-1 font-bold text-white drop-shadow-sm">
+            {item.rating ? <><Star className="size-3 fill-current text-yellow-500/90 drop-shadow-[0_0_5px_rgba(234,179,8,0.6)]" aria-hidden="true" />{Number(item.rating).toFixed(1)}</> : <span className="text-white/50">未评分</span>}
+          </span>
+        </div>
+        <div className="mt-1.5 flex flex-wrap gap-1.5">
+          {[...(item.genres ?? []).slice(0, 3), ...(item.languages ?? []).slice(0, 2)].map((tag, index) => (
+            <span key={`${tag}-${index}`} className="inline-flex items-center rounded-md border border-white/10 bg-white/5 px-1.5 py-0.5 text-[10px] font-medium tracking-wide text-white/70 backdrop-blur-md transition-all duration-300 group-hover:border-red-400/30 group-hover:bg-red-500/15 group-hover:text-red-300 group-hover:shadow-[0_4px_10px_rgba(248,113,113,0.2)]">{tag}</span>
+          ))}
+        </div>
+      </div>
+    </Link>
+  );
+}

@@ -1,5 +1,11 @@
 import SeriesCatalog from "./SeriesCatalog";
 import { fetchMediaListServer, fetchStatsServer } from "@/lib/functions/media-repo";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "电视剧",
+  description: "浏览已看、在看与想看的电视剧记录。",
+};
 
 export const revalidate = 60;
 

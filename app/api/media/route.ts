@@ -1,35 +1,19 @@
 import { NextResponse } from "next/server";
 import { searchMediaServer } from "@/lib/functions/media-repo";
+import { ApiValidationError, parseMediaSearchParams } from "@/lib/api/media-params";
 
 export async function GET(request: Request) {
   try {
-    const { searchParams } = new URL(request.url);
-    
-    const parseBoundedInteger = (value: string | null, fallback: number, min: number, max: number) => {
-      if (value === null) return fallback;
-      const parsed = Number(value);
-      return Number.isSafeInteger(parsed) ? Math.min(max, Math.max(min, parsed)) : fallback;
-    };
-
-    const params = {
-      q: searchParams.get("q") || undefined,
-      type: searchParams.get("type") || undefined,
-      seriesOnly: searchParams.get("series") === "true",
-      creditRole: searchParams.get("creditRole") || undefined,
-      status: searchParams.get("status") || undefined,
-      genre: searchParams.get("genre") || undefined,
-      region: searchParams.get("region") || undefined,
-      language: searchParams.get("language") || undefined,
-      startYear: searchParams.get("startYear") || undefined,
-      endYear: searchParams.get("endYear") || undefined,
-      sort: searchParams.get("sort") || undefined,
-      limit: parseBoundedInteger(searchParams.get("limit"), 30, 1, 100),
-      offset: parseBoundedInteger(searchParams.get("offset"), 0, 0, 100_000),
-    };
-
+    const params = parseMediaSearchParams(new URL(request.url).searchParams);
     const results = await searchMediaServer(params);
-    return NextResponse.json(results);
+    return NextResponse.json(results, {
+      headers: { "Cache-Control": "public, s-maxage=30, stale-while-revalidate=120" },
+    });
   } catch (err) {
-    return NextResponse.json({ error: String(err) }, { status: 500 });
+    if (err instanceof ApiValidationError) {
+      return NextResponse.json({ error: err.message }, { status: 400 });
+    }
+    console.error("Media API request failed:", err);
+    return NextResponse.json({ error: "Unable to load media" }, { status: 503 });
   }
 }

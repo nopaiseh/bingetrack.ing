@@ -1,4 +1,4 @@
-import { Media, ViewAllMediaRow } from "@/lib/types";
+import type { Media, ViewAllMediaRow } from "@/lib/types";
 
 const nameCollator = new Intl.Collator(undefined, {
   numeric: true,

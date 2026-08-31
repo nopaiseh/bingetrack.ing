@@ -1,4 +1,4 @@
-import { getSupabaseServer } from "@/utils/supabase";
+import { getSupabasePublicServer } from "@/utils/supabase";
 import HomeDashboard from "@/app/HomeDashboard";
 import { Summary } from "@/lib/types";
 import { fetchMediaDistributionsServer, fetchTopMediaServer } from "@/lib/functions/media-repo";
@@ -6,7 +6,7 @@ import { fetchMediaDistributionsServer, fetchTopMediaServer } from "@/lib/functi
 export const revalidate = 60;
 
 export default async function HomePage() {
-  const db = getSupabaseServer();
+  const db = getSupabasePublicServer();
   const [summaryRes, topMovies, topSeries, distributions] = await Promise.all([
     db.from("release_year_stats").select("*").order("release_year", { ascending: false }),
     fetchTopMediaServer("movie", null, 10),
