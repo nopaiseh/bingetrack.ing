@@ -298,20 +298,22 @@ function SearchContent() {
         {/* Search Input Section */}
         <div className="mb-8">
           <div className="group relative grid gap-2 sm:block">
-            <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none z-10">
-              <Search className="size-4 text-white/50 group-focus-within:text-red-400 group-focus-within:drop-shadow-[0_0_5px_rgba(248,113,113,0.6)] transition-all duration-300" aria-hidden="true" />
+            <div className="relative">
+              <div className="pointer-events-none absolute inset-y-0 left-0 z-10 flex items-center pl-5">
+                <Search className="size-4 text-white/50 group-focus-within:text-red-400 group-focus-within:drop-shadow-[0_0_5px_rgba(248,113,113,0.6)] transition-all duration-300" aria-hidden="true" />
+              </div>
+
+              <input
+                type="text"
+                aria-label="搜索媒体"
+                value={query}
+                onChange={(e) => {
+                  setQuery(e.target.value);
+                }}
+                placeholder="搜索电影、电视剧、导演或演员..."
+                className="glass-control relative z-0 w-full rounded-2xl py-4 pl-12 pr-12 text-base text-white outline-none transition-all duration-500 placeholder:text-white/50 focus:border-red-400/50 focus:bg-white/10 focus:ring-1 focus:ring-red-400/50 focus:shadow-[0_6px_30px_rgba(248,113,113,0.2)] sm:py-5 sm:pr-40 sm:text-lg"
+              />
             </div>
-            
-            <input
-              type="text"
-              aria-label="搜索媒体"
-              value={query}
-              onChange={(e) => {
-                setQuery(e.target.value);
-              }}
-              placeholder="搜索电影、电视剧、导演或演员..."
-              className="glass-control relative z-0 w-full rounded-2xl py-4 pl-12 pr-12 text-base text-white outline-none transition-all duration-500 placeholder:text-white/50 focus:border-red-400/50 focus:bg-white/10 focus:ring-1 focus:ring-red-400/50 focus:shadow-[0_6px_30px_rgba(248,113,113,0.2)] sm:py-5 sm:pr-40 sm:text-lg"
-            />
 
             <div className="z-10 flex min-h-11 items-center justify-end gap-3 sm:absolute sm:inset-y-0 sm:right-0 sm:pr-4">
               {query && (
