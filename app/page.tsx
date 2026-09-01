@@ -19,11 +19,12 @@ export default async function HomePage() {
 
   if (error) {
     console.error("Failed to fetch release year stats:", error);
+    throw new Error("Failed to fetch dashboard summary", { cause: error });
   }
 
   return (
-    <main>
+    <div>
       <HomeDashboard summary={summary} topMovies={topMovies ?? []} topSeries={topSeries ?? []} distributions={distributions} />
-    </main>
+    </div>
   );
 }

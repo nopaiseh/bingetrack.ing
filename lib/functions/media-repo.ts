@@ -84,12 +84,13 @@ export async function getMediaById(id: string): Promise<Media | null> {
     .from("v_all_media")
     .select("*")
     .eq("id", id)
-    .single();
+    .maybeSingle();
 
-  if (viewError || !viewData) {
+  if (viewError) {
     console.error(`Failed to fetch media details for id ${id}:`, viewError);
-    return null;
+    throw new MediaRepositoryError("fetch media details", viewError);
   }
+  if (!viewData) return null;
 
   // 2. The view does not expose collection memberships, so load every linked
   // series from the many-to-many junction table in display order.
@@ -179,7 +180,7 @@ export async function getSeasonsBySeriesId(seriesId: string): Promise<SeasonInfo
 
   if (error) {
     console.error(`Failed to fetch seasons for series ${seriesId}:`, error);
-    return [];
+    throw new MediaRepositoryError("fetch series seasons", error);
   }
 
   const seasonRows = (data ?? []) as SeasonRow[];
@@ -225,42 +226,26 @@ export async function getSeasonsBySeriesId(seriesId: string): Promise<SeasonInfo
   });
 }
 
-type EpisodeRow = {
+type SeasonEpisodePageRow = {
+  season_number: number;
+  episode_count: number | string;
+  watched_count: number | string;
+  total_runtime: number | string;
+  average_rating: number | string | null;
+  first_release_date: string | null;
+  last_release_date: string | null;
+  total: number | string;
+  episodes: Array<{
   id: string;
   episode_number: number;
-  media_items: {
     title: string | null;
     summary: string | null;
     cover_url: string | null;
     release_date: string | null;
     runtime: number | null;
-    tracking: { status: string | null; rating: number | null } | Array<{ status: string | null; rating: number | null }> | null;
-  } | Array<{
-    title: string | null;
-    summary: string | null;
-    cover_url: string | null;
-    release_date: string | null;
-    runtime: number | null;
-    tracking: { status: string | null; rating: number | null } | Array<{ status: string | null; rating: number | null }> | null;
-  }> | null;
-};
-
-type SeasonHeaderRow = {
-  id: string;
-  season_number: number;
-  tv_episodes: Array<{
-    id: string;
-    episode_number: number;
-    media_items: {
-      release_date: string | null;
-      runtime: number | null;
-      tracking: { status: string | null; rating: number | null } | Array<{ status: string | null; rating: number | null }> | null;
-    } | Array<{
-      release_date: string | null;
-      runtime: number | null;
-      tracking: { status: string | null; rating: number | null } | Array<{ status: string | null; rating: number | null }> | null;
-    }> | null;
-  }> | null;
+    status: string | null;
+    rating: number | null;
+  }>;
 };
 
 export async function getSeasonEpisodes(
@@ -271,111 +256,70 @@ export async function getSeasonEpisodes(
   status: "all" | "watched" | "unwatched" = "all",
   order: "asc" | "desc" = "asc",
 ): Promise<SeasonEpisodePage | null> {
-  const db = getSupabasePublicServer();
-  const [seasonResult, seasonMediaResult] = await Promise.all([
-    db
-      .from("tv_seasons")
-      .select("id, season_number, tv_episodes(id, episode_number, media_items(release_date, runtime, tracking(status, rating)))")
-      .eq("id", seasonId)
-      .eq("series_id", seriesId)
-      .maybeSingle(),
+  const db = getSupabaseServer();
+  const offset = (page - 1) * pageSize;
+  const [episodePageResult, seasonMediaResult] = await Promise.all([
+    db.rpc("get_season_episode_page", {
+      p_series_id: seriesId,
+      p_season_id: seasonId,
+      p_status: status,
+      p_order: order,
+      p_limit: pageSize,
+      p_offset: offset,
+    }),
     db
       .from("media_items")
       .select("title, summary, cover_url")
       .eq("id", seasonId)
       .maybeSingle(),
   ]);
-  const { data: seasonData, error: seasonError } = seasonResult;
+  const { data: episodePageData, error: episodePageError } = episodePageResult;
   const { data: seasonMedia, error: seasonMediaError } = seasonMediaResult;
 
-  if (seasonError || !seasonData) {
-    if (seasonError) console.error(`Failed to fetch season ${seasonId}:`, seasonError);
-    return null;
+  if (episodePageError) {
+    console.error(`Failed to fetch season ${seasonId}:`, episodePageError);
+    throw new MediaRepositoryError("fetch season episode page", episodePageError);
   }
+  if (!episodePageData) return null;
 
   if (seasonMediaError) {
     console.error(`Failed to fetch summary for season ${seasonId}:`, seasonMediaError);
+    throw new MediaRepositoryError("fetch season summary", seasonMediaError);
   }
 
-  const season = seasonData as SeasonHeaderRow;
-  const allEpisodes = (season.tv_episodes ?? []).map((episode) => {
-    const mediaItem = Array.isArray(episode.media_items) ? episode.media_items[0] : episode.media_items;
-    const tracking = firstRelated(mediaItem?.tracking);
-    return {
+  const result = episodePageData as SeasonEpisodePageRow;
+  const episodes: EpisodeInfo[] = (result.episodes ?? []).map((episode) => ({
       id: episode.id,
       episodeNumber: episode.episode_number,
-      releaseDate: mediaItem?.release_date ?? null,
-      runtime: mediaItem?.runtime ?? null,
-      status: tracking?.status ?? null,
-      rating: tracking?.rating ?? null,
-    };
-  });
-  const watchedCount = allEpisodes.filter((episode) => episode.status === "watched").length;
-  const totalRuntime = allEpisodes.reduce((sum, episode) => sum + (episode.runtime ?? 0), 0);
-  const ratings = allEpisodes.map((episode) => episode.rating).filter((rating): rating is number => rating !== null);
-  const averageRating = ratings.length > 0 ? ratings.reduce((sum, rating) => sum + rating, 0) / ratings.length : null;
-  const filteredEpisodes = allEpisodes
-    .filter((episode) => status === "all" || (status === "watched" ? episode.status === "watched" : episode.status !== "watched"))
-    .sort((left, right) => order === "asc" ? left.episodeNumber - right.episodeNumber : right.episodeNumber - left.episodeNumber);
-  const offset = (page - 1) * pageSize;
-  const pageIds = filteredEpisodes.slice(offset, offset + pageSize).map((episode) => episode.id);
-
-  let episodeRows: EpisodeRow[] = [];
-  if (pageIds.length > 0) {
-    const { data, error } = await db
-      .from("tv_episodes")
-      .select("id, episode_number, media_items(title, summary, cover_url, release_date, runtime, tracking(status, rating))")
-      .in("id", pageIds);
-
-    if (error) {
-      console.error(`Failed to fetch episodes for season ${seasonId}:`, error);
-      return null;
-    }
-    episodeRows = (data ?? []) as EpisodeRow[];
-  }
-
-  const episodeMap = new Map(episodeRows.map((episode) => [episode.id, episode]));
-  const episodes: EpisodeInfo[] = pageIds.flatMap((id) => {
-    const episode = episodeMap.get(id);
-    if (!episode) return [];
-    const mediaItem = Array.isArray(episode.media_items) ? episode.media_items[0] : episode.media_items;
-    const tracking = firstRelated(mediaItem?.tracking);
-    return [{
-      id: episode.id,
-      episodeNumber: episode.episode_number,
-      title: mediaItem?.title ?? `第 ${episode.episode_number} 集`,
-      summary: mediaItem?.summary ?? "",
-      coverUrl: mediaItem?.cover_url ?? "",
-      releaseDate: mediaItem?.release_date ?? null,
-      runtime: mediaItem?.runtime ?? null,
-      status: tracking?.status ?? null,
-      rating: tracking?.rating ?? null,
-    }];
-  });
-
-  const dates = allEpisodes
-    .map((episode) => episode.releaseDate)
-    .filter((date): date is string => Boolean(date))
-    .sort();
-  const firstYear = dates[0]?.slice(0, 4);
-  const lastYear = dates.at(-1)?.slice(0, 4);
+      title: episode.title ?? `第 ${episode.episode_number} 集`,
+      summary: episode.summary ?? "",
+      coverUrl: episode.cover_url ?? "",
+      releaseDate: episode.release_date,
+      runtime: episode.runtime,
+      status: episode.status,
+      rating: episode.rating === null ? null : Number(episode.rating),
+  }));
+  const firstYear = result.first_release_date?.slice(0, 4);
+  const lastYear = result.last_release_date?.slice(0, 4);
+  const episodeCount = Number(result.episode_count);
+  const watchedCount = Number(result.watched_count);
 
   return {
     season: {
-      id: season.id,
-      seasonNumber: season.season_number,
-      title: seasonMedia?.title ?? `第 ${season.season_number} 季`,
+      id: seasonId,
+      seasonNumber: result.season_number,
+      title: seasonMedia?.title ?? `第 ${result.season_number} 季`,
       coverUrl: seasonMedia?.cover_url ?? "",
-      episodeCount: allEpisodes.length,
+      episodeCount,
       watchedEpisodeCount: watchedCount,
       releaseYearRange: firstYear && lastYear ? (firstYear === lastYear ? firstYear : `${firstYear} - ${lastYear}`) : undefined,
       summary: seasonMedia?.summary ?? "",
     },
     episodes,
-    total: filteredEpisodes.length,
+    total: Number(result.total),
     watchedCount,
-    totalRuntime,
-    averageRating,
+    totalRuntime: Number(result.total_runtime),
+    averageRating: result.average_rating === null ? null : Number(result.average_rating),
   };
 }
 
@@ -660,28 +604,19 @@ async function fetchMediaList(opts: FetchMediaListOptions): Promise<{ rows: Medi
 
 // 统计信息查询（例如 Movies / Series 页面需要的 total/watched/want/upcoming）
 export async function fetchStatsServer(mediaType: "movie" | "tv_series") {
-  const db = getSupabasePublicServer();
-  const today = new Date().toISOString().split("T")[0];
-
-  const [totalRes, watchedRes, watchingRes, wantRes, upcomingRes] = await Promise.all([
-    db.from("v_all_media").select("id", { count: "exact", head: true }).eq("type", mediaType),
-    db.from("v_all_media").select("id", { count: "exact", head: true }).eq("type", mediaType).eq("status", "watched"),
-    db.from("v_all_media").select("id", { count: "exact", head: true }).eq("type", mediaType).eq("status", "watching"),
-    db.from("v_all_media").select("id", { count: "exact", head: true }).eq("type", mediaType).eq("status", "want_to_watch"),
-    db.from("v_all_media").select("id", { count: "exact", head: true }).eq("type", mediaType).gte("sort_date", today),
-  ]);
-
-  const error = totalRes.error ?? watchedRes.error ?? watchingRes.error ?? wantRes.error ?? upcomingRes.error;
-  if (error) {
-    console.error("Failed to fetch media stats:", error);
+  const db = getSupabaseServer();
+  const { data, error } = await db.rpc("get_media_stats", { p_media_type: mediaType });
+  if (error || !data?.[0]) {
+    if (error) console.error("Failed to fetch media stats:", error);
     throw new MediaRepositoryError("fetch media stats", error);
   }
+  const stats = data[0] as Record<"total" | "watched" | "watching" | "want" | "upcoming", number | string>;
 
   return {
-    total: totalRes.count ?? 0,
-    watched: watchedRes.count ?? 0,
-    watching: watchingRes.count ?? 0,
-    want: wantRes.count ?? 0,
-    upcoming: upcomingRes.count ?? 0,
+    total: Number(stats.total),
+    watched: Number(stats.watched),
+    watching: Number(stats.watching),
+    want: Number(stats.want),
+    upcoming: Number(stats.upcoming),
   };
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, Suspense, useCallback, useRef } from "react";
+import { useState, useEffect, Suspense, useCallback, useMemo, useRef } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { getSupabaseBrowser } from "@/utils/supabase-client";
 import { Media } from "@/lib/types";
@@ -8,6 +8,33 @@ import { SearchMediaCard, SearchMediaCardSkeleton } from "@/components/SearchMed
 import { ArrowDown, ArrowUp, ChevronDown, ChevronLeft, ChevronRight, LoaderCircle, Search, SlidersHorizontal, X } from "lucide-react";
 
 const PAGE_SIZE = 30;
+type SearchFilters = Record<string, string[]>;
+
+function readFilters(searchParams: URLSearchParams): SearchFilters {
+  return {
+    type: searchParams.get("type")?.split(",").filter(Boolean) ?? [],
+    status: searchParams.get("status")?.split(",").filter(Boolean) ?? [],
+    genre: searchParams.get("genre")?.split(",").filter(Boolean) ?? [],
+    region: searchParams.get("region")?.split(",").filter(Boolean) ?? [],
+    language: searchParams.get("language")?.split(",").filter(Boolean) ?? [],
+    year: searchParams.get("startYear") || searchParams.get("endYear")
+      ? [searchParams.get("startYear") || "", searchParams.get("endYear") || ""]
+      : [],
+    sort: [searchParams.get("sort") || "date_desc"],
+  };
+}
+
+function writeFilters(params: URLSearchParams, filters: SearchFilters) {
+  for (const key of ["type", "status", "genre", "region", "language", "startYear", "endYear", "sort"]) {
+    params.delete(key);
+  }
+  for (const key of ["type", "status", "genre", "region", "language"]) {
+    if (filters[key]?.length) params.set(key, filters[key].join(","));
+  }
+  if (filters.year?.[0]) params.set("startYear", filters.year[0]);
+  if (filters.year?.[1]) params.set("endYear", filters.year[1]);
+  if (filters.sort?.[0] && filters.sort[0] !== "date_desc") params.set("sort", filters.sort[0]);
+}
 
 function pageNumbers(current: number, total: number) {
   const start = Math.max(1, Math.min(current - 2, total - 4));
@@ -19,10 +46,15 @@ function SearchContent() {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const searchParamsString = searchParams.toString();
+  const latestSearchParamsRef = useRef(searchParamsString);
+  useEffect(() => {
+    latestSearchParamsRef.current = searchParamsString;
+  }, [searchParamsString]);
   const urlQuery = searchParams.get("q") || "";
   const requestedPage = Number(searchParams.get("page") ?? "1");
   const page = Number.isSafeInteger(requestedPage) && requestedPage > 0 ? requestedPage : 1;
-  const returnHref = searchParams.size > 0 ? `${pathname}?${searchParams.toString()}` : pathname;
+  const returnHref = searchParams.size > 0 ? `${pathname}?${searchParamsString}` : pathname;
 
   const [query, setQuery] = useState(urlQuery);
   const [debouncedQuery, setDebouncedQuery] = useState(urlQuery);
@@ -33,17 +65,10 @@ function SearchContent() {
     setQuery(urlQuery);
   }
 
-  const [filters, setFilters] = useState<Record<string, string[]>>({
-    type: searchParams.get("type") ? searchParams.get("type")!.split(",") : [],
-    status: searchParams.get("status") ? searchParams.get("status")!.split(",") : [],
-    genre: searchParams.get("genre") ? searchParams.get("genre")!.split(",") : [],
-    region: searchParams.get("region") ? searchParams.get("region")!.split(",") : [],
-    language: searchParams.get("language") ? searchParams.get("language")!.split(",") : [],
-    year: searchParams.get("startYear") || searchParams.get("endYear") 
-      ? [searchParams.get("startYear") || "", searchParams.get("endYear") || ""] 
-      : [],
-    sort: searchParams.get("sort") ? [searchParams.get("sort")!] : ["date_desc"],
-  });
+  const filters = useMemo(
+    () => readFilters(new URLSearchParams(searchParamsString)),
+    [searchParamsString],
+  );
 
   const [showAdvanced, setShowAdvanced] = useState(true);
 
@@ -68,14 +93,32 @@ function SearchContent() {
     else router.push(href, { scroll: false });
   }, [pathname, router, searchParams]);
 
-  const resetPagination = useCallback(() => {
-    if (page > 1) updatePage(1, true);
-  }, [page, updatePage]);
+  const setFilters = useCallback((
+    update: SearchFilters | ((previous: SearchFilters) => SearchFilters),
+  ) => {
+    const nextFilters = typeof update === "function" ? update(filters) : update;
+    const params = new URLSearchParams(searchParams.toString());
+    writeFilters(params, nextFilters);
+    params.delete("page");
+    const href = params.size > 0 ? `${pathname}?${params.toString()}` : pathname;
+    router.replace(href, { scroll: false });
+  }, [filters, pathname, router, searchParams]);
 
   useEffect(() => {
-    const timeoutId = window.setTimeout(() => setDebouncedQuery(query), 300);
+    const timeoutId = window.setTimeout(() => {
+      setDebouncedQuery(query);
+      const currentParams = latestSearchParamsRef.current;
+      const params = new URLSearchParams(currentParams);
+      if (query.trim()) params.set("q", query.trim());
+      else params.delete("q");
+      params.delete("page");
+      const href = params.size > 0 ? `${pathname}?${params.toString()}` : pathname;
+      if (params.toString() !== currentParams) {
+        router.replace(href, { scroll: false });
+      }
+    }, 300);
     return () => window.clearTimeout(timeoutId);
-  }, [query]);
+  }, [pathname, query, router]);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -193,7 +236,6 @@ function SearchContent() {
   ];
 
   const toggleFilter = (categoryId: string, value: string, isMultiSelect = true, allOptions: string[] = []) => {
-    resetPagination();
     setFilters((prev) => {
       const currentSelected = prev[categoryId] || [];
       if (value === "全部") return { ...prev, [categoryId]: [] };
@@ -211,7 +253,6 @@ function SearchContent() {
   };
 
   const handleSortToggle = (fieldId: string) => {
-    resetPagination();
     setFilters((prev) => {
       const currentSort = prev.sort[0] || "date_desc";
       const [currentField, currentOrder] = currentSort.split("_");
@@ -225,7 +266,6 @@ function SearchContent() {
   };
 
   const handleYearChange = (type: "start" | "end", value: string) => {
-    resetPagination();
     setFilters((prev) => {
       const currentStart = prev.year?.[0] || "";
       const currentEnd = prev.year?.[1] || "";
@@ -264,9 +304,9 @@ function SearchContent() {
             
             <input
               type="text"
+              aria-label="搜索媒体"
               value={query}
               onChange={(e) => {
-                resetPagination();
                 setQuery(e.target.value);
               }}
               placeholder="搜索电影、电视剧、导演或演员..."
@@ -276,7 +316,6 @@ function SearchContent() {
             <div className="z-10 flex min-h-11 items-center justify-end gap-3 sm:absolute sm:inset-y-0 sm:right-0 sm:pr-4">
               {query && (
                 <button onClick={() => {
-                  resetPagination();
                   setQuery("");
                 }} className="text-white/50 hover:text-red-400 hover:drop-shadow-[0_0_5px_rgba(248,113,113,0.6)] transition-all duration-300" aria-label="清除搜索">
                   <X className="size-5" aria-hidden="true" />
@@ -356,7 +395,6 @@ function SearchContent() {
                   <div className="flex w-full flex-col items-start gap-3 sm:w-auto sm:flex-row sm:items-center sm:gap-4">
                     <button
                       onClick={() => {
-                        resetPagination();
                         setFilters((prev) => ({ ...prev, year: [] }));
                       }}
                       className={`min-h-10 rounded-lg px-4 py-1.5 text-[13px] transition-all duration-300 backdrop-blur-2xl ${
@@ -371,6 +409,7 @@ function SearchContent() {
                     <div className="grid w-full grid-cols-[1fr_auto_1fr] items-center gap-2 sm:flex sm:w-auto">
                       <div className="relative group">
                         <select
+                          aria-label="开始年份"
                           value={filters.year?.[0] || ""}
                           onChange={(e) => handleYearChange("start", e.target.value)}
                           className="min-h-10 w-full min-w-0 cursor-pointer appearance-none rounded-lg border border-white/10 bg-white/5 py-1.5 pl-3 pr-8 text-[13px] text-white shadow-[0_4px_10px_rgba(0,0,0,0.2)] backdrop-blur-2xl transition-all outline-none hover:border-white/20 hover:bg-white/10 hover:shadow-[0_6px_15px_rgba(0,0,0,0.3)] focus:border-red-400/50 focus:bg-white/10 sm:min-w-25"
@@ -387,6 +426,7 @@ function SearchContent() {
 
                       <div className="relative group">
                         <select
+                          aria-label="结束年份"
                           value={filters.year?.[1] || ""}
                           onChange={(e) => handleYearChange("end", e.target.value)}
                           className="min-h-10 w-full min-w-0 cursor-pointer appearance-none rounded-lg border border-white/10 bg-white/5 py-1.5 pl-3 pr-8 text-[13px] text-white shadow-[0_4px_10px_rgba(0,0,0,0.2)] backdrop-blur-2xl transition-all outline-none hover:border-white/20 hover:bg-white/10 hover:shadow-[0_6px_15px_rgba(0,0,0,0.3)] focus:border-red-400/50 focus:bg-white/10 sm:min-w-25"
@@ -436,9 +476,9 @@ function SearchContent() {
           )}
         </div>
 
-        <main ref={resultsRef} className="w-full scroll-mt-24">
+        <section ref={resultsRef} className="w-full scroll-mt-24" aria-labelledby="search-results-heading">
           <div className="mb-8 flex flex-col items-start justify-between gap-3 sm:flex-row sm:items-center">
-            <h2 className="text-2xl font-bold text-white tracking-wide drop-shadow-[0_0_10px_rgba(255,255,255,0.2)]">
+            <h2 id="search-results-heading" className="text-2xl font-bold text-white tracking-wide drop-shadow-[0_0_10px_rgba(255,255,255,0.2)]">
               {query ? (
                 <>
                   <span className="text-red-400 drop-shadow-[0_0_5px_rgba(248,113,113,0.5)]">&quot;{query}&quot;</span> 的搜索结果
@@ -451,7 +491,6 @@ function SearchContent() {
               {hasActiveFilters && (
                 <button
                   onClick={() => {
-                    resetPagination();
                     setFilters({ type: [], status: [], genre: [], region: [], language: [], year: [], sort: ["date_desc"] });
                   }}
                   className="text-sm text-white/60 hover:text-red-400 hover:drop-shadow-[0_0_5px_rgba(248,113,113,0.5)] transition-all duration-300"
@@ -510,11 +549,12 @@ function SearchContent() {
               </button>
             </nav>
           )}
-        </main>
+        </section>
       </div>
 
       <button
         onClick={scrollToTop}
+        aria-label="返回页面顶部"
         className={`fixed bottom-22 right-4 z-50 flex size-12 items-center justify-center rounded-full border border-white/10 bg-white/5 text-white/70 shadow-[0_4px_15px_rgba(0,0,0,0.2)] backdrop-blur-2xl transition-all duration-300 hover:scale-105 hover:border-red-400/50 hover:bg-white/10 hover:text-red-400 hover:shadow-[0_6px_25px_rgba(248,113,113,0.3)] hover:drop-shadow-[0_0_5px_rgba(248,113,113,0.5)] sm:right-8 lg:right-12 ${
           showScrollTop ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10 pointer-events-none"
         }`}

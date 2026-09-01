@@ -199,11 +199,17 @@ export default function HomeDashboard({
 }) {
   const [activeTab, setActiveTab] = useState("总览");
   const tabs = ["总览", "电影", "电视剧"];
+  const tabIds: Record<string, string> = {
+    总览: "overview",
+    电影: "movies",
+    电视剧: "tv-series",
+  };
 
   const [selectedYear, setSelectedYear] = useState("All Time");
   const [displayedTopMovies, setDisplayedTopMovies] = useState(topMovies);
   const [displayedTopSeries, setDisplayedTopSeries] = useState(topSeries);
   const [topMediaError, setTopMediaError] = useState<string | null>(null);
+  const [topMediaLoading, setTopMediaLoading] = useState(false);
 
   const currentYearData = summary.find(
     (item) => String(item.release_year) === String(selectedYear),
@@ -243,6 +249,9 @@ export default function HomeDashboard({
     const loadTopMedia = async () => {
       try {
         setTopMediaError(null);
+        setTopMediaLoading(true);
+        setDisplayedTopMovies([]);
+        setDisplayedTopSeries([]);
         const [moviesResponse, seriesResponse] = await Promise.all([
           fetch(`/api/top-media?type=movie&year=${encodeURIComponent(selectedYear)}&limit=10`, { signal: controller.signal }),
           fetch(`/api/top-media?type=tv_series&year=${encodeURIComponent(selectedYear)}&limit=10`, { signal: controller.signal }),
@@ -255,6 +264,10 @@ export default function HomeDashboard({
         if ((error as Error).name !== "AbortError") {
           console.error(error);
           setTopMediaError("年度精选暂时无法加载，请稍后重试。");
+        }
+      } finally {
+        if (!controller.signal.aborted) {
+          setTopMediaLoading(false);
         }
       }
     };
@@ -283,6 +296,8 @@ export default function HomeDashboard({
                 key={tab}
                 onClick={() => setActiveTab(tab)}
                 role="tab"
+                id={`dashboard-tab-${tabIds[tab]}`}
+                aria-controls={`dashboard-panel-${tabIds[tab]}`}
                 aria-selected={activeTab === tab}
                 className={`px-5 py-2 rounded-lg text-sm font-medium transition-all duration-300 ${
                   activeTab === tab
@@ -309,8 +324,13 @@ export default function HomeDashboard({
             {topMediaError}
           </div>
         )}
+        {topMediaLoading && selectedYear !== "All Time" && (
+          <div role="status" className="mb-6 rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white/60">
+            正在加载 {selectedYear} 年度精选…
+          </div>
+        )}
         {activeTab === "总览" && (
-          <div key="overview" className="animate-fade-in flex flex-col gap-4 md:gap-6">
+          <div key="overview" id="dashboard-panel-overview" role="tabpanel" aria-labelledby="dashboard-tab-overview" className="animate-fade-in flex flex-col gap-4 md:gap-6">
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-6 lg:grid-cols-3">
               
               <div className="glass-card group flex flex-col justify-between rounded-2xl p-4 shadow-[0_10px_30px_rgba(0,0,0,0.2)] transition-all duration-300 hover:-translate-y-1 hover:border-white/20 hover:bg-white/10 hover:shadow-[0_15px_40px_rgba(0,0,0,0.3)] sm:p-5 lg:p-6">
@@ -474,7 +494,7 @@ export default function HomeDashboard({
         )}
 
         {activeTab === "电影" && (
-          <div key="movies" className="animate-fade-in flex flex-col gap-4 md:gap-6">
+          <div key="movies" id="dashboard-panel-movies" role="tabpanel" aria-labelledby="dashboard-tab-movies" className="animate-fade-in flex flex-col gap-4 md:gap-6">
             <CategoryHeaderCards
               year={selectedYear}
               categoryName="电影"
@@ -499,7 +519,7 @@ export default function HomeDashboard({
         )}
 
         {activeTab === "电视剧" && (
-          <div key="tv-series" className="animate-fade-in flex flex-col gap-4 md:gap-6">
+          <div key="tv-series" id="dashboard-panel-tv-series" role="tabpanel" aria-labelledby="dashboard-tab-tv-series" className="animate-fade-in flex flex-col gap-4 md:gap-6">
             <CategoryHeaderCards
               year={selectedYear}
               categoryName="电视剧"

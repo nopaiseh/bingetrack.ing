@@ -48,4 +48,11 @@ test("validates top-media type, year, and limit", () => {
     () => parseTopMediaParams(new URLSearchParams({ type: "tv_series", year: "0000" })),
     ApiValidationError,
   );
+  assert.throws(
+    () => parseTopMediaParams(new URLSearchParams({
+      type: "tv_series",
+      year: String(new Date().getUTCFullYear() + 6),
+    })),
+    ApiValidationError,
+  );
 });

@@ -4,7 +4,7 @@ import { RotateCcw } from "lucide-react";
 
 export default function ErrorPage({ reset }: { error: Error & { digest?: string }; reset: () => void }) {
   return (
-    <main className="container mx-auto flex min-h-[70vh] max-w-3xl items-center justify-center px-6 py-24">
+    <div className="container mx-auto flex min-h-[70vh] max-w-3xl items-center justify-center px-6 py-24">
       <section className="glass-panel w-full rounded-2xl border border-red-400/20 p-8 text-center sm:p-12">
         <p className="font-mono text-sm font-bold tracking-widest text-red-400">暂时无法加载</p>
         <h1 className="mt-3 text-2xl font-bold text-white sm:text-3xl">媒体数据出了点问题</h1>
@@ -20,6 +20,6 @@ export default function ErrorPage({ reset }: { error: Error & { digest?: string 
           重新加载
         </button>
       </section>
-    </main>
+    </div>
   );
 }

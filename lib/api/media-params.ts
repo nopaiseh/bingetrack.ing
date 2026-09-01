@@ -41,7 +41,8 @@ function parseList(
 
 function parseYear(value: string | null, name: string): string | undefined {
   if (!value) return undefined;
-  if (!/^\d{4}$/.test(value) || Number(value) < 1000 || Number(value) > 9998) {
+  const latestSupportedYear = new Date().getUTCFullYear() + 5;
+  if (!/^\d{4}$/.test(value) || Number(value) < 1888 || Number(value) > latestSupportedYear) {
     throw new ApiValidationError(`Invalid ${name}`);
   }
   return value;
