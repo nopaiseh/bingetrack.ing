@@ -42,7 +42,10 @@ export default function DashboardYearPicker({
 
   return (
     <div className="relative" ref={pickerRef}>
-      <div className="glass-control group flex w-35 cursor-text items-center gap-2 rounded-xl py-2.5 pl-4 pr-3 transition-all hover:border-white/20 hover:bg-white/10 hover:shadow-[0_6px_20px_rgba(0,0,0,0.3)]">
+      <label
+        className="glass-control group flex w-35 cursor-pointer items-center gap-2 rounded-xl py-2.5 pl-4 pr-3 transition-all hover:border-white/20 hover:bg-white/10 hover:shadow-[0_6px_20px_rgba(0,0,0,0.3)]"
+        onClick={() => setIsOpen(true)}
+      >
         <CalendarDays className="size-4 text-red-500 transition-colors group-hover:text-red-400 group-hover:drop-shadow-[0_0_5px_rgba(248,113,113,0.5)]" aria-hidden="true" />
         <input
           type="text"
@@ -78,10 +81,11 @@ export default function DashboardYearPicker({
           aria-controls="dashboard-year-options"
           aria-autocomplete="list"
           aria-activedescendant={activeIndex >= 0 ? `dashboard-year-option-${activeIndex}` : undefined}
-          className="w-full bg-transparent font-mono text-sm text-white/90 outline-none placeholder:text-white/40"
+          style={{ outline: "none" }}
+          className="w-full cursor-pointer bg-transparent font-mono text-sm text-white/90 outline-none placeholder:text-white/40 focus-visible:outline-none"
         />
         <ChevronDown className={`size-3 text-white/50 transition-transform duration-300 ${isOpen ? "rotate-180 text-white" : "group-hover:text-white"}`} aria-hidden="true" />
-      </div>
+      </label>
 
       {isOpen && (
         <div className="glass-panel absolute right-0 top-full z-50 mt-2 w-32 overflow-hidden rounded-xl animate-in fade-in slide-in-from-top-2">

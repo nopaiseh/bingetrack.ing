@@ -2,7 +2,7 @@
 
 import { RotateCcw } from "lucide-react";
 
-export default function GlobalError({ reset }: { error: Error & { digest?: string }; reset: () => void }) {
+export default function GlobalError() {
   return (
     <html lang="zh-CN">
       <body className="min-h-screen bg-neutral-950 text-neutral-200">
@@ -15,7 +15,7 @@ export default function GlobalError({ reset }: { error: Error & { digest?: strin
             </p>
             <button
               type="button"
-              onClick={reset}
+              onClick={() => window.location.reload()}
               className="mt-7 inline-flex items-center gap-2 rounded-xl border border-red-400/40 bg-red-500/15 px-5 py-3 text-sm font-bold text-red-300"
             >
               <RotateCcw className="size-4" aria-hidden="true" />
