@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import test from "node:test";
+import { test } from "vitest";
 import { mapViewRowToMedia } from "../lib/functions/media-mapper.ts";
 
 test("normalizes media type and sorts cloned metadata arrays", () => {

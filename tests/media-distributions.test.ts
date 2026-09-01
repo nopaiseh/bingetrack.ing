@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import test from "node:test";
+import { test } from "vitest";
 import { buildMediaDistributions, type DistributionCountRow } from "../lib/functions/media-distributions.ts";
 
 test("builds top-five distributions and percentages from database counts", () => {

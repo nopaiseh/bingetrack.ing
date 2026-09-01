@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import test from "node:test";
+import { test } from "vitest";
 import { checkRateLimit } from "../lib/api/rate-limit.ts";
 
 test("limits repeated requests within the same bucket and window", () => {
