@@ -32,11 +32,11 @@ export function CinematicBackground({ imageUrl }: { imageUrl: string }) {
 
 function MediaPoster({ media }: { media: Media }) {
   return (
-    <div className="w-full max-w-72 shrink-0 self-center lg:w-72 lg:self-start">
+    <div className="w-full max-w-80 shrink-0 self-center lg:w-80 lg:self-start">
       {/* Lighter Frosted Glass Poster */}
       <div className="surface-muted relative aspect-2/3 w-full overflow-hidden rounded-xl border border-white/10 shadow-[0_15px_40px_rgba(0,0,0,0.3)] backdrop-blur-2xl">
         {media.cover_url ? (
-          <Image src={media.cover_url} alt={media.title} fill sizes="(max-width: 768px) 100vw, 288px" className="object-cover transition-transform duration-700 hover:scale-105" priority/>
+          <Image src={media.cover_url} alt={media.title} fill sizes="(max-width: 768px) 100vw, 320px" className="object-cover transition-transform duration-700 hover:scale-105" priority/>
         ) : (
           <div className="w-full h-full flex flex-col items-center justify-center text-white/30 gap-2">
             <ImageIcon className="size-10 drop-shadow-md" aria-hidden="true" />
@@ -184,6 +184,8 @@ export default function MediaInformation({
 }) {
   const defaultBackHref = media.type === "series" ? "/series" : "/movies";
   const defaultBackLabel = media.type === "series" ? "返回电视剧列表" : "返回电影列表";
+  const alternateTitle = media.alternate_title?.trim();
+  const showAlternateTitle = alternateTitle && alternateTitle !== media.title.trim();
 
   return (
     <>
@@ -201,9 +203,16 @@ export default function MediaInformation({
 
             <div className="flex flex-1 flex-col">
             <div className="mb-4 md:mb-8">
-              <h1 className="text-balance mb-6 mt-4 text-3xl font-bold tracking-tight text-white drop-shadow-[0_0_15px_rgba(255,255,255,0.3)] sm:text-4xl lg:text-5xl">
-                {media.title}
-              </h1>
+              <div className="mb-6 mt-4">
+                <h1 className="text-balance text-3xl font-bold tracking-tight text-white drop-shadow-[0_0_15px_rgba(255,255,255,0.3)] sm:text-4xl lg:text-5xl">
+                  {media.title}
+                </h1>
+                {showAlternateTitle && (
+                  <p className="mt-2 text-balance text-lg font-medium tracking-wide text-white/50 sm:text-xl">
+                    {alternateTitle}
+                  </p>
+                )}
+              </div>
 
               <div className="flex flex-wrap items-center gap-4 text-sm font-medium">
                 {media.rating ? (

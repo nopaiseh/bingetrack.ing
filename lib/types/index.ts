@@ -3,6 +3,7 @@ export type MediaType = "movies" | "series";
 export interface Media {
   id: string;
   title: string;
+  alternate_title?: string | null;
   date: string;
   release_year?: string | number | null;
   runtime?: number | null;
@@ -23,6 +24,7 @@ export interface SeasonInfo {
   id: string;
   seasonNumber: number;
   title: string;
+  alternateTitle?: string | null;
   coverUrl: string;
   episodeCount: number;
   watchedEpisodeCount: number;
@@ -34,6 +36,7 @@ export interface EpisodeInfo {
   id: string;
   episodeNumber: number;
   title: string;
+  alternateTitle?: string | null;
   summary: string;
   coverUrl: string;
   releaseDate: string | null;
@@ -126,6 +129,7 @@ export type MediaDistributions = Record<MediaType, Record<string, MediaDistribut
 export interface ViewAllMediaRow {
   id: string | number;
   title?: string | null;
+  alternate_title?: string | null;
   sort_date?: string | null;
   release_date?: string | null;
   release_year?: string | number | null;

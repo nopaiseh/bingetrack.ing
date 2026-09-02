@@ -24,6 +24,7 @@ export function mapViewRowToMedia(
   return {
     id: String(item.id),
     title: item.title ?? "",
+    alternate_title: item.alternate_title ?? null,
     date: String(item.sort_date ?? item.release_year ?? item.release_date ?? ""),
     release_year: item.release_year ?? "",
     runtime: item.runtime ?? null,

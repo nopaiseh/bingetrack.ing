@@ -23,9 +23,11 @@ type EpisodeOrder = "asc" | "desc";
 
 function EpisodeCard({ episode }: { episode: EpisodeInfo }) {
   const watched = episode.status === "watched";
+  const alternateTitle = episode.alternateTitle?.trim();
+  const showAlternateTitle = alternateTitle && alternateTitle !== episode.title.trim();
 
   return (
-    <article className="surface-card group flex flex-col overflow-hidden rounded-2xl transition-colors duration-300 hover:border-red-400/30 hover:bg-white/8 lg:min-h-64 lg:flex-row">
+    <article className="surface-card group flex flex-col overflow-hidden rounded-2xl transition-colors duration-300 hover:border-red-400/30 hover:bg-white/8 lg:min-h-76 lg:flex-row">
       <div className="image-overlay relative aspect-video w-full shrink-0 lg:aspect-auto lg:w-88">
         {episode.coverUrl ? (
           <Image
@@ -47,7 +49,14 @@ function EpisodeCard({ episode }: { episode: EpisodeInfo }) {
 
       <div className="flex min-w-0 flex-1 flex-col p-4 sm:p-5">
         <div className="flex flex-wrap items-start justify-between gap-3">
-          <h2 className="min-w-0 flex-1 font-bold text-white/90 transition-colors group-hover:text-red-300">{episode.title}</h2>
+          <div className="min-w-0 flex-1">
+            <h2 className="font-bold text-white/90 transition-colors group-hover:text-red-300">{episode.title}</h2>
+            {showAlternateTitle && (
+              <p className="mt-1 text-sm font-medium tracking-wide text-white/45">
+                {alternateTitle}
+              </p>
+            )}
+          </div>
           <span className={`inline-flex shrink-0 items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium ${
             watched ? "border-emerald-400/25 bg-emerald-400/10 text-emerald-300" : "surface-muted border-white/10 text-white/45"
           }`}>
@@ -119,6 +128,8 @@ export default async function SeasonPage({
   const watchedPercent = seasonData.season.episodeCount > 0
     ? Math.round((seasonData.watchedCount / seasonData.season.episodeCount) * 100)
     : 0;
+  const alternateTitle = seasonData.season.alternateTitle?.trim();
+  const showAlternateTitle = alternateTitle && alternateTitle !== seasonData.season.title.trim();
 
   return (
     <div className="min-h-screen pb-16 pt-24 text-neutral-200">
@@ -142,6 +153,11 @@ export default async function SeasonPage({
               <div className="flex flex-col justify-between gap-5 lg:flex-row lg:items-end">
                 <div>
                   <h1 className="text-3xl font-bold text-white md:text-5xl">{seasonData.season.title}</h1>
+                  {showAlternateTitle && (
+                    <p className="mt-2 text-balance text-lg font-medium tracking-wide text-white/50 sm:text-xl">
+                      {alternateTitle}
+                    </p>
+                  )}
                   <p className="mt-3 text-sm text-white/50">
                     {seasonData.season.releaseYearRange ? `${seasonData.season.releaseYearRange} · ` : ""}{seasonData.season.episodeCount} 集
                   </p>

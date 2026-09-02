@@ -56,6 +56,7 @@ create table public.media_items (
   id uuid default gen_random_uuid() not null,
   type public.media_type not null,
   title text not null,
+  alternate_title text,
   summary text,
   cover_url text,
   release_date date,
@@ -283,7 +284,8 @@ select
   (select array_agg(l.name) from public.media_languages ml join public.languages l on l.id = ml.language_id where ml.media_item_id = m.id) as languages,
   (select array_agg(r.name) from public.media_regions mr join public.regions r on r.id = mr.region_id where mr.media_item_id = m.id) as regions,
   (select array_agg(p.name order by mc.credit_order) from public.media_credits mc join public.people p on p.id = mc.person_id where mc.media_item_id = m.id and mc.role = 'actor'::public.person_role) as casts,
-  (select array_agg(p.name order by mc.credit_order) from public.media_credits mc join public.people p on p.id = mc.person_id where mc.media_item_id = m.id and mc.role = 'director'::public.person_role) as directors
+  (select array_agg(p.name order by mc.credit_order) from public.media_credits mc join public.people p on p.id = mc.person_id where mc.media_item_id = m.id and mc.role = 'director'::public.person_role) as directors,
+  m.alternate_title
 from public.media_items m
 left join public.tracking t on t.media_item_id = m.id
 where m.type = 'movie'::public.media_type
@@ -314,7 +316,8 @@ select
   (select array_agg(l.name) from public.media_languages ml join public.languages l on l.id = ml.language_id where ml.media_item_id = series.id) as languages,
   (select array_agg(r.name) from public.media_regions mr join public.regions r on r.id = mr.region_id where mr.media_item_id = series.id) as regions,
   (select array_agg(p.name order by mc.credit_order) from public.media_credits mc join public.people p on p.id = mc.person_id where mc.media_item_id = series.id and mc.role = 'actor'::public.person_role) as casts,
-  (select array_agg(p.name order by mc.credit_order) from public.media_credits mc join public.people p on p.id = mc.person_id where mc.media_item_id = series.id and mc.role = 'director'::public.person_role) as directors
+  (select array_agg(p.name order by mc.credit_order) from public.media_credits mc join public.people p on p.id = mc.person_id where mc.media_item_id = series.id and mc.role = 'director'::public.person_role) as directors,
+  series.alternate_title
 from public.media_items series
 left join public.tv_seasons seasons on seasons.series_id = series.id
 left join public.tv_episodes episodes on episodes.season_id = seasons.id
@@ -732,6 +735,7 @@ as $$
       e.id,
       e.episode_number,
       m.title,
+      m.alternate_title,
       m.summary,
       m.cover_url,
       m.release_date,
@@ -775,6 +779,7 @@ as $$
           'id', id,
           'episode_number', episode_number,
           'title', title,
+          'alternate_title', alternate_title,
           'summary', summary,
           'cover_url', cover_url,
           'release_date', release_date,

@@ -186,7 +186,7 @@ export async function getSeasonsBySeriesId(seriesId: string): Promise<SeasonInfo
   const seasonRows = (data ?? []) as SeasonRow[];
   const seasonIds = seasonRows.map((season) => season.id);
   const { data: mediaItems, error: mediaItemsError } = seasonIds.length > 0
-    ? await db.from("media_items").select("id, title, summary, cover_url").in("id", seasonIds)
+    ? await db.from("media_items").select("id, title, alternate_title, summary, cover_url").in("id", seasonIds)
     : { data: [], error: null };
 
   if (mediaItemsError) {
@@ -215,6 +215,7 @@ export async function getSeasonsBySeriesId(seriesId: string): Promise<SeasonInfo
       id: season.id,
       seasonNumber: season.season_number,
       title: mediaItem?.title ?? `第 ${season.season_number} 季`,
+      alternateTitle: mediaItem?.alternate_title ?? null,
       coverUrl: mediaItem?.cover_url ?? "",
       episodeCount: season.tv_episodes?.length ?? 0,
       watchedEpisodeCount,
@@ -237,8 +238,9 @@ type SeasonEpisodePageRow = {
   total: number | string;
   episodes: Array<{
   id: string;
-  episode_number: number;
+    episode_number: number;
     title: string | null;
+    alternate_title: string | null;
     summary: string | null;
     cover_url: string | null;
     release_date: string | null;
@@ -269,7 +271,7 @@ export async function getSeasonEpisodes(
     }),
     db
       .from("media_items")
-      .select("title, summary, cover_url")
+      .select("title, alternate_title, summary, cover_url")
       .eq("id", seasonId)
       .maybeSingle(),
   ]);
@@ -292,6 +294,7 @@ export async function getSeasonEpisodes(
       id: episode.id,
       episodeNumber: episode.episode_number,
       title: episode.title ?? `第 ${episode.episode_number} 集`,
+      alternateTitle: episode.alternate_title ?? null,
       summary: episode.summary ?? "",
       coverUrl: episode.cover_url ?? "",
       releaseDate: episode.release_date,
@@ -309,6 +312,7 @@ export async function getSeasonEpisodes(
       id: seasonId,
       seasonNumber: result.season_number,
       title: seasonMedia?.title ?? `第 ${result.season_number} 季`,
+      alternateTitle: seasonMedia?.alternate_title ?? null,
       coverUrl: seasonMedia?.cover_url ?? "",
       episodeCount,
       watchedEpisodeCount: watchedCount,
