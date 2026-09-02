@@ -311,7 +311,7 @@ function SearchContent() {
                   setQuery(e.target.value);
                 }}
                 placeholder="搜索电影、电视剧、导演或演员..."
-                className="glass-control relative z-0 w-full rounded-2xl py-4 pl-12 pr-12 text-base text-white outline-none transition-all duration-500 placeholder:text-white/50 focus:border-red-400/50 focus:bg-white/10 focus:ring-1 focus:ring-red-400/50 focus:shadow-[0_6px_30px_rgba(248,113,113,0.2)] sm:py-5 sm:pr-40 sm:text-lg"
+                className="surface-control relative z-0 w-full rounded-2xl py-4 pl-12 pr-12 text-base text-white outline-none transition-all duration-500 placeholder:text-white/50 focus:border-red-400/50 focus:bg-white/10 focus:ring-1 focus:ring-red-400/50 focus:shadow-[0_6px_30px_rgba(248,113,113,0.2)] sm:py-5 sm:pr-40 sm:text-lg"
               />
             </div>
 
@@ -329,8 +329,8 @@ function SearchContent() {
                 onClick={() => setShowAdvanced(!showAdvanced)}
                 className={`relative flex min-h-11 items-center gap-2 rounded-xl px-4 py-2 text-sm font-medium transition-all duration-300 backdrop-blur-2xl ${
                   showAdvanced
-                    ? "bg-red-500/15 text-red-400 border border-red-400/40 shadow-[0_4px_15px_rgba(248,113,113,0.2)] drop-shadow-[0_0_3px_rgba(248,113,113,0.3)]"
-                    : "bg-white/5 text-white/70 border border-white/10 shadow-[0_4px_15px_rgba(0,0,0,0.2)] hover:bg-white/10 hover:text-white hover:border-white/20 hover:drop-shadow-[0_0_8px_rgba(255,255,255,0.5)] hover:shadow-[0_6px_20px_rgba(0,0,0,0.3)]"
+                    ? "surface-active text-red-400 border border-red-400/40 shadow-[0_4px_15px_rgba(248,113,113,0.2)] drop-shadow-[0_0_3px_rgba(248,113,113,0.3)]"
+                    : "filter-option"
                 }`}
               >
                 <SlidersHorizontal className="size-4" aria-hidden="true" />
@@ -343,7 +343,7 @@ function SearchContent() {
           </div>
 
           {showAdvanced && (
-            <div className="glass-panel mt-4 origin-top rounded-2xl p-4 transition-all duration-300 animate-in slide-in-from-top-2 fade-in sm:p-6">
+            <div className="surface-panel mt-4 origin-top rounded-2xl p-4 transition-all duration-300 animate-in slide-in-from-top-2 fade-in sm:p-6">
               <div className="flex flex-col">
                 {BUTTON_CATEGORIES.map((category) => {
                   const activeSelections = filters[category.id] || [];
@@ -359,8 +359,8 @@ function SearchContent() {
                           onClick={() => toggleFilter(category.id, "全部", category.multiSelect, category.options)}
                           className={`min-h-10 rounded-lg px-4 py-1.5 text-[13px] transition-all duration-300 backdrop-blur-2xl ${
                             isAllSelected
-                              ? "bg-red-500/15 text-red-400 font-bold border border-red-400/40 shadow-[0_4px_10px_rgba(248,113,113,0.2)] drop-shadow-[0_0_3px_rgba(248,113,113,0.3)]"
-                              : "bg-white/5 text-white/70 border border-white/10 shadow-[0_4px_10px_rgba(0,0,0,0.2)] hover:bg-white/10 hover:text-white hover:border-white/20 hover:shadow-[0_6px_15px_rgba(0,0,0,0.3)] hover:drop-shadow-[0_0_8px_rgba(255,255,255,0.5)]"
+                              ? "filter-option-active"
+                              : "filter-option"
                           }`}
                         >
                           全部
@@ -374,8 +374,8 @@ function SearchContent() {
                               onClick={() => toggleFilter(category.id, option, category.multiSelect, category.options)}
                               className={`group flex min-h-10 items-center gap-1.5 rounded-lg px-4 py-1.5 text-[13px] transition-all duration-300 backdrop-blur-2xl ${
                                 isSelected
-                                  ? "bg-red-500/15 text-red-400 font-bold border border-red-400/40 shadow-[0_4px_10px_rgba(248,113,113,0.2)] drop-shadow-[0_0_3px_rgba(248,113,113,0.3)]"
-                                  : "bg-white/5 text-white/70 border border-white/10 shadow-[0_4px_10px_rgba(0,0,0,0.2)] hover:bg-white/10 hover:text-white hover:border-white/20 hover:shadow-[0_6px_15px_rgba(0,0,0,0.3)] hover:drop-shadow-[0_0_8px_rgba(255,255,255,0.5)]"
+                                  ? "filter-option-active"
+                                  : "filter-option"
                               }`}
                             >
                               {option}
@@ -401,8 +401,8 @@ function SearchContent() {
                       }}
                       className={`min-h-10 rounded-lg px-4 py-1.5 text-[13px] transition-all duration-300 backdrop-blur-2xl ${
                         !filters.year?.length || (filters.year[0] === "" && filters.year[1] === "")
-                          ? "bg-red-500/15 text-red-400 font-bold border border-red-400/40 shadow-[0_4px_10px_rgba(248,113,113,0.2)] drop-shadow-[0_0_3px_rgba(248,113,113,0.3)]"
-                          : "bg-white/5 text-white/70 border border-white/10 shadow-[0_4px_10px_rgba(0,0,0,0.2)] hover:bg-white/10 hover:text-white hover:border-white/20 hover:shadow-[0_6px_15px_rgba(0,0,0,0.3)] hover:drop-shadow-[0_0_8px_rgba(255,255,255,0.5)]"
+                          ? "filter-option-active"
+                          : "filter-option"
                       }`}
                     >
                       全部
@@ -414,7 +414,7 @@ function SearchContent() {
                           aria-label="开始年份"
                           value={filters.year?.[0] || ""}
                           onChange={(e) => handleYearChange("start", e.target.value)}
-                          className="min-h-10 w-full min-w-0 cursor-pointer appearance-none rounded-lg border border-white/10 bg-white/5 py-1.5 pl-3 pr-8 text-[13px] text-white shadow-[0_4px_10px_rgba(0,0,0,0.2)] backdrop-blur-2xl transition-all outline-none hover:border-white/20 hover:bg-white/10 hover:shadow-[0_6px_15px_rgba(0,0,0,0.3)] focus:border-red-400/50 focus:bg-white/10 sm:min-w-25"
+                          className="filter-option min-h-10 w-full min-w-0 cursor-pointer appearance-none rounded-lg py-1.5 pl-3 pr-8 text-[13px] backdrop-blur-2xl transition-all outline-none focus:border-red-400/50 focus:bg-white/10 sm:min-w-25"
                         >
                           <option value="" disabled hidden className="bg-neutral-900 text-neutral-300">开始年份</option>
                           {yearOptions.map((y) => (
@@ -431,7 +431,7 @@ function SearchContent() {
                           aria-label="结束年份"
                           value={filters.year?.[1] || ""}
                           onChange={(e) => handleYearChange("end", e.target.value)}
-                          className="min-h-10 w-full min-w-0 cursor-pointer appearance-none rounded-lg border border-white/10 bg-white/5 py-1.5 pl-3 pr-8 text-[13px] text-white shadow-[0_4px_10px_rgba(0,0,0,0.2)] backdrop-blur-2xl transition-all outline-none hover:border-white/20 hover:bg-white/10 hover:shadow-[0_6px_15px_rgba(0,0,0,0.3)] focus:border-red-400/50 focus:bg-white/10 sm:min-w-25"
+                          className="filter-option min-h-10 w-full min-w-0 cursor-pointer appearance-none rounded-lg py-1.5 pl-3 pr-8 text-[13px] backdrop-blur-2xl transition-all outline-none focus:border-red-400/50 focus:bg-white/10 sm:min-w-25"
                         >
                           <option value="" disabled hidden className="bg-neutral-900 text-neutral-300">最终年份</option>
                           {yearOptions.map((y) => (
@@ -460,8 +460,8 @@ function SearchContent() {
                           onClick={() => handleSortToggle(option.id)}
                           className={`group flex min-h-10 items-center gap-2 rounded-lg px-4 py-1.5 text-[13px] transition-all duration-300 backdrop-blur-2xl ${
                             isSelected
-                              ? "bg-red-500/15 text-red-400 font-bold border border-red-400/40 shadow-[0_4px_10px_rgba(248,113,113,0.2)] drop-shadow-[0_0_3px_rgba(248,113,113,0.3)]"
-                              : "bg-white/5 text-white/70 border border-white/10 shadow-[0_4px_10px_rgba(0,0,0,0.2)] hover:bg-white/10 hover:text-white hover:border-white/20 hover:shadow-[0_6px_15px_rgba(0,0,0,0.3)] hover:drop-shadow-[0_0_8px_rgba(255,255,255,0.5)]"
+                              ? "filter-option-active"
+                              : "filter-option"
                           }`}
                         >
                           {option.label}
@@ -500,7 +500,7 @@ function SearchContent() {
                   清空筛选
                 </button>
               )}
-              <span className="min-w-32 text-center text-sm px-4 py-1.5 bg-white/5 backdrop-blur-2xl rounded-full border border-white/10 text-white font-medium shadow-[0_4px_10px_rgba(0,0,0,0.2)] drop-shadow-[0_0_8px_rgba(255,255,255,0.1)] transition-all">
+              <span className="surface-muted min-w-32 rounded-full border border-white/10 px-4 py-1.5 text-center text-sm font-medium text-white shadow-[0_4px_10px_rgba(0,0,0,0.2)] backdrop-blur-2xl drop-shadow-[0_0_8px_rgba(255,255,255,0.1)] transition-all">
                 {isLoading ? "加载中..." : requestError ? "加载失败" : `找到 ${total} 部作品`}
               </span>
             </div>
@@ -538,15 +538,15 @@ function SearchContent() {
           
           {totalPages > 1 && !isLoading && (
             <nav className="mt-10 flex flex-wrap items-center justify-center gap-2" aria-label="搜索结果分页">
-              <button onClick={() => goToPage(page - 1)} disabled={page === 1} className="glass-control rounded-xl p-2.5 text-white/65 transition-all hover:bg-white/10 hover:text-white disabled:pointer-events-none disabled:opacity-30" aria-label="上一页">
+              <button onClick={() => goToPage(page - 1)} disabled={page === 1} className="surface-control rounded-xl p-2.5 text-white/65 transition-all hover:bg-white/10 hover:text-white disabled:pointer-events-none disabled:opacity-30" aria-label="上一页">
                 <ChevronLeft className="size-4" aria-hidden="true" />
               </button>
               {pageNumbers(page, totalPages).map((pageNumber) => (
-                <button key={pageNumber} onClick={() => goToPage(pageNumber)} aria-current={pageNumber === page ? "page" : undefined} className={`min-w-10 rounded-xl border px-3 py-2 text-center text-sm transition-all ${pageNumber === page ? "border-red-400/30 bg-red-500/15 text-red-300" : "border-white/10 bg-white/5 text-white/55 hover:bg-white/10 hover:text-white"}`}>
+                <button key={pageNumber} onClick={() => goToPage(pageNumber)} aria-current={pageNumber === page ? "page" : undefined} className={`min-w-10 rounded-xl border px-3 py-2 text-center text-sm transition-all ${pageNumber === page ? "surface-active border-red-400/30 text-red-300" : "surface-muted border-white/10 text-white/55 hover:bg-white/10 hover:text-white"}`}>
                   {pageNumber}
                 </button>
               ))}
-              <button onClick={() => goToPage(page + 1)} disabled={page === totalPages} className="glass-control rounded-xl p-2.5 text-white/65 transition-all hover:bg-white/10 hover:text-white disabled:pointer-events-none disabled:opacity-30" aria-label="下一页">
+              <button onClick={() => goToPage(page + 1)} disabled={page === totalPages} className="surface-control rounded-xl p-2.5 text-white/65 transition-all hover:bg-white/10 hover:text-white disabled:pointer-events-none disabled:opacity-30" aria-label="下一页">
                 <ChevronRight className="size-4" aria-hidden="true" />
               </button>
             </nav>
@@ -557,7 +557,7 @@ function SearchContent() {
       <button
         onClick={scrollToTop}
         aria-label="返回页面顶部"
-        className={`fixed bottom-22 right-4 z-50 flex size-12 items-center justify-center rounded-full border border-white/10 bg-white/5 text-white/70 shadow-[0_4px_15px_rgba(0,0,0,0.2)] backdrop-blur-2xl transition-all duration-300 hover:scale-105 hover:border-red-400/50 hover:bg-white/10 hover:text-red-400 hover:shadow-[0_6px_25px_rgba(248,113,113,0.3)] hover:drop-shadow-[0_0_5px_rgba(248,113,113,0.5)] sm:right-8 lg:right-12 ${
+        className={`surface-muted fixed bottom-22 right-4 z-50 flex size-12 items-center justify-center rounded-full border border-white/10 text-white/70 shadow-[0_4px_15px_rgba(0,0,0,0.2)] backdrop-blur-2xl transition-all duration-300 hover:scale-105 hover:border-red-400/50 hover:bg-white/10 hover:text-red-400 hover:shadow-[0_6px_25px_rgba(248,113,113,0.3)] hover:drop-shadow-[0_0_5px_rgba(248,113,113,0.5)] sm:right-8 lg:right-12 ${
           showScrollTop ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10 pointer-events-none"
         }`}
       >

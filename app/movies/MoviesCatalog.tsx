@@ -21,7 +21,7 @@ export default function MoviesCatalog({
         
         <div className="mb-10 grid grid-cols-2 gap-4 md:mb-12 lg:mb-16 lg:grid-cols-4">
           {statItems.map((stat, idx) => (
-            <div key={idx} className="glass-card group flex flex-col rounded-2xl p-4 transition-all duration-300 hover:-translate-y-1 hover:border-white/20 hover:bg-white/10 sm:p-5 lg:p-6">
+            <div key={idx} className="surface-card interactive-card group flex flex-col rounded-2xl p-4 sm:p-5 lg:p-6">
               <h2 className="font-medium uppercase text-neutral-400 text-xs tracking-widest mb-2">
                 {stat.label}
               </h2>

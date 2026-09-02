@@ -43,7 +43,7 @@ export default function DashboardYearPicker({
   return (
     <div className="relative" ref={pickerRef}>
       <label
-        className="glass-control group flex w-35 cursor-pointer items-center gap-2 rounded-xl py-2.5 pl-4 pr-3 transition-all hover:border-white/20 hover:bg-white/10 hover:shadow-[0_6px_20px_rgba(0,0,0,0.3)]"
+        className="surface-control group flex w-35 cursor-pointer items-center gap-2 rounded-xl py-2.5 pl-4 pr-3 transition-all hover:border-white/20 hover:bg-white/10 hover:shadow-[0_6px_20px_rgba(0,0,0,0.3)]"
         onClick={() => setIsOpen(true)}
       >
         <CalendarDays className="size-4 text-red-500 transition-colors group-hover:text-red-400 group-hover:drop-shadow-[0_0_5px_rgba(248,113,113,0.5)]" aria-hidden="true" />
@@ -88,7 +88,7 @@ export default function DashboardYearPicker({
       </label>
 
       {isOpen && (
-        <div className="glass-panel absolute right-0 top-full z-50 mt-2 w-32 overflow-hidden rounded-xl animate-in fade-in slide-in-from-top-2">
+        <div className="surface-panel absolute right-0 top-full z-50 mt-2 w-32 overflow-hidden rounded-xl animate-in fade-in slide-in-from-top-2">
           <div id="dashboard-year-options" role="listbox" aria-label="年份" className="custom-scrollbar flex max-h-64 flex-col overflow-y-auto">
             {options.length > 0 ? options.map((year, index) => (
               <button
@@ -101,7 +101,7 @@ export default function DashboardYearPicker({
                 onClick={() => selectYear(year)}
                 className={`w-full shrink-0 border-l-2 px-5 py-3 text-left font-mono text-sm transition-colors ${
                   selectedYear === year || activeIndex === index
-                    ? "border-red-400 bg-red-500/15 font-bold text-red-400 drop-shadow-[0_0_5px_rgba(248,113,113,0.3)]"
+                    ? "surface-active border-red-400 font-bold text-red-400 drop-shadow-[0_0_5px_rgba(248,113,113,0.3)]"
                     : "border-transparent text-white/60 hover:bg-white/10 hover:text-white"
                 }`}
               >

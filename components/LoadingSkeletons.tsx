@@ -1,10 +1,10 @@
 function Pulse({ className }: { className: string }) {
-  return <div className={`animate-pulse rounded-xl bg-white/8 ${className}`} />;
+  return <div className={`surface-skeleton animate-pulse rounded-xl ${className}`} />;
 }
 
 function PosterSkeleton() {
   return (
-    <div className="glass-card w-36 shrink-0 overflow-hidden rounded-xl sm:w-44">
+    <div className="surface-card w-36 shrink-0 overflow-hidden rounded-xl sm:w-44">
       <Pulse className="aspect-2/3 w-full rounded-none" />
       <div className="space-y-2 p-3">
         <Pulse className="h-4 w-3/4" />
@@ -34,7 +34,7 @@ export function CatalogLoadingSkeleton() {
     <div className="container mx-auto max-w-7xl px-4 pb-12 pt-26 sm:px-6 lg:px-8" aria-label="正在加载媒体目录">
       <div className="mb-10 grid grid-cols-2 gap-4 md:mb-12 lg:mb-16 lg:grid-cols-4">
         {Array.from({ length: 4 }, (_, index) => (
-          <div key={index} className="glass-card space-y-3 rounded-2xl p-4 sm:p-5 lg:p-6">
+          <div key={index} className="surface-card space-y-3 rounded-2xl p-4 sm:p-5 lg:p-6">
             <Pulse className="h-3 w-24" />
             <Pulse className="h-9 w-16" />
           </div>

@@ -34,7 +34,7 @@ function MediaPoster({ media }: { media: Media }) {
   return (
     <div className="w-full max-w-72 shrink-0 self-center lg:w-72 lg:self-start">
       {/* Lighter Frosted Glass Poster */}
-      <div className="aspect-2/3 w-full bg-white/5 backdrop-blur-2xl rounded-xl overflow-hidden border border-white/10 shadow-[0_15px_40px_rgba(0,0,0,0.3)] relative">
+      <div className="surface-muted relative aspect-2/3 w-full overflow-hidden rounded-xl border border-white/10 shadow-[0_15px_40px_rgba(0,0,0,0.3)] backdrop-blur-2xl">
         {media.cover_url ? (
           <Image src={media.cover_url} alt={media.title} fill sizes="(max-width: 768px) 100vw, 288px" className="object-cover transition-transform duration-700 hover:scale-105" priority/>
         ) : (
@@ -70,7 +70,7 @@ function StatusBadge({ status }: { status?: string }) {
   }
 
   return (
-    <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/5 text-white/60 border border-white/10 text-xs font-medium backdrop-blur-2xl shadow-[0_4px_10px_rgba(0,0,0,0.2)] hover:bg-white/10 hover:text-white hover:border-white/20 hover:shadow-[0_6px_15px_rgba(0,0,0,0.3)] hover:drop-shadow-[0_0_5px_rgba(255,255,255,0.5)] transition-all cursor-pointer">
+    <div className="surface-muted interactive-control flex cursor-pointer items-center gap-1.5 rounded-full border border-white/10 px-3 py-1.5 text-xs font-medium text-white/60 shadow-[0_4px_10px_rgba(0,0,0,0.2)] backdrop-blur-2xl">
       <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
         <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
       </svg>
@@ -107,7 +107,7 @@ export function MediaMetadata({ media, includePeople = true, releaseDateLabel }:
       {releaseDateLabel !== undefined && (
         <MetadataRow label="上映">
           {releaseDateLabel
-            ? <span className="inline-flex items-center rounded-lg border border-white/8 bg-white/3 px-3.5 py-1.5 text-sm font-medium tracking-wide text-neutral-300">{releaseDateLabel}</span>
+            ? <span className="surface-subtle inline-flex items-center rounded-lg border border-white/8 px-3.5 py-1.5 text-sm font-medium tracking-wide text-neutral-300">{releaseDateLabel}</span>
             : <span className="text-sm text-white/30 sm:pt-1">-</span>}
         </MetadataRow>
       )}
@@ -190,12 +190,12 @@ export default function MediaInformation({
       <CinematicBackground imageUrl={media.cover_url} />
 
       <div className="container relative z-10 mx-auto max-w-7xl px-4 pb-12 pt-24 sm:px-6 lg:px-8">
-        <Link href={backHref ?? defaultBackHref} className="glass-control group mb-6 inline-flex w-fit items-center rounded-xl px-4 py-2 text-sm font-medium text-white/70 transition-all hover:border-white/20 hover:bg-white/10 hover:text-white">
+        <Link href={backHref ?? defaultBackHref} className="surface-control interactive-control group mb-6 inline-flex w-fit items-center rounded-xl px-4 py-2 text-sm font-medium text-white/70">
           <span className="mr-2 transition-transform duration-300 group-hover:-translate-x-1">←</span>
           {backLabel ?? defaultBackLabel}
         </Link>
 
-        <div className="glass-panel rounded-3xl p-5 sm:p-6 lg:p-8">
+        <div className="surface-panel rounded-3xl p-5 sm:p-6 lg:p-8">
           <div className="flex flex-col gap-8 lg:flex-row lg:gap-12">
             <MediaPoster media={media} />
 
@@ -214,7 +214,7 @@ export default function MediaInformation({
                     <span className="font-bold tracking-wide">{media.rating.toFixed(1)}</span>
                   </div>
                 ) : (
-                  <span className="text-white/50 px-3 py-1.5 rounded-md bg-white/5 border border-white/10 backdrop-blur-2xl">
+                  <span className="surface-muted rounded-md border border-white/10 px-3 py-1.5 text-white/50 backdrop-blur-2xl">
                     未评分
                   </span>
                 )}
@@ -265,15 +265,15 @@ export default function MediaInformation({
               <Link
                 key={season.id}
                 href={`/series/${media.id}/seasons/${season.id}`}
-                className="glass-card group flex cursor-pointer flex-col overflow-hidden rounded-xl text-left transition-all duration-300 hover:-translate-y-1.5 hover:border-red-400/40 hover:bg-white/10 hover:shadow-[0_15px_40px_rgba(248,113,113,0.2)]"
+                className="surface-card interactive-media-card group flex cursor-pointer flex-col overflow-hidden rounded-xl text-left"
               >
-                <div className="relative aspect-2/3 w-full overflow-hidden bg-black/30">
+                <div className="image-overlay relative aspect-2/3 w-full overflow-hidden">
                   {season.coverUrl ? (
                     <Image src={season.coverUrl} alt={`${season.title} 海报`} fill className="object-cover transition-transform duration-500 group-hover:scale-105" sizes="(max-width: 639px) 50vw, (max-width: 1023px) 33vw, 20vw" />
                   ) : (
                     <div className="flex h-full items-center justify-center text-white/25"><ImageIcon className="size-9" aria-hidden="true" /></div>
                   )}
-                  <span className="absolute left-2 top-2 rounded-lg border border-white/10 bg-black/65 px-2 py-1 text-[11px] text-white/75 backdrop-blur-md">第 {season.seasonNumber} 季</span>
+                  <span className="image-label absolute left-2 top-2 rounded-lg border border-white/10 px-2 py-1 text-[11px] text-white/75 backdrop-blur-md">第 {season.seasonNumber} 季</span>
                 </div>
                 <div className="flex flex-1 flex-col p-4">
                   <h4 className="mb-2 line-clamp-2 text-sm font-bold text-white/85 transition-colors group-hover:text-red-300">
@@ -288,7 +288,7 @@ export default function MediaInformation({
               </Link>
             ))}
             {seasons.length === 0 && (
-              <div className="col-span-full rounded-xl border border-white/10 bg-white/5 px-6 py-10 text-center text-sm text-white/40">
+              <div className="surface-muted col-span-full rounded-xl border border-white/10 px-6 py-10 text-center text-sm text-white/40">
                 暂无季集数据
               </div>
             )}

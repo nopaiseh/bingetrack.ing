@@ -35,7 +35,7 @@ export default function SearchTag({
   return (
     <Link
       href={getSearchHref(label, category)}
-      className="inline-flex items-center px-3.5 py-1.5 rounded-lg bg-white/3 border border-white/8 text-neutral-300 text-sm font-medium tracking-wide transition-all duration-300 hover:bg-white/8 hover:text-white hover:border-white/20 hover:shadow-[0_0_12px_rgba(255,255,255,0.05)]"
+      className="surface-subtle inline-flex items-center rounded-lg border border-white/8 px-3.5 py-1.5 text-sm font-medium tracking-wide text-neutral-300 transition-all duration-300 hover:border-white/20 hover:bg-white/8 hover:text-white hover:shadow-[0_0_12px_rgba(255,255,255,0.05)]"
     >
       {label}
     </Link>

@@ -36,7 +36,7 @@ export default function Navbar() {
   };
 
   return (
-    <nav className="glass-panel fixed left-0 top-0 z-50 w-full border-x-0 border-t-0 transition-all duration-300">
+    <nav className="surface-panel fixed left-0 top-0 z-50 w-full border-x-0 border-t-0 transition-all duration-300">
       <div className="flex h-16 w-full max-w-7xl items-center justify-between px-4 sm:px-6 lg:mx-auto lg:px-8">
         <div className="flex items-center gap-10">
           <Link
@@ -91,17 +91,17 @@ export default function Navbar() {
               name="q"
               type="text"
               placeholder="搜索"
-              className="glass-control text-white text-sm rounded-full 
-              focus:bg-white/10 focus:ring-1 focus:ring-white/30 focus:border-white/30 
+              className="surface-control text-white text-sm rounded-full
+              focus:bg-white/10 focus:ring-1 focus:ring-white/30 focus:border-white/30
               block w-36 focus:w-52 sm:w-44 lg:focus:w-64 pl-10 py-2.5 transition-all duration-500 ease-out
-              placeholder-white/40 outline-none 
-              shadow-[0_4px_15px_rgba(0,0,0,0.2)] 
+              placeholder-white/40 outline-none
+              shadow-[0_4px_15px_rgba(0,0,0,0.2)]
               focus:shadow-[0_4px_25px_rgba(255,255,255,0.05)]"
             />
           </form>
 
           <button
-            className="glass-control flex size-11 items-center justify-center rounded-full p-2 text-white/70 outline-none hover:text-white lg:hidden
+            className="surface-control flex size-11 items-center justify-center rounded-full p-2 text-white/70 outline-none hover:text-white lg:hidden
             hover:bg-white/10 hover:border-white/20 hover:shadow-[0_6px_20px_rgba(255,255,255,0.05)] transition-all duration-300"
             aria-label={isMobileMenuOpen ? "关闭导航菜单" : "打开导航菜单"}
             aria-expanded={isMobileMenuOpen}
@@ -113,7 +113,7 @@ export default function Navbar() {
       </div>
 
       <div
-        className={`overflow-hidden border-b border-white/10 bg-white/5 shadow-[0_15px_40px_rgba(0,0,0,0.2)] backdrop-blur-3xl transition-all duration-500 ease-in-out lg:hidden ${
+        className={`surface-muted overflow-hidden border-b border-white/10 shadow-[0_15px_40px_rgba(0,0,0,0.2)] backdrop-blur-3xl transition-all duration-500 ease-in-out lg:hidden ${
           isMobileMenuOpen
             ? "max-h-72 opacity-100 py-4"
             : "max-h-0 opacity-0 py-0 border-transparent"
@@ -151,10 +151,10 @@ export default function Navbar() {
               name="q"
               type="text"
               placeholder="搜索"
-              className="glass-control text-white text-sm rounded-xl block w-full pl-10 py-2.5 outline-none 
+              className="surface-control text-white text-sm rounded-xl block w-full pl-10 py-2.5 outline-none
               focus:bg-white/10 focus:border-white/30 focus:ring-1 focus:ring-white/30
-              shadow-[0_4px_15px_rgba(0,0,0,0.2)] 
-              focus:shadow-[0_6px_25px_rgba(255,255,255,0.05)] 
+              shadow-[0_4px_15px_rgba(0,0,0,0.2)]
+              focus:shadow-[0_6px_25px_rgba(255,255,255,0.05)]
               placeholder-white/40 transition-all duration-300"
             />
           </form>

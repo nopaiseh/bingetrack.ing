@@ -33,7 +33,7 @@ export default function RootLayout({
         
         {/* --- 1. THE UNDER-LAYER (What sits behind the glass) --- */}
         {/* Deepened base gradient to keep the overall backdrop darker and calmer */}
-        <div className="fixed inset-0 z-[-2] bg-linear-to-br from-[#0c0202] via-[#050202] to-[#0a0202] overflow-hidden pointer-events-none">
+        <div className="fixed inset-0 z-[-2] overflow-hidden bg-linear-to-br from-[var(--canvas-start)] via-[var(--canvas-middle)] to-[var(--canvas-end)] pointer-events-none">
           
           {/* Main ambient glow - reduced opacity from 15% down to 6% for a much duller, softer red tint */}
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[250vw] h-[250vh] md:w-[150vw] md:h-[150vh] rounded-[100%] bg-red-600/6 blur-[140px] md:blur-[220px]"></div>
@@ -48,7 +48,7 @@ export default function RootLayout({
 
         {/* --- 2. THE FULL-SCREEN HEAVY GLASS PANE --- */}
         {/* Slightly deepened glass overlay (bg-black/30) to smooth out the background glow further */}
-        <div className="fixed inset-0 z-[-1] bg-black/30 backdrop-blur-xl border-x border-white/5 shadow-[inset_0_0_100px_rgba(0,0,0,0.2)] pointer-events-none"></div>
+        <div className="canvas-dimmer fixed inset-0 z-[-1] border-x border-white/5 shadow-[inset_0_0_100px_rgba(0,0,0,0.2)] backdrop-blur-xl pointer-events-none"></div>
 
         <Navbar />
 

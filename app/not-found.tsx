@@ -23,7 +23,7 @@ export default function NotFound() {
         
         <Link 
           href="/" 
-          className="mt-4 px-8 py-3 bg-white/5 hover:bg-white/10 border border-white/10 hover:border-white/20 transition-all duration-300 rounded-xl text-sm font-medium group"
+          className="surface-muted interactive-control group mt-4 rounded-xl border border-white/10 px-8 py-3 text-sm font-medium"
         >
           <ArrowLeft className="mr-2 inline size-4 text-neutral-500 group-hover:text-red-400 transition-colors" aria-hidden="true" />
           返回首页

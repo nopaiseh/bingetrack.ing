@@ -40,9 +40,9 @@ function percent(value: number, total: number) {
 
 function DistributionCard({ title, icon: Icon, items }: { title: string; icon: LucideIcon; items: DistributionItem[] }) {
   return (
-    <div className="glass-card group h-full rounded-2xl p-4 shadow-[0_10px_30px_rgba(0,0,0,0.2)] transition-all duration-300 hover:-translate-y-1 hover:border-white/20 hover:bg-white/10 hover:shadow-[0_15px_40px_rgba(0,0,0,0.3)] sm:p-5 lg:p-6">
+    <div className="surface-card interactive-card group h-full rounded-2xl p-4 sm:p-5 lg:p-6">
       <div className="mb-5 flex h-8 items-center gap-3 text-sm text-neutral-400">
-        <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-white/10 transition-colors duration-300 shadow-[0_4px_10px_rgba(0,0,0,0.1)] group-hover:bg-red-500/15 group-hover:text-red-400 group-hover:shadow-[0_4px_10px_rgba(248,113,113,0.2)]">
+        <div className="surface-raised flex size-8 shrink-0 items-center justify-center rounded-lg shadow-[0_4px_10px_rgba(0,0,0,0.1)] transition-colors duration-300 group-hover:bg-red-500/15 group-hover:text-red-400 group-hover:shadow-[0_4px_10px_rgba(248,113,113,0.2)]">
           <Icon className="size-4" aria-hidden="true" />
         </div>
         <span className="font-medium tracking-wide text-white/80 transition-colors group-hover:text-white">{title}</span>
@@ -51,7 +51,7 @@ function DistributionCard({ title, icon: Icon, items }: { title: string; icon: L
         {items.map((item) => (
           <div key={item.name} className="flex items-center gap-3">
             <span className="w-20 truncate text-sm text-white/70" title={item.name}>{item.name}</span>
-            <div className="flex-1 h-1.5 bg-white/10 rounded-full overflow-hidden shadow-inner">
+            <div className="progress-track h-1.5 flex-1 overflow-hidden rounded-full shadow-inner">
               <div className="h-full bg-neutral-300/80" style={{ width: `${item.percent}%` }} />
             </div>
             <span className="text-xs text-white/50 w-8 text-right">{item.percent}%</span>
@@ -92,7 +92,7 @@ function CategoryHeaderCards({
 }) {
   return (
     <div className="grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-6 lg:grid-cols-4">
-      <div className="glass-card group col-span-1 flex flex-col justify-center rounded-2xl p-4 shadow-[0_10px_30px_rgba(0,0,0,0.2)] transition-all duration-300 hover:-translate-y-1 hover:border-white/20 hover:bg-white/10 hover:shadow-[0_15px_40px_rgba(0,0,0,0.3)] sm:p-5 lg:col-span-3 lg:p-6">
+      <div className="surface-card interactive-card group col-span-1 flex flex-col justify-center rounded-2xl p-4 sm:p-5 lg:col-span-3 lg:p-6">
         <div className="text-white/60 mb-4 flex justify-between items-center drop-shadow-[0_0_5px_rgba(255,255,255,0.1)]">
           <i className="text-xl font-medium">{year} {categoryName} 阅览进度</i>
         </div>
@@ -103,7 +103,7 @@ function CategoryHeaderCards({
               / {totalCount} 部 (已看 / 总数)
             </span>
           </div>
-          <div className="w-full h-2 bg-white/10 rounded-full overflow-hidden shadow-inner">
+          <div className="progress-track h-2 w-full overflow-hidden rounded-full shadow-inner">
             <div
               className="h-full bg-linear-to-r from-red-600 to-red-400 shadow-[0_0_12px_rgba(239,68,68,0.5)] rounded-full"
               style={{
@@ -115,7 +115,7 @@ function CategoryHeaderCards({
         </div>
       </div>
 
-      <div className="glass-card group col-span-1 flex flex-col justify-center rounded-2xl p-4 shadow-[0_10px_30px_rgba(0,0,0,0.2)] transition-all duration-300 hover:-translate-y-1 hover:border-white/20 hover:bg-white/10 hover:shadow-[0_15px_40px_rgba(0,0,0,0.3)] sm:p-5 lg:p-6">
+      <div className="surface-card interactive-card group col-span-1 flex flex-col justify-center rounded-2xl p-4 sm:p-5 lg:p-6">
         <div className="text-white/60 mb-4 flex justify-between items-center drop-shadow-[0_0_5px_rgba(255,255,255,0.1)]">
           <i className="text-xl font-medium">平均{categoryName}评分</i>
         </div>
@@ -124,7 +124,7 @@ function CategoryHeaderCards({
             <span className="text-4xl font-mono text-white drop-shadow-[0_0_8px_rgba(255,255,255,0.2)]">{avgRating || 0}</span>
             <span className="text-sm text-white/50 font-medium">/ 10</span>
           </div>
-          <div className="w-full h-2 bg-white/10 rounded-full overflow-hidden shadow-inner">
+          <div className="progress-track h-2 w-full overflow-hidden rounded-full shadow-inner">
             <div
               className="h-full bg-linear-to-r from-red-600 to-red-400 shadow-[0_0_12px_rgba(239,68,68,0.5)] rounded-full"
               style={{
@@ -154,7 +154,7 @@ function MediaStatusCard({
   episodesCount?: number;
 }) {
   return (
-    <div className="group flex flex-col gap-4 rounded-xl border border-white/10 bg-white/5 p-4 shadow-[0_4px_15px_rgba(0,0,0,0.1)] backdrop-blur-xl transition-all duration-300 hover:-translate-y-1 hover:border-red-400/40 hover:bg-white/10 hover:shadow-[0_8px_25px_rgba(248,113,113,0.15)] sm:p-5">
+    <div className="surface-muted group flex flex-col gap-4 rounded-xl border border-white/10 p-4 shadow-[0_4px_15px_rgba(0,0,0,0.1)] backdrop-blur-xl transition-all duration-300 hover:-translate-y-1 hover:border-red-400/40 hover:bg-white/10 hover:shadow-[0_8px_25px_rgba(248,113,113,0.15)] sm:p-5">
       <div className="text-white/70 font-bold text-sm flex items-center gap-2 border-b border-white/10 pb-2 group-hover:text-red-300 transition-colors">
         <Icon className="size-4" aria-hidden="true" /> {title}
       </div>
@@ -290,7 +290,7 @@ export default function HomeDashboard({
 
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-white/10 pb-5">
           {/* Frosted Glass Tabs */}
-          <div className="flex gap-1 glass-control rounded-xl p-1.5" role="tablist" aria-label="仪表板视图">
+          <div className="surface-control flex gap-1 rounded-xl p-1.5" role="tablist" aria-label="仪表板视图">
             {tabs.map((tab) => (
               <button
                 key={tab}
@@ -301,7 +301,7 @@ export default function HomeDashboard({
                 aria-selected={activeTab === tab}
                 className={`px-5 py-2 rounded-lg text-sm font-medium transition-all duration-300 ${
                   activeTab === tab
-                    ? "bg-white/15 text-white shadow-[0_2px_10px_rgba(0,0,0,0.2)] ring-1 ring-white/20 drop-shadow-[0_0_5px_rgba(255,255,255,0.3)]"
+                    ? "surface-selected text-white shadow-[0_2px_10px_rgba(0,0,0,0.2)] ring-1 ring-white/20 drop-shadow-[0_0_5px_rgba(255,255,255,0.3)]"
                     : "text-white/60 hover:text-white hover:bg-white/10"
                 }`}
               >
@@ -325,7 +325,7 @@ export default function HomeDashboard({
           </div>
         )}
         {topMediaLoading && selectedYear !== "All Time" && (
-          <div role="status" className="mb-6 rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white/60">
+          <div role="status" className="surface-muted mb-6 rounded-xl border border-white/10 px-4 py-3 text-sm text-white/60">
             正在加载 {selectedYear} 年度精选…
           </div>
         )}
@@ -333,10 +333,10 @@ export default function HomeDashboard({
           <div key="overview" id="dashboard-panel-overview" role="tabpanel" aria-labelledby="dashboard-tab-overview" className="animate-fade-in flex flex-col gap-4 md:gap-6">
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-6 lg:grid-cols-3">
               
-              <div className="glass-card group flex flex-col justify-between rounded-2xl p-4 shadow-[0_10px_30px_rgba(0,0,0,0.2)] transition-all duration-300 hover:-translate-y-1 hover:border-white/20 hover:bg-white/10 hover:shadow-[0_15px_40px_rgba(0,0,0,0.3)] sm:p-5 lg:p-6">
+              <div className="surface-card interactive-card group flex flex-col justify-between rounded-2xl p-4 sm:p-5 lg:p-6">
                 <div>
                   <div className="text-sm text-white/60 mb-2 flex items-center gap-2">
-                    <div className="bg-white/10 p-2 rounded-lg flex items-center justify-center group-hover:bg-red-500/15 group-hover:text-red-400 transition-colors duration-300 shadow-[0_4px_10px_rgba(0,0,0,0.1)] group-hover:shadow-[0_4px_10px_rgba(248,113,113,0.2)]">
+                    <div className="stat-icon flex items-center justify-center rounded-lg p-2">
                       <PlayCircle className="size-4" aria-hidden="true" />
                     </div>
                     <span className="text-sm font-bold text-white/80 group-hover:text-white transition-colors tracking-wide">
@@ -355,10 +355,10 @@ export default function HomeDashboard({
                 </p>
               </div>
 
-              <div className="glass-card group flex flex-col justify-between rounded-2xl p-4 shadow-[0_10px_30px_rgba(0,0,0,0.2)] transition-all duration-300 hover:-translate-y-1 hover:border-white/20 hover:bg-white/10 hover:shadow-[0_15px_40px_rgba(0,0,0,0.3)] sm:p-5 lg:p-6">
+              <div className="surface-card interactive-card group flex flex-col justify-between rounded-2xl p-4 sm:p-5 lg:p-6">
                 <div>
                   <div className="text-sm text-white/60 mb-2 flex items-center gap-2">
-                    <div className="bg-white/10 p-2 rounded-lg flex items-center justify-center group-hover:bg-red-500/15 group-hover:text-red-400 transition-colors duration-300 shadow-[0_4px_10px_rgba(0,0,0,0.1)] group-hover:shadow-[0_4px_10px_rgba(248,113,113,0.2)]">
+                    <div className="stat-icon flex items-center justify-center rounded-lg p-2">
                       <Layers3 className="size-4" aria-hidden="true" />
                     </div>
                     <span className="text-sm font-bold text-white/80 group-hover:text-white transition-colors tracking-wide">
@@ -377,10 +377,10 @@ export default function HomeDashboard({
                 </p>
               </div>
 
-              <div className="glass-card group flex flex-col justify-between rounded-2xl p-4 shadow-[0_10px_30px_rgba(0,0,0,0.2)] transition-all duration-300 hover:-translate-y-1 hover:border-white/20 hover:bg-white/10 hover:shadow-[0_15px_40px_rgba(0,0,0,0.3)] sm:p-5 lg:p-6">
+              <div className="surface-card interactive-card group flex flex-col justify-between rounded-2xl p-4 sm:p-5 lg:p-6">
                 <div>
                   <div className="text-sm text-white/60 mb-2 flex items-center gap-2">
-                    <div className="bg-white/10 p-2 rounded-lg flex items-center justify-center group-hover:bg-red-500/15 group-hover:text-red-400 transition-colors duration-300 shadow-[0_4px_10px_rgba(0,0,0,0.1)] group-hover:shadow-[0_4px_10px_rgba(248,113,113,0.2)]">
+                    <div className="stat-icon flex items-center justify-center rounded-lg p-2">
                       <ChartPie className="size-4" aria-hidden="true" />
                     </div>
                     <span className="text-sm font-bold text-white/80 group-hover:text-white transition-colors tracking-wide">
@@ -395,7 +395,7 @@ export default function HomeDashboard({
                     <span className="text-white/50 font-medium">已完成</span>
                   </div>
                 </div>
-                <div className="w-full h-2 bg-white/10 rounded-full overflow-hidden mt-2 shadow-inner">
+                <div className="progress-track mt-2 h-2 w-full overflow-hidden rounded-full shadow-inner">
                   <div
                     className="h-full bg-linear-to-r from-red-600 to-red-400 shadow-[0_0_12px_rgba(239,68,68,0.5)] rounded-full"
                     style={{
@@ -407,10 +407,10 @@ export default function HomeDashboard({
             </div>
 
             {/* Movies Section (Updated to 2 columns) */}
-            <div className="glass-card group flex flex-col gap-6 rounded-2xl p-4 shadow-[0_10px_30px_rgba(0,0,0,0.2)] transition-all duration-300 hover:-translate-y-1 hover:border-white/20 hover:bg-white/10 hover:shadow-[0_15px_40px_rgba(0,0,0,0.3)] sm:p-5 lg:p-6">
+            <div className="surface-card interactive-card group flex flex-col gap-6 rounded-2xl p-4 sm:p-5 lg:p-6">
               <div className="flex justify-between items-center border-b border-white/10 pb-3">
                 <div className="flex items-center gap-2">
-                  <div className="bg-white/10 p-2 rounded-lg flex items-center justify-center group-hover:bg-red-500/15 group-hover:text-red-400 transition-colors duration-300 shadow-[0_4px_10px_rgba(0,0,0,0.1)] group-hover:shadow-[0_4px_10px_rgba(248,113,113,0.2)]">
+                  <div className="stat-icon flex items-center justify-center rounded-lg p-2">
                     <Film className="size-4" aria-hidden="true" />
                   </div>
                   <span className="text-sm font-bold text-white/80 group-hover:text-white transition-colors tracking-wide">
@@ -436,7 +436,7 @@ export default function HomeDashboard({
                 />
               </div>
 
-              <div className="w-full h-1.5 bg-white/10 rounded-full overflow-hidden shadow-inner">
+              <div className="progress-track h-1.5 w-full overflow-hidden rounded-full shadow-inner">
                 <div
                   className="h-full bg-linear-to-r from-red-600 to-red-400 shadow-[0_0_12px_rgba(239,68,68,0.5)] rounded-full"
                   style={{ width: `${moviesPercent}%` }}
@@ -445,10 +445,10 @@ export default function HomeDashboard({
             </div>
 
             {/* Series Section */}
-            <div className="glass-card group flex flex-col gap-6 rounded-2xl p-4 shadow-[0_10px_30px_rgba(0,0,0,0.2)] transition-all duration-300 hover:-translate-y-1 hover:border-white/20 hover:bg-white/10 hover:shadow-[0_15px_40px_rgba(0,0,0,0.3)] sm:p-5 lg:p-6">
+            <div className="surface-card interactive-card group flex flex-col gap-6 rounded-2xl p-4 sm:p-5 lg:p-6">
               <div className="flex justify-between items-center border-b border-white/10 pb-3">
                 <div className="flex items-center gap-2">
-                  <div className="bg-white/10 p-2 rounded-lg flex items-center justify-center group-hover:bg-red-500/15 group-hover:text-red-400 transition-colors duration-300 shadow-[0_4px_10px_rgba(0,0,0,0.1)] group-hover:shadow-[0_4px_10px_rgba(248,113,113,0.2)]">
+                  <div className="stat-icon flex items-center justify-center rounded-lg p-2">
                     <Tv className="size-4" aria-hidden="true" />
                   </div>
                   <span className="text-sm font-bold text-white/80 group-hover:text-white transition-colors tracking-wide">
@@ -483,7 +483,7 @@ export default function HomeDashboard({
                 />
               </div>
               
-              <div className="w-full h-1.5 bg-white/10 rounded-full overflow-hidden shadow-inner">
+              <div className="progress-track h-1.5 w-full overflow-hidden rounded-full shadow-inner">
                 <div
                   className="h-full bg-linear-to-r from-red-600 to-red-400 shadow-[0_0_12px_rgba(239,68,68,0.5)] rounded-full"
                   style={{ width: `${seriesPercent}%` }}

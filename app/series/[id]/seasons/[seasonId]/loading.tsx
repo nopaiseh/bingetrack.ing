@@ -1,5 +1,5 @@
 function Pulse({ className }: { className: string }) {
-  return <div className={`animate-pulse rounded-xl bg-white/8 ${className}`} />;
+  return <div className={`surface-skeleton animate-pulse rounded-xl ${className}`} />;
 }
 
 export default function Loading() {
@@ -7,7 +7,7 @@ export default function Loading() {
     <div className="min-h-screen pb-16 pt-24">
       <div className="container mx-auto max-w-7xl space-y-6 px-4 sm:px-6 lg:px-8" aria-label="正在加载本季剧集">
         <Pulse className="h-10 w-44" />
-        <div className="glass-panel flex flex-col gap-6 rounded-3xl p-5 sm:p-6 lg:flex-row lg:p-8">
+        <div className="surface-panel flex flex-col gap-6 rounded-3xl p-5 sm:p-6 lg:flex-row lg:p-8">
           <Pulse className="aspect-2/3 w-full max-w-72 shrink-0 self-center lg:w-72 lg:self-start" />
           <div className="flex-1 space-y-4 py-2">
             <Pulse className="h-4 w-40" />
@@ -22,7 +22,7 @@ export default function Loading() {
         <Pulse className="h-16 w-full" />
         <div className="space-y-3">
           {Array.from({ length: 6 }, (_, index) => (
-            <div key={index} className="glass-card flex flex-col overflow-hidden rounded-2xl lg:h-64 lg:flex-row">
+            <div key={index} className="surface-card flex flex-col overflow-hidden rounded-2xl lg:h-64 lg:flex-row">
               <Pulse className="aspect-video w-full shrink-0 rounded-none lg:aspect-auto lg:h-full lg:w-88" />
               <div className="flex-1 space-y-3 p-5">
                 <Pulse className="h-5 w-2/5" />

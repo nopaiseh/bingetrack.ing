@@ -13,10 +13,10 @@ function ItemCard({ item, type }: { item: Media; type: "movies" | "series" }) {
 
   return (
     <>
-      <div className="w-full aspect-2/3 relative flex items-center justify-center overflow-hidden bg-black/60">
+      <div className="image-placeholder relative flex aspect-2/3 w-full items-center justify-center overflow-hidden">
         {item.cover_url ? (
           <>
-            {!isImageLoaded && <div className="absolute inset-0 animate-pulse bg-white/8" />}
+            {!isImageLoaded && <div className="surface-skeleton absolute inset-0 animate-pulse" />}
             <Image
               src={item.cover_url}
               alt={item.title}
@@ -61,7 +61,7 @@ function ItemCard({ item, type }: { item: Media; type: "movies" | "series" }) {
             <span
               key={`tag-${i}`}
               title={tag} 
-              className="w-fit min-w-9 shrink truncate text-center px-1.5 py-0.5 rounded-md bg-white/5 backdrop-blur-md border border-white/10 text-white/70 text-[9px] sm:text-[10px] font-medium tracking-wide transition-all duration-300 group-hover:bg-red-500/15 group-hover:text-red-300 group-hover:border-red-400/30 group-hover:shadow-[0_4px_10px_rgba(248,113,113,0.2)]"
+              className="surface-muted w-fit min-w-9 shrink truncate rounded-md border border-white/10 px-1.5 py-0.5 text-center text-[9px] font-medium tracking-wide text-white/70 backdrop-blur-md transition-all duration-300 group-hover:border-red-400/30 group-hover:bg-red-500/15 group-hover:text-red-300 group-hover:shadow-[0_4px_10px_rgba(248,113,113,0.2)] sm:text-[10px]"
             >
               {tag}
             </span>
@@ -107,7 +107,7 @@ export default function MediaRow({
             <Link
               href={`/${mediaType}/${media.id}`}
               key={media.id}
-              className="glass-card group flex w-36 flex-none snap-start cursor-pointer flex-col overflow-hidden rounded-xl transition-all duration-300 hover:-translate-y-1.5 hover:border-red-400/40 hover:bg-white/10 hover:shadow-[0_15px_40px_rgba(248,113,113,0.2)] sm:w-44"
+              className="surface-card interactive-media-card group flex w-36 flex-none snap-start cursor-pointer flex-col overflow-hidden rounded-xl sm:w-44"
             >
               <ItemCard item={media} type={mediaType} />
             </Link>

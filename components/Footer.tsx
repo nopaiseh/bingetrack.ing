@@ -3,7 +3,7 @@ import { Terminal } from "lucide-react";
 
 export default function Footer() {
   return (
-    <footer className="glass-panel relative z-1 mt-auto overflow-hidden border-x-0 border-b-0 py-6 transition-all duration-300">
+    <footer className="surface-panel relative z-1 mt-auto overflow-hidden border-x-0 border-b-0 py-6 transition-all duration-300">
       
       {/* Subdued fixed white gradient syntax for dark theme */}
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-3/4 h-px bg-linear-to-r from-transparent via-white/10 to-transparent"></div>
@@ -38,7 +38,7 @@ export default function Footer() {
             
             {/* Tech badges */}
             <div className="flex items-center gap-2">
-              <a href="https://nextjs.org/" target="_blank" rel="noreferrer" className="px-2 py-1 rounded bg-white/5 backdrop-blur-md border border-white/10 text-neutral-400 text-[10px] font-mono hover:text-white hover:border-white/20 hover:bg-white/10 hover:shadow-[0_0_10px_rgba(255,255,255,0.1)] transition-all duration-300">
+              <a href="https://nextjs.org/" target="_blank" rel="noreferrer" className="surface-muted px-2 py-1 rounded backdrop-blur-md border border-white/10 text-neutral-400 text-[10px] font-mono hover:text-white hover:border-white/20 hover:bg-white/10 hover:shadow-[0_0_10px_rgba(255,255,255,0.1)] transition-all duration-300">
                 Next.js
               </a>
               <a href="https://supabase.com/" target="_blank" rel="noreferrer" className="px-2 py-1 rounded bg-[#3ECF8E]/10 backdrop-blur-md border border-[#3ECF8E]/20 text-[#3ECF8E]/90 text-[10px] font-mono hover:text-[#3ECF8E] hover:border-[#3ECF8E]/40 hover:bg-[#3ECF8E]/20 hover:shadow-[0_0_10px_rgba(62,207,142,0.2)] transition-all duration-300">

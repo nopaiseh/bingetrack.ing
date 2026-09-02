@@ -25,8 +25,8 @@ function EpisodeCard({ episode }: { episode: EpisodeInfo }) {
   const watched = episode.status === "watched";
 
   return (
-    <article className="glass-card group flex flex-col overflow-hidden rounded-2xl transition-colors duration-300 hover:border-red-400/30 hover:bg-white/8 lg:min-h-64 lg:flex-row">
-      <div className="relative aspect-video w-full shrink-0 bg-black/30 lg:aspect-auto lg:w-88">
+    <article className="surface-card group flex flex-col overflow-hidden rounded-2xl transition-colors duration-300 hover:border-red-400/30 hover:bg-white/8 lg:min-h-64 lg:flex-row">
+      <div className="image-overlay relative aspect-video w-full shrink-0 lg:aspect-auto lg:w-88">
         {episode.coverUrl ? (
           <Image
             src={episode.coverUrl}
@@ -40,7 +40,7 @@ function EpisodeCard({ episode }: { episode: EpisodeInfo }) {
             <ImageIcon className="size-8" aria-hidden="true" />
           </div>
         )}
-        <span className="absolute left-2 top-2 rounded-md border border-white/10 bg-black/70 px-2 py-1 text-xs font-bold text-white backdrop-blur-md">
+        <span className="image-label absolute left-2 top-2 rounded-md border border-white/10 px-2 py-1 text-xs font-bold text-white backdrop-blur-md">
           EP {episode.episodeNumber}
         </span>
       </div>
@@ -49,7 +49,7 @@ function EpisodeCard({ episode }: { episode: EpisodeInfo }) {
         <div className="flex flex-wrap items-start justify-between gap-3">
           <h2 className="min-w-0 flex-1 font-bold text-white/90 transition-colors group-hover:text-red-300">{episode.title}</h2>
           <span className={`inline-flex shrink-0 items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium ${
-            watched ? "border-emerald-400/25 bg-emerald-400/10 text-emerald-300" : "border-white/10 bg-white/5 text-white/45"
+            watched ? "border-emerald-400/25 bg-emerald-400/10 text-emerald-300" : "surface-muted border-white/10 text-white/45"
           }`}>
             {watched ? <CheckCircle className="size-3" /> : <Eye className="size-3" />}
             {watched ? "已看" : "未看"}
@@ -123,14 +123,14 @@ export default async function SeasonPage({
   return (
     <div className="min-h-screen pb-16 pt-24 text-neutral-200">
       <div className="container mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <Link href={`/series/${id}`} className="mb-6 inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm text-white/60 backdrop-blur-xl transition-colors hover:bg-white/10 hover:text-white">
+        <Link href={`/series/${id}`} className="surface-muted interactive-control mb-6 inline-flex items-center gap-2 rounded-xl border border-white/10 px-4 py-2 text-sm text-white/60 backdrop-blur-xl">
           <ChevronLeft className="size-4" /> 返回《{series.title}》
         </Link>
 
-        <header className="glass-panel relative mb-6 overflow-hidden rounded-3xl p-5 sm:p-6 lg:p-8">
+        <header className="surface-panel relative mb-6 overflow-hidden rounded-3xl p-5 sm:p-6 lg:p-8">
           {(seasonData.season.coverUrl || series.cover_url) && <Image src={seasonData.season.coverUrl || series.cover_url} alt="" fill priority className="-z-10 object-cover opacity-10 blur-2xl" sizes="100vw" />}
           <div className="flex flex-col gap-6 lg:flex-row lg:gap-8">
-            <div className="relative aspect-2/3 w-full max-w-72 shrink-0 self-center overflow-hidden rounded-2xl border border-white/15 bg-black/30 shadow-[0_12px_35px_rgba(0,0,0,0.35)] lg:w-72 lg:self-start">
+            <div className="image-overlay relative aspect-2/3 w-full max-w-72 shrink-0 self-center overflow-hidden rounded-2xl border border-white/15 shadow-[0_12px_35px_rgba(0,0,0,0.35)] lg:w-72 lg:self-start">
               {seasonData.season.coverUrl ? (
                 <Image src={seasonData.season.coverUrl} alt={`${seasonData.season.title} 海报`} fill priority className="object-cover" sizes="(max-width: 768px) 100vw, 288px" />
               ) : (
@@ -147,15 +147,15 @@ export default async function SeasonPage({
                   </p>
                 </div>
                 <div className="flex items-center gap-2">
-              {previousSeason && <Link href={`/series/${id}/seasons/${previousSeason.id}`} className="rounded-xl border border-white/10 bg-black/20 p-2.5 text-white/60 hover:bg-white/10 hover:text-white" aria-label={`上一季：第 ${previousSeason.seasonNumber} 季`}><ChevronLeft className="size-4" /></Link>}
-              <div className="flex max-w-72 gap-1 overflow-x-auto rounded-xl border border-white/10 bg-black/20 p-1">
+              {previousSeason && <Link href={`/series/${id}/seasons/${previousSeason.id}`} className="surface-recessed interactive-control rounded-xl border border-white/10 p-2.5 text-white/60" aria-label={`上一季：第 ${previousSeason.seasonNumber} 季`}><ChevronLeft className="size-4" /></Link>}
+              <div className="surface-recessed flex max-w-72 gap-1 overflow-x-auto rounded-xl border border-white/10 p-1">
                 {seasons.map((season) => (
                   <Link key={season.id} href={`/series/${id}/seasons/${season.id}`} className={`shrink-0 rounded-lg px-3 py-1.5 text-xs transition-colors ${season.id === seasonId ? "bg-red-500/20 text-red-300" : "text-white/45 hover:bg-white/10 hover:text-white"}`}>
                     第 {season.seasonNumber} 季
                   </Link>
                 ))}
               </div>
-              {nextSeason && <Link href={`/series/${id}/seasons/${nextSeason.id}`} className="rounded-xl border border-white/10 bg-black/20 p-2.5 text-white/60 hover:bg-white/10 hover:text-white" aria-label={`下一季：第 ${nextSeason.seasonNumber} 季`}><ChevronRight className="size-4" /></Link>}
+              {nextSeason && <Link href={`/series/${id}/seasons/${nextSeason.id}`} className="surface-recessed interactive-control rounded-xl border border-white/10 p-2.5 text-white/60" aria-label={`下一季：第 ${nextSeason.seasonNumber} 季`}><ChevronRight className="size-4" /></Link>}
                 </div>
               </div>
               {seasonData.season.summary && (
@@ -177,25 +177,25 @@ export default async function SeasonPage({
             ["总时长", `${Math.round(seasonData.totalRuntime / 60)} 小时`],
             ["平均评分", seasonData.averageRating === null ? "—" : seasonData.averageRating.toFixed(1)],
           ].map(([label, value]) => (
-            <div key={label} className="rounded-2xl border border-white/10 bg-white/5 p-4 backdrop-blur-xl">
+            <div key={label} className="surface-muted rounded-2xl border border-white/10 p-4 backdrop-blur-xl">
               <p className="text-xs text-white/40">{label}</p>
               <p className="mt-2 font-mono text-xl text-white">{value}</p>
             </div>
           ))}
         </section>
 
-        <div className="glass-panel sticky top-20 z-20 mb-6 flex flex-col justify-between gap-3 rounded-2xl p-3 sm:flex-row sm:items-center">
+        <div className="surface-panel sticky top-20 z-20 mb-6 flex flex-col justify-between gap-3 rounded-2xl p-3 sm:flex-row sm:items-center">
           <div className="flex items-center gap-2 overflow-x-auto">
             <ListFilter className="ml-1 size-4 shrink-0 text-white/60" />
             {(["all", "watched", "unwatched"] as const).map((value) => (
-              <Link key={value} href={seasonHref({ page: 1, status: value })} className={`shrink-0 rounded-lg border px-4 py-1.5 text-[13px] backdrop-blur-2xl transition-all duration-300 ${status === value ? "border-red-400/40 bg-red-500/15 font-bold text-red-400 shadow-[0_4px_10px_rgba(248,113,113,0.2)] drop-shadow-[0_0_3px_rgba(248,113,113,0.3)]" : "border-white/10 bg-white/5 text-white/70 shadow-[0_4px_10px_rgba(0,0,0,0.2)] hover:border-white/20 hover:bg-white/10 hover:text-white hover:shadow-[0_6px_15px_rgba(0,0,0,0.3)] hover:drop-shadow-[0_0_8px_rgba(255,255,255,0.5)]"}`}>
+              <Link key={value} href={seasonHref({ page: 1, status: value })} className={`shrink-0 rounded-lg border px-4 py-1.5 text-[13px] backdrop-blur-2xl transition-all duration-300 ${status === value ? "surface-active border-red-400/40 font-bold text-red-400 shadow-[0_4px_10px_rgba(248,113,113,0.2)] drop-shadow-[0_0_3px_rgba(248,113,113,0.3)]" : "surface-muted border-white/10 text-white/70 shadow-[0_4px_10px_rgba(0,0,0,0.2)] hover:border-white/20 hover:bg-white/10 hover:text-white hover:shadow-[0_6px_15px_rgba(0,0,0,0.3)] hover:drop-shadow-[0_0_8px_rgba(255,255,255,0.5)]"}`}>
                 {{ all: "全部", watched: "已看", unwatched: "未看" }[value]}
               </Link>
             ))}
           </div>
           <div className="flex items-center gap-2 text-sm">
             <span className="text-white/60">集数</span>
-            <Link href={seasonHref({ page: 1, order: order === "asc" ? "desc" : "asc" })} className="rounded-lg border border-red-400/40 bg-red-500/15 px-4 py-1.5 text-[13px] font-bold text-red-400 shadow-[0_4px_10px_rgba(248,113,113,0.2)] backdrop-blur-2xl drop-shadow-[0_0_3px_rgba(248,113,113,0.3)] transition-all duration-300 hover:bg-red-500/25">
+            <Link href={seasonHref({ page: 1, order: order === "asc" ? "desc" : "asc" })} className="surface-active rounded-lg border border-red-400/40 px-4 py-1.5 text-[13px] font-bold text-red-400 shadow-[0_4px_10px_rgba(248,113,113,0.2)] backdrop-blur-2xl drop-shadow-[0_0_3px_rgba(248,113,113,0.3)] transition-all duration-300 hover:bg-red-500/25">
               {order === "asc" ? "升序 ↑" : "降序 ↓"}
             </Link>
             <span className="ml-auto text-white/60 sm:ml-2">{seasonData.total} 集</span>
@@ -207,18 +207,18 @@ export default async function SeasonPage({
             {seasonData.episodes.map((episode) => <EpisodeCard key={episode.id} episode={episode} />)}
           </div>
         ) : (
-          <div className="rounded-2xl border border-white/10 bg-white/5 py-20 text-center text-white/40">当前筛选下暂无剧集</div>
+          <div className="surface-muted rounded-2xl border border-white/10 py-20 text-center text-white/40">当前筛选下暂无剧集</div>
         )}
 
         {totalPages > 1 && (
           <nav className="mt-10 flex flex-wrap items-center justify-center gap-2" aria-label="剧集分页">
-            {page > 1 && <Link href={seasonHref({ page: page - 1 })} className="rounded-xl border border-white/10 bg-white/5 p-2.5 text-white/60 hover:bg-white/10 hover:text-white" aria-label="上一页"><ChevronLeft className="size-4" /></Link>}
+            {page > 1 && <Link href={seasonHref({ page: page - 1 })} className="surface-muted interactive-control rounded-xl border border-white/10 p-2.5 text-white/60" aria-label="上一页"><ChevronLeft className="size-4" /></Link>}
             {pageNumbers(page, totalPages).map((pageNumber) => (
-              <Link key={pageNumber} href={seasonHref({ page: pageNumber })} className={`min-w-10 rounded-xl border px-3 py-2 text-center text-sm ${pageNumber === page ? "border-red-400/30 bg-red-500/15 text-red-300" : "border-white/10 bg-white/5 text-white/50 hover:bg-white/10 hover:text-white"}`}>
+              <Link key={pageNumber} href={seasonHref({ page: pageNumber })} className={`min-w-10 rounded-xl border px-3 py-2 text-center text-sm ${pageNumber === page ? "surface-active border-red-400/30 text-red-300" : "surface-muted border-white/10 text-white/50 hover:bg-white/10 hover:text-white"}`}>
                 {pageNumber}
               </Link>
             ))}
-            {page < totalPages && <Link href={seasonHref({ page: page + 1 })} className="rounded-xl border border-white/10 bg-white/5 p-2.5 text-white/60 hover:bg-white/10 hover:text-white" aria-label="下一页"><ChevronRight className="size-4" /></Link>}
+            {page < totalPages && <Link href={seasonHref({ page: page + 1 })} className="surface-muted interactive-control rounded-xl border border-white/10 p-2.5 text-white/60" aria-label="下一页"><ChevronRight className="size-4" /></Link>}
           </nav>
         )}
       </div>
