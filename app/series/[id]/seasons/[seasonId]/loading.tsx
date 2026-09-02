@@ -23,7 +23,7 @@ export default function Loading() {
         <div className="space-y-3">
           {Array.from({ length: 6 }, (_, index) => (
             <div key={index} className="surface-card flex flex-col overflow-hidden rounded-2xl lg:h-64 lg:flex-row">
-              <Pulse className="aspect-video w-full shrink-0 rounded-none lg:aspect-auto lg:h-full lg:w-88" />
+              <Pulse className="aspect-video w-full shrink-0 rounded-none lg:aspect-auto lg:h-full lg:w-96" />
               <div className="flex-1 space-y-3 p-5">
                 <Pulse className="h-5 w-2/5" />
                 <Pulse className="h-3 w-1/3" />

@@ -458,9 +458,14 @@ async function fetchMediaList(opts: FetchMediaListOptions): Promise<{ rows: Medi
   const creditRoles = creditRole?.split(",").filter((role) => role === "director" || role === "actor") ?? [];
   const hasQuery = typeof q === "string" && q.trim().length > 0;
   const queryText = hasQuery ? `%${q.trim()}%` : "";
+  const titleSearchFilter = `title.ilike.${queryText},alternate_title.ilike.${queryText}`;
+  const searchesAllCategories = hasQuery && types.length === 0 && !seriesOnly && creditRoles.length === 0;
+  const searchedTypes = searchesAllCategories ? ["movie", "tv_series"] : types;
+  const searchesSeries = searchesAllCategories || seriesOnly;
+  const searchedCreditRoles = searchesAllCategories ? ["director", "actor"] : creditRoles;
 
   let seriesItemIds: string[] = [];
-  if (seriesOnly) {
+  if (searchesSeries) {
     let seriesQuery = db
       .from("media_item_series")
       .select("media_item_id, media_series!inner(name)");
@@ -479,16 +484,16 @@ async function fetchMediaList(opts: FetchMediaListOptions): Promise<{ rows: Medi
 
   let classificationHandlesQuery = false;
 
-  if (hasQuery && (types.length > 0 || seriesOnly || creditRoles.length > 0)) {
+  if (hasQuery && (searchedTypes.length > 0 || searchesSeries || searchedCreditRoles.length > 0)) {
     const [titleResult, creditResult] = await Promise.all([
-      types.length > 0
-        ? db.from("v_all_media").select("id").in("type", types).ilike("title", queryText)
+      searchedTypes.length > 0 || searchesSeries
+        ? db.from("v_all_media").select("id, type").or(titleSearchFilter)
         : Promise.resolve({ data: [], error: null }),
-      creditRoles.length > 0
+      searchedCreditRoles.length > 0
         ? db
             .from("media_credits")
             .select("media_item_id, people!inner(name)")
-            .in("role", creditRoles)
+            .in("role", searchedCreditRoles)
             .ilike("people.name", queryText)
         : Promise.resolve({ data: [], error: null }),
     ]);
@@ -498,9 +503,32 @@ async function fetchMediaList(opts: FetchMediaListOptions): Promise<{ rows: Medi
       throw new MediaRepositoryError("filter media by search category", titleResult.error ?? creditResult.error);
     }
 
+    const titleMatches = titleResult.data ?? [];
+    const typedTitleIds = searchedTypes.length > 0
+      ? titleMatches
+          .filter((item) => searchedTypes.includes(String(item.type)))
+          .map((item) => String(item.id))
+      : [];
+
+    let seriesTitleIds: string[] = [];
+    if (seriesOnly && titleMatches.length > 0) {
+      const { data: seriesTitleItems, error: seriesTitleError } = await db
+        .from("media_item_series")
+        .select("media_item_id")
+        .in("media_item_id", titleMatches.map((item) => String(item.id)));
+
+      if (seriesTitleError) {
+        console.error("Failed to filter series media by title:", seriesTitleError);
+        throw new MediaRepositoryError("filter series media by title", seriesTitleError);
+      }
+
+      seriesTitleIds = (seriesTitleItems ?? []).map((item) => item.media_item_id);
+    }
+
     const matchingIds = Array.from(new Set([
-      ...(seriesOnly ? seriesItemIds : []),
-      ...(titleResult.data ?? []).map((item) => String(item.id)),
+      ...(searchesSeries ? seriesItemIds : []),
+      ...typedTitleIds,
+      ...seriesTitleIds,
       ...(creditResult.data ?? []).map((credit) => credit.media_item_id),
     ]));
     if (matchingIds.length === 0) {
@@ -554,8 +582,8 @@ async function fetchMediaList(opts: FetchMediaListOptions): Promise<{ rows: Medi
     countQuery = countQuery.lte("sort_date", `${endYear}-12-31`);
   }
   if (!classificationHandlesQuery && !seriesOnly && hasQuery) {
-    dataQuery = dataQuery.ilike("title", queryText);
-    countQuery = countQuery.ilike("title", queryText);
+    dataQuery = dataQuery.or(titleSearchFilter);
+    countQuery = countQuery.or(titleSearchFilter);
   }
 
   if (sort) {

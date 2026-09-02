@@ -28,14 +28,14 @@ function EpisodeCard({ episode }: { episode: EpisodeInfo }) {
 
   return (
     <article className="surface-card group flex flex-col overflow-hidden rounded-2xl transition-colors duration-300 hover:border-red-400/30 hover:bg-white/8 lg:min-h-76 lg:flex-row">
-      <div className="image-overlay relative aspect-video w-full shrink-0 lg:aspect-auto lg:w-88">
+      <div className="image-overlay relative aspect-video w-full shrink-0 lg:aspect-auto lg:w-96">
         {episode.coverUrl ? (
           <Image
             src={episode.coverUrl}
             alt=""
             fill
             className="object-cover"
-            sizes="(min-width: 1024px) 352px, calc(100vw - 48px)"
+            sizes="(min-width: 1024px) 384px, calc(100vw - 48px)"
           />
         ) : (
           <div className="flex h-full items-center justify-center text-white/20">

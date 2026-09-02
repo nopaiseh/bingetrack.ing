@@ -12,7 +12,7 @@ export function SearchMediaCardSkeleton() {
       <div className="surface-muted relative aspect-2/3 w-full overflow-hidden animate-pulse">
         <div className="absolute inset-0 bg-linear-to-tr from-transparent via-white/5 to-transparent animate-pulse" />
       </div>
-      <div className="flex grow flex-col space-y-3 px-3 py-3">
+      <div className="flex flex-col space-y-3 px-3 py-2.5">
         <div className="surface-raised h-4 w-3/4 animate-pulse rounded-md" />
         <div className="mt-1 flex items-center justify-between">
           <div className="surface-muted h-3 w-8 animate-pulse rounded-md" />
@@ -50,7 +50,7 @@ export function SearchMediaCard({ item, returnHref }: { item: Media; returnHref:
         )}
       </div>
 
-      <div className="flex min-h-28 grow flex-col space-y-1.5 px-3 py-2.5">
+      <div className="flex flex-col space-y-1.5 px-3 py-2.5">
         <h3 className="truncate text-sm font-bold text-white transition-colors duration-300 drop-shadow-[0_0_8px_rgba(255,255,255,0.2)] group-hover:text-red-300 group-hover:drop-shadow-[0_0_5px_rgba(248,113,113,0.6)]" title={item.title}>{item.title}</h3>
         <div className="flex items-center justify-between text-xs">
           <span className="font-medium text-white/60">{item.date ? item.date.substring(0, 4) : "未知"}</span>
