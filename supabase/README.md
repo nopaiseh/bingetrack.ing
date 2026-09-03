@@ -20,7 +20,9 @@ append-only history:
 
 The snapshot is an executable reference, not an append-only Supabase migration.
 Updating it does not apply changes to an existing database; live DDL must be
-applied explicitly.
+applied explicitly. New production changes should also receive a versioned
+migration created with `supabase migration new <descriptive-name>` and a reviewed
+rollback plan. See `docs/deployment.md` for the expand-and-contract release flow.
 
 ## Fresh local database
 

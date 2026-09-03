@@ -17,7 +17,9 @@ export default defineConfig({
     { name: "desktop", use: { viewport: { width: 1024, height: 768 } } },
   ],
   webServer: {
-    command: "npm run dev -- --hostname 127.0.0.1 --port 3000",
+    command: process.env.CI
+      ? "npm start -- --hostname 127.0.0.1 --port 3000"
+      : "npm run dev -- --hostname 127.0.0.1 --port 3000",
     url: "http://127.0.0.1:3000/search",
     reuseExistingServer: !process.env.CI,
     timeout: 120_000,

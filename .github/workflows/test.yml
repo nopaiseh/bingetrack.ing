@@ -2,8 +2,14 @@ name: Tests
 
 on:
   push:
+    branches:
+      - main
   pull_request:
   workflow_dispatch:
+
+concurrency:
+  group: tests-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 
 permissions:
   contents: read
@@ -62,7 +68,11 @@ jobs:
             echo "NEXT_PUBLIC_SUPABASE_URL=${API_URL}"
             echo "NEXT_PUBLIC_SUPABASE_ANON_KEY=${ANON_KEY}"
             echo "SUPABASE_SERVICE_ROLE_KEY=${SERVICE_ROLE_KEY}"
+            echo "NEXT_PUBLIC_SITE_URL=http://127.0.0.1:3000"
           } >> "${GITHUB_ENV}"
+
+      - name: Validate application environment
+        run: npm run env:check
 
       - name: Build production application
         run: npm run build
@@ -72,3 +82,14 @@ jobs:
 
       - name: Run database tests
         run: supabase test db
+
+      - name: Upload browser failure artifacts
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-failure-${{ github.run_id }}
+          path: |
+            playwright-report/
+            test-results/
+          if-no-files-found: ignore
+          retention-days: 7
