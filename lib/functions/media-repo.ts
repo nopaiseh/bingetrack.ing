@@ -494,7 +494,9 @@ async function fetchMediaList(opts: FetchMediaListOptions): Promise<{ rows: Medi
             .from("media_credits")
             .select("media_item_id, people!inner(name)")
             .in("role", searchedCreditRoles)
-            .ilike("people.name", queryText)
+            .or(`name.ilike.${queryText},alternate_name.ilike.${queryText}`, {
+              referencedTable: "people",
+            })
         : Promise.resolve({ data: [], error: null }),
     ]);
 

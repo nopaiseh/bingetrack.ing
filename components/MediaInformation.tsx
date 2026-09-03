@@ -184,8 +184,6 @@ export default function MediaInformation({
 }) {
   const defaultBackHref = media.type === "series" ? "/series" : "/movies";
   const defaultBackLabel = media.type === "series" ? "返回电视剧列表" : "返回电影列表";
-  const alternateTitle = media.alternate_title?.trim();
-  const showAlternateTitle = alternateTitle && alternateTitle !== media.title.trim();
 
   return (
     <>
@@ -207,11 +205,6 @@ export default function MediaInformation({
                 <h1 className="text-balance text-3xl font-bold tracking-tight text-white drop-shadow-[0_0_15px_rgba(255,255,255,0.3)] sm:text-4xl lg:text-5xl">
                   {media.title}
                 </h1>
-                {showAlternateTitle && (
-                  <p className="mt-2 text-balance text-lg font-medium tracking-wide text-white/50 sm:text-xl">
-                    {alternateTitle}
-                  </p>
-                )}
               </div>
 
               <div className="flex flex-wrap items-center gap-4 text-sm font-medium">
