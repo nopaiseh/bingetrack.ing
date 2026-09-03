@@ -1,0 +1,2 @@
+-- Intentionally empty.
+-- Add only non-sensitive development fixtures here; never copy production data.
