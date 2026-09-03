@@ -14,7 +14,11 @@
 NEXT_PUBLIC_SUPABASE_URL="https://xxx.supabase.co"
 NEXT_PUBLIC_SUPABASE_ANON_KEY="xxx"
 SUPABASE_SERVICE_ROLE_KEY="xxx"
+NEXT_PUBLIC_SITE_URL="http://localhost:3000"
 ```
+
+复制 `.env.example` 中的变量名到本地 `.env.local`，不要提交真实密钥。
+运行 `npm run env:check` 可以在构建前检查必需变量。
 
 ## 启动命令
 
@@ -22,6 +26,11 @@ SUPABASE_SERVICE_ROLE_KEY="xxx"
 npm install
 npm run dev
 ```
+
+## 部署
+
+Vercel、GitHub 检查、Supabase 数据库变更、烟雾测试与回滚流程见
+[`docs/deployment.md`](docs/deployment.md)。
 
 ## 说明
 

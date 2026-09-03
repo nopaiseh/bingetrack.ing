@@ -4,9 +4,12 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "prebuild": "npm run env:check",
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "env:check": "node --env-file-if-exists=.env.local scripts/check-env.mjs",
+    "smoke": "node scripts/smoke-deployment.mjs",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
