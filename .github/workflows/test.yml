@@ -30,6 +30,15 @@ jobs:
       - name: Install Chromium
         run: npx playwright install --with-deps chromium
 
+      - name: Lint
+        run: npm run lint
+
+      - name: Type-check
+        run: npx tsc --noEmit
+
+      - name: Run unit and component tests
+        run: npm test
+
       - name: Set up Supabase CLI
         uses: supabase/setup-cli@v3
         with:
@@ -55,17 +64,8 @@ jobs:
             echo "SUPABASE_SERVICE_ROLE_KEY=${SERVICE_ROLE_KEY}"
           } >> "${GITHUB_ENV}"
 
-      - name: Lint
-        run: npm run lint
-
-      - name: Type-check
-        run: npx tsc --noEmit
-
       - name: Build production application
         run: npm run build
-
-      - name: Run unit and component tests
-        run: npm test
 
       - name: Run browser tests
         run: npm run test:e2e
