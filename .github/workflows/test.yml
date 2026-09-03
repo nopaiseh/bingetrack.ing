@@ -12,10 +12,7 @@ jobs:
   test:
     name: Lint, type-check, unit, and browser tests
     runs-on: ubuntu-latest
-    timeout-minutes: 15
-    env:
-      NEXT_PUBLIC_SUPABASE_URL: http://127.0.0.1:54321
-      NEXT_PUBLIC_SUPABASE_ANON_KEY: test-anon-key
+    timeout-minutes: 25
 
     steps:
       - name: Check out repository
@@ -42,5 +39,36 @@ jobs:
       - name: Run unit and component tests
         run: npm test
 
+      - name: Set up Supabase CLI
+        uses: supabase/setup-cli@v3
+        with:
+          version: 2.115.0
+
+      - name: Start local Supabase
+        run: supabase start
+
+      - name: Rebuild application schema
+        env:
+          PGPASSWORD: postgres
+        run: >-
+          psql --host 127.0.0.1 --port 54322 --username postgres
+          --dbname postgres --set ON_ERROR_STOP=1
+          --file supabase/scripts/current_schema.sql
+
+      - name: Configure local Supabase environment
+        run: |
+          source <(supabase status -o env)
+          {
+            echo "NEXT_PUBLIC_SUPABASE_URL=${API_URL}"
+            echo "NEXT_PUBLIC_SUPABASE_ANON_KEY=${ANON_KEY}"
+            echo "SUPABASE_SERVICE_ROLE_KEY=${SERVICE_ROLE_KEY}"
+          } >> "${GITHUB_ENV}"
+
+      - name: Build production application
+        run: npm run build
+
       - name: Run browser tests
         run: npm run test:e2e
+
+      - name: Run database tests
+        run: supabase test db
