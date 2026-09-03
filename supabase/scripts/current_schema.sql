@@ -75,7 +75,8 @@ create table public.media_regions (
 
 create table public.media_series (
   id uuid default gen_random_uuid() not null,
-  name text not null
+  name text not null,
+  alternate_name text
 );
 
 create table public.music (
@@ -91,7 +92,8 @@ create table public.music_albums (
 
 create table public.people (
   id uuid default gen_random_uuid() not null,
-  name text not null
+  name text not null,
+  alternate_name text
 );
 
 create table public.regions (
