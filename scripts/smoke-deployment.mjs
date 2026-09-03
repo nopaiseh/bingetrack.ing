@@ -1,4 +1,5 @@
 const deploymentUrl = process.env.DEPLOYMENT_URL;
+const protectionBypassSecret = process.env.VERCEL_AUTOMATION_BYPASS_SECRET;
 
 if (!deploymentUrl) {
   console.error("DEPLOYMENT_URL is required, for example https://www.bingetrack.ing");
@@ -27,6 +28,9 @@ for (const check of checks) {
 
   try {
     const response = await fetch(url, {
+      headers: protectionBypassSecret
+        ? { "x-vercel-protection-bypass": protectionBypassSecret }
+        : undefined,
       redirect: "follow",
       signal: AbortSignal.timeout(15_000),
     });
