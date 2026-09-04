@@ -1,8 +1,14 @@
 "use client";
 
+import * as Sentry from "@sentry/nextjs";
 import { RotateCcw } from "lucide-react";
+import { useEffect } from "react";
 
-export default function GlobalError() {
+export default function GlobalError({ error }: { error: Error & { digest?: string } }) {
+  useEffect(() => {
+    Sentry.captureException(error);
+  }, [error]);
+
   return (
     <html lang="zh-CN">
       <body className="min-h-screen bg-neutral-950 text-neutral-200">
