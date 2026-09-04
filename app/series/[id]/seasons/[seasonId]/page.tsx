@@ -14,12 +14,32 @@ import {
 } from "lucide-react";
 import { getMediaById, getSeasonEpisodes, getSeasonsBySeriesId } from "@/lib/functions/media-repo";
 import type { EpisodeInfo } from "@/lib/types";
+import type { Metadata } from "next";
+import { cache } from "react";
+import { buildSeasonMetadata } from "@/lib/seo/media";
 
 export const revalidate = 60;
 
 const PAGE_SIZE = 10;
+const getCachedMediaById = cache(getMediaById);
+const getCachedSeasonsBySeriesId = cache(getSeasonsBySeriesId);
 type StatusFilter = "all" | "watched" | "unwatched";
 type EpisodeOrder = "asc" | "desc";
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ id: string; seasonId: string }>;
+}): Promise<Metadata> {
+  const { id, seasonId } = await params;
+  const [series, seasons] = await Promise.all([
+    getCachedMediaById(id),
+    getCachedSeasonsBySeriesId(id),
+  ]);
+  const season = seasons.find((item) => item.id === seasonId);
+  if (!series || !season) return { title: "季度未找到" };
+  return buildSeasonMetadata(series, season);
+}
 
 function EpisodeCard({ episode }: { episode: EpisodeInfo }) {
   const watched = episode.status === "watched";
@@ -91,9 +111,9 @@ export default async function SeasonPage({
   const status: StatusFilter = query.status === "watched" || query.status === "unwatched" ? query.status : "all";
   const order: EpisodeOrder = query.order === "desc" ? "desc" : "asc";
   const [series, seasonData, seasons] = await Promise.all([
-    getMediaById(id),
+    getCachedMediaById(id),
     getSeasonEpisodes(id, seasonId, page, PAGE_SIZE, status, order),
-    getSeasonsBySeriesId(id),
+    getCachedSeasonsBySeriesId(id),
   ]);
 
   if (!series || !seasonData) notFound();
