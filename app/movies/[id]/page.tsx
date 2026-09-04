@@ -6,6 +6,7 @@ import { RelatedMediaLoadingSkeleton } from "@/components/LoadingSkeletons";
 import { Suspense } from "react";
 import { cache } from "react";
 import type { Metadata } from "next";
+import { buildMediaJsonLd, buildMediaMetadata, serializeJsonLd } from "@/lib/seo/media";
 
 export const revalidate = 60;
 
@@ -15,10 +16,7 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
   const { id } = await params;
   const movie = await getCachedMediaById(id);
   if (!movie) return { title: "电影未找到" };
-  return {
-    title: movie.title,
-    description: movie.summary?.slice(0, 160) || `查看《${movie.title}》的观看记录与详细信息。`,
-  };
+  return buildMediaMetadata(movie);
 }
 
 async function RelatedMovies({ seriesNames, currentId }: { seriesNames: string[]; currentId: string }) {
@@ -47,11 +45,16 @@ export default async function MovieDetailPage({
   const returnToSearch = query.from === "/search" || query.from?.startsWith("/search?");
   const movie = await getCachedMediaById(id);
   if (!movie) notFound();
+  const jsonLd = buildMediaJsonLd(movie);
 
   return (
     // Removed bg-[#060606] to let the root layout's glowing red lights shine through.
     // Updated selection color to a frosted red to match the aesthetic.
     <div className="relative min-h-screen text-white/90 selection:bg-red-500/30 selection:text-white font-sans overflow-hidden">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: serializeJsonLd(jsonLd) }}
+      />
       <MediaInformation
         media={movie}
         seasons={null}
