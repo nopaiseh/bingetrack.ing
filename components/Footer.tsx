@@ -36,16 +36,16 @@ export default function Footer() {
 
           <div className="flex flex-wrap items-center justify-center lg:justify-end gap-4 md:gap-5">
             
-            {/* Tech badges */}
+            {/* Platform badges */}
             <div className="flex items-center gap-2">
-              <a href="https://nextjs.org/" target="_blank" rel="noreferrer" className="surface-muted px-2 py-1 rounded backdrop-blur-md border border-white/10 text-neutral-400 text-[10px] font-mono hover:text-white hover:border-white/20 hover:bg-white/10 hover:shadow-[0_0_10px_rgba(255,255,255,0.1)] transition-all duration-300">
-                Next.js
+              <a href="https://vercel.com/" target="_blank" rel="noreferrer" className="surface-muted px-2 py-1 rounded backdrop-blur-md border border-white/20 text-white/80 text-[10px] font-mono hover:text-white hover:border-white/40 hover:bg-white/10 hover:shadow-[0_0_10px_rgba(255,255,255,0.2)] transition-all duration-300">
+                Vercel
               </a>
               <a href="https://supabase.com/" target="_blank" rel="noreferrer" className="px-2 py-1 rounded bg-[#3ECF8E]/10 backdrop-blur-md border border-[#3ECF8E]/20 text-[#3ECF8E]/90 text-[10px] font-mono hover:text-[#3ECF8E] hover:border-[#3ECF8E]/40 hover:bg-[#3ECF8E]/20 hover:shadow-[0_0_10px_rgba(62,207,142,0.2)] transition-all duration-300">
                 Supabase
               </a>
-              <a href="https://tailwindcss.com/" target="_blank" rel="noreferrer" className="px-2 py-1 rounded bg-[#38BDF8]/10 backdrop-blur-md border border-[#38BDF8]/20 text-[#38BDF8]/90 text-[10px] font-mono hover:text-[#38BDF8] hover:border-[#38BDF8]/40 hover:bg-[#38BDF8]/20 hover:shadow-[0_0_10px_rgba(56,189,248,0.2)] transition-all duration-300">
-                Tailwind
+              <a href="https://sentry.io/" target="_blank" rel="noreferrer" className="px-2 py-1 rounded bg-[#362D59]/40 backdrop-blur-md border border-[#6C5FC7]/30 text-[#A99EDB] text-[10px] font-mono hover:text-[#C9C1F0] hover:border-[#6C5FC7]/60 hover:bg-[#362D59]/60 hover:shadow-[0_0_10px_rgba(108,95,199,0.25)] transition-all duration-300">
+                Sentry
               </a>
             </div>
 
