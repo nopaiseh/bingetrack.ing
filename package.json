@@ -9,6 +9,8 @@
     "dev": "next dev",
     "prebuild": "npm run env:check",
     "build": "next build",
+    "analyze": "next experimental-analyze --output",
+    "perf:lighthouse": "node scripts/run-lighthouse.mjs",
     "start": "next start",
     "lint": "eslint",
     "env:check": "node --env-file-if-exists=.env.local scripts/check-env.mjs",
@@ -44,6 +46,7 @@
     "eslint": "^9",
     "eslint-config-next": "16.3.3",
     "jsdom": "^30.0.1",
+    "lighthouse": "^13.4.1",
     "tailwindcss": "^4",
     "typescript": "^5",
     "vitest": "^4.1.11"
