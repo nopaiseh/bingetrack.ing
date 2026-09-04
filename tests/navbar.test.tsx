@@ -18,9 +18,8 @@ test("marks the current section and toggles the mobile menu", async () => {
   const user = userEvent.setup();
   render(<Navbar />);
 
-  const movieLinks = screen.getAllByRole("link", { name: "电影" });
-  expect(movieLinks).toHaveLength(2);
-  for (const link of movieLinks) expect(link).toHaveClass("text-red-500");
+  expect(screen.getAllByRole("link", { name: "电影" })).toHaveLength(1);
+  expect(document.querySelector("#mobile-navigation")).toHaveAttribute("inert");
 
   const menuButton = screen.getByRole("button", { name: "打开导航菜单" });
   await user.click(menuButton);
@@ -28,6 +27,12 @@ test("marks the current section and toggles the mobile menu", async () => {
     "aria-expanded",
     "true",
   );
+  const movieLinks = screen.getAllByRole("link", { name: "电影" });
+  expect(movieLinks).toHaveLength(2);
+  for (const link of movieLinks) {
+    expect(link).toHaveClass("text-red-500");
+    expect(link).toHaveAttribute("aria-current", "page");
+  }
 });
 
 test("submits trimmed desktop search text to the search route", async () => {
