@@ -29,7 +29,13 @@ export default function RootLayout({
 }) {
   return (
     <html lang="zh-CN" className={`${GeistMono.variable}`}>
-      <body className="text-neutral-200 font-sans leading-normal tracking-normal selection:bg-red-500/30 selection:text-white flex flex-col min-h-screen relative">
+      <body className="bg-[var(--canvas-middle)] text-neutral-200 font-sans leading-normal tracking-normal selection:bg-red-500/30 selection:text-white flex flex-col min-h-screen relative">
+        <a
+          href="#main-content"
+          className="surface-raised fixed left-4 top-4 z-100 -translate-y-24 rounded-lg border border-red-400 px-4 py-2 text-sm font-semibold text-white transition-transform focus:translate-y-0"
+        >
+          跳到主要内容
+        </a>
         
         {/* --- 1. THE UNDER-LAYER (What sits behind the glass) --- */}
         {/* Deepened base gradient to keep the overall backdrop darker and calmer */}
@@ -52,7 +58,7 @@ export default function RootLayout({
 
         <Navbar />
 
-        <main className="flex-1 flex flex-col relative z-1">
+        <main id="main-content" tabIndex={-1} className="flex-1 flex flex-col relative z-1">
           {children}
         </main>
 

@@ -200,7 +200,7 @@ export default async function SeasonPage({
             ["平均评分", seasonData.averageRating === null ? "—" : seasonData.averageRating.toFixed(1)],
           ].map(([label, value]) => (
             <div key={label} className="surface-muted rounded-2xl border border-white/10 p-4 backdrop-blur-xl">
-              <p className="text-xs text-white/40">{label}</p>
+              <p className="text-xs text-white/60">{label}</p>
               <p className="mt-2 font-mono text-xl text-white">{value}</p>
             </div>
           ))}
