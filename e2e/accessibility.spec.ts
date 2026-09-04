@@ -1,7 +1,5 @@
-import { createRequire } from "node:module";
 import { expect, test, type Page, type TestInfo } from "@playwright/test";
 
-const require = createRequire(import.meta.url);
 const axePath = require.resolve("axe-core/axe.min.js");
 
 const MOVIE_ID = "50000000-0000-4000-8000-000000000001";
