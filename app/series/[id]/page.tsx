@@ -6,6 +6,7 @@ import { RelatedMediaLoadingSkeleton } from "@/components/LoadingSkeletons";
 import { Suspense } from "react";
 import { cache } from "react";
 import type { Metadata } from "next";
+import { buildMediaJsonLd, buildMediaMetadata, serializeJsonLd } from "@/lib/seo/media";
 
 export const revalidate = 60;
 
@@ -15,10 +16,7 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
   const { id } = await params;
   const series = await getCachedMediaById(id);
   if (!series) return { title: "电视剧未找到" };
-  return {
-    title: series.title,
-    description: series.summary?.slice(0, 160) || `查看《${series.title}》的季度、剧集与观看记录。`,
-  };
+  return buildMediaMetadata(series);
 }
 
 async function RelatedSeries({ seriesNames, currentId }: { seriesNames: string[]; currentId: string }) {
@@ -50,6 +48,7 @@ export default async function SeriesDetailPage({
     getSeasonsBySeriesId(id),
   ]);
   if (!series) notFound();
+  const jsonLd = buildMediaJsonLd(series);
 
   const episodeYears = seasons.flatMap((season) => season.releaseYearRange?.match(/\d{4}/g) ?? []);
   const firstEpisodeYear = episodeYears.length > 0 ? Math.min(...episodeYears.map(Number)) : null;
@@ -69,6 +68,10 @@ export default async function SeriesDetailPage({
 
   return (
     <div className="relative min-h-screen text-white/90 selection:bg-red-500/30 selection:text-white font-sans overflow-hidden">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: serializeJsonLd(jsonLd) }}
+      />
       <MediaInformation
         media={series}
         seasons={seasons}
