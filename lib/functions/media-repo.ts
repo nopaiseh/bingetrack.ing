@@ -33,6 +33,61 @@ type SeriesReleaseYearRow = {
   }> | null;
 };
 
+export type SitemapMediaEntry = {
+  path: string;
+};
+
+const SITEMAP_PAGE_SIZE = 1_000;
+
+/** Return every public movie and TV series route for the generated sitemap. */
+export async function getSitemapMediaEntries(): Promise<SitemapMediaEntry[]> {
+  const db = getSupabasePublicServer();
+  const entries: SitemapMediaEntry[] = [];
+
+  for (let offset = 0; ; offset += SITEMAP_PAGE_SIZE) {
+    const { data, error } = await db
+      .from("v_all_media")
+      .select("id, type")
+      .in("type", ["movie", "tv_series"])
+      .order("id", { ascending: true })
+      .range(offset, offset + SITEMAP_PAGE_SIZE - 1);
+
+    if (error) {
+      console.error("Failed to fetch media routes for sitemap:", error);
+      throw new MediaRepositoryError("fetch sitemap media routes", error);
+    }
+
+    const rows = data ?? [];
+    entries.push(...rows.map((row) => ({
+      path: `/${row.type === "movie" ? "movies" : "series"}/${encodeURIComponent(String(row.id))}`,
+    })));
+
+    if (rows.length < SITEMAP_PAGE_SIZE) break;
+  }
+
+  for (let offset = 0; ; offset += SITEMAP_PAGE_SIZE) {
+    const { data, error } = await db
+      .from("tv_seasons")
+      .select("id, series_id")
+      .order("id", { ascending: true })
+      .range(offset, offset + SITEMAP_PAGE_SIZE - 1);
+
+    if (error) {
+      console.error("Failed to fetch season routes for sitemap:", error);
+      throw new MediaRepositoryError("fetch sitemap season routes", error);
+    }
+
+    const rows = data ?? [];
+    entries.push(...rows.map((row) => ({
+      path: `/series/${encodeURIComponent(String(row.series_id))}/seasons/${encodeURIComponent(String(row.id))}`,
+    })));
+
+    if (rows.length < SITEMAP_PAGE_SIZE) break;
+  }
+
+  return entries;
+}
+
 async function addSeriesReleaseYearRanges(
   db: ReturnType<typeof getSupabaseServer>,
   items: Media[],
