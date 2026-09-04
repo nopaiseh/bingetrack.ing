@@ -1,6 +1,6 @@
 begin;
 
-select plan(5);
+select plan(13);
 
 select is(
   (
@@ -62,6 +62,88 @@ select ok(
   ),
   'the event trigger enables RLS on new public tables'
 );
+
+select ok(
+  has_function_privilege('anon', 'public.get_top_tv_series_by_year(integer, integer)', 'EXECUTE')
+    and has_function_privilege('authenticated', 'public.get_top_tv_series_by_year(integer, integer)', 'EXECUTE'),
+  'public roles can execute the year-specific TV ranking RPC'
+);
+
+select ok(
+  has_function_privilege('anon', 'public.get_media_distribution_counts()', 'EXECUTE')
+    and has_function_privilege('authenticated', 'public.get_media_distribution_counts()', 'EXECUTE'),
+  'public roles can execute the media distribution RPC'
+);
+
+select ok(
+  has_function_privilege('anon', 'public.get_media_stats(text)', 'EXECUTE')
+    and has_function_privilege('authenticated', 'public.get_media_stats(text)', 'EXECUTE'),
+  'public roles can execute the media stats RPC'
+);
+
+select ok(
+  has_function_privilege('anon', 'public.get_season_episode_page(uuid, uuid, text, text, integer, integer)', 'EXECUTE')
+    and has_function_privilege('authenticated', 'public.get_season_episode_page(uuid, uuid, text, text, integer, integer)', 'EXECUTE'),
+  'public roles can execute the season episode RPC'
+);
+
+select ok(
+  not exists (
+    select 1
+    from pg_proc p
+    cross join lateral aclexplode(coalesce(p.proacl, acldefault('f', p.proowner))) acl
+    where p.oid in (
+      'public.get_top_tv_series_by_year(integer, integer)'::regprocedure,
+      'public.get_media_distribution_counts()'::regprocedure,
+      'public.get_media_stats(text)'::regprocedure,
+      'public.get_season_episode_page(uuid, uuid, text, text, integer, integer)'::regprocedure
+    )
+      and acl.grantee = 0
+      and acl.privilege_type = 'EXECUTE'
+  ),
+  'PUBLIC has no implicit execute privilege on public read RPCs'
+);
+
+select ok(
+  not exists (
+    select 1
+    from pg_proc
+    where oid in (
+      'public.get_top_tv_series_by_year(integer, integer)'::regprocedure,
+      'public.get_media_distribution_counts()'::regprocedure,
+      'public.get_media_stats(text)'::regprocedure,
+      'public.get_season_episode_page(uuid, uuid, text, text, integer, integer)'::regprocedure
+    )
+      and prosecdef
+  ),
+  'public read RPCs execute with invoker privileges'
+);
+
+select ok(
+  has_function_privilege('service_role', 'public.rls_auto_enable()', 'EXECUTE')
+    and not has_function_privilege('anon', 'public.rls_auto_enable()', 'EXECUTE')
+    and not has_function_privilege('authenticated', 'public.rls_auto_enable()', 'EXECUTE'),
+  'the RLS event-trigger function remains service-role-only'
+);
+
+set local role anon;
+
+select results_eq(
+  $$select * from public.get_media_stats('movie')$$,
+  $$
+    select
+      count(*) as total,
+      count(*) filter (where media.status = 'watched') as watched,
+      count(*) filter (where media.status = 'watching') as watching,
+      count(*) filter (where media.status = 'want_to_watch') as want,
+      count(*) filter (where media.sort_date >= current_date) as upcoming
+    from public.v_all_media as media
+    where media.type::text = 'movie'
+  $$,
+  'anonymous media stats match the equivalent direct read query'
+);
+
+reset role;
 
 select * from finish();
 rollback;

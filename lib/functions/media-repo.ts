@@ -1,7 +1,7 @@
-import { getSupabaseServer } from "@/utils/supabase";
 import { getSupabasePublicServer } from "@/utils/supabase";
 import { mapViewRowToMedia } from "@/lib/functions/media-mapper";
 import { buildMediaDistributions, type DistributionCountRow } from "@/lib/functions/media-distributions";
+import { quotePostgrestFilterValue } from "@/lib/functions/postgrest-filter";
 import { EpisodeInfo, Media, MediaDistributions, SeasonEpisodePage, SeasonInfo, ViewAllMediaRow, FetchMediaListOptions } from "@/lib/types";
 
 /*
@@ -9,15 +9,8 @@ import { EpisodeInfo, Media, MediaDistributions, SeasonEpisodePage, SeasonInfo, 
 
   说明：
   - 把常用的 v_all_media 查询封装到统一的函数中，页面调用这些函数无需关心视图字段细节。
-  - 所有导出的函数均为服务端使用（使用 getSupabaseServer），若需要浏览器端查询，请使用 utils/supabase-client 中的客户端 API。
+  - 所有导出的函数均为服务端使用（使用公开密钥并受 RLS 约束），若需要浏览器端查询，请使用 utils/supabase-client 中的客户端 API。
 */
-
-declare global {
-  var _mediaRepoCache: Map<string, { ts: number; data: Media[]; total?: number }> | undefined;
-}
-
-const MEDIA_CACHE_TTL_MS = 30_000;
-const MEDIA_CACHE_MAX_ENTRIES = 200;
 
 export class MediaRepositoryError extends Error {
   constructor(operation: string, cause?: unknown) {
@@ -89,7 +82,7 @@ export async function getSitemapMediaEntries(): Promise<SitemapMediaEntry[]> {
 }
 
 async function addSeriesReleaseYearRanges(
-  db: ReturnType<typeof getSupabaseServer>,
+  db: ReturnType<typeof getSupabasePublicServer>,
   items: Media[],
 ): Promise<Media[]> {
   const seriesIds = items
@@ -313,7 +306,7 @@ export async function getSeasonEpisodes(
   status: "all" | "watched" | "unwatched" = "all",
   order: "asc" | "desc" = "asc",
 ): Promise<SeasonEpisodePage | null> {
-  const db = getSupabaseServer();
+  const db = getSupabasePublicServer();
   const offset = (page - 1) * pageSize;
   const [episodePageResult, seasonMediaResult] = await Promise.all([
     db.rpc("get_season_episode_page", {
@@ -388,9 +381,7 @@ export async function fetchTopMediaServer(
   year?: string | null,
   limit = 10,
 ): Promise<Media[]> {
-  const db = mediaType === "tv_series" && year
-    ? getSupabaseServer()
-    : getSupabasePublicServer();
+  const db = getSupabasePublicServer();
 
   if (mediaType === "tv_series" && year) {
     type RankedSeriesRow = {
@@ -464,7 +455,7 @@ export async function fetchTopMediaServer(
 }
 
 export async function fetchMediaDistributionsServer(): Promise<MediaDistributions> {
-  const db = getSupabaseServer();
+  const db = getSupabasePublicServer();
 
   const { data, error } = await db.rpc("get_media_distribution_counts");
   if (error || !data) {
@@ -489,23 +480,6 @@ async function fetchMediaList(opts: FetchMediaListOptions): Promise<{ rows: Medi
     type, seriesOnly = false, creditRole, status, genre, region, language, startYear, endYear, q, sort, limit = 30, offset = 0,
   } = opts || {};
 
-  // 1. 初始化缓存变量
-  const cacheKey = JSON.stringify({ type, seriesOnly, creditRole, status, genre, region, language, startYear, endYear, q, sort, limit, offset });
-  const now = Date.now();
-
-  // 2. 内存缓存读取机制
-  if (!globalThis._mediaRepoCache) {
-    globalThis._mediaRepoCache = new Map();
-  }
-  const cache = globalThis._mediaRepoCache;
-  const cached = cache.get(cacheKey);
-
-  if (cached && now - cached.ts < MEDIA_CACHE_TTL_MS) {
-    return { rows: cached.data, total: cached.total ?? 0 };
-  }
-  if (cached) cache.delete(cacheKey);
-
-  // 3. 构造查询
   let dataQuery = db.from("v_all_media").select("*");
   let countQuery = db.from("v_all_media").select("id", { count: "exact", head: true });
 
@@ -513,7 +487,8 @@ async function fetchMediaList(opts: FetchMediaListOptions): Promise<{ rows: Medi
   const creditRoles = creditRole?.split(",").filter((role) => role === "director" || role === "actor") ?? [];
   const hasQuery = typeof q === "string" && q.trim().length > 0;
   const queryText = hasQuery ? `%${q.trim()}%` : "";
-  const titleSearchFilter = `title.ilike.${queryText},alternate_title.ilike.${queryText}`;
+  const quotedQueryText = quotePostgrestFilterValue(queryText);
+  const titleSearchFilter = `title.ilike.${quotedQueryText},alternate_title.ilike.${quotedQueryText}`;
   const searchesAllCategories = hasQuery && types.length === 0 && !seriesOnly && creditRoles.length === 0;
   const searchedTypes = searchesAllCategories ? ["movie", "tv_series"] : types;
   const searchesSeries = searchesAllCategories || seriesOnly;
@@ -549,7 +524,7 @@ async function fetchMediaList(opts: FetchMediaListOptions): Promise<{ rows: Medi
             .from("media_credits")
             .select("media_item_id, people!inner(name)")
             .in("role", searchedCreditRoles)
-            .or(`name.ilike.${queryText},alternate_name.ilike.${queryText}`, {
+            .or(`name.ilike.${quotedQueryText},alternate_name.ilike.${quotedQueryText}`, {
               referencedTable: "people",
             })
         : Promise.resolve({ data: [], error: null }),
@@ -589,7 +564,6 @@ async function fetchMediaList(opts: FetchMediaListOptions): Promise<{ rows: Medi
       ...(creditResult.data ?? []).map((credit) => credit.media_item_id),
     ]));
     if (matchingIds.length === 0) {
-      cache.set(cacheKey, { ts: now, data: [], total: 0 });
       return { rows: [], total: 0 };
     }
 
@@ -677,23 +651,12 @@ async function fetchMediaList(opts: FetchMediaListOptions): Promise<{ rows: Medi
   const mappedResults: Media[] = data.map((item: ViewAllMediaRow) => mapViewRowToMedia(item));
   const results = await addSeriesReleaseYearRanges(db, mappedResults);
 
-  // Keep the short-lived process cache bounded on long-running server instances.
-  if (cache.size >= MEDIA_CACHE_MAX_ENTRIES) {
-    for (const [key, entry] of cache) {
-      if (now - entry.ts >= MEDIA_CACHE_TTL_MS || cache.size >= MEDIA_CACHE_MAX_ENTRIES) {
-        cache.delete(key);
-      }
-      if (cache.size < MEDIA_CACHE_MAX_ENTRIES) break;
-    }
-  }
-  cache.set(cacheKey, { ts: now, data: results, total });
-
   return { rows: results, total };
 }
 
 // 统计信息查询（例如 Movies / Series 页面需要的 total/watched/want/upcoming）
 export async function fetchStatsServer(mediaType: "movie" | "tv_series") {
-  const db = getSupabaseServer();
+  const db = getSupabasePublicServer();
   const { data, error } = await db.rpc("get_media_stats", { p_media_type: mediaType });
   if (error || !data?.[0]) {
     if (error) console.error("Failed to fetch media stats:", error);
