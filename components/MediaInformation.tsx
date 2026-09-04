@@ -224,9 +224,9 @@ export default function MediaInformation({
                 {media.runtime && (
                   <>
                     <span className="text-white/20 hidden sm:inline">•</span>
-                    <Link href={`/search?runtime=${encodeURIComponent(media.runtime.toString())}`} className="text-white/60 hover:text-white transition-colors underline underline-offset-4 decoration-white/20 hover:decoration-white/80 drop-shadow-[0_0_5px_rgba(255,255,255,0.1)]">
+                    <span className="text-white/60 drop-shadow-[0_0_5px_rgba(255,255,255,0.1)]">
                       {media.runtime} 分钟
-                    </Link>
+                    </span>
                   </>
                 )}
 

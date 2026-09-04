@@ -1,6 +1,8 @@
 -- Complete current application schema.
 -- Keep this file updated whenever the public schema changes.
 
+create extension if not exists pg_trgm;
+
 create type public.media_type as enum (
   'movie',
   'tv_series',
@@ -227,12 +229,17 @@ alter table only public.tv_episodes
 create index media_credits_person_id_idx on public.media_credits using btree (person_id);
 create index media_genres_genre_id_media_item_id_idx on public.media_genres using btree (genre_id, media_item_id);
 create index media_item_series_series_id_media_item_id_idx on public.media_item_series using btree (series_id, media_item_id);
+create index idx_media_items_alternate_title_trgm on public.media_items using gin (alternate_title gin_trgm_ops);
 create index idx_media_items_release_date on public.media_items using btree (release_date desc);
+create index idx_media_items_title_trgm on public.media_items using gin (title gin_trgm_ops);
 create index idx_media_items_type on public.media_items using btree (type);
 create index media_languages_language_id_media_item_id_idx on public.media_languages using btree (language_id, media_item_id);
 create index media_regions_region_id_media_item_id_idx on public.media_regions using btree (region_id, media_item_id);
+create index idx_media_series_name_trgm on public.media_series using gin (name gin_trgm_ops);
 create index music_album_id_idx on public.music using btree (album_id);
 create index music_albums_artist_id_idx on public.music_albums using btree (artist_id);
+create index idx_people_alternate_name_trgm on public.people using gin (alternate_name gin_trgm_ops);
+create index idx_people_name_trgm on public.people using gin (name gin_trgm_ops);
 
 alter table public.genres enable row level security;
 alter table public.languages enable row level security;
@@ -568,6 +575,7 @@ grant execute on function public.get_tv_seasons_by_series(uuid) to public, anon,
 
 revoke all on function public.rls_auto_enable() from public;
 revoke all on function public.rls_auto_enable() from anon, authenticated;
+grant execute on function public.rls_auto_enable() to service_role;
 
 create or replace function public.get_top_tv_series_by_year(
   p_year integer,
@@ -597,9 +605,7 @@ as $$
 $$;
 
 revoke all on function public.get_top_tv_series_by_year(integer, integer) from public;
-revoke all on function public.get_top_tv_series_by_year(integer, integer) from anon;
-revoke all on function public.get_top_tv_series_by_year(integer, integer) from authenticated;
-grant execute on function public.get_top_tv_series_by_year(integer, integer) to service_role;
+grant execute on function public.get_top_tv_series_by_year(integer, integer) to anon, authenticated, service_role;
 
 create or replace function public.get_media_distribution_counts()
 returns table(
@@ -680,9 +686,7 @@ as $$
 $$;
 
 revoke all on function public.get_media_distribution_counts() from public;
-revoke all on function public.get_media_distribution_counts() from anon;
-revoke all on function public.get_media_distribution_counts() from authenticated;
-grant execute on function public.get_media_distribution_counts() to service_role;
+grant execute on function public.get_media_distribution_counts() to anon, authenticated, service_role;
 
 create or replace function public.get_media_stats(p_media_type text)
 returns table(
@@ -708,9 +712,7 @@ as $$
 $$;
 
 revoke all on function public.get_media_stats(text) from public;
-revoke all on function public.get_media_stats(text) from anon;
-revoke all on function public.get_media_stats(text) from authenticated;
-grant execute on function public.get_media_stats(text) to service_role;
+grant execute on function public.get_media_stats(text) to anon, authenticated, service_role;
 
 create or replace function public.get_season_episode_page(
   p_series_id uuid,
@@ -801,6 +803,4 @@ as $$
 $$;
 
 revoke all on function public.get_season_episode_page(uuid, uuid, text, text, integer, integer) from public;
-revoke all on function public.get_season_episode_page(uuid, uuid, text, text, integer, integer) from anon;
-revoke all on function public.get_season_episode_page(uuid, uuid, text, text, integer, integer) from authenticated;
-grant execute on function public.get_season_episode_page(uuid, uuid, text, text, integer, integer) to service_role;
+grant execute on function public.get_season_episode_page(uuid, uuid, text, text, integer, integer) to anon, authenticated, service_role;

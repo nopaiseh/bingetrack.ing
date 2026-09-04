@@ -13,7 +13,6 @@
 ```bash
 NEXT_PUBLIC_SUPABASE_URL="https://xxx.supabase.co"
 NEXT_PUBLIC_SUPABASE_ANON_KEY="xxx"
-SUPABASE_SERVICE_ROLE_KEY="xxx"
 NEXT_PUBLIC_SITE_URL="http://localhost:3000"
 ```
 

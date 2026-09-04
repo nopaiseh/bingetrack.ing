@@ -3,12 +3,15 @@
 // https://docs.sentry.io/platforms/javascript/guides/nextjs/
 
 import * as Sentry from "@sentry/nextjs";
+import { parseSentryTracesSampleRate } from "./lib/sentry-sampling";
 
 Sentry.init({
   dsn: "https://3372f2ef28f0008a74b965e76a9dd7b4@o4512027852668928.ingest.de.sentry.io/4512027952545872",
 
-  // Define how likely traces are sampled. Adjust this value in production, or use tracesSampler for greater control.
-  tracesSampleRate: 1,
+  // Errors are unaffected; this only controls performance trace sampling.
+  tracesSampleRate: parseSentryTracesSampleRate(
+    process.env.SENTRY_TRACES_SAMPLE_RATE,
+  ),
 
   dataCollection: {
     // To disable sending user data and HTTP bodies, uncomment the lines below. For more info visit:
