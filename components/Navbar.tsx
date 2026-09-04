@@ -36,7 +36,7 @@ export default function Navbar() {
   };
 
   return (
-    <nav className="surface-panel fixed left-0 top-0 z-50 w-full border-x-0 border-t-0 transition-all duration-300">
+    <nav aria-label="主要导航" className="surface-panel fixed left-0 top-0 z-50 w-full border-x-0 border-t-0 transition-all duration-300">
       <div className="flex h-16 w-full max-w-7xl items-center justify-between px-4 sm:px-6 lg:mx-auto lg:px-8">
         <div className="flex items-center gap-10">
           <Link
@@ -63,6 +63,7 @@ export default function Navbar() {
               <Link
                 key={item.name}
                 href={item.href}
+                aria-current={isActive(item.href) ? "page" : undefined}
                 className={`transition-all duration-300 ${
                   isActive(item.href)
                     ? "text-red-500 font-bold drop-shadow-[0_0_12px_rgba(239,68,68,0.8)] scale-105" 
@@ -105,6 +106,7 @@ export default function Navbar() {
             hover:bg-white/10 hover:border-white/20 hover:shadow-[0_6px_20px_rgba(255,255,255,0.05)] transition-all duration-300"
             aria-label={isMobileMenuOpen ? "关闭导航菜单" : "打开导航菜单"}
             aria-expanded={isMobileMenuOpen}
+            aria-controls="mobile-navigation"
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
           >
             {isMobileMenuOpen ? <X className="size-5" aria-hidden="true" /> : <Menu className="size-5" aria-hidden="true" />}
@@ -113,6 +115,9 @@ export default function Navbar() {
       </div>
 
       <div
+        id="mobile-navigation"
+        aria-hidden={!isMobileMenuOpen}
+        inert={!isMobileMenuOpen ? true : undefined}
         className={`surface-muted overflow-hidden border-b border-white/10 shadow-[0_15px_40px_rgba(0,0,0,0.2)] backdrop-blur-3xl transition-all duration-500 ease-in-out lg:hidden ${
           isMobileMenuOpen
             ? "max-h-72 opacity-100 py-4"
@@ -124,6 +129,7 @@ export default function Navbar() {
             <Link
               key={item.name}
               href={item.href}
+              aria-current={isActive(item.href) ? "page" : undefined}
               className={`block py-2 transition-all ${
                 isActive(item.href)
                   ? "text-red-500 font-bold drop-shadow-[0_0_12px_rgba(239,68,68,0.8)] translate-x-2"
