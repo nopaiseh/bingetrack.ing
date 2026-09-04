@@ -1,17 +1,8 @@
 import { NextResponse } from "next/server";
 import { searchMediaServer } from "@/lib/functions/media-repo";
 import { ApiValidationError, parseMediaSearchParams } from "@/lib/api/media-params";
-import { checkRateLimit } from "@/lib/api/rate-limit";
 
 export async function GET(request: Request) {
-  const rateLimit = checkRateLimit(request, "media-search", 90);
-  if (!rateLimit.allowed) {
-    return NextResponse.json(
-      { error: "Too many requests" },
-      { status: 429, headers: { "Retry-After": String(rateLimit.retryAfter) } },
-    );
-  }
-
   try {
     const params = parseMediaSearchParams(new URL(request.url).searchParams);
     const results = await searchMediaServer(params);
