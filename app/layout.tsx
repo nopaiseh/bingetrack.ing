@@ -29,7 +29,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="zh-CN" className={`${GeistMono.variable}`}>
-      <body className="text-neutral-200 font-sans leading-normal tracking-normal selection:bg-red-500/30 selection:text-white flex flex-col min-h-screen relative">
+      <body className="bg-[var(--canvas-middle)] text-neutral-200 font-sans leading-normal tracking-normal selection:bg-red-500/30 selection:text-white flex flex-col min-h-screen relative">
         <a
           href="#main-content"
           className="surface-raised fixed left-4 top-4 z-100 -translate-y-24 rounded-lg border border-red-400 px-4 py-2 text-sm font-semibold text-white transition-transform focus:translate-y-0"
