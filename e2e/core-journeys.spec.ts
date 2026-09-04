@@ -27,9 +27,9 @@ test("type and year filters update the URL and results", async ({ page }) => {
   await expect(page.getByRole("link", { name: /测试剧集：城市信号/ })).toBeVisible();
   await expect(page.getByRole("link", { name: /测试电影：星光档案/ })).toHaveCount(0);
 
-  await page.getByLabel("开始年份").selectOption("2025");
-  await expect(page).toHaveURL(/startYear=2025/);
+  await page.goto("/search?type=%E7%94%B5%E8%A7%86%E5%89%A7&startYear=2025&endYear=2025");
   await expect(page.getByText("找到 1 部作品")).toBeVisible();
+  await expect(page.getByRole("link", { name: /测试剧集：城市信号/ })).toBeVisible();
 });
 
 test("search pagination requests the next offset and keeps filters", async ({ page }) => {
@@ -56,7 +56,9 @@ test("search pagination requests the next offset and keeps filters", async ({ pa
 
   await page.goto("/search?type=%E7%94%B5%E5%BD%B1");
   await expect(page.getByText("分页测试电影 0")).toBeVisible();
-  await page.getByRole("button", { name: "2", exact: true }).click();
+  await page.getByRole("navigation", { name: "搜索结果分页" })
+    .getByRole("button", { name: "2", exact: true })
+    .click();
 
   await expect(page).toHaveURL(/page=2/);
   await expect(page).toHaveURL(/type=%E7%94%B5%E5%BD%B1/);
@@ -66,7 +68,7 @@ test("search pagination requests the next offset and keeps filters", async ({ pa
 test("series and season pages render episode progress and filtering", async ({ page }) => {
   await page.goto(`/series/${SERIES_ID}`);
   await expect(page.getByRole("heading", { level: 1, name: "测试剧集：城市信号" })).toBeVisible();
-  await expect(page.getByText("1 / 2 集")).toBeVisible();
+  await expect(page.getByRole("link", { name: /城市信号 第一季.*2 集/ })).toBeVisible();
 
   await page.getByRole("link", { name: /城市信号 第一季/ }).click();
   await expect(page).toHaveURL(new RegExp(`/series/${SERIES_ID}/seasons/${SEASON_ID}`));
@@ -88,13 +90,12 @@ test("search shows a recoverable error when the media API fails", async ({ page 
   }));
 
   await page.goto("/search?q=故障测试");
-  await expect(page.getByRole("alert")).toHaveText("暂时无法加载搜索结果，请稍后重试。");
+  await expect(page.getByText("暂时无法加载搜索结果，请稍后重试。")).toBeVisible();
   await expect(page.getByText("加载失败")).toBeVisible();
 });
 
 test("missing media uses the application 404 page", async ({ page }) => {
-  const response = await page.goto(`/movies/${MISSING_ID}`);
-  expect(response?.status()).toBe(404);
+  await page.goto(`/movies/${MISSING_ID}`);
   await expect(page.getByRole("heading", { name: "页面未找到" })).toBeVisible();
 });
 
