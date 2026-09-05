@@ -151,6 +151,11 @@
     background: var(--surface-raised);
   }
 
+  .dashboard-deferred {
+    content-visibility: auto;
+    contain-intrinsic-size: auto 420px;
+  }
+
   .stat-icon {
     background: var(--surface-raised);
     box-shadow: 0 4px 10px rgb(0 0 0 / 0.10);

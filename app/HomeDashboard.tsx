@@ -139,6 +139,76 @@ function CategoryHeaderCards({
   );
 }
 
+function MediaRuntimeCards({
+  watchedRuntime,
+  unwatchedRuntime,
+  totalRuntime,
+}: {
+  watchedRuntime: number;
+  unwatchedRuntime: number;
+  totalRuntime: number;
+}) {
+  const completionPercent = percent(watchedRuntime, totalRuntime);
+  const watchedHours = Math.round(watchedRuntime / 60);
+  const unwatchedHours = Math.round(unwatchedRuntime / 60);
+
+  return (
+    <div className="grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-6 lg:grid-cols-3">
+      <div className="surface-card interactive-card group flex flex-col justify-between rounded-2xl p-4 sm:p-5 lg:p-6">
+        <div>
+          <div className="mb-2 flex items-center gap-2 text-sm text-white/60">
+            <div className="stat-icon flex items-center justify-center rounded-lg p-2">
+              <PlayCircle className="size-4" aria-hidden="true" />
+            </div>
+            <span className="text-sm font-bold tracking-wide text-white/80 transition-colors group-hover:text-white">已看总时长</span>
+          </div>
+          <div className="mb-2 flex items-baseline gap-2">
+            <span className="font-mono text-5xl tracking-tighter text-white drop-shadow-[0_0_10px_rgba(255,255,255,0.2)]">{watchedHours}</span>
+            <span className="font-medium text-white/50">小时</span>
+          </div>
+        </div>
+        <p className="mt-4 border-t border-white/10 pt-4 text-xs text-white/50">
+          相当于连续观看约 {Math.round(watchedHours / 24)} 天
+        </p>
+      </div>
+
+      <div className="surface-card interactive-card group flex flex-col justify-between rounded-2xl p-4 sm:p-5 lg:p-6">
+        <div>
+          <div className="mb-2 flex items-center gap-2 text-sm text-white/60">
+            <div className="stat-icon flex items-center justify-center rounded-lg p-2">
+              <Layers3 className="size-4" aria-hidden="true" />
+            </div>
+            <span className="text-sm font-bold tracking-wide text-white/80 transition-colors group-hover:text-white">待看总时长</span>
+          </div>
+          <div className="mb-2 flex items-baseline gap-2">
+            <span className="font-mono text-5xl tracking-tighter text-white drop-shadow-[0_0_10px_rgba(255,255,255,0.2)]">{unwatchedHours}</span>
+            <span className="font-medium text-white/50">小时</span>
+          </div>
+        </div>
+        <p className="mt-4 border-t border-white/10 pt-4 text-xs text-white/50">尚未完成的内容时长</p>
+      </div>
+
+      <div className="surface-card interactive-card group flex flex-col justify-between rounded-2xl p-4 sm:p-5 lg:p-6">
+        <div>
+          <div className="mb-2 flex items-center gap-2 text-sm text-white/60">
+            <div className="stat-icon flex items-center justify-center rounded-lg p-2">
+              <ChartPie className="size-4" aria-hidden="true" />
+            </div>
+            <span className="text-sm font-bold tracking-wide text-white/80 transition-colors group-hover:text-white">完成进度</span>
+          </div>
+          <div className="mb-4 flex items-baseline gap-2">
+            <span className="font-mono text-5xl tracking-tighter text-white drop-shadow-[0_0_10px_rgba(255,255,255,0.2)]">{completionPercent}%</span>
+            <span className="font-medium text-white/50">已完成</span>
+          </div>
+        </div>
+        <div className="progress-track mt-2 h-2 w-full overflow-hidden rounded-full shadow-inner">
+          <div className="h-full rounded-full bg-linear-to-r from-red-600 to-red-400 shadow-[0_0_12px_rgba(239,68,68,0.5)]" style={{ width: `${completionPercent}%` }} />
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // Unified Status Card to handle both Movies and Series
 function MediaStatusCard({
   title,
@@ -225,6 +295,9 @@ export default function HomeDashboard({
 
   const avgMoviesRating = currentYearData?.movie_avg_rating || 0;
   const avgMoviesRatingPercent = percent(avgMoviesRating, 10);
+  const moviesWatchedRuntime = currentYearData?.movies_watched_runtime ?? 0;
+  const moviesUnwatchedRuntime = currentYearData?.movies_unwatched_runtime ?? 0;
+  const totalMoviesRuntime = currentYearData?.total_movies_runtime ?? 0;
 
   // Derive series totals strictly from 3 tracking states
   const watchedSeries = currentYearData?.watched_series || 0;
@@ -235,6 +308,9 @@ export default function HomeDashboard({
 
   const avgSeriesRating = currentYearData?.series_avg_rating || 0;
   const avgSeriesRatingPercent = percent(avgSeriesRating, 10);
+  const seriesWatchedRuntime = currentYearData?.series_watched_runtime ?? 0;
+  const seriesUnwatchedRuntime = currentYearData?.series_unwatched_runtime ?? 0;
+  const totalSeriesRuntime = currentYearData?.total_series_runtime ?? 0;
 
   const watchedRuntime = currentYearData?.total_watched_runtime ?? 0;
   const totalRuntime = currentYearData?.total_runtime ?? 0;
@@ -277,19 +353,45 @@ export default function HomeDashboard({
   }, [selectedYear]);
 
   return (
-    <div className="container mx-auto flex max-w-7xl animate-fade-in flex-col gap-6 px-4 py-12 pt-24 sm:px-6 lg:px-8">
-      <div className="flex flex-col gap-6 md:gap-8 mb-4">
-        <div>
-          <h1 className="flex flex-col gap-1 font-mono text-4xl font-bold tracking-tighter sm:flex-row sm:flex-wrap sm:items-baseline sm:gap-3 lg:text-6xl">
-            <span className="text-transparent bg-clip-text bg-linear-to-r from-red-500 to-red-400 drop-shadow-[0_0_15px_rgba(248,113,113,0.3)]">
-              {selectedYear}
-            </span>
-            <span className="text-white drop-shadow-[0_0_10px_rgba(255,255,255,0.2)]">记录回顾</span>
-          </h1>
+    <div className="container mx-auto flex max-w-7xl flex-col gap-6 px-4 py-12 pt-24 sm:px-6 lg:px-8">
+      <section aria-labelledby="dashboard-title" className="relative z-10 mb-2 rounded-3xl border border-white/10 bg-[linear-gradient(135deg,rgba(127,29,29,0.2),rgba(255,255,255,0.035)_42%,rgba(255,255,255,0.015))] px-5 pb-5 pt-6 shadow-[0_24px_80px_rgba(0,0,0,0.24)] sm:px-7 sm:pb-6 sm:pt-8 lg:px-10 lg:pb-8 lg:pt-10">
+        <div aria-hidden="true" className="pointer-events-none absolute inset-0 overflow-hidden rounded-[inherit]">
+          <div className="absolute -right-24 -top-32 size-72 rounded-full bg-red-500/10 blur-3xl" />
+        </div>
+        <div className="relative">
+          <div className="mb-5 flex items-center gap-3 text-[11px] font-semibold uppercase tracking-[0.24em] text-red-300/90">
+            <span className="h-px w-8 bg-red-400" />
+            <span>{selectedYear === "All Time" ? "全时段档案" : `${selectedYear} 年度档案`}</span>
+          </div>
+
+          <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
+            <div className="max-w-3xl">
+              <h1 id="dashboard-title" className="font-mono text-4xl font-semibold leading-none tracking-[-0.055em] text-white sm:text-5xl lg:text-7xl">
+                媒体全景
+              </h1>
+              <p className="mt-4 max-w-xl text-sm leading-6 text-white/55 sm:text-base">
+                收录我倾注在光影、声音与文字里的时光。
+              </p>
+            </div>
+
+            <dl className="grid grid-cols-3 gap-2 border-t border-white/10 pt-5 lg:min-w-100 lg:border-l lg:border-t-0 lg:pl-8 lg:pt-0">
+              <div>
+                <dt className="text-[11px] tracking-wide text-white/40">电影总计</dt>
+                <dd className="mt-1 font-mono text-xl font-medium text-white sm:text-2xl">{totalMovies}</dd>
+              </div>
+              <div>
+                <dt className="text-[11px] tracking-wide text-white/40">电视剧总计</dt>
+                <dd className="mt-1 font-mono text-xl font-medium text-white sm:text-2xl">{totalSeries}</dd>
+              </div>
+              <div>
+                <dt className="text-[11px] tracking-wide text-white/40">完成进度</dt>
+                <dd className="mt-1 font-mono text-xl font-medium text-red-300 sm:text-2xl">{runtimePercent}%</dd>
+              </div>
+            </dl>
+          </div>
         </div>
 
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-white/10 pb-5">
-          {/* Frosted Glass Tabs */}
+        <div className="relative mt-7 flex flex-col items-start justify-between gap-4 border-t border-white/10 pt-5 md:flex-row md:items-center">
           <div className="surface-control flex gap-1 rounded-xl p-1.5" role="tablist" aria-label="仪表板视图">
             {tabs.map((tab) => (
               <button
@@ -316,7 +418,7 @@ export default function HomeDashboard({
             onSelect={setSelectedYear}
           />
         </div>
-      </div>
+      </section>
 
       <div className="w-full">
         {topMediaError && selectedYear !== "All Time" && (
@@ -330,85 +432,10 @@ export default function HomeDashboard({
           </div>
         )}
         {activeTab === "总览" && (
-          <div key="overview" id="dashboard-panel-overview" role="tabpanel" aria-labelledby="dashboard-tab-overview" className="animate-fade-in flex flex-col gap-4 md:gap-6">
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-6 lg:grid-cols-3">
-              
-              <div className="surface-card interactive-card group flex flex-col justify-between rounded-2xl p-4 sm:p-5 lg:p-6">
-                <div>
-                  <div className="text-sm text-white/60 mb-2 flex items-center gap-2">
-                    <div className="stat-icon flex items-center justify-center rounded-lg p-2">
-                      <PlayCircle className="size-4" aria-hidden="true" />
-                    </div>
-                    <span className="text-sm font-bold text-white/80 group-hover:text-white transition-colors tracking-wide">
-                      已看总时长
-                    </span>
-                  </div>
-                  <div className="flex items-baseline gap-2 mb-2">
-                    <span className="text-5xl font-mono text-white tracking-tighter drop-shadow-[0_0_10px_rgba(255,255,255,0.2)]">
-                      {Math.round((currentYearData?.total_watched_runtime ?? 0) / 60)}
-                    </span>
-                    <span className="text-white/50 font-medium">小时</span>
-                  </div>
-                </div>
-                <p className="text-xs text-white/50 mt-4 border-t border-white/10 pt-4">
-                  相当于连续不眠不休看了约 {Math.round((currentYearData?.total_watched_runtime ?? 0) / 60 / 24)} 天
-                </p>
-              </div>
-
-              <div className="surface-card interactive-card group flex flex-col justify-between rounded-2xl p-4 sm:p-5 lg:p-6">
-                <div>
-                  <div className="text-sm text-white/60 mb-2 flex items-center gap-2">
-                    <div className="stat-icon flex items-center justify-center rounded-lg p-2">
-                      <Layers3 className="size-4" aria-hidden="true" />
-                    </div>
-                    <span className="text-sm font-bold text-white/80 group-hover:text-white transition-colors tracking-wide">
-                      待看时长
-                    </span>
-                  </div>
-                  <div className="flex items-baseline gap-2 mb-2">
-                    <span className="text-5xl font-mono text-white tracking-tighter drop-shadow-[0_0_10px_rgba(255,255,255,0.2)]">
-                      {Math.round((currentYearData?.total_unwatched_runtime ?? 0) / 60)}
-                    </span>
-                    <span className="text-white/50 font-medium">小时</span>
-                  </div>
-                </div>
-                <p className="text-xs text-white/50 mt-4 border-t border-white/10 pt-4">
-                  正在看与想要看的精神食粮储备
-                </p>
-              </div>
-
-              <div className="surface-card interactive-card group flex flex-col justify-between rounded-2xl p-4 sm:p-5 lg:p-6">
-                <div>
-                  <div className="text-sm text-white/60 mb-2 flex items-center gap-2">
-                    <div className="stat-icon flex items-center justify-center rounded-lg p-2">
-                      <ChartPie className="size-4" aria-hidden="true" />
-                    </div>
-                    <span className="text-sm font-bold text-white/80 group-hover:text-white transition-colors tracking-wide">
-                      片库完成进度
-                    </span>
-                  </div>
-                  <div className="flex items-baseline gap-2 mb-4">
-                    <span className="text-5xl font-mono text-white tracking-tighter drop-shadow-[0_0_10px_rgba(255,255,255,0.2)]">
-                      {runtimePercent}
-                      %
-                    </span>
-                    <span className="text-white/50 font-medium">已完成</span>
-                  </div>
-                </div>
-                <div className="progress-track mt-2 h-2 w-full overflow-hidden rounded-full shadow-inner">
-                  <div
-                    className="h-full bg-linear-to-r from-red-600 to-red-400 shadow-[0_0_12px_rgba(239,68,68,0.5)] rounded-full"
-                    style={{
-                      width: `${runtimePercent}%`,
-                    }}
-                  />
-                </div>
-              </div>
-            </div>
-
+          <div key="overview" id="dashboard-panel-overview" role="tabpanel" aria-labelledby="dashboard-tab-overview" className="flex flex-col gap-4 md:gap-6">
             {/* Movies Section (Updated to 2 columns) */}
-            <div className="surface-card interactive-card group flex flex-col gap-6 rounded-2xl p-4 sm:p-5 lg:p-6">
-              <div className="flex justify-between items-center border-b border-white/10 pb-3">
+            <div className="dashboard-deferred surface-card interactive-card group flex flex-col gap-6 rounded-2xl p-4 sm:p-5 lg:p-6">
+              <div className="flex items-center border-b border-white/10 pb-3">
                 <div className="flex items-center gap-2">
                   <div className="stat-icon flex items-center justify-center rounded-lg p-2">
                     <Film className="size-4" aria-hidden="true" />
@@ -417,9 +444,6 @@ export default function HomeDashboard({
                     电影看板
                   </span>
                 </div>
-                <span className="text-xs font-mono text-white/50">
-                  总计: {totalMovies} 部
-                </span>
               </div>
 
               {/* Grid set to grid-cols-2 as requested */}
@@ -445,8 +469,8 @@ export default function HomeDashboard({
             </div>
 
             {/* Series Section */}
-            <div className="surface-card interactive-card group flex flex-col gap-6 rounded-2xl p-4 sm:p-5 lg:p-6">
-              <div className="flex justify-between items-center border-b border-white/10 pb-3">
+            <div className="dashboard-deferred surface-card interactive-card group flex flex-col gap-6 rounded-2xl p-4 sm:p-5 lg:p-6">
+              <div className="flex items-center border-b border-white/10 pb-3">
                 <div className="flex items-center gap-2">
                   <div className="stat-icon flex items-center justify-center rounded-lg p-2">
                     <Tv className="size-4" aria-hidden="true" />
@@ -455,9 +479,6 @@ export default function HomeDashboard({
                     电视剧看板
                   </span>
                 </div>
-                <span className="text-xs font-mono text-white/50">
-                  总计: {totalSeries} 部
-                </span>
               </div>
 
               <div className="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3">
@@ -505,6 +526,12 @@ export default function HomeDashboard({
               avgRatingPercent={avgMoviesRatingPercent}
             />
 
+            <MediaRuntimeCards
+              watchedRuntime={moviesWatchedRuntime}
+              unwatchedRuntime={moviesUnwatchedRuntime}
+              totalRuntime={totalMoviesRuntime}
+            />
+
             <DistributionTop5Cards distribution={movieDistribution} />
 
             <div className="space-y-12 mt-4">
@@ -528,6 +555,12 @@ export default function HomeDashboard({
               watchedPercent={seriesPercent}
               avgRating={avgSeriesRating}
               avgRatingPercent={avgSeriesRatingPercent}
+            />
+
+            <MediaRuntimeCards
+              watchedRuntime={seriesWatchedRuntime}
+              unwatchedRuntime={seriesUnwatchedRuntime}
+              totalRuntime={totalSeriesRuntime}
             />
 
             <DistributionTop5Cards distribution={seriesDistribution} />
