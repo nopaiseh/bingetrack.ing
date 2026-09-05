@@ -14,7 +14,7 @@ function MediaPoster({ media }: { media: Media }) {
         {media.cover_url ? (
           <Image src={media.cover_url} alt={media.title} fill sizes="(max-width: 393px) calc(100vw - 74px), 320px" className="object-cover transition-transform duration-700 hover:scale-105" preload/>
         ) : (
-          <div className="w-full h-full flex flex-col items-center justify-center text-white/30 gap-2">
+          <div className="w-full h-full flex flex-col items-center justify-center text-white/60 gap-2">
             <ImageIcon className="size-10 drop-shadow-md" aria-hidden="true" />
             <span className="text-sm">暂无海报</span>
           </div>
@@ -258,7 +258,7 @@ export default function MediaInformation({
               </Link>
             ))}
             {seasons.length === 0 && (
-              <div className="surface-muted col-span-full rounded-xl border border-white/10 px-6 py-10 text-center text-sm text-white/40">
+              <div className="surface-muted col-span-full rounded-xl border border-white/10 px-6 py-10 text-center text-sm text-white/60">
                 暂无季集数据
               </div>
             )}

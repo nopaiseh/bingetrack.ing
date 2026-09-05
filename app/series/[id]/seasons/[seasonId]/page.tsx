@@ -69,14 +69,14 @@ function EpisodeCard({ episode }: { episode: EpisodeInfo }) {
             <h2 className="font-bold text-white/90 transition-colors group-hover:text-red-300">{episode.title}</h2>
           </div>
           <span className={`inline-flex shrink-0 items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium ${
-            watched ? "border-emerald-400/25 bg-emerald-400/10 text-emerald-300" : "surface-muted border-white/10 text-white/45"
+            watched ? "border-emerald-400/25 bg-emerald-400/10 text-emerald-300" : "surface-muted border-white/10 text-white/60"
           }`}>
             {watched ? <CheckCircle className="size-3" /> : <Eye className="size-3" />}
             {watched ? "已看" : "未看"}
           </span>
         </div>
 
-        <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-white/45">
+        <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-white/60">
           {episode.releaseDate && <span className="flex items-center gap-1"><CalendarDays className="size-3" />{episode.releaseDate}</span>}
           {episode.runtime && <span className="flex items-center gap-1"><Clock3 className="size-3" />{episode.runtime} 分钟</span>}
           {episode.rating !== null && <span className="flex items-center gap-1 text-amber-400"><Star className="size-3 fill-current" />{episode.rating.toFixed(1)}</span>}
@@ -169,7 +169,7 @@ export default async function SeasonPage({
               {previousSeason && <Link href={`/series/${id}/seasons/${previousSeason.id}`} className="surface-recessed interactive-control rounded-xl border border-white/10 p-2.5 text-white/60" aria-label={`上一季：第 ${previousSeason.seasonNumber} 季`}><ChevronLeft className="size-4" /></Link>}
               <div className="surface-recessed flex max-w-72 gap-1 overflow-x-auto rounded-xl border border-white/10 p-1">
                 {seasons.map((season) => (
-                  <Link key={season.id} href={`/series/${id}/seasons/${season.id}`} className={`shrink-0 rounded-lg px-3 py-1.5 text-xs transition-colors ${season.id === seasonId ? "bg-red-500/20 text-red-300" : "text-white/45 hover:bg-white/10 hover:text-white"}`}>
+                  <Link key={season.id} href={`/series/${id}/seasons/${season.id}`} className={`shrink-0 rounded-lg px-3 py-1.5 text-xs transition-colors ${season.id === seasonId ? "bg-red-500/20 text-red-300" : "text-white/60 hover:bg-white/10 hover:text-white"}`}>
                     第 {season.seasonNumber} 季
                   </Link>
                 ))}
@@ -179,7 +179,7 @@ export default async function SeasonPage({
               </div>
               {seasonData.season.summary && (
                 <div className="mt-6 border-t border-white/10 pt-5">
-                  <h2 className="text-xs font-semibold uppercase tracking-widest text-white/45">本季简介</h2>
+                  <h2 className="text-xs font-semibold uppercase tracking-widest text-white/60">本季简介</h2>
                   <p className="mt-2 whitespace-pre-line text-sm leading-7 text-white/70 md:text-base">
                     {seasonData.season.summary}
                   </p>
@@ -226,7 +226,7 @@ export default async function SeasonPage({
             {seasonData.episodes.map((episode) => <EpisodeCard key={episode.id} episode={episode} />)}
           </div>
         ) : (
-          <div className="surface-muted rounded-2xl border border-white/10 py-20 text-center text-white/40">当前筛选下暂无剧集</div>
+          <div className="surface-muted rounded-2xl border border-white/10 py-20 text-center text-white/60">当前筛选下暂无剧集</div>
         )}
 
         {totalPages > 1 && (
