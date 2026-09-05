@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 import { GeistMono } from 'geist/font/mono';
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
@@ -63,6 +64,7 @@ export default function RootLayout({
         </main>
 
         <Footer />
+        <SpeedInsights />
       </body>
     </html>
   );
