@@ -108,14 +108,18 @@ test("media API rejects invalid query parameters", async ({ request }) => {
 });
 
 
-test("search results are available without JavaScript", async ({ browser, baseURL }) => {
-  const context = await browser.newContext({ baseURL, javaScriptEnabled: false });
-  try {
-    const page = await context.newPage();
-    await page.goto("/search?q=星光档案");
-    await expect(page.getByRole("heading", { name: "测试电影：星光档案", exact: true })).toBeVisible();
-    await expect(page.getByText("找到 1 部作品")).toBeVisible();
-  } finally {
-    await context.close();
-  }
+test("search results render before application hydration without a client data request", async ({ page }) => {
+  // React streaming uses inline scripts to reveal server-rendered HTML. Block
+  // application bundles instead of disabling those HTML delivery scripts too.
+  const mediaRequests: string[] = [];
+  await page.route(/\/_next\/.*\.js(?:\?|$)/, (route) => route.abort());
+  await page.route("**/api/media**", (route) => {
+    mediaRequests.push(route.request().url());
+    return route.abort();
+  });
+
+  await page.goto("/search?q=星光档案");
+  await expect(page.getByRole("heading", { name: "测试电影：星光档案", exact: true })).toBeVisible();
+  await expect(page.getByText("找到 1 部作品")).toBeVisible();
+  expect(mediaRequests).toEqual([]);
 });
