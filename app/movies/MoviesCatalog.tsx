@@ -34,8 +34,8 @@ export default function MoviesCatalog({
 
         
         <div className="space-y-12">
-          <MediaRow title="我已看" items={watched ?? []} viewAllLink="/search?type=电影&status=已看" type="movies" />
-          <MediaRow title="我想看" items={want ?? []} viewAllLink="/search?type=电影&status=想看" type="movies" />
+          <MediaRow title="我已看" items={watched ?? []} eagerCount={2} viewAllLink="/search?type=电影&status=已看" type="movies" />
+          <MediaRow title="我想看" items={want ?? []} eagerCount={watched?.length ? 0 : 2} viewAllLink="/search?type=电影&status=想看" type="movies" />
         </div>
       </div>
     </div>
