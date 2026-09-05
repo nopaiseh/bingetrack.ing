@@ -1,13 +1,9 @@
-"use client";
-
 import Image from "next/image";
 import Link from "next/link";
 import { ImageIcon, Star } from "lucide-react";
-import { useState } from "react";
 import { Media } from "@/lib/types";
 
-function ItemCard({ item, type }: { item: Media; type: "movies" | "series" }) {
-  const [isImageLoaded, setIsImageLoaded] = useState(false);
+function ItemCard({ item, type, eager, highPriority }: { item: Media; type: "movies" | "series"; eager: boolean; highPriority: boolean }) {
   // Combine genres and languages, then limit to a maximum of 4 items
   const tags = [...(item.genres ?? []), ...(item.languages ?? [])].slice(0, 4);
 
@@ -15,19 +11,15 @@ function ItemCard({ item, type }: { item: Media; type: "movies" | "series" }) {
     <>
       <div className="image-placeholder relative flex aspect-2/3 w-full items-center justify-center overflow-hidden">
         {item.cover_url ? (
-          <>
-            {!isImageLoaded && <div className="surface-skeleton absolute inset-0 animate-pulse" />}
-            <Image
-              src={item.cover_url}
-              alt={item.title}
-              fill
-              className={`object-cover transition-[opacity,transform,filter] duration-500 group-hover:scale-110 ${
-                isImageLoaded ? "opacity-100 blur-none" : "opacity-0 blur-sm"
-              }`}
-              sizes="(max-width: 639px) 144px, 176px"
-              onLoad={() => setIsImageLoaded(true)}
-            />
-          </>
+          <Image
+            src={item.cover_url}
+            alt={item.title}
+            fill
+            className="object-cover transition-transform duration-500 group-hover:scale-110"
+            sizes="(max-width: 639px) 144px, 176px"
+            loading={eager ? "eager" : "lazy"}
+            fetchPriority={highPriority ? "high" : undefined}
+          />
         ) : (
           <ImageIcon className="size-10 text-white/20 drop-shadow-md" aria-hidden="true" />
         )}
@@ -77,11 +69,13 @@ export default function MediaRow({
   items,
   viewAllLink,
   type,
+  eagerCount = 0,
 }: {
   title: string;
   items: Media[];
   viewAllLink?: string;
   type?: "movies" | "series";
+  eagerCount?: number;
 }) {
   if (!items || items.length === 0) return null;
 
@@ -101,7 +95,7 @@ export default function MediaRow({
       
       {/* FIX: Changed py-4 to pt-4 pb-12 and added -mb-8 to offset the extra padding visually so the layout doesn't break */}
       <div className="no-scrollbar -mb-8 flex snap-x snap-mandatory space-x-4 overflow-x-auto px-1 pb-12 pr-5 pt-4 scroll-pl-2">
-        {items.map((media: Media) => {
+        {items.map((media: Media, index: number) => {
           const mediaType = type ?? media.type ?? "movies";
           return (
             <Link
@@ -109,7 +103,7 @@ export default function MediaRow({
               key={media.id}
               className="surface-card interactive-media-card group flex w-36 flex-none snap-start cursor-pointer flex-col overflow-hidden rounded-xl sm:w-44"
             >
-              <ItemCard item={media} type={mediaType} />
+              <ItemCard item={media} type={mediaType} eager={index < eagerCount} highPriority={eagerCount > 0 && index === 0} />
             </Link>
           );
         })}

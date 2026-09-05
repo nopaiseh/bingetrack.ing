@@ -20,10 +20,13 @@ export function CinematicBackground({ imageUrl }: { imageUrl: string }) {
     >
       <Image 
         src={imageUrl} 
-        alt="cinematic background" 
+        alt=""
+        aria-hidden="true"
         fill 
-        sizes="100vw"
-        // Opacity at 30% combined with mix-blend-screen creates a perfect ambient glow
+        // Deliberately undersample this heavily blurred decorative image.
+        sizes="384px"
+        quality={25}
+        loading="eager"
         className="object-cover opacity-20 blur-[80px] saturate-150 scale-125" 
       />
     </div>
@@ -36,7 +39,7 @@ function MediaPoster({ media }: { media: Media }) {
       {/* Lighter Frosted Glass Poster */}
       <div className="surface-muted relative aspect-2/3 w-full overflow-hidden rounded-xl border border-white/10 shadow-[0_15px_40px_rgba(0,0,0,0.3)] backdrop-blur-2xl">
         {media.cover_url ? (
-          <Image src={media.cover_url} alt={media.title} fill sizes="(max-width: 768px) 100vw, 320px" className="object-cover transition-transform duration-700 hover:scale-105" priority/>
+          <Image src={media.cover_url} alt={media.title} fill sizes="(max-width: 393px) calc(100vw - 74px), 320px" className="object-cover transition-transform duration-700 hover:scale-105" preload/>
         ) : (
           <div className="w-full h-full flex flex-col items-center justify-center text-white/30 gap-2">
             <ImageIcon className="size-10 drop-shadow-md" aria-hidden="true" />

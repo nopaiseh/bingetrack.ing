@@ -1,6 +1,3 @@
-"use client";
-
-import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { ImageIcon, Star } from "lucide-react";
@@ -28,23 +25,17 @@ export function SearchMediaCardSkeleton() {
 }
 
 export function SearchMediaCard({ item, returnHref }: { item: Media; returnHref: string }) {
-  const [isImageLoaded, setIsImageLoaded] = useState(false);
-
   return (
     <Link href={`/${item.type}/${item.id}?from=${encodeURIComponent(returnHref)}`} className="surface-card interactive-media-card group flex cursor-pointer flex-col overflow-hidden rounded-xl">
       <div className="image-placeholder relative flex aspect-2/3 w-full items-center justify-center overflow-hidden">
         {item.cover_url ? (
-          <>
-            {!isImageLoaded && <div className="surface-muted absolute inset-0 z-0 animate-pulse" />}
-            <Image
-              src={item.cover_url}
-              alt={item.title}
-              fill
-              className={`z-10 object-cover transition-all duration-700 group-hover:scale-110 ${isImageLoaded ? "opacity-100 blur-none" : "scale-105 opacity-0 blur-md"}`}
-              sizes="(max-width: 639px) 50vw, (max-width: 1023px) 33vw, (max-width: 1279px) 20vw, 16vw"
-              onLoad={() => setIsImageLoaded(true)}
-            />
-          </>
+          <Image
+            src={item.cover_url}
+            alt={item.title}
+            fill
+            className="object-cover transition-transform duration-700 group-hover:scale-110"
+            sizes="(max-width: 639px) 50vw, (max-width: 1023px) 33vw, (max-width: 1279px) 20vw, 16vw"
+          />
         ) : (
           <ImageIcon className="size-10 text-white/20 drop-shadow-md" aria-hidden="true" />
         )}

@@ -24,6 +24,7 @@ const nextConfig: NextConfig = {
     NEXT_PUBLIC_SENTRY_ENVIRONMENT: resolveSentryEnvironment(process.env),
   },
   images: {
+    qualities: [25, 75],
     remotePatterns: [
       {
         protocol: "https",
