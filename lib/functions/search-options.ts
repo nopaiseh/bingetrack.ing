@@ -1,4 +1,5 @@
 import "server-only";
+import { unstable_cache } from "next/cache";
 import { getSupabasePublicServer } from "@/utils/supabase";
 
 type NamedOption = { name: string };
@@ -11,7 +12,7 @@ export type SearchOptions = {
   years: string[];
 };
 
-export async function fetchSearchOptionsServer(): Promise<SearchOptions> {
+async function fetchSearchOptions(): Promise<SearchOptions> {
   const db = getSupabasePublicServer();
   const [genresRes, regionsRes, languagesRes, yearsRes] = await Promise.all([
     db.from("genres").select("name").order("name", { ascending: true }),
@@ -29,3 +30,8 @@ export async function fetchSearchOptionsServer(): Promise<SearchOptions> {
     years: ((yearsRes.data ?? []) as ReleaseYearOption[]).map(({ release_year }) => String(release_year)),
   };
 }
+
+export const fetchSearchOptionsServer = unstable_cache(fetchSearchOptions, ["search-options-v1"], {
+  revalidate: 3600,
+  tags: ["media"],
+});

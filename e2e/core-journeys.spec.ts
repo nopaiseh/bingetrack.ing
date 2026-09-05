@@ -55,6 +55,7 @@ test("search pagination requests the next offset and keeps filters", async ({ pa
   });
 
   await page.goto("/search?type=%E7%94%B5%E5%BD%B1");
+  await page.getByRole("textbox", { name: "搜索媒体", exact: true }).fill("分页测试");
   await expect(page.getByText("分页测试电影 0")).toBeVisible();
   await page.getByRole("navigation", { name: "搜索结果分页" })
     .getByRole("button", { name: "2", exact: true })
@@ -89,7 +90,8 @@ test("search shows a recoverable error when the media API fails", async ({ page 
     body: JSON.stringify({ error: "fixture failure" }),
   }));
 
-  await page.goto("/search?q=故障测试");
+  await page.goto("/search");
+  await page.getByRole("textbox", { name: "搜索媒体", exact: true }).fill("故障测试");
   await expect(page.getByText("暂时无法加载搜索结果，请稍后重试。")).toBeVisible();
   await expect(page.getByText("加载失败")).toBeVisible();
 });
@@ -103,4 +105,17 @@ test("media API rejects invalid query parameters", async ({ request }) => {
   const response = await request.get("/api/media?type=invalid&startYear=2050");
   expect(response.status()).toBe(400);
   await expect(response.json()).resolves.toEqual({ error: "Invalid start year" });
+});
+
+
+test("search results are available without JavaScript", async ({ browser, baseURL }) => {
+  const context = await browser.newContext({ baseURL, javaScriptEnabled: false });
+  try {
+    const page = await context.newPage();
+    await page.goto("/search?q=星光档案");
+    await expect(page.getByRole("heading", { name: "测试电影：星光档案", exact: true })).toBeVisible();
+    await expect(page.getByText("找到 1 部作品")).toBeVisible();
+  } finally {
+    await context.close();
+  }
 });

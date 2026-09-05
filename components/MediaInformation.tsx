@@ -1,7 +1,8 @@
 import Image from "next/image";
 import Link from "next/link";
 import { ImageIcon } from "lucide-react";
-import type { ReactNode } from "react";
+import { Suspense, type ReactNode } from "react";
+import MediaBackLink, { DefaultMediaBackLink } from "./MediaBackLink";
 import { Media, SeasonInfo } from "@/lib/types";
 import SearchTag from "./SearchTag";
 
@@ -172,31 +173,24 @@ export default function MediaInformation({
   media,
   seasons,
   relatedContent,
-  backHref,
-  backLabel,
   releaseDateLabel,
   displayStatus,
 }: {
   media: Media;
   seasons: SeasonInfo[] | null;
   relatedContent?: ReactNode;
-  backHref?: string;
-  backLabel?: string;
   releaseDateLabel?: string;
   displayStatus?: string;
 }) {
-  const defaultBackHref = media.type === "series" ? "/series" : "/movies";
-  const defaultBackLabel = media.type === "series" ? "返回电视剧列表" : "返回电影列表";
 
   return (
     <>
       <CinematicBackground imageUrl={media.cover_url} />
 
       <div className="container relative z-10 mx-auto max-w-7xl px-4 pb-12 pt-24 sm:px-6 lg:px-8">
-        <Link href={backHref ?? defaultBackHref} className="surface-control interactive-control group mb-6 inline-flex w-fit items-center rounded-xl px-4 py-2 text-sm font-medium text-white/70">
-          <span className="mr-2 transition-transform duration-300 group-hover:-translate-x-1">←</span>
-          {backLabel ?? defaultBackLabel}
-        </Link>
+        <Suspense fallback={<DefaultMediaBackLink type={media.type === "series" ? "series" : "movies"} />}>
+          <MediaBackLink type={media.type === "series" ? "series" : "movies"} />
+        </Suspense>
 
         <div className="surface-panel rounded-3xl p-5 sm:p-6 lg:p-8">
           <div className="flex flex-col gap-8 lg:flex-row lg:gap-12">

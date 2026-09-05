@@ -1,16 +1,17 @@
 import { notFound } from "next/navigation";
-import { getMediaById, getRelatedBySeries } from "@/lib/functions/media-repo";
+import { getRelatedBySeries } from "@/lib/functions/media-repo";
 import MediaInformation from "@/components/MediaInformation";
 import MediaRow from "@/components/MediaRow";
 import { RelatedMediaLoadingSkeleton } from "@/components/LoadingSkeletons";
 import { Suspense } from "react";
-import { cache } from "react";
+import { getCachedMediaById } from "@/lib/functions/cached-media";
 import type { Metadata } from "next";
 import { buildMediaJsonLd, buildMediaMetadata, serializeJsonLd } from "@/lib/seo/media";
 
 export const revalidate = 60;
 
-const getCachedMediaById = cache(getMediaById);
+// Generate public detail pages on demand and reuse them for 60 seconds.
+export function generateStaticParams() { return []; }
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
   const { id } = await params;
@@ -36,13 +37,10 @@ async function RelatedMovies({ seriesNames, currentId }: { seriesNames: string[]
 
 export default async function MovieDetailPage({
   params,
-  searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ from?: string }>;
 }) {
-  const [{ id }, query] = await Promise.all([params, searchParams]);
-  const returnToSearch = query.from === "/search" || query.from?.startsWith("/search?");
+  const { id } = await params;
   const movie = await getCachedMediaById(id);
   if (!movie) notFound();
   const jsonLd = buildMediaJsonLd(movie);
@@ -58,8 +56,6 @@ export default async function MovieDetailPage({
       <MediaInformation
         media={movie}
         seasons={null}
-        backHref={returnToSearch ? query.from : undefined}
-        backLabel={returnToSearch ? "返回搜索页" : undefined}
         releaseDateLabel={movie.date}
         relatedContent={movie.series && movie.series.length > 0 ? (
           <Suspense fallback={<RelatedMediaLoadingSkeleton />}>

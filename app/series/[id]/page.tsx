@@ -1,16 +1,17 @@
 import { notFound } from "next/navigation";
-import { getMediaById, getRelatedBySeries, getSeasonsBySeriesId } from "@/lib/functions/media-repo";
+import { getRelatedBySeries } from "@/lib/functions/media-repo";
 import MediaInformation from "@/components/MediaInformation";
 import MediaRow from "@/components/MediaRow";
 import { RelatedMediaLoadingSkeleton } from "@/components/LoadingSkeletons";
 import { Suspense } from "react";
-import { cache } from "react";
+import { getCachedMediaById, getCachedSeasonsBySeriesId } from "@/lib/functions/cached-media";
 import type { Metadata } from "next";
 import { buildMediaJsonLd, buildMediaMetadata, serializeJsonLd } from "@/lib/seo/media";
 
 export const revalidate = 60;
 
-const getCachedMediaById = cache(getMediaById);
+// Generate public detail pages on demand and reuse them for 60 seconds.
+export function generateStaticParams() { return []; }
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
   const { id } = await params;
@@ -36,16 +37,13 @@ async function RelatedSeries({ seriesNames, currentId }: { seriesNames: string[]
 
 export default async function SeriesDetailPage({
   params,
-  searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ from?: string }>;
 }) {
-  const [{ id }, query] = await Promise.all([params, searchParams]);
-  const returnToSearch = query.from === "/search" || query.from?.startsWith("/search?");
+  const { id } = await params;
   const [series, seasons] = await Promise.all([
     getCachedMediaById(id),
-    getSeasonsBySeriesId(id),
+    getCachedSeasonsBySeriesId(id),
   ]);
   if (!series) notFound();
   const jsonLd = buildMediaJsonLd(series);
@@ -75,8 +73,6 @@ export default async function SeriesDetailPage({
       <MediaInformation
         media={series}
         seasons={seasons}
-        backHref={returnToSearch ? query.from : undefined}
-        backLabel={returnToSearch ? "返回搜索页" : undefined}
         releaseDateLabel={releaseYearRange}
         displayStatus={episodeDerivedStatus}
         relatedContent={series.series && series.series.length > 0 ? (
