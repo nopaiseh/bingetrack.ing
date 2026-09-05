@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import MediaRow from "@/components/MediaRow";
 import DashboardYearPicker from "@/components/DashboardYearPicker";
-import { DistributionItem, Media, MediaDistribution, MediaDistributions, Summary } from "@/lib/types";
+import { DistributionItem, MediaCard, MediaDistribution, MediaDistributions, Summary } from "@/lib/types";
 import {
   ChartPie,
   CheckCircle,
@@ -57,7 +57,7 @@ function DistributionCard({ title, icon: Icon, items }: { title: string; icon: L
             <span className="text-xs text-white/50 w-8 text-right">{item.percent}%</span>
           </div>
         ))}
-        {items.length === 0 && <span className="py-6 text-center text-sm text-white/40">暂无数据</span>}
+        {items.length === 0 && <span className="py-6 text-center text-sm text-white/60">暂无数据</span>}
       </div>
     </div>
   );
@@ -232,14 +232,14 @@ function MediaStatusCard({
         <div className="flex justify-between items-end">
           <span className="text-sm text-white/50">部数</span>
           <span className="text-2xl font-mono text-white drop-shadow-[0_0_5px_rgba(255,255,255,0.2)]">
-            {count} <span className="text-xs text-white/40 font-normal">部</span>
+            {count} <span className="text-xs text-white/60 font-normal">部</span>
           </span>
         </div>
         {seasonsCount !== undefined && (
           <div className="flex justify-between items-end">
             <span className="text-sm text-white/50">季数</span>
             <span className="text-2xl font-mono text-white drop-shadow-[0_0_5px_rgba(255,255,255,0.2)]">
-              {seasonsCount} <span className="text-xs text-white/40 font-normal">季</span>
+              {seasonsCount} <span className="text-xs text-white/60 font-normal">季</span>
             </span>
           </div>
         )}
@@ -247,7 +247,7 @@ function MediaStatusCard({
           <div className="flex justify-between items-end">
             <span className="text-sm text-white/50">集数</span>
             <span className="text-2xl font-mono text-white drop-shadow-[0_0_5px_rgba(255,255,255,0.2)]">
-              {episodesCount} <span className="text-xs text-white/40 font-normal">集</span>
+              {episodesCount} <span className="text-xs text-white/60 font-normal">集</span>
             </span>
           </div>
         )}
@@ -263,8 +263,8 @@ export default function HomeDashboard({
   distributions,
 }: {
   summary: Summary[];
-  topMovies: Media[];
-  topSeries: Media[];
+  topMovies: MediaCard[];
+  topSeries: MediaCard[];
   distributions: MediaDistributions;
 }) {
   const [activeTab, setActiveTab] = useState("总览");
@@ -354,10 +354,7 @@ export default function HomeDashboard({
 
   return (
     <div className="container mx-auto flex max-w-7xl flex-col gap-6 px-4 py-12 pt-24 sm:px-6 lg:px-8">
-      <section aria-labelledby="dashboard-title" className="relative z-10 mb-2 rounded-3xl border border-white/10 bg-[linear-gradient(135deg,rgba(127,29,29,0.2),rgba(255,255,255,0.035)_42%,rgba(255,255,255,0.015))] px-5 pb-5 pt-6 shadow-[0_24px_80px_rgba(0,0,0,0.24)] sm:px-7 sm:pb-6 sm:pt-8 lg:px-10 lg:pb-8 lg:pt-10">
-        <div aria-hidden="true" className="pointer-events-none absolute inset-0 overflow-hidden rounded-[inherit]">
-          <div className="absolute -right-24 -top-32 size-72 rounded-full bg-red-500/10 blur-3xl" />
-        </div>
+      <section aria-labelledby="dashboard-title" className="relative z-10 mb-2 rounded-3xl border border-white/10 bg-[var(--surface-panel)] px-5 pb-5 pt-6 shadow-[0_24px_80px_rgba(0,0,0,0.24)] sm:px-7 sm:pb-6 sm:pt-8 lg:px-10 lg:pb-8 lg:pt-10">
         <div className="relative">
           <div className="mb-5 flex items-center gap-3 text-[11px] font-semibold uppercase tracking-[0.24em] text-red-300/90">
             <span className="h-px w-8 bg-red-400" />
@@ -376,15 +373,15 @@ export default function HomeDashboard({
 
             <dl className="grid grid-cols-3 gap-2 border-t border-white/10 pt-5 lg:min-w-100 lg:border-l lg:border-t-0 lg:pl-8 lg:pt-0">
               <div>
-                <dt className="text-[11px] tracking-wide text-white/40">电影总计</dt>
+                <dt className="text-[11px] tracking-wide text-white/60">电影总计</dt>
                 <dd className="mt-1 font-mono text-xl font-medium text-white sm:text-2xl">{totalMovies}</dd>
               </div>
               <div>
-                <dt className="text-[11px] tracking-wide text-white/40">电视剧总计</dt>
+                <dt className="text-[11px] tracking-wide text-white/60">电视剧总计</dt>
                 <dd className="mt-1 font-mono text-xl font-medium text-white sm:text-2xl">{totalSeries}</dd>
               </div>
               <div>
-                <dt className="text-[11px] tracking-wide text-white/40">完成进度</dt>
+                <dt className="text-[11px] tracking-wide text-white/60">完成进度</dt>
                 <dd className="mt-1 font-mono text-xl font-medium text-red-300 sm:text-2xl">{runtimePercent}%</dd>
               </div>
             </dl>

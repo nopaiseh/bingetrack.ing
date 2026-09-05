@@ -1,4 +1,4 @@
-import type { Media, ViewAllMediaRow } from "@/lib/types";
+import type { MediaCard, Media, ViewAllMediaRow } from "@/lib/types";
 
 const nameCollator = new Intl.Collator(undefined, {
   numeric: true,
@@ -39,5 +39,20 @@ export function mapViewRowToMedia(
     directors: item.directors ?? [],
     type: mediaType,
     series: sortNames(overrideSeries ?? item.series),
+  };
+}
+
+/** Explicitly excludes detail-only data from card/API/RSC payloads. */
+export function mapViewRowToMediaCard(item: ViewAllMediaRow): MediaCard {
+  return {
+    id: String(item.id),
+    title: item.title ?? "",
+    date: String(item.sort_date ?? item.release_year ?? item.release_date ?? ""),
+    release_year: item.release_year ?? "",
+    rating: item.rating ?? item.average_rating ?? null,
+    genres: sortNames(item.genres),
+    languages: sortNames(item.languages),
+    cover_url: item.cover_url ?? "",
+    type: item.type === "movie" || item.type === "movies" ? "movies" : "series",
   };
 }

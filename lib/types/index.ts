@@ -20,6 +20,11 @@ export interface Media {
   type?: MediaType;
 }
 
+/** Fields crossing the server/client boundary for media cards. */
+export type MediaCard = Pick<Media,
+  "id" | "title" | "date" | "release_year" | "rating" | "genres" | "languages" | "cover_url" | "type"
+>;
+
 export interface SeasonInfo {
   id: string;
   seasonNumber: number;
@@ -106,9 +111,9 @@ export interface Stats {
 }
 
 export interface MediaCatalogProps {
-  watched?: Media[];
-  watching?: Media[];
-  want?: Media[];
+  watched?: MediaCard[];
+  watching?: MediaCard[];
+  want?: MediaCard[];
   stats?: Stats;
 }
 

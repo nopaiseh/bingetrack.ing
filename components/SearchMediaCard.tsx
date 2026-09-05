@@ -1,7 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { ImageIcon, Star } from "lucide-react";
-import type { Media } from "@/lib/types";
+import type { MediaCard } from "@/lib/types";
 
 export function SearchMediaCardSkeleton() {
   return (
@@ -24,7 +24,7 @@ export function SearchMediaCardSkeleton() {
   );
 }
 
-export function SearchMediaCard({ item, returnHref }: { item: Media; returnHref: string }) {
+export function SearchMediaCard({ item, returnHref }: { item: MediaCard; returnHref: string }) {
   return (
     <Link href={`/${item.type}/${item.id}?from=${encodeURIComponent(returnHref)}`} className="surface-card interactive-media-card group flex cursor-pointer flex-col overflow-hidden rounded-xl">
       <div className="image-placeholder relative flex aspect-2/3 w-full items-center justify-center overflow-hidden">

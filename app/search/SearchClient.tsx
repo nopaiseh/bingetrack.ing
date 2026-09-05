@@ -2,7 +2,7 @@
 
 import { useState, useEffect, Suspense, useCallback, useMemo, useRef } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
-import type { Media } from "@/lib/types";
+import type { MediaCard } from "@/lib/types";
 import type { SearchOptions } from "@/lib/functions/search-options";
 import { PAGE_SIZE, readFilters, writeFilters, readSearchPage, buildMediaSearchQuery, type SearchFilters } from "@/lib/api/search-state";
 
@@ -11,7 +11,7 @@ import { ArrowDown, ArrowUp, ChevronDown, ChevronLeft, ChevronRight, LoaderCircl
 
 type SearchProps = {
   initialOptions: SearchOptions;
-  initialResult: { rows: Media[]; total: number; key: string; error: string | null };
+  initialResult: { rows: MediaCard[]; total: number; key: string; error: string | null };
 };
 
 function pageNumbers(current: number, total: number) {
@@ -114,8 +114,8 @@ function SearchContent({ initialOptions, initialResult }: SearchProps) {
     const fetchMedia = async () => {
       try {
         const res = await fetch(`/api/media?${apiQuery}`, { signal: controller.signal });
-        if (!res.ok) throw new Error(`Media request failed with status ${res.status}`);
-        const json: { rows?: Media[]; total?: number } = await res.json();
+        if (!res.ok) throw new Error(`MediaCard request failed with status ${res.status}`);
+        const json: { rows?: MediaCard[]; total?: number } = await res.json();
         if (!controller.signal.aborted) {
           setResult({ rows: json.rows ?? [], total: json.total ?? 0, key: apiQuery, error: null });
         }

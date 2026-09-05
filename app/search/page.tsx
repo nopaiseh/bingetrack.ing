@@ -2,7 +2,7 @@ import SearchClient from "./SearchClient";
 import { fetchSearchOptionsServer } from "@/lib/functions/search-options";
 import { searchCachedMedia } from "@/lib/functions/cached-media";
 import { buildMediaSearchQuery } from "@/lib/api/search-state";
-import type { Media } from "@/lib/types";
+import type { MediaCard } from "@/lib/types";
 
 export const revalidate = 3600;
 
@@ -22,7 +22,7 @@ export default async function SearchPage({ searchParams }: {
       (data) => ({ ...data, key, error: null }),
       (error: unknown) => {
         console.error("Initial search failed:", error);
-        return { rows: [] as Media[], total: 0, key, error: "暂时无法加载搜索结果，请稍后重试。" };
+        return { rows: [] as MediaCard[], total: 0, key, error: "暂时无法加载搜索结果，请稍后重试。" };
       },
     ),
   ]);
