@@ -12,17 +12,15 @@ import {
   ListFilter,
   Star,
 } from "lucide-react";
-import { getMediaById, getSeasonEpisodes, getSeasonsBySeriesId } from "@/lib/functions/media-repo";
+import { getSeasonEpisodes } from "@/lib/functions/media-repo";
 import type { EpisodeInfo } from "@/lib/types";
 import type { Metadata } from "next";
-import { cache } from "react";
+import { getCachedMediaById, getCachedSeasonsBySeriesId } from "@/lib/functions/cached-media";
 import { buildSeasonMetadata } from "@/lib/seo/media";
 
 export const revalidate = 60;
 
 const PAGE_SIZE = 10;
-const getCachedMediaById = cache(getMediaById);
-const getCachedSeasonsBySeriesId = cache(getSeasonsBySeriesId);
 type StatusFilter = "all" | "watched" | "unwatched";
 type EpisodeOrder = "asc" | "desc";
 

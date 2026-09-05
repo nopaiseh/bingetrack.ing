@@ -1,40 +1,18 @@
 "use client";
 
 import { useState, useEffect, Suspense, useCallback, useMemo, useRef } from "react";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { Media } from "@/lib/types";
+import { usePathname, useSearchParams } from "next/navigation";
+import type { Media } from "@/lib/types";
 import type { SearchOptions } from "@/lib/functions/search-options";
+import { PAGE_SIZE, readFilters, writeFilters, readSearchPage, buildMediaSearchQuery, type SearchFilters } from "@/lib/api/search-state";
+
 import { SearchMediaCard, SearchMediaCardSkeleton } from "@/components/SearchMediaCard";
 import { ArrowDown, ArrowUp, ChevronDown, ChevronLeft, ChevronRight, LoaderCircle, Search, SlidersHorizontal, X } from "lucide-react";
 
-const PAGE_SIZE = 30;
-type SearchFilters = Record<string, string[]>;
-
-function readFilters(searchParams: URLSearchParams): SearchFilters {
-  return {
-    type: searchParams.get("type")?.split(",").filter(Boolean) ?? [],
-    status: searchParams.get("status")?.split(",").filter(Boolean) ?? [],
-    genre: searchParams.get("genre")?.split(",").filter(Boolean) ?? [],
-    region: searchParams.get("region")?.split(",").filter(Boolean) ?? [],
-    language: searchParams.get("language")?.split(",").filter(Boolean) ?? [],
-    year: searchParams.get("startYear") || searchParams.get("endYear")
-      ? [searchParams.get("startYear") || "", searchParams.get("endYear") || ""]
-      : [],
-    sort: [searchParams.get("sort") || "date_desc"],
-  };
-}
-
-function writeFilters(params: URLSearchParams, filters: SearchFilters) {
-  for (const key of ["type", "status", "genre", "region", "language", "startYear", "endYear", "sort"]) {
-    params.delete(key);
-  }
-  for (const key of ["type", "status", "genre", "region", "language"]) {
-    if (filters[key]?.length) params.set(key, filters[key].join(","));
-  }
-  if (filters.year?.[0]) params.set("startYear", filters.year[0]);
-  if (filters.year?.[1]) params.set("endYear", filters.year[1]);
-  if (filters.sort?.[0] && filters.sort[0] !== "date_desc") params.set("sort", filters.sort[0]);
-}
+type SearchProps = {
+  initialOptions: SearchOptions;
+  initialResult: { rows: Media[]; total: number; key: string; error: string | null };
+};
 
 function pageNumbers(current: number, total: number) {
   const start = Math.max(1, Math.min(current - 2, total - 4));
@@ -42,8 +20,7 @@ function pageNumbers(current: number, total: number) {
   return Array.from({ length: end - start + 1 }, (_, index) => start + index);
 }
 
-function SearchContent({ initialOptions }: { initialOptions: SearchOptions }) {
-  const router = useRouter();
+function SearchContent({ initialOptions, initialResult }: SearchProps) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const searchParamsString = searchParams.toString();
@@ -52,12 +29,11 @@ function SearchContent({ initialOptions }: { initialOptions: SearchOptions }) {
     latestSearchParamsRef.current = searchParamsString;
   }, [searchParamsString]);
   const urlQuery = searchParams.get("q") || "";
-  const requestedPage = Number(searchParams.get("page") ?? "1");
-  const page = Number.isSafeInteger(requestedPage) && requestedPage > 0 ? requestedPage : 1;
+  const page = readSearchPage(new URLSearchParams(searchParamsString));
+  const apiQuery = buildMediaSearchQuery(new URLSearchParams(searchParamsString));
   const returnHref = searchParams.size > 0 ? `${pathname}?${searchParamsString}` : pathname;
 
   const [query, setQuery] = useState(urlQuery);
-  const [debouncedQuery, setDebouncedQuery] = useState(urlQuery);
   const [prevUrlQuery, setPrevUrlQuery] = useState(urlQuery);
 
   if (urlQuery !== prevUrlQuery) {
@@ -74,10 +50,10 @@ function SearchContent({ initialOptions }: { initialOptions: SearchOptions }) {
 
   const { genres: genreOptions, regions: regionOptions, languages: languageOptions, years: yearOptions } = initialOptions;
 
-  const [mediaItems, setMediaItems] = useState<Media[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [requestError, setRequestError] = useState<string | null>(null);
-  const [total, setTotal] = useState(0);
+  const [result, setResult] = useState(initialResult);
+  const { rows: mediaItems, total } = result;
+  const isLoading = result.key !== apiQuery;
+  const requestError = isLoading ? null : result.error;
   const [showScrollTop, setShowScrollTop] = useState(false);
   const resultsRef = useRef<HTMLElement | null>(null);
 
@@ -86,9 +62,9 @@ function SearchContent({ initialOptions }: { initialOptions: SearchOptions }) {
     if (nextPage > 1) params.set("page", String(nextPage));
     else params.delete("page");
     const href = params.size > 0 ? `${pathname}?${params.toString()}` : pathname;
-    if (replace) router.replace(href, { scroll: false });
-    else router.push(href, { scroll: false });
-  }, [pathname, router, searchParams]);
+    if (replace) window.history.replaceState(null, "", href);
+    else window.history.pushState(null, "", href);
+  }, [pathname, searchParams]);
 
   const setFilters = useCallback((
     update: SearchFilters | ((previous: SearchFilters) => SearchFilters),
@@ -98,12 +74,13 @@ function SearchContent({ initialOptions }: { initialOptions: SearchOptions }) {
     writeFilters(params, nextFilters);
     params.delete("page");
     const href = params.size > 0 ? `${pathname}?${params.toString()}` : pathname;
-    router.replace(href, { scroll: false });
-  }, [filters, pathname, router, searchParams]);
+    window.history.replaceState(null, "", href);
+  }, [filters, pathname, searchParams]);
 
   useEffect(() => {
+    // URL restoration (including page > 1) is not a new search.
+    if (query.trim() === urlQuery.trim()) return;
     const timeoutId = window.setTimeout(() => {
-      setDebouncedQuery(query);
       const currentParams = latestSearchParamsRef.current;
       const params = new URLSearchParams(currentParams);
       if (query.trim()) params.set("q", query.trim());
@@ -111,11 +88,11 @@ function SearchContent({ initialOptions }: { initialOptions: SearchOptions }) {
       params.delete("page");
       const href = params.size > 0 ? `${pathname}?${params.toString()}` : pathname;
       if (params.toString() !== currentParams) {
-        router.replace(href, { scroll: false });
+        window.history.replaceState(null, "", href);
       }
     }, 300);
     return () => window.clearTimeout(timeoutId);
-  }, [pathname, query, router]);
+  }, [pathname, query, urlQuery]);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -130,73 +107,33 @@ function SearchContent({ initialOptions }: { initialOptions: SearchOptions }) {
   };
 
   useEffect(() => {
+    // Server results already match the initial URL. Fetch only after an actual
+    // query change, and retain the previous cards while the next page loads.
+    if (result.key === apiQuery) return;
     const controller = new AbortController();
-
     const fetchMedia = async () => {
-      setIsLoading(true);
-
-      const params = new URLSearchParams();
-      if (debouncedQuery) params.set("q", debouncedQuery);
-
-      if (filters.type && filters.type.length > 0) {
-        const typeMap: Record<string, string> = { 电影: "movie", 电视剧: "tv_series" };
-        const creditRoleMap: Record<string, string> = { 导演: "director", 演员: "actor" };
-        const mappedTypes = filters.type.map((t) => typeMap[t]).filter(Boolean);
-        const mappedCreditRoles = filters.type.map((t) => creditRoleMap[t]).filter(Boolean);
-        if (mappedTypes.length > 0) params.set("type", mappedTypes.join(","));
-        if (filters.type.includes("系列")) params.set("series", "true");
-        if (mappedCreditRoles.length > 0) params.set("creditRole", mappedCreditRoles.join(","));
-      }
-
-      if (filters.status && filters.status.length > 0) {
-        const statusMap: Record<string, string> = { 想看: "want_to_watch", 在看: "watching", 已看: "watched" };
-        const mappedStatuses = filters.status.map((s) => statusMap[s]).filter(Boolean);
-        if (mappedStatuses.length > 0) params.set("status", mappedStatuses.join(","));
-      }
-
-      if (filters.genre && filters.genre.length > 0) params.set("genre", filters.genre.join(","));
-      if (filters.region && filters.region.length > 0) params.set("region", filters.region.join(","));
-      if (filters.language && filters.language.length > 0) params.set("language", filters.language.join(","));
-
-      if (filters.year && filters.year.length === 2) {
-        if (filters.year[0]) params.set("startYear", filters.year[0]);
-        if (filters.year[1]) params.set("endYear", filters.year[1]);
-      }
-
-      if (filters.sort && filters.sort.length > 0) params.set("sort", filters.sort[0]);
-
-      params.set("limit", PAGE_SIZE.toString());
-      params.set("offset", ((page - 1) * PAGE_SIZE).toString());
-
       try {
-        setRequestError(null);
-        const res = await fetch(`/api/media?${params.toString()}`, { signal: controller.signal });
+        const res = await fetch(`/api/media?${apiQuery}`, { signal: controller.signal });
         if (!res.ok) throw new Error(`Media request failed with status ${res.status}`);
         const json: { rows?: Media[]; total?: number } = await res.json();
-        setMediaItems(json.rows ?? []);
-        setTotal(json.total ?? 0);
-      } catch (error) {
-        if (error instanceof DOMException && error.name === "AbortError") return;
-        console.error("Failed to fetch media:", error);
-        setRequestError("暂时无法加载搜索结果，请稍后重试。");
-        setMediaItems([]);
-        setTotal(0);
-      } finally {
         if (!controller.signal.aborted) {
-          setIsLoading(false);
+          setResult({ rows: json.rows ?? [], total: json.total ?? 0, key: apiQuery, error: null });
         }
+      } catch (error) {
+        if (controller.signal.aborted) return;
+        console.error("Failed to fetch media:", error);
+        setResult({ rows: [], total: 0, key: apiQuery, error: "暂时无法加载搜索结果，请稍后重试。" });
       }
     };
-
-    fetchMedia();
+    void fetchMedia();
     return () => controller.abort();
-  }, [debouncedQuery, filters, page]);
+  }, [apiQuery, result.key]);
 
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
   useEffect(() => {
-    if (!isLoading && page > totalPages) updatePage(totalPages, true);
-  }, [isLoading, page, totalPages, updatePage]);
+    if (!isLoading && !requestError && page > totalPages) updatePage(totalPages, true);
+  }, [isLoading, requestError, page, totalPages, updatePage]);
 
   const goToPage = (nextPage: number) => {
     updatePage(nextPage);
@@ -543,7 +480,7 @@ function SearchContent({ initialOptions }: { initialOptions: SearchOptions }) {
   );
 }
 
-export default function SearchClient({ initialOptions }: { initialOptions: SearchOptions }) {
+export default function SearchClient(props: SearchProps) {
   return (
     <Suspense
       fallback={
@@ -552,7 +489,7 @@ export default function SearchClient({ initialOptions }: { initialOptions: Searc
         </div>
       }
     >
-      <SearchContent initialOptions={initialOptions} />
+      <SearchContent {...props} />
     </Suspense>
   );
 }
