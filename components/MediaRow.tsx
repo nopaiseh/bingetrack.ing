@@ -1,9 +1,9 @@
 import Image from "next/image";
 import Link from "next/link";
 import { ImageIcon, Star } from "lucide-react";
-import { Media } from "@/lib/types";
+import { MediaCard } from "@/lib/types";
 
-function ItemCard({ item, type, eager, highPriority }: { item: Media; type: "movies" | "series"; eager: boolean; highPriority: boolean }) {
+function ItemCard({ item, type, eager, highPriority }: { item: MediaCard; type: "movies" | "series"; eager: boolean; highPriority: boolean }) {
   // Combine genres and languages, then limit to a maximum of 4 items
   const tags = [...(item.genres ?? []), ...(item.languages ?? [])].slice(0, 4);
 
@@ -72,7 +72,7 @@ export default function MediaRow({
   eagerCount = 0,
 }: {
   title: string;
-  items: Media[];
+  items: MediaCard[];
   viewAllLink?: string;
   type?: "movies" | "series";
   eagerCount?: number;
@@ -95,7 +95,7 @@ export default function MediaRow({
       
       {/* FIX: Changed py-4 to pt-4 pb-12 and added -mb-8 to offset the extra padding visually so the layout doesn't break */}
       <div className="no-scrollbar -mb-8 flex snap-x snap-mandatory space-x-4 overflow-x-auto px-1 pb-12 pr-5 pt-4 scroll-pl-2">
-        {items.map((media: Media, index: number) => {
+        {items.map((media: MediaCard, index: number) => {
           const mediaType = type ?? media.type ?? "movies";
           return (
             <Link

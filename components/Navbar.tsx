@@ -36,7 +36,7 @@ export default function Navbar() {
   };
 
   return (
-    <nav aria-label="主要导航" className="surface-panel fixed left-0 top-0 z-50 w-full border-x-0 border-t-0 transition-all duration-300">
+    <nav aria-label="主要导航" className="surface-overlay fixed left-0 top-0 z-50 w-full border-x-0 border-t-0 transition-all duration-300">
       <div className="flex h-16 w-full max-w-7xl items-center justify-between px-4 sm:px-6 lg:mx-auto lg:px-8">
         <div className="flex items-center gap-10">
           <Link

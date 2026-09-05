@@ -1,6 +1,6 @@
 begin;
 
-select plan(13);
+select plan(15);
 
 select is(
   (
@@ -144,6 +144,27 @@ select results_eq(
 );
 
 reset role;
+
+select is(
+  (select count(*)::integer from pg_class c join pg_namespace n on n.oid = c.relnamespace
+   where n.nspname = 'public'
+     and c.relname in ('v_media_series_years', 'v_media_season_summaries')
+     and c.reloptions @> array['security_invoker=true']),
+  2,
+  'both media aggregate views respect caller permissions and RLS'
+);
+
+select ok(
+  not exists (
+    select 1 from pg_class c join pg_namespace n on n.oid = c.relnamespace
+    cross join (values ('anon'), ('authenticated')) roles(name)
+    where n.nspname = 'public'
+      and c.relname in ('v_media_series_years', 'v_media_season_summaries')
+      and (not has_table_privilege(roles.name, c.oid, 'SELECT')
+        or has_table_privilege(roles.name, c.oid, 'INSERT,UPDATE,DELETE,TRUNCATE'))
+  ),
+  'public readers have only read access to the media aggregate views'
+);
 
 select * from finish();
 rollback;

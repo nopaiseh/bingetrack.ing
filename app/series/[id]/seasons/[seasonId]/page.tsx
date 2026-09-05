@@ -148,11 +148,10 @@ export default async function SeasonPage({
         </Link>
 
         <header className="surface-panel relative mb-6 overflow-hidden rounded-3xl p-5 sm:p-6 lg:p-8">
-          {(seasonData.season.coverUrl || series.cover_url) && <Image src={seasonData.season.coverUrl || series.cover_url} alt="" fill priority className="-z-10 object-cover opacity-10 blur-2xl" sizes="100vw" />}
           <div className="flex flex-col gap-6 lg:flex-row lg:gap-8">
             <div className="image-overlay relative aspect-2/3 w-full max-w-72 shrink-0 self-center overflow-hidden rounded-2xl border border-white/15 shadow-[0_12px_35px_rgba(0,0,0,0.35)] lg:w-72 lg:self-start">
               {seasonData.season.coverUrl ? (
-                <Image src={seasonData.season.coverUrl} alt={`${seasonData.season.title} 海报`} fill priority className="object-cover" sizes="(max-width: 768px) 100vw, 288px" />
+                <Image src={seasonData.season.coverUrl} alt={`${seasonData.season.title} 海报`} fill priority className="object-cover" sizes="(max-width: 362px) calc(100vw - 74px), 288px" />
               ) : (
                 <div className="flex h-full items-center justify-center text-white/25"><ImageIcon className="size-9" aria-hidden="true" /></div>
               )}
@@ -204,7 +203,7 @@ export default async function SeasonPage({
           ))}
         </section>
 
-        <div className="surface-panel sticky top-20 z-20 mb-6 flex flex-col justify-between gap-3 rounded-2xl p-3 sm:flex-row sm:items-center">
+        <div className="surface-overlay sticky top-20 z-20 mb-6 flex flex-col justify-between gap-3 rounded-2xl p-3 sm:flex-row sm:items-center">
           <div className="flex items-center gap-2 overflow-x-auto">
             <ListFilter className="ml-1 size-4 shrink-0 text-white/60" />
             {(["all", "watched", "unwatched"] as const).map((value) => (

@@ -6,34 +6,6 @@ import MediaBackLink, { DefaultMediaBackLink } from "./MediaBackLink";
 import { Media, SeasonInfo } from "@/lib/types";
 import SearchTag from "./SearchTag";
 
-export function CinematicBackground({ imageUrl }: { imageUrl: string }) {
-  if (!imageUrl) return null;
-  
-  return (
-    <div 
-      // 1. z-0 puts it in the correct layer (behind content, but above the root black background)
-      // 2. mix-blend-screen ensures dark poster pixels become invisible, letting your red glows shine through!
-      className="absolute top-0 inset-x-0 h-[75vh] pointer-events-none z-0 mix-blend-screen select-none"
-      style={{ 
-        maskImage: 'linear-gradient(to bottom, black 20%, transparent 100%)', 
-        WebkitMaskImage: 'linear-gradient(to bottom, black 20%, transparent 100%)' 
-      }}
-    >
-      <Image 
-        src={imageUrl} 
-        alt=""
-        aria-hidden="true"
-        fill 
-        // Deliberately undersample this heavily blurred decorative image.
-        sizes="384px"
-        quality={25}
-        loading="eager"
-        className="object-cover opacity-20 blur-[80px] saturate-150 scale-125" 
-      />
-    </div>
-  );
-}
-
 function MediaPoster({ media }: { media: Media }) {
   return (
     <div className="w-full max-w-80 shrink-0 self-center lg:w-80 lg:self-start">
@@ -185,7 +157,6 @@ export default function MediaInformation({
 
   return (
     <>
-      <CinematicBackground imageUrl={media.cover_url} />
 
       <div className="container relative z-10 mx-auto max-w-7xl px-4 pb-12 pt-24 sm:px-6 lg:px-8">
         <Suspense fallback={<DefaultMediaBackLink type={media.type === "series" ? "series" : "movies"} />}>

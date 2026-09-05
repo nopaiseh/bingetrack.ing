@@ -1,8 +1,8 @@
 import { getSupabasePublicServer } from "@/utils/supabase";
-import { mapViewRowToMedia } from "@/lib/functions/media-mapper";
+import { mapViewRowToMedia, mapViewRowToMediaCard } from "@/lib/functions/media-mapper";
 import { buildMediaDistributions, type DistributionCountRow } from "@/lib/functions/media-distributions";
 import { quotePostgrestFilterValue } from "@/lib/functions/postgrest-filter";
-import { EpisodeInfo, Media, MediaDistributions, SeasonEpisodePage, SeasonInfo, ViewAllMediaRow, FetchMediaListOptions } from "@/lib/types";
+import { EpisodeInfo, MediaCard, Media, MediaDistributions, SeasonEpisodePage, SeasonInfo, ViewAllMediaRow, FetchMediaListOptions } from "@/lib/types";
 
 /*
   媒体仓库（server-side helpers）
@@ -17,6 +17,17 @@ export class MediaRepositoryError extends Error {
     super(`Media repository operation failed: ${operation}`, { cause });
     this.name = "MediaRepositoryError";
   }
+}
+
+const MEDIA_CARD_COLUMNS = "id,type,title,sort_date,release_year,rating,genres,languages,cover_url";
+
+function isMissingAggregateView(error: { code?: string } | null): boolean {
+  return error?.code === "PGRST205" || error?.code === "42P01";
+}
+
+function formatYearRange(first: number | null, last: number | null): string | undefined {
+  if (first == null || last == null) return undefined;
+  return first === last ? String(first) : `${first} - ${last}`;
 }
 
 type SeriesReleaseYearRow = {
@@ -81,14 +92,27 @@ export async function getSitemapMediaEntries(): Promise<SitemapMediaEntry[]> {
   return entries;
 }
 
-async function addSeriesReleaseYearRanges(
+async function addSeriesReleaseYearRanges<T extends MediaCard>(
   db: ReturnType<typeof getSupabasePublicServer>,
-  items: Media[],
-): Promise<Media[]> {
+  items: T[],
+): Promise<T[]> {
   const seriesIds = items
     .filter((item) => item.type === "series")
     .map((item) => item.id);
   if (seriesIds.length === 0) return items;
+
+  const aggregate = await db.from("v_media_series_years")
+    .select("series_id,first_year,last_year").in("series_id", seriesIds);
+  if (!aggregate.error) {
+    const years = new Map((aggregate.data ?? []).map((row) => [
+      row.series_id, formatYearRange(row.first_year, row.last_year),
+    ]));
+    return items.map((item) => ({ ...item, release_year: years.get(item.id) ?? item.release_year }));
+  }
+  if (!isMissingAggregateView(aggregate.error)) {
+    throw new MediaRepositoryError("fetch series year aggregates", aggregate.error);
+  }
+  // Compatibility during rollout only: deploy media-list-aggregates.sql first.
 
   const { data, error } = await db
     .from("tv_seasons")
@@ -163,7 +187,7 @@ export async function getMediaById(id: string): Promise<Media | null> {
 }
 
 // 2. 获取同系列相关作品
-export async function getRelatedBySeries(seriesName: string, currentId: string): Promise<Media[]> {
+export async function getRelatedBySeries(seriesName: string, currentId: string): Promise<MediaCard[]> {
   if (!seriesName) return [];
 
   const db = getSupabasePublicServer();
@@ -183,10 +207,10 @@ export async function getRelatedBySeries(seriesName: string, currentId: string):
 
   const relatedIds = seriesItems.map((item) => item.media_item_id);
 
-  // 第二步：拿着这些 ID，去 v_all_media 视图中拉取完整的富媒体数据
+  // Related rows need the same lightweight payload as other media cards.
   const { data, error } = await db
     .from("v_all_media")
-    .select("*")
+    .select(MEDIA_CARD_COLUMNS)
     .in("id", relatedIds)
     .order("sort_date", { ascending: true, nullsFirst: false })
     .order("id", { ascending: true });
@@ -196,7 +220,7 @@ export async function getRelatedBySeries(seriesName: string, currentId: string):
     return [];
   }
 
-  return data.map((item: ViewAllMediaRow) => mapViewRowToMedia(item, [seriesName]));
+  return data.map((item: ViewAllMediaRow) => mapViewRowToMediaCard(item));
 }
 
 type SeasonRow = {
@@ -220,6 +244,26 @@ function firstRelated<T>(value: T | T[] | null | undefined): T | undefined {
 
 export async function getSeasonsBySeriesId(seriesId: string): Promise<SeasonInfo[]> {
   const db = getSupabasePublicServer();
+  const aggregate = await db.from("v_media_season_summaries")
+    .select("id,season_number,title,alternate_title,summary,cover_url,episode_count,watched_episode_count,first_year,last_year")
+    .eq("series_id", seriesId).order("season_number", { ascending: true });
+  if (!aggregate.error) {
+    return (aggregate.data ?? []).map((row) => ({
+      id: row.id,
+      seasonNumber: row.season_number,
+      title: row.title ?? `第 ${row.season_number} 季`,
+      alternateTitle: row.alternate_title ?? null,
+      coverUrl: row.cover_url ?? "",
+      episodeCount: Number(row.episode_count),
+      watchedEpisodeCount: Number(row.watched_episode_count),
+      releaseYearRange: formatYearRange(row.first_year, row.last_year),
+      summary: row.summary ?? "",
+    }));
+  }
+  if (!isMissingAggregateView(aggregate.error)) {
+    throw new MediaRepositoryError("fetch season aggregates", aggregate.error);
+  }
+  // Compatibility during rollout only: never hide permission or network errors.
   const { data, error } = await db
     .from("tv_seasons")
     .select("id, season_number, tv_episodes(id, media_items(release_date, tracking(status)))")
@@ -380,7 +424,7 @@ export async function fetchTopMediaServer(
   mediaType: "movie" | "tv_series",
   year?: string | null,
   limit = 10,
-): Promise<Media[]> {
+): Promise<MediaCard[]> {
   const db = getSupabasePublicServer();
 
   if (mediaType === "tv_series" && year) {
@@ -412,7 +456,7 @@ export async function fetchTopMediaServer(
 
     const { data: seriesData, error: seriesError } = await db
       .from("v_all_media")
-      .select("*")
+      .select(MEDIA_CARD_COLUMNS)
       .eq("type", "tv_series")
       .in("id", seriesIds);
 
@@ -424,7 +468,7 @@ export async function fetchTopMediaServer(
     const rankedSeries = (seriesData as ViewAllMediaRow[])
       .map((item) => {
         const yearRating = ratingsBySeries.get(String(item.id)) ?? null;
-        return { ...mapViewRowToMedia(item), rating: yearRating };
+        return { ...mapViewRowToMediaCard(item), rating: yearRating };
       })
       .sort((left, right) =>
         (right.rating ?? -1) - (left.rating ?? -1) || left.id.localeCompare(right.id),
@@ -434,7 +478,7 @@ export async function fetchTopMediaServer(
 
   let query = db
     .from("v_all_media")
-    .select("*")
+    .select(MEDIA_CARD_COLUMNS)
     .eq("type", mediaType)
     .order("rating", { ascending: false, nullsFirst: false })
     .limit(limit);
@@ -450,7 +494,7 @@ export async function fetchTopMediaServer(
   }
   if (!data) return [];
 
-  const items = data.map((item: ViewAllMediaRow) => mapViewRowToMedia(item));
+  const items = data.map((item: ViewAllMediaRow) => mapViewRowToMediaCard(item));
   return mediaType === "tv_series" ? addSeriesReleaseYearRanges(db, items) : items;
 }
 
@@ -466,21 +510,26 @@ export async function fetchMediaDistributionsServer(): Promise<MediaDistribution
   return buildMediaDistributions(data as DistributionCountRow[]);
 }
 
-export async function searchMediaServer(opts: FetchMediaListOptions = {}): Promise<{ rows: Media[]; total: number }> {
+export async function searchMediaServer(opts: FetchMediaListOptions = {}): Promise<{ rows: MediaCard[]; total: number }> {
   return fetchMediaList(opts);
 }
 
-export async function fetchMediaListServer(opts: FetchMediaListOptions = {}): Promise<{ rows: Media[]; total: number }> {
+export async function fetchMediaListServer(opts: FetchMediaListOptions = {}): Promise<{ rows: MediaCard[]; total: number }> {
   return fetchMediaList(opts);
 }
 
-async function fetchMediaList(opts: FetchMediaListOptions): Promise<{ rows: Media[]; total: number }> {
+/** Catalog rows have a separate stats query and never need pagination totals. */
+export async function fetchMediaCardsServer(opts: FetchMediaListOptions = {}): Promise<MediaCard[]> {
+  return (await fetchMediaList(opts, false)).rows;
+}
+
+async function fetchMediaList(opts: FetchMediaListOptions, includeTotal = true): Promise<{ rows: MediaCard[]; total: number }> {
   const db = getSupabasePublicServer();
   const {
     type, seriesOnly = false, creditRole, status, genre, region, language, startYear, endYear, q, sort, limit = 30, offset = 0,
   } = opts || {};
 
-  let dataQuery = db.from("v_all_media").select("*");
+  let dataQuery = db.from("v_all_media").select(MEDIA_CARD_COLUMNS);
   let countQuery = db.from("v_all_media").select("id", { count: "exact", head: true });
 
   const types = type?.split(",").filter(Boolean) ?? [];
@@ -636,7 +685,7 @@ async function fetchMediaList(opts: FetchMediaListOptions): Promise<{ rows: Medi
 
   dataQuery = dataQuery.range(offset, offset + limit - 1);
 
-  const [dataRes, countRes] = await Promise.all([dataQuery, countQuery]);
+  const [dataRes, countRes] = await Promise.all([dataQuery, includeTotal ? countQuery : Promise.resolve({ count: null, error: null })]);
 
   if (dataRes.error || countRes.error) {
     console.error("Failed to fetch media list:", dataRes.error ?? countRes.error);
@@ -648,7 +697,7 @@ async function fetchMediaList(opts: FetchMediaListOptions): Promise<{ rows: Medi
 
   if (!data) return { rows: [], total };
 
-  const mappedResults: Media[] = data.map((item: ViewAllMediaRow) => mapViewRowToMedia(item));
+  const mappedResults: MediaCard[] = data.map((item: ViewAllMediaRow) => mapViewRowToMediaCard(item));
   const results = await addSeriesReleaseYearRanges(db, mappedResults);
 
   return { rows: results, total };

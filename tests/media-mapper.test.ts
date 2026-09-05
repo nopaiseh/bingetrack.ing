@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "vitest";
-import { mapViewRowToMedia } from "../lib/functions/media-mapper.ts";
+import { mapViewRowToMedia, mapViewRowToMediaCard } from "../lib/functions/media-mapper.ts";
 
 test("normalizes media type and sorts cloned metadata arrays", () => {
   const genres = ["科幻 10", "动作", "科幻 2"];
@@ -31,4 +31,14 @@ test("honors mapped type and series overrides", () => {
   assert.equal(media.id, "42");
   assert.equal(media.type, "series");
   assert.deepEqual(media.series, ["A", "B"]);
+});
+
+test("card mapping preserves display fields and excludes detail payloads", () => {
+  const row = { id: 42, type: "tv_series", title: "Series", sort_date: "2020-01-01",
+    release_year: "2020 - 2026", rating: 8, genres: ["B", "A"], languages: ["English"],
+    summary: "Long summary", casts: ["Actor"], directors: ["Director"], runtime: 4000 };
+  const card = mapViewRowToMediaCard(row);
+  const full = mapViewRowToMedia(row);
+  for (const key of Object.keys(card) as Array<keyof typeof card>) assert.deepEqual(card[key], full[key]);
+  for (const key of ["summary", "casts", "directors", "runtime", "regions", "series"]) assert.equal(key in card, false);
 });

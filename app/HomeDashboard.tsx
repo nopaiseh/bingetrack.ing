@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import MediaRow from "@/components/MediaRow";
 import DashboardYearPicker from "@/components/DashboardYearPicker";
-import { DistributionItem, Media, MediaDistribution, MediaDistributions, Summary } from "@/lib/types";
+import { DistributionItem, MediaCard, MediaDistribution, MediaDistributions, Summary } from "@/lib/types";
 import {
   ChartPie,
   CheckCircle,
@@ -263,8 +263,8 @@ export default function HomeDashboard({
   distributions,
 }: {
   summary: Summary[];
-  topMovies: Media[];
-  topSeries: Media[];
+  topMovies: MediaCard[];
+  topSeries: MediaCard[];
   distributions: MediaDistributions;
 }) {
   const [activeTab, setActiveTab] = useState("总览");
@@ -354,10 +354,7 @@ export default function HomeDashboard({
 
   return (
     <div className="container mx-auto flex max-w-7xl flex-col gap-6 px-4 py-12 pt-24 sm:px-6 lg:px-8">
-      <section aria-labelledby="dashboard-title" className="relative z-10 mb-2 rounded-3xl border border-white/10 bg-[linear-gradient(135deg,rgba(127,29,29,0.2),rgba(255,255,255,0.035)_42%,rgba(255,255,255,0.015))] px-5 pb-5 pt-6 shadow-[0_24px_80px_rgba(0,0,0,0.24)] sm:px-7 sm:pb-6 sm:pt-8 lg:px-10 lg:pb-8 lg:pt-10">
-        <div aria-hidden="true" className="pointer-events-none absolute inset-0 overflow-hidden rounded-[inherit]">
-          <div className="absolute -right-24 -top-32 size-72 rounded-full bg-red-500/10 blur-3xl" />
-        </div>
+      <section aria-labelledby="dashboard-title" className="relative z-10 mb-2 rounded-3xl border border-white/10 bg-[var(--surface-panel)] px-5 pb-5 pt-6 shadow-[0_24px_80px_rgba(0,0,0,0.24)] sm:px-7 sm:pb-6 sm:pt-8 lg:px-10 lg:pb-8 lg:pt-10">
         <div className="relative">
           <div className="mb-5 flex items-center gap-3 text-[11px] font-semibold uppercase tracking-[0.24em] text-red-300/90">
             <span className="h-px w-8 bg-red-400" />
