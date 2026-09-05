@@ -1,5 +1,6 @@
 import { withSentryConfig } from "@sentry/nextjs/config";
 import type { NextConfig } from "next";
+import { resolveSentryEnvironment } from "./lib/sentry-environment";
 
 const isDevelopment = process.env.NODE_ENV === "development";
 
@@ -18,6 +19,10 @@ const contentSecurityPolicy = [
 ].join("; ");
 
 const nextConfig: NextConfig = {
+  env: {
+    // Inline the same non-secret build label into browser, Node and Edge bundles.
+    NEXT_PUBLIC_SENTRY_ENVIRONMENT: resolveSentryEnvironment(process.env),
+  },
   images: {
     remotePatterns: [
       {
