@@ -1,6 +1,7 @@
 -- 应用数据库结构快照，用于重建本地测试环境；文件本身不代表线上数据库当前状态。
 
-create extension if not exists pg_trgm;
+create schema if not exists extensions;
+create extension if not exists pg_trgm with schema extensions;
 
 create type public.media_type as enum (
   'movie',
@@ -228,17 +229,17 @@ alter table only public.tv_episodes
 create index media_credits_person_id_idx on public.media_credits using btree (person_id);
 create index media_genres_genre_id_media_item_id_idx on public.media_genres using btree (genre_id, media_item_id);
 create index media_item_series_series_id_media_item_id_idx on public.media_item_series using btree (series_id, media_item_id);
-create index idx_media_items_alternate_title_trgm on public.media_items using gin (alternate_title gin_trgm_ops);
+create index idx_media_items_alternate_title_trgm on public.media_items using gin (alternate_title extensions.gin_trgm_ops);
 create index idx_media_items_release_date on public.media_items using btree (release_date desc);
-create index idx_media_items_title_trgm on public.media_items using gin (title gin_trgm_ops);
+create index idx_media_items_title_trgm on public.media_items using gin (title extensions.gin_trgm_ops);
 create index idx_media_items_type on public.media_items using btree (type);
 create index media_languages_language_id_media_item_id_idx on public.media_languages using btree (language_id, media_item_id);
 create index media_regions_region_id_media_item_id_idx on public.media_regions using btree (region_id, media_item_id);
-create index idx_media_series_name_trgm on public.media_series using gin (name gin_trgm_ops);
+create index idx_media_series_name_trgm on public.media_series using gin (name extensions.gin_trgm_ops);
 create index music_album_id_idx on public.music using btree (album_id);
 create index music_albums_artist_id_idx on public.music_albums using btree (artist_id);
-create index idx_people_alternate_name_trgm on public.people using gin (alternate_name gin_trgm_ops);
-create index idx_people_name_trgm on public.people using gin (name gin_trgm_ops);
+create index idx_people_alternate_name_trgm on public.people using gin (alternate_name extensions.gin_trgm_ops);
+create index idx_people_name_trgm on public.people using gin (name extensions.gin_trgm_ops);
 
 alter table public.genres enable row level security;
 alter table public.languages enable row level security;
