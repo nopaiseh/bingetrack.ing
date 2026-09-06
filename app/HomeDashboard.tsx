@@ -24,6 +24,7 @@ const EMPTY_MEDIA_DISTRIBUTION: MediaDistribution = {
   genres: [],
 };
 
+/** 按媒体分类生成评分降序的搜索链接；指定年份时同时限定起止年份。 */
 function getSearchViewAllLink(type: "电影" | "电视剧", year: string) {
   const params = new URLSearchParams({ type, sort: "rating_desc" });
   if (year !== "All Time") {
@@ -33,11 +34,13 @@ function getSearchViewAllLink(type: "电影" | "电视剧", year: string) {
   return `/search?${params.toString()}`;
 }
 
+/** 将完成比例四舍五入为百分数并限制在 0 到 100；总数非正时返回 0。 */
 function percent(value: number, total: number) {
   if (total <= 0) return 0;
   return Math.min(Math.max(Math.round((value / total) * 100), 0), 100);
 }
 
+/** 展示一个分布维度的名称和占比条，数据为空时显示暂无数据。 */
 function DistributionCard({ title, icon: Icon, items }: { title: string; icon: LucideIcon; items: DistributionItem[] }) {
   return (
     <div className="surface-card interactive-card group h-full rounded-2xl p-4 sm:p-5 lg:p-6">
@@ -48,7 +51,7 @@ function DistributionCard({ title, icon: Icon, items }: { title: string; icon: L
         <span className="font-medium tracking-wide text-white/80 transition-colors group-hover:text-white">{title}</span>
       </div>
       <div className="flex flex-col gap-3">
-        {items.map((item) => (
+        {items.map(/* 把一项分布数据渲染为名称、占比条和百分比。 */ (item) => (
           <div key={item.name} className="flex items-center gap-3">
             <span className="w-20 truncate text-sm text-white/70" title={item.name}>{item.name}</span>
             <div className="progress-track h-1.5 flex-1 overflow-hidden rounded-full shadow-inner">
@@ -63,6 +66,7 @@ function DistributionCard({ title, icon: Icon, items }: { title: string; icon: L
   );
 }
 
+/** 将地区、语言和类型三个维度分别展示为前五名分布卡片。 */
 function DistributionTop5Cards({ distribution }: { distribution: MediaDistribution }) {
   return (
     <div className="grid grid-cols-1 items-stretch gap-4 md:grid-cols-2 md:gap-6 lg:grid-cols-3">
@@ -73,6 +77,7 @@ function DistributionTop5Cards({ distribution }: { distribution: MediaDistributi
   );
 }
 
+/** 展示媒体类别标题、总数量、观看进度和平均评分。 */
 function CategoryHeaderCards({
   year,
   categoryName,
@@ -139,6 +144,7 @@ function CategoryHeaderCards({
   );
 }
 
+/** 把观看分钟数换算为整数小时，展示已看、未看时长和完成比例。 */
 function MediaRuntimeCards({
   watchedRuntime,
   unwatchedRuntime,
@@ -209,7 +215,7 @@ function MediaRuntimeCards({
   );
 }
 
-// Unified Status Card to handle both Movies and Series
+/** 按传入标题和图标展示媒体部数，并在提供数据时补充季数与集数。 */
 function MediaStatusCard({
   title,
   icon: Icon,
@@ -256,6 +262,7 @@ function MediaStatusCard({
   );
 }
 
+/** 根据年份和总览、电影、电视剧标签组织统计、分布及榜单；年份变化时加载对应榜单。 */
 export default function HomeDashboard({
   summary,
   topMovies,
@@ -282,12 +289,13 @@ export default function HomeDashboard({
   const [topMediaLoading, setTopMediaLoading] = useState(false);
 
   const currentYearData = summary.find(
+    /** 从统计行中找到当前所选年份的数据。 */
     (item) => String(item.release_year) === String(selectedYear),
   );
   const movieDistribution = distributions.movies[selectedYear] ?? EMPTY_MEDIA_DISTRIBUTION;
   const seriesDistribution = distributions.series[selectedYear] ?? EMPTY_MEDIA_DISTRIBUTION;
 
-  // Derive movie totals strictly from 2 tracking states (Watched + Unwatched)
+  // 电影总数采用已看与未看之和；进度按已看数量占比计算。
   const watchedMovies = currentYearData?.watched_movies || 0;
   const unwatchedMovies = currentYearData?.unwatched_movies || 0;
   const totalMovies = watchedMovies + unwatchedMovies;
@@ -299,7 +307,7 @@ export default function HomeDashboard({
   const moviesUnwatchedRuntime = currentYearData?.movies_unwatched_runtime ?? 0;
   const totalMoviesRuntime = currentYearData?.total_movies_runtime ?? 0;
 
-  // Derive series totals strictly from 3 tracking states
+  // 电视剧总数包含已看、在看和未看三种状态，在看不计入已看进度。
   const watchedSeries = currentYearData?.watched_series || 0;
   const watchingSeries = currentYearData?.watching_series || 0;
   const unwatchedSeries = currentYearData?.unwatched_series || 0;
@@ -316,12 +324,13 @@ export default function HomeDashboard({
   const totalRuntime = currentYearData?.total_runtime ?? 0;
   const runtimePercent = percent(watchedRuntime, totalRuntime);
 
-  useEffect(() => {
+  useEffect(/* 选择具体年份时启动榜单请求，离开该年份或卸载组件时取消请求。 */ () => {
     if (selectedYear === "All Time") {
       return;
     }
 
     const controller = new AbortController();
+    /** 并行加载该年的电影和电视剧榜单，更新加载状态与结果，并显示非取消类错误。 */
     const loadTopMedia = async () => {
       try {
         setTopMediaError(null);
@@ -349,7 +358,7 @@ export default function HomeDashboard({
     };
 
     void loadTopMedia();
-    return () => controller.abort();
+    return /* 取消当前年份尚未完成的榜单请求。 */ () => controller.abort();
   }, [selectedYear]);
 
   return (
@@ -390,10 +399,10 @@ export default function HomeDashboard({
 
         <div className="relative mt-7 flex flex-col items-start justify-between gap-4 border-t border-white/10 pt-5 md:flex-row md:items-center">
           <div className="surface-control flex gap-1 rounded-xl p-1.5" role="tablist" aria-label="仪表板视图">
-            {tabs.map((tab) => (
+            {tabs.map(/* 为每个看板分类渲染可切换的标签按钮。 */ (tab) => (
               <button
                 key={tab}
-                onClick={() => setActiveTab(tab)}
+                onClick={/* 将点击的分类设为当前看板标签。 */ () => setActiveTab(tab)}
                 role="tab"
                 id={`dashboard-tab-${tabIds[tab]}`}
                 aria-controls={`dashboard-panel-${tabIds[tab]}`}
@@ -410,7 +419,7 @@ export default function HomeDashboard({
           </div>
 
           <DashboardYearPicker
-            years={summary.map((item) => item.release_year)}
+            years={summary.map(/* 提取统计行的年份，供年份选择器使用。 */ (item) => item.release_year)}
             selectedYear={selectedYear}
             onSelect={setSelectedYear}
           />
@@ -430,7 +439,6 @@ export default function HomeDashboard({
         )}
         {activeTab === "总览" && (
           <div key="overview" id="dashboard-panel-overview" role="tabpanel" aria-labelledby="dashboard-tab-overview" className="flex flex-col gap-4 md:gap-6">
-            {/* Movies Section (Updated to 2 columns) */}
             <div className="dashboard-deferred surface-card interactive-card group flex flex-col gap-6 rounded-2xl p-4 sm:p-5 lg:p-6">
               <div className="flex items-center border-b border-white/10 pb-3">
                 <div className="flex items-center gap-2">
@@ -443,7 +451,6 @@ export default function HomeDashboard({
                 </div>
               </div>
 
-              {/* Grid set to grid-cols-2 as requested */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                 <MediaStatusCard
                   title="已观看"
@@ -465,7 +472,6 @@ export default function HomeDashboard({
               </div>
             </div>
 
-            {/* Series Section */}
             <div className="dashboard-deferred surface-card interactive-card group flex flex-col gap-6 rounded-2xl p-4 sm:p-5 lg:p-6">
               <div className="flex items-center border-b border-white/10 pb-3">
                 <div className="flex items-center gap-2">

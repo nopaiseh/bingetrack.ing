@@ -4,6 +4,7 @@ export const alt = "bingetrack.ing 个人媒体记录平台";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
+/** 生成用于默认社交分享预览的站点图片响应。 */
 export default function OpenGraphImage() {
   return new ImageResponse(
     <div

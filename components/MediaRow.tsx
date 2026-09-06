@@ -3,8 +3,9 @@ import Link from "next/link";
 import { ImageIcon, Star } from "lucide-react";
 import { MediaCard } from "@/lib/types";
 
+/** 展示卡片海报、年份、评分及最多四个标签，并按参数控制图片加载优先级。 */
 function ItemCard({ item, type, eager, highPriority }: { item: MediaCard; type: "movies" | "series"; eager: boolean; highPriority: boolean }) {
-  // Combine genres and languages, then limit to a maximum of 4 items
+  // 合并类型与语言标签，只展示前四项，控制卡片高度。
   const tags = [...(item.genres ?? []), ...(item.languages ?? [])].slice(0, 4);
 
   return (
@@ -49,7 +50,7 @@ function ItemCard({ item, type, eager, highPriority }: { item: MediaCard; type: 
         </div>
         
         <div className="flex flex-row gap-1 mt-1.5 w-full overflow-hidden">
-          {tags.map((tag: string, i: number) => (
+          {tags.map(/* 将一个类型或语言标签渲染为可截断的紧凑徽标。 */ (tag: string, i: number) => (
             <span
               key={`tag-${i}`}
               title={tag} 
@@ -64,6 +65,7 @@ function ItemCard({ item, type, eager, highPriority }: { item: MediaCard; type: 
   );
 }
 
+/** 渲染带标题和可选查看全部链接的横向媒体列表；没有条目时不输出内容。 */
 export default function MediaRow({
   title,
   items,
@@ -93,16 +95,14 @@ export default function MediaRow({
         )}
       </div>
       
-      {/* Extend the scroll viewport into the page gutters so edge-card glows have room.
-          Matching padding preserves card alignment; scroll padding keeps snapped cards inset. */}
-      <div className="no-scrollbar -mx-4 -mb-8 flex snap-x snap-mandatory space-x-4 overflow-x-auto scroll-px-5 px-5 pb-12 pt-4 sm:-mx-6 sm:scroll-px-7 sm:px-7 lg:-mx-8 lg:scroll-px-9 lg:px-9 2xl:-mx-12 2xl:scroll-px-13 2xl:px-13">
-        {items.map((media: MediaCard, index: number) => {
+      <div className="no-scrollbar -mb-8 flex snap-x snap-mandatory space-x-4 overflow-x-auto scroll-px-1 px-1 pb-12 pt-4">
+        {items.map(/* 决定卡片详情路由类型，并按索引设置首批图片的加载优先级。 */ (media: MediaCard, index: number) => {
           const mediaType = type ?? media.type ?? "movies";
           return (
             <Link
               href={`/${mediaType}/${media.id}`}
               key={media.id}
-              className="surface-card interactive-media-card group flex w-36 flex-none snap-start cursor-pointer flex-col overflow-hidden rounded-xl sm:w-44"
+              className="surface-card interactive-media-card group flex w-36 flex-none snap-start cursor-pointer flex-col overflow-hidden rounded-xl last:snap-end sm:w-44"
             >
               <ItemCard item={media} type={mediaType} eager={index < eagerCount} highPriority={eagerCount > 0 && index === 0} />
             </Link>

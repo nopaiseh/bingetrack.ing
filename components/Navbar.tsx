@@ -5,11 +5,13 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { Menu, Search, Terminal, X } from "lucide-react";
 
+/** 渲染当前栏目导航、搜索表单和可折叠移动菜单，并处理搜索跳转。 */
 export default function Navbar() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const pathname = usePathname();
   const router = useRouter();
 
+  /** 关闭移动端导航菜单。 */
   const closeMenu = () => setIsMobileMenuOpen(false);
 
   const navItems = [
@@ -18,10 +20,12 @@ export default function Navbar() {
     { name: "电视剧", href: "/series" },
   ];
 
+  /** 首页要求路径完全匹配，其他栏目按路径前缀判断当前状态。 */
   const isActive = (href: string) => {
     return href === "/" ? pathname === "/" : pathname.startsWith(href);
   };
 
+  /** 阻止表单默认提交，修剪搜索词并关闭菜单，再导航到带编码关键词的搜索页。 */
   const handleSearch = (e: React.SubmitEvent<HTMLFormElement>) => {
     e.preventDefault();
 
@@ -61,7 +65,7 @@ export default function Navbar() {
           </Link>
 
           <div className="hidden lg:flex items-center gap-8 text-sm font-medium">
-            {navItems.map((item) => (
+            {navItems.map(/* 为桌面导航生成栏目链接并标记当前栏目。 */ (item) => (
               <Link
                 key={item.name}
                 href={item.href}
@@ -109,7 +113,7 @@ export default function Navbar() {
             aria-label={isMobileMenuOpen ? "关闭导航菜单" : "打开导航菜单"}
             aria-expanded={isMobileMenuOpen}
             aria-controls="mobile-navigation"
-            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+            onClick={/* 切换移动端菜单的展开状态。 */ () => setIsMobileMenuOpen(!isMobileMenuOpen)}
           >
             {isMobileMenuOpen ? <X className="size-5" aria-hidden="true" /> : <Menu className="size-5" aria-hidden="true" />}
           </button>
@@ -127,7 +131,7 @@ export default function Navbar() {
         }`}
       >
         <div className="flex flex-col gap-4 px-4 text-base font-medium sm:px-6">
-          {navItems.map((item) => (
+          {navItems.map(/* 为移动菜单生成栏目链接并标记当前栏目。 */ (item) => (
             <Link
               key={item.name}
               href={item.href}

@@ -4,6 +4,7 @@ const requiredVariables = [
 ];
 
 const missingVariables = requiredVariables.filter(
+  /** 筛出未设置或只有空白的必需环境变量。 */
   (name) => !process.env[name]?.trim(),
 );
 

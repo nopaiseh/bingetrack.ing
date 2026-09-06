@@ -9,6 +9,7 @@ export const metadata: Metadata = {
 
 export const revalidate = 60;
 
+/** 并行读取电影统计及最近的已看、想看卡片，再交给目录组件展示。 */
 export default async function MoviesPage() {
   const [stats, watchedRes, wantRes] = await Promise.all([
     fetchStatsServer("movie"),

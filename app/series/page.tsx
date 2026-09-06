@@ -9,6 +9,7 @@ export const metadata: Metadata = {
 
 export const revalidate = 60;
 
+/** 并行读取电视剧统计与已看、在看、想看卡片，交给目录组件展示。 */
 export default async function SeriesPage() {
   const [stats, watchedRes, watchingRes, wantRes] = await Promise.all([
     fetchStatsServer("tv_series"),

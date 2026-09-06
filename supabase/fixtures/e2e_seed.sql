@@ -1,5 +1,4 @@
--- Deterministic, fictional records used only by Playwright in local/CI Supabase.
--- Never load this file into a hosted project.
+-- 仅供本地和 CI 端到端测试的固定虚构数据，不应导入线上项目。
 
 begin;
 

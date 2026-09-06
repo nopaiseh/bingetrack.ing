@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 
+/** 展示未找到页面提示，并提供返回首页的入口。 */
 export default function NotFound() {
   return (
     <div className="flex flex-col items-center justify-center min-h-screen w-full bg-[#0a0a0a] text-white">

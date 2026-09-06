@@ -5,6 +5,7 @@ import { fetchMediaDistributionsServer, fetchTopMediaServer } from "@/lib/functi
 
 export const revalidate = 60;
 
+/** 并行读取年度统计、电影和电视剧榜单及分布数据，组成首页看板的初始数据。 */
 export default async function HomePage() {
   const db = getSupabasePublicServer();
   const [summaryRes, topMovies, topSeries, distributions] = await Promise.all([

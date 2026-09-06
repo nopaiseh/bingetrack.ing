@@ -3,7 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { expect, test, vi } from "vitest";
 import DashboardYearPicker from "@/components/DashboardYearPicker";
 
-test("filters years and selects an option with the keyboard", async () => {
+test("filters years and selects an option with the keyboard", /* 验证年份输入筛选后，可以使用键盘选中候选年份。 */ async () => {
   const user = userEvent.setup();
   const onSelect = vi.fn();
   render(
@@ -27,7 +27,7 @@ test("filters years and selects an option with the keyboard", async () => {
   expect(picker).toHaveAttribute("aria-expanded", "false");
 });
 
-test("closes without selecting when Escape is pressed", async () => {
+test("closes without selecting when Escape is pressed", /* 验证 Escape 只关闭年份列表，不触发选择回调。 */ async () => {
   const user = userEvent.setup();
   const onSelect = vi.fn();
   render(

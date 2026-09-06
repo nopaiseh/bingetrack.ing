@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { CalendarDays, ChevronDown } from "lucide-react";
 
+/** 渲染可搜索的年份选择框，支持键盘定位、确认、取消及点击外部关闭。 */
 export default function DashboardYearPicker({
   years,
   selectedYear,
@@ -17,11 +18,13 @@ export default function DashboardYearPicker({
   const [activeIndex, setActiveIndex] = useState(-1);
   const pickerRef = useRef<HTMLDivElement>(null);
   const options = useMemo(
-    () => years.map(String).filter((year) => year.toLowerCase().includes(query.toLowerCase())),
+    /** 把年份转成字符串并按输入文本筛选，复用未变化的筛选结果。 */
+    () => years.map(String).filter(/* 忽略大小写判断年份文本是否包含输入词。 */ (year) => year.toLowerCase().includes(query.toLowerCase())),
     [query, years],
   );
 
-  useEffect(() => {
+  useEffect(/* 注册点击外部关闭的监听，并在卸载时清理。 */ () => {
+    /** 点击选择框外部时关闭列表，清空查询和键盘定位状态。 */
     function handleClickOutside(event: MouseEvent) {
       if (pickerRef.current && !pickerRef.current.contains(event.target as Node)) {
         setIsOpen(false);
@@ -30,9 +33,10 @@ export default function DashboardYearPicker({
       }
     }
     document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
+    return /* 移除年份选择框的外部点击监听。 */ () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  /** 通知父组件选择年份，并关闭列表、清空输入和定位状态。 */
   function selectYear(year: string) {
     onSelect(year);
     setQuery("");
@@ -44,26 +48,26 @@ export default function DashboardYearPicker({
     <div className="relative" ref={pickerRef}>
       <label
         className="surface-control group flex w-35 cursor-pointer items-center gap-2 rounded-xl py-2.5 pl-4 pr-3 transition-all hover:border-white/20 hover:bg-white/10 hover:shadow-[0_6px_20px_rgba(0,0,0,0.3)]"
-        onClick={() => setIsOpen(true)}
+        onClick={/* 点击年份选择区域时展开候选列表。 */ () => setIsOpen(true)}
       >
         <CalendarDays className="size-4 text-red-500 transition-colors group-hover:text-red-400 group-hover:drop-shadow-[0_0_5px_rgba(248,113,113,0.5)]" aria-hidden="true" />
         <input
           type="text"
           value={isOpen ? query : selectedYear}
-          onChange={(event) => {
+          onChange={/* 更新年份查询，展开列表并将键盘定位重置到首项。 */ (event) => {
             setQuery(event.target.value);
             setIsOpen(true);
             setActiveIndex(0);
           }}
-          onFocus={() => setIsOpen(true)}
-          onKeyDown={(event) => {
+          onFocus={/* 输入框获得焦点时展开年份列表。 */ () => setIsOpen(true)}
+          onKeyDown={/* 用上下键定位年份、回车确认；Escape 关闭列表、清空查询并移开焦点。 */ (event) => {
             if (event.key === "ArrowDown") {
               event.preventDefault();
               setIsOpen(true);
-              setActiveIndex((index) => Math.min(index + 1, options.length - 1));
+              setActiveIndex(/* 向下移动一项，最多停在最后一个候选年份。 */ (index) => Math.min(index + 1, options.length - 1));
             } else if (event.key === "ArrowUp") {
               event.preventDefault();
-              setActiveIndex((index) => Math.max(index - 1, 0));
+              setActiveIndex(/* 向上移动一项，最少停在首个候选年份。 */ (index) => Math.max(index - 1, 0));
             } else if (event.key === "Enter" && activeIndex >= 0 && options[activeIndex]) {
               event.preventDefault();
               selectYear(options[activeIndex]);
@@ -90,15 +94,15 @@ export default function DashboardYearPicker({
       {isOpen && (
         <div className="surface-panel absolute right-0 top-full z-50 mt-2 w-32 overflow-hidden rounded-xl animate-in fade-in slide-in-from-top-2">
           <div id="dashboard-year-options" role="listbox" aria-label="年份" className="custom-scrollbar flex max-h-64 flex-col overflow-y-auto">
-            {options.length > 0 ? options.map((year, index) => (
+            {options.length > 0 ? options.map(/* 将候选年份渲染为支持选中态和键盘定位的选项按钮。 */ (year, index) => (
               <button
                 id={`dashboard-year-option-${index}`}
                 key={year}
                 type="button"
                 role="option"
                 aria-selected={selectedYear === year}
-                onMouseEnter={() => setActiveIndex(index)}
-                onClick={() => selectYear(year)}
+                onMouseEnter={/* 将鼠标指向的年份设为当前活动选项。 */ () => setActiveIndex(index)}
+                onClick={/* 确认点击的年份并关闭选择列表。 */ () => selectYear(year)}
                 className={`w-full shrink-0 border-l-2 px-5 py-3 text-left font-mono text-sm transition-colors ${
                   selectedYear === year || activeIndex === index
                     ? "surface-active border-red-400 font-bold text-red-400 drop-shadow-[0_0_5px_rgba(248,113,113,0.3)]"

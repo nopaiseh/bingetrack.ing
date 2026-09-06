@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { test } from "vitest";
 import { buildMediaDistributions, type DistributionCountRow } from "../lib/functions/media-distributions.ts";
 
-test("builds top-five distributions and percentages from database counts", () => {
+test("builds top-five distributions and percentages from database counts", /* 用固定数据库计数验证前五名排序与百分比计算。 */ () => {
   const rows: DistributionCountRow[] = [
     { media_type: "movies", release_year: "All Time", dimension: "regions", name: "美国", item_count: 6 },
     { media_type: "movies", release_year: "All Time", dimension: "regions", name: "香港", item_count: 4 },
@@ -26,7 +26,7 @@ test("builds top-five distributions and percentages from database counts", () =>
   ]);
 });
 
-test("always supplies empty All Time buckets", () => {
+test("always supplies empty All Time buckets", /* 验证无数据时仍提供电影和电视剧的空 All Time 分组。 */ () => {
   const distributions = buildMediaDistributions([]);
   assert.deepEqual(distributions.movies["All Time"], { regions: [], languages: [], genres: [] });
   assert.deepEqual(distributions.series["All Time"], { regions: [], languages: [], genres: [] });

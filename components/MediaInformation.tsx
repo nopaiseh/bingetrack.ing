@@ -6,10 +6,10 @@ import MediaBackLink, { DefaultMediaBackLink } from "./MediaBackLink";
 import { Media, SeasonInfo } from "@/lib/types";
 import SearchTag from "./SearchTag";
 
+/** 展示并预加载详情海报；无图片时显示暂无海报占位。 */
 function MediaPoster({ media }: { media: Media }) {
   return (
     <div className="w-full max-w-80 shrink-0 self-center lg:w-80 lg:self-start">
-      {/* Lighter Frosted Glass Poster */}
       <div className="surface-muted relative aspect-2/3 w-full overflow-hidden rounded-xl border border-white/10 shadow-[0_15px_40px_rgba(0,0,0,0.3)] backdrop-blur-2xl">
         {media.cover_url ? (
           <Image src={media.cover_url} alt={media.title} fill sizes="(max-width: 393px) calc(100vw - 74px), 320px" className="object-cover transition-transform duration-700 hover:scale-105" preload/>
@@ -24,6 +24,7 @@ function MediaPoster({ media }: { media: Media }) {
   );
 }
 
+/** 已看和在看状态分别显示对应徽标，其他状态统一显示想要看。 */
 function StatusBadge({ status }: { status?: string }) {
   if (status === "watched") {
     return (
@@ -55,6 +56,7 @@ function StatusBadge({ status }: { status?: string }) {
   );
 }
 
+/** 将属性标签与内容排成响应式元数据行。 */
 function MetadataRow({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="group -mx-3 flex flex-col items-start gap-3 rounded-xl border-b border-white/10 px-3 py-3 transition-colors last:border-0 hover:bg-white/5 sm:flex-row sm:gap-6">
@@ -68,6 +70,7 @@ function MetadataRow({ label, children }: { label: string; children: React.React
   );
 }
 
+/** 为详情内容区渲染带红色标记的分区标题。 */
 function SectionHeading({ children }: { children: ReactNode }) {
   return (
     <div className="mb-3 flex items-center gap-2">
@@ -77,6 +80,7 @@ function SectionHeading({ children }: { children: ReactNode }) {
   );
 }
 
+/** 展示媒体的发行信息、类型、地区、语言和系列标签，并按参数决定是否包含演职员。 */
 export function MediaMetadata({ media, includePeople = true, releaseDateLabel }: { media: Media; includePeople?: boolean; releaseDateLabel?: string }) {
   return (
     <div className="flex flex-col">
@@ -89,25 +93,25 @@ export function MediaMetadata({ media, includePeople = true, releaseDateLabel }:
       )}
       <MetadataRow label="类型">
         {media.genres?.length > 0 
-          ? media.genres.map((g) => <SearchTag key={g} label={g} category="genre" />) 
+          ? media.genres.map(/* 将媒体类型名称渲染为类型筛选链接。 */ (g) => <SearchTag key={g} label={g} category="genre" />)
           : <span className="text-white/30 text-sm sm:pt-1">-</span>}
       </MetadataRow>
         
       <MetadataRow label="地区">
         {media.regions && media.regions.length > 0 
-          ? media.regions.map((r) => <SearchTag key={r} label={r} category="region" />)
+          ? media.regions.map(/* 将地区名称渲染为地区筛选链接。 */ (r) => <SearchTag key={r} label={r} category="region" />)
           : <span className="text-white/30 text-sm sm:pt-1">-</span>}
       </MetadataRow>
 
       <MetadataRow label="语言">
         {media.languages?.length > 0 
-          ? media.languages.map((l) => <SearchTag key={l} label={l} category="language" />)
+          ? media.languages.map(/* 将语言名称渲染为语言筛选链接。 */ (l) => <SearchTag key={l} label={l} category="language" />)
           : <span className="text-white/30 text-sm sm:pt-1">-</span>}
       </MetadataRow>
 
       {media.series && media.series.length > 0 && (
         <MetadataRow label="系列">
-          {media.series.map((seriesName) => (
+          {media.series.map(/* 将作品系列名渲染为限定系列分类的搜索链接。 */ (seriesName) => (
             <SearchTag key={seriesName} label={seriesName} category="series" />
           ))}
         </MetadataRow>
@@ -118,6 +122,7 @@ export function MediaMetadata({ media, includePeople = true, releaseDateLabel }:
   );
 }
 
+/** 分别展示导演和主演搜索标签，缺少名单时显示占位符。 */
 function MediaCredits({ media }: { media: Media }) {
   return (
     <div className="flex flex-col gap-6">
@@ -125,7 +130,7 @@ function MediaCredits({ media }: { media: Media }) {
         <SectionHeading>导演</SectionHeading>
         <div className="flex flex-wrap gap-2.5">
           {media.directors && media.directors.length > 0
-            ? media.directors.map((director) => <SearchTag key={director} label={director} category="director" />)
+            ? media.directors.map(/* 将导演姓名渲染为导演分类搜索链接。 */ (director) => <SearchTag key={director} label={director} category="director" />)
             : <span className="text-sm text-white/30">-</span>}
         </div>
       </div>
@@ -133,7 +138,7 @@ function MediaCredits({ media }: { media: Media }) {
         <SectionHeading>主演</SectionHeading>
         <div className="flex flex-wrap gap-2.5">
           {media.casts && media.casts.length > 0
-            ? media.casts.map((castMember) => <SearchTag key={castMember} label={castMember} category="cast" />)
+            ? media.casts.map(/* 将演员姓名渲染为演员分类搜索链接。 */ (castMember) => <SearchTag key={castMember} label={castMember} category="cast" />)
             : <span className="text-sm text-white/30">-</span>}
         </div>
       </div>
@@ -141,6 +146,7 @@ function MediaCredits({ media }: { media: Media }) {
   );
 }
 
+/** 组合返回入口、海报、标题、状态、属性和简介，并根据传入季列表展示季度入口。 */
 export default function MediaInformation({
   media,
   seasons,
@@ -231,7 +237,7 @@ export default function MediaInformation({
           </div>
 
           <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
-            {seasons.map((season) => (
+            {seasons.map(/* 将一季渲染为含海报、标题、年份范围和集数的详情链接。 */ (season) => (
               <Link
                 key={season.id}
                 href={`/series/${media.id}/seasons/${season.id}`}

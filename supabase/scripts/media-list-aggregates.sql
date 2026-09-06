@@ -1,5 +1,4 @@
--- Review/deploy separately from the application. No base tables or policies change.
--- Both views execute with the caller's privileges and existing base-table RLS.
+-- 为列表提供电视剧年份和季摘要聚合视图，使用调用者权限；需独立部署到数据库。
 begin;
 
 create or replace view public.v_media_series_years
@@ -31,7 +30,3 @@ revoke all on public.v_media_series_years, public.v_media_season_summaries from 
 grant select on public.v_media_series_years, public.v_media_season_summaries to anon, authenticated;
 notify pgrst, 'reload schema';
 commit;
-
--- Rollback, after reverting the application (its missing-view fallback is also safe):
--- drop view public.v_media_season_summaries;
--- drop view public.v_media_series_years;

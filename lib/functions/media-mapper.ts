@@ -5,13 +5,12 @@ const nameCollator = new Intl.Collator(undefined, {
   sensitivity: "base",
 });
 
+/** 复制名称数组后按忽略大小写的自然数字顺序排序，避免修改输入数组。 */
 function sortNames(names: string[] | null | undefined): string[] {
   return [...(names ?? [])].sort(nameCollator.compare);
 }
 
-/**
- * Maps a flat row from the `v_all_media` view to the frontend `Media` object.
- */
+// 将数据库字段转换为详情对象，补齐空值、统一路由类型并排序分类名称。
 export function mapViewRowToMedia(
   item: ViewAllMediaRow,
   overrideSeries?: string[] | null,
@@ -42,7 +41,7 @@ export function mapViewRowToMedia(
   };
 }
 
-/** Explicitly excludes detail-only data from card/API/RSC payloads. */
+// 显式挑选列表字段，确保卡片、API 和服务端组件传输的数据不包含详情字段。
 export function mapViewRowToMediaCard(item: ViewAllMediaRow): MediaCard {
   return {
     id: String(item.id),

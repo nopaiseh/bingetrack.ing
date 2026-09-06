@@ -1,7 +1,9 @@
+/** 按传入尺寸渲染带脉冲动画的骨架块。 */
 function Pulse({ className }: { className: string }) {
   return <div className={`surface-skeleton animate-pulse rounded-xl ${className}`} />;
 }
 
+/** 为季详情的海报、统计、筛选和剧集列表展示占位布局。 */
 export default function Loading() {
   return (
     <div className="min-h-screen pb-16 pt-24">
@@ -17,11 +19,11 @@ export default function Loading() {
           </div>
         </div>
         <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-          {Array.from({ length: 4 }, (_, index) => <Pulse key={index} className="h-24" />)}
+          {Array.from({ length: 4 }, /* 为一项季统计生成固定高度的骨架块。 */ (_, index) => <Pulse key={index} className="h-24" />)}
         </div>
         <Pulse className="h-16 w-full" />
         <div className="space-y-3">
-          {Array.from({ length: 6 }, (_, index) => (
+          {Array.from({ length: 6 }, /* 为一集生成封面与文本骨架布局。 */ (_, index) => (
             <div key={index} className="surface-card flex flex-col overflow-hidden rounded-2xl lg:h-64 lg:flex-row">
               <Pulse className="aspect-video w-full shrink-0 rounded-none lg:aspect-auto lg:h-full lg:w-96" />
               <div className="flex-1 space-y-3 p-5">

@@ -2,7 +2,7 @@ import { mkdirSync, readFileSync } from "node:fs";
 import { spawnSync } from "node:child_process";
 import { resolve } from "node:path";
 
-const baseUrl = (process.argv.find((argument) => argument.startsWith("http")) ?? "http://localhost:3000").replace(/\/$/, "");
+const baseUrl = (process.argv.find(/* 找到首个以 http 开头的命令行参数作为待测站点地址。 */ (argument) => argument.startsWith("http")) ?? "http://localhost:3000").replace(/\/$/, "");
 const enforceBudgets = process.argv.includes("--enforce");
 const outputDirectory = resolve(".lighthouse");
 const lighthouseBinary = resolve("node_modules/.bin/lighthouse");
@@ -14,6 +14,7 @@ const routes = [
   { name: "series", path: "/series" },
 ];
 
+/** 读取可选的测量路径覆盖值，并要求其为指定前缀下的站内路径。 */
 function configuredPath(name, expectedPrefix) {
   const value = process.env[name];
   if (!value) return null;
@@ -23,16 +24,19 @@ function configuredPath(name, expectedPrefix) {
   return value;
 }
 
+/** 获取指定页面 HTML，响应失败时抛出带路径和状态码的错误。 */
 async function fetchHtml(path) {
   const response = await fetch(`${baseUrl}${path}`);
   if (!response.ok) throw new Error(`Unable to discover Lighthouse sample from ${path}: ${response.status}`);
   return response.text();
 }
 
+/** 提取正则首个捕获组作为链接，并将 HTML 中的 &amp; 还原为 &。 */
 function firstHref(html, pattern) {
   return html.match(pattern)?.[1]?.replaceAll("&amp;", "&") ?? null;
 }
 
+/** 从配置或目录 HTML 中发现电影、电视剧及季详情地址，加入 Lighthouse 测量列表。 */
 async function addDynamicRoutes() {
   const moviesHtml = await fetchHtml("/movies");
   const seriesHtml = await fetchHtml("/series");

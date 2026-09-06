@@ -12,6 +12,7 @@ export type SearchOptions = {
   years: string[];
 };
 
+/** 并行读取类型、地区、语言和发行年份选项，任一查询失败即抛错。 */
 async function fetchSearchOptions(): Promise<SearchOptions> {
   const db = getSupabasePublicServer();
   const [genresRes, regionsRes, languagesRes, yearsRes] = await Promise.all([
@@ -24,10 +25,10 @@ async function fetchSearchOptions(): Promise<SearchOptions> {
   if (error) throw error;
 
   return {
-    genres: ((genresRes.data ?? []) as NamedOption[]).map(({ name }) => name),
-    regions: ((regionsRes.data ?? []) as NamedOption[]).map(({ name }) => name),
-    languages: ((languagesRes.data ?? []) as NamedOption[]).map(({ name }) => name),
-    years: ((yearsRes.data ?? []) as ReleaseYearOption[]).map(({ release_year }) => String(release_year)),
+    genres: ((genresRes.data ?? []) as NamedOption[]).map(/* 提取类型选项名称。 */ ({ name }) => name),
+    regions: ((regionsRes.data ?? []) as NamedOption[]).map(/* 提取地区选项名称。 */ ({ name }) => name),
+    languages: ((languagesRes.data ?? []) as NamedOption[]).map(/* 提取语言选项名称。 */ ({ name }) => name),
+    years: ((yearsRes.data ?? []) as ReleaseYearOption[]).map(/* 将发行年份统一转为字符串选项。 */ ({ release_year }) => String(release_year)),
   };
 }
 

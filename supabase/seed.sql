@@ -1,2 +1,1 @@
--- Intentionally empty.
--- Add only non-sensitive development fixtures here; never copy production data.
+-- 默认种子文件留空；本地端到端测试数据由 fixtures/e2e_seed.sql 单独提供。

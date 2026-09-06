@@ -23,9 +23,10 @@ type AxeViolation = {
   nodes: Array<{ target: string[] }>;
 };
 
+/** 在页面注入 axe 并扫描指定 WCAG A/AA 规则；发现问题时附加报告，返回违规列表。 */
 async function scanPage(page: Page, testInfo: TestInfo): Promise<AxeViolation[]> {
   await page.addScriptTag({ path: axePath });
-  const results = await page.evaluate(async () => {
+  const results = await page.evaluate(/* 在浏览器内运行 axe 的 WCAG 2.0、2.1 和 2.2 AA 相关规则。 */ async () => {
     const axe = (window as unknown as Window & {
       axe: {
         run: (context: Document, options: object) => Promise<{ violations: AxeViolation[] }>;
@@ -51,7 +52,7 @@ async function scanPage(page: Page, testInfo: TestInfo): Promise<AxeViolation[]>
 }
 
 for (const route of routes) {
-  test(`${route.name}没有可自动检测的 WCAG A/AA 问题`, async ({ page }, testInfo) => {
+  test(`${route.name}没有可自动检测的 WCAG A/AA 问题`, /* 访问指定路由，等待页面稳定后断言自动无障碍扫描没有违规项。 */ async ({ page }, testInfo) => {
     await page.goto(route.path);
     await page.waitForLoadState("networkidle");
     await expect(page.locator("main")).toBeVisible();
@@ -60,7 +61,7 @@ for (const route of routes) {
   });
 }
 
-test("键盘用户可以跳到主要内容", async ({ page }) => {
+test("键盘用户可以跳到主要内容", /* 用 Tab 和 Enter 验证跳到主要内容链接可以获得并转移焦点。 */ async ({ page }) => {
   await page.goto("/");
   await page.keyboard.press("Tab");
 
@@ -70,7 +71,7 @@ test("键盘用户可以跳到主要内容", async ({ page }) => {
   await expect(page.locator("#main-content")).toBeFocused();
 });
 
-test("移动导航可以完全使用键盘操作", async ({ page }, testInfo) => {
+test("移动导航可以完全使用键盘操作", /* 在移动布局中用键盘打开菜单并进入电影栏目，验证菜单按钮焦点和跳转地址。 */ async ({ page }, testInfo) => {
   test.skip(testInfo.project.name === "desktop", "桌面导航始终可见");
   await page.goto("/");
 

@@ -2,6 +2,7 @@
 
 import { RotateCcw } from "lucide-react";
 
+/** 展示路由加载失败提示，通过 reset 回调让用户重试当前页面。 */
 export default function ErrorPage({ reset }: { error: Error & { digest?: string }; reset: () => void }) {
   return (
     <div className="container mx-auto flex min-h-[70vh] max-w-3xl items-center justify-center px-6 py-24">

@@ -22,6 +22,7 @@ export const metadata: Metadata = {
   },
 };
 
+/** 设置中文文档、全局导航、页脚和主要内容容器，并挂载性能统计组件。 */
 export default function RootLayout({
   children,
 }: {

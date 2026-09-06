@@ -10,6 +10,6 @@ test.each([
   ["%back\\slash%", '"%back\\\\slash%"'],
   ["%100%%", '"%100%%"'],
   ["%under_score%", '"%under_score%"'],
-])("quotes a raw PostgREST filter value containing %s", (value, expected) => {
+])("quotes a raw PostgREST filter value containing %s", /* 对每组标点和转义样例验证 PostgREST 值引用结果。 */ (value, expected) => {
   assert.equal(quotePostgrestFilterValue(value), expected);
 });
