@@ -1,4 +1,4 @@
-name: Tests
+name: Application quality checks
 
 on:
   push:
@@ -16,7 +16,7 @@ permissions:
 
 jobs:
   test:
-    name: Lint, type-check, unit, and browser tests
+    name: Lint, types, build, unit, browser & database tests
     runs-on: ubuntu-latest
     timeout-minutes: 25
 
@@ -36,13 +36,13 @@ jobs:
       - name: Install Chromium
         run: npx playwright install --with-deps chromium
 
-      - name: Lint
+      - name: Check code quality (ESLint)
         run: npm run lint
 
-      - name: Type-check
+      - name: Check TypeScript types
         run: npx tsc --noEmit
 
-      - name: Run unit and component tests
+      - name: Test units and components (Vitest)
         run: npm test
 
       - name: Set up Supabase CLI
@@ -82,13 +82,13 @@ jobs:
       - name: Validate application environment
         run: npm run env:check
 
-      - name: Build production application
+      - name: Verify production build (Next.js)
         run: npm run build
 
-      - name: Run browser tests
+      - name: Test browser flows (Playwright)
         run: npm run test:e2e
 
-      - name: Run database tests
+      - name: Test database behavior (pgTAP)
         run: supabase test db
 
       - name: Upload browser failure artifacts
