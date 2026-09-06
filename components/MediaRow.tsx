@@ -93,8 +93,9 @@ export default function MediaRow({
         )}
       </div>
       
-      {/* FIX: Changed py-4 to pt-4 pb-12 and added -mb-8 to offset the extra padding visually so the layout doesn't break */}
-      <div className="no-scrollbar -mb-8 flex snap-x snap-mandatory space-x-4 overflow-x-auto px-1 pb-12 pr-5 pt-4 scroll-pl-2">
+      {/* Extend the scroll viewport into the page gutters so edge-card glows have room.
+          Matching padding preserves card alignment; scroll padding keeps snapped cards inset. */}
+      <div className="no-scrollbar -mx-4 -mb-8 flex snap-x snap-mandatory space-x-4 overflow-x-auto scroll-px-5 px-5 pb-12 pt-4 sm:-mx-6 sm:scroll-px-7 sm:px-7 lg:-mx-8 lg:scroll-px-9 lg:px-9 2xl:-mx-12 2xl:scroll-px-13 2xl:px-13">
         {items.map((media: MediaCard, index: number) => {
           const mediaType = type ?? media.type ?? "movies";
           return (

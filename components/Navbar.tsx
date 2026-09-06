@@ -28,6 +28,8 @@ export default function Navbar() {
     const formData = new FormData(e.currentTarget);
     const query = formData.get("q")?.toString().trim() || "";
 
+    closeMenu();
+
     if (query) {
       router.push(`/search?q=${encodeURIComponent(query)}`);
     } else {
