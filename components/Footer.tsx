@@ -1,11 +1,11 @@
 import Link from "next/link";
 import { Terminal } from "lucide-react";
 
+/** 渲染站点页脚、品牌链接及所用平台标识。 */
 export default function Footer() {
   return (
     <footer className="surface-panel relative z-1 mt-auto overflow-hidden border-x-0 border-b-0 py-6 transition-all duration-300">
       
-      {/* Subdued fixed white gradient syntax for dark theme */}
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-3/4 h-px bg-linear-to-r from-transparent via-white/10 to-transparent"></div>
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-1/4 h-px bg-linear-to-r from-transparent via-white/20 to-transparent blur-[2px]"></div>
 
@@ -15,7 +15,6 @@ export default function Footer() {
           <div className="flex flex-col sm:flex-row items-center gap-3 md:gap-4 shrink-0">
             <Link href="/" className="flex items-center gap-2.5 group cursor-pointer opacity-90 hover:opacity-100 transition-opacity duration-300">
               <Terminal className="size-4 text-red-500 group-hover:rotate-12 group-hover:drop-shadow-[0_0_10px_rgba(239,68,68,0.8)] transition-all duration-300" aria-hidden="true" />
-              {/* Glass-like Gradient Text matching Navbar */}
               <span className="font-mono text-xl font-light tracking-tight drop-shadow-[0_0_12px_rgba(255,255,255,0.1)]">
                 <span className="bg-clip-text text-transparent bg-linear-to-br from-white via-white/80 to-white/50">
                   bingetrack
@@ -36,7 +35,6 @@ export default function Footer() {
 
           <div className="flex flex-wrap items-center justify-center lg:justify-end gap-4 md:gap-5">
             
-            {/* Platform badges */}
             <div className="flex items-center gap-2">
               <a href="https://vercel.com/" target="_blank" rel="noreferrer" className="surface-muted px-2 py-1 rounded backdrop-blur-md border border-white/20 text-white/80 text-[10px] font-mono hover:text-white hover:border-white/40 hover:bg-white/10 hover:shadow-[0_0_10px_rgba(255,255,255,0.2)] transition-all duration-300">
                 Vercel

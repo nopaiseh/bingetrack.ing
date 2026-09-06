@@ -43,9 +43,10 @@ for (const check of checks) {
         `${url}: expected ${check.expectedContentType}, received ${contentType || "no content type"}`,
       );
     } else if (
-      check.requiredHeaders?.some((name) => !response.headers.has(name))
+      check.requiredHeaders?.some(/* 判断响应是否缺少任一必需的 HTTP 头。 */ (name) => !response.headers.has(name))
     ) {
       const missingHeaders = check.requiredHeaders.filter(
+        /** 收集缺少的 HTTP 头名称以生成检查错误。 */
         (name) => !response.headers.has(name),
       );
       failures.push(`${url}: missing headers ${missingHeaders.join(", ")}`);

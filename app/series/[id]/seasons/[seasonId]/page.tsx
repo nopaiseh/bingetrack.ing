@@ -24,6 +24,7 @@ const PAGE_SIZE = 10;
 type StatusFilter = "all" | "watched" | "unwatched";
 type EpisodeOrder = "asc" | "desc";
 
+/** 并行读取电视剧与季摘要，找到目标季后生成元数据；缺失时返回未找到标题。 */
 export async function generateMetadata({
   params,
 }: {
@@ -34,11 +35,12 @@ export async function generateMetadata({
     getCachedMediaById(id),
     getCachedSeasonsBySeriesId(id),
   ]);
-  const season = seasons.find((item) => item.id === seasonId);
+  const season = seasons.find(/* 按季 ID 查找目标季。 */ (item) => item.id === seasonId);
   if (!series || !season) return { title: "季度未找到" };
   return buildSeasonMetadata(series, season);
 }
 
+/** 展示单集封面、简介、发行信息、评分和观看状态，缺少封面时使用占位内容。 */
 function EpisodeCard({ episode }: { episode: EpisodeInfo }) {
   const watched = episode.status === "watched";
 
@@ -90,12 +92,14 @@ function EpisodeCard({ episode }: { episode: EpisodeInfo }) {
   );
 }
 
+/** 生成最多五个连续页码，并在列表首尾调整窗口。 */
 function pageNumbers(current: number, total: number) {
   const start = Math.max(1, Math.min(current - 2, total - 4));
   const end = Math.min(total, start + 4);
-  return Array.from({ length: end - start + 1 }, (_, index) => start + index);
+  return Array.from({ length: end - start + 1 }, /* 把分页窗口索引转换为页码。 */ (_, index) => start + index);
 }
 
+/** 校验季页面的分页和筛选输入，并行加载详情、剧集与季列表，渲染统计和翻页导航。 */
 export default async function SeasonPage({
   params,
   searchParams,
@@ -117,6 +121,7 @@ export default async function SeasonPage({
   if (!series || !seasonData) notFound();
 
   const totalPages = Math.max(1, Math.ceil(seasonData.total / PAGE_SIZE));
+  /** 将当前分页条件与传入覆盖值合并为查询串，省略第一页、全部状态和升序默认值。 */
   const queryString = (values: { page?: number; status?: StatusFilter; order?: EpisodeOrder } = {}) => {
     const nextStatus = values.status ?? status;
     const nextOrder = values.order ?? order;
@@ -128,12 +133,13 @@ export default async function SeasonPage({
     const value = params.toString();
     return value ? `?${value}` : "";
   };
+  /** 为当前季生成包含指定分页或筛选条件的地址。 */
   const seasonHref = (values: { page?: number; status?: StatusFilter; order?: EpisodeOrder } = {}) =>
     `/series/${id}/seasons/${seasonId}${queryString(values)}`;
 
   if (page > totalPages) redirect(seasonHref({ page: totalPages }));
 
-  const currentSeasonIndex = seasons.findIndex((season) => season.id === seasonId);
+  const currentSeasonIndex = seasons.findIndex(/* 查找当前季在季列表中的位置，供相邻季导航使用。 */ (season) => season.id === seasonId);
   const previousSeason = currentSeasonIndex > 0 ? seasons[currentSeasonIndex - 1] : null;
   const nextSeason = currentSeasonIndex >= 0 && currentSeasonIndex < seasons.length - 1 ? seasons[currentSeasonIndex + 1] : null;
   const watchedPercent = seasonData.season.episodeCount > 0
@@ -168,7 +174,7 @@ export default async function SeasonPage({
                 <div className="flex items-center gap-2">
               {previousSeason && <Link href={`/series/${id}/seasons/${previousSeason.id}`} className="surface-recessed interactive-control rounded-xl border border-white/10 p-2.5 text-white/60" aria-label={`上一季：第 ${previousSeason.seasonNumber} 季`}><ChevronLeft className="size-4" /></Link>}
               <div className="surface-recessed flex max-w-72 gap-1 overflow-x-auto rounded-xl border border-white/10 p-1">
-                {seasons.map((season) => (
+                {seasons.map(/* 为一个季渲染切换链接，并突出当前季。 */ (season) => (
                   <Link key={season.id} href={`/series/${id}/seasons/${season.id}`} className={`shrink-0 rounded-lg px-3 py-1.5 text-xs transition-colors ${season.id === seasonId ? "bg-red-500/20 text-red-300" : "text-white/60 hover:bg-white/10 hover:text-white"}`}>
                     第 {season.seasonNumber} 季
                   </Link>
@@ -195,7 +201,7 @@ export default async function SeasonPage({
             ["完成比例", `${watchedPercent}%`],
             ["总时长", `${Math.round(seasonData.totalRuntime / 60)} 小时`],
             ["平均评分", seasonData.averageRating === null ? "—" : seasonData.averageRating.toFixed(1)],
-          ].map(([label, value]) => (
+          ].map(/* 将整季的一项统计渲染为标签和数值。 */ ([label, value]) => (
             <div key={label} className="surface-muted rounded-2xl border border-white/10 p-4 backdrop-blur-xl">
               <p className="text-xs text-white/60">{label}</p>
               <p className="mt-2 font-mono text-xl text-white">{value}</p>
@@ -206,7 +212,7 @@ export default async function SeasonPage({
         <div className="surface-overlay sticky top-20 z-20 mb-6 flex flex-col justify-between gap-3 rounded-2xl p-3 sm:flex-row sm:items-center">
           <div className="flex items-center gap-2 overflow-x-auto">
             <ListFilter className="ml-1 size-4 shrink-0 text-white/60" />
-            {(["all", "watched", "unwatched"] as const).map((value) => (
+            {(["all", "watched", "unwatched"] as const).map(/* 生成观看状态筛选链接，切换状态时回到第一页。 */ (value) => (
               <Link key={value} href={seasonHref({ page: 1, status: value })} className={`shrink-0 rounded-lg border px-4 py-1.5 text-[13px] backdrop-blur-2xl transition-all duration-300 ${status === value ? "surface-active border-red-400/40 font-bold text-red-400 shadow-[0_4px_10px_rgba(248,113,113,0.2)] drop-shadow-[0_0_3px_rgba(248,113,113,0.3)]" : "surface-muted border-white/10 text-white/70 shadow-[0_4px_10px_rgba(0,0,0,0.2)] hover:border-white/20 hover:bg-white/10 hover:text-white hover:shadow-[0_6px_15px_rgba(0,0,0,0.3)] hover:drop-shadow-[0_0_8px_rgba(255,255,255,0.5)]"}`}>
                 {{ all: "全部", watched: "已看", unwatched: "未看" }[value]}
               </Link>
@@ -223,7 +229,7 @@ export default async function SeasonPage({
 
         {seasonData.episodes.length > 0 ? (
           <div className="space-y-3">
-            {seasonData.episodes.map((episode) => <EpisodeCard key={episode.id} episode={episode} />)}
+            {seasonData.episodes.map(/* 将当前页的一集数据渲染为剧集卡片。 */ (episode) => <EpisodeCard key={episode.id} episode={episode} />)}
           </div>
         ) : (
           <div className="surface-muted rounded-2xl border border-white/10 py-20 text-center text-white/60">当前筛选下暂无剧集</div>
@@ -232,7 +238,7 @@ export default async function SeasonPage({
         {totalPages > 1 && (
           <nav className="mt-10 flex flex-wrap items-center justify-center gap-2" aria-label="剧集分页">
             {page > 1 && <Link href={seasonHref({ page: page - 1 })} className="surface-muted interactive-control rounded-xl border border-white/10 p-2.5 text-white/60" aria-label="上一页"><ChevronLeft className="size-4" /></Link>}
-            {pageNumbers(page, totalPages).map((pageNumber) => (
+            {pageNumbers(page, totalPages).map(/* 生成保留当前筛选条件的页码链接，并标记当前页。 */ (pageNumber) => (
               <Link key={pageNumber} href={seasonHref({ page: pageNumber })} className={`min-w-10 rounded-xl border px-3 py-2 text-center text-sm ${pageNumber === page ? "surface-active border-red-400/30 text-red-300" : "surface-muted border-white/10 text-white/50 hover:bg-white/10 hover:text-white"}`}>
                 {pageNumber}
               </Link>

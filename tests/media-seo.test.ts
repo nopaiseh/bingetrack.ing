@@ -19,8 +19,8 @@ const movie: Media = {
   type: "movies",
 };
 
-describe("media SEO", () => {
-  it("builds canonical and social metadata for a movie", () => {
+describe("media SEO", /* 组织媒体与季页面的元数据、结构化数据和序列化测试。 */ () => {
+  it("builds canonical and social metadata for a movie", /* 验证电影规范地址、Open Graph 和 Twitter 分享字段。 */ () => {
     const metadata = buildMediaMetadata(movie);
 
     expect(metadata.alternates?.canonical).toBe("/movies/movie%2Fid");
@@ -36,7 +36,7 @@ describe("media SEO", () => {
     });
   });
 
-  it("builds Movie structured data", () => {
+  it("builds Movie structured data", /* 验证电影 JSON-LD 中的类型、名称、时长和演职员字段。 */ () => {
     expect(buildMediaJsonLd(movie)).toMatchObject({
       "@context": "https://schema.org",
       "@type": "Movie",
@@ -48,7 +48,7 @@ describe("media SEO", () => {
     });
   });
 
-  it("builds TVSeries structured data and a useful fallback description", () => {
+  it("builds TVSeries structured data and a useful fallback description", /* 验证电视剧使用 TVSeries 类型，并在无简介时生成季度与剧集描述。 */ () => {
     const series = { ...movie, id: "series-1", type: "series" as const, summary: "" };
 
     expect(getMediaDescription(series)).toBe("查看《测试电影》的季度、剧集与观看记录。");
@@ -56,11 +56,11 @@ describe("media SEO", () => {
     expect(buildMediaMetadata(series).alternates?.canonical).toBe("/series/series-1");
   });
 
-  it("escapes markup-like text in JSON-LD", () => {
+  it("escapes markup-like text in JSON-LD", /* 验证 JSON-LD 转义脚本闭合文本，避免输出原始结束标签。 */ () => {
     expect(serializeJsonLd({ value: "</script>" })).not.toContain("</script>");
   });
 
-  it("builds canonical and social metadata for a season", () => {
+  it("builds canonical and social metadata for a season", /* 验证季页面生成正确的规范地址、标题与分享海报。 */ () => {
     const metadata = buildSeasonMetadata(
       { ...movie, id: "series-1", type: "series" },
       {

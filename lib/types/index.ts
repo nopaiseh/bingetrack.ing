@@ -20,7 +20,7 @@ export interface Media {
   type?: MediaType;
 }
 
-/** Fields crossing the server/client boundary for media cards. */
+// 服务端传给浏览器的卡片字段集合，不包含详情页专用数据。
 export type MediaCard = Pick<Media,
   "id" | "title" | "date" | "release_year" | "rating" | "genres" | "languages" | "cover_url" | "type"
 >;

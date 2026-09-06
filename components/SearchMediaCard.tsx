@@ -3,6 +3,7 @@ import Link from "next/link";
 import { ImageIcon, Star } from "lucide-react";
 import type { MediaCard } from "@/lib/types";
 
+/** 为搜索卡片提供与海报和文本布局对应的加载占位。 */
 export function SearchMediaCardSkeleton() {
   return (
     <div className="surface-card flex flex-col overflow-hidden rounded-xl">
@@ -24,6 +25,7 @@ export function SearchMediaCardSkeleton() {
   );
 }
 
+/** 渲染搜索媒体卡片，详情链接携带来源地址以保留返回时的筛选和分页。 */
 export function SearchMediaCard({ item, returnHref }: { item: MediaCard; returnHref: string }) {
   return (
     <Link href={`/${item.type}/${item.id}?from=${encodeURIComponent(returnHref)}`} className="surface-card interactive-media-card group flex cursor-pointer flex-col overflow-hidden rounded-xl">
@@ -50,7 +52,7 @@ export function SearchMediaCard({ item, returnHref }: { item: MediaCard; returnH
           </span>
         </div>
         <div className="mt-1.5 flex flex-wrap gap-1.5">
-          {[...(item.genres ?? []).slice(0, 3), ...(item.languages ?? []).slice(0, 2)].map((tag, index) => (
+          {[...(item.genres ?? []).slice(0, 3), ...(item.languages ?? []).slice(0, 2)].map(/* 将最多三个类型和两个语言标签渲染为卡片徽标。 */ (tag, index) => (
             <span key={`${tag}-${index}`} className="surface-muted inline-flex items-center rounded-md border border-white/10 px-1.5 py-0.5 text-[10px] font-medium tracking-wide text-white/70 backdrop-blur-md transition-all duration-300 group-hover:border-red-400/30 group-hover:bg-red-500/15 group-hover:text-red-300 group-hover:shadow-[0_4px_10px_rgba(248,113,113,0.2)]">{tag}</span>
           ))}
         </div>

@@ -1,6 +1,7 @@
 import MediaRow from "@/components/MediaRow";
 import { MediaCatalogProps } from "@/lib/types";
 
+/** 将电视剧统计及已看、在看、想看列表渲染为目录页。 */
 export default function SeriesCatalog({
   watched,
   watching,
@@ -21,7 +22,7 @@ export default function SeriesCatalog({
 
         
         <div className="mb-10 grid grid-cols-2 gap-4 md:mb-12 lg:mb-16 lg:grid-cols-4">
-          {statItems.map((stat, idx) => (
+          {statItems.map(/* 将一项电视剧统计渲染为标签与数值卡片。 */ (stat, idx) => (
             <div key={idx} className="surface-card interactive-card group flex flex-col rounded-2xl p-4 sm:p-5 lg:p-6">
               <h2 className="font-medium uppercase text-neutral-400 text-xs tracking-widest mb-2">
                 {stat.label}

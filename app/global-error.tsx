@@ -4,8 +4,9 @@ import * as Sentry from "@sentry/nextjs";
 import { RotateCcw } from "lucide-react";
 import { useEffect } from "react";
 
+/** 上报根级渲染错误，并提供独立的 HTML 错误页面与整页刷新入口。 */
 export default function GlobalError({ error }: { error: Error & { digest?: string } }) {
-  useEffect(() => {
+  useEffect(/* 在错误对象变化时将异常发送给 Sentry。 */ () => {
     Sentry.captureException(error);
   }, [error]);
 
@@ -21,7 +22,7 @@ export default function GlobalError({ error }: { error: Error & { digest?: strin
             </p>
             <button
               type="button"
-              onClick={() => window.location.reload()}
+              onClick={/* 重新加载整个页面以重试根级渲染。 */ () => window.location.reload()}
               className="surface-active mt-7 inline-flex items-center gap-2 rounded-xl border border-red-400/40 px-5 py-3 text-sm font-bold text-red-300"
             >
               <RotateCcw className="size-4" aria-hidden="true" />

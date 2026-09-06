@@ -1,5 +1,4 @@
--- Complete current application schema.
--- Keep this file updated whenever the public schema changes.
+-- 应用数据库结构快照，用于重建本地测试环境；文件本身不代表线上数据库当前状态。
 
 create extension if not exists pg_trgm;
 
@@ -488,6 +487,7 @@ from combined_stats
 group by release_year
 order by (release_year is null) desc, coalesce(release_year::text, 'All Time') desc;
 
+-- 按季号和集号升序返回指定电视剧的季与嵌套剧集 JSON；没有季或剧集时使用空数组。
 create function public.get_tv_seasons_by_series(p_series_id uuid)
 returns jsonb
 language sql
@@ -536,6 +536,7 @@ as $$
   where s.series_id = p_series_id;
 $$;
 
+-- 在建表事件结束时为 public 下新建的普通表和分区表启用 RLS；单表失败只记录警告并继续。
 create function public.rls_auto_enable()
 returns event_trigger
 language plpgsql
@@ -577,6 +578,7 @@ revoke all on function public.rls_auto_enable() from public;
 revoke all on function public.rls_auto_enable() from anon, authenticated;
 grant execute on function public.rls_auto_enable() to service_role;
 
+-- 按指定年份发行的剧集计算各电视剧平均评分，空评分排末，同分按 ID 排序；返回数量限制为 1 到 20。
 create or replace function public.get_top_tv_series_by_year(
   p_year integer,
   p_limit integer default 10
@@ -607,6 +609,7 @@ $$;
 revoke all on function public.get_top_tv_series_by_year(integer, integer) from public;
 grant execute on function public.get_top_tv_series_by_year(integer, integer) to anon, authenticated, service_role;
 
+-- 按媒体类型、年份及地区、语言、类型统计去重作品数；电视剧按剧集发行年份归组，并额外提供 All Time 汇总。
 create or replace function public.get_media_distribution_counts()
 returns table(
   media_type text,
@@ -688,6 +691,7 @@ $$;
 revoke all on function public.get_media_distribution_counts() from public;
 grant execute on function public.get_media_distribution_counts() to anon, authenticated, service_role;
 
+-- 统计指定媒体类型的总数、已看、在看和想看数量；发行日期为今天或以后的条目计入 upcoming。
 create or replace function public.get_media_stats(p_media_type text)
 returns table(
   total bigint,
@@ -714,6 +718,7 @@ $$;
 revoke all on function public.get_media_stats(text) from public;
 grant execute on function public.get_media_stats(text) to anon, authenticated, service_role;
 
+-- 先确认季属于指定电视剧，再返回整季统计及筛选分页结果；未看包含所有非 watched 状态，季不存在时返回空结果。
 create or replace function public.get_season_episode_page(
   p_series_id uuid,
   p_season_id uuid,
@@ -805,7 +810,6 @@ $$;
 revoke all on function public.get_season_episode_page(uuid, uuid, text, text, integer, integer) from public;
 grant execute on function public.get_season_episode_page(uuid, uuid, text, text, integer, integer) to anon, authenticated, service_role;
 
--- Public list aggregates, deployed and anonymously verified 2026-09-06.
 create view public.v_media_series_years
 with (security_invoker = true) as
 select s.series_id,
