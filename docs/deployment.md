@@ -9,7 +9,7 @@ Repository files cannot enforce these settings. Configure them once in GitHub
 and Vercel:
 
 1. Protect `main` and require a pull request plus the
-   `Lint, type-check, unit, and browser tests` status check before merging.
+   `Lint, types, build, unit, browser & database tests` status check before merging.
 2. Disable bypassing the required check, including for administrators when that
    is practical.
 3. In Vercel, prevent production deployment until the required GitHub check has
@@ -20,8 +20,9 @@ and Vercel:
 
 ## Application release
 
-1. Open a pull request and wait for both the Vercel preview and GitHub `Tests`
-   check to succeed.
+1. Open a pull request and wait for both the Vercel preview and the
+   `Lint, types, build, unit, browser & database tests` check in the
+   `Application quality checks` workflow to succeed.
 2. Verify the preview URL with `DEPLOYMENT_URL=<url> npm run smoke` and inspect
    the affected user flow.
 3. Merge only after required checks pass.
@@ -29,15 +30,17 @@ and Vercel:
 5. Run `DEPLOYMENT_URL=https://www.bingetrack.ing npm run smoke` and inspect
    Vercel runtime errors after the deployment.
 
-The `Deployment smoke test` workflow also runs when Vercel reports a successful
+The `Deployment health checks` workflow also runs when Vercel reports a successful
 GitHub Deployment and can be started manually for any URL.
 
 ## Database release
 
 `supabase/scripts/current_schema.sql` remains the reproducible schema snapshot
-for a fresh database. For every new production schema change, also create a
-versioned migration with `supabase migration new <descriptive-name>` and include
-an explicit rollback plan in the pull request.
+for a fresh database. During beta, maintain this snapshot without requiring
+versioned migrations. Introduce versioned migrations once the project is stable.
+For each production schema change during beta, include the exact incremental SQL
+for the existing database and an explicit rollback plan in the pull request,
+and keep the snapshot synchronized with the verified final schema.
 
 Use expand-and-contract changes so the old and new application versions can run
 against the database during deployment:
