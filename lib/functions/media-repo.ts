@@ -2,6 +2,7 @@ import { getSupabasePublicServer } from "@/utils/supabase";
 import { mapViewRowToMedia, mapViewRowToMediaCard } from "@/lib/functions/media-mapper";
 import { buildMediaDistributions, type DistributionCountRow } from "@/lib/functions/media-distributions";
 import { quotePostgrestFilterValue } from "@/lib/functions/postgrest-filter";
+import { isMediaId } from "@/lib/functions/media-id";
 import { EpisodeInfo, MediaCard, Media, MediaDistributions, SeasonEpisodePage, SeasonInfo, ViewAllMediaRow, FetchMediaListOptions } from "@/lib/types";
 
 
@@ -148,6 +149,7 @@ async function addSeriesReleaseYearRanges<T extends MediaCard>(
 
 // 详情读取完整视图；找不到记录返回 null，查询失败则抛出错误。
 export async function getMediaById(id: string): Promise<Media | null> {
+  if (!isMediaId(id)) return null;
   const db = getSupabasePublicServer();
 
   const { data: viewData, error: viewError } = await db
@@ -240,6 +242,7 @@ function firstRelated<T>(value: T | T[] | null | undefined): T | undefined {
 
 // 优先读取数据库聚合好的季摘要；仅在视图缺失时回退到逐集统计。
 export async function getSeasonsBySeriesId(seriesId: string): Promise<SeasonInfo[]> {
+  if (!isMediaId(seriesId)) return [];
   const db = getSupabasePublicServer();
   const aggregate = await db.from("v_media_season_summaries")
     .select("id,season_number,title,alternate_title,summary,cover_url,episode_count,watched_episode_count,first_year,last_year")
@@ -347,6 +350,7 @@ export async function getSeasonEpisodes(
   status: "all" | "watched" | "unwatched" = "all",
   order: "asc" | "desc" = "asc",
 ): Promise<SeasonEpisodePage | null> {
+  if (!isMediaId(seriesId) || !isMediaId(seasonId)) return null;
   const db = getSupabasePublicServer();
   const offset = (page - 1) * pageSize;
   // 并行读取分页剧集与季简介；分页和整季统计由 RPC 一次返回。

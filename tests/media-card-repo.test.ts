@@ -54,7 +54,7 @@ test("season aggregates preserve empty seasons and single-year display", /* 验�
     { id: "empty", season_number: 1, episode_count: 0, watched_episode_count: 0, first_year: null, last_year: null },
     { id: "full", season_number: 2, episode_count: 12, watched_episode_count: 8, first_year: 2026, last_year: 2026 },
   ], error: null };
-  const rows = await getSeasonsBySeriesId("s");
+  const rows = await getSeasonsBySeriesId("12345678-1234-1234-1234-123456789abc");
   expect(rows[0]).toMatchObject({ title: "第 1 季", episodeCount: 0, releaseYearRange: undefined });
   expect(rows[1]).toMatchObject({ episodeCount: 12, watchedEpisodeCount: 8, releaseYearRange: "2026" });
   expect(state.executed).toHaveLength(1);
@@ -62,8 +62,8 @@ test("season aggregates preserve empty seasons and single-year display", /* 验�
 
 test("only missing views use the rollout fallback", /* 验证仅视图缺失会触发回退，权限类错误仍抛出。 */ async () => {
   state.results.v_media_season_summaries = { data: null, error: { code: "PGRST205" } };
-  expect(await getSeasonsBySeriesId("s")).toEqual([]);
+  expect(await getSeasonsBySeriesId("12345678-1234-1234-1234-123456789abc")).toEqual([]);
   expect(state.executed.map(/* 提取查询表名以确认执行了缺失视图回退。 */ (query) => query.table)).toEqual(["v_media_season_summaries", "tv_seasons"]);
   state.results.v_media_season_summaries = { data: null, error: { code: "42501" } };
-  await expect(getSeasonsBySeriesId("s")).rejects.toBeInstanceOf(MediaRepositoryError);
+  await expect(getSeasonsBySeriesId("12345678-1234-1234-1234-123456789abc")).rejects.toBeInstanceOf(MediaRepositoryError);
 });
