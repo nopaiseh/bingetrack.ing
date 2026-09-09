@@ -7,7 +7,7 @@ test("站长初始化、影视季集管理、公开更新、退出与非站长�
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const secret = process.env.SUPABASE_SERVICE_ROLE_KEY;
   const isLocal = url && ["localhost", "127.0.0.1"].includes(new URL(url).hostname);
-  test.skip(info.project.name !== "desktop" || !isLocal || !secret, "完整写入测试只运行于配置了运维密钥的本地 Supabase 桌面项目。");
+  test.skip(info.project.name !== "admin" || !isLocal || !secret, "完整写入测试只运行于配置了运维密钥的本地 Supabase 管理项目。");
   test.setTimeout(120_000);
   const db = createClient(url!, secret!, { auth: { persistSession: false, autoRefreshToken: false } });
   const prefix = `Admin E2E ${randomUUID()}`;
@@ -25,7 +25,7 @@ test("站长初始化、影视季集管理、公开更新、退出与非站长�
   async function save() {
     const title = await page.getByLabel("标题", { exact: true }).inputValue();
     const [response] = await Promise.all([
-      page.waitForResponse(/* 等待本次 Server Action 响应，不能把上次保存提示当作成功。 */ response => response.request().method() === "POST" && response.url().includes("/admin/media/")),
+      page.waitForResponse(/* 等待本次 Server Action 响应，不能把上次保存提示当作成功。 */ response => response.request().method() === "POST" && response.url().includes("/admin/media/"), { timeout: 15_000 }),
       page.getByRole("button", { name: "保存资料", exact: true }).click(),
     ]);
     expect(response.ok()).toBe(true);
@@ -38,6 +38,7 @@ test("站长初始化、影视季集管理、公开更新、退出与非站长�
       return savedId;
     }).not.toBe("");
     await expect(page).toHaveURL(new RegExp(`/admin/media/${savedId}\\?saved=1$`));
+    await expect(page.getByRole("heading", { name: `编辑：${title}`, exact: true })).toBeVisible();
     await expect(page.getByRole("button", { name: "保存资料", exact: true })).toBeEnabled();
     await expect(page.getByRole("status").filter({ hasText: "保存成功" })).toBeVisible();
     return savedId;
@@ -71,10 +72,14 @@ test("站长初始化、影视季集管理、公开更新、退出与非站长�
     await page.getByLabel("标题", { exact: true }).fill(`${prefix} series`);
     const series = await save();
     await page.getByRole("link", { name: "新增季", exact: true }).click();
+    await expect(page.getByRole("heading", { name: "新增媒体", exact: true })).toBeVisible();
+    await expect(page.getByLabel("所属剧集 ID", { exact: false })).toHaveValue(series);
     await page.getByLabel("标题", { exact: true }).fill(`${prefix} season`);
     await page.getByLabel("季编号（特别篇可填 0）").fill("1");
     const season = await save();
     await page.getByRole("link", { name: "新增集", exact: true }).click();
+    await expect(page.getByRole("heading", { name: "新增媒体", exact: true })).toBeVisible();
+    await expect(page.getByLabel("所属季 ID", { exact: false })).toHaveValue(season);
     await page.getByLabel("标题", { exact: true }).fill(`${prefix} episode`);
     await page.getByLabel("集编号", { exact: true }).fill("1");
     await page.getByLabel("观看状态").selectOption("watched");

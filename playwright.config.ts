@@ -12,9 +12,11 @@ export default defineConfig({
     trace: "retain-on-failure",
   },
   projects: [
-    { name: "phone", use: { ...devices["iPhone 13"], browserName: "chromium" } },
-    { name: "tablet", use: { viewport: { width: 768, height: 1024 } } },
-    { name: "desktop", use: { viewport: { width: 1024, height: 768 } } },
+    { name: "phone", testIgnore: "admin-management.spec.ts", use: { ...devices["iPhone 13"], browserName: "chromium" } },
+    { name: "tablet", testIgnore: "admin-management.spec.ts", use: { viewport: { width: 768, height: 1024 } } },
+    { name: "desktop", testIgnore: "admin-management.spec.ts", use: { viewport: { width: 1024, height: 768 } } },
+    // 管理测试会写入共享数据库，必须等依赖固定种子数据的公开浏览测试结束。
+    { name: "admin", testMatch: "admin-management.spec.ts", dependencies: ["phone", "tablet", "desktop"], use: { viewport: { width: 1024, height: 768 } } },
   ],
   webServer: {
     command: process.env.CI
