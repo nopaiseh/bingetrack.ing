@@ -11,7 +11,7 @@ select is(
       and c.relkind in ('r', 'p')
       and c.relrowsecurity
   ),
-  16,
+  17,
   'all public tables have RLS enabled'
 );
 

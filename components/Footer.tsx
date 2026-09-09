@@ -34,6 +34,7 @@ export default function Footer() {
           </div>
 
           <div className="flex flex-wrap items-center justify-center lg:justify-end gap-4 md:gap-5">
+            <Link href="/login" className="text-xs text-neutral-400 hover:text-white">站长登录</Link>
             
             <div className="flex items-center gap-2">
               <a href="https://vercel.com/" target="_blank" rel="noreferrer" className="surface-muted px-2 py-1 rounded backdrop-blur-md border border-white/20 text-white/80 text-[10px] font-mono hover:text-white hover:border-white/40 hover:bg-white/10 hover:shadow-[0_0_10px_rgba(255,255,255,0.2)] transition-all duration-300">
