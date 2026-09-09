@@ -23,14 +23,24 @@ test("站长初始化、影视季集管理、公开更新、退出与非站长�
   }
   /** 提交表单并从保存后的地址取得实际媒体 ID。 */
   async function save() {
+    const title = await page.getByLabel("标题", { exact: true }).inputValue();
     const [response] = await Promise.all([
       page.waitForResponse(/* 等待本次 Server Action 响应，不能把上次保存提示当作成功。 */ response => response.request().method() === "POST" && response.url().includes("/admin/media/")),
       page.getByRole("button", { name: "保存资料", exact: true }).click(),
     ]);
-    await response.finished();
+    expect(response.ok()).toBe(true);
+    // RSC 响应可能持续流式传输；用本次实际写入和页面完成状态确认保存。
+    let savedId = "";
+    await expect.poll(async () => {
+      const { data, error } = await db.from("media_items").select("id").eq("title", title).single();
+      expect(error).toBeNull();
+      savedId = data?.id ?? "";
+      return savedId;
+    }).not.toBe("");
+    await expect(page).toHaveURL(new RegExp(`/admin/media/${savedId}\\?saved=1$`));
     await expect(page.getByRole("button", { name: "保存资料", exact: true })).toBeEnabled();
     await expect(page.getByRole("status").filter({ hasText: "保存成功" })).toBeVisible();
-    return new URL(page.url()).pathname.split("/").at(-1)!;
+    return savedId;
   }
   try {
     for (const email of [ownerEmail, outsiderEmail]) {
