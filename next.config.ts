@@ -4,6 +4,15 @@ import { resolveSentryEnvironment } from "./lib/sentry-environment";
 
 const isDevelopment = process.env.NODE_ENV === "development";
 
+/** 本地 Supabase 认证需要浏览器访问其 HTTP 端口；仅开发模式允许配置中的回环地址。 */
+function localAuthOrigin() {
+  if (!isDevelopment || !process.env.NEXT_PUBLIC_SUPABASE_URL) return "";
+  try {
+    const url = new URL(process.env.NEXT_PUBLIC_SUPABASE_URL);
+    return ["localhost", "127.0.0.1", "[::1]"].includes(url.hostname) ? ` ${url.origin}` : "";
+  } catch { return ""; }
+}
+
 const contentSecurityPolicy = [
   "default-src 'self'",
   "base-uri 'self'",
@@ -14,7 +23,7 @@ const contentSecurityPolicy = [
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' data: blob: https://image.tmdb.org https://*.tmdb.org",
   "font-src 'self' data:",
-  "connect-src 'self' https://*.supabase.co https://o4512027852668928.ingest.de.sentry.io",
+  `connect-src 'self' https://*.supabase.co https://o4512027852668928.ingest.de.sentry.io${localAuthOrigin()}`,
   "upgrade-insecure-requests",
 ].join("; ");
 
