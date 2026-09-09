@@ -12,8 +12,9 @@ test("管理区拒绝匿名访问，登录页无注册和邮箱输入", async ({
 });
 
 /** 无效的一次性链接不能建立会话或重定向到外部地址。 */
-test("无效初始化链接回到登录页", async ({ page }) => {
+test("无效初始化链接回到登录页", async ({ page, baseURL }) => {
   await page.goto("/auth/confirm?type=signup&token_hash=invalid&next=https://example.com");
   await expect(page).toHaveURL(/\/login\?error=link$/);
+  expect(new URL(page.url()).origin).toBe(new URL(baseURL!).origin);
   await expect(page.getByRole("alert").filter({ hasText: "登录链接无效或已过期" })).toBeVisible();
 });
