@@ -2,7 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { getAuthServer } from "@/lib/auth/server";
 
 /** 使用固定相对地址，避免反向代理的内部域名导致跨域丢失登录 Cookie。 */
-function redirectWithinSite(location: "/admin/security" | "/login?error=link") {
+function redirectWithinSite(location: "/settings" | "/?authError=link") {
   return new NextResponse(null, {
     status: 303,
     headers: { Location: location, "Cache-Control": "private, no-store" },
@@ -16,7 +16,7 @@ export async function GET(request: NextRequest) {
   if (tokenHash && (type === "magiclink" || type === "invite")) {
     const db = await getAuthServer();
     const { error } = await db.auth.verifyOtp({ token_hash: tokenHash, type });
-    if (!error) return redirectWithinSite("/admin/security");
+    if (!error) return redirectWithinSite("/settings");
   }
-  return redirectWithinSite("/login?error=link");
+  return redirectWithinSite("/?authError=link");
 }

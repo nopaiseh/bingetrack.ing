@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState, useState } from "react";
-import { saveMedia, deleteMedia } from "@/app/admin/actions";
+import { saveMedia, deleteMedia } from "@/app/manage/actions";
 import { mediaTypes, type MediaInput, type ManagedMediaType } from "@/lib/admin/media-form";
 
 /** 用同一表单编辑电影、剧集、季和集，保持各字段有明确标签。 */
@@ -11,7 +11,7 @@ export default function MediaForm({ item, initialType = "movie", parent = "" }: 
   const [deleteState, deleteAction, deleting] = useActionState(deleteMedia, {});
   const isChild = type === "tv_season" || type === "tv_episode";
   return <div className="space-y-10">
-    <form action={action} className="space-y-7">
+    <form action={action} className="surface-panel rounded-2xl p-5 sm:p-8">
       <fieldset disabled={pending || deleting} className="space-y-7">
         <legend className="sr-only">媒体资料</legend>
         <input type="hidden" name="id" value={item?.id ?? ""} />
@@ -28,15 +28,15 @@ export default function MediaForm({ item, initialType = "movie", parent = "" }: 
           </>}
         </div>
         <label>简介<textarea name="summary" rows={5} maxLength={20000} defaultValue={item?.summary ?? ""} /></label>
-        <section className="surface-panel rounded-xl p-5">
-          <h2 className="mb-4 text-lg font-medium text-white">观看记录</h2>
+        <section className="surface-muted rounded-2xl border border-white/10 p-5 sm:p-6">
+          <h2 className="admin-section-title mb-4 text-lg font-medium text-white">观看记录</h2>
           <div className="grid gap-5 sm:grid-cols-2">
             <label>观看状态<select name="status" defaultValue={item?.status ?? "want_to_watch"}><option value="want_to_watch">没看过</option><option value="watched">看过</option></select></label>
             <label>评分（0–10，可留空）<input type="number" name="rating" min="0" max="10" step="0.1" defaultValue={item?.rating ?? ""} /></label>
           </div>
         </section>
         <section>
-          <h2 className="mb-2 text-lg font-medium text-white">关联资料</h2>
+          <h2 className="admin-section-title mb-2 text-lg font-medium text-white">关联资料</h2>
           <p className="mb-4 text-sm text-neutral-400">每行填写一个名称。保存时会关联已有名称或创建新名称；清空可移除当前条目的关联。</p>
           <div className="grid gap-5 sm:grid-cols-2">{([['genres','类型标签'],['languages','语言'],['regions','地区'],['directors','导演'],['actors','演员（按显示顺序）']] as const).map(/* 名称逐行编辑以保留真实名称中的逗号。 */ ([name, label]) => <label key={name}>{label}<textarea name={name} rows={3} maxLength={10000} defaultValue={item?.[name].join("\n") ?? ""} /></label>)}</div>
         </section>
@@ -44,14 +44,14 @@ export default function MediaForm({ item, initialType = "movie", parent = "" }: 
         <button type="submit" className="admin-primary">{pending ? "正在保存…" : "保存资料"}</button>
       </fieldset>
     </form>
-    {item && <section className="rounded-xl border border-red-800 p-5">
+    {item && <section className="rounded-2xl border border-red-400/25 bg-red-500/5 p-5 sm:p-8">
       <h2 className="mb-3 text-lg font-medium text-red-200">删除条目</h2>
       <p className="mb-4 text-sm leading-relaxed text-neutral-300">将永久删除「{item.title}」及其观看记录、评分和关联。{type === "tv_series" ? "所有下属季和集的资料、观看记录及评分也会一起删除。" : type === "tv_season" ? "此季的所有集及其观看记录和评分也会一起删除。" : ""}此操作无法撤销。</p>
       <form action={deleteAction} className="space-y-4">
         <input type="hidden" name="id" value={item.id ?? ""} />
         <label>输入完整标题以确认删除<input name="confirm_title" required autoComplete="off" disabled={pending || deleting} /></label>
         <p role="alert" className="text-red-300">{deleteState.error}</p>
-        <button type="submit" disabled={pending || deleting}>{deleting ? "正在删除…" : "永久删除"}</button>
+        <button className="admin-danger" type="submit" disabled={pending || deleting}>{deleting ? "正在删除…" : "永久删除"}</button>
       </form>
     </section>}
   </div>;

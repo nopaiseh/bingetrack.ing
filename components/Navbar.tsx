@@ -1,5 +1,6 @@
 "use client";
 
+import { useNavbarAuth } from "@/lib/auth/use-navbar-auth";
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -8,6 +9,7 @@ import { Menu, Search, Terminal, X } from "lucide-react";
 /** 渲染当前栏目导航、搜索表单和可折叠移动菜单，并处理搜索跳转。 */
 export default function Navbar() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const auth = useNavbarAuth();
   const pathname = usePathname();
   const router = useRouter();
 
@@ -18,11 +20,12 @@ export default function Navbar() {
     { name: "首页", href: "/" },
     { name: "电影", href: "/movies" },
     { name: "电视剧", href: "/series" },
+    ...(auth.owner ? [{ name: "管理", href: "/manage" }, { name: "设置", href: "/settings" }] : []),
   ];
 
   /** 首页要求路径完全匹配，其他栏目按路径前缀判断当前状态。 */
   const isActive = (href: string) => {
-    return href === "/" ? pathname === "/" : pathname.startsWith(href);
+    return (href === "/") ? pathname === href : pathname.startsWith(href);
   };
 
   /** 阻止表单默认提交，修剪搜索词并关闭菜单，再导航到带编码关键词的搜索页。 */
@@ -44,7 +47,7 @@ export default function Navbar() {
   return (
     <nav aria-label="主要导航" className="surface-overlay fixed left-0 top-0 z-50 w-full border-x-0 border-t-0 transition-all duration-300">
       <div className="flex h-16 w-full max-w-7xl items-center justify-between px-4 sm:px-6 lg:mx-auto lg:px-8">
-        <div className="flex items-center gap-10">
+        <div className="flex items-center gap-6">
           <Link
             href="/"
             className="flex items-center gap-2.5 group cursor-pointer"
@@ -64,7 +67,7 @@ export default function Navbar() {
             </span>
           </Link>
 
-          <div className="hidden lg:flex items-center gap-8 text-sm font-medium">
+          <div className="hidden lg:flex items-center gap-5 text-sm font-medium">
             {navItems.map(/* 为桌面导航生成栏目链接并标记当前栏目。 */ (item) => (
               <Link
                 key={item.name}
@@ -82,7 +85,7 @@ export default function Navbar() {
           </div>
         </div>
 
-        <div className="flex items-center gap-5">
+        <div className="flex items-center gap-3">
           <form
             onSubmit={handleSearch}
             className="relative group hidden sm:block"
@@ -100,12 +103,25 @@ export default function Navbar() {
               placeholder="搜索"
               className="surface-control text-white text-sm rounded-full
               focus:bg-white/10 focus:ring-1 focus:ring-white/30 focus:border-white/30
-              block w-36 focus:w-52 sm:w-44 lg:focus:w-64 pl-10 py-2.5 transition-all duration-500 ease-out
+              block w-36 focus:w-52 sm:w-44 lg:focus:w-52 pl-10 py-2.5 transition-all duration-500 ease-out
               placeholder-white/40 outline-none
               shadow-[0_4px_15px_rgba(0,0,0,0.2)]
               focus:shadow-[0_4px_25px_rgba(255,255,255,0.05)]"
             />
           </form>
+
+          {auth.signedIn ? (
+            <form action="/auth/logout" onSubmit={closeMenu}>
+              <button type="submit" className="surface-control shrink-0 rounded-full px-3 py-2.5 text-sm text-white/80 hover:text-white">退出</button>
+            </form>
+          ) : (
+            <button type="button" disabled={auth.busy} onClick={() => {
+              closeMenu();
+              void auth.signIn();
+            }} className="surface-control shrink-0 rounded-full px-3 py-2.5 text-sm text-white/80 hover:text-white disabled:opacity-60">
+              {auth.busy ? "验证中…" : "登录"}
+            </button>
+          )}
 
           <button
             className="surface-control flex size-11 items-center justify-center rounded-full p-2 text-white/70 outline-none hover:text-white lg:hidden
@@ -126,7 +142,7 @@ export default function Navbar() {
         inert={!isMobileMenuOpen ? true : undefined}
         className={`surface-muted overflow-hidden border-b border-white/10 shadow-[0_15px_40px_rgba(0,0,0,0.2)] backdrop-blur-3xl transition-all duration-500 ease-in-out lg:hidden ${
           isMobileMenuOpen
-            ? "max-h-72 opacity-100 py-4"
+            ? "max-h-[32rem] opacity-100 py-4"
             : "max-h-0 opacity-0 py-0 border-transparent"
         }`}
       >
@@ -172,6 +188,7 @@ export default function Navbar() {
           </form>
         </div>
       </div>
+      {auth.error && <p role="alert" className="border-t border-white/10 px-4 py-3 text-sm text-red-300">{auth.error}</p>}
     </nav>
   );
 }

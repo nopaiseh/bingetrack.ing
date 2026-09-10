@@ -1,13 +1,13 @@
 # 单人管理与 Passkey
 
-公开页面继续匿名读取。`/admin` 和每个写入 Server Action 都先向 Supabase Auth 验证用户，再调用 `is_site_owner()` 检查固定账号。数据库使用相同的 `site_owner` 记录执行 RLS；该表只有一个槽位，普通用户不能自行写入。应用运行时不需要 service role / secret key。
+公开页面继续匿名读取。`/manage`、`/settings` 和每个写入 Server Action 都先向 Supabase Auth 验证用户，再调用 `is_site_owner()` 检查固定账号。数据库使用相同的 `site_owner` 记录执行 RLS；该表只有一个槽位，普通用户不能自行写入。应用运行时不需要 service role / secret key。
 
 后台支持管理电影、剧集、季、集的新增、编辑、删除，标题、其他标题、简介、TMDB 封面、发行日期、时长、类型标签、语言、地区、导演、演员、评分和看过／没看过状态。**没有观看日期或额外进度字段。** 没看过沿用数据库已有的 `want_to_watch` 值；各集状态体现追剧进度，现有公开页面的汇总规则不变。
 
 ## 部署顺序
 
 1. `supabase/archive/single-owner-admin.sql` 已于 2026-09-09 应用到生产，作为迁移记录保留，不要重复执行。`current_schema.sql` 已同步这些结构；本地重建和 CI 只需载入当前快照，再载入测试数据。
-2. 部署包含 `/login`、`/auth/confirm`、`/admin` 的应用。公开 Supabase URL 和 anon key 沿用原配置，`@supabase/ssr` 已锁定版本。
+2. 部署包含 `/auth/confirm`、`/manage`、`/settings` 的应用。公开 Supabase URL 和 anon key 沿用原配置，`@supabase/ssr` 已锁定版本。
 3. 在 Supabase Authentication 关闭新用户注册、匿名登录及不使用的登录提供商；启用 Passkey。RP display name 为 `bingetrack.ing`，RP ID 为 `bingetrack.ing`，Origins 仅列实际需要的 `https://bingetrack.ing` 和 `https://www.bingetrack.ing`。Site URL 设置为实际规范域名。RP ID 绑定后保持不变。Vercel 随机 Preview 域名不使用生产 Passkey。
 4. 用下述运维工具为站长指定的邮箱创建唯一账号并生成初始化链接；工具不发送邮件。邮箱确认由站长通过后台信任流程完成，首次创建没有密码。真实邮箱只放在被忽略的本地配置中。
 5. 站长亲自打开一次性链接，进入 Passkey 设置，完成 Touch ID / Face ID / 密码管理器验证。建议添加两个独立凭证，退出后分别验证登录。

@@ -31,8 +31,8 @@ export async function getAuthServer() {
 export async function requireOwner() {
   const db = await getAuthServer();
   const { data: { user }, error } = await db.auth.getUser();
-  if (error || !user) redirect("/login");
+  if (error || !user) redirect("/");
   const owner = await db.rpc("is_site_owner");
-  if (owner.error || owner.data !== true) redirect("/login?error=access");
+  if (owner.error || owner.data !== true) redirect("/?authError=access");
   return { db, user };
 }
