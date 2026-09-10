@@ -4,7 +4,7 @@ const state = vi.hoisted(/* 在模块模拟提升阶段创建共享查询记录�
   executed: [] as Array<{ table: string; columns?: string; head?: boolean }>,
   results: {} as Record<string, { data: unknown; error: null | { code: string }; count?: number }>,
 }));
-vi.mock("@/utils/supabase", /* 提供可记录查询的 Supabase 模块替身。 */ () => ({
+vi.mock("@/lib/supabase/public-server", /* 提供可记录查询的 Supabase 模块替身。 */ () => ({
   getSupabasePublicServer: /* 返回带链式查询接口的公开服务端客户端替身。 */ () => ({
     /** 为指定表创建查询记录，并返回可等待的链式接口。 */
     from(table: string) {

@@ -1,4 +1,4 @@
-import { getSupabasePublicServer } from "@/utils/supabase";
+import { getSupabasePublicServer } from "@/lib/supabase/public-server";
 import HomeDashboard from "@/app/HomeDashboard";
 import { Summary } from "@/lib/types";
 import { fetchMediaDistributionsServer, fetchTopMediaServer } from "@/lib/functions/media-repo";

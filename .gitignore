@@ -44,8 +44,5 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-# Sentry Config File
-.env.sentry-build-plugin
-
 # 站长初始化的一次性登录凭证。
 /.local-admin/
