@@ -22,30 +22,30 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
   const rows = data as unknown as { id: string; title: string; type: ManagedMediaType; release_date: string | null; tracking: { status: string; rating: number | null } | { status: string; rating: number | null }[] | null }[];
   /** 保留当前筛选条件生成分页地址。 */
   function pageUrl(next: number) {
-    return `/admin?${new URLSearchParams({ q, type, parent, page: String(next) })}`;
+    return `/manage?${new URLSearchParams({ q, type, parent, page: String(next) })}`;
   }
   return <section>
-    <div className="mb-7 flex flex-wrap items-center justify-between gap-4">
-      <div><h1 className="text-3xl font-semibold text-white">媒体管理</h1><p className="mt-2 text-neutral-400">共 {count ?? 0} 个条目 · 公开浏览，站长编辑</p></div>
-      <Link href={`/admin/media/new${parent && type ? `?type=${type}&parent=${parent}` : ""}`} className="admin-button admin-primary">新增{type ? mediaTypes[type] : "媒体"}</Link>
+    <div className="surface-panel mb-8 rounded-3xl p-5 sm:p-8 flex flex-wrap items-center justify-between gap-4">
+      <div><h1 className="admin-heading">媒体管理</h1><p className="mt-2 text-neutral-400">共 {count ?? 0} 个条目 · 管理影视与观看记录</p></div>
+      <Link href={`/manage/media/new${parent && type ? `?type=${type}&parent=${parent}` : ""}`} className="admin-button admin-primary shrink-0">新增{type ? mediaTypes[type] : "媒体"}</Link>
     </div>
-    {params.deleted === "1" && <p role="status" className="mb-5 text-green-300">条目及其下属资料已删除。</p>}
-    {parent && <p className="mb-5"><Link href={`/admin/media/${parent}`} className="underline">返回上级条目</Link></p>}
-    <form className="mb-6 grid items-end gap-3 sm:grid-cols-[1fr_10rem_auto]">
+    {params.deleted === "1" && <p role="status" className="surface-muted mb-5 rounded-xl border border-white/10 px-4 py-3 text-sm text-green-300">条目及其下属资料已删除。</p>}
+    {parent && <p className="mb-5"><Link href={`/manage/media/${parent}`} className="underline">返回上级条目</Link></p>}
+    <form className="surface-panel mb-6 rounded-2xl p-4 sm:p-6 grid items-end gap-4 sm:grid-cols-[1fr_10rem_auto]">
       <label>搜索标题<input name="q" defaultValue={q} maxLength={200} placeholder="输入电影、剧集或单集名称" /></label>
       <label>媒体类型<select name="type" defaultValue={type}><option value="">全部类型</option>{Object.entries(mediaTypes).map(/* 显示支持的媒体类型。 */ ([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label>
       {parent && <input type="hidden" name="parent" value={parent} />}
       <button type="submit">筛选</button>
     </form>
-    <ul className="divide-y divide-white/10 rounded-xl border border-white/15">{rows.map(/* 兼容 PostgREST 根据唯一外键返回的单对象关系。 */ item => {
+    {rows.length > 0 && <ul className="surface-panel divide-y divide-white/10 overflow-hidden rounded-2xl">{rows.map(/* 兼容 PostgREST 根据唯一外键返回的单对象关系。 */ item => {
       const tracking = Array.isArray(item.tracking) ? item.tracking[0] : item.tracking;
       return <li key={item.id}>
-      <Link href={`/admin/media/${item.id}`} className="flex items-center justify-between gap-4 p-4 hover:bg-white/5">
-        <div className="min-w-0"><h2 className="break-words font-medium text-white">{item.title}</h2><p className="mt-1 text-sm text-neutral-400">{mediaTypes[item.type]}{item.release_date ? ` · ${item.release_date}` : ""}</p></div>
-        <span className="shrink-0 text-sm text-neutral-300">{tracking?.status === "watched" ? "看过" : "没看过"}{tracking?.rating != null ? ` · ${tracking.rating} 分` : ""}</span>
+      <Link href={`/manage/media/${item.id}`} className="group flex flex-col gap-3 p-5 transition-colors hover:bg-white/5 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+        <div className="min-w-0"><h2 className="break-words font-medium text-white transition-colors group-hover:text-red-300">{item.title}</h2><p className="mt-1 text-sm text-neutral-400">{mediaTypes[item.type]}{item.release_date ? ` · ${item.release_date}` : ""}</p></div>
+        <span className="surface-muted w-fit shrink-0 rounded-full border border-white/10 px-3 py-1 text-xs text-neutral-300">{tracking?.status === "watched" ? "看过" : "没看过"}{tracking?.rating != null ? ` · ${tracking.rating} 分` : ""}</span>
       </Link>
-    </li>; })}</ul>
-    {!rows.length && <p className="py-10 text-center text-neutral-400">没有符合条件的条目。</p>}
+    </li>; })}</ul>}
+    {!rows.length && <p className="surface-panel rounded-2xl px-6 py-16 text-center text-neutral-400">没有符合条件的条目。</p>}
     <nav aria-label="管理列表分页" className="mt-6 flex items-center justify-between">
       {page > 1 ? <Link href={pageUrl(page - 1)} className="admin-button">上一页</Link> : <span />}
       <span className="text-sm text-neutral-400">第 {page} 页</span>

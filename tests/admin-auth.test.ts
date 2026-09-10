@@ -12,13 +12,13 @@ describe("服务端站长权限", () => {
   beforeEach(() => { vi.clearAllMocks(); });
   it("无会话时跳转登录且不执行权限 RPC", async () => {
     getUser.mockResolvedValue({ data: { user: null }, error: null });
-    await expect(requireOwner()).rejects.toThrow("REDIRECT:/login");
+    await expect(requireOwner()).rejects.toThrow("REDIRECT:/");
     expect(rpc).not.toHaveBeenCalled();
   });
   it.each([{ data: false, error: null }, { data: null, error: { code: "PGRST202" } }, { data: "true", error: null }])("非站长、配置缺失或错误响应均拒绝", async result => {
     getUser.mockResolvedValue({ data: { user: { id: "outsider" } }, error: null });
     rpc.mockResolvedValue(result);
-    await expect(requireOwner()).rejects.toThrow("REDIRECT:/login?error=access");
+    await expect(requireOwner()).rejects.toThrow("REDIRECT:/?authError=access");
   });
   it("只有经过 Auth 验证且数据库确认为站长的账号能通过", async () => {
     getUser.mockResolvedValue({ data: { user: { id: "owner" } }, error: null });

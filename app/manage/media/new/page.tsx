@@ -8,5 +8,5 @@ export default async function NewMediaPage({ searchParams }: { searchParams: Pro
   await requireOwner();
   const params = await searchParams;
   const type = params.type && Object.hasOwn(mediaTypes, params.type) ? params.type as ManagedMediaType : "movie";
-  return <section><h1 className="mb-8 text-3xl font-semibold text-white">新增媒体</h1><MediaForm initialType={type} parent={isMediaId(params.parent) ? params.parent : ""} /></section>;
+  return <section><h1 className="admin-heading mb-8">新增媒体</h1><MediaForm initialType={type} parent={isMediaId(params.parent) ? params.parent : ""} /></section>;
 }

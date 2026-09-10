@@ -8,12 +8,12 @@ import { isMediaId } from "@/lib/functions/media-id";
 
 export type ActionResult = { error?: string; saved?: boolean };
 
-/** 退出当前浏览器会话，并立即回到登录页。 */
+/** 退出当前浏览器会话，并立即回到首页。 */
 export async function signOut() {
   const db = await getAuthServer();
   const { error } = await db.auth.signOut({ scope: "local" });
   if (error) throw new Error("退出失败，请重试。");
-  redirect("/login");
+  redirect("/");
 }
 
 /** 将数据库错误转换成可以采取行动的提示，不暴露 SQL 细节。 */
@@ -35,7 +35,7 @@ export async function saveMedia(_previous: ActionResult, form: FormData): Promis
   if (error) return { error: writeError(error.code) };
   revalidateTag("media", { expire: 0 });
   revalidatePath("/", "layout");
-  redirect(`/admin/media/${data}?saved=1`);
+  redirect(`/manage/media/${data}?saved=1`);
 }
 
 /** 明确确认标题后，原子删除条目、下属季集和观看记录。 */
@@ -48,5 +48,5 @@ export async function deleteMedia(_previous: ActionResult, form: FormData): Prom
   if (error) return { error: error.code === "22023" ? "标题不匹配，请输入当前条目的完整标题。" : writeError(error.code) };
   revalidateTag("media", { expire: 0 });
   revalidatePath("/", "layout");
-  redirect("/admin?deleted=1");
+  redirect("/manage?deleted=1");
 }
