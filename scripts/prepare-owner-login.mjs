@@ -8,7 +8,7 @@ const secret = process.env.SUPABASE_SECRET_KEY?.trim();
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL;
 if (!email || !secret || !supabaseUrl || !siteUrl) {
-  throw new Error("请在忽略提交的 .env.admin 中配置 OWNER_EMAIL、SUPABASE_SECRET_KEY、NEXT_PUBLIC_SUPABASE_URL 和 NEXT_PUBLIC_SITE_URL。");
+  throw new Error("请在忽略提交的 .env.local 中配置 OWNER_EMAIL、SUPABASE_SECRET_KEY、NEXT_PUBLIC_SUPABASE_URL 和 NEXT_PUBLIC_SITE_URL。");
 }
 const origin = new URL(siteUrl).origin;
 if (!origin.startsWith("https://") && !["localhost", "127.0.0.1"].includes(new URL(origin).hostname)) throw new Error("站点必须使用 HTTPS。");
@@ -26,7 +26,7 @@ async function findUser() {
 }
 
 const owner = await db.from("site_owner").select("user_id").eq("singleton", true).maybeSingle();
-if (owner.error) throw new Error("请先应用 single-owner-admin.sql。");
+if (owner.error) throw new Error("请先确认数据库已包含站长结构，参阅 supabase/README.md。");
 let user = await findUser();
 if (owner.data && owner.data.user_id !== user?.id) throw new Error("数据库已配置其他站长；工具不会创建额外账号或替换现有站长。");
 if (!user) {

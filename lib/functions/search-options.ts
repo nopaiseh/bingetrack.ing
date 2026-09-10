@@ -1,6 +1,6 @@
 import "server-only";
 import { unstable_cache } from "next/cache";
-import { getSupabasePublicServer } from "@/utils/supabase";
+import { getSupabasePublicServer } from "@/lib/supabase/public-server";
 
 type NamedOption = { name: string };
 type ReleaseYearOption = { release_year: string | number };

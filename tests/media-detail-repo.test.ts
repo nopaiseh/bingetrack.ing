@@ -4,7 +4,7 @@ const state = vi.hoisted(() => ({
   result: { data: null, error: null } as { data: unknown; error: unknown },
   client: vi.fn(),
 }));
-vi.mock("@/utils/supabase", () => ({ getSupabasePublicServer: state.client }));
+vi.mock("@/lib/supabase/public-server", () => ({ getSupabasePublicServer: state.client }));
 import { getMediaById, getSeasonsBySeriesId, getSeasonEpisodes, MediaRepositoryError } from "@/lib/functions/media-repo";
 
 const id = "12345678-1234-1234-1234-123456789abc";

@@ -1,83 +1,48 @@
-# Deployment and rollback runbook
+# 部署与回滚
 
-The application is deployed through the Vercel Git integration. Pull requests
-receive preview deployments and `main` is the production branch.
+应用通过 Vercel Git 集成部署，拉取请求用于预览，`main` 用于生产。以下是应配置和执行的流程；仓库文件本身不能证明平台上的分支保护或发布门槛已启用。
 
-## Required repository settings
+## 平台设置
 
-Repository files cannot enforce these settings. Configure them once in GitHub
-and Vercel:
+1. GitHub 保护 `main`，要求通过拉取请求合并，并要求 `Application quality checks` 工作流中的 `Lint, types, build, unit, browser & database tests` 检查成功。
+2. 按项目权限条件关闭绕过必要检查的能力。
+3. Vercel 生产发布应等待必要检查通过；若当前账户不支持该门槛，可保留自动预览，再手动提升已验证的部署。
+4. Development、Preview、Production 分别配置环境变量。网站运行不需要 Supabase 运维密钥；预览和测试不得使用生产 service-role 密钥执行写入测试。
 
-1. Protect `main` and require a pull request plus the
-   `Lint, types, build, unit, browser & database tests` status check before merging.
-2. Disable bypassing the required check, including for administrators when that
-   is practical.
-3. In Vercel, prevent production deployment until the required GitHub check has
-   passed. If that feature is unavailable on the current plan, keep automatic
-   preview deployments but promote a tested preview to production manually.
-4. Keep Preview and Production environment variables separately scoped. Preview
-   deployments must not use the production Supabase service-role key.
+## 应用发布
 
-## Application release
+1. 创建拉取请求，等待质量检查和 Vercel 预览构建成功。
+2. 执行 `DEPLOYMENT_URL=<预览地址> npm run smoke`，并验证受影响的实际用户流程。
+3. 必要检查通过后合并，确认生产部署对应合并后的提交。
+4. 确认正式域名指向该部署，再执行 `DEPLOYMENT_URL=https://www.bingetrack.ing npm run smoke`，检查运行日志。
 
-1. Open a pull request and wait for both the Vercel preview and the
-   `Lint, types, build, unit, browser & database tests` check in the
-   `Application quality checks` workflow to succeed.
-2. Verify the preview URL with `DEPLOYMENT_URL=<url> npm run smoke` and inspect
-   the affected user flow.
-3. Merge only after required checks pass.
-4. Confirm the production deployment references the merged commit.
-5. Run `DEPLOYMENT_URL=https://www.bingetrack.ing npm run smoke` and inspect
-   Vercel runtime errors after the deployment.
+`Deployment health checks` 工作流会响应成功的 GitHub Deployment，也支持手动输入部署地址。受保护预览需要在执行环境设置 `VERCEL_AUTOMATION_BYPASS_SECRET`；不要把它放入公开变量或日志。
 
-The `Deployment health checks` workflow also runs when Vercel reports a successful
-GitHub Deployment and can be started manually for any URL.
+## 数据库发布
 
-## Database release
+当前测试阶段使用 `supabase/scripts/current_schema.sql` 维护可重建的完整结构，稳定后再引入版本化迁移。已有数据库变更需在拉取请求中提供准确的增量 SQL、验证结果及回滚方案。
 
-`supabase/scripts/current_schema.sql` remains the reproducible schema snapshot
-for a fresh database. During beta, maintain this snapshot without requiring
-versioned migrations. Introduce versioned migrations once the project is stable.
-For each production schema change during beta, include the exact incremental SQL
-for the existing database and an explicit rollback plan in the pull request,
-and keep the snapshot synchronized with the verified final schema.
+1. 优先新增兼容的字段、表、索引、函数、权限及 RLS，让旧版和新版应用都能运行。
+2. 在新本地 Supabase 上加载快照和测试数据，运行数据库测试。
+3. 应用依赖新结构时，先实施并验证数据库变更，再发布应用。
+4. 检查正式站点及相关查询，后续版本再移除旧代码不再使用的结构。
+5. 将已验证的最终结构同步到快照。
 
-Use expand-and-contract changes so the old and new application versions can run
-against the database during deployment:
+完整快照不能直接应用到已有数据库。破坏性变更前备份受影响数据，回滚方案应说明使用应用回滚、修复 SQL 或备份恢复。`supabase/archive/` 为历史增量 SQL，仅供追溯，不在新环境重复执行。
 
-1. Expand: add compatible columns, tables, indexes, functions, grants, and RLS.
-2. Run the schema and pgTAP checks against a fresh local Supabase instance.
-3. Apply and verify the production DDL before deploying code that requires it.
-4. Deploy the application and run the production smoke test.
-5. Contract in a later release only after old code no longer depends on the
-   removed database objects.
-6. Synchronize `supabase/scripts/current_schema.sql` with the verified final
-   production state.
+## 应用回滚
 
-Do not apply the full snapshot to an existing database. Back up affected data
-before destructive DDL. A rollback must identify whether the safe response is
-application rollback, forward-fix SQL, or restoring data from backup.
+1. 数据库仍兼容时，将正式域名恢复到已知正常的 Vercel 部署。
+2. 重新运行正式站点检查并查看运行日志。
+3. 涉及数据库时依照已审查的恢复方案处理，避免直接反向执行结构变更。
+4. 记录故障提交、部署地址、表现和恢复操作。
 
-## Application rollback
+## 环境配置
 
-1. If the database remains backward-compatible, use Vercel Instant Rollback to
-   restore the last known-good production deployment.
-2. Run the production smoke test and inspect runtime logs.
-3. If a database change is involved, do not blindly reverse it. Follow the
-   reviewed rollback plan or deploy a forward-compatible application fix.
-4. Record the failed commit, deployment URL, symptoms, and recovery action.
-
-## Environment setup
-
-The variable names and public placeholders are documented in `.env.example`.
-For local development, link the Vercel project and pull Development variables
-into the ignored `.env.local` file:
+变量模板在根目录 `.env.example`，真实本机配置统一放入已忽略的 `.env.local`。已有文件应保留其中的本地运维变量，避免直接用模板或平台拉取结果覆盖。独立脚本需要时可使用：
 
 ```sh
-vercel link
-vercel env pull .env.local --environment=development
-npm run env:check
+node --env-file=.env.local scripts/smoke-deployment.mjs
 ```
 
-Environment changes affect only new Vercel deployments. Redeploy after rotating
-or changing a variable.
+上例仍需通过进程环境提供 `DEPLOYMENT_URL`。Next.js 的环境加载与公开变量规则见 [官方说明](https://nextjs.org/docs/app/guides/environment-variables)。平台变量修改后需要新部署才能生效；本地 `.env.local` 不会同步更改 Vercel 配置。

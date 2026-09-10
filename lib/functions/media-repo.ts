@@ -1,4 +1,4 @@
-import { getSupabasePublicServer } from "@/utils/supabase";
+import { getSupabasePublicServer } from "@/lib/supabase/public-server";
 import { mapViewRowToMedia, mapViewRowToMediaCard } from "@/lib/functions/media-mapper";
 import { buildMediaDistributions, type DistributionCountRow } from "@/lib/functions/media-distributions";
 import { quotePostgrestFilterValue } from "@/lib/functions/postgrest-filter";
