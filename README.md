@@ -13,7 +13,7 @@
 
 ## 技术栈
 
-Next.js 16 App Router、React 19、TypeScript、UnoCSS、Supabase PostgreSQL / Auth。项目要求 **Node.js 22**，使用 npm 和提交到仓库的 `package-lock.json`。
+Next.js 16 App Router、React 19、TypeScript、UnoCSS、Supabase PostgreSQL / Auth。项目要求 **Node.js 24**，使用 npm 和提交到仓库的 `package-lock.json`。
 
 ## 本地启动
 
@@ -103,6 +103,6 @@ Next.js 的 `proxy.ts`、`instrumentation*.ts`、Sentry 初始化文件和各工
 | `npm run perf:lighthouse -- http://localhost:3000` | Lighthouse 实验室性能报告 |
 | `npm run analyze` | Next.js 构建包分析 |
 
-E2E 依赖本地 Supabase 和固定种子数据；管理测试会写数据库。首次运行浏览器测试前安装 Chromium：`npx playwright install chromium`。Playwright 测试进程不会自动读取 `.env.local`；需要本地管理测试时，使用 `node --env-file=.env.local node_modules/@playwright/test/cli.js test`，或预先在进程环境设置本地数据库变量。CI 使用 Node 22，重建本地数据库后执行构建、浏览器及数据库测试。Lighthouse 结果不等同于真实用户性能数据。
+E2E 依赖本地 Supabase 和固定种子数据；管理测试会写数据库。首次运行浏览器测试前安装 Chromium：`npx playwright install chromium`。Playwright 测试进程不会自动读取 `.env.local`；需要本地管理测试时，使用 `node --env-file=.env.local node_modules/@playwright/test/cli.js test`，或预先在进程环境设置本地数据库变量。CI 使用 Node 24，重建本地数据库后执行构建、浏览器及数据库测试。Lighthouse 结果不等同于真实用户性能数据。
 
 部署、检查和回滚见 [部署说明](docs/deployment.md)。
