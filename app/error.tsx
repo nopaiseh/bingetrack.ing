@@ -1,7 +1,5 @@
 "use client";
 
-import { RotateCcw } from "lucide-react";
-
 /** 展示路由加载失败提示，通过 reset 回调让用户重试当前页面。 */
 export default function ErrorPage({ reset }: { error: Error & { digest?: string }; reset: () => void }) {
   return (
@@ -17,7 +15,7 @@ export default function ErrorPage({ reset }: { error: Error & { digest?: string 
           onClick={reset}
           className="surface-active mt-7 inline-flex items-center gap-2 rounded-xl border border-red-400/40 px-5 py-3 text-sm font-bold text-red-300 transition-colors hover:bg-red-500/25 hover:text-red-200"
         >
-          <RotateCcw className="size-4" aria-hidden="true" />
+          <span className="i-material-symbols-refresh-rounded size-4 inline-block" aria-hidden="true" />
           重新加载
         </button>
       </section>

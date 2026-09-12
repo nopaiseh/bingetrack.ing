@@ -1,6 +1,5 @@
 import Image from "next/image";
 import Link from "next/link";
-import { ImageIcon, Star } from "lucide-react";
 import { MediaCard } from "@/lib/types";
 
 /** 展示卡片海报、年份、评分及最多四个标签，并按参数控制图片加载优先级。 */
@@ -22,7 +21,7 @@ function ItemCard({ item, type, eager, highPriority }: { item: MediaCard; type: 
             fetchPriority={highPriority ? "high" : undefined}
           />
         ) : (
-          <ImageIcon className="size-10 text-white/20 drop-shadow-md" aria-hidden="true" />
+          <span className="i-material-symbols-image-outline-rounded inline-block size-10 text-white/20 drop-shadow-md" aria-hidden="true" />
         )}
       </div>
       
@@ -40,7 +39,7 @@ function ItemCard({ item, type, eager, highPriority }: { item: MediaCard; type: 
           <span className="text-white font-bold flex items-center gap-1 drop-shadow-sm">
             {item.rating ? (
               <>
-                <Star className="size-3 fill-current text-yellow-500/90 drop-shadow-[0_0_5px_rgba(234,179,8,0.6)]" aria-hidden="true" />
+                <span className="i-material-symbols-star-rounded inline-block size-3 text-yellow-500/90 drop-shadow-[0_0_5px_rgba(234,179,8,0.6)]" aria-hidden="true" />
                 {Number(item.rating).toFixed(1)}
               </>
             ) : (

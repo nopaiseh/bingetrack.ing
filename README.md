@@ -13,7 +13,7 @@
 
 ## 技术栈
 
-Next.js 16 App Router、React 19、TypeScript、Tailwind CSS 4、Supabase PostgreSQL / Auth。项目要求 **Node.js 22**，使用 npm 和提交到仓库的 `package-lock.json`。
+Next.js 16 App Router、React 19、TypeScript、UnoCSS、Supabase PostgreSQL / Auth。项目要求 **Node.js 22**，使用 npm 和提交到仓库的 `package-lock.json`。
 
 ## 本地启动
 

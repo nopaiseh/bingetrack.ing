@@ -1,6 +1,5 @@
 import Image from "next/image";
 import Link from "next/link";
-import { ImageIcon } from "lucide-react";
 import { Suspense, type ReactNode } from "react";
 import MediaBackLink, { DefaultMediaBackLink } from "./MediaBackLink";
 import { Media, SeasonInfo } from "@/lib/types";
@@ -15,7 +14,7 @@ function MediaPoster({ media }: { media: Media }) {
           <Image src={media.cover_url} alt={media.title} fill sizes="(max-width: 393px) calc(100vw - 74px), 320px" className="object-cover transition-transform duration-700 hover:scale-105" preload/>
         ) : (
           <div className="w-full h-full flex flex-col items-center justify-center text-white/60 gap-2">
-            <ImageIcon className="size-10 drop-shadow-md" aria-hidden="true" />
+            <span className="i-material-symbols-image-outline-rounded inline-block size-10 drop-shadow-md" aria-hidden="true" />
             <span className="text-sm">暂无海报</span>
           </div>
         )}
@@ -247,7 +246,7 @@ export default function MediaInformation({
                   {season.coverUrl ? (
                     <Image src={season.coverUrl} alt={`${season.title} 海报`} fill className="object-cover transition-transform duration-500 group-hover:scale-105" sizes="(max-width: 639px) 50vw, (max-width: 1023px) 33vw, 20vw" />
                   ) : (
-                    <div className="flex h-full items-center justify-center text-white/25"><ImageIcon className="size-9" aria-hidden="true" /></div>
+                    <div className="flex h-full items-center justify-center text-white/25"><span className="i-material-symbols-image-outline-rounded inline-block size-9" aria-hidden="true" /></div>
                   )}
                   <span className="image-label absolute left-2 top-2 rounded-lg border border-white/10 px-2 py-1 text-[11px] text-white/75 backdrop-blur-md">第 {season.seasonNumber} 季</span>
                 </div>

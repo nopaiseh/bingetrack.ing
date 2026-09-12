@@ -1,34 +1,56 @@
 /* 管理与设置沿用公开页面的表面颜色、圆角和控件交互。 */
 .admin-shell :is(input:not([type="hidden"]), textarea, select) {
   width: 100%; min-width: 0; background: var(--surface-control);
-  border: 1px solid var(--border-hover); border-radius: .75rem;
+  border: 1px solid rgba(255, 255, 255, 0.22); border-radius: .75rem;
   padding: .75rem 1rem; color: #f5f5f5; color-scheme: dark;
-  box-shadow: inset 0 1px 0 rgb(255 255 255 / .06), 0 4px 14px rgb(0 0 0 / .16);
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.5), 0 1px 0 rgba(255, 255, 255, 0.06);
   transition: border-color 200ms, background-color 200ms, box-shadow 200ms;
 }
-.admin-shell :is(input, textarea)::placeholder { color: rgb(255 255 255 / .45); }
-.admin-shell :is(input, textarea, select):hover { border-color: rgb(255 255 255 / .3); }
-.admin-shell :is(input, textarea, select):focus-visible { border-color: var(--accent); }
+.admin-shell :is(input, textarea)::placeholder { color: rgba(255, 255, 255, 0.55); }
+.admin-shell :is(input, textarea, select):hover {
+  border-color: rgba(255, 255, 255, 0.40);
+  background: rgba(16, 7, 9, 0.85);
+}
+.admin-shell :is(input, textarea, select):focus-visible {
+  border-color: var(--accent);
+  background: rgba(18, 7, 10, 0.92);
+  outline: none;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.4), 0 0 0 1px var(--accent), 0 0 16px rgba(239, 68, 68, 0.35);
+}
 .admin-shell textarea { resize: vertical; }
-.admin-shell label { display: grid; gap: .625rem; min-width: 0; font-size: .875rem; color: rgb(255 255 255 / .8); }
+.admin-shell label { display: grid; gap: .625rem; min-width: 0; font-size: .875rem; color: rgb(255 255 255 / .85); }
 /* 固定导航下保留聚焦控件的可见空间。 */
 .admin-shell :is(input, textarea, select, button, a) { scroll-margin-top: 6rem; }
 .admin-shell button, .admin-button {
   display: inline-flex; align-items: center; justify-content: center; gap: .5rem;
-  min-height: 2.75rem; border: 1px solid var(--border-hover); border-radius: .75rem;
-  padding: .65rem 1.1rem; background: var(--surface-control); color: #f5f5f5;
+  min-height: 2.75rem; border: 1px solid rgba(255, 255, 255, 0.16); border-radius: .75rem;
+  padding: .65rem 1.1rem; background: rgba(32, 13, 16, 0.75); color: #f5f5f5;
+  backdrop-filter: blur(12px);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.12);
   font-size: .875rem; font-weight: 500; text-align: center;
   transition: background-color 200ms, border-color 200ms, box-shadow 200ms;
 }
-.admin-shell button:hover, .admin-button:hover { background: var(--surface-raised); border-color: rgb(255 255 255 / .3); }
+.admin-shell button:hover, .admin-button:hover {
+  background: rgba(45, 18, 22, 0.85);
+  border-color: rgba(255, 255, 255, 0.3);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.18);
+}
 .admin-shell button:disabled { opacity: .5; cursor: not-allowed; }
 .admin-shell :is(input, textarea, select, button, a):focus-visible { outline: 2px solid #fca5a5; outline-offset: 3px; }
-.admin-shell .admin-primary { background: #b91c1c; border-color: rgb(248 113 113 / .4); box-shadow: 0 4px 16px rgb(239 68 68 / .15); }
-.admin-shell .admin-primary:hover { background: #991b1b; border-color: #f87171; }
+.admin-shell .admin-primary {
+  background: linear-gradient(135deg, #b91c1c, #991b1b);
+  border-color: rgb(248 113 113 / .5);
+  box-shadow: 0 4px 18px rgb(239 68 68 / .3), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+.admin-shell .admin-primary:hover {
+  background: linear-gradient(135deg, #dc2626, #b91c1c);
+  border-color: #f87171;
+  box-shadow: 0 6px 24px rgb(239 68 68 / .4), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+}
 .admin-shell .admin-danger { color: #fecaca; border-color: rgb(248 113 113 / .3); background: var(--accent-soft); }
 .admin-heading { font-size: clamp(1.75rem, 3vw, 2.5rem); font-weight: 700; letter-spacing: -.04em; line-height: 1.25; color: white; }
 .admin-section-title { display: flex; align-items: center; gap: .75rem; }
-.admin-section-title::before { content: ""; width: .25rem; height: 1.25rem; border-radius: 9999px; background: var(--accent); box-shadow: 0 0 12px rgb(239 68 68 / .3); }
+.admin-section-title::before { content: ""; width: .25rem; height: 1.25rem; border-radius: 9999px; background: var(--accent); box-shadow: 0 0 12px rgb(239 68 68 / .4); }
 /* 原生 dialog 提供焦点约束与 Escape 关闭，窄屏保持可滚动。 */
-.admin-quick-dialog { margin: auto; width: min(36rem, calc(100% - 2rem)); max-height: calc(100dvh - 2rem); overflow-y: auto; border: 1px solid var(--border-hover); border-radius: 1.5rem; padding: 1.5rem; background: var(--surface-panel); color: #f5f5f5; }
-.admin-quick-dialog::backdrop { background: rgb(0 0 0 / .65); backdrop-filter: blur(6px); }
+.admin-quick-dialog { margin: auto; width: min(36rem, calc(100% - 2rem)); max-height: calc(100dvh - 2rem); overflow-y: auto; border: 1px solid rgba(255, 255, 255, 0.16); border-radius: 1.5rem; padding: 1.5rem; background: var(--surface-panel); color: #f5f5f5; backdrop-filter: blur(24px); box-shadow: 0 25px 60px rgba(0, 0, 0, 0.7); }
+.admin-quick-dialog::backdrop { background: rgb(0 0 0 / .65); backdrop-filter: blur(8px); }

@@ -4,19 +4,6 @@ import { useState, useEffect } from "react";
 import MediaRow from "@/components/MediaRow";
 import DashboardYearPicker from "@/components/DashboardYearPicker";
 import { DistributionItem, MediaCard, MediaDistribution, MediaDistributions, Summary } from "@/lib/types";
-import {
-  ChartPie,
-  CheckCircle,
-  CircleEllipsis,
-  Film,
-  Globe2,
-  Languages,
-  Layers3,
-  PauseCircle,
-  PlayCircle,
-  Tv,
-  type LucideIcon,
-} from "lucide-react";
 
 const EMPTY_MEDIA_DISTRIBUTION: MediaDistribution = {
   regions: [],
@@ -41,12 +28,12 @@ function percent(value: number, total: number) {
 }
 
 /** 展示一个分布维度的名称和占比条，数据为空时显示暂无数据。 */
-function DistributionCard({ title, icon: Icon, items }: { title: string; icon: LucideIcon; items: DistributionItem[] }) {
+function DistributionCard({ title, icon, items }: { title: string; icon: string; items: DistributionItem[] }) {
   return (
     <div className="surface-card interactive-card group h-full rounded-2xl p-4 sm:p-5 lg:p-6">
       <div className="mb-5 flex h-8 items-center gap-3 text-sm text-neutral-400">
         <div className="surface-raised flex size-8 shrink-0 items-center justify-center rounded-lg shadow-[0_4px_10px_rgba(0,0,0,0.1)] transition-colors duration-300 group-hover:bg-red-500/15 group-hover:text-red-400 group-hover:shadow-[0_4px_10px_rgba(248,113,113,0.2)]">
-          <Icon className="size-4" aria-hidden="true" />
+          <span className={`${icon} size-4 inline-block`} aria-hidden="true" />
         </div>
         <span className="font-medium tracking-wide text-white/80 transition-colors group-hover:text-white">{title}</span>
       </div>
@@ -54,10 +41,10 @@ function DistributionCard({ title, icon: Icon, items }: { title: string; icon: L
         {items.map(/* 把一项分布数据渲染为名称、占比条和百分比。 */ (item) => (
           <div key={item.name} className="flex items-center gap-3">
             <span className="w-20 truncate text-sm text-white/70" title={item.name}>{item.name}</span>
-            <div className="progress-track h-1.5 flex-1 overflow-hidden rounded-full shadow-inner">
-              <div className="h-full bg-neutral-300/80" style={{ width: `${item.percent}%` }} />
+            <div className="progress-track h-2 flex-1 overflow-hidden rounded-full">
+              <div className="h-full rounded-full bg-linear-to-r from-red-500 to-rose-400 shadow-[0_0_8px_rgba(239,68,68,0.5)] transition-all duration-500" style={{ width: `${item.percent}%` }} />
             </div>
-            <span className="text-xs text-white/50 w-8 text-right">{item.percent}%</span>
+            <span className="text-xs text-white/60 w-8 text-right font-mono">{item.percent}%</span>
           </div>
         ))}
         {items.length === 0 && <span className="py-6 text-center text-sm text-white/60">暂无数据</span>}
@@ -70,9 +57,9 @@ function DistributionCard({ title, icon: Icon, items }: { title: string; icon: L
 function DistributionTop5Cards({ distribution }: { distribution: MediaDistribution }) {
   return (
     <div className="grid grid-cols-1 items-stretch gap-4 md:grid-cols-2 md:gap-6 lg:grid-cols-3">
-      <DistributionCard title="影视产地分布 Top 5" icon={Globe2} items={distribution.regions} />
-      <DistributionCard title="主要语言 Top 5" icon={Languages} items={distribution.languages} />
-      <DistributionCard title="主要类型 Top 5" icon={CircleEllipsis} items={distribution.genres} />
+      <DistributionCard title="影视产地分布 Top 5" icon="i-material-symbols-public-rounded" items={distribution.regions} />
+      <DistributionCard title="主要语言 Top 5" icon="i-material-symbols-translate-rounded" items={distribution.languages} />
+      <DistributionCard title="主要类型 Top 5" icon="i-material-symbols-more-horiz-rounded" items={distribution.genres} />
     </div>
   );
 }
@@ -164,7 +151,7 @@ function MediaRuntimeCards({
         <div>
           <div className="mb-2 flex items-center gap-2 text-sm text-white/60">
             <div className="stat-icon flex items-center justify-center rounded-lg p-2">
-              <PlayCircle className="size-4" aria-hidden="true" />
+              <span className="i-material-symbols-play-circle-outline-rounded size-4 inline-block" aria-hidden="true" />
             </div>
             <span className="text-sm font-bold tracking-wide text-white/80 transition-colors group-hover:text-white">已看总时长</span>
           </div>
@@ -182,7 +169,7 @@ function MediaRuntimeCards({
         <div>
           <div className="mb-2 flex items-center gap-2 text-sm text-white/60">
             <div className="stat-icon flex items-center justify-center rounded-lg p-2">
-              <Layers3 className="size-4" aria-hidden="true" />
+              <span className="i-material-symbols-layers-rounded size-4 inline-block" aria-hidden="true" />
             </div>
             <span className="text-sm font-bold tracking-wide text-white/80 transition-colors group-hover:text-white">待看总时长</span>
           </div>
@@ -198,7 +185,7 @@ function MediaRuntimeCards({
         <div>
           <div className="mb-2 flex items-center gap-2 text-sm text-white/60">
             <div className="stat-icon flex items-center justify-center rounded-lg p-2">
-              <ChartPie className="size-4" aria-hidden="true" />
+              <span className="i-material-symbols-pie-chart-outline-rounded size-4 inline-block" aria-hidden="true" />
             </div>
             <span className="text-sm font-bold tracking-wide text-white/80 transition-colors group-hover:text-white">完成进度</span>
           </div>
@@ -218,21 +205,21 @@ function MediaRuntimeCards({
 /** 按传入标题和图标展示媒体部数，并在提供数据时补充季数与集数。 */
 function MediaStatusCard({
   title,
-  icon: Icon,
+  icon,
   count,
   seasonsCount,
   episodesCount,
 }: {
   title: string;
-  icon: LucideIcon;
+  icon: string;
   count: number;
   seasonsCount?: number;
   episodesCount?: number;
 }) {
   return (
-    <div className="surface-muted group flex flex-col gap-4 rounded-xl border border-white/10 p-4 shadow-[0_4px_15px_rgba(0,0,0,0.1)] backdrop-blur-xl transition-all duration-300 hover:-translate-y-1 hover:border-red-400/40 hover:bg-white/10 hover:shadow-[0_8px_25px_rgba(248,113,113,0.15)] sm:p-5">
-      <div className="text-white/70 font-bold text-sm flex items-center gap-2 border-b border-white/10 pb-2 group-hover:text-red-300 transition-colors">
-        <Icon className="size-4" aria-hidden="true" /> {title}
+    <div className="surface-card interactive-card group flex flex-col gap-4 rounded-2xl p-4 sm:p-5">
+      <div className="text-white/80 font-bold text-sm flex items-center gap-2.5 border-b border-white/10 pb-2.5 group-hover:text-red-300 transition-colors">
+        <span className={`${icon} size-4 inline-block text-red-500/80 group-hover:text-red-400`} aria-hidden="true" /> {title}
       </div>
       <div className="flex flex-col gap-3 mt-1">
         <div className="flex justify-between items-end">
@@ -407,10 +394,10 @@ export default function HomeDashboard({
                 id={`dashboard-tab-${tabIds[tab]}`}
                 aria-controls={`dashboard-panel-${tabIds[tab]}`}
                 aria-selected={activeTab === tab}
-                className={`px-5 py-2 rounded-lg text-sm font-medium transition-all duration-300 ${
+                className={`px-5 py-2 rounded-lg text-sm font-medium !border-none transition-all duration-300 ${
                   activeTab === tab
-                    ? "surface-selected text-white shadow-[0_2px_10px_rgba(0,0,0,0.2)] ring-1 ring-white/20 drop-shadow-[0_0_5px_rgba(255,255,255,0.3)]"
-                    : "text-white/60 hover:text-white hover:bg-white/10"
+                    ? "surface-selected text-white !shadow-[0_2px_12px_rgba(0,0,0,0.3)] ring-1 ring-white/20 drop-shadow-[0_0_8px_rgba(255,255,255,0.2)]"
+                    : "text-white/60 hover:text-white hover:bg-white/10 !shadow-none"
                 }`}
               >
                 {tab}
@@ -443,7 +430,7 @@ export default function HomeDashboard({
               <div className="flex items-center border-b border-white/10 pb-3">
                 <div className="flex items-center gap-2">
                   <div className="stat-icon flex items-center justify-center rounded-lg p-2">
-                    <Film className="size-4" aria-hidden="true" />
+                    <span className="i-material-symbols-movie-rounded size-4 inline-block" aria-hidden="true" />
                   </div>
                   <span className="text-sm font-bold text-white/80 group-hover:text-white transition-colors tracking-wide">
                     电影看板
@@ -454,12 +441,12 @@ export default function HomeDashboard({
               <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                 <MediaStatusCard
                   title="已观看"
-                  icon={CheckCircle}
+                  icon="i-material-symbols-check-circle-outline-rounded"
                   count={watchedMovies}
                 />
                 <MediaStatusCard
                   title="想要看"
-                  icon={PauseCircle}
+                  icon="i-material-symbols-pause-circle-outline-rounded"
                   count={unwatchedMovies}
                 />
               </div>
@@ -476,7 +463,7 @@ export default function HomeDashboard({
               <div className="flex items-center border-b border-white/10 pb-3">
                 <div className="flex items-center gap-2">
                   <div className="stat-icon flex items-center justify-center rounded-lg p-2">
-                    <Tv className="size-4" aria-hidden="true" />
+                    <span className="i-material-symbols-tv-rounded size-4 inline-block" aria-hidden="true" />
                   </div>
                   <span className="text-sm font-bold text-white/80 group-hover:text-white transition-colors tracking-wide">
                     电视剧看板
@@ -487,20 +474,20 @@ export default function HomeDashboard({
               <div className="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3">
                 <MediaStatusCard
                   title="已观看"
-                  icon={CheckCircle}
+                  icon="i-material-symbols-check-circle-outline-rounded"
                   count={watchedSeries}
                   seasonsCount={currentYearData?.watched_seasons ?? 0}
                   episodesCount={currentYearData?.watched_series_episodes ?? 0}
                 />
                 <MediaStatusCard
                   title="正在看"
-                  icon={PlayCircle}
+                  icon="i-material-symbols-play-circle-outline-rounded"
                   count={watchingSeries}
                   seasonsCount={currentYearData?.watching_seasons ?? 0}
                 />
                 <MediaStatusCard
                   title="想要看"
-                  icon={PauseCircle}
+                  icon="i-material-symbols-pause-circle-outline-rounded"
                   count={unwatchedSeries}
                   seasonsCount={currentYearData?.unwatched_seasons ?? 0}
                   episodesCount={currentYearData?.unwatched_episodes ?? 0}
