@@ -3,6 +3,7 @@
 import { useState, useEffect, Suspense, useCallback, useMemo, useRef } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
 import type { MediaCard } from "@/lib/types";
+import { MAX_SEARCH_QUERY_LENGTH } from "@/lib/api/search-limits";
 import type { SearchOptions } from "@/lib/functions/search-options";
 import { PAGE_SIZE, readFilters, writeFilters, readSearchPage, buildMediaSearchQuery, type SearchFilters } from "@/lib/api/search-state";
 
@@ -27,7 +28,8 @@ function SearchContent({ initialOptions, initialResult }: SearchProps) {
   const searchParams = useSearchParams();
   const searchParamsString = searchParams.toString();
   const latestSearchParamsRef = useRef(searchParamsString);
-  useEffect(/* 保存最新 URL 参数，供延迟执行的搜索回调读取。 */ () => {
+  // 保存最新 URL 参数，供延迟执行的搜索回调读取。
+  useEffect(() => {
     latestSearchParamsRef.current = searchParamsString;
   }, [searchParamsString]);
   const urlQuery = searchParams.get("q") || "";
@@ -55,12 +57,15 @@ function SearchContent({ initialOptions, initialResult }: SearchProps) {
 
   const [result, setResult] = useState(initialResult);
   const { rows: mediaItems, total } = result;
-  const isLoading = result.key !== apiQuery;
-  const requestError = isLoading ? null : result.error;
+  const inputTooLong = query.trim().length > MAX_SEARCH_QUERY_LENGTH;
+  const queryTooLong = urlQuery.trim().length > MAX_SEARCH_QUERY_LENGTH;
+  const isLoading = !queryTooLong && result.key !== apiQuery;
+  const requestError = queryTooLong ? null : isLoading ? null : result.error;
   const [showScrollTop, setShowScrollTop] = useState(false);
   const resultsRef = useRef<HTMLElement | null>(null);
 
-  const updatePage = useCallback(/* 写入目标页码并省略第一页参数，按需要新增或替换浏览器历史记录。 */ (nextPage: number, replace = false) => {
+  // 写入目标页码并省略第一页参数，按需要新增或替换浏览器历史记录。
+  const updatePage = useCallback((nextPage: number, replace = false) => {
     const params = new URLSearchParams(searchParams.toString());
     if (nextPage > 1) params.set("page", String(nextPage));
     else params.delete("page");
@@ -69,7 +74,8 @@ function SearchContent({ initialOptions, initialResult }: SearchProps) {
     else window.history.pushState(null, "", href);
   }, [pathname, searchParams]);
 
-  const setFilters = useCallback(/* 根据新筛选状态重写 URL，并删除页码以从第一页重新搜索。 */ (
+  // 根据新筛选状态重写 URL，并删除页码以从第一页重新搜索。
+  const setFilters = useCallback((
     update: SearchFilters | ((previous: SearchFilters) => SearchFilters),
   ) => {
     const nextFilters = typeof update === "function" ? update(filters) : update;
@@ -80,10 +86,12 @@ function SearchContent({ initialOptions, initialResult }: SearchProps) {
     window.history.replaceState(null, "", href);
   }, [filters, pathname, searchParams]);
 
-  useEffect(/* 输入词与 URL 不一致时安排 300 毫秒防抖更新；恢复历史 URL 时不重置页码。 */ () => {
+  // 输入词与 URL 不一致时安排 300 毫秒防抖更新；恢复历史 URL 时不重置页码。
+  useEffect(() => {
     // 从历史 URL 恢复搜索时保留页码；只有输入变化才在防抖结束后回到第一页。
-    if (query.trim() === urlQuery.trim()) return;
-    const timeoutId = window.setTimeout(/* 将最新输入合并到当前 URL，清除旧页码，且只在参数改变时替换地址。 */ () => {
+    if (inputTooLong || query.trim() === urlQuery.trim()) return;
+    // 将最新输入合并到当前 URL，清除旧页码，且只在参数改变时替换地址。
+    const timeoutId = window.setTimeout(() => {
       const currentParams = latestSearchParamsRef.current;
       const params = new URLSearchParams(currentParams);
       if (query.trim()) params.set("q", query.trim());
@@ -94,16 +102,19 @@ function SearchContent({ initialOptions, initialResult }: SearchProps) {
         window.history.replaceState(null, "", href);
       }
     }, 300);
-    return /* 清除尚未触发的防抖计时器。 */ () => window.clearTimeout(timeoutId);
-  }, [pathname, query, urlQuery]);
+    // 清除尚未触发的防抖计时器。
+    return () => window.clearTimeout(timeoutId);
+  }, [pathname, query, urlQuery, inputTooLong]);
 
-  useEffect(/* 监听滚动位置以控制回到顶部按钮，并在清理时移除监听器。 */ () => {
+  // 监听滚动位置以控制回到顶部按钮，并在清理时移除监听器。
+  useEffect(() => {
     /** 滚动超过 500 像素时显示回到顶部按钮。 */
     const handleScroll = () => {
       setShowScrollTop(window.scrollY > 500);
     };
     window.addEventListener("scroll", handleScroll, { passive: true });
-    return /* 移除滚动事件监听，避免组件卸载后继续更新状态。 */ () => window.removeEventListener("scroll", handleScroll);
+    // 移除滚动事件监听，避免组件卸载后继续更新状态。
+    return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
   /** 平滑滚动到页面顶部。 */
@@ -111,14 +122,19 @@ function SearchContent({ initialOptions, initialResult }: SearchProps) {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  useEffect(/* 查询键变化时请求新结果，并在查询再次变化或卸载时取消旧请求。 */ () => {
+  // 查询键变化时请求新结果，并在查询再次变化或卸载时取消旧请求。
+  useEffect(() => {
     // 首屏结果与查询一致时不重复请求；换页期间保留旧卡片，查询变化时取消旧请求。
-    if (result.key === apiQuery) return;
+    if (queryTooLong || result.key === apiQuery) return;
     const controller = new AbortController();
     /** 请求媒体 API；成功时写入卡片和总数，失败时显示错误，忽略已取消请求的结果。 */
     const fetchMedia = async () => {
       try {
         const res = await fetch(`/api/media?${apiQuery}`, { signal: controller.signal });
+        if (res.status === 400) {
+          if (!controller.signal.aborted) setResult({ rows: [], total: 0, key: apiQuery, error: "搜索条件无效，请检查搜索词和筛选条件。" });
+          return;
+        }
         if (!res.ok) throw new Error(`MediaCard request failed with status ${res.status}`);
         const json: { rows?: MediaCard[]; total?: number } = await res.json();
         if (!controller.signal.aborted) {
@@ -131,8 +147,9 @@ function SearchContent({ initialOptions, initialResult }: SearchProps) {
       }
     };
     void fetchMedia();
-    return /* 取消已过期的媒体搜索请求。 */ () => controller.abort();
-  }, [apiQuery, result.key]);
+    // 取消已过期的媒体搜索请求。
+    return () => controller.abort();
+  }, [apiQuery, result.key, queryTooLong]);
 
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
@@ -226,6 +243,8 @@ function SearchContent({ initialOptions, initialResult }: SearchProps) {
 
               <input
                 aria-label="搜索媒体"
+                aria-describedby={inputTooLong ? "search-query-limit" : undefined}
+                aria-invalid={inputTooLong}
                 value={query}
                 onChange={/* 将搜索输入框内容写入本地输入状态。 */ (e) => {
                   setQuery(e.target.value);
@@ -233,6 +252,11 @@ function SearchContent({ initialOptions, initialResult }: SearchProps) {
                 placeholder="搜索电影、电视剧、导演或演员..."
                 className="surface-control relative z-0 w-full rounded-2xl py-4 pl-12 pr-12 text-base text-white outline-none transition-all duration-300 placeholder:text-white/50 sm:py-5 sm:pr-40 sm:text-lg"
               />
+              {inputTooLong && (
+                <div id="search-query-limit" role="tooltip" className="absolute left-0 top-full z-20 mt-2 rounded-lg border border-red-400/30 bg-neutral-900 px-3 py-2 text-sm text-red-200 shadow-lg">
+                  搜索词最多 {MAX_SEARCH_QUERY_LENGTH} 个字符，请缩短后再搜索。
+                </div>
+              )}
             </div>
 
             <div className="z-10 flex min-h-11 items-center justify-end gap-3 sm:absolute sm:inset-y-0 sm:right-0 sm:pr-4">
@@ -246,6 +270,8 @@ function SearchContent({ initialOptions, initialResult }: SearchProps) {
               <div className="hidden h-6 w-px bg-white/20 sm:block"></div>
               
               <button
+                aria-expanded={showAdvanced}
+                aria-controls="search-filters"
                 onClick={/* 切换高级筛选区域的展开状态。 */ () => setShowAdvanced(!showAdvanced)}
                 className={`relative flex min-h-11 items-center gap-2 rounded-xl px-4 py-2 text-sm font-medium transition-all duration-300 backdrop-blur-2xl ${
                   showAdvanced
@@ -263,7 +289,7 @@ function SearchContent({ initialOptions, initialResult }: SearchProps) {
           </div>
 
           {showAdvanced && (
-            <div className="surface-panel mt-4 origin-top rounded-2xl p-4 transition-all duration-300 animate-in slide-in-from-top-2 fade-in sm:p-6">
+            <div id="search-filters" className="surface-panel mt-4 origin-top rounded-2xl p-4 transition-all duration-300 animate-in slide-in-from-top-2 fade-in sm:p-6">
               <div className="flex flex-col">
                 {BUTTON_CATEGORIES.map(/* 为每个筛选分类生成全部按钮与具体选项，并计算当前选中状态。 */ (category) => {
                   const activeSelections = filters[category.id] || [];
@@ -276,6 +302,7 @@ function SearchContent({ initialOptions, initialResult }: SearchProps) {
                       </span>
                       <div className="flex flex-wrap gap-x-3 gap-y-2 flex-1 items-center">
                         <button
+                          aria-pressed={isAllSelected}
                           onClick={/* 清除当前分类的限制。 */ () => toggleFilter(category.id, "全部", category.multiSelect, category.options)}
                           className={`min-h-10 rounded-lg px-4 py-1.5 text-[13px] transition-all duration-300 backdrop-blur-2xl ${
                             isAllSelected
@@ -291,6 +318,7 @@ function SearchContent({ initialOptions, initialResult }: SearchProps) {
                           return (
                             <button
                               key={option}
+                              aria-pressed={isSelected}
                               onClick={/* 按该分类的单选或多选规则切换当前选项。 */ () => toggleFilter(category.id, option, category.multiSelect, category.options)}
                               className={`group flex min-h-10 items-center gap-1.5 rounded-lg px-4 py-1.5 text-[13px] transition-all duration-300 backdrop-blur-2xl ${
                                 isSelected
@@ -316,6 +344,7 @@ function SearchContent({ initialOptions, initialResult }: SearchProps) {
                   </span>
                   <div className="flex w-full flex-col items-start gap-3 sm:w-auto sm:flex-row sm:items-center sm:gap-4">
                     <button
+                      aria-pressed={!filters.year?.some(Boolean)}
                       onClick={/* 清除起止年份筛选。 */ () => {
                         setFilters(/* 保留其他筛选项，只将年份范围清空。 */ (prev) => ({ ...prev, year: [] }));
                       }}
@@ -377,6 +406,8 @@ function SearchContent({ initialOptions, initialResult }: SearchProps) {
                       return (
                         <button
                           key={option.id}
+                          aria-pressed={isSelected}
+                          aria-label={isSelected ? `${option.label}，${currentOrder === "desc" ? "降序" : "升序"}` : option.label}
                           onClick={/* 切换点击字段的排序方向。 */ () => handleSortToggle(option.id)}
                           className={`group flex min-h-10 items-center gap-2 rounded-lg px-4 py-1.5 text-[13px] transition-all duration-300 backdrop-blur-2xl ${
                             isSelected
@@ -429,6 +460,9 @@ function SearchContent({ initialOptions, initialResult }: SearchProps) {
           {requestError && (
             <div role="alert" className="mb-6 rounded-xl border border-red-400/30 bg-red-500/10 px-4 py-3 text-sm text-red-200">
               {requestError}
+              {!queryTooLong && (
+                <button type="button" className="ml-3 underline underline-offset-4" onClick={/* 清除已完成的查询键，重新请求当前搜索条件。 */ () => setResult({ ...result, key: "", error: null })}>重试</button>
+              )}
             </div>
           )}
 
@@ -494,4 +528,3 @@ export default function SearchClient(props: SearchProps) {
     </Suspense>
   );
 }
-

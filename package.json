@@ -21,17 +21,18 @@
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
     "test:all": "npm run test && npm run test:e2e",
-    "owner:login": "node --env-file=.env.local scripts/prepare-owner-login.mjs"
+    "owner:login": "node --env-file=.env.local scripts/prepare-owner-login.mjs",
+    "postinstall": "node scripts/patch-unocss.mjs && node scripts/patch-next-code-frame.mjs"
   },
   "dependencies": {
-    "@sentry/nextjs": "10.73.0",
+    "@sentry/nextjs": "10.74.0",
     "@supabase/ssr": "0.12.7",
-    "@supabase/supabase-js": "2.115.0",
+    "@supabase/supabase-js": "2.116.0",
     "@vercel/speed-insights": "^2.0.0",
-    "next": "16.3.4",
+    "next": "16.3.5",
     "postcss": "8.5.28",
-    "react": "19.2.8",
-    "react-dom": "19.2.8"
+    "react": "19.3.0",
+    "react-dom": "19.3.0"
   },
   "devDependencies": {
     "@iconify-json/material-symbols": "^1.2.92",
@@ -47,7 +48,7 @@
     "@vitest/coverage-v8": "^4.1.11",
     "axe-core": "4.13.0",
     "eslint": "^9",
-    "eslint-config-next": "16.3.4",
+    "eslint-config-next": "16.3.5",
     "jsdom": "^30.0.1",
     "lighthouse": "^13.4.1",
     "typescript": "^5",

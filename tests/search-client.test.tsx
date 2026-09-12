@@ -76,3 +76,68 @@ test("history restoration updates the query without deleting its page", /* 验�
   expect(new URLSearchParams(window.location.search).get("page")).toBe("2");
   await screen.findByText("找到 62 部作品");
 });
+
+test("failed search can retry the same query and recover", /* 模拟网络失败后恢复，验证重试保留条件且不会重复请求。 */ async () => {
+  window.history.replaceState(null, "", "/search?q=电影");
+  vi.spyOn(console, "error").mockImplementation(/* 静默预期错误。 */ () => {});
+  vi.mocked(fetch).mockRejectedValueOnce(new TypeError("offline"))
+    .mockResolvedValueOnce(new Response(JSON.stringify({ rows: [], total: 0 })));
+  render(<SearchClient initialOptions={options} initialResult={resultFor("?q=旧")} />);
+  fireEvent.click(await screen.findByRole("button", { name: "重试" }));
+  await screen.findByText("找到 0 部作品");
+  expect(fetch).toHaveBeenCalledTimes(2);
+  expect(vi.mocked(fetch).mock.calls[0][0]).toBe(vi.mocked(fetch).mock.calls[1][0]);
+});
+
+test("overlong shared query explains the limit without requesting", /* 超长链接不再触发无效请求，修改后可恢复。 */ async () => {
+  window.history.replaceState(null, "", `/search?q=${"a".repeat(101)}`);
+  render(<SearchClient initialOptions={options} initialResult={resultFor(window.location.search)} />);
+  expect(screen.getByRole("tooltip")).toHaveTextContent("搜索词最多 100 个字符，请缩短后再搜索。");
+  expect(screen.getByRole("textbox", { name: "搜索媒体" })).toHaveAttribute("aria-invalid", "true");
+  expect(fetch).not.toHaveBeenCalled();
+  vi.mocked(fetch).mockResolvedValue(new Response(JSON.stringify({ rows: [], total: 0 })));
+  fireEvent.change(screen.getByRole("textbox", { name: "搜索媒体" }), { target: { value: "电影" } });
+  await screen.findByText("找到 0 部作品");
+});
+
+test("invalid filters show actionable validation feedback", /* 参数错误不再误报为暂时服务故障。 */ async () => {
+  window.history.replaceState(null, "", "/search?q=电影");
+  vi.mocked(fetch).mockResolvedValue(new Response("{}", { status: 400 }));
+  render(<SearchClient initialOptions={options} initialResult={resultFor("?q=旧")} />);
+  expect(await screen.findByRole("alert")).toHaveTextContent("搜索条件无效");
+});
+
+test("filter selection and sort direction are accessible", /* 验证切换后读屏可识别选中状态及排序方向。 */ async () => {
+  window.history.replaceState(null, "", "/search");
+  vi.mocked(fetch).mockImplementation(/* 每次返回独立响应。 */ async () => new Response(JSON.stringify({ rows: [], total: 0 })));
+  render(<SearchClient initialOptions={options} initialResult={resultFor("")} />);
+  const movie = screen.getByRole("button", { name: "电影" });
+  expect(movie).toHaveAttribute("aria-pressed", "false");
+  fireEvent.click(movie);
+  expect(movie).toHaveAttribute("aria-pressed", "true");
+  fireEvent.click(screen.getByRole("button", { name: "日期，降序" }));
+  expect(screen.getByRole("button", { name: "日期，升序" })).toHaveAttribute("aria-pressed", "true");
+  fireEvent.click(screen.getByRole("button", { name: "收起筛选" }));
+  expect(screen.getByRole("button", { name: "高级筛选" })).toHaveAttribute("aria-expanded", "false");
+  await screen.findByText("找到 0 部作品");
+});
+
+
+test("search limit tooltip only appears above 100 characters", /* 正常输入不占提示空间，超长输入不更新地址或发送请求，缩短后隐藏提示。 */ async () => {
+  window.history.replaceState(null, "", "/search");
+  render(<SearchClient initialOptions={options} initialResult={resultFor("")} />);
+  const input = screen.getByRole("textbox", { name: "搜索媒体" });
+  expect(screen.queryByRole("tooltip")).not.toBeInTheDocument();
+  vi.useFakeTimers();
+  try {
+    fireEvent.change(input, { target: { value: "a".repeat(100) } });
+    expect(screen.queryByRole("tooltip")).not.toBeInTheDocument();
+    fireEvent.change(input, { target: { value: "a".repeat(101) } });
+    expect(screen.getByRole("tooltip")).toHaveTextContent("最多 100 个字符");
+    await act(/* 等待防抖窗口，确认没有超长请求。 */ () => vi.advanceTimersByTimeAsync(500));
+    expect(fetch).not.toHaveBeenCalled();
+    expect(window.location.search).toBe("");
+    fireEvent.change(input, { target: { value: "a".repeat(100) } });
+    expect(screen.queryByRole("tooltip")).not.toBeInTheDocument();
+  } finally { vi.useRealTimers(); }
+});

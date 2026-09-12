@@ -47,7 +47,7 @@ export function SearchMediaCard({ item, returnHref }: { item: MediaCard; returnH
         <div className="flex items-center justify-between text-xs">
           <span className="font-medium text-white/60">{item.date ? item.date.substring(0, 4) : "未知"}</span>
           <span className="flex items-center gap-1 font-bold text-white drop-shadow-sm">
-            {item.rating ? <><span className="i-material-symbols-star-rounded inline-block size-3 text-amber-400 drop-shadow-[0_0_5px_rgba(251,191,36,0.6)]" aria-hidden="true" />{Number(item.rating).toFixed(1)}</> : <span className="text-white/50">未评分</span>}
+            {item.rating != null ? <><span className="i-material-symbols-star-rounded inline-block size-3 text-amber-400 drop-shadow-[0_0_5px_rgba(251,191,36,0.6)]" aria-hidden="true" />{Number(item.rating).toFixed(1)}</> : <span className="text-white/50">未评分</span>}
           </span>
         </div>
         <div className="mt-1.5 flex flex-wrap gap-1.5">
