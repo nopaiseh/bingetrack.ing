@@ -11,7 +11,6 @@ export default function UnsavedGuard({ dirty }: { dirty: boolean }) {
       const anchor = target instanceof Element ? target.closest<HTMLAnchorElement>("a[href]") : target?.parentElement?.closest<HTMLAnchorElement>("a[href]");
       if (!anchor) return;
       const href = anchor.getAttribute("href") ?? "";
-      if (anchor.target === "_blank" || href.startsWith("#") || href.startsWith("javascript:")) return;
       if (anchor.target === "_blank" || !href || href.startsWith("#") || anchor.hasAttribute("download")) return;
       if (!event.defaultPrevented && !window.confirm("还有未保存的修改，确定离开吗？")) { event.preventDefault(); event.stopPropagation(); }
     }
