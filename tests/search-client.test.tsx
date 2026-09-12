@@ -6,10 +6,6 @@ import { buildMediaSearchQuery } from "@/lib/api/search-state";
 
 vi.mock("next/navigation", /* 模拟搜索路由，并使搜索参数订阅浏览器地址变化。 */ () => ({
   usePathname: /* 固定返回搜索页路径。 */ () => "/search",
-  useRouter: () => ({
-    push: (href: string) => { window.history.pushState(null, "", href); },
-    replace: (href: string) => { window.history.replaceState(null, "", href); },
-  }),
   useSearchParams: /* 用外部存储订阅读取地址中的查询串，并转换为 URLSearchParams。 */ () => new URLSearchParams(useSyncExternalStore(
     /** 订阅 popstate 事件，让地址变更通知测试中的搜索组件。 */
     (notify) => {

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, Suspense, useCallback, useMemo, useRef } from "react";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import type { MediaCard } from "@/lib/types";
 import { MAX_SEARCH_QUERY_LENGTH } from "@/lib/api/search-limits";
 import type { SearchOptions } from "@/lib/functions/search-options";
@@ -24,7 +24,6 @@ function pageNumbers(current: number, total: number) {
 
 /** 以 URL 为筛选和分页状态来源，复用服务端首屏结果，并管理搜索、防抖请求和交互界面。 */
 function SearchContent({ initialOptions, initialResult }: SearchProps) {
-  const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const searchParamsString = searchParams.toString();
@@ -71,9 +70,9 @@ function SearchContent({ initialOptions, initialResult }: SearchProps) {
     if (nextPage > 1) params.set("page", String(nextPage));
     else params.delete("page");
     const href = params.size > 0 ? `${pathname}?${params.toString()}` : pathname;
-    if (replace) router.replace(href, { scroll: false });
-    else router.push(href, { scroll: false });
-  }, [pathname, router, searchParams]);
+    if (replace) window.history.replaceState(null, "", href);
+    else window.history.pushState(null, "", href);
+  }, [pathname, searchParams]);
 
   // 根据新筛选状态重写 URL，并删除页码以从第一页重新搜索。
   const setFilters = useCallback((
@@ -84,8 +83,8 @@ function SearchContent({ initialOptions, initialResult }: SearchProps) {
     writeFilters(params, nextFilters);
     params.delete("page");
     const href = params.size > 0 ? `${pathname}?${params.toString()}` : pathname;
-    router.replace(href, { scroll: false });
-  }, [filters, pathname, router, searchParams]);
+    window.history.replaceState(null, "", href);
+  }, [filters, pathname, searchParams]);
 
   // 输入词与 URL 不一致时安排 300 毫秒防抖更新；恢复历史 URL 时不重置页码。
   useEffect(() => {
@@ -100,12 +99,12 @@ function SearchContent({ initialOptions, initialResult }: SearchProps) {
       params.delete("page");
       const href = params.size > 0 ? `${pathname}?${params.toString()}` : pathname;
       if (params.toString() !== currentParams) {
-        router.replace(href, { scroll: false });
+        window.history.replaceState(null, "", href);
       }
     }, 300);
     // 清除尚未触发的防抖计时器。
     return () => window.clearTimeout(timeoutId);
-  }, [pathname, query, router, urlQuery, inputTooLong]);
+  }, [pathname, query, urlQuery, inputTooLong]);
 
   // 监听滚动位置以控制回到顶部按钮，并在清理时移除监听器。
   useEffect(() => {
