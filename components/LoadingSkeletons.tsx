@@ -35,7 +35,7 @@ export function PosterRowSkeleton() {
 /** 为媒体目录展示四项统计和两排海报占位。 */
 export function CatalogLoadingSkeleton() {
   return (
-    <div className="container mx-auto max-w-7xl px-4 pb-12 pt-26 sm:px-6 lg:px-8" aria-label="正在加载媒体目录">
+    <section className="container mx-auto max-w-7xl px-4 pb-12 pt-26 sm:px-6 lg:px-8" aria-label="正在加载媒体目录">
       <div className="mb-10 grid grid-cols-2 gap-4 md:mb-12 lg:mb-16 lg:grid-cols-4">
         {Array.from({ length: 4 }, /* 为一项目录统计渲染标签和数字占位。 */ (_, index) => (
           <div key={index} className="surface-card space-y-3 rounded-2xl p-4 sm:p-5 lg:p-6">
@@ -48,14 +48,14 @@ export function CatalogLoadingSkeleton() {
         <PosterRowSkeleton />
         <PosterRowSkeleton />
       </div>
-    </div>
+    </section>
   );
 }
 
 /** 为首页标题、统计、图表和媒体列表展示加载骨架。 */
 export function HomeLoadingSkeleton() {
   return (
-    <div className="container mx-auto flex max-w-7xl flex-col gap-8 px-4 pb-12 pt-24 sm:px-6 lg:px-8" aria-label="正在加载首页">
+    <section className="container mx-auto flex max-w-7xl flex-col gap-8 px-4 pb-12 pt-24 sm:px-6 lg:px-8" aria-label="正在加载首页">
       <SkeletonBlock className="h-14 w-72 max-w-full" />
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
         {Array.from({ length: 3 }, /* 为首页统计区域生成一个占位块。 */ (_, index) => <SkeletonBlock key={index} className="h-40" />)}
@@ -65,14 +65,14 @@ export function HomeLoadingSkeleton() {
         <SkeletonBlock className="h-72" />
       </div>
       <PosterRowSkeleton />
-    </div>
+    </section>
   );
 }
 
 /** 为媒体详情的海报、标题、属性和底部内容展示加载骨架。 */
 export function DetailLoadingSkeleton() {
   return (
-    <div className="container mx-auto max-w-7xl px-4 pb-12 pt-24 sm:px-6 lg:px-8" aria-label="正在加载媒体详情">
+    <section className="container mx-auto max-w-7xl px-4 pb-12 pt-24 sm:px-6 lg:px-8" aria-label="正在加载媒体详情">
       <div className="flex flex-col gap-12 lg:flex-row lg:gap-20">
         <div className="w-full shrink-0 space-y-6 lg:w-72">
           <SkeletonBlock className="h-10 w-28" />
@@ -85,7 +85,7 @@ export function DetailLoadingSkeleton() {
         </div>
       </div>
       <SkeletonBlock className="mt-12 h-48 w-full" />
-    </div>
+    </section>
   );
 }
 
@@ -137,7 +137,7 @@ export function AdminLoadingSkeleton() {
 export function SeasonDetailLoadingSkeleton() {
   return (
     <div className="min-h-screen pb-16 pt-24">
-      <div className="container mx-auto max-w-7xl space-y-6 px-4 sm:px-6 lg:px-8" aria-label="正在加载本季剧集">
+      <section className="container mx-auto max-w-7xl space-y-6 px-4 sm:px-6 lg:px-8" aria-label="正在加载本季剧集">
         <SkeletonBlock className="h-10 w-44" />
         <div className="surface-panel flex flex-col gap-6 rounded-3xl p-5 sm:p-6 lg:flex-row lg:p-8">
           <SkeletonBlock className="aspect-2/3 w-full max-w-72 shrink-0 self-center lg:w-72 lg:self-start" />
@@ -165,7 +165,7 @@ export function SeasonDetailLoadingSkeleton() {
             </div>
           ))}
         </div>
-      </div>
+      </section>
     </div>
   );
 }

@@ -1,4 +1,5 @@
 import type { FetchMediaListOptions } from "@/lib/types";
+import { MAX_SEARCH_QUERY_LENGTH } from "./search-limits";
 
 export class ApiValidationError extends Error {
   /** 创建具名参数校验错误，供 API 区分客户端输入错误与服务端故障。 */
@@ -55,7 +56,7 @@ function parseYear(value: string | null, name: string): string | undefined {
 // 集中校验 API 筛选参数；保留合法搜索文本，表达式转义交给查询层处理。
 export function parseMediaSearchParams(searchParams: URLSearchParams): FetchMediaListOptions {
   const q = searchParams.get("q")?.trim() || undefined;
-  if (q && q.length > 100) throw new ApiValidationError("Search query is too long");
+  if (q && q.length > MAX_SEARCH_QUERY_LENGTH) throw new ApiValidationError("Search query is too long");
 
   const startYear = parseYear(searchParams.get("startYear"), "start year");
   const endYear = parseYear(searchParams.get("endYear"), "end year");

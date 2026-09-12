@@ -37,7 +37,7 @@ function ItemCard({ item, type, eager, highPriority }: { item: MediaCard; type: 
               : item.date ? item.date.substring(0, 4) : "未知"}
           </span>
           <span className="text-white font-bold flex items-center gap-1 drop-shadow-sm">
-            {item.rating ? (
+            {item.rating != null ? (
               <>
                 <span className="i-material-symbols-star-rounded inline-block size-3 text-amber-400 drop-shadow-[0_0_5px_rgba(251,191,36,0.6)]" aria-hidden="true" />
                 {Number(item.rating).toFixed(1)}

@@ -1,5 +1,7 @@
 "use client";
 
+import { MAX_SEARCH_QUERY_LENGTH } from "@/lib/api/search-limits";
+
 import { useNavbarAuth } from "@/lib/auth/use-navbar-auth";
 import { useState } from "react";
 import Link from "next/link";
@@ -100,6 +102,8 @@ export default function Navbar() {
               name="q"
               type="text"
               placeholder="搜索"
+              maxLength={MAX_SEARCH_QUERY_LENGTH}
+              title={`搜索词最多 ${MAX_SEARCH_QUERY_LENGTH} 个字符`}
               className="surface-control text-white text-sm rounded-full
               block w-36 focus:w-56 sm:w-44 lg:focus:w-56 pl-10 pr-4 py-2 transition-all duration-500 ease-out
               placeholder-white/50 outline-none"
@@ -174,6 +178,8 @@ export default function Navbar() {
               name="q"
               type="text"
               placeholder="搜索"
+              maxLength={MAX_SEARCH_QUERY_LENGTH}
+              title={`搜索词最多 ${MAX_SEARCH_QUERY_LENGTH} 个字符`}
               className="surface-control text-white text-sm rounded-xl block w-full pl-10 pr-4 py-2.5 outline-none placeholder-white/50 transition-all duration-300"
             />
           </form>
