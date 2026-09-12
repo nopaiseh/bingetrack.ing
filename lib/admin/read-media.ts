@@ -12,18 +12,24 @@ export async function readEditableMedia(db: SupabaseClient, id: string): Promise
     db.from("media_genres").select("genres(name)").eq("media_item_id", id),
     db.from("media_languages").select("languages(name)").eq("media_item_id", id),
     db.from("media_regions").select("regions(name)").eq("media_item_id", id),
+    db.from("media_item_series").select("media_series(name)").eq("media_item_id", id),
     db.from("media_credits").select("role,people(name)").eq("media_item_id", id).order("credit_order"),
   ]);
   if (results.some(/* 任一失败均禁止继续编辑。 */ result => result.error)) throw new Error("无法完整读取媒体资料，请重试。");
-  const [media, tracking, season, episode, genres, languages, regions, credits] = results;
+  const [media, tracking, season, episode, genres, languages, regions, collections, credits] = results;
   if (!media.data) return null;
   /** Supabase 多对一关联在此按数据库外键返回单个对象。 */
   function names(data: unknown, key: string, role?: string): string[] {
-    return (data as Record<string, unknown>[]).filter(/* 人物关联按角色分别展示。 */ row => !role || row.role === role).map(/* 提取关联对象名称。 */ row => (row[key] as { name: string }).name);
+    if (!Array.isArray(data)) return [];
+    return data
+      .filter(/* 人物关联按角色分别展示。 */ (row): row is Record<string, unknown> => Boolean(row && typeof row === "object" && (!role || (row as Record<string, unknown>).role === role)))
+      .map(/* 提取关联对象名称并过滤无效条目。 */ row => (row[key] as { name?: string } | null | undefined)?.name)
+      .filter((name): name is string => typeof name === "string" && name.length > 0);
   }
   return { ...media.data, parent_id: season.data?.series_id ?? episode.data?.season_id ?? null,
     number: season.data?.season_number ?? episode.data?.episode_number ?? null,
     status: tracking.data?.status ?? "want_to_watch", rating: tracking.data?.rating ?? null,
     genres: names(genres.data, "genres"), languages: names(languages.data, "languages"), regions: names(regions.data, "regions"),
+    collections: names(collections.data, "media_series"),
     actors: names(credits.data, "people", "actor"), directors: names(credits.data, "people", "director") } as MediaInput;
 }

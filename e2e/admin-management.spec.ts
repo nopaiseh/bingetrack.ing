@@ -54,11 +54,29 @@ test("站长初始化、影视季集管理、公开更新、退出与非站长�
     await initialize(ownerEmail);
     await expect(page.getByRole("heading", { name: "Passkey 设置" })).toBeVisible();
 
+    // 八类导航与关联资料可独立创建、修改和删除。
+    for (const [kind, label] of [["people", "人物"], ["collections", "系列"], ["genres", "类型"], ["regions", "地区"]]) {
+      await page.goto(`/manage/references/${kind}/new`);
+      await page.getByLabel("名称", { exact: true }).fill(`${prefix} ${kind}`);
+      await page.getByRole("button", { name: "保存资料", exact: true }).click();
+      await expect(page.getByRole("status").filter({ hasText: "保存成功" })).toBeVisible();
+      await page.getByLabel("名称", { exact: true }).fill(`${prefix} ${kind} renamed`);
+      await page.getByRole("button", { name: "保存资料", exact: true }).click();
+      await expect(page.getByRole("heading", { name: `编辑：${prefix} ${kind} renamed` })).toBeVisible();
+      await page.getByText(`删除${label}`, { exact: true }).click();
+      await page.getByLabel("输入完整名称以确认删除").fill("wrong name");
+      await page.getByRole("button", { name: "永久删除", exact: true }).click();
+      await expect(page.getByRole("alert").filter({ hasText: "名称不匹配" })).toBeVisible();
+      await page.getByLabel("输入完整名称以确认删除").fill(`${prefix} ${kind} renamed`);
+      await page.getByRole("button", { name: "永久删除", exact: true }).click();
+      await expect(page).toHaveURL(new RegExp(`/manage/references/${kind}\\?deleted=1$`));
+    }
     await page.goto("/manage/media/new");
     await page.getByLabel("标题", { exact: true }).fill(`${prefix} movie`);
     await page.getByLabel("观看状态").selectOption("watched");
     await page.getByLabel("评分（0–10，可留空）").fill("8.5");
     await page.getByLabel("类型标签").fill(`${prefix} genre`);
+    await page.getByRole("button", { name: `新增并关联「${prefix} genre」` }).click();
     const movie = await save();
     await page.getByLabel("标题", { exact: true }).fill(`${prefix} updated movie`);
     await page.getByLabel("评分（0–10，可留空）").fill("0");
@@ -71,20 +89,21 @@ test("站长初始化、影视季集管理、公开更新、退出与非站长�
     await page.goto("/manage/media/new?type=tv_series");
     await page.getByLabel("标题", { exact: true }).fill(`${prefix} series`);
     const series = await save();
-    await page.getByRole("link", { name: "新增季", exact: true }).click();
+    await page.getByRole("link", { name: "新增剧季", exact: true }).click();
     await expect(page.getByRole("heading", { name: "新增媒体", exact: true })).toBeVisible();
-    await expect(page.getByLabel("所属剧集 ID", { exact: false })).toHaveValue(series);
+    await expect(page.locator('input[name="parent_id"]')).toHaveValue(series);
     await page.getByLabel("标题", { exact: true }).fill(`${prefix} season`);
     await page.getByLabel("季编号（特别篇可填 0）").fill("1");
     const season = await save();
-    await page.getByRole("link", { name: "新增集", exact: true }).click();
+    await page.getByRole("link", { name: "新增剧集", exact: true }).click();
     await expect(page.getByRole("heading", { name: "新增媒体", exact: true })).toBeVisible();
-    await expect(page.getByLabel("所属季 ID", { exact: false })).toHaveValue(season);
+    await expect(page.locator('input[name="parent_id"]')).toHaveValue(season);
     await page.getByLabel("标题", { exact: true }).fill(`${prefix} episode`);
     await page.getByLabel("集编号", { exact: true }).fill("1");
     await page.getByLabel("观看状态").selectOption("watched");
     const episode = await save();
     await page.goto(`/manage/media/${series}`);
+    await page.getByText("删除条目", { exact: true }).click();
     await page.getByLabel("输入完整标题以确认删除").fill("incorrect title");
     await page.getByRole("button", { name: "永久删除", exact: true }).click();
     await expect(page.getByRole("alert").filter({ hasText: "标题不匹配" })).toBeVisible();
@@ -103,6 +122,9 @@ test("站长初始化、影视季集管理、公开更新、退出与非站长�
   } finally {
     const cleanup = await db.from("media_items").delete().like("title", `${prefix}%`);
     expect(cleanup.error).toBeNull();
+    for (const table of ["people", "media_series", "regions", "genres"]) {
+      expect((await db.from(table).delete().like("name", `${prefix}%`)).error).toBeNull();
+    }
     const genreCleanup = await db.from("genres").delete().eq("name", `${prefix} genre`);
     expect(genreCleanup.error).toBeNull();
     for (const id of userIds) {

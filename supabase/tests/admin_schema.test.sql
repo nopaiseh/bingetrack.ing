@@ -59,6 +59,33 @@ select is((select count(*)::integer from public.media_items where id in (select 
 select is((select count(*)::integer from public.tracking where media_item_id in (select id from admin_test_ids where name in ('series','season','episode'))),0,'delete removes descendant tracking');
 select is((select count(*)::integer from public.media_items where id=(select id from admin_test_ids where name='movie')),1,'unrelated movie survives series deletion');
 
+-- 八类管理补充：系列和关联资料不能绕过站长权限，失败须整次回滚。
+select ok(not has_table_privilege('anon','public.media_series','INSERT,UPDATE,DELETE'), 'anonymous cannot write collections');
+select ok(not has_function_privilege('anon','public.manage_save_media(jsonb)','EXECUTE'), 'anonymous cannot call catalog save');
+select lives_ok($$select public.manage_save_media(pg_temp.admin_payload('movie','Catalog movie') || '{"collections":["Catalog collection"],"actors":["Catalog person"],"genres":["Catalog genre"],"regions":["Catalog region"]}')$$, 'owner creates collection and all reference kinds with media');
+select is((select count(*)::integer from public.media_item_series join public.media_series on series_id=media_series.id where name='Catalog collection'),1,'collection membership saved');
+select lives_ok($$update public.media_item_series set position=9 where series_id=(select id from public.media_series where name='Catalog collection')$$,'owner reorders collection member');
+select lives_ok($$select public.manage_save_media(pg_temp.admin_payload('movie','Catalog movie') || jsonb_build_object('id',(select id from public.media_items where title='Catalog movie'),'collections',jsonb_build_array('Catalog collection'),'actors',jsonb_build_array('Catalog person'),'genres',jsonb_build_array('Catalog genre'),'regions',jsonb_build_array('Catalog region')))$$,'owner updates existing media with collection');
+select is((select position from public.media_item_series where series_id=(select id from public.media_series where name='Catalog collection')),9,'media save preserves collection order');
+select throws_ok($$select public.manage_save_media(pg_temp.admin_payload('movie','Catalog rollback') || '{"collections":[""]}')$$,'22023',null,'invalid collection aborts transaction');
+select is((select count(*)::integer from public.media_items where title='Catalog rollback'),0,'invalid collection leaves no media or tracking');
+select lives_ok($$update public.media_series set name='Catalog renamed' where name='Catalog collection'$$,'owner renames collection');
+select is((select count(*)::integer from public.media_item_series join public.media_series on series_id=media_series.id where name='Catalog renamed'),1,'rename preserves membership');
+do $$ begin perform set_config('request.jwt.claim.sub','fa000000-0000-4000-8000-000000000002',true); end $$;
+select throws_ok($$insert into public.media_series(name) values('Unauthorized collection')$$,'42501',null,'nonowner cannot create collection');
+select throws_ok($$select public.manage_save_media(pg_temp.admin_payload('movie','Unauthorized catalog') || '{"collections":[]}')$$,'42501',null,'nonowner cannot use wrapper');
+select lives_ok($$delete from public.media_series where name='Catalog renamed'$$,'nonowner delete is filtered');
+select is((select count(*)::integer from public.media_series where name='Catalog renamed'),1,'nonowner cannot delete collection');
+select lives_ok($$update public.media_item_series set position=99 where series_id=(select id from public.media_series where name='Catalog renamed')$$,'nonowner member update is filtered');
+select is((select position from public.media_item_series where series_id=(select id from public.media_series where name='Catalog renamed')),9,'nonowner cannot reorder collection');
+do $$ begin perform set_config('request.jwt.claim.sub','fa000000-0000-4000-8000-000000000001',true); end $$;
+select is((select count(*)::integer from public.media_credits join public.media_items on media_item_id=media_items.id where title='Catalog movie'),1,'person remains associated before deletion');
+select lives_ok($$delete from public.media_series where name='Catalog renamed'$$,'owner deletes collection');
+select lives_ok($$delete from public.people where name='Catalog person'; delete from public.genres where name='Catalog genre'; delete from public.regions where name='Catalog region'$$,'owner deletes reference data');
+select is((select count(*)::integer from public.media_credits join public.media_items on media_item_id=media_items.id where title='Catalog movie'),0,'reference deletion removes links');
+select is((select count(*)::integer from public.media_items where title='Catalog movie'),1,'deleting reference data preserves movie');
+select is((select count(*)::integer from public.tracking join public.media_items on media_item_id=media_items.id where title='Catalog movie'),1,'deleting reference data preserves tracking');
+
 reset role;
 set local role anon;
 select lives_ok($$select id,title from public.media_items limit 1$$,'public browsing still works');

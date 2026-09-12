@@ -1,6 +1,6 @@
 import { isMediaId } from "@/lib/functions/media-id";
 
-export const mediaTypes = { movie: "电影", tv_series: "剧集", tv_season: "季", tv_episode: "集" } as const;
+export const mediaTypes = { movie: "电影", tv_series: "电视剧", tv_season: "剧季", tv_episode: "剧集" } as const;
 export type ManagedMediaType = keyof typeof mediaTypes;
 export type MediaInput = {
   id: string | null;
@@ -20,6 +20,7 @@ export type MediaInput = {
   regions: string[];
   actors: string[];
   directors: string[];
+  collections?: string[];
 };
 
 /** 严格检查服务端表单，公开查询的筛选语义不受影响。 */
@@ -69,5 +70,5 @@ export function parseMediaForm(form: FormData): MediaInput {
   const rating = numeric("rating", 10);
   if (rating !== null && Math.abs(rating * 10 - Math.round(rating * 10)) > 1e-8) throw new Error("评分最多保留一位小数。");
   return { id, type: type as ManagedMediaType, title, alternate_title: string("alternate_title"), summary: string("summary", 20000), cover_url, release_date, runtime: numeric("runtime", 100000), parent_id, number, status, rating,
-    genres: names("genres"), languages: names("languages"), regions: names("regions"), actors: names("actors"), directors: names("directors") };
+    genres: names("genres"), languages: names("languages"), regions: names("regions"), actors: names("actors"), directors: names("directors"), collections: names("collections") };
 }
