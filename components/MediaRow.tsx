@@ -17,16 +17,16 @@ function ItemCard({ item, type, eager, highPriority }: { item: MediaCard; type: 
             fill
             className="object-cover transition-transform duration-500 group-hover:scale-110"
             sizes="(max-width: 639px) 144px, 176px"
-            loading={eager ? "eager" : "lazy"}
-            fetchPriority={highPriority ? "high" : undefined}
+            priority={highPriority}
+            loading={highPriority ? undefined : eager ? "eager" : "lazy"}
           />
         ) : (
-          <span className="i-material-symbols-image-outline-rounded inline-block size-10 text-white/20 drop-shadow-md" aria-hidden="true" />
+          <span className="i-material-symbols-image-outline-rounded inline-block size-10 text-white/30 drop-shadow-md" aria-hidden="true" />
         )}
       </div>
       
       <div className="flex flex-col space-y-1.5 grow px-3 py-2.5 min-w-0">
-        <h3 className="text-sm font-bold text-white truncate drop-shadow-[0_0_8px_rgba(255,255,255,0.2)] group-hover:text-red-300 group-hover:drop-shadow-[0_0_5px_rgba(248,113,113,0.6)] transition-colors duration-300" title={item.title}>
+        <h3 className="text-sm font-bold text-white truncate drop-shadow-[0_0_8px_rgba(255,255,255,0.2)] group-hover:text-red-400 group-hover:drop-shadow-[0_0_5px_rgba(248,113,113,0.6)] transition-colors duration-300" title={item.title}>
           {item.title}
         </h3>
 
@@ -39,7 +39,7 @@ function ItemCard({ item, type, eager, highPriority }: { item: MediaCard; type: 
           <span className="text-white font-bold flex items-center gap-1 drop-shadow-sm">
             {item.rating ? (
               <>
-                <span className="i-material-symbols-star-rounded inline-block size-3 text-yellow-500/90 drop-shadow-[0_0_5px_rgba(234,179,8,0.6)]" aria-hidden="true" />
+                <span className="i-material-symbols-star-rounded inline-block size-3 text-amber-400 drop-shadow-[0_0_5px_rgba(251,191,36,0.6)]" aria-hidden="true" />
                 {Number(item.rating).toFixed(1)}
               </>
             ) : (
@@ -53,7 +53,7 @@ function ItemCard({ item, type, eager, highPriority }: { item: MediaCard; type: 
             <span
               key={`tag-${i}`}
               title={tag} 
-              className="surface-muted w-fit min-w-9 shrink truncate rounded-md border border-white/10 px-1.5 py-0.5 text-center text-[9px] font-medium tracking-wide text-white/70 backdrop-blur-md transition-all duration-300 group-hover:border-red-400/30 group-hover:bg-red-500/15 group-hover:text-red-300 group-hover:shadow-[0_4px_10px_rgba(248,113,113,0.2)] sm:text-[10px]"
+              className="surface-muted w-fit min-w-9 shrink truncate rounded-md border border-white/10 px-1.5 py-0.5 text-center text-[9px] font-medium tracking-wide text-white/70 backdrop-blur-md transition-all duration-300 group-hover:border-red-400/30 group-hover:bg-red-500/15 group-hover:text-red-400 group-hover:shadow-[0_4px_10px_rgba(248,113,113,0.2)] sm:text-[10px]"
             >
               {tag}
             </span>

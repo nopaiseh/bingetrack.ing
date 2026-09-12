@@ -33,6 +33,7 @@ const nextConfig: NextConfig = {
     NEXT_PUBLIC_SENTRY_ENVIRONMENT: resolveSentryEnvironment(process.env),
   },
   images: {
+    formats: ["image/avif", "image/webp"],
     qualities: [25, 75],
     remotePatterns: [
       {

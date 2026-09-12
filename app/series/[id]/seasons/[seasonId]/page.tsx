@@ -34,15 +34,15 @@ function EpisodeCard({ episode }: { episode: EpisodeInfo }) {
   const watched = episode.status === "watched";
 
   return (
-    <article className="surface-card interactive-card group flex flex-col overflow-hidden rounded-2xl sm:flex-row">
-      <div className="image-overlay relative aspect-video w-full shrink-0 overflow-hidden sm:w-64 sm:aspect-16/10">
+    <article className="surface-card interactive-card group flex flex-col overflow-hidden rounded-2xl sm:h-64 sm:flex-row">
+      <div className="image-overlay relative aspect-video w-full shrink-0 overflow-hidden sm:aspect-auto sm:h-full sm:w-80 md:w-96">
         {episode.coverUrl ? (
           <Image
             src={episode.coverUrl}
             alt=""
             fill
-            className="object-cover"
-            sizes="(min-width: 1024px) 384px, calc(100vw - 48px)"
+            className="object-cover transition-transform duration-500 group-hover:scale-105"
+            sizes="(min-width: 768px) 384px, (min-width: 640px) 320px, calc(100vw - 48px)"
           />
         ) : (
           <div className="flex h-full items-center justify-center text-white/20">
@@ -57,10 +57,12 @@ function EpisodeCard({ episode }: { episode: EpisodeInfo }) {
       <div className="flex min-w-0 flex-1 flex-col p-4 sm:p-5">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="min-w-0 flex-1">
-            <h2 className="font-bold text-white/90 transition-colors group-hover:text-red-300">{episode.title}</h2>
+            <h2 className="line-clamp-2 font-bold text-white/90 transition-colors group-hover:text-red-400" title={episode.title}>
+              {episode.title}
+            </h2>
           </div>
           <span className={`inline-flex shrink-0 items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium ${
-            watched ? "border-emerald-400/25 bg-emerald-400/10 text-emerald-300" : "surface-muted border-white/10 text-white/60"
+            watched ? "border-emerald-500/30 bg-emerald-500/15 text-emerald-400" : "surface-muted border-white/10 text-white/60"
           }`}>
             {watched ? <span className="i-material-symbols-check-circle-rounded inline-block size-3" aria-hidden="true" /> : <span className="i-material-symbols-visibility-rounded inline-block size-3" aria-hidden="true" />}
             {watched ? "已看" : "未看"}
@@ -74,7 +76,9 @@ function EpisodeCard({ episode }: { episode: EpisodeInfo }) {
         </div>
 
         {episode.summary ? (
-          <p className="mt-3 whitespace-pre-line text-sm leading-relaxed text-white/60">{episode.summary}</p>
+          <p className="mt-3 line-clamp-4 whitespace-pre-line text-sm leading-relaxed text-white/60 sm:line-clamp-5 md:line-clamp-6" title={episode.summary}>
+            {episode.summary}
+          </p>
         ) : <p className="mt-3 text-sm text-white/35">暂无简介。</p>}
       </div>
     </article>
@@ -136,7 +140,7 @@ export default async function SeasonPage({
     : 0;
 
   return (
-    <div className="min-h-screen pb-16 pt-24 text-neutral-200">
+    <div className="min-h-screen pb-16 pt-24 text-white/90">
       <div className="container mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <Link href={`/series/${id}`} className="surface-muted interactive-control mb-6 inline-flex items-center gap-2 rounded-xl border border-white/10 px-4 py-2 text-sm text-white/60 backdrop-blur-xl">
           <span className="i-material-symbols-chevron-left-rounded inline-block size-4" aria-hidden="true" /> 返回《{series.title}》
@@ -148,7 +152,7 @@ export default async function SeasonPage({
               {seasonData.season.coverUrl ? (
                 <Image src={seasonData.season.coverUrl} alt={`${seasonData.season.title} 海报`} fill priority className="object-cover" sizes="(max-width: 362px) calc(100vw - 74px), 288px" />
               ) : (
-                <div className="flex h-full items-center justify-center text-white/25"><span className="i-material-symbols-image-outline-rounded inline-block size-9" aria-hidden="true" /></div>
+                <div className="flex h-full items-center justify-center text-white/30"><span className="i-material-symbols-image-outline-rounded inline-block size-9" aria-hidden="true" /></div>
               )}
             </div>
             <div className="min-w-0 flex-1">
@@ -164,7 +168,7 @@ export default async function SeasonPage({
               {previousSeason && <Link href={`/series/${id}/seasons/${previousSeason.id}`} className="surface-recessed interactive-control rounded-xl border border-white/10 p-2.5 text-white/60" aria-label={`上一季：第 ${previousSeason.seasonNumber} 季`}><span className="i-material-symbols-chevron-left-rounded inline-block size-4" aria-hidden="true" /></Link>}
               <div className="surface-recessed flex max-w-72 gap-1 overflow-x-auto rounded-xl border border-white/10 p-1">
                 {seasons.map(/* 为一个季渲染切换链接，并突出当前季。 */ (season) => (
-                  <Link key={season.id} href={`/series/${id}/seasons/${season.id}`} className={`shrink-0 rounded-lg px-3 py-1.5 text-xs transition-colors ${season.id === seasonId ? "bg-red-500/20 text-red-300" : "text-white/60 hover:bg-white/10 hover:text-white"}`}>
+                  <Link key={season.id} href={`/series/${id}/seasons/${season.id}`} className={`shrink-0 rounded-lg px-3 py-1.5 text-xs transition-colors ${season.id === seasonId ? "surface-active border border-red-400/40 font-bold text-red-400 shadow-[0_4px_10px_rgba(248,113,113,0.2)]" : "text-white/60 hover:bg-white/10 hover:text-white"}`}>
                     第 {season.seasonNumber} 季
                   </Link>
                 ))}
@@ -228,7 +232,7 @@ export default async function SeasonPage({
           <nav className="mt-10 flex flex-wrap items-center justify-center gap-2" aria-label="剧集分页">
             {page > 1 && <Link href={seasonHref({ page: page - 1 })} className="surface-muted interactive-control rounded-xl border border-white/10 p-2.5 text-white/60" aria-label="上一页"><span className="i-material-symbols-chevron-left-rounded inline-block size-4" aria-hidden="true" /></Link>}
             {pageNumbers(page, totalPages).map(/* 生成保留当前筛选条件的页码链接，并标记当前页。 */ (pageNumber) => (
-              <Link key={pageNumber} href={seasonHref({ page: pageNumber })} className={`min-w-10 rounded-xl border px-3 py-2 text-center text-sm ${pageNumber === page ? "surface-active border-red-400/30 text-red-300" : "surface-muted border-white/10 text-white/50 hover:bg-white/10 hover:text-white"}`}>
+              <Link key={pageNumber} href={seasonHref({ page: pageNumber })} className={`min-w-10 rounded-xl border px-3 py-2 text-center text-sm ${pageNumber === page ? "surface-active border-red-400/40 text-red-400 font-bold shadow-[0_4px_10px_rgba(248,113,113,0.2)]" : "surface-muted border-white/10 text-white/70 hover:bg-white/10 hover:text-white"}`}>
                 {pageNumber}
               </Link>
             ))}

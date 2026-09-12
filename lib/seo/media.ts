@@ -15,7 +15,7 @@ export function getMediaDescription(media: Media): string {
 }
 
 /** 按媒体类型选取详情栏目，并对媒体 ID 编码形成规范路径。 */
-export function getMediaPath(media: Media): string {
+function getMediaPath(media: Media): string {
   const section = media.type === "series" ? "series" : "movies";
   return `/${section}/${encodeURIComponent(media.id)}`;
 }

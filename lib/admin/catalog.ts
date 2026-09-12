@@ -4,6 +4,7 @@ export const referenceTypes = {
   collections: { label: "系列", table: "media_series", link: "media_item_series", key: "series_id", alternate: true },
   genres: { label: "类型", table: "genres", link: "media_genres", key: "genre_id", alternate: false },
   regions: { label: "地区", table: "regions", link: "media_regions", key: "region_id", alternate: false },
+  languages: { label: "语言", table: "languages", link: "media_languages", key: "language_id", alternate: false },
 } as const;
 export type ReferenceType = keyof typeof referenceTypes;
 export type Choice = { id: string; name: string; detail?: string; cover_url?: string | null };

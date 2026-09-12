@@ -73,4 +73,11 @@ describe("关联资料服务端操作", () => {
     const result = await searchChoices("tv_season", "query");
     expect(result.choices[0].detail).toBe("未知剧集 · 第 1 季");
   });
+  it("支持对 languages（语言）进行新增与保存", async () => {
+    chain.single.mockResolvedValue({ data: { id }, error: null });
+    const result = await saveReference({}, form({ kind: "languages", name: "英语", return_list: "1" }));
+    expect(from).toHaveBeenCalledWith("languages");
+    expect(chain.insert).toHaveBeenCalledWith({ name: "英语" });
+    expect(result).toEqual({ saved: true });
+  });
 });

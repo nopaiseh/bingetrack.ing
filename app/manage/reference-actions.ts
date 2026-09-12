@@ -11,8 +11,8 @@ import type { ActionResult } from "./actions";
 export async function searchChoices(kind: string, term: string): Promise<{ choices: Choice[]; error?: string }> {
   const { db } = await requireOwner();
   const media = ["movie", "tv_series", "tv_season", "tv_episode", "media"].includes(kind);
-  if (!media && kind !== "languages" && !isReferenceType(kind)) return { choices: [], error: "不支持的资料类别。" };
-  const table = media ? "media_items" : kind === "languages" ? "languages" : referenceTypes[kind as keyof typeof referenceTypes].table;
+  if (!media && !isReferenceType(kind)) return { choices: [], error: "不支持的资料类别。" };
+  const table = media ? "media_items" : referenceTypes[kind as keyof typeof referenceTypes].table;
   let query = db.from(table).select(media ? "id,title,type,cover_url,season:tv_seasons!tv_seasons_id_fkey(season_number,parent:media_items!tv_seasons_series_id_fkey(title))" : "id,name").ilike(media ? "title" : "name", `%${term.trim().slice(0, 200)}%`).order(media ? "title" : "name").order("id").limit(20);
   if (media) query = kind === "media" ? query.in("type", ["movie", "tv_series", "tv_season", "tv_episode"]) : query.eq("type", kind);
   const { data, error } = await query;

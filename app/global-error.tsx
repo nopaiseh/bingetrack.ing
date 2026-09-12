@@ -11,7 +11,7 @@ export default function GlobalError({ error }: { error: Error & { digest?: strin
 
   return (
     <html lang="zh-CN">
-      <body className="min-h-screen bg-neutral-950 text-neutral-200">
+      <body className="min-h-screen bg-[var(--canvas)] text-white/90">
         <main className="mx-auto flex min-h-screen max-w-3xl items-center justify-center px-6 py-24">
           <section className="surface-muted w-full rounded-2xl border border-red-400/20 p-8 text-center">
             <p className="font-mono text-sm font-bold tracking-widest text-red-400">暂时无法加载</p>
@@ -22,7 +22,7 @@ export default function GlobalError({ error }: { error: Error & { digest?: strin
             <button
               type="button"
               onClick={/* 重新加载整个页面以重试根级渲染。 */ () => window.location.reload()}
-              className="surface-active mt-7 inline-flex items-center gap-2 rounded-xl border border-red-400/40 px-5 py-3 text-sm font-bold text-red-300"
+              className="surface-active mt-7 inline-flex items-center gap-2 rounded-xl border border-red-400/40 px-5 py-3 text-sm font-bold text-red-400 transition-colors hover:bg-red-500/25"
             >
               <span className="i-material-symbols-refresh-rounded size-4 inline-block" aria-hidden="true" />
               重新加载

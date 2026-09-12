@@ -34,8 +34,10 @@ export function useNavbarAuth() {
         stopIdle?.();
         currentUser = id;
         if (id) stopIdle = watchIdleSession(id, () => {
-          // 完整导航清除管理页内存与路由缓存，并通过服务端清理会话。
-          window.location.replace("/auth/logout");
+          // 通过 POST 接口清理会话，再完整导航回首页以清除管理页内存与路由缓存。
+          void fetch("/auth/logout", { method: "POST" }).finally(() => {
+            window.location.replace("/");
+          });
         });
       }
       if (id) {
