@@ -1,31 +1,30 @@
-import { getSupabasePublicServer } from "@/lib/supabase/public-server";
 import HomeDashboard from "@/app/HomeDashboard";
-import { Summary } from "@/lib/types";
-import { fetchMediaDistributionsServer, fetchTopMediaServer } from "@/lib/functions/media-repo";
+import {
+  getCachedReleaseYearStats,
+  getCachedTopMediaServer,
+  getCachedMediaDistributionsServer,
+} from "@/lib/functions/cached-media";
 
 export const revalidate = 60;
 
 /** 并行读取年度统计、电影和电视剧榜单及分布数据，组成首页看板的初始数据。 */
 export default async function HomePage() {
-  const db = getSupabasePublicServer();
-  const [summaryRes, topMovies, topSeries, distributions] = await Promise.all([
-    db.from("release_year_stats").select("*").order("release_year", { ascending: false }),
-    fetchTopMediaServer("movie", null, 10),
-    fetchTopMediaServer("tv_series", null, 10),
-    fetchMediaDistributionsServer(),
+  const [summary, topMovies, topSeries, distributions] = await Promise.all([
+    getCachedReleaseYearStats(),
+    getCachedTopMediaServer("movie", null, 10),
+    getCachedTopMediaServer("tv_series", null, 10),
+    getCachedMediaDistributionsServer(),
   ]);
-
-  const summary = (summaryRes?.data as Summary[] | null) ?? [];
-  const error = summaryRes?.error ?? null;
-
-  if (error) {
-    console.error("Failed to fetch release year stats:", error);
-    throw new Error("Failed to fetch dashboard summary", { cause: error });
-  }
 
   return (
     <div>
-      <HomeDashboard summary={summary} topMovies={topMovies ?? []} topSeries={topSeries ?? []} distributions={distributions} />
+      <HomeDashboard
+        summary={summary}
+        topMovies={topMovies ?? []}
+        topSeries={topSeries ?? []}
+        distributions={distributions}
+      />
     </div>
   );
 }
+

@@ -3,7 +3,7 @@ import Link from "next/link";
 /** 展示未找到页面提示，并提供返回首页的入口。 */
 export default function NotFound() {
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen w-full bg-[#0a0a0a] text-white">
+    <div className="flex flex-col items-center justify-center min-h-screen w-full bg-[var(--canvas)] text-white">
       
       <div className="flex flex-col items-center gap-6 animate-fade-in px-6 text-center">
         
@@ -15,7 +15,7 @@ export default function NotFound() {
           <h2 className="text-2xl md:text-3xl font-bold">
             页面未找到
           </h2>
-          <p className="text-neutral-400 max-w-md mx-auto text-sm md:text-base">
+          <p className="text-white/60 max-w-md mx-auto text-sm md:text-base">
             你似乎来到了一个不存在的维度。该页面可能已被移除，或者你输入了错误的地址。
           </p>
         </div>
@@ -25,7 +25,7 @@ export default function NotFound() {
           href="/" 
           className="surface-muted interactive-control group mt-4 rounded-xl border border-white/10 px-8 py-3 text-sm font-medium"
         >
-          <span className="i-material-symbols-arrow-back-rounded mr-2 inline-block size-4 text-neutral-500 group-hover:text-red-400 transition-colors" aria-hidden="true" />
+          <span className="i-material-symbols-arrow-back-rounded mr-2 inline-block size-4 text-white/50 group-hover:text-red-400 transition-colors" aria-hidden="true" />
           返回首页
         </Link>
       </div>

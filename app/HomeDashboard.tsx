@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import MediaRow from "@/components/MediaRow";
+import { PosterRowSkeleton } from "@/components/LoadingSkeletons";
 import DashboardYearPicker from "@/components/DashboardYearPicker";
 import { DistributionItem, MediaCard, MediaDistribution, MediaDistributions, Summary } from "@/lib/types";
 
@@ -31,7 +32,7 @@ function percent(value: number, total: number) {
 function DistributionCard({ title, icon, items }: { title: string; icon: string; items: DistributionItem[] }) {
   return (
     <div className="surface-card interactive-card group h-full rounded-2xl p-4 sm:p-5 lg:p-6">
-      <div className="mb-5 flex h-8 items-center gap-3 text-sm text-neutral-400">
+      <div className="mb-5 flex h-8 items-center gap-3 text-sm text-white/70">
         <div className="surface-raised flex size-8 shrink-0 items-center justify-center rounded-lg shadow-[0_4px_10px_rgba(0,0,0,0.1)] transition-colors duration-300 group-hover:bg-red-500/15 group-hover:text-red-400 group-hover:shadow-[0_4px_10px_rgba(248,113,113,0.2)]">
           <span className={`${icon} size-4 inline-block`} aria-hidden="true" />
         </div>
@@ -218,7 +219,7 @@ function MediaStatusCard({
 }) {
   return (
     <div className="surface-card interactive-card group flex flex-col gap-4 rounded-2xl p-4 sm:p-5">
-      <div className="text-white/80 font-bold text-sm flex items-center gap-2.5 border-b border-white/10 pb-2.5 group-hover:text-red-300 transition-colors">
+      <div className="text-white/80 font-bold text-sm flex items-center gap-2.5 border-b border-white/10 pb-2.5 group-hover:text-red-400 transition-colors">
         <span className={`${icon} size-4 inline-block text-red-500/80 group-hover:text-red-400`} aria-hidden="true" /> {title}
       </div>
       <div className="flex flex-col gap-3 mt-1">
@@ -394,10 +395,10 @@ export default function HomeDashboard({
                 id={`dashboard-tab-${tabIds[tab]}`}
                 aria-controls={`dashboard-panel-${tabIds[tab]}`}
                 aria-selected={activeTab === tab}
-                className={`px-5 py-2 rounded-lg text-sm font-medium !border-none transition-all duration-300 ${
+                className={`px-5 py-2 rounded-lg text-sm font-medium transition-all duration-300 border ${
                   activeTab === tab
-                    ? "surface-selected text-white !shadow-[0_2px_12px_rgba(0,0,0,0.3)] ring-1 ring-white/20 drop-shadow-[0_0_8px_rgba(255,255,255,0.2)]"
-                    : "text-white/60 hover:text-white hover:bg-white/10 !shadow-none"
+                    ? "surface-active text-red-400 border-red-400/40 font-bold shadow-[0_4px_15px_rgba(248,113,113,0.2)] drop-shadow-[0_0_5px_rgba(248,113,113,0.4)]"
+                    : "border-transparent text-white/70 hover:text-white hover:bg-white/10"
                 }`}
               >
                 {tab}
@@ -525,12 +526,16 @@ export default function HomeDashboard({
             <DistributionTop5Cards distribution={movieDistribution} />
 
             <div className="space-y-12 mt-4">
-              <MediaRow
-                title="影史精选"
-                items={selectedYear === "All Time" ? topMovies : displayedTopMovies}
-                viewAllLink={getSearchViewAllLink("电影", selectedYear)}
-                type="movies"
-              />
+              {topMediaLoading ? (
+                <PosterRowSkeleton />
+              ) : (
+                <MediaRow
+                  title={selectedYear === "All Time" ? "影史精选" : `${selectedYear} 年度精选`}
+                  items={selectedYear === "All Time" ? topMovies : displayedTopMovies}
+                  viewAllLink={getSearchViewAllLink("电影", selectedYear)}
+                  type="movies"
+                />
+              )}
             </div>
           </div>
         )}
@@ -556,12 +561,16 @@ export default function HomeDashboard({
             <DistributionTop5Cards distribution={seriesDistribution} />
 
             <div className="space-y-12 mt-4">
-              <MediaRow
-                title="影史精选"
-                items={selectedYear === "All Time" ? topSeries : displayedTopSeries}
-                viewAllLink={getSearchViewAllLink("电视剧", selectedYear)}
-                type="series"
-              />
+              {topMediaLoading ? (
+                <PosterRowSkeleton />
+              ) : (
+                <MediaRow
+                  title={selectedYear === "All Time" ? "影史精选" : `${selectedYear} 年度精选`}
+                  items={selectedYear === "All Time" ? topSeries : displayedTopSeries}
+                  viewAllLink={getSearchViewAllLink("电视剧", selectedYear)}
+                  type="series"
+                />
+              )}
             </div>
           </div>
         )}

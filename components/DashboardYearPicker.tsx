@@ -84,8 +84,8 @@ export default function DashboardYearPicker({
           aria-controls="dashboard-year-options"
           aria-autocomplete="list"
           aria-activedescendant={activeIndex >= 0 ? `dashboard-year-option-${activeIndex}` : undefined}
-          style={{ outline: "none" }}
-          className="w-full cursor-pointer bg-transparent !border-none !shadow-none font-mono text-sm text-white outline-none placeholder:text-white/50 focus-visible:outline-none"
+          style={{ background: "transparent", outline: "none", boxShadow: "none" }}
+          className="w-full cursor-pointer !bg-transparent hover:!bg-transparent focus:!bg-transparent !border-none !shadow-none font-mono text-sm text-white outline-none placeholder:text-white/50 focus-visible:outline-none"
         />
         <span className={`i-material-symbols-expand-more-rounded inline-block size-3 text-white/50 transition-transform duration-300 ${isOpen ? "rotate-180 text-white" : "group-hover:text-white"}`} aria-hidden="true" />
       </label>

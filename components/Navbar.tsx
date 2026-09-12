@@ -94,7 +94,7 @@ export default function Navbar() {
               aria-label="搜索"
               className="absolute inset-y-0 left-0 flex items-center pl-3.5 cursor-pointer z-10"
             >
-              <span className="i-material-symbols-search-rounded inline-block size-4 text-white/50 group-focus-within:text-red-400 group-focus-within:drop-shadow-[0_0_8px_rgba(239,68,68,0.8)] transition-all duration-300" aria-hidden="true" />
+              <span className="i-material-symbols-search-rounded inline-block size-4 text-white/50 group-focus-within:text-white group-focus-within:drop-shadow-[0_0_8px_rgba(255,255,255,0.6)] transition-all duration-300" aria-hidden="true" />
             </button>
             <input
               name="q"
@@ -107,20 +107,20 @@ export default function Navbar() {
           </form>
 
           {auth.signedIn ? (
-            <form action="/auth/logout" onSubmit={closeMenu}>
-              <button type="submit" className="surface-control shrink-0 rounded-full px-3.5 py-2 text-sm font-medium text-white/90 hover:text-white hover:border-white/40 transition-all">退出</button>
+            <form action="/auth/logout" method="POST" onSubmit={closeMenu}>
+              <button type="submit" className="surface-control shrink-0 cursor-pointer rounded-full px-3.5 py-2 text-sm font-medium text-white/90 transition-all duration-200 hover:border-white/40 hover:bg-white/10 hover:text-white hover:shadow-[0_0_12px_rgba(255,255,255,0.15)] active:scale-95">退出</button>
             </form>
           ) : (
             <button type="button" disabled={auth.busy} onClick={() => {
               closeMenu();
               void auth.signIn();
-            }} className="surface-control shrink-0 rounded-full px-3.5 py-2 text-sm font-medium text-white/90 hover:text-white hover:border-white/40 disabled:opacity-60 transition-all">
+            }} className="surface-control shrink-0 cursor-pointer rounded-full px-3.5 py-2 text-sm font-medium text-white/90 transition-all duration-200 hover:border-white/40 hover:bg-white/10 hover:text-white hover:shadow-[0_0_12px_rgba(255,255,255,0.15)] active:scale-95 disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:border-white/20 disabled:hover:bg-transparent disabled:hover:shadow-none disabled:active:scale-100">
               {auth.busy ? "验证中…" : "登录"}
             </button>
           )}
 
           <button
-            className="surface-control flex size-10 items-center justify-center rounded-full text-white/80 outline-none hover:text-white hover:border-white/40 transition-all duration-300 lg:hidden"
+            className="surface-control flex size-10 shrink-0 cursor-pointer items-center justify-center rounded-full text-white/80 outline-none transition-all duration-200 hover:border-white/40 hover:bg-white/10 hover:text-white hover:shadow-[0_0_12px_rgba(255,255,255,0.15)] active:scale-95 lg:hidden"
             aria-label={isMobileMenuOpen ? "关闭导航菜单" : "打开导航菜单"}
             aria-expanded={isMobileMenuOpen}
             aria-controls="mobile-navigation"
@@ -167,7 +167,7 @@ export default function Navbar() {
               aria-label="搜索"
               className="absolute inset-y-0 left-0 flex items-center pl-3.5 cursor-pointer z-10"
             >
-              <span className="i-material-symbols-search-rounded inline-block size-4 text-white/50 group-focus-within:text-red-400 group-focus-within:drop-shadow-[0_0_8px_rgba(239,68,68,0.8)] transition-all duration-300" aria-hidden="true" />
+              <span className="i-material-symbols-search-rounded inline-block size-4 text-white/50 group-focus-within:text-white group-focus-within:drop-shadow-[0_0_8px_rgba(255,255,255,0.6)] transition-all duration-300" aria-hidden="true" />
             </button>
 
             <input

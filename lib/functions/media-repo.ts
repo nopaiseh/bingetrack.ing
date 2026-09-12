@@ -17,6 +17,8 @@ export class MediaRepositoryError extends Error {
 
 // 列表只读取卡片需要的字段，避免把简介和演职员等详情数据传到客户端。
 const MEDIA_CARD_COLUMNS = "id,type,title,sort_date,release_year,rating,genres,languages,cover_url";
+// 限制通过 URL 参数传递给 PostgREST 的 ID 数量上限，防止超出网关的 URL 长度限制（HTTP 414）。
+const MAX_FILTER_IDS = 100;
 
 /** 只将 PostgREST 表缺失或 PostgreSQL 关系缺失错误识别为聚合视图缺失。 */
 function isMissingAggregateView(error: { code?: string } | null): boolean {
@@ -517,11 +519,6 @@ export async function searchMediaServer(opts: FetchMediaListOptions = {}): Promi
   return fetchMediaList(opts);
 }
 
-/** 将列表查询入口委托给统一实现，保留卡片和总数返回结构。 */
-export async function fetchMediaListServer(opts: FetchMediaListOptions = {}): Promise<{ rows: MediaCard[]; total: number }> {
-  return fetchMediaList(opts);
-}
-
 // 目录页另有统计查询，此处只取卡片，跳过精确总数查询。
 export async function fetchMediaCardsServer(opts: FetchMediaListOptions = {}): Promise<MediaCard[]> {
   return (await fetchMediaList(opts, false)).rows;
@@ -612,13 +609,13 @@ async function fetchMediaList(opts: FetchMediaListOptions, includeTotal = true):
       seriesTitleIds = (seriesTitleItems ?? []).map(/* 提取同时命中标题和作品系列关联的媒体 ID。 */ (item) => item.media_item_id);
     }
 
-    // 各搜索分类的命中结果取并集并去重，再统一叠加状态、年份等筛选条件。
+    // 各搜索分类的命中结果取并集并去重，限制单次查询 ID 上限，再统一叠加状态、年份等筛选条件。
     const matchingIds = Array.from(new Set([
       ...(searchesSeries ? seriesItemIds : []),
       ...typedTitleIds,
       ...seriesTitleIds,
       ...(creditResult.data ?? []).map(/* 提取演职员搜索命中的媒体 ID。 */ (credit) => credit.media_item_id),
-    ]));
+    ])).slice(0, MAX_FILTER_IDS);
     if (matchingIds.length === 0) {
       return { rows: [], total: 0 };
     }
@@ -627,15 +624,17 @@ async function fetchMediaList(opts: FetchMediaListOptions, includeTotal = true):
     countQuery = countQuery.in("id", matchingIds);
     classificationHandlesQuery = true;
   } else if (seriesOnly && types.length > 0) {
+    const boundedSeriesIds = seriesItemIds.slice(0, MAX_FILTER_IDS);
     const typeFilter = `type.in.(${types.join(",")})`;
-    const filters = seriesItemIds.length > 0
-      ? `${typeFilter},id.in.(${seriesItemIds.join(",")})`
+    const filters = boundedSeriesIds.length > 0
+      ? `${typeFilter},id.in.(${boundedSeriesIds.join(",")})`
       : typeFilter;
     dataQuery = dataQuery.or(filters);
     countQuery = countQuery.or(filters);
   } else if (seriesOnly) {
-    dataQuery = dataQuery.in("id", seriesItemIds);
-    countQuery = countQuery.in("id", seriesItemIds);
+    const boundedSeriesIds = seriesItemIds.slice(0, MAX_FILTER_IDS);
+    dataQuery = dataQuery.in("id", boundedSeriesIds);
+    countQuery = countQuery.in("id", boundedSeriesIds);
   } else if (types.length > 0) {
     dataQuery = dataQuery.in("type", types);
     countQuery = countQuery.in("type", types);

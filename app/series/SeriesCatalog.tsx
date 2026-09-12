@@ -16,7 +16,7 @@ export default function SeriesCatalog({
   ];
 
   return (
-    <div className="relative text-neutral-200 pt-14">
+    <div className="relative text-white/90 pt-14">
       <div className="absolute top-0 inset-x-0 h-[40vh] bg-linear-to-b from-white/5 to-transparent pointer-events-none -z-10" />
       <div className="container relative z-1 mx-auto w-full max-w-7xl px-4 pb-12 pt-12 sm:px-6 lg:px-8">
 
@@ -24,7 +24,7 @@ export default function SeriesCatalog({
         <div className="mb-10 grid grid-cols-2 gap-4 md:mb-12 lg:mb-16 lg:grid-cols-4">
           {statItems.map(/* 将一项电视剧统计渲染为标签与数值卡片。 */ (stat, idx) => (
             <div key={idx} className="surface-card interactive-card group flex flex-col rounded-2xl p-4 sm:p-5 lg:p-6">
-              <h2 className="font-medium uppercase text-neutral-400 text-xs tracking-widest mb-2">
+              <h2 className="font-medium uppercase text-white/50 text-xs tracking-widest mb-2">
                 {stat.label}
               </h2>
               <p className="font-mono text-3xl tracking-tight text-white group-hover:text-red-400 transition-colors">

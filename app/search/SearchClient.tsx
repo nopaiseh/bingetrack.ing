@@ -7,6 +7,7 @@ import type { SearchOptions } from "@/lib/functions/search-options";
 import { PAGE_SIZE, readFilters, writeFilters, readSearchPage, buildMediaSearchQuery, type SearchFilters } from "@/lib/api/search-state";
 
 import { SearchMediaCard, SearchMediaCardSkeleton } from "@/components/SearchMediaCard";
+import SearchLoading from "./loading";
 
 type SearchProps = {
   initialOptions: SearchOptions;
@@ -213,14 +214,14 @@ function SearchContent({ initialOptions, initialResult }: SearchProps) {
   ];
 
   return (
-    <div className="min-h-screen text-neutral-200 pt-24 pb-12 selection:bg-red-500/30 selection:text-white font-sans relative">
+    <div className="min-h-screen text-white/90 pt-24 pb-12 selection:bg-red-500/30 selection:text-white font-sans relative">
       <div className="container relative z-1 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         
         <div className="mb-8">
           <div className="group relative grid gap-2 sm:block">
             <div className="relative">
               <div className="pointer-events-none absolute inset-y-0 left-0 z-10 flex items-center pl-5">
-                <span className="i-material-symbols-search-rounded inline-block size-4 text-white/50 group-focus-within:text-red-400 group-focus-within:drop-shadow-[0_0_5px_rgba(248,113,113,0.6)] transition-all duration-300" aria-hidden="true" />
+                <span className="i-material-symbols-search-rounded inline-block size-4 text-white/50 group-focus-within:text-white group-focus-within:drop-shadow-[0_0_8px_rgba(255,255,255,0.6)] transition-all duration-300" aria-hidden="true" />
               </div>
 
               <input
@@ -333,7 +334,7 @@ function SearchContent({ initialOptions, initialResult }: SearchProps) {
                           aria-label="开始年份"
                           value={filters.year?.[0] || ""}
                           onChange={/* 将选择的值作为起始年份交给范围校正逻辑。 */ (e) => handleYearChange("start", e.target.value)}
-                          className="filter-option min-h-10 w-full min-w-0 cursor-pointer appearance-none rounded-lg py-1.5 pl-3 pr-8 text-[13px] backdrop-blur-2xl transition-all outline-none focus:border-red-400/50 focus:bg-white/10 sm:min-w-25"
+                          className="filter-option min-h-10 w-full min-w-0 cursor-pointer appearance-none rounded-lg py-1.5 pl-3 pr-8 text-[13px] backdrop-blur-2xl transition-all outline-none focus:border-white/40 focus:bg-white/10 sm:min-w-25"
                         >
                           <option value="" disabled hidden className="bg-neutral-900 text-neutral-300">开始年份</option>
                           {yearOptions.map(/* 将年份渲染为起始年份下拉选项。 */ (y) => (
@@ -350,7 +351,7 @@ function SearchContent({ initialOptions, initialResult }: SearchProps) {
                           aria-label="结束年份"
                           value={filters.year?.[1] || ""}
                           onChange={/* 将选择的值作为结束年份交给范围校正逻辑。 */ (e) => handleYearChange("end", e.target.value)}
-                          className="filter-option min-h-10 w-full min-w-0 cursor-pointer appearance-none rounded-lg py-1.5 pl-3 pr-8 text-[13px] backdrop-blur-2xl transition-all outline-none focus:border-red-400/50 focus:bg-white/10 sm:min-w-25"
+                          className="filter-option min-h-10 w-full min-w-0 cursor-pointer appearance-none rounded-lg py-1.5 pl-3 pr-8 text-[13px] backdrop-blur-2xl transition-all outline-none focus:border-white/40 focus:bg-white/10 sm:min-w-25"
                         >
                           <option value="" disabled hidden className="bg-neutral-900 text-neutral-300">最终年份</option>
                           {yearOptions.map(/* 将年份渲染为结束年份下拉选项。 */ (y) => (
@@ -456,15 +457,15 @@ function SearchContent({ initialOptions, initialResult }: SearchProps) {
           
           {totalPages > 1 && !isLoading && (
             <nav className="mt-10 flex flex-wrap items-center justify-center gap-2" aria-label="搜索结果分页">
-              <button onClick={/* 返回上一页搜索结果。 */ () => goToPage(page - 1)} disabled={page === 1} className="surface-control rounded-xl p-2.5 text-white/65 transition-all hover:bg-white/10 hover:text-white disabled:pointer-events-none disabled:opacity-30" aria-label="上一页">
+              <button onClick={/* 返回上一页搜索结果。 */ () => goToPage(page - 1)} disabled={page === 1} className="surface-control rounded-xl p-2.5 text-white/70 transition-all hover:bg-white/10 hover:text-white disabled:pointer-events-none disabled:opacity-30" aria-label="上一页">
                 <span className="i-material-symbols-chevron-left-rounded inline-block size-4" aria-hidden="true" />
               </button>
               {pageNumbers(page, totalPages).map(/* 将页码窗口中的一页渲染为分页按钮。 */ (pageNumber) => (
-                <button key={pageNumber} onClick={/* 跳转到点击的结果页。 */ () => goToPage(pageNumber)} aria-current={pageNumber === page ? "page" : undefined} className={`min-w-10 rounded-xl border px-3 py-2 text-center text-sm transition-all ${pageNumber === page ? "surface-active border-red-400/30 text-red-300" : "surface-muted border-white/10 text-white/55 hover:bg-white/10 hover:text-white"}`}>
+                <button key={pageNumber} onClick={/* 跳转到点击的结果页。 */ () => goToPage(pageNumber)} aria-current={pageNumber === page ? "page" : undefined} className={`min-w-10 rounded-xl border px-3 py-2 text-center text-sm transition-all ${pageNumber === page ? "surface-active border-red-400/40 text-red-400 font-bold shadow-[0_4px_10px_rgba(248,113,113,0.2)]" : "surface-muted border-white/10 text-white/70 hover:bg-white/10 hover:text-white"}`}>
                   {pageNumber}
                 </button>
               ))}
-              <button onClick={/* 前往下一页搜索结果。 */ () => goToPage(page + 1)} disabled={page === totalPages} className="surface-control rounded-xl p-2.5 text-white/65 transition-all hover:bg-white/10 hover:text-white disabled:pointer-events-none disabled:opacity-30" aria-label="下一页">
+              <button onClick={/* 前往下一页搜索结果。 */ () => goToPage(page + 1)} disabled={page === totalPages} className="surface-control rounded-xl p-2.5 text-white/70 transition-all hover:bg-white/10 hover:text-white disabled:pointer-events-none disabled:opacity-30" aria-label="下一页">
                 <span className="i-material-symbols-chevron-right-rounded inline-block size-4" aria-hidden="true" />
               </button>
             </nav>
@@ -488,14 +489,9 @@ function SearchContent({ initialOptions, initialResult }: SearchProps) {
 /** 为读取 URL 参数的搜索组件提供 Suspense 边界及等待指示器。 */
 export default function SearchClient(props: SearchProps) {
   return (
-    <Suspense
-      fallback={
-        <div className="min-h-screen flex items-center justify-center text-white/60">
-          <span className="i-material-symbols-progress-activity-rounded inline-block size-6 animate-spin text-red-400 drop-shadow-[0_0_5px_rgba(248,113,113,0.5)]" aria-hidden="true" />
-        </div>
-      }
-    >
+    <Suspense fallback={<SearchLoading />}>
       <SearchContent {...props} />
     </Suspense>
   );
 }
+

@@ -6,5 +6,5 @@ import { rememberedList } from "@/lib/admin/navigation";
 export default function BackToList({ category }: { category: string }) {
   const router = useRouter();
   const fallback = category === "movie" || category.startsWith("tv_") ? `/manage?type=${category}` : `/manage/references/${category}`;
-  return <Link href={fallback} className="mb-4 inline-block text-sm text-neutral-400 hover:text-white" onClick={event => { if (event.button || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return; event.preventDefault(); router.push(rememberedList(category, fallback)); }}>← 返回列表</Link>;
+  return <Link href={fallback} className="mb-4 inline-block text-sm text-white/60 hover:text-white transition-colors" onClick={event => { if (event.button || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return; event.preventDefault(); router.push(rememberedList(category, fallback)); }}>← 返回列表</Link>;
 }

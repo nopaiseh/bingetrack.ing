@@ -4,8 +4,8 @@ import Link from "next/link";
 import { mayLeaveEditor } from "@/lib/admin/navigation";
 import { referenceTypes } from "@/lib/admin/catalog";
 import ReferenceForm from "./ReferenceForm";
-/** 类型与地区用原生弹窗快速维护，完整详情仍有独立可访问地址。 */
-export default function ReferenceQuickEdit({ kind, item, count }: { kind: "genres" | "regions"; item?: { id: string; name: string }; count?: number }) {
+/** 类型、地区与语言用原生弹窗快速维护，完整详情仍有独立可访问地址。 */
+export default function ReferenceQuickEdit({ kind, item, count }: { kind: "genres" | "regions" | "languages"; item?: { id: string; name: string }; count?: number }) {
   const dialog = useRef<HTMLDialogElement>(null);
   const [open, setOpen] = useState(false);
   useEffect(() => { if (open) dialog.current?.showModal(); else dialog.current?.close(); }, [open]);

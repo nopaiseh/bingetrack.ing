@@ -2,19 +2,11 @@
 
 import { redirect } from "next/navigation";
 import { revalidatePath, revalidateTag } from "next/cache";
-import { getAuthServer, requireOwner } from "@/lib/auth/server";
+import { requireOwner } from "@/lib/auth/server";
 import { parseMediaForm } from "@/lib/admin/media-form";
 import { isMediaId } from "@/lib/functions/media-id";
 
 export type ActionResult = { error?: string; saved?: boolean };
-
-/** 退出当前浏览器会话，并立即回到首页。 */
-export async function signOut() {
-  const db = await getAuthServer();
-  const { error } = await db.auth.signOut({ scope: "local" });
-  if (error) throw new Error("退出失败，请重试。");
-  redirect("/");
-}
 
 /** 将数据库错误转换成可以采取行动的提示，不暴露 SQL 细节。 */
 function writeError(code?: string) {

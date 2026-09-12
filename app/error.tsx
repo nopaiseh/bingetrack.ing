@@ -13,7 +13,7 @@ export default function ErrorPage({ reset }: { error: Error & { digest?: string 
         <button
           type="button"
           onClick={reset}
-          className="surface-active mt-7 inline-flex items-center gap-2 rounded-xl border border-red-400/40 px-5 py-3 text-sm font-bold text-red-300 transition-colors hover:bg-red-500/25 hover:text-red-200"
+          className="surface-active mt-7 inline-flex items-center gap-2 rounded-xl border border-red-400/40 px-5 py-3 text-sm font-bold text-red-400 transition-colors hover:bg-red-500/25 hover:text-red-300"
         >
           <span className="i-material-symbols-refresh-rounded size-4 inline-block" aria-hidden="true" />
           重新加载

@@ -1,7 +1,9 @@
+import { Suspense } from "react";
 import type { Metadata } from "next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import NavigationProgressBar from "@/components/NavigationProgressBar";
 import { SITE_URL } from "@/lib/site";
 import "./globals.css";
 
@@ -22,7 +24,7 @@ export const metadata: Metadata = {
   },
 };
 
-/** 设置中文文档、全局导航、页脚和主要内容容器，并挂载性能统计组件。 */
+/** 设置中文文档、全局导航、页脚和主要内容容器，并挂载性能统计与路由流转组件。 */
 export default function RootLayout({
   children,
 }: {
@@ -30,7 +32,11 @@ export default function RootLayout({
 }) {
   return (
     <html lang="zh-CN">
-      <body className="bg-[var(--canvas)] text-neutral-200 font-sans leading-normal tracking-normal selection:bg-red-500/30 selection:text-white flex flex-col min-h-screen relative">
+      <body className="bg-[var(--canvas)] text-white/90 font-sans leading-normal tracking-normal selection:bg-red-500/30 selection:text-white flex flex-col min-h-screen relative">
+        <Suspense fallback={null}>
+          <NavigationProgressBar />
+        </Suspense>
+
         <a
           href="#main-content"
           className="surface-raised fixed left-4 top-4 z-100 -translate-y-24 rounded-lg border border-red-400 px-4 py-2 text-sm font-semibold text-white transition-transform focus:translate-y-0"
@@ -50,3 +56,4 @@ export default function RootLayout({
     </html>
   );
 }
+

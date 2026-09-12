@@ -11,7 +11,7 @@ function MediaPoster({ media }: { media: Media }) {
     <div className="w-full max-w-80 shrink-0 self-center lg:w-80 lg:self-start">
       <div className="surface-muted relative aspect-2/3 w-full overflow-hidden rounded-xl border border-white/10 shadow-[0_15px_40px_rgba(0,0,0,0.3)] backdrop-blur-2xl">
         {media.cover_url ? (
-          <Image src={media.cover_url} alt={media.title} fill sizes="(max-width: 393px) calc(100vw - 74px), 320px" className="object-cover transition-transform duration-700 hover:scale-105" preload/>
+          <Image src={media.cover_url} alt={media.title} fill sizes="(max-width: 393px) calc(100vw - 74px), 320px" className="object-cover transition-transform duration-700 hover:scale-105" priority />
         ) : (
           <div className="w-full h-full flex flex-col items-center justify-center text-white/60 gap-2">
             <span className="i-material-symbols-image-outline-rounded inline-block size-10 drop-shadow-md" aria-hidden="true" />
@@ -80,13 +80,13 @@ function SectionHeading({ children }: { children: ReactNode }) {
 }
 
 /** 展示媒体的发行信息、类型、地区、语言和系列标签，并按参数决定是否包含演职员。 */
-export function MediaMetadata({ media, includePeople = true, releaseDateLabel }: { media: Media; includePeople?: boolean; releaseDateLabel?: string }) {
+function MediaMetadata({ media, includePeople = true, releaseDateLabel }: { media: Media; includePeople?: boolean; releaseDateLabel?: string }) {
   return (
     <div className="flex flex-col">
       {releaseDateLabel !== undefined && (
         <MetadataRow label="上映">
           {releaseDateLabel
-            ? <span className="surface-subtle inline-flex items-center rounded-lg border border-white/8 px-3.5 py-1.5 text-sm font-medium tracking-wide text-neutral-300">{releaseDateLabel}</span>
+            ? <span className="surface-subtle inline-flex items-center rounded-lg border border-white/8 px-3.5 py-1.5 text-sm font-medium tracking-wide text-white/70">{releaseDateLabel}</span>
             : <span className="text-sm text-white/30 sm:pt-1">-</span>}
         </MetadataRow>
       )}
@@ -246,12 +246,12 @@ export default function MediaInformation({
                   {season.coverUrl ? (
                     <Image src={season.coverUrl} alt={`${season.title} 海报`} fill className="object-cover transition-transform duration-500 group-hover:scale-105" sizes="(max-width: 639px) 50vw, (max-width: 1023px) 33vw, 20vw" />
                   ) : (
-                    <div className="flex h-full items-center justify-center text-white/25"><span className="i-material-symbols-image-outline-rounded inline-block size-9" aria-hidden="true" /></div>
+                    <div className="flex h-full items-center justify-center text-white/30"><span className="i-material-symbols-image-outline-rounded inline-block size-9" aria-hidden="true" /></div>
                   )}
                   <span className="image-label absolute left-2 top-2 rounded-lg border border-white/10 px-2 py-1 text-[11px] text-white/75 backdrop-blur-md">第 {season.seasonNumber} 季</span>
                 </div>
                 <div className="flex flex-1 flex-col p-4">
-                  <h4 className="mb-2 line-clamp-2 text-sm font-bold text-white/85 transition-colors group-hover:text-red-300">
+                  <h4 className="mb-2 line-clamp-2 text-sm font-bold text-white/85 transition-colors group-hover:text-red-400">
                     {season.title}
                   </h4>
                   <div className="mt-auto flex flex-wrap items-center gap-x-2 gap-y-1 font-mono text-xs text-white/50">
