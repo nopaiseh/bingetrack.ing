@@ -6,6 +6,7 @@
 
 - `scripts/current_schema.sql`：新环境与 CI 使用的唯一完整结构入口。
 - `archive/media-list-aggregates.sql`：列表聚合视图的历史增量 SQL。
+- `archive/manage-catalog.sql`：八类管理工作台的系列权限与原子保存扩展（已应用）。
 - `archive/single-owner-admin.sql`：单人管理功能的历史增量 SQL。
 - `fixtures/e2e_seed.sql`：确定性的浏览器测试数据，仅用于本地和 CI。
 - `tests/`：公开数据语义与站长权限、事务行为的 pgTAP 测试。

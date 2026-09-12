@@ -29,3 +29,6 @@
 .admin-heading { font-size: clamp(1.75rem, 3vw, 2.5rem); font-weight: 700; letter-spacing: -.04em; line-height: 1.25; color: white; }
 .admin-section-title { display: flex; align-items: center; gap: .75rem; }
 .admin-section-title::before { content: ""; width: .25rem; height: 1.25rem; border-radius: 9999px; background: var(--accent); box-shadow: 0 0 12px rgb(239 68 68 / .3); }
+/* 原生 dialog 提供焦点约束与 Escape 关闭，窄屏保持可滚动。 */
+.admin-quick-dialog { margin: auto; width: min(36rem, calc(100% - 2rem)); max-height: calc(100dvh - 2rem); overflow-y: auto; border: 1px solid var(--border-hover); border-radius: 1.5rem; padding: 1.5rem; background: var(--surface-panel); color: #f5f5f5; }
+.admin-quick-dialog::backdrop { background: rgb(0 0 0 / .65); backdrop-filter: blur(6px); }

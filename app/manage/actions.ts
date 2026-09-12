@@ -31,7 +31,7 @@ export async function saveMedia(_previous: ActionResult, form: FormData): Promis
   try { payload = parseMediaForm(form); } catch (error) {
     return { error: error instanceof Error ? error.message : "资料格式不正确。" };
   }
-  const { data, error } = await db.rpc("admin_save_media", { p_data: payload });
+  const { data, error } = await db.rpc("manage_save_media", { p_data: payload });
   if (error) return { error: writeError(error.code) };
   revalidateTag("media", { expire: 0 });
   revalidatePath("/", "layout");
