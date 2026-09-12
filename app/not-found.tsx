@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { ArrowLeft } from "lucide-react";
 
 /** 展示未找到页面提示，并提供返回首页的入口。 */
 export default function NotFound() {
@@ -26,7 +25,7 @@ export default function NotFound() {
           href="/" 
           className="surface-muted interactive-control group mt-4 rounded-xl border border-white/10 px-8 py-3 text-sm font-medium"
         >
-          <ArrowLeft className="mr-2 inline size-4 text-neutral-500 group-hover:text-red-400 transition-colors" aria-hidden="true" />
+          <span className="i-material-symbols-arrow-back-rounded mr-2 inline-block size-4 text-neutral-500 group-hover:text-red-400 transition-colors" aria-hidden="true" />
           返回首页
         </Link>
       </div>

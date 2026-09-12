@@ -4,7 +4,6 @@ import { useNavbarAuth } from "@/lib/auth/use-navbar-auth";
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Menu, Search, Terminal, X } from "lucide-react";
 
 /** 渲染当前栏目导航、搜索表单和可折叠移动菜单，并处理搜索跳转。 */
 export default function Navbar() {
@@ -53,7 +52,7 @@ export default function Navbar() {
             className="flex items-center gap-2.5 group cursor-pointer"
             onClick={closeMenu}
           >
-            <Terminal className="size-4 text-red-500 group-hover:rotate-12 group-hover:drop-shadow-[0_0_10px_rgba(239,68,68,0.8)] transition-all duration-300" aria-hidden="true" />
+            <span className="i-material-symbols-terminal-rounded inline-block size-4 text-red-500 group-hover:rotate-12 group-hover:drop-shadow-[0_0_10px_rgba(239,68,68,0.8)] transition-all duration-300" aria-hidden="true" />
             <span className="font-mono text-xl font-light tracking-tight drop-shadow-[0_0_12px_rgba(255,255,255,0.1)]">
               <span className="bg-clip-text text-transparent bg-linear-to-br from-white via-white/80 to-white/50">
                 bingetrack
@@ -95,43 +94,39 @@ export default function Navbar() {
               aria-label="搜索"
               className="absolute inset-y-0 left-0 flex items-center pl-3.5 cursor-pointer z-10"
             >
-              <Search className="size-4 text-white/50 group-focus-within:text-white group-focus-within:drop-shadow-[0_0_8px_rgba(255,255,255,0.8)] transition-all duration-300" aria-hidden="true" />
+              <span className="i-material-symbols-search-rounded inline-block size-4 text-white/50 group-focus-within:text-red-400 group-focus-within:drop-shadow-[0_0_8px_rgba(239,68,68,0.8)] transition-all duration-300" aria-hidden="true" />
             </button>
             <input
               name="q"
               type="text"
               placeholder="搜索"
               className="surface-control text-white text-sm rounded-full
-              focus:bg-white/10 focus:ring-1 focus:ring-white/30 focus:border-white/30
-              block w-36 focus:w-52 sm:w-44 lg:focus:w-52 pl-10 py-2.5 transition-all duration-500 ease-out
-              placeholder-white/40 outline-none
-              shadow-[0_4px_15px_rgba(0,0,0,0.2)]
-              focus:shadow-[0_4px_25px_rgba(255,255,255,0.05)]"
+              block w-36 focus:w-56 sm:w-44 lg:focus:w-56 pl-10 pr-4 py-2 transition-all duration-500 ease-out
+              placeholder-white/50 outline-none"
             />
           </form>
 
           {auth.signedIn ? (
             <form action="/auth/logout" onSubmit={closeMenu}>
-              <button type="submit" className="surface-control shrink-0 rounded-full px-3 py-2.5 text-sm text-white/80 hover:text-white">退出</button>
+              <button type="submit" className="surface-control shrink-0 rounded-full px-3.5 py-2 text-sm font-medium text-white/90 hover:text-white hover:border-white/40 transition-all">退出</button>
             </form>
           ) : (
             <button type="button" disabled={auth.busy} onClick={() => {
               closeMenu();
               void auth.signIn();
-            }} className="surface-control shrink-0 rounded-full px-3 py-2.5 text-sm text-white/80 hover:text-white disabled:opacity-60">
+            }} className="surface-control shrink-0 rounded-full px-3.5 py-2 text-sm font-medium text-white/90 hover:text-white hover:border-white/40 disabled:opacity-60 transition-all">
               {auth.busy ? "验证中…" : "登录"}
             </button>
           )}
 
           <button
-            className="surface-control flex size-11 items-center justify-center rounded-full p-2 text-white/70 outline-none hover:text-white lg:hidden
-            hover:bg-white/10 hover:border-white/20 hover:shadow-[0_6px_20px_rgba(255,255,255,0.05)] transition-all duration-300"
+            className="surface-control flex size-10 items-center justify-center rounded-full text-white/80 outline-none hover:text-white hover:border-white/40 transition-all duration-300 lg:hidden"
             aria-label={isMobileMenuOpen ? "关闭导航菜单" : "打开导航菜单"}
             aria-expanded={isMobileMenuOpen}
             aria-controls="mobile-navigation"
             onClick={/* 切换移动端菜单的展开状态。 */ () => setIsMobileMenuOpen(!isMobileMenuOpen)}
           >
-            {isMobileMenuOpen ? <X className="size-5" aria-hidden="true" /> : <Menu className="size-5" aria-hidden="true" />}
+            {isMobileMenuOpen ? <span className="i-material-symbols-close-rounded inline-block size-5" aria-hidden="true" /> : <span className="i-material-symbols-menu-rounded inline-block size-5" aria-hidden="true" />}
           </button>
         </div>
       </div>
@@ -140,7 +135,7 @@ export default function Navbar() {
         id="mobile-navigation"
         aria-hidden={!isMobileMenuOpen}
         inert={!isMobileMenuOpen ? true : undefined}
-        className={`surface-muted overflow-hidden border-b border-white/10 shadow-[0_15px_40px_rgba(0,0,0,0.2)] backdrop-blur-3xl transition-all duration-500 ease-in-out lg:hidden ${
+        className={`surface-overlay overflow-hidden border-b border-white/10 shadow-[0_15px_40px_rgba(0,0,0,0.5)] backdrop-blur-3xl transition-all duration-500 ease-in-out lg:hidden ${
           isMobileMenuOpen
             ? "max-h-[32rem] opacity-100 py-4"
             : "max-h-0 opacity-0 py-0 border-transparent"
@@ -172,18 +167,14 @@ export default function Navbar() {
               aria-label="搜索"
               className="absolute inset-y-0 left-0 flex items-center pl-3.5 cursor-pointer z-10"
             >
-              <Search className="size-4 text-white/50 group-focus-within:text-white group-focus-within:drop-shadow-[0_0_8px_rgba(255,255,255,0.8)] transition-all duration-300" aria-hidden="true" />
+              <span className="i-material-symbols-search-rounded inline-block size-4 text-white/50 group-focus-within:text-red-400 group-focus-within:drop-shadow-[0_0_8px_rgba(239,68,68,0.8)] transition-all duration-300" aria-hidden="true" />
             </button>
 
             <input
               name="q"
               type="text"
               placeholder="搜索"
-              className="surface-control text-white text-sm rounded-xl block w-full pl-10 py-2.5 outline-none
-              focus:bg-white/10 focus:border-white/30 focus:ring-1 focus:ring-white/30
-              shadow-[0_4px_15px_rgba(0,0,0,0.2)]
-              focus:shadow-[0_6px_25px_rgba(255,255,255,0.05)]
-              placeholder-white/40 transition-all duration-300"
+              className="surface-control text-white text-sm rounded-xl block w-full pl-10 pr-4 py-2.5 outline-none placeholder-white/50 transition-all duration-300"
             />
           </form>
         </div>

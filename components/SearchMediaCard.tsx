@@ -1,6 +1,5 @@
 import Image from "next/image";
 import Link from "next/link";
-import { ImageIcon, Star } from "lucide-react";
 import type { MediaCard } from "@/lib/types";
 
 /** 为搜索卡片提供与海报和文本布局对应的加载占位。 */
@@ -39,7 +38,7 @@ export function SearchMediaCard({ item, returnHref }: { item: MediaCard; returnH
             sizes="(max-width: 639px) 50vw, (max-width: 1023px) 33vw, (max-width: 1279px) 20vw, 16vw"
           />
         ) : (
-          <ImageIcon className="size-10 text-white/20 drop-shadow-md" aria-hidden="true" />
+          <span className="i-material-symbols-image-outline-rounded inline-block size-10 text-white/20 drop-shadow-md" aria-hidden="true" />
         )}
       </div>
 
@@ -48,7 +47,7 @@ export function SearchMediaCard({ item, returnHref }: { item: MediaCard; returnH
         <div className="flex items-center justify-between text-xs">
           <span className="font-medium text-white/60">{item.date ? item.date.substring(0, 4) : "未知"}</span>
           <span className="flex items-center gap-1 font-bold text-white drop-shadow-sm">
-            {item.rating ? <><Star className="size-3 fill-current text-yellow-500/90 drop-shadow-[0_0_5px_rgba(234,179,8,0.6)]" aria-hidden="true" />{Number(item.rating).toFixed(1)}</> : <span className="text-white/50">未评分</span>}
+            {item.rating ? <><span className="i-material-symbols-star-rounded inline-block size-3 text-yellow-500/90 drop-shadow-[0_0_5px_rgba(234,179,8,0.6)]" aria-hidden="true" />{Number(item.rating).toFixed(1)}</> : <span className="text-white/50">未评分</span>}
           </span>
         </div>
         <div className="mt-1.5 flex flex-wrap gap-1.5">

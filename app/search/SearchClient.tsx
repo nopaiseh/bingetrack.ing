@@ -7,7 +7,6 @@ import type { SearchOptions } from "@/lib/functions/search-options";
 import { PAGE_SIZE, readFilters, writeFilters, readSearchPage, buildMediaSearchQuery, type SearchFilters } from "@/lib/api/search-state";
 
 import { SearchMediaCard, SearchMediaCardSkeleton } from "@/components/SearchMediaCard";
-import { ArrowDown, ArrowUp, ChevronDown, ChevronLeft, ChevronRight, LoaderCircle, Search, SlidersHorizontal, X } from "lucide-react";
 
 type SearchProps = {
   initialOptions: SearchOptions;
@@ -221,18 +220,17 @@ function SearchContent({ initialOptions, initialResult }: SearchProps) {
           <div className="group relative grid gap-2 sm:block">
             <div className="relative">
               <div className="pointer-events-none absolute inset-y-0 left-0 z-10 flex items-center pl-5">
-                <Search className="size-4 text-white/50 group-focus-within:text-red-400 group-focus-within:drop-shadow-[0_0_5px_rgba(248,113,113,0.6)] transition-all duration-300" aria-hidden="true" />
+                <span className="i-material-symbols-search-rounded inline-block size-4 text-white/50 group-focus-within:text-red-400 group-focus-within:drop-shadow-[0_0_5px_rgba(248,113,113,0.6)] transition-all duration-300" aria-hidden="true" />
               </div>
 
               <input
-                type="text"
                 aria-label="搜索媒体"
                 value={query}
                 onChange={/* 将搜索输入框内容写入本地输入状态。 */ (e) => {
                   setQuery(e.target.value);
                 }}
                 placeholder="搜索电影、电视剧、导演或演员..."
-                className="surface-control relative z-0 w-full rounded-2xl py-4 pl-12 pr-12 text-base text-white outline-none transition-all duration-500 placeholder:text-white/50 focus:border-red-400/50 focus:bg-white/10 focus:ring-1 focus:ring-red-400/50 focus:shadow-[0_6px_30px_rgba(248,113,113,0.2)] sm:py-5 sm:pr-40 sm:text-lg"
+                className="surface-control relative z-0 w-full rounded-2xl py-4 pl-12 pr-12 text-base text-white outline-none transition-all duration-300 placeholder:text-white/50 sm:py-5 sm:pr-40 sm:text-lg"
               />
             </div>
 
@@ -241,7 +239,7 @@ function SearchContent({ initialOptions, initialResult }: SearchProps) {
                 <button onClick={/* 清空搜索词，后续由防抖逻辑同步到 URL。 */ () => {
                   setQuery("");
                 }} className="text-white/50 hover:text-red-400 hover:drop-shadow-[0_0_5px_rgba(248,113,113,0.6)] transition-all duration-300" aria-label="清除搜索">
-                  <X className="size-5" aria-hidden="true" />
+                  <span className="i-material-symbols-close-rounded inline-block size-5" aria-hidden="true" />
                 </button>
               )}
               <div className="hidden h-6 w-px bg-white/20 sm:block"></div>
@@ -254,7 +252,7 @@ function SearchContent({ initialOptions, initialResult }: SearchProps) {
                     : "filter-option"
                 }`}
               >
-                <SlidersHorizontal className="size-4" aria-hidden="true" />
+                <span className="i-material-symbols-tune-rounded inline-block size-4" aria-hidden="true" />
                 {showAdvanced ? "收起筛选" : "高级筛选"}
                 {!showAdvanced && hasActiveFilters && (
                   <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-400 rounded-full border border-black/50 shadow-[0_0_8px_rgba(248,113,113,0.8)] animate-pulse"></span>
@@ -301,7 +299,7 @@ function SearchContent({ initialOptions, initialResult }: SearchProps) {
                             >
                               {option}
                               {isSelected && (
-                                <X className="ml-1 size-3 opacity-60 group-hover:opacity-100 transition-opacity" aria-hidden="true" />
+                                <span className="i-material-symbols-close-rounded ml-1 inline-block size-3 opacity-60 group-hover:opacity-100 transition-opacity" aria-hidden="true" />
                               )}
                             </button>
                           );
@@ -342,7 +340,7 @@ function SearchContent({ initialOptions, initialResult }: SearchProps) {
                             <option key={y} value={y} className="bg-neutral-900 text-neutral-300">{y}</option>
                           ))}
                         </select>
-                        <ChevronDown className="absolute right-3 top-1/2 size-3 -translate-y-1/2 text-white/50 group-hover:text-white pointer-events-none transition-colors" aria-hidden="true" />
+                        <span className="i-material-symbols-expand-more-rounded absolute right-3 top-1/2 inline-block size-3 -translate-y-1/2 text-white/50 group-hover:text-white pointer-events-none transition-colors" aria-hidden="true" />
                       </div>
 
                       <span className="text-white/60 text-[13px] font-medium px-1">至</span>
@@ -359,7 +357,7 @@ function SearchContent({ initialOptions, initialResult }: SearchProps) {
                             <option key={y} value={y} className="bg-neutral-900 text-neutral-300">{y}</option>
                           ))}
                         </select>
-                        <ChevronDown className="absolute right-3 top-1/2 size-3 -translate-y-1/2 text-white/50 group-hover:text-white pointer-events-none transition-colors" aria-hidden="true" />
+                        <span className="i-material-symbols-expand-more-rounded absolute right-3 top-1/2 inline-block size-3 -translate-y-1/2 text-white/50 group-hover:text-white pointer-events-none transition-colors" aria-hidden="true" />
                       </div>
                     </div>
                   </div>
@@ -387,7 +385,7 @@ function SearchContent({ initialOptions, initialResult }: SearchProps) {
                         >
                           {option.label}
                           {isSelected && (
-                            currentOrder === "desc" ? <ArrowDown className="size-3" aria-hidden="true" /> : <ArrowUp className="size-3" aria-hidden="true" />
+                            currentOrder === "desc" ? <span className="i-material-symbols-arrow-downward-rounded inline-block size-3" aria-hidden="true" /> : <span className="i-material-symbols-arrow-upward-rounded inline-block size-3" aria-hidden="true" />
                           )}
                         </button>
                       );
@@ -459,7 +457,7 @@ function SearchContent({ initialOptions, initialResult }: SearchProps) {
           {totalPages > 1 && !isLoading && (
             <nav className="mt-10 flex flex-wrap items-center justify-center gap-2" aria-label="搜索结果分页">
               <button onClick={/* 返回上一页搜索结果。 */ () => goToPage(page - 1)} disabled={page === 1} className="surface-control rounded-xl p-2.5 text-white/65 transition-all hover:bg-white/10 hover:text-white disabled:pointer-events-none disabled:opacity-30" aria-label="上一页">
-                <ChevronLeft className="size-4" aria-hidden="true" />
+                <span className="i-material-symbols-chevron-left-rounded inline-block size-4" aria-hidden="true" />
               </button>
               {pageNumbers(page, totalPages).map(/* 将页码窗口中的一页渲染为分页按钮。 */ (pageNumber) => (
                 <button key={pageNumber} onClick={/* 跳转到点击的结果页。 */ () => goToPage(pageNumber)} aria-current={pageNumber === page ? "page" : undefined} className={`min-w-10 rounded-xl border px-3 py-2 text-center text-sm transition-all ${pageNumber === page ? "surface-active border-red-400/30 text-red-300" : "surface-muted border-white/10 text-white/55 hover:bg-white/10 hover:text-white"}`}>
@@ -467,7 +465,7 @@ function SearchContent({ initialOptions, initialResult }: SearchProps) {
                 </button>
               ))}
               <button onClick={/* 前往下一页搜索结果。 */ () => goToPage(page + 1)} disabled={page === totalPages} className="surface-control rounded-xl p-2.5 text-white/65 transition-all hover:bg-white/10 hover:text-white disabled:pointer-events-none disabled:opacity-30" aria-label="下一页">
-                <ChevronRight className="size-4" aria-hidden="true" />
+                <span className="i-material-symbols-chevron-right-rounded inline-block size-4" aria-hidden="true" />
               </button>
             </nav>
           )}
@@ -481,7 +479,7 @@ function SearchContent({ initialOptions, initialResult }: SearchProps) {
           showScrollTop ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10 pointer-events-none"
         }`}
       >
-        <ArrowUp className="size-5" aria-hidden="true" />
+        <span className="i-material-symbols-arrow-upward-rounded inline-block size-5" aria-hidden="true" />
       </button>
     </div>
   );
@@ -493,7 +491,7 @@ export default function SearchClient(props: SearchProps) {
     <Suspense
       fallback={
         <div className="min-h-screen flex items-center justify-center text-white/60">
-          <LoaderCircle className="size-6 animate-spin text-red-400 drop-shadow-[0_0_5px_rgba(248,113,113,0.5)]" aria-hidden="true" />
+          <span className="i-material-symbols-progress-activity-rounded inline-block size-6 animate-spin text-red-400 drop-shadow-[0_0_5px_rgba(248,113,113,0.5)]" aria-hidden="true" />
         </div>
       }
     >
