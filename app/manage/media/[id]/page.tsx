@@ -7,6 +7,7 @@ import { readEditableMedia } from "@/lib/admin/read-media";
 import { mediaTypes } from "@/lib/admin/media-form";
 import { readParent, readImpact } from "@/lib/admin/media-context";
 import MediaForm from "../MediaForm";
+import StatusModal from "../../StatusModal";
 
 /** 载入完整编辑资料，并提供上下级导航及新增季集入口。 */
 export default async function EditMediaPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ saved?: string }> }) {
@@ -29,7 +30,7 @@ export default async function EditMediaPage({ params, searchParams }: { params: 
       {childType && <><Link className="admin-button" href={`/manage?type=${childType}&parent=${id}`}>管理下属{mediaTypes[childType]}</Link><Link className="admin-button" href={`/manage/media/new?type=${childType}&parent=${id}`}>新增{mediaTypes[childType]}</Link></>}
       {(item.type === "movie" || item.type === "tv_series") && <Link className="admin-button" href={`/${item.type === "movie" ? "movies" : "series"}/${id}`}>查看公开页面</Link>}
     </div>
-    {saved === "1" && <p role="status" className="mb-6 text-green-300">保存成功，公开页面缓存已更新。</p>}
+    {saved === "1" && <StatusModal message="保存成功，公开页面缓存已更新。" />}
     <MediaForm key={JSON.stringify(item)} item={item} parent={parent} impact={impact} />
   </section>;
 }
