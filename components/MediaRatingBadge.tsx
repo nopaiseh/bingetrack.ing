@@ -105,9 +105,9 @@ export function getRatingTier(rating: number | null | undefined): RatingTierInfo
   // 0.0 ~ 0.9
   return {
     label: "神烂",
-    badgeClass: "border-red-900/60 bg-black/70 text-red-500 shadow-[0_0_12px_rgba(185,28,28,0.3)]",
-    glowClass: "drop-shadow-[0_0_6px_rgba(185,28,28,0.8)] text-red-500",
-    textClass: "text-red-500 font-black",
+    badgeClass: "border-red-800/60 bg-black/70 text-red-400 shadow-[0_0_12px_rgba(185,28,28,0.3)]",
+    glowClass: "drop-shadow-[0_0_6px_rgba(185,28,28,0.8)] text-red-400",
+    textClass: "text-red-400 font-black",
     icon: "i-material-symbols-skull-rounded",
   };
 }

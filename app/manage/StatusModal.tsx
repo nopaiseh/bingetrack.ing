@@ -18,7 +18,8 @@ export interface StatusModalProps {
  * - 移动端：吸底浮层抽屉（Bottom Sheet），适配单手大拇指触控并预留安全边距；
  * - 平板与桌面端：屏幕中央居中卡片（Centered Dialog），最大宽度适中，毛玻璃背景；
  * - 5 秒后平滑倒计时自动消失，支持悬停/长按暂停；
- * - 支持 Escape、点击遮罩或按钮即时关闭；
+ * - 支持 Escape 键、点击“知道了”或关闭按钮即时关闭；
+ * - 非阻塞式浮层：不阻碍对后台表单的持续输入与快捷操作；
  * - 消息具有 role="status"，无障碍播报并兼容自动化测试。
  */
 export default function StatusModal({
@@ -35,7 +36,6 @@ export default function StatusModal({
   const isPausedRef = useRef(false);
   const lastTickRef = useRef<number>(0);
   const modalRef = useRef<HTMLDivElement>(null);
-  const confirmBtnRef = useRef<HTMLButtonElement>(null);
 
   /** 清除 URL 中的 saved / deleted 参数，避免刷新重复弹窗 */
   const cleanUrl = useCallback(() => {
@@ -71,11 +71,6 @@ export default function StatusModal({
       onClose?.();
     }, 200);
   }, [cleanUrl, onClose]);
-
-  // 初始自动聚焦到“知道了”按钮，方便键盘与辅助技术快速操作
-  useEffect(() => {
-    confirmBtnRef.current?.focus();
-  }, []);
 
   // 倒计时与暂停管理
   useEffect(() => {
@@ -130,18 +125,16 @@ export default function StatusModal({
   return (
     <div
       role="dialog"
-      aria-modal="true"
       aria-labelledby="status-modal-title"
       aria-describedby="status-modal-desc"
-      className={`fixed inset-0 z-50 flex items-end justify-center p-4 pb-[max(1rem,env(safe-area-inset-bottom,0px))] sm:items-center sm:p-6 transition-opacity duration-200 ${
-        isClosing ? "opacity-0 pointer-events-none" : "opacity-100"
+      className={`fixed inset-0 z-50 pointer-events-none flex items-end justify-center p-4 pb-[max(1rem,env(safe-area-inset-bottom,0px))] sm:items-center sm:p-6 transition-opacity duration-200 ${
+        isClosing ? "opacity-0" : "opacity-100"
       }`}
     >
-      {/* 半透明毛玻璃背景遮罩 */}
+      {/* 柔和毛玻璃微暗背景（非阻断式） */}
       <div
-        className="fixed inset-0 bg-black/60 backdrop-blur-sm transition-opacity"
+        className="fixed inset-0 bg-black/35 backdrop-blur-[1.5px] transition-opacity pointer-events-none"
         aria-hidden="true"
-        onClick={handleClose}
       />
 
       {/* 弹窗内容卡片：手机端底部抽屉，平板与桌面端中心弹窗 */}
@@ -157,7 +150,7 @@ export default function StatusModal({
           lastTickRef.current = Date.now();
           isPausedRef.current = false;
         }}
-        className={`relative w-full max-w-md overflow-hidden rounded-2xl sm:rounded-3xl border border-white/15 bg-neutral-900/95 p-5 sm:p-6 text-neutral-100 shadow-[0_20px_50px_rgba(0,0,0,0.8)] backdrop-blur-2xl transition-all duration-200 ${
+        className={`pointer-events-auto relative w-full max-w-md overflow-hidden rounded-2xl sm:rounded-3xl border border-white/20 bg-neutral-900/95 p-5 sm:p-6 text-neutral-100 shadow-[0_25px_60px_rgba(0,0,0,0.85)] backdrop-blur-2xl transition-all duration-200 ${
           isClosing
             ? "translate-y-4 sm:translate-y-0 sm:scale-95 opacity-0"
             : "translate-y-0 sm:scale-100 opacity-100"
@@ -222,7 +215,6 @@ export default function StatusModal({
             {Math.ceil(remainingTime / 1000)} 秒后自动关闭
           </span>
           <button
-            ref={confirmBtnRef}
             type="button"
             onClick={handleClose}
             className="admin-button admin-primary !min-h-9 !px-4 !py-1.5 text-xs font-medium sm:text-sm"

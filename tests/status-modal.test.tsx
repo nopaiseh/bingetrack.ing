@@ -17,7 +17,7 @@ it("渲染包含正确 role=status、无障碍标题与响应式类别的弹窗"
 
   const dialog = screen.getByRole("dialog");
   expect(dialog).toBeInTheDocument();
-  expect(dialog).toHaveAttribute("aria-modal", "true");
+  expect(dialog.className).toContain("pointer-events-none");
 
   // 必须包含 role="status" 以兼顾无障碍播报与 Playwright E2E 检查
   const status = screen.getByRole("status");
