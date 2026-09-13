@@ -16,7 +16,9 @@ vi.mock("@/lib/supabase/public-server", /* 提供可记录查询的 Supabase 模
         /** 等待查询时保存请求记录，再把预设表结果交给后续 Promise 回调。 */
         then(resolve: (value: unknown) => unknown) {
           state.executed.push(request);
-          return Promise.resolve(state.results[table] ?? { data: [], error: null, count: 0 }).then(resolve);
+          const raw = state.results[table];
+          const result = typeof raw === "function" ? (raw as () => unknown)() : raw;
+          return Promise.resolve(result ?? { data: [], error: null, count: 0 }).then(resolve);
         },
       };
       return chain;
@@ -86,4 +88,21 @@ test("fetchStatsServer converts string counts to numbers including upcoming", /*
     upcoming: 1,
   });
   expect(state.executed.map(/* 提取查询表名以确认执行了 RPC。 */ (query) => query.table)).toEqual(["rpc:get_media_stats"]);
+});
+
+test("fetchMediaCardsServer retries on transient gateway timeout and succeeds on retry", async () => {
+  let attempt = 0;
+  // @ts-expect-error test dynamic mock function
+  state.results.v_all_media = () => {
+    attempt++;
+    if (attempt === 1) {
+      return { data: null, error: { message: "Gateway Timeout" }, count: 0 };
+    }
+    return { data: [{ id: "m-retry", type: "movie", title: "Recovered Movie" }], error: null, count: 1 };
+  };
+
+  const rows = await fetchMediaCardsServer({ type: "movie", limit: 10 });
+  expect(rows).toHaveLength(1);
+  expect(rows[0].title).toBe("Recovered Movie");
+  expect(attempt).toBe(2);
 });
