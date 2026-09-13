@@ -3,6 +3,7 @@ import Link from "next/link";
 import { requireOwner } from "@/lib/auth/server";
 import { mediaTypes, type ManagedMediaType } from "@/lib/admin/media-form";
 import { isMediaId } from "@/lib/functions/media-id";
+import StatusModal from "./StatusModal";
 
 /** 分页搜索全部影视，或查看指定剧集／季的下属条目。 */
 export default async function AdminPage({ searchParams }: { searchParams: Promise<Record<string, string | undefined>> }) {
@@ -30,7 +31,7 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
       <div><h1 className="admin-heading">{mediaTypes[type]}</h1><p className="mt-2 text-neutral-400">共 {count ?? 0} 个条目 · 管理影视与观看记录</p></div>
       <Link href={`/manage/media/new${type ? `?type=${type}${parent ? `&parent=${parent}` : ""}` : ""}`} className="admin-button admin-primary shrink-0">新增{type ? mediaTypes[type] : "媒体"}</Link>
     </div>
-    {params.deleted === "1" && <p role="status" className="surface-muted mb-5 rounded-xl border border-white/10 px-4 py-3 text-sm text-green-300">条目及其下属资料已删除。</p>}
+    {params.deleted === "1" && <StatusModal message="条目及其下属资料已删除。" />}
     {parent && <p className="mb-5"><Link href={`/manage/media/${parent}`} className="underline">返回上级条目</Link></p>}
     <form className="surface-panel mb-6 rounded-2xl p-4 sm:p-6 grid grid-cols-[minmax(0,1fr)_auto] items-end gap-3">
       <label>搜索标题<input name="q" defaultValue={q} maxLength={200} placeholder="输入电影、剧集或单集名称" /></label>
