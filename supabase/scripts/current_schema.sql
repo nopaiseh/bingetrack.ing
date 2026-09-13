@@ -707,6 +707,15 @@ stable
 parallel safe
 set search_path to ''
 as $$
+  with upcoming_series as (
+    select distinct s.series_id
+    from public.tv_seasons as s
+    join public.tv_episodes as e on e.season_id = s.id
+    join public.media_items as em on em.id = e.id
+    left join public.tracking as t on t.media_item_id = e.id
+    where em.release_date >= current_date
+      and (t.status is distinct from 'watched')
+  )
   select
     count(*) as total,
     count(*) filter (where media.status = 'watched') as watched,
@@ -716,21 +725,13 @@ as $$
       when p_media_type = 'tv_series' then
         count(*) filter (
           where media.status is distinct from 'watched'
-            and exists (
-              select 1
-              from public.tv_seasons as s
-              join public.tv_episodes as e on e.season_id = s.id
-              join public.media_items as em on em.id = e.id
-              left join public.tracking as t on t.media_item_id = e.id
-              where s.series_id = media.id
-                and em.release_date >= current_date
-                and (t.status is distinct from 'watched')
-            )
+            and u.series_id is not null
         )
       else
         count(*) filter (where media.sort_date >= current_date)
     end as upcoming
   from public.v_all_media as media
+  left join upcoming_series as u on u.series_id = media.id
   where media.type::text = p_media_type;
 $$;
 
