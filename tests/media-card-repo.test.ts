@@ -21,9 +21,13 @@ vi.mock("@/lib/supabase/public-server", /* 提供可记录查询的 Supabase 模
       };
       return chain;
     },
+    rpc(fn: string) {
+      state.executed.push({ table: `rpc:${fn}` });
+      return Promise.resolve(state.results[`rpc:${fn}`] ?? { data: [], error: null });
+    },
   }),
 }));
-import { fetchMediaCardsServer, searchMediaServer, getSeasonsBySeriesId, MediaRepositoryError } from "@/lib/functions/media-repo";
+import { fetchMediaCardsServer, searchMediaServer, getSeasonsBySeriesId, fetchStatsServer, MediaRepositoryError } from "@/lib/functions/media-repo";
 
 beforeEach(/* 在每个测试前清空执行记录和模拟表结果。 */ () => { state.executed = []; state.results = {}; });
 
@@ -66,4 +70,20 @@ test("only missing views use the rollout fallback", /* 验证仅视图缺失会�
   expect(state.executed.map(/* 提取查询表名以确认执行了缺失视图回退。 */ (query) => query.table)).toEqual(["v_media_season_summaries", "tv_seasons"]);
   state.results.v_media_season_summaries = { data: null, error: { code: "42501" } };
   await expect(getSeasonsBySeriesId("12345678-1234-1234-1234-123456789abc")).rejects.toBeInstanceOf(MediaRepositoryError);
+});
+
+test("fetchStatsServer converts string counts to numbers including upcoming", /* 验证统计函数正确转换各种计数为数字（包括 upcoming）。 */ async () => {
+  state.results["rpc:get_media_stats"] = {
+    data: [{ total: "10", watched: "5", watching: "2", want: "3", upcoming: "1" }],
+    error: null,
+  };
+  const stats = await fetchStatsServer("tv_series");
+  expect(stats).toEqual({
+    total: 10,
+    watched: 5,
+    watching: 2,
+    want: 3,
+    upcoming: 1,
+  });
+  expect(state.executed.map(/* 提取查询表名以确认执行了 RPC。 */ (query) => query.table)).toEqual(["rpc:get_media_stats"]);
 });
