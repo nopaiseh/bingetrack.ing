@@ -17,6 +17,8 @@ export class MediaRepositoryError extends Error {
 
 // 列表只读取卡片需要的字段，避免把简介和演职员等详情数据传到客户端。
 const MEDIA_CARD_COLUMNS = "id,type,title,sort_date,release_year,rating,genres,languages,cover_url";
+// 榜单精选读取卡片字段及简介摘要，供首页展台和精选展示使用。
+const TOP_MEDIA_COLUMNS = "id,type,title,sort_date,release_year,rating,genres,languages,cover_url,summary";
 // 限制通过 URL 参数传递给 PostgREST 的 ID 数量上限，防止超出网关的 URL 长度限制（HTTP 414）。
 const MAX_FILTER_IDS = 100;
 
@@ -459,7 +461,7 @@ export async function fetchTopMediaServer(
 
     const { data: seriesData, error: seriesError } = await db
       .from("v_all_media")
-      .select(MEDIA_CARD_COLUMNS)
+      .select(TOP_MEDIA_COLUMNS)
       .eq("type", "tv_series")
       .in("id", seriesIds);
 
@@ -471,7 +473,11 @@ export async function fetchTopMediaServer(
     const rankedSeries = (seriesData as ViewAllMediaRow[])
       .map(/* 将电视剧视图行转成卡片，并把评分替换为所选年份的评分。 */ (item) => {
         const yearRating = ratingsBySeries.get(String(item.id)) ?? null;
-        return { ...mapViewRowToMediaCard(item), rating: yearRating };
+        return {
+          ...mapViewRowToMediaCard(item),
+          rating: yearRating,
+          ...(item.summary ? { summary: item.summary } : {}),
+        };
       })
       .sort(/* 按年度评分降序排列，缺失评分置后，同分时按 ID 排序。 */ (left, right) =>
         (right.rating ?? -1) - (left.rating ?? -1) || left.id.localeCompare(right.id),
@@ -481,7 +487,7 @@ export async function fetchTopMediaServer(
 
   let query = db
     .from("v_all_media")
-    .select(MEDIA_CARD_COLUMNS)
+    .select(TOP_MEDIA_COLUMNS)
     .eq("type", mediaType)
     .order("rating", { ascending: false, nullsFirst: false })
     .limit(limit);
@@ -497,7 +503,10 @@ export async function fetchTopMediaServer(
   }
   if (!data) return [];
 
-  const items = data.map(/* 将榜单视图行转换为媒体卡片。 */ (item: ViewAllMediaRow) => mapViewRowToMediaCard(item));
+  const items = data.map(/* 将榜单视图行转换为媒体卡片。 */ (item: ViewAllMediaRow) => ({
+    ...mapViewRowToMediaCard(item),
+    ...(item.summary ? { summary: item.summary } : {}),
+  }));
   return mediaType === "tv_series" ? addSeriesReleaseYearRanges(db, items) : items;
 }
 

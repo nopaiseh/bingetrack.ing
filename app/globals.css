@@ -232,8 +232,16 @@ video {
   display: none;
 }
 
+@view-transition {
+  navigation: auto;
+}
+
 :root {
-  /* 统一纯净的背景底色，避免局部忽明忽暗 */
+  color-scheme: dark;
+  accent-color: var(--accent);
+  --font-serif-movie: "Songti SC", "Source Han Serif SC", "Noto Serif SC", "STSong", "SimSun", "Baskerville", "Georgia", serif;
+
+  /* 默认：经典红毯 (Red Carpet) */
   --canvas: #140606;
   --surface-panel: rgba(32, 14, 16, 0.82);
   --surface-overlay: rgba(26, 12, 14, 0.82);
@@ -251,6 +259,30 @@ video {
   --image-overlay: rgba(0, 0, 0, 0.35);
   --image-placeholder: rgba(0, 0, 0, 0.45);
   --image-label: rgba(0, 0, 0, 0.72);
+}
+
+/* 赛博霓虹 (Cyber Neon) */
+[data-theme="cyber"] {
+  --canvas: #050b14;
+  --surface-panel: rgba(12, 22, 38, 0.82);
+  --surface-overlay: rgba(10, 18, 32, 0.82);
+  --surface-card: rgba(14, 26, 44, 0.72);
+  --accent: #38bdf8;
+  --accent-soft: rgba(56, 189, 248, 0.16);
+  --surface-control: rgba(4, 10, 18, 0.80);
+  --surface-recessed: rgba(3, 8, 14, 0.88);
+}
+
+/* 复古胶片暖褐 (Warm Sepia) */
+[data-theme="sepia"] {
+  --canvas: #140d06;
+  --surface-panel: rgba(36, 24, 14, 0.82);
+  --surface-overlay: rgba(30, 20, 10, 0.82);
+  --surface-card: rgba(42, 28, 16, 0.72);
+  --accent: #f59e0b;
+  --accent-soft: rgba(245, 158, 11, 0.16);
+  --surface-control: rgba(16, 10, 4, 0.80);
+  --surface-recessed: rgba(12, 8, 3, 0.88);
 }
 
 /* 全局高对比度输入控件基底：赋予明确的下凹物理槽位感 (Recessed Well)，让人一眼看出是 input */
@@ -361,7 +393,7 @@ video {
   }
 
   .interactive-card {
-    transition: transform 300ms, border-color 300ms, background-color 300ms, box-shadow 300ms;
+    transition: transform 300ms cubic-bezier(0.16, 1, 0.3, 1), border-color 300ms, background-color 300ms, box-shadow 300ms;
   }
 
   .interactive-card:hover {
@@ -374,15 +406,17 @@ video {
   }
 
   .interactive-media-card {
-    transition: transform 300ms, border-color 300ms, background-color 300ms, box-shadow 300ms;
+    transition: transform 300ms cubic-bezier(0.16, 1, 0.3, 1), border-color 300ms, background-color 300ms, box-shadow 300ms;
   }
 
-  /* 悬停时抬升卡片，并把红色投影集中到下方。 */
+  /* 悬停时抬升卡片，并把红色投影集中到下方，附带微光。 */
   .interactive-media-card:hover {
     transform: translateY(-0.375rem);
     border-color: rgb(248 113 113 / 0.50);
     background: rgba(38, 15, 18, 0.85);
-    box-shadow: 0 24px 28px -12px rgba(239, 68, 68, 0.35), 0 12px 30px rgba(0, 0, 0, 0.5);
+    box-shadow: 0 24px 32px -10px rgba(239, 68, 68, 0.38),
+                0 12px 30px rgba(0, 0, 0, 0.55),
+                inset 0 1px 0 rgba(255, 255, 255, 0.2);
   }
 
   .interactive-control {
@@ -398,11 +432,12 @@ video {
   .filter-option {
     border: 1px solid var(--border-default);
     background: rgba(20, 8, 10, 0.6);
-    -webkit-backdrop-filter: blur(12px);
-    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(14px);
+    backdrop-filter: blur(14px);
     color: rgb(255 255 255 / 0.75);
     box-shadow: 0 4px 10px rgb(0 0 0 / 0.20), inset 0 1px 0 rgba(255, 255, 255, 0.08);
     color-scheme: dark;
+    transition: transform 200ms cubic-bezier(0.16, 1, 0.3, 1), border-color 200ms, background-color 200ms, color 200ms, box-shadow 200ms;
   }
 
   .filter-option:hover {
@@ -412,14 +447,32 @@ video {
     box-shadow: 0 6px 15px rgb(0 0 0 / 0.30), inset 0 1px 0 rgba(255, 255, 255, 0.15);
   }
 
+  .filter-option:active {
+    transform: scale(0.96);
+  }
+
   .filter-option-active {
     border: 1px solid rgb(248 113 113 / 0.50);
     background: var(--accent-soft);
-    -webkit-backdrop-filter: blur(12px);
-    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(16px);
+    backdrop-filter: blur(16px);
     color: #f87171;
     font-weight: 700;
     box-shadow: 0 4px 15px rgb(248 113 113 / 0.25), inset 0 1px 0 rgba(248, 113, 113, 0.3);
+    text-shadow: 0 0 8px rgba(248, 113, 113, 0.45);
+    filter: drop-shadow(0 0 4px rgba(248, 113, 113, 0.3));
+    transition: transform 200ms cubic-bezier(0.16, 1, 0.3, 1), border-color 200ms, background-color 200ms, color 200ms, box-shadow 200ms;
+  }
+
+  .filter-option-active:hover {
+    border-color: rgb(248 113 113 / 0.75);
+    background: rgba(239, 68, 68, 0.22);
+    color: #fca5a5;
+    box-shadow: 0 6px 20px rgb(248 113 113 / 0.35), inset 0 1px 0 rgba(248, 113, 113, 0.45);
+  }
+
+  .filter-option-active:active {
+    transform: scale(0.96);
   }
 
   .progress-track {
@@ -528,5 +581,9 @@ video {
 }
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
   background: rgba(255, 255, 255, 0.3);
+}
+
+.font-serif-movie {
+  font-family: var(--font-serif-movie);
 }
 

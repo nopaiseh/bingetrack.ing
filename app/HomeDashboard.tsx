@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import MediaRow from "@/components/MediaRow";
 import { PosterRowSkeleton } from "@/components/LoadingSkeletons";
 import DashboardYearPicker from "@/components/DashboardYearPicker";
+import SpotlightHero from "@/components/SpotlightHero";
 import { DistributionItem, MediaCard, MediaDistribution, MediaDistributions, Summary } from "@/lib/types";
 
 const EMPTY_MEDIA_DISTRIBUTION: MediaDistribution = {
@@ -11,6 +12,48 @@ const EMPTY_MEDIA_DISTRIBUTION: MediaDistribution = {
   languages: [],
   genres: [],
 };
+
+/** 平滑数字缓动步进组件，支持减弱动效回退与小数位控制。 */
+function AnimatedNumber({ value, decimals = 0 }: { value: number; decimals?: number }) {
+  const [displayValue, setDisplayValue] = useState(value);
+  const prevValueRef = useRef(value);
+
+  useEffect(() => {
+    const isReducedMotion = typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const start = prevValueRef.current;
+    const end = value;
+    if (start === end) return;
+
+    let animationFrameId: number;
+    if (isReducedMotion) {
+      prevValueRef.current = end;
+      animationFrameId = requestAnimationFrame(() => setDisplayValue(end));
+      return () => cancelAnimationFrame(animationFrameId);
+    }
+
+    const duration = 500;
+    const startTime = performance.now();
+
+    const updateNumber = (now: number) => {
+      const elapsed = now - startTime;
+      const progress = Math.min(elapsed / duration, 1);
+      const ease = progress === 1 ? 1 : 1 - Math.pow(2, -10 * progress);
+      const current = start + (end - start) * ease;
+      setDisplayValue(current);
+
+      if (progress < 1) {
+        animationFrameId = requestAnimationFrame(updateNumber);
+      } else {
+        prevValueRef.current = end;
+      }
+    };
+
+    animationFrameId = requestAnimationFrame(updateNumber);
+    return () => cancelAnimationFrame(animationFrameId);
+  }, [value]);
+
+  return <>{decimals > 0 ? displayValue.toFixed(decimals) : Math.round(displayValue)}</>;
+}
 
 /** 按媒体分类生成评分降序的搜索链接；指定年份时同时限定起止年份。 */
 function getSearchViewAllLink(type: "电影" | "电视剧", year: string) {
@@ -91,9 +134,11 @@ function CategoryHeaderCards({
         </div>
         <div>
           <div className="flex items-baseline gap-2 mb-2">
-            <span className="text-4xl font-mono text-white drop-shadow-[0_0_8px_rgba(255,255,255,0.2)]">{watchedCount}</span>
+            <span className="text-4xl font-mono text-white drop-shadow-[0_0_8px_rgba(255,255,255,0.2)]">
+              <AnimatedNumber value={watchedCount} />
+            </span>
             <span className="text-sm text-white/50 font-medium">
-              / {totalCount} 部 (已看 / 总数)
+              / <AnimatedNumber value={totalCount} /> 部 (已看 / 总数)
             </span>
           </div>
           <div className="progress-track h-2 w-full overflow-hidden rounded-full shadow-inner">
@@ -114,7 +159,9 @@ function CategoryHeaderCards({
         </div>
         <div>
           <div className="flex items-baseline gap-2 mb-2">
-            <span className="text-4xl font-mono text-white drop-shadow-[0_0_8px_rgba(255,255,255,0.2)]">{avgRating || 0}</span>
+            <span className="text-4xl font-mono text-white drop-shadow-[0_0_8px_rgba(255,255,255,0.2)]">
+              <AnimatedNumber value={avgRating || 0} decimals={1} />
+            </span>
             <span className="text-sm text-white/50 font-medium">/ 10</span>
           </div>
           <div className="progress-track h-2 w-full overflow-hidden rounded-full shadow-inner">
@@ -157,7 +204,9 @@ function MediaRuntimeCards({
             <span className="text-sm font-bold tracking-wide text-white/80 transition-colors group-hover:text-white">已看总时长</span>
           </div>
           <div className="mb-2 flex items-baseline gap-2">
-            <span className="font-mono text-5xl tracking-tighter text-white drop-shadow-[0_0_10px_rgba(255,255,255,0.2)]">{watchedHours}</span>
+            <span className="font-mono text-5xl tracking-tighter text-white drop-shadow-[0_0_10px_rgba(255,255,255,0.2)]">
+              <AnimatedNumber value={watchedHours} />
+            </span>
             <span className="font-medium text-white/50">小时</span>
           </div>
         </div>
@@ -175,7 +224,9 @@ function MediaRuntimeCards({
             <span className="text-sm font-bold tracking-wide text-white/80 transition-colors group-hover:text-white">待看总时长</span>
           </div>
           <div className="mb-2 flex items-baseline gap-2">
-            <span className="font-mono text-5xl tracking-tighter text-white drop-shadow-[0_0_10px_rgba(255,255,255,0.2)]">{unwatchedHours}</span>
+            <span className="font-mono text-5xl tracking-tighter text-white drop-shadow-[0_0_10px_rgba(255,255,255,0.2)]">
+              <AnimatedNumber value={unwatchedHours} />
+            </span>
             <span className="font-medium text-white/50">小时</span>
           </div>
         </div>
@@ -191,7 +242,9 @@ function MediaRuntimeCards({
             <span className="text-sm font-bold tracking-wide text-white/80 transition-colors group-hover:text-white">完成进度</span>
           </div>
           <div className="mb-4 flex items-baseline gap-2">
-            <span className="font-mono text-5xl tracking-tighter text-white drop-shadow-[0_0_10px_rgba(255,255,255,0.2)]">{completionPercent}%</span>
+            <span className="font-mono text-5xl tracking-tighter text-white drop-shadow-[0_0_10px_rgba(255,255,255,0.2)]">
+              <AnimatedNumber value={completionPercent} />%
+            </span>
             <span className="font-medium text-white/50">已完成</span>
           </div>
         </div>
@@ -226,14 +279,14 @@ function MediaStatusCard({
         <div className="flex justify-between items-end">
           <span className="text-sm text-white/50">部数</span>
           <span className="text-2xl font-mono text-white drop-shadow-[0_0_5px_rgba(255,255,255,0.2)]">
-            {count} <span className="text-xs text-white/60 font-normal">部</span>
+            <AnimatedNumber value={count} /> <span className="text-xs text-white/60 font-normal">部</span>
           </span>
         </div>
         {seasonsCount !== undefined && (
           <div className="flex justify-between items-end">
             <span className="text-sm text-white/50">季数</span>
             <span className="text-2xl font-mono text-white drop-shadow-[0_0_5px_rgba(255,255,255,0.2)]">
-              {seasonsCount} <span className="text-xs text-white/60 font-normal">季</span>
+              <AnimatedNumber value={seasonsCount} /> <span className="text-xs text-white/60 font-normal">季</span>
             </span>
           </div>
         )}
@@ -241,7 +294,7 @@ function MediaStatusCard({
           <div className="flex justify-between items-end">
             <span className="text-sm text-white/50">集数</span>
             <span className="text-2xl font-mono text-white drop-shadow-[0_0_5px_rgba(255,255,255,0.2)]">
-              {episodesCount} <span className="text-xs text-white/60 font-normal">集</span>
+              <AnimatedNumber value={episodesCount} /> <span className="text-xs text-white/60 font-normal">集</span>
             </span>
           </div>
         )}
@@ -349,6 +402,10 @@ export default function HomeDashboard({
     return /* 取消当前年份尚未完成的榜单请求。 */ () => controller.abort();
   }, [selectedYear]);
 
+  const spotlightCandidates = selectedYear === "All Time"
+    ? topMovies
+    : (displayedTopMovies.length > 0 ? displayedTopMovies : topMovies);
+
   return (
     <div className="container mx-auto flex max-w-7xl flex-col gap-6 px-4 py-12 pt-24 sm:px-6 lg:px-8">
       <section aria-labelledby="dashboard-title" className="relative z-10 mb-2 rounded-3xl border border-white/10 bg-[var(--surface-panel)] px-5 pb-5 pt-6 shadow-[0_24px_80px_rgba(0,0,0,0.24)] sm:px-7 sm:pb-6 sm:pt-8 lg:px-10 lg:pb-8 lg:pt-10">
@@ -371,22 +428,37 @@ export default function HomeDashboard({
             <dl className="grid grid-cols-3 gap-2 border-t border-white/10 pt-5 lg:min-w-100 lg:border-l lg:border-t-0 lg:pl-8 lg:pt-0">
               <div>
                 <dt className="text-[11px] tracking-wide text-white/60">电影总计</dt>
-                <dd className="mt-1 font-mono text-xl font-medium text-white sm:text-2xl">{totalMovies}</dd>
+                <dd className="mt-1 font-mono text-xl font-medium text-white sm:text-2xl">
+                  <AnimatedNumber value={totalMovies} />
+                </dd>
               </div>
               <div>
                 <dt className="text-[11px] tracking-wide text-white/60">电视剧总计</dt>
-                <dd className="mt-1 font-mono text-xl font-medium text-white sm:text-2xl">{totalSeries}</dd>
+                <dd className="mt-1 font-mono text-xl font-medium text-white sm:text-2xl">
+                  <AnimatedNumber value={totalSeries} />
+                </dd>
               </div>
               <div>
                 <dt className="text-[11px] tracking-wide text-white/60">完成进度</dt>
-                <dd className="mt-1 font-mono text-xl font-medium text-red-300 sm:text-2xl">{runtimePercent}%</dd>
+                <dd className="mt-1 font-mono text-xl font-medium text-red-300 sm:text-2xl">
+                  <AnimatedNumber value={runtimePercent} />%
+                </dd>
               </div>
             </dl>
           </div>
         </div>
 
         <div className="relative mt-7 flex flex-col items-start justify-between gap-4 border-t border-white/10 pt-5 md:flex-row md:items-center">
-          <div className="surface-control flex gap-1 rounded-xl p-1.5" role="tablist" aria-label="仪表板视图">
+          <div className="surface-control relative flex items-center rounded-xl p-1.5" role="tablist" aria-label="仪表板视图">
+            {/* 平滑滑动的物理胶囊底块 */}
+            <div
+              className="surface-active pointer-events-none absolute top-1.5 bottom-1.5 rounded-lg border border-red-400/40 shadow-[0_4px_15px_rgba(248,113,113,0.2)] drop-shadow-[0_0_5px_rgba(248,113,113,0.4)] transition-transform duration-300 ease-out"
+              style={{
+                width: `calc((100% - 12px) / ${tabs.length})`,
+                transform: `translateX(calc(${tabs.indexOf(activeTab)} * 100%))`,
+              }}
+            />
+
             {tabs.map(/* 为每个看板分类渲染可切换的标签按钮。 */ (tab) => (
               <button
                 key={tab}
@@ -395,10 +467,10 @@ export default function HomeDashboard({
                 id={`dashboard-tab-${tabIds[tab]}`}
                 aria-controls={`dashboard-panel-${tabIds[tab]}`}
                 aria-selected={activeTab === tab}
-                className={`px-5 py-2 rounded-lg text-sm font-medium transition-all duration-300 border ${
+                className={`relative z-10 px-5 py-2 rounded-lg text-sm font-medium transition-colors duration-200 ${
                   activeTab === tab
-                    ? "surface-active text-red-400 border-red-400/40 font-bold shadow-[0_4px_15px_rgba(248,113,113,0.2)] drop-shadow-[0_0_5px_rgba(248,113,113,0.4)]"
-                    : "border-transparent text-white/70 hover:text-white hover:bg-white/10"
+                    ? "text-red-400 font-bold"
+                    : "text-white/70 hover:text-white"
                 }`}
               >
                 {tab}
@@ -427,6 +499,8 @@ export default function HomeDashboard({
         )}
         {activeTab === "总览" && (
           <div key="overview" id="dashboard-panel-overview" role="tabpanel" aria-labelledby="dashboard-tab-overview" className="flex flex-col gap-4 md:gap-6">
+            <SpotlightHero items={spotlightCandidates} yearLabel={selectedYear} />
+
             <div className="dashboard-deferred surface-card interactive-card group flex flex-col gap-6 rounded-2xl p-4 sm:p-5 lg:p-6">
               <div className="flex items-center border-b border-white/10 pb-3">
                 <div className="flex items-center gap-2">

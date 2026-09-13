@@ -15,3 +15,28 @@ test.each([0, null])("rating %s remains distinct from unrated across public view
   expect(screen.getAllByText(rating === null ? "未评分" : "0.0")).toHaveLength(3);
   expect(screen.queryByText(rating === null ? "0.0" : "未评分")).not.toBeInTheDocument();
 });
+
+test.each([
+  [9.5, "神作"],
+  [8.5, "佳作"],
+  [7.5, "良作"],
+  [6.5, "尚可"],
+  [5.5, "及格"],
+  [4.5, "平庸"],
+  [3.5, "较差"],
+  [2.5, "烂片"],
+  [1.5, "灾难"],
+  [0.5, "神烂"],
+])("rating %s corresponds to tier %s across views", (rating, expectedTier) => {
+  const item = { ...media, rating };
+  render(
+    <>
+      <MediaInformation media={item} seasons={null} />
+      <SearchMediaCard item={item} returnHref="/search" />
+      <MediaRow title="电影" items={[item]} type="movies" />
+    </>
+  );
+  expect(screen.getAllByText(expectedTier)).toHaveLength(3);
+  expect(screen.getAllByText(Number(rating).toFixed(1))).toHaveLength(3);
+});
+

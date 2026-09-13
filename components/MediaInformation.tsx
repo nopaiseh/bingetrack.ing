@@ -4,12 +4,13 @@ import { Suspense, type ReactNode } from "react";
 import MediaBackLink, { DefaultMediaBackLink } from "./MediaBackLink";
 import { Media, SeasonInfo } from "@/lib/types";
 import SearchTag from "./SearchTag";
+import MediaRatingBadge from "./MediaRatingBadge";
 
 /** 展示并预加载详情海报；无图片时显示暂无海报占位。 */
 function MediaPoster({ media }: { media: Media }) {
   return (
-    <div className="w-full max-w-80 shrink-0 self-center lg:w-80 lg:self-start">
-      <div className="surface-muted relative aspect-2/3 w-full overflow-hidden rounded-xl border border-white/10 shadow-[0_15px_40px_rgba(0,0,0,0.3)] backdrop-blur-2xl">
+    <div className="relative w-full max-w-80 shrink-0 self-center lg:w-80 lg:self-start">
+      <div className="surface-muted relative z-10 aspect-2/3 w-full overflow-hidden rounded-2xl border border-white/15 shadow-[0_25px_60px_-15px_rgba(0,0,0,0.8)] backdrop-blur-2xl ring-1 ring-white/10 transition-transform duration-500 hover:scale-[1.02]">
         {media.cover_url ? (
           <Image src={media.cover_url} alt={media.title} fill sizes="(max-width: 393px) calc(100vw - 74px), 320px" className="object-cover transition-transform duration-700 hover:scale-105" priority />
         ) : (
@@ -27,7 +28,7 @@ function MediaPoster({ media }: { media: Media }) {
 function StatusBadge({ status }: { status?: string }) {
   if (status === "watched") {
     return (
-      <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 text-xs font-bold backdrop-blur-2xl shadow-[0_4px_10px_rgba(16,185,129,0.2)] drop-shadow-[0_0_5px_rgba(16,185,129,0.4)] cursor-default transition-all">
+      <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 text-xs font-bold backdrop-blur-2xl shadow-[0_4px_12px_rgba(16,185,129,0.25)] drop-shadow-[0_0_6px_rgba(16,185,129,0.4)] cursor-default transition-all duration-300 hover:bg-emerald-500/25 hover:shadow-[0_4px_16px_rgba(16,185,129,0.35)]">
         <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
           <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7"/>
         </svg>
@@ -38,15 +39,18 @@ function StatusBadge({ status }: { status?: string }) {
 
   if (status === "watching") {
     return (
-      <div className="flex cursor-default items-center gap-1.5 rounded-full border border-sky-400/30 bg-sky-400/15 px-3 py-1.5 text-xs font-bold text-sky-300 shadow-[0_4px_10px_rgba(56,189,248,0.18)] backdrop-blur-2xl">
-        <span className="size-2 rounded-full bg-sky-300 shadow-[0_0_8px_rgba(125,211,252,0.8)]" />
+      <div className="flex cursor-default items-center gap-1.5 rounded-full border border-sky-400/30 bg-sky-400/15 px-3 py-1.5 text-xs font-bold text-sky-300 shadow-[0_4px_12px_rgba(56,189,248,0.2)] backdrop-blur-2xl transition-all duration-300 hover:bg-sky-400/25 hover:shadow-[0_4px_16px_rgba(56,189,248,0.3)]">
+        <span className="relative flex size-2">
+          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-sky-400 opacity-75 duration-1000" />
+          <span className="relative inline-flex size-2 rounded-full bg-sky-300 shadow-[0_0_8px_rgba(125,211,252,0.8)]" />
+        </span>
         正在看
       </div>
     );
   }
 
   return (
-    <div className="surface-muted interactive-control flex cursor-pointer items-center gap-1.5 rounded-full border border-white/10 px-3 py-1.5 text-xs font-medium text-white/60 shadow-[0_4px_10px_rgba(0,0,0,0.2)] backdrop-blur-2xl">
+    <div className="surface-muted interactive-control flex cursor-pointer items-center gap-1.5 rounded-full border border-white/10 px-3 py-1.5 text-xs font-medium text-white/70 shadow-[0_4px_10px_rgba(0,0,0,0.2)] backdrop-blur-2xl transition-all duration-300 hover:border-red-400/40 hover:bg-red-500/10 hover:text-red-300 hover:shadow-[0_4px_15px_rgba(239,68,68,0.2)]">
       <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
         <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
       </svg>
@@ -162,6 +166,22 @@ export default function MediaInformation({
 
   return (
     <>
+      {/* 顶部电影氛围背景 (Cinematic Header Ambient Glow) */}
+      {media.cover_url && (
+        <div
+          aria-hidden="true"
+          className="pointer-events-none fixed inset-x-0 top-0 h-[65vh] overflow-hidden opacity-20 blur-[100px] saturate-200 -z-10"
+        >
+          <Image
+            src={media.cover_url}
+            alt=""
+            fill
+            className="object-cover scale-150 -translate-y-1/4"
+            priority={false}
+          />
+          <div className="absolute inset-0 bg-gradient-to-b from-transparent via-[var(--canvas)]/70 to-[var(--canvas)]" />
+        </div>
+      )}
 
       <div className="container relative z-10 mx-auto max-w-7xl px-4 pb-12 pt-24 sm:px-6 lg:px-8">
         <Suspense fallback={<DefaultMediaBackLink type={media.type === "series" ? "series" : "movies"} />}>
@@ -175,24 +195,13 @@ export default function MediaInformation({
             <div className="flex flex-1 flex-col">
             <div className="mb-4 md:mb-8">
               <div className="mb-6 mt-4">
-                <h1 className="text-balance text-3xl font-bold tracking-tight text-white drop-shadow-[0_0_15px_rgba(255,255,255,0.3)] sm:text-4xl lg:text-5xl">
+                <h1 className="font-serif-movie text-balance text-3xl font-bold tracking-tight text-white drop-shadow-[0_0_15px_rgba(255,255,255,0.3)] sm:text-4xl lg:text-5xl">
                   {media.title}
                 </h1>
               </div>
 
               <div className="flex flex-wrap items-center gap-4 text-sm font-medium">
-                {media.rating != null ? (
-                  <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-amber-500/15 text-amber-400 border border-amber-500/30 backdrop-blur-2xl shadow-[0_4px_10px_rgba(251,191,36,0.2)] drop-shadow-[0_0_5px_rgba(251,191,36,0.4)]">
-                    <svg className="w-4 h-4 fill-current" viewBox="0 0 20 20">
-                      <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                    </svg>
-                    <span className="font-bold tracking-wide">{media.rating.toFixed(1)}</span>
-                  </div>
-                ) : (
-                  <span className="surface-muted rounded-md border border-white/10 px-3 py-1.5 text-white/50 backdrop-blur-2xl">
-                    未评分
-                  </span>
-                )}
+                <MediaRatingBadge rating={media.rating} size="lg" showTier />
 
                 {media.runtime && (
                   <>

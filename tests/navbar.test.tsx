@@ -52,7 +52,7 @@ test("submits trimmed desktop search text to the search route", /* 验证桌面�
 });
 
 
-test("导航栏直接登录，站长登录后展示管理设置和退出", async () => {
+test("导航栏直接登录，站长登录后展示管理和退出，不展示设置", async () => {
   const user = userEvent.setup();
   const { rerender } = render(<Navbar />);
   await user.click(screen.getByRole("button", { name: "登录" }));
@@ -63,7 +63,8 @@ test("导航栏直接登录，站长登录后展示管理设置和退出", async
   expect(screen.queryByRole("button", { name: "登录" })).not.toBeInTheDocument();
   expect(screen.getByRole("button", { name: "退出" })).toBeInTheDocument();
   expect(screen.getByRole("link", { name: "管理" })).toHaveAttribute("href", "/manage");
-  expect(screen.getByRole("link", { name: "设置" })).toHaveAttribute("href", "/settings");
+  expect(screen.queryByRole("link", { name: "设置" })).not.toBeInTheDocument();
   await user.click(screen.getByRole("button", { name: "打开导航菜单" }));
-  expect(screen.getAllByRole("link", { name: "设置" })).toHaveLength(2);
+  expect(screen.getAllByRole("link", { name: "管理" })).toHaveLength(2);
+  expect(screen.queryByRole("link", { name: "设置" })).not.toBeInTheDocument();
 });
