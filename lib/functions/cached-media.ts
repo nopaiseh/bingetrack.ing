@@ -4,6 +4,7 @@ import { unstable_cache } from "next/cache";
 import { getMediaById, getSeasonsBySeriesId, searchMediaServer, fetchTopMediaServer, fetchMediaDistributionsServer } from "./media-repo";
 import { parseMediaSearchParams } from "@/lib/api/media-params";
 import { getSupabasePublicServer } from "@/lib/supabase/public-server";
+import { withRetry } from "./retry";
 import type { Summary } from "@/lib/types";
 
 // 公开详情缓存 60 秒，函数参数参与缓存键；React cache 合并同次渲染的重复读取。
@@ -42,13 +43,15 @@ export const getCachedMediaDistributionsServer = cache(unstable_cache(
 // 年度统计聚合结果缓存 60 秒。
 export const getCachedReleaseYearStats = cache(unstable_cache(
   async () => {
-    const db = getSupabasePublicServer();
-    const { data, error } = await db.from("release_year_stats").select("*").order("release_year", { ascending: false });
-    if (error) {
-      console.error("Failed to fetch release year stats:", error);
-      throw new Error("Failed to fetch dashboard summary", { cause: error });
-    }
-    return (data as Summary[] | null) ?? [];
+    return withRetry(async () => {
+      const db = getSupabasePublicServer();
+      const { data, error } = await db.from("release_year_stats").select("*").order("release_year", { ascending: false });
+      if (error) {
+        console.error("Failed to fetch release year stats:", error);
+        throw new Error("Failed to fetch dashboard summary", { cause: error });
+      }
+      return (data as Summary[] | null) ?? [];
+    });
   },
   ["public-media-release-year-stats-v1"],
   { revalidate: 60, tags: ["media"] },
