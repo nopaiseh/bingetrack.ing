@@ -692,7 +692,8 @@ $$;
 revoke all on function public.get_media_distribution_counts() from public;
 grant execute on function public.get_media_distribution_counts() to anon, authenticated, service_role;
 
--- 统计指定媒体类型的总数、已看、在看和想看数量；发行日期为今天或以后的条目计入 upcoming。
+-- 统计指定媒体类型的总数、已看、在看和想看数量；
+-- 发行日期为今天或以后的电影，或存在今天及以后播出且未看单集的电视剧计入 upcoming。
 create or replace function public.get_media_stats(p_media_type text)
 returns table(
   total bigint,
@@ -706,13 +707,31 @@ stable
 parallel safe
 set search_path to ''
 as $$
+  with upcoming_series as (
+    select distinct s.series_id
+    from public.tv_seasons as s
+    join public.tv_episodes as e on e.season_id = s.id
+    join public.media_items as em on em.id = e.id
+    left join public.tracking as t on t.media_item_id = e.id
+    where em.release_date >= current_date
+      and (t.status is distinct from 'watched')
+  )
   select
     count(*) as total,
     count(*) filter (where media.status = 'watched') as watched,
     count(*) filter (where media.status = 'watching') as watching,
     count(*) filter (where media.status = 'want_to_watch') as want,
-    count(*) filter (where media.sort_date >= current_date) as upcoming
+    case
+      when p_media_type = 'tv_series' then
+        count(*) filter (
+          where media.status is distinct from 'watched'
+            and u.series_id is not null
+        )
+      else
+        count(*) filter (where media.sort_date >= current_date)
+    end as upcoming
   from public.v_all_media as media
+  left join upcoming_series as u on u.series_id = media.id
   where media.type::text = p_media_type;
 $$;
 

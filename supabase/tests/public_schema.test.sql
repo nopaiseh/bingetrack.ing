@@ -1,6 +1,6 @@
 begin;
 
-select plan(15);
+select plan(16);
 
 select is(
   (
@@ -141,6 +141,34 @@ select results_eq(
     where media.type::text = 'movie'
   $$,
   'anonymous media stats match the equivalent direct read query'
+);
+
+select results_eq(
+  $$select * from public.get_media_stats('tv_series')$$,
+  $$
+    with upcoming_series as (
+      select distinct s.series_id
+      from public.tv_seasons as s
+      join public.tv_episodes as e on e.season_id = s.id
+      join public.media_items as em on em.id = e.id
+      left join public.tracking as t on t.media_item_id = e.id
+      where em.release_date >= current_date
+        and (t.status is distinct from 'watched')
+    )
+    select
+      count(*) as total,
+      count(*) filter (where media.status = 'watched') as watched,
+      count(*) filter (where media.status = 'watching') as watching,
+      count(*) filter (where media.status = 'want_to_watch') as want,
+      count(*) filter (
+        where media.status is distinct from 'watched'
+          and u.series_id is not null
+      ) as upcoming
+    from public.v_all_media as media
+    left join upcoming_series as u on u.series_id = media.id
+    where media.type::text = 'tv_series'
+  $$,
+  'anonymous tv series stats match the equivalent direct read query'
 );
 
 reset role;
