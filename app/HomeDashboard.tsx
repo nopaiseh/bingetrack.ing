@@ -452,6 +452,7 @@ export default function HomeDashboard({
           <div className="surface-control relative flex items-center rounded-xl p-1.5" role="tablist" aria-label="仪表板视图">
             {/* 平滑滑动的物理胶囊底块 */}
             <div
+              aria-hidden="true"
               className="surface-active pointer-events-none absolute top-1.5 bottom-1.5 rounded-lg border border-red-400/40 shadow-[0_4px_15px_rgba(248,113,113,0.2)] drop-shadow-[0_0_5px_rgba(248,113,113,0.4)] transition-transform duration-300 ease-out"
               style={{
                 width: `calc((100% - 12px) / ${tabs.length})`,

@@ -33,7 +33,12 @@ export default function SpotlightHero({ items, yearLabel }: SpotlightHeroProps) 
       <div className="relative z-10 flex flex-col lg:flex-row items-center justify-between gap-8">
           
           {/* 左侧：电影简介、类型标签与核心控制区 */}
-          <div className="flex flex-1 flex-col justify-between max-w-2xl">
+          <div
+            id="spotlight-panel"
+            role="tabpanel"
+            aria-labelledby={`spotlight-thumb-${activeIndex}`}
+            className="flex flex-1 flex-col justify-between max-w-2xl"
+          >
             <div>
               {/* 顶栏徽标 */}
               <div className="mb-4 flex flex-wrap items-center gap-3">
@@ -41,9 +46,9 @@ export default function SpotlightHero({ items, yearLabel }: SpotlightHeroProps) 
                   <span className="size-1.5 rounded-full bg-amber-400 animate-pulse" />
                   {yearLabel && yearLabel !== "All Time" ? `${yearLabel} · 站长力荐` : "影史精选 · 站长力荐"}
                 </span>
-                <span className="text-xs font-mono text-white/50">{releaseYear}</span>
+                <span className="text-xs font-mono text-white/70">{releaseYear}</span>
                 {currentItem.languages && currentItem.languages.length > 0 && (
-                  <span className="text-xs text-white/40">
+                  <span className="text-xs text-white/70">
                     {currentItem.languages.slice(0, 2).join(" / ")}
                   </span>
                 )}
@@ -78,7 +83,7 @@ export default function SpotlightHero({ items, yearLabel }: SpotlightHeroProps) 
                     {currentItem.summary}
                   </p>
                 ) : (
-                  <p className="text-sm sm:text-base leading-relaxed text-white/50 italic">
+                  <p className="text-sm sm:text-base leading-relaxed text-white/70 italic">
                     收录于影史与年度精选档案，点击下方按钮回顾完整剧照、演职员与详情。
                   </p>
                 )}
@@ -108,6 +113,7 @@ export default function SpotlightHero({ items, yearLabel }: SpotlightHeroProps) 
             <div className="relative group/poster">
               <Link
                 href={mediaPath}
+                aria-label={`查看《${currentItem.title}》详情`}
                 className="surface-muted relative aspect-2/3 w-48 sm:w-56 block overflow-hidden rounded-2xl border border-white/20 shadow-[0_25px_60px_-15px_rgba(0,0,0,0.8)] backdrop-blur-2xl ring-1 ring-white/10 transition-transform duration-500 hover:scale-103 hover:border-red-400/50 hover:shadow-[0_25px_60px_rgba(239,68,68,0.3)]"
               >
                 {currentItem.cover_url ? (
@@ -144,6 +150,7 @@ export default function SpotlightHero({ items, yearLabel }: SpotlightHeroProps) 
                       role="tab"
                       id={`spotlight-thumb-${idx}`}
                       aria-selected={isActive}
+                      aria-controls="spotlight-panel"
                       aria-label={`切换展台为 ${media.title}`}
                       onClick={() => setSelectedId(media.id)}
                       className={`group relative aspect-2/3 w-11 sm:w-12 overflow-hidden rounded-lg border backdrop-blur-md transition-all duration-300 cursor-pointer ${

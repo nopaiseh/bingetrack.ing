@@ -132,7 +132,7 @@ export default function MediaRatingBadge({
     const unratedPad = size === "lg" ? "px-2 py-0.5 text-xs" : size === "md" ? "px-1.5 py-0.5 text-xs" : "px-1 py-0.5 text-[10px]";
     return (
       <span
-        className={`inline-flex shrink-0 items-center rounded border border-white/10 ${unratedPad} font-medium leading-none text-white/50 backdrop-blur-md ${className}`}
+        className={`inline-flex shrink-0 items-center rounded border border-white/10 ${unratedPad} font-medium leading-none text-white/70 backdrop-blur-md ${className}`}
       >
         未评分
       </span>

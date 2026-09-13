@@ -48,8 +48,8 @@ export default function ThemeToggle() {
       aria-label="影院氛围主题"
       className="surface-control flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs backdrop-blur-md"
     >
-      <span className="text-[11px] font-medium text-white/50">氛围</span>
-      <div className="flex items-center gap-1.5 pl-0.5">
+      <span className="text-[11px] font-medium text-white/70">氛围</span>
+      <div className="flex items-center gap-1">
         {PALETTES.map((palette) => {
           const isActive = currentTheme === palette.id;
           return (
@@ -60,15 +60,19 @@ export default function ThemeToggle() {
               aria-label={`切换为${palette.name}主题`}
               aria-pressed={isActive}
               title={palette.name}
-              className={`size-3.5 rounded-full ${palette.colorClass} transition-all duration-300 cursor-pointer ${
-                isActive
-                  ? "scale-125 ring-2 ring-white/80 ring-offset-1 ring-offset-black/60 shadow-[0_0_8px_var(--un-glow)]"
-                  : "opacity-60 hover:opacity-100 hover:scale-110"
-              }`}
-              style={{
-                "--un-glow": palette.glowColor,
-              } as React.CSSProperties}
-            />
+              className="flex size-6 items-center justify-center rounded-full p-0 transition-transform duration-200 hover:scale-110 active:scale-95 cursor-pointer"
+            >
+              <span
+                className={`size-3.5 rounded-full ${palette.colorClass} transition-all duration-300 ${
+                  isActive
+                    ? "scale-110 ring-2 ring-white/80 ring-offset-1 ring-offset-black/60 shadow-[0_0_8px_var(--un-glow)]"
+                    : "opacity-60 hover:opacity-100"
+                }`}
+                style={{
+                  "--un-glow": palette.glowColor,
+                } as React.CSSProperties}
+              />
+            </button>
           );
         })}
       </div>
