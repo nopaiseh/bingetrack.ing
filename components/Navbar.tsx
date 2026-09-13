@@ -21,7 +21,7 @@ export default function Navbar() {
     { name: "首页", href: "/" },
     { name: "电影", href: "/movies" },
     { name: "电视剧", href: "/series" },
-    ...(auth.owner ? [{ name: "管理", href: "/manage" }, { name: "设置", href: "/settings" }] : []),
+    ...(auth.owner ? [{ name: "管理", href: "/manage" }] : []),
   ];
 
   /** 首页要求路径完全匹配，其他栏目按路径前缀判断当前状态。 */

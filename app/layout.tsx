@@ -1,11 +1,18 @@
 import { Suspense } from "react";
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import NavigationProgressBar from "@/components/NavigationProgressBar";
 import { SITE_URL } from "@/lib/site";
 import "./globals.css";
+
+export const viewport: Viewport = {
+  themeColor: "#140606",
+  colorScheme: "dark",
+  width: "device-width",
+  initialScale: 1,
+};
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
@@ -15,6 +22,11 @@ export const metadata: Metadata = {
   },
   description: "记录、检索并回顾电影与电视剧观看历程。",
   applicationName: "bingetrack.ing",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "bingetrack.ing",
+  },
   openGraph: {
     type: "website",
     locale: "zh_CN",
@@ -31,8 +43,15 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="zh-CN">
-      <body className="bg-[var(--canvas)] text-white/90 font-sans leading-normal tracking-normal selection:bg-red-500/30 selection:text-white flex flex-col min-h-screen relative">
+    <html lang="zh-CN" suppressHydrationWarning>
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{var t=localStorage.getItem("bingetrack-theme");if(t)document.documentElement.setAttribute("data-theme",t);}catch(e){}})();`,
+          }}
+        />
+      </head>
+      <body className="bg-[var(--canvas)] text-white/90 font-sans leading-normal tracking-normal selection:bg-red-500/30 selection:text-white flex flex-col min-h-screen relative transition-colors duration-500">
         <Suspense fallback={null}>
           <NavigationProgressBar />
         </Suspense>
