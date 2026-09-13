@@ -32,12 +32,11 @@ it("渲染包含正确 role=status、无障碍标题与响应式类别的弹窗"
   expect(progressbar).toBeInTheDocument();
 });
 
-it("5秒后自动关闭并触发 onClose 回调且清理 URL 参数", async () => {
+it("5秒后自动关闭并触发 onClose 回调", async () => {
   const onClose = vi.fn();
   render(<StatusModal message="保存成功，公开页面缓存已更新。" duration={5000} onClose={onClose} />);
 
   expect(screen.getByRole("status")).toBeInTheDocument();
-  expect(window.location.search).toContain("saved=1");
 
   // 前进 4900ms，弹窗仍在
   act(() => {
@@ -56,11 +55,9 @@ it("5秒后自动关闭并触发 onClose 回调且清理 URL 参数", async () =
 
   expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   expect(onClose).toHaveBeenCalledTimes(1);
-  expect(window.location.search).not.toContain("saved");
-  expect(window.location.search).not.toContain("deleted");
 });
 
-it("点击“知道了”按钮立即关闭并清理 URL", async () => {
+it("点击“知道了”按钮立即关闭", async () => {
   const onClose = vi.fn();
   render(<StatusModal message="条目及其下属资料已删除。" onClose={onClose} />);
 
@@ -74,7 +71,6 @@ it("点击“知道了”按钮立即关闭并清理 URL", async () => {
 
   expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   expect(onClose).toHaveBeenCalled();
-  expect(window.location.search).not.toContain("deleted");
 });
 
 it("点击右上角关闭按钮立即关闭", async () => {

@@ -37,40 +37,16 @@ export default function StatusModal({
   const lastTickRef = useRef<number>(0);
   const modalRef = useRef<HTMLDivElement>(null);
 
-  /** 清除 URL 中的 saved / deleted 参数，避免刷新重复弹窗 */
-  const cleanUrl = useCallback(() => {
-    if (typeof window === "undefined") return;
-    try {
-      const url = new URL(window.location.href);
-      let changed = false;
-      if (url.searchParams.has("saved")) {
-        url.searchParams.delete("saved");
-        changed = true;
-      }
-      if (url.searchParams.has("deleted")) {
-        url.searchParams.delete("deleted");
-        changed = true;
-      }
-      if (changed) {
-        const next = url.pathname + (url.searchParams.toString() ? `?${url.searchParams.toString()}` : "") + url.hash;
-        window.history.replaceState(window.history.state, "", next);
-      }
-    } catch {
-      // 忽略在无 window 环境或解析异常
-    }
-  }, []);
-
   /** 执行平滑关闭动画后彻底卸载 */
   const handleClose = useCallback(() => {
     if (isClosingRef.current) return;
     isClosingRef.current = true;
     setIsClosing(true);
-    cleanUrl();
     setTimeout(() => {
       setIsOpen(false);
       onClose?.();
     }, 200);
-  }, [cleanUrl, onClose]);
+  }, [onClose]);
 
   // 倒计时与暂停管理
   useEffect(() => {
@@ -110,13 +86,6 @@ export default function StatusModal({
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [handleClose]);
-
-  // 组件卸载时清理参数
-  useEffect(() => {
-    return () => {
-      cleanUrl();
-    };
-  }, [cleanUrl]);
 
   if (!isOpen) return null;
 
