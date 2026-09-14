@@ -467,10 +467,8 @@ function SearchContent({ initialOptions, initialResult }: SearchProps) {
           )}
 
           <div
-            className={`relative grid grid-cols-2 items-start gap-4 transition-opacity duration-200 sm:grid-cols-3 md:gap-6 lg:grid-cols-5 xl:grid-cols-6 ${
+            className={`relative grid grid-cols-2 items-start gap-4 sm:grid-cols-3 md:gap-6 lg:grid-cols-5 xl:grid-cols-6 ${
               isLoading && mediaItems.length === 0 ? "min-h-128" : ""
-            } ${
-              isLoading && mediaItems.length > 0 ? "opacity-60" : "opacity-100"
             }`}
             aria-busy={isLoading}
           >

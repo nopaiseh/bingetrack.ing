@@ -7,7 +7,7 @@ import MediaRatingBadge from "./MediaRatingBadge";
 /** 为搜索卡片提供高度拟真且美观的加载骨架。 */
 export function SearchMediaCardSkeleton() {
   return (
-    <div className="surface-card flex flex-col overflow-hidden rounded-xl border border-white/10">
+    <div className="search-media-card surface-card flex flex-col overflow-hidden rounded-xl border border-white/10">
       {/* 拟真海报占位，带暗黑景深与极简胶片图标 */}
       <div className="relative flex aspect-2/3 w-full items-center justify-center overflow-hidden bg-white/4">
         <SkeletonBlock className="absolute inset-0 rounded-none bg-transparent" />
@@ -40,7 +40,7 @@ export function SearchMediaCard({ item, returnHref }: { item: MediaCard; returnH
   const tags = [...(item.genres ?? []).slice(0, 3), ...(item.languages ?? []).slice(0, 1)].slice(0, 3);
 
   return (
-    <Link href={`/${item.type}/${item.id}?from=${encodeURIComponent(returnHref)}`} className="surface-card interactive-media-card group flex cursor-pointer flex-col overflow-hidden rounded-xl">
+    <Link href={`/${item.type}/${item.id}?from=${encodeURIComponent(returnHref)}`} className="search-media-card surface-card interactive-media-card group flex cursor-pointer flex-col overflow-hidden rounded-xl">
       <div className="image-placeholder relative flex aspect-2/3 w-full items-center justify-center overflow-hidden">
         {item.cover_url ? (
           <Image
