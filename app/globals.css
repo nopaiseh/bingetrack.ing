@@ -587,3 +587,9 @@ video {
   font-family: var(--font-serif-movie);
 }
 
+/* 搜索网格包含大量卡片；避免卡片与徽标的嵌套背景模糊产生额外合成层。 */
+.search-media-card,
+.search-media-card * {
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
