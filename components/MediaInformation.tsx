@@ -50,7 +50,7 @@ function StatusBadge({ status }: { status?: string }) {
   }
 
   return (
-    <div className="surface-muted interactive-control flex cursor-pointer items-center gap-1.5 rounded-full border border-white/10 px-3 py-1.5 text-xs font-medium text-white/70 shadow-[0_4px_10px_rgba(0,0,0,0.2)] backdrop-blur-2xl transition-all duration-300 hover:border-red-400/40 hover:bg-red-500/10 hover:text-red-300 hover:shadow-[0_4px_15px_rgba(239,68,68,0.2)]">
+    <div className="surface-muted interactive-control flex cursor-pointer items-center gap-1.5 rounded-full border border-white/10 px-3 py-1.5 text-xs font-medium text-white/70 shadow-[0_4px_10px_rgba(0,0,0,0.2)] backdrop-blur-2xl transition-all duration-300 hover:border-[var(--accent-border)] hover:bg-[var(--accent-soft)] hover:text-[var(--accent-light)] hover:shadow-[0_4px_15px_var(--accent-glow-soft)]">
       <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
         <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
       </svg>
@@ -77,7 +77,7 @@ function MetadataRow({ label, children }: { label: string; children: React.React
 function SectionHeading({ children }: { children: ReactNode }) {
   return (
     <div className="mb-3 flex items-center gap-2">
-      <div className="h-5 w-1 rounded-sm bg-red-400 shadow-[0_0_8px_rgba(248,113,113,0.6)]" />
+      <div className="h-5 w-1 rounded-sm bg-[var(--accent)] shadow-[0_0_8px_var(--accent-glow)]" />
       <h2 className="text-sm font-bold tracking-widest text-white/90">{children}</h2>
     </div>
   );
@@ -238,7 +238,7 @@ export default function MediaInformation({
       {seasons && (
         <div className="mb-12 mt-12">
           <div className="flex items-center gap-2 mb-6">
-            <div className="w-1 h-5 bg-red-400 rounded-sm shadow-[0_0_8px_rgba(248,113,113,0.6)]"></div> 
+            <div className="w-1 h-5 bg-[var(--accent)] rounded-sm shadow-[0_0_8px_var(--accent-glow)]"></div> 
             <h3 className="text-white/90 font-bold text-lg drop-shadow-[0_0_5px_rgba(255,255,255,0.2)] tracking-widest">
               季度列表
             </h3>
@@ -260,7 +260,7 @@ export default function MediaInformation({
                   <span className="image-label absolute left-2 top-2 rounded-lg border border-white/10 px-2 py-1 text-[11px] text-white/75 backdrop-blur-md">第 {season.seasonNumber} 季</span>
                 </div>
                 <div className="flex flex-1 flex-col p-4">
-                  <h4 className="mb-2 line-clamp-2 text-sm font-bold text-white/85 transition-colors group-hover:text-red-400">
+                  <h4 className="mb-2 line-clamp-2 text-sm font-bold text-white/85 transition-colors group-hover:text-[var(--accent-hover)]">
                     {season.title}
                   </h4>
                   <div className="mt-auto flex flex-wrap items-center gap-x-2 gap-y-1 font-mono text-xs text-white/50">

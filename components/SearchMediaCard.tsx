@@ -57,7 +57,7 @@ export function SearchMediaCard({ item, returnHref }: { item: MediaCard; returnH
 
 
       <div className="flex flex-col space-y-1.5 px-3 py-2.5">
-        <h3 className="font-serif-movie truncate text-sm font-bold text-white transition-colors duration-300 drop-shadow-[0_0_8px_rgba(255,255,255,0.2)] group-hover:text-red-400 group-hover:drop-shadow-[0_0_5px_rgba(248,113,113,0.6)]" title={item.title}>{item.title}</h3>
+        <h3 className="font-serif-movie truncate text-sm font-bold text-white transition-colors duration-300 drop-shadow-[0_0_8px_rgba(255,255,255,0.2)] group-hover:text-[var(--accent-hover)] group-hover:drop-shadow-[0_0_5px_var(--accent-glow)]" title={item.title}>{item.title}</h3>
         <div className="flex items-center justify-between text-xs">
           <span className="font-medium text-white/60">{item.date ? item.date.substring(0, 4) : "未知"}</span>
           <MediaRatingBadge
@@ -68,7 +68,7 @@ export function SearchMediaCard({ item, returnHref }: { item: MediaCard; returnH
         </div>
         <div className="mt-1.5 flex items-center gap-1.5 w-full overflow-hidden">
           {tags.map(/* 将一个类型或语言标签渲染为统一可截断的紧凑徽标。 */ (tag, index) => (
-            <span key={`${tag}-${index}`} title={tag} className="surface-muted inline-flex items-center shrink truncate rounded-md border border-white/10 px-1.5 py-0.5 text-[10px] font-medium tracking-wide text-white/70 backdrop-blur-md transition-all duration-300 group-hover:border-red-400/30 group-hover:bg-red-500/15 group-hover:text-red-400 group-hover:shadow-[0_4px_10px_rgba(248,113,113,0.2)]">{tag}</span>
+            <span key={`${tag}-${index}`} title={tag} className="surface-muted inline-flex items-center shrink truncate rounded-md border border-white/10 px-1.5 py-0.5 text-[10px] font-medium tracking-wide text-white/70 backdrop-blur-md transition-all duration-300 group-hover:border-[var(--accent-border)] group-hover:bg-[var(--accent-soft)] group-hover:text-[var(--accent-hover)] group-hover:shadow-[0_4px_10px_var(--accent-glow-soft)]">{tag}</span>
           ))}
         </div>
       </div>

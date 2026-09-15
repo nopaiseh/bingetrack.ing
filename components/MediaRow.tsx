@@ -30,7 +30,7 @@ function ItemCard({ item, type, eager, highPriority }: { item: MediaCard; type: 
       </div>
       
       <div className="flex flex-col space-y-1.5 grow px-3 py-2.5 min-w-0">
-        <h3 className="font-serif-movie text-sm font-bold text-white truncate drop-shadow-[0_0_8px_rgba(255,255,255,0.2)] group-hover:text-red-400 group-hover:drop-shadow-[0_0_5px_rgba(248,113,113,0.6)] transition-colors duration-300" title={item.title}>
+        <h3 className="font-serif-movie text-sm font-bold text-white truncate drop-shadow-[0_0_8px_rgba(255,255,255,0.2)] group-hover:text-[var(--accent-hover)] group-hover:drop-shadow-[0_0_5px_var(--accent-glow)] transition-colors duration-300" title={item.title}>
           {item.title}
         </h3>
 
@@ -52,7 +52,7 @@ function ItemCard({ item, type, eager, highPriority }: { item: MediaCard; type: 
             <span
               key={`tag-${i}`}
               title={tag} 
-              className="surface-muted inline-flex items-center shrink truncate rounded-md border border-white/10 px-1.5 py-0.5 text-[10px] font-medium tracking-wide text-white/70 backdrop-blur-md transition-all duration-300 group-hover:border-red-400/30 group-hover:bg-red-500/15 group-hover:text-red-400 group-hover:shadow-[0_4px_10px_rgba(248,113,113,0.2)]"
+              className="surface-muted inline-flex items-center shrink truncate rounded-md border border-white/10 px-1.5 py-0.5 text-[10px] font-medium tracking-wide text-white/70 backdrop-blur-md transition-all duration-300 group-hover:border-[var(--accent-border)] group-hover:bg-[var(--accent-soft)] group-hover:text-[var(--accent-hover)] group-hover:shadow-[0_4px_10px_var(--accent-glow-soft)]"
             >
               {tag}
             </span>
@@ -120,7 +120,7 @@ export default function MediaRow({
           {title}
         </h2>
         {viewAllLink && (
-          <Link href={viewAllLink} className="text-sm text-white/60 hover:text-red-400 hover:drop-shadow-[0_0_5px_rgba(248,113,113,0.5)] transition-all duration-300 uppercase tracking-wider">
+          <Link href={viewAllLink} className="text-sm text-white/60 hover:text-[var(--accent-hover)] hover:drop-shadow-[0_0_5px_var(--accent-glow)] transition-all duration-300 uppercase tracking-wider">
             查看全部 &rarr;
           </Link>
         )}
@@ -132,7 +132,7 @@ export default function MediaRow({
         onClick={() => handleScroll("left")}
         aria-label={`向左滚动 ${title}`}
         disabled={!canScrollLeft}
-        className={`surface-panel absolute -left-3 top-1/2 -translate-y-1/2 z-20 hidden lg:flex size-10 items-center justify-center rounded-full border border-white/20 text-white/80 transition-all duration-300 hover:border-red-400/50 hover:bg-red-500/20 hover:text-red-300 hover:scale-110 active:scale-95 hover:shadow-[0_0_16px_rgba(239,68,68,0.4)] ${
+        className={`surface-panel absolute -left-3 top-1/2 -translate-y-1/2 z-20 hidden lg:flex size-10 items-center justify-center rounded-full border border-white/20 text-white/80 transition-all duration-300 hover:border-[var(--accent-border-hover)] hover:bg-[var(--accent-soft)] hover:text-[var(--accent-hover)] hover:scale-110 active:scale-95 hover:shadow-[0_0_16px_var(--accent-glow)] ${
           canScrollLeft
             ? "opacity-0 group-hover/row:opacity-100 pointer-events-auto"
             : "opacity-0 pointer-events-none"
@@ -147,7 +147,7 @@ export default function MediaRow({
         onClick={() => handleScroll("right")}
         aria-label={`向右滚动 ${title}`}
         disabled={!canScrollRight}
-        className={`surface-panel absolute -right-3 top-1/2 -translate-y-1/2 z-20 hidden lg:flex size-10 items-center justify-center rounded-full border border-white/20 text-white/80 transition-all duration-300 hover:border-red-400/50 hover:bg-red-500/20 hover:text-red-300 hover:scale-110 active:scale-95 hover:shadow-[0_0_16px_rgba(239,68,68,0.4)] ${
+        className={`surface-panel absolute -right-3 top-1/2 -translate-y-1/2 z-20 hidden lg:flex size-10 items-center justify-center rounded-full border border-white/20 text-white/80 transition-all duration-300 hover:border-[var(--accent-border-hover)] hover:bg-[var(--accent-soft)] hover:text-[var(--accent-hover)] hover:scale-110 active:scale-95 hover:shadow-[0_0_16px_var(--accent-glow)] ${
           canScrollRight
             ? "opacity-0 group-hover/row:opacity-100 pointer-events-auto"
             : "opacity-0 pointer-events-none"

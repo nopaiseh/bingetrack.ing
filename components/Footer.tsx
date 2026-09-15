@@ -14,12 +14,12 @@ export default function Footer() {
           
           <div className="flex flex-col sm:flex-row items-center gap-3 md:gap-4 shrink-0">
             <Link href="/" className="flex items-center gap-2.5 group cursor-pointer opacity-90 hover:opacity-100 transition-opacity duration-300">
-              <span className="i-material-symbols-terminal-rounded inline-block size-4 text-red-500 group-hover:rotate-12 group-hover:drop-shadow-[0_0_10px_rgba(239,68,68,0.8)] transition-all duration-300" aria-hidden="true" />
+              <span className="i-material-symbols-terminal-rounded inline-block size-4 text-[var(--accent)] group-hover:rotate-12 group-hover:drop-shadow-[0_0_10px_var(--accent-glow-strong)] transition-all duration-300" aria-hidden="true" />
               <span className="font-mono text-xl font-light tracking-tight drop-shadow-[0_0_12px_rgba(255,255,255,0.1)]">
                 <span className="bg-clip-text text-transparent bg-linear-to-br from-white via-white/80 to-white/50">
                   bingetrack
                 </span>
-                <span className="text-red-500 font-black -mx-0.5 drop-shadow-[0_0_8px_rgba(239,68,68,0.8)]">
+                <span className="text-[var(--accent)] font-black -mx-0.5 drop-shadow-[0_0_8px_var(--accent-glow-strong)]">
                   .
                 </span>
                 <span className="bg-clip-text text-transparent bg-linear-to-br from-white/90 to-white/40">

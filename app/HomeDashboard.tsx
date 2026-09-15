@@ -76,7 +76,7 @@ function DistributionCard({ title, icon, items }: { title: string; icon: string;
   return (
     <div className="surface-card interactive-card group h-full rounded-2xl p-4 sm:p-5 lg:p-6">
       <div className="mb-5 flex h-8 items-center gap-3 text-sm text-white/70">
-        <div className="surface-raised flex size-8 shrink-0 items-center justify-center rounded-lg shadow-[0_4px_10px_rgba(0,0,0,0.1)] transition-colors duration-300 group-hover:bg-red-500/15 group-hover:text-red-400 group-hover:shadow-[0_4px_10px_rgba(248,113,113,0.2)]">
+        <div className="surface-raised flex size-8 shrink-0 items-center justify-center rounded-lg shadow-[0_4px_10px_rgba(0,0,0,0.1)] transition-colors duration-300 group-hover:bg-[var(--accent-soft)] group-hover:text-[var(--accent-hover)] group-hover:shadow-[0_4px_10px_var(--accent-glow-soft)]">
           <span className={`${icon} size-4 inline-block`} aria-hidden="true" />
         </div>
         <span className="font-medium tracking-wide text-white/80 transition-colors group-hover:text-white">{title}</span>
@@ -86,7 +86,7 @@ function DistributionCard({ title, icon, items }: { title: string; icon: string;
           <div key={item.name} className="flex items-center gap-3">
             <span className="w-20 truncate text-sm text-white/70" title={item.name}>{item.name}</span>
             <div className="progress-track h-2 flex-1 overflow-hidden rounded-full">
-              <div className="h-full rounded-full bg-linear-to-r from-red-500 to-rose-400 shadow-[0_0_8px_rgba(239,68,68,0.5)] transition-all duration-500" style={{ width: `${item.percent}%` }} />
+              <div className="h-full rounded-full bg-linear-to-r from-[var(--accent)] to-[var(--accent-hover)] shadow-[0_0_8px_var(--accent-glow)] transition-all duration-500" style={{ width: `${item.percent}%` }} />
             </div>
             <span className="text-xs text-white/60 w-8 text-right font-mono">{item.percent}%</span>
           </div>
@@ -143,7 +143,7 @@ function CategoryHeaderCards({
           </div>
           <div className="progress-track h-2 w-full overflow-hidden rounded-full shadow-inner">
             <div
-              className="h-full bg-linear-to-r from-red-600 to-red-400 shadow-[0_0_12px_rgba(239,68,68,0.5)] rounded-full"
+              className="h-full bg-linear-to-r from-[var(--accent-dark)] to-[var(--accent-hover)] shadow-[0_0_12px_var(--accent-glow)] rounded-full"
               style={{
                 width: `${watchedPercent}%`,
                 transition: "width 1s cubic-bezier(0.4, 0, 0.2, 1)",
@@ -166,7 +166,7 @@ function CategoryHeaderCards({
           </div>
           <div className="progress-track h-2 w-full overflow-hidden rounded-full shadow-inner">
             <div
-              className="h-full bg-linear-to-r from-red-600 to-red-400 shadow-[0_0_12px_rgba(239,68,68,0.5)] rounded-full"
+              className="h-full bg-linear-to-r from-[var(--accent-dark)] to-[var(--accent-hover)] shadow-[0_0_12px_var(--accent-glow)] rounded-full"
               style={{
                 width: `${avgRatingPercent}%`,
                 transition: "width 1s cubic-bezier(0.4, 0, 0.2, 1)",
@@ -242,14 +242,17 @@ function MediaRuntimeCards({
             <span className="text-sm font-bold tracking-wide text-white/80 transition-colors group-hover:text-white">完成进度</span>
           </div>
           <div className="mb-4 flex items-baseline gap-2">
-            <span className="font-mono text-5xl tracking-tighter text-white drop-shadow-[0_0_10px_rgba(255,255,255,0.2)]">
+            <span
+              className="font-mono text-5xl tracking-tighter text-accent-light text-[var(--accent-light)] drop-shadow-[0_0_10px_var(--accent-glow-soft)]"
+              style={{ color: "var(--accent-light)" }}
+            >
               <AnimatedNumber value={completionPercent} />%
             </span>
             <span className="font-medium text-white/50">已完成</span>
           </div>
         </div>
         <div className="progress-track mt-2 h-2 w-full overflow-hidden rounded-full shadow-inner">
-          <div className="h-full rounded-full bg-linear-to-r from-red-600 to-red-400 shadow-[0_0_12px_rgba(239,68,68,0.5)]" style={{ width: `${completionPercent}%` }} />
+          <div className="h-full rounded-full bg-linear-to-r from-[var(--accent-dark)] to-[var(--accent-hover)] shadow-[0_0_12px_var(--accent-glow)]" style={{ width: `${completionPercent}%` }} />
         </div>
       </div>
     </div>
@@ -272,8 +275,8 @@ function MediaStatusCard({
 }) {
   return (
     <div className="surface-card interactive-card group flex flex-col gap-4 rounded-2xl p-4 sm:p-5">
-      <div className="text-white/80 font-bold text-sm flex items-center gap-2.5 border-b border-white/10 pb-2.5 group-hover:text-red-400 transition-colors">
-        <span className={`${icon} size-4 inline-block text-red-500/80 group-hover:text-red-400`} aria-hidden="true" /> {title}
+      <div className="text-white/80 font-bold text-sm flex items-center gap-2.5 border-b border-white/10 pb-2.5 group-hover:text-[var(--accent-hover)] transition-colors">
+        <span className={`${icon} size-4 inline-block text-[var(--accent)]/80 group-hover:text-[var(--accent-hover)]`} aria-hidden="true" /> {title}
       </div>
       <div className="flex flex-col gap-3 mt-1">
         <div className="flex justify-between items-end">
@@ -410,8 +413,8 @@ export default function HomeDashboard({
     <div className="container mx-auto flex max-w-7xl flex-col gap-6 px-4 py-12 pt-24 sm:px-6 lg:px-8">
       <section aria-labelledby="dashboard-title" className="relative z-10 mb-2 rounded-3xl border border-white/10 bg-[var(--surface-panel)] px-5 pb-5 pt-6 shadow-[0_24px_80px_rgba(0,0,0,0.24)] sm:px-7 sm:pb-6 sm:pt-8 lg:px-10 lg:pb-8 lg:pt-10">
         <div className="relative">
-          <div className="mb-5 flex items-center gap-3 text-[11px] font-semibold uppercase tracking-[0.24em] text-red-300/90">
-            <span className="h-px w-8 bg-red-400" />
+          <div className="mb-5 flex items-center gap-3 text-[11px] font-semibold uppercase tracking-[0.24em] text-[var(--accent-light)]/90">
+            <span className="h-px w-8 bg-[var(--accent)]" />
             <span>{selectedYear === "All Time" ? "全时段档案" : `${selectedYear} 年度档案`}</span>
           </div>
 
@@ -440,7 +443,10 @@ export default function HomeDashboard({
               </div>
               <div>
                 <dt className="text-[11px] tracking-wide text-white/60">完成进度</dt>
-                <dd className="mt-1 font-mono text-xl font-medium text-red-300 sm:text-2xl">
+                <dd
+                  className="mt-1 font-mono text-xl font-medium text-accent-light text-[var(--accent-light)] sm:text-2xl"
+                  style={{ color: "var(--accent-light)" }}
+                >
                   <AnimatedNumber value={runtimePercent} />%
                 </dd>
               </div>
@@ -453,10 +459,12 @@ export default function HomeDashboard({
             {/* 平滑滑动的物理胶囊底块 */}
             <div
               aria-hidden="true"
-              className="surface-active pointer-events-none absolute top-1.5 bottom-1.5 rounded-lg border border-red-400/40 shadow-[0_4px_15px_rgba(248,113,113,0.2)] drop-shadow-[0_0_5px_rgba(248,113,113,0.4)] transition-transform duration-300 ease-out"
+              className="surface-active pointer-events-none absolute top-1.5 bottom-1.5 rounded-lg border border-[var(--accent-border)] shadow-[0_4px_15px_var(--accent-glow-soft)] drop-shadow-[0_0_5px_var(--accent-glow)] transition-transform duration-300 ease-out"
               style={{
                 width: `calc((100% - 12px) / ${tabs.length})`,
                 transform: `translateX(calc(${tabs.indexOf(activeTab)} * 100%))`,
+                background: "var(--accent-soft)",
+                borderColor: "var(--accent-border)",
               }}
             />
 
@@ -470,9 +478,10 @@ export default function HomeDashboard({
                 aria-selected={activeTab === tab}
                 className={`relative z-10 px-5 py-2 rounded-lg text-sm font-medium transition-colors duration-200 ${
                   activeTab === tab
-                    ? "text-red-400 font-bold"
+                    ? "text-accent-hover text-[var(--accent-hover)] font-bold drop-shadow-[0_0_8px_var(--accent-glow)]"
                     : "text-white/70 hover:text-white"
                 }`}
+                style={activeTab === tab ? { color: "var(--accent-hover)" } : undefined}
               >
                 {tab}
               </button>
@@ -529,7 +538,7 @@ export default function HomeDashboard({
 
               <div className="progress-track h-1.5 w-full overflow-hidden rounded-full shadow-inner">
                 <div
-                  className="h-full bg-linear-to-r from-red-600 to-red-400 shadow-[0_0_12px_rgba(239,68,68,0.5)] rounded-full"
+                  className="h-full bg-linear-to-r from-[var(--accent-dark)] to-[var(--accent-hover)] shadow-[0_0_12px_var(--accent-glow)] rounded-full"
                   style={{ width: `${moviesPercent}%` }}
                 />
               </div>
@@ -572,7 +581,7 @@ export default function HomeDashboard({
               
               <div className="progress-track h-1.5 w-full overflow-hidden rounded-full shadow-inner">
                 <div
-                  className="h-full bg-linear-to-r from-red-600 to-red-400 shadow-[0_0_12px_rgba(239,68,68,0.5)] rounded-full"
+                  className="h-full bg-linear-to-r from-[var(--accent-dark)] to-[var(--accent-hover)] shadow-[0_0_12px_var(--accent-glow)] rounded-full"
                   style={{ width: `${seriesPercent}%` }}
                 />
               </div>

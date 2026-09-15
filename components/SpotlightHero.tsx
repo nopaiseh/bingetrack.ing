@@ -68,7 +68,7 @@ export default function SpotlightHero({ items, yearLabel }: SpotlightHeroProps) 
                   {currentItem.genres.map((genre) => (
                     <span
                       key={genre}
-                      className="surface-muted inline-flex items-center rounded-md border border-white/15 px-2.5 py-1 text-xs font-medium text-white/80 backdrop-blur-md transition-all duration-300 hover:border-red-400/40 hover:bg-red-500/15 hover:text-white"
+                      className="surface-muted inline-flex items-center rounded-md border border-white/15 px-2.5 py-1 text-xs font-medium text-white/80 backdrop-blur-md transition-all duration-300 hover:border-[var(--accent-border)] hover:bg-[var(--accent-soft)] hover:text-white"
                     >
                       {genre}
                     </span>
@@ -95,11 +95,11 @@ export default function SpotlightHero({ items, yearLabel }: SpotlightHeroProps) 
               </div>
             </div>
 
-            {/* 行动呼吁按钮组：采用站内 surface-control 红色微光毛玻璃胶囊规范 */}
+            {/* 行动呼吁按钮组：采用站内 surface-control 主题微光毛玻璃胶囊规范 */}
             <div className="mt-7 flex flex-wrap items-center gap-4">
               <Link
                 href={mediaPath}
-                className="surface-control group inline-flex items-center gap-2 rounded-xl border border-red-400/50 bg-red-500/20 px-6 py-2.5 text-sm font-semibold text-white backdrop-blur-xl shadow-[0_4px_15px_rgba(248,113,113,0.25)] drop-shadow-[0_0_5px_rgba(248,113,113,0.4)] transition-all duration-300 hover:border-red-400 hover:bg-red-500/30 hover:shadow-[0_4px_20px_rgba(248,113,113,0.5)] hover:scale-105 active:scale-95"
+                className="surface-control group inline-flex items-center gap-2 rounded-xl border border-[var(--accent-border)] bg-[var(--accent-soft)] px-6 py-2.5 text-sm font-semibold text-white backdrop-blur-xl shadow-[0_4px_15px_var(--accent-glow-soft)] drop-shadow-[0_0_5px_var(--accent-glow)] transition-all duration-300 hover:border-[var(--accent)] hover:bg-[var(--accent-glow-soft)] hover:shadow-[0_4px_20px_var(--accent-glow)] hover:scale-105 active:scale-95"
               >
                 <span>立即回顾</span>
                 <span className="i-material-symbols-arrow-forward-rounded size-4 transition-transform group-hover:translate-x-1" aria-hidden="true" />
@@ -114,7 +114,7 @@ export default function SpotlightHero({ items, yearLabel }: SpotlightHeroProps) 
               <Link
                 href={mediaPath}
                 aria-label={`查看《${currentItem.title}》详情`}
-                className="surface-muted relative aspect-2/3 w-48 sm:w-56 block overflow-hidden rounded-2xl border border-white/20 shadow-[0_25px_60px_-15px_rgba(0,0,0,0.8)] backdrop-blur-2xl ring-1 ring-white/10 transition-transform duration-500 hover:scale-103 hover:border-red-400/50 hover:shadow-[0_25px_60px_rgba(239,68,68,0.3)]"
+                className="surface-muted relative aspect-2/3 w-48 sm:w-56 block overflow-hidden rounded-2xl border border-white/20 shadow-[0_25px_60px_-15px_rgba(0,0,0,0.8)] backdrop-blur-2xl ring-1 ring-white/10 transition-transform duration-500 hover:scale-103 hover:border-[var(--accent-border-hover)] hover:shadow-[0_25px_60px_var(--accent-glow)]"
               >
                 {currentItem.cover_url ? (
                   <Image

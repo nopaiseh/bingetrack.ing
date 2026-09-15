@@ -231,7 +231,7 @@ function SearchContent({ initialOptions, initialResult }: SearchProps) {
   ];
 
   return (
-    <div className="min-h-screen text-white/90 pt-24 pb-12 selection:bg-red-500/30 selection:text-white font-sans relative">
+    <div className="min-h-screen text-white/90 pt-24 pb-12 selection:bg-[var(--accent-soft)] selection:text-white font-sans relative">
       <div className="container relative z-1 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         
         <div className="mb-8">
@@ -263,7 +263,7 @@ function SearchContent({ initialOptions, initialResult }: SearchProps) {
               {query && (
                 <button onClick={/* 清空搜索词，后续由防抖逻辑同步到 URL。 */ () => {
                   setQuery("");
-                }} className="text-white/50 hover:text-red-400 hover:drop-shadow-[0_0_5px_rgba(248,113,113,0.6)] transition-all duration-300" aria-label="清除搜索">
+                }} className="text-white/50 hover:text-[var(--accent-hover)] hover:drop-shadow-[0_0_5px_var(--accent-glow)] transition-all duration-300" aria-label="清除搜索">
                   <span className="i-material-symbols-close-rounded inline-block size-5" aria-hidden="true" />
                 </button>
               )}
@@ -275,14 +275,14 @@ function SearchContent({ initialOptions, initialResult }: SearchProps) {
                 onClick={/* 切换高级筛选区域的展开状态。 */ () => setShowAdvanced(!showAdvanced)}
                 className={`relative flex min-h-11 items-center gap-2 rounded-xl px-4 py-2 text-sm font-medium transition-all duration-300 backdrop-blur-2xl ${
                   showAdvanced
-                    ? "surface-active text-red-400 border border-red-400/40 shadow-[0_4px_15px_rgba(248,113,113,0.2)] drop-shadow-[0_0_3px_rgba(248,113,113,0.3)]"
+                    ? "surface-active text-[var(--accent-hover)] border border-[var(--accent-border)] shadow-[0_4px_15px_var(--accent-glow-soft)] drop-shadow-[0_0_3px_var(--accent-glow-soft)]"
                     : "filter-option"
                 }`}
               >
                 <span className="i-material-symbols-tune-rounded inline-block size-4" aria-hidden="true" />
                 {showAdvanced ? "收起筛选" : "高级筛选"}
                 {!showAdvanced && hasActiveFilters && (
-                  <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-400 rounded-full border border-black/50 shadow-[0_0_8px_rgba(248,113,113,0.8)] animate-pulse"></span>
+                  <span className="absolute -top-1 -right-1 w-3 h-3 bg-[var(--accent)] rounded-full border border-black/50 shadow-[0_0_8px_var(--accent-glow)] animate-pulse"></span>
                 )}
               </button>
             </div>
@@ -434,7 +434,7 @@ function SearchContent({ initialOptions, initialResult }: SearchProps) {
             <h2 id="search-results-heading" className="text-2xl font-bold text-white tracking-wide drop-shadow-[0_0_10px_rgba(255,255,255,0.2)]">
               {query ? (
                 <>
-                  <span className="text-red-400 drop-shadow-[0_0_5px_rgba(248,113,113,0.5)]">&quot;{query}&quot;</span> 的搜索结果
+                  <span className="text-[var(--accent-hover)] drop-shadow-[0_0_5px_var(--accent-glow)]">&quot;{query}&quot;</span> 的搜索结果
                 </>
               ) : (
                 "搜索结果"
@@ -446,7 +446,7 @@ function SearchContent({ initialOptions, initialResult }: SearchProps) {
                   onClick={/* 清空所有筛选并恢复默认日期降序。 */ () => {
                     setFilters({ type: [], status: [], genre: [], region: [], language: [], year: [], sort: ["date_desc"] });
                   }}
-                  className="text-sm text-white/60 hover:text-red-400 hover:drop-shadow-[0_0_5px_rgba(248,113,113,0.5)] transition-all duration-300"
+                  className="text-sm text-white/60 hover:text-[var(--accent-hover)] hover:drop-shadow-[0_0_5px_var(--accent-glow)] transition-all duration-300"
                 >
                   清空筛选
                 </button>
@@ -493,7 +493,7 @@ function SearchContent({ initialOptions, initialResult }: SearchProps) {
                 <span className="i-material-symbols-chevron-left-rounded inline-block size-4" aria-hidden="true" />
               </button>
               {pageNumbers(page, totalPages).map(/* 将页码窗口中的一页渲染为分页按钮。 */ (pageNumber) => (
-                <button key={pageNumber} onClick={/* 跳转到点击的结果页。 */ () => goToPage(pageNumber)} aria-current={pageNumber === page ? "page" : undefined} className={`min-w-10 rounded-xl border px-3 py-2 text-center text-sm transition-all ${pageNumber === page ? "surface-active border-red-400/40 text-red-400 font-bold shadow-[0_4px_10px_rgba(248,113,113,0.2)]" : "surface-muted border-white/10 text-white/70 hover:bg-white/10 hover:text-white"}`}>
+                <button key={pageNumber} onClick={/* 跳转到点击的结果页。 */ () => goToPage(pageNumber)} aria-current={pageNumber === page ? "page" : undefined} className={`min-w-10 rounded-xl border px-3 py-2 text-center text-sm transition-all ${pageNumber === page ? "surface-active border-[var(--accent-border)] text-[var(--accent-hover)] font-bold shadow-[0_4px_10px_var(--accent-glow-soft)]" : "surface-muted border-white/10 text-white/70 hover:bg-white/10 hover:text-white"}`}>
                   {pageNumber}
                 </button>
               ))}
@@ -508,7 +508,7 @@ function SearchContent({ initialOptions, initialResult }: SearchProps) {
       <button
         onClick={scrollToTop}
         aria-label="返回页面顶部"
-        className={`surface-muted fixed bottom-22 right-4 z-50 flex size-12 items-center justify-center rounded-full border border-white/10 text-white/70 shadow-[0_4px_15px_rgba(0,0,0,0.2)] backdrop-blur-2xl transition-all duration-300 hover:scale-105 hover:border-red-400/50 hover:bg-white/10 hover:text-red-400 hover:shadow-[0_6px_25px_rgba(248,113,113,0.3)] hover:drop-shadow-[0_0_5px_rgba(248,113,113,0.5)] sm:right-8 lg:right-12 ${
+        className={`surface-muted fixed bottom-22 right-4 z-50 flex size-12 items-center justify-center rounded-full border border-white/10 text-white/70 shadow-[0_4px_15px_rgba(0,0,0,0.2)] backdrop-blur-2xl transition-all duration-300 hover:scale-105 hover:border-[var(--accent-border-hover)] hover:bg-white/10 hover:text-[var(--accent-hover)] hover:shadow-[0_6px_25px_var(--accent-glow)] hover:drop-shadow-[0_0_5px_var(--accent-glow)] sm:right-8 lg:right-12 ${
           showScrollTop ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10 pointer-events-none"
         }`}
       >

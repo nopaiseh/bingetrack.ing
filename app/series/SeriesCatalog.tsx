@@ -27,7 +27,7 @@ export default function SeriesCatalog({
               <h2 className="font-medium uppercase text-white/50 text-xs tracking-widest mb-2">
                 {stat.label}
               </h2>
-              <p className="font-mono text-3xl tracking-tight text-white group-hover:text-red-400 transition-colors">
+              <p className="font-mono text-3xl tracking-tight text-white group-hover:text-[var(--accent-hover)] transition-colors">
                 {stat.value}
               </p>
             </div>
