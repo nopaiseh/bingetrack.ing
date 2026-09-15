@@ -7,7 +7,7 @@ export default function NotFound() {
       
       <div className="flex flex-col items-center gap-6 animate-fade-in px-6 text-center">
         
-        <h1 className="text-7xl md:text-9xl font-black tracking-tight text-transparent bg-clip-text bg-linear-to-r from-red-500 to-red-700 drop-shadow-[0_0_24px_rgba(239,68,68,0.4)]">
+        <h1 className="text-7xl md:text-9xl font-black tracking-tight text-transparent bg-clip-text bg-linear-to-r from-[var(--accent)] to-[var(--accent-dark)] drop-shadow-[0_0_24px_var(--accent-glow)]">
           404
         </h1>
 
@@ -25,13 +25,13 @@ export default function NotFound() {
           href="/" 
           className="surface-muted interactive-control group mt-4 rounded-xl border border-white/10 px-8 py-3 text-sm font-medium"
         >
-          <span className="i-material-symbols-arrow-back-rounded mr-2 inline-block size-4 text-white/50 group-hover:text-red-400 transition-colors" aria-hidden="true" />
+          <span className="i-material-symbols-arrow-back-rounded mr-2 inline-block size-4 text-white/50 group-hover:text-[var(--accent-hover)] transition-colors" aria-hidden="true" />
           返回首页
         </Link>
       </div>
 
       
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[60vw] h-[60vw] bg-red-500/5 blur-[120px] rounded-full pointer-events-none -z-10"></div>
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[60vw] h-[60vw] bg-[var(--accent-soft)] blur-[120px] rounded-full pointer-events-none -z-10"></div>
     </div>
   );
 }

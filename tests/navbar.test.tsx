@@ -35,7 +35,7 @@ test("marks the current section and toggles the mobile menu", /* 验证当前栏
   const movieLinks = screen.getAllByRole("link", { name: "电影" });
   expect(movieLinks).toHaveLength(2);
   for (const link of movieLinks) {
-    expect(link).toHaveClass("text-red-500");
+    expect(link).toHaveClass("text-[var(--accent)]");
     expect(link).toHaveAttribute("aria-current", "page");
   }
 });

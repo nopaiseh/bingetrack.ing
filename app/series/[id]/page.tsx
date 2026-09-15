@@ -69,7 +69,7 @@ export default async function SeriesDetailPage({
         : "unwatched";
 
   return (
-    <div className="relative min-h-screen text-white/90 selection:bg-red-500/30 selection:text-white font-sans overflow-hidden">
+    <div className="relative min-h-screen text-white/90 selection:bg-[var(--accent-soft)] selection:text-white font-sans overflow-hidden">
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: serializeJsonLd(jsonLd) }}

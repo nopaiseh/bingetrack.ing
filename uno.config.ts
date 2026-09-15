@@ -16,6 +16,19 @@ export default defineConfig({
       "./lib/**/*.{html,js,ts,jsx,tsx,mdx}",
     ],
   },
+  theme: {
+    colors: {
+      accent: {
+        DEFAULT: "var(--accent)",
+        hover: "var(--accent-hover)",
+        light: "var(--accent-light)",
+        dark: "var(--accent-dark)",
+        soft: "var(--accent-soft)",
+        border: "var(--accent-border)",
+        glow: "var(--accent-glow)",
+      },
+    },
+  },
   presets: [
     presetUno(),
     presetIcons({
