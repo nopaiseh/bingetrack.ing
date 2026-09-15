@@ -1,59 +1,34 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
-import MediaRow from "@/components/MediaRow";
+import { useState, useEffect } from "react";
+import dynamic from "next/dynamic";
 import { PosterRowSkeleton } from "@/components/LoadingSkeletons";
 import DashboardYearPicker from "@/components/DashboardYearPicker";
 import SpotlightHero from "@/components/SpotlightHero";
-import { DistributionItem, MediaCard, MediaDistribution, MediaDistributions, Summary } from "@/lib/types";
+import AnimatedNumber from "@/components/AnimatedNumber";
+import type { MediaCard, MediaDistribution, MediaDistributions, Summary } from "@/lib/types";
+
+const CategoryHeaderCards = dynamic(() => import("@/components/dashboard/CategoryHeaderCards"), {
+  loading: () => <div className="min-h-36 rounded-2xl bg-white/5 animate-pulse" />,
+});
+
+const MediaRuntimeCards = dynamic(() => import("@/components/dashboard/MediaRuntimeCards"), {
+  loading: () => <div className="min-h-36 rounded-2xl bg-white/5 animate-pulse" />,
+});
+
+const DistributionTop5Cards = dynamic(() => import("@/components/dashboard/DistributionTop5Cards"), {
+  loading: () => <div className="min-h-60 rounded-2xl bg-white/5 animate-pulse" />,
+});
+
+const MediaRow = dynamic(() => import("@/components/MediaRow"), {
+  loading: () => <PosterRowSkeleton />,
+});
 
 const EMPTY_MEDIA_DISTRIBUTION: MediaDistribution = {
   regions: [],
   languages: [],
   genres: [],
 };
-
-/** 平滑数字缓动步进组件，支持减弱动效回退与小数位控制。 */
-function AnimatedNumber({ value, decimals = 0 }: { value: number; decimals?: number }) {
-  const [displayValue, setDisplayValue] = useState(value);
-  const prevValueRef = useRef(value);
-
-  useEffect(() => {
-    const isReducedMotion = typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    const start = prevValueRef.current;
-    const end = value;
-    if (start === end) return;
-
-    let animationFrameId: number;
-    if (isReducedMotion) {
-      prevValueRef.current = end;
-      animationFrameId = requestAnimationFrame(() => setDisplayValue(end));
-      return () => cancelAnimationFrame(animationFrameId);
-    }
-
-    const duration = 500;
-    const startTime = performance.now();
-
-    const updateNumber = (now: number) => {
-      const elapsed = now - startTime;
-      const progress = Math.min(elapsed / duration, 1);
-      const ease = progress === 1 ? 1 : 1 - Math.pow(2, -10 * progress);
-      const current = start + (end - start) * ease;
-      setDisplayValue(current);
-
-      if (progress < 1) {
-        animationFrameId = requestAnimationFrame(updateNumber);
-      } else {
-        prevValueRef.current = end;
-      }
-    };
-
-    animationFrameId = requestAnimationFrame(updateNumber);
-    return () => cancelAnimationFrame(animationFrameId);
-  }, [value]);
-
-  return <>{decimals > 0 ? displayValue.toFixed(decimals) : Math.round(displayValue)}</>;
-}
 
 /** 按媒体分类生成评分降序的搜索链接；指定年份时同时限定起止年份。 */
 function getSearchViewAllLink(type: "电影" | "电视剧", year: string) {
@@ -69,194 +44,6 @@ function getSearchViewAllLink(type: "电影" | "电视剧", year: string) {
 function percent(value: number, total: number) {
   if (total <= 0) return 0;
   return Math.min(Math.max(Math.round((value / total) * 100), 0), 100);
-}
-
-/** 展示一个分布维度的名称和占比条，数据为空时显示暂无数据。 */
-function DistributionCard({ title, icon, items }: { title: string; icon: string; items: DistributionItem[] }) {
-  return (
-    <div className="surface-card interactive-card group h-full rounded-2xl p-4 sm:p-5 lg:p-6">
-      <div className="mb-5 flex h-8 items-center gap-3 text-sm text-white/70">
-        <div className="surface-raised flex size-8 shrink-0 items-center justify-center rounded-lg shadow-[0_4px_10px_rgba(0,0,0,0.1)] transition-colors duration-300 group-hover:bg-[var(--accent-soft)] group-hover:text-[var(--accent-hover)] group-hover:shadow-[0_4px_10px_var(--accent-glow-soft)]">
-          <span className={`${icon} size-4 inline-block`} aria-hidden="true" />
-        </div>
-        <span className="font-medium tracking-wide text-white/80 transition-colors group-hover:text-white">{title}</span>
-      </div>
-      <div className="flex flex-col gap-3">
-        {items.map(/* 把一项分布数据渲染为名称、占比条和百分比。 */ (item) => (
-          <div key={item.name} className="flex items-center gap-3">
-            <span className="w-20 truncate text-sm text-white/70" title={item.name}>{item.name}</span>
-            <div className="progress-track h-2 flex-1 overflow-hidden rounded-full">
-              <div className="h-full rounded-full bg-linear-to-r from-[var(--accent)] to-[var(--accent-hover)] shadow-[0_0_8px_var(--accent-glow)] transition-all duration-500" style={{ width: `${item.percent}%` }} />
-            </div>
-            <span className="text-xs text-white/60 w-8 text-right font-mono">{item.percent}%</span>
-          </div>
-        ))}
-        {items.length === 0 && <span className="py-6 text-center text-sm text-white/60">暂无数据</span>}
-      </div>
-    </div>
-  );
-}
-
-/** 将地区、语言和类型三个维度分别展示为前五名分布卡片。 */
-function DistributionTop5Cards({ distribution }: { distribution: MediaDistribution }) {
-  return (
-    <div className="grid grid-cols-1 items-stretch gap-4 md:grid-cols-2 md:gap-6 lg:grid-cols-3">
-      <DistributionCard title="影视产地分布 Top 5" icon="i-material-symbols-public-rounded" items={distribution.regions} />
-      <DistributionCard title="主要语言 Top 5" icon="i-material-symbols-translate-rounded" items={distribution.languages} />
-      <DistributionCard title="主要类型 Top 5" icon="i-material-symbols-more-horiz-rounded" items={distribution.genres} />
-    </div>
-  );
-}
-
-/** 展示媒体类别标题、总数量、观看进度和平均评分。 */
-function CategoryHeaderCards({
-  year,
-  categoryName,
-  watchedCount,
-  totalCount,
-  watchedPercent,
-  avgRating,
-  avgRatingPercent,
-}: {
-  year: string;
-  categoryName: string;
-  watchedCount: number;
-  totalCount: number;
-  watchedPercent: number;
-  avgRating: number;
-  avgRatingPercent: number;
-}) {
-  return (
-    <div className="grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-6 lg:grid-cols-4">
-      <div className="surface-card interactive-card group col-span-1 flex flex-col justify-center rounded-2xl p-4 sm:p-5 lg:col-span-3 lg:p-6">
-        <div className="text-white/60 mb-4 flex justify-between items-center drop-shadow-[0_0_5px_rgba(255,255,255,0.1)]">
-          <i className="text-xl font-medium">{year} {categoryName} 阅览进度</i>
-        </div>
-        <div>
-          <div className="flex items-baseline gap-2 mb-2">
-            <span className="text-4xl font-mono text-white drop-shadow-[0_0_8px_rgba(255,255,255,0.2)]">
-              <AnimatedNumber value={watchedCount} />
-            </span>
-            <span className="text-sm text-white/50 font-medium">
-              / <AnimatedNumber value={totalCount} /> 部 (已看 / 总数)
-            </span>
-          </div>
-          <div className="progress-track h-2 w-full overflow-hidden rounded-full shadow-inner">
-            <div
-              className="h-full bg-linear-to-r from-[var(--accent-dark)] to-[var(--accent-hover)] shadow-[0_0_12px_var(--accent-glow)] rounded-full"
-              style={{
-                width: `${watchedPercent}%`,
-                transition: "width 1s cubic-bezier(0.4, 0, 0.2, 1)",
-              }}
-            />
-          </div>
-        </div>
-      </div>
-
-      <div className="surface-card interactive-card group col-span-1 flex flex-col justify-center rounded-2xl p-4 sm:p-5 lg:p-6">
-        <div className="text-white/60 mb-4 flex justify-between items-center drop-shadow-[0_0_5px_rgba(255,255,255,0.1)]">
-          <i className="text-xl font-medium">平均{categoryName}评分</i>
-        </div>
-        <div>
-          <div className="flex items-baseline gap-2 mb-2">
-            <span className="text-4xl font-mono text-white drop-shadow-[0_0_8px_rgba(255,255,255,0.2)]">
-              <AnimatedNumber value={avgRating || 0} decimals={1} />
-            </span>
-            <span className="text-sm text-white/50 font-medium">/ 10</span>
-          </div>
-          <div className="progress-track h-2 w-full overflow-hidden rounded-full shadow-inner">
-            <div
-              className="h-full bg-linear-to-r from-[var(--accent-dark)] to-[var(--accent-hover)] shadow-[0_0_12px_var(--accent-glow)] rounded-full"
-              style={{
-                width: `${avgRatingPercent}%`,
-                transition: "width 1s cubic-bezier(0.4, 0, 0.2, 1)",
-              }}
-            />
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-/** 把观看分钟数换算为整数小时，展示已看、未看时长和完成比例。 */
-function MediaRuntimeCards({
-  watchedRuntime,
-  unwatchedRuntime,
-  totalRuntime,
-}: {
-  watchedRuntime: number;
-  unwatchedRuntime: number;
-  totalRuntime: number;
-}) {
-  const completionPercent = percent(watchedRuntime, totalRuntime);
-  const watchedHours = Math.round(watchedRuntime / 60);
-  const unwatchedHours = Math.round(unwatchedRuntime / 60);
-
-  return (
-    <div className="grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-6 lg:grid-cols-3">
-      <div className="surface-card interactive-card group flex flex-col justify-between rounded-2xl p-4 sm:p-5 lg:p-6">
-        <div>
-          <div className="mb-2 flex items-center gap-2 text-sm text-white/60">
-            <div className="stat-icon flex items-center justify-center rounded-lg p-2">
-              <span className="i-material-symbols-play-circle-outline-rounded size-4 inline-block" aria-hidden="true" />
-            </div>
-            <span className="text-sm font-bold tracking-wide text-white/80 transition-colors group-hover:text-white">已看总时长</span>
-          </div>
-          <div className="mb-2 flex items-baseline gap-2">
-            <span className="font-mono text-5xl tracking-tighter text-white drop-shadow-[0_0_10px_rgba(255,255,255,0.2)]">
-              <AnimatedNumber value={watchedHours} />
-            </span>
-            <span className="font-medium text-white/50">小时</span>
-          </div>
-        </div>
-        <p className="mt-4 border-t border-white/10 pt-4 text-xs text-white/50">
-          相当于连续观看约 {Math.round(watchedHours / 24)} 天
-        </p>
-      </div>
-
-      <div className="surface-card interactive-card group flex flex-col justify-between rounded-2xl p-4 sm:p-5 lg:p-6">
-        <div>
-          <div className="mb-2 flex items-center gap-2 text-sm text-white/60">
-            <div className="stat-icon flex items-center justify-center rounded-lg p-2">
-              <span className="i-material-symbols-layers-rounded size-4 inline-block" aria-hidden="true" />
-            </div>
-            <span className="text-sm font-bold tracking-wide text-white/80 transition-colors group-hover:text-white">待看总时长</span>
-          </div>
-          <div className="mb-2 flex items-baseline gap-2">
-            <span className="font-mono text-5xl tracking-tighter text-white drop-shadow-[0_0_10px_rgba(255,255,255,0.2)]">
-              <AnimatedNumber value={unwatchedHours} />
-            </span>
-            <span className="font-medium text-white/50">小时</span>
-          </div>
-        </div>
-        <p className="mt-4 border-t border-white/10 pt-4 text-xs text-white/50">尚未完成的内容时长</p>
-      </div>
-
-      <div className="surface-card interactive-card group flex flex-col justify-between rounded-2xl p-4 sm:p-5 lg:p-6">
-        <div>
-          <div className="mb-2 flex items-center gap-2 text-sm text-white/60">
-            <div className="stat-icon flex items-center justify-center rounded-lg p-2">
-              <span className="i-material-symbols-pie-chart-outline-rounded size-4 inline-block" aria-hidden="true" />
-            </div>
-            <span className="text-sm font-bold tracking-wide text-white/80 transition-colors group-hover:text-white">完成进度</span>
-          </div>
-          <div className="mb-4 flex items-baseline gap-2">
-            <span
-              className="font-mono text-5xl tracking-tighter text-accent-light text-[var(--accent-light)] drop-shadow-[0_0_10px_var(--accent-glow-soft)]"
-              style={{ color: "var(--accent-light)" }}
-            >
-              <AnimatedNumber value={completionPercent} />%
-            </span>
-            <span className="font-medium text-white/50">已完成</span>
-          </div>
-        </div>
-        <div className="progress-track mt-2 h-2 w-full overflow-hidden rounded-full shadow-inner">
-          <div className="h-full rounded-full bg-linear-to-r from-[var(--accent-dark)] to-[var(--accent-hover)] shadow-[0_0_12px_var(--accent-glow)]" style={{ width: `${completionPercent}%` }} />
-        </div>
-      </div>
-    </div>
-  );
 }
 
 /** 按传入标题和图标展示媒体部数，并在提供数据时补充季数与集数。 */

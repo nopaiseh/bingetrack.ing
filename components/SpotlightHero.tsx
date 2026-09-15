@@ -122,6 +122,7 @@ export default function SpotlightHero({ items, yearLabel }: SpotlightHeroProps) 
                     alt={currentItem.title}
                     fill
                     priority
+                    fetchPriority="high"
                     className="object-cover transition-transform duration-700 ease-out group-hover/poster:scale-105"
                     sizes="(max-width: 639px) 192px, 224px"
                   />
@@ -164,6 +165,7 @@ export default function SpotlightHero({ items, yearLabel }: SpotlightHeroProps) 
                           src={media.cover_url}
                           alt=""
                           fill
+                          loading="lazy"
                           className="object-cover"
                           sizes="48px"
                         />
