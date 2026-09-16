@@ -6,6 +6,7 @@ import type { EpisodeInfo } from "@/lib/types";
 import type { Metadata } from "next";
 import { getCachedMediaById, getCachedSeasonsBySeriesId } from "@/lib/functions/cached-media";
 import { buildSeasonMetadata } from "@/lib/seo/media";
+import { formatRuntime } from "@/lib/format-runtime";
 
 export const revalidate = 60;
 
@@ -32,6 +33,7 @@ export async function generateMetadata({
 /** 渲染单集卡片，展示剧集封面、集数、标题、观看状态、上映日期和简介。 */
 function EpisodeCard({ episode }: { episode: EpisodeInfo }) {
   const watched = episode.status === "watched";
+  const episodeRuntimeLabel = formatRuntime(episode.runtime);
 
   return (
     <article className="surface-card interactive-card group flex flex-col overflow-hidden rounded-2xl sm:h-64 sm:flex-row">
@@ -71,7 +73,7 @@ function EpisodeCard({ episode }: { episode: EpisodeInfo }) {
 
         <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-white/60">
           {episode.releaseDate && <span className="flex items-center gap-1"><span className="i-material-symbols-calendar-today-rounded inline-block size-3" aria-hidden="true" />{episode.releaseDate}</span>}
-          {episode.runtime && <span className="flex items-center gap-1"><span className="i-material-symbols-schedule-rounded inline-block size-3" aria-hidden="true" />{episode.runtime} 分钟</span>}
+          {episodeRuntimeLabel && <span className="flex items-center gap-1"><span className="i-material-symbols-schedule-rounded inline-block size-3" aria-hidden="true" />{episodeRuntimeLabel}</span>}
           {episode.rating !== null && <span className="flex items-center gap-1 text-amber-400"><span className="i-material-symbols-star-rounded inline-block size-3 text-amber-400" aria-hidden="true" />{episode.rating.toFixed(1)}</span>}
         </div>
 
@@ -192,7 +194,7 @@ export default async function SeasonPage({
           {[
             ["观看进度", `${seasonData.watchedCount} / ${seasonData.season.episodeCount}`],
             ["完成比例", `${watchedPercent}%`],
-            ["总时长", `${Math.round(seasonData.totalRuntime / 60)} 小时`],
+            ["总时长", formatRuntime(seasonData.totalRuntime, true) ?? "0 分钟"],
             ["平均评分", seasonData.averageRating === null ? "—" : seasonData.averageRating.toFixed(1)],
           ].map(/* 将整季的一项统计渲染为标签和数值。 */ ([label, value]) => (
             <div key={label} className="surface-muted rounded-2xl border border-white/10 p-4 backdrop-blur-xl">
