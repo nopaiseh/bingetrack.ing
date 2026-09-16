@@ -3,6 +3,7 @@ import Link from "next/link";
 import { Suspense, type ReactNode } from "react";
 import MediaBackLink, { DefaultMediaBackLink } from "./MediaBackLink";
 import { Media, SeasonInfo } from "@/lib/types";
+import { formatRuntime } from "@/lib/format-runtime";
 import SearchTag from "./SearchTag";
 import MediaRatingBadge from "./MediaRatingBadge";
 
@@ -163,6 +164,7 @@ export default function MediaInformation({
   releaseDateLabel?: string;
   displayStatus?: string;
 }) {
+  const runtimeLabel = formatRuntime(media.runtime);
 
   return (
     <>
@@ -203,11 +205,11 @@ export default function MediaInformation({
               <div className="flex flex-wrap items-center gap-4 text-sm font-medium">
                 <MediaRatingBadge rating={media.rating} size="lg" showTier />
 
-                {media.runtime && (
+                {runtimeLabel && (
                   <>
                     <span className="text-white/20 hidden sm:inline">•</span>
                     <span className="text-white/60 drop-shadow-[0_0_5px_rgba(255,255,255,0.1)]">
-                      {media.runtime} 分钟
+                      {runtimeLabel}
                     </span>
                   </>
                 )}
