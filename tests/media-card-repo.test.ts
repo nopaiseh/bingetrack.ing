@@ -1,18 +1,45 @@
 import { beforeEach, expect, test, vi } from "vitest";
 
 const state = vi.hoisted(/* 在模块模拟提升阶段创建共享查询记录和模拟结果容器。 */ () => ({
-  executed: [] as Array<{ table: string; columns?: string; head?: boolean }>,
+  executed: [] as Array<{
+    table: string;
+    columns?: string;
+    head?: boolean;
+    orders?: Array<{ column: string; ascending?: boolean; nullsFirst?: boolean }>;
+    gtes?: Array<{ column: string; value: unknown }>;
+    ltes?: Array<{ column: string; value: unknown }>;
+  }>,
   results: {} as Record<string, { data: unknown; error: null | { code: string }; count?: number }>,
 }));
 vi.mock("@/lib/supabase/public-server", /* 提供可记录查询的 Supabase 模块替身。 */ () => ({
   getSupabasePublicServer: /* 返回带链式查询接口的公开服务端客户端替身。 */ () => ({
     /** 为指定表创建查询记录，并返回可等待的链式接口。 */
     from(table: string) {
-      const request: { table: string; columns?: string; head?: boolean } = { table };
+      const request: {
+        table: string;
+        columns?: string;
+        head?: boolean;
+        orders: Array<{ column: string; ascending?: boolean; nullsFirst?: boolean }>;
+        gtes: Array<{ column: string; value: unknown }>;
+        ltes: Array<{ column: string; value: unknown }>;
+      } = { table, orders: [], gtes: [], ltes: [] };
       const chain = {
         /** 记录所选字段及是否仅查询计数，并返回链对象继续调用。 */
         select(columns: string, options?: { head?: boolean }) { request.columns = columns; request.head = options?.head; return chain; },
-        eq: /* 忽略等值筛选并返回同一模拟查询链。 */ () => chain, in: /* 忽略集合筛选并返回同一模拟查询链。 */ () => chain, order: /* 忽略排序参数并返回同一模拟查询链。 */ () => chain, range: /* 忽略分页范围并返回同一模拟查询链。 */ () => chain,
+        eq: /* 忽略等值筛选并返回同一模拟查询链。 */ () => chain, in: /* 忽略集合筛选并返回同一模拟查询链。 */ () => chain,
+        order: /* 记录排序参数并返回同一模拟查询链。 */ (column: string, opts?: { ascending?: boolean; nullsFirst?: boolean }) => {
+          request.orders.push({ column, ascending: opts?.ascending, nullsFirst: opts?.nullsFirst });
+          return chain;
+        },
+        gte: /* 记录下限筛选并返回同一模拟查询链。 */ (column: string, value: unknown) => {
+          request.gtes.push({ column, value });
+          return chain;
+        },
+        lte: /* 记录上限筛选并返回同一模拟查询链。 */ (column: string, value: unknown) => {
+          request.ltes.push({ column, value });
+          return chain;
+        },
+        overlaps: () => chain, or: () => chain, range: /* 忽略分页范围并返回同一模拟查询链。 */ () => chain,
         /** 等待查询时保存请求记录，再把预设表结果交给后续 Promise 回调。 */
         then(resolve: (value: unknown) => unknown) {
           state.executed.push(request);
@@ -106,3 +133,23 @@ test("fetchMediaCardsServer retries on transient gateway timeout and succeeds on
   expect(rows[0].title).toBe("Recovered Movie");
   expect(attempt).toBe(2);
 });
+
+test("fetchMediaCardsServer applies compound date sort with sort_date, first_air_date and id", async () => {
+  state.results.v_all_media = { data: [{ id: "s1", type: "tv_series" }], error: null };
+  await fetchMediaCardsServer({ type: "tv_series", sort: "date_desc", limit: 10 });
+  const query = state.executed.find((req) => req.table === "v_all_media");
+  expect(query?.orders).toEqual([
+    { column: "sort_date", ascending: false, nullsFirst: false },
+    { column: "first_air_date", ascending: false, nullsFirst: false },
+    { column: "id", ascending: true, nullsFirst: undefined },
+  ]);
+});
+
+test("fetchMediaCardsServer applies decoupled year interval filter on last_air_date and first_air_date", async () => {
+  state.results.v_all_media = { data: [{ id: "s1", type: "tv_series" }], error: null };
+  await fetchMediaCardsServer({ type: "tv_series", startYear: "2010", endYear: "2015", limit: 10 });
+  const query = state.executed.find((req) => req.table === "v_all_media");
+  expect(query?.gtes).toEqual([{ column: "last_air_date", value: "2010-01-01" }]);
+  expect(query?.ltes).toEqual([{ column: "first_air_date", value: "2015-12-31" }]);
+});
+

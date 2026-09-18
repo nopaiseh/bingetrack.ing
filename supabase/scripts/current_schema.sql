@@ -294,7 +294,9 @@ select
   (select array_agg(r.name) from public.media_regions mr join public.regions r on r.id = mr.region_id where mr.media_item_id = m.id) as regions,
   (select array_agg(p.name order by mc.credit_order) from public.media_credits mc join public.people p on p.id = mc.person_id where mc.media_item_id = m.id and mc.role = 'actor'::public.person_role) as casts,
   (select array_agg(p.name order by mc.credit_order) from public.media_credits mc join public.people p on p.id = mc.person_id where mc.media_item_id = m.id and mc.role = 'director'::public.person_role) as directors,
-  m.alternate_title
+  m.alternate_title,
+  m.release_date as first_air_date,
+  m.release_date as last_air_date
 from public.media_items m
 left join public.tracking t on t.media_item_id = m.id
 where m.type = 'movie'::public.media_type
@@ -306,7 +308,10 @@ select
   series.title,
   series.summary,
   series.cover_url,
-  min(episode_media.release_date) as sort_date,
+  coalesce(
+    max(episode_media.release_date) filter (where episode_media.release_date <= current_date),
+    min(episode_media.release_date)
+  ) as sort_date,
   case
     when min(episode_media.release_date) is null then null::text
     when max(episode_media.release_date) > current_date then extract(year from min(episode_media.release_date))::text || ' - Present'
@@ -326,7 +331,9 @@ select
   (select array_agg(r.name) from public.media_regions mr join public.regions r on r.id = mr.region_id where mr.media_item_id = series.id) as regions,
   (select array_agg(p.name order by mc.credit_order) from public.media_credits mc join public.people p on p.id = mc.person_id where mc.media_item_id = series.id and mc.role = 'actor'::public.person_role) as casts,
   (select array_agg(p.name order by mc.credit_order) from public.media_credits mc join public.people p on p.id = mc.person_id where mc.media_item_id = series.id and mc.role = 'director'::public.person_role) as directors,
-  series.alternate_title
+  series.alternate_title,
+  min(episode_media.release_date) as first_air_date,
+  max(episode_media.release_date) as last_air_date
 from public.media_items series
 left join public.tv_seasons seasons on seasons.series_id = series.id
 left join public.tv_episodes episodes on episodes.season_id = seasons.id

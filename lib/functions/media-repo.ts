@@ -17,9 +17,9 @@ export class MediaRepositoryError extends Error {
 }
 
 // 列表只读取卡片需要的字段，避免把简介和演职员等详情数据传到客户端。
-const MEDIA_CARD_COLUMNS = "id,type,title,sort_date,release_year,rating,genres,languages,cover_url";
+const MEDIA_CARD_COLUMNS = "id,type,title,sort_date,first_air_date,last_air_date,release_year,rating,genres,languages,cover_url";
 // 榜单精选读取卡片字段及简介摘要，供首页展台和精选展示使用。
-const TOP_MEDIA_COLUMNS = "id,type,title,sort_date,release_year,rating,genres,languages,cover_url,summary";
+const TOP_MEDIA_COLUMNS = "id,type,title,sort_date,first_air_date,last_air_date,release_year,rating,genres,languages,cover_url,summary";
 // 限制通过 URL 参数传递给 PostgREST 的 ID 数量上限，防止超出网关的 URL 长度限制（HTTP 414）。
 const MAX_FILTER_IDS = 100;
 
@@ -688,12 +688,12 @@ async function fetchMediaList(opts: FetchMediaListOptions, includeTotal = true):
     countQuery = countQuery.overlaps("languages", languages);
   }
   if (startYear) {
-    dataQuery = dataQuery.gte("sort_date", `${startYear}-01-01`);
-    countQuery = countQuery.gte("sort_date", `${startYear}-01-01`);
+    dataQuery = dataQuery.gte("last_air_date", `${startYear}-01-01`);
+    countQuery = countQuery.gte("last_air_date", `${startYear}-01-01`);
   }
   if (endYear) {
-    dataQuery = dataQuery.lte("sort_date", `${endYear}-12-31`);
-    countQuery = countQuery.lte("sort_date", `${endYear}-12-31`);
+    dataQuery = dataQuery.lte("first_air_date", `${endYear}-12-31`);
+    countQuery = countQuery.lte("first_air_date", `${endYear}-12-31`);
   }
   if (!classificationHandlesQuery && !seriesOnly && hasQuery) {
     dataQuery = dataQuery.or(titleSearchFilter);
@@ -705,12 +705,16 @@ async function fetchMediaList(opts: FetchMediaListOptions, includeTotal = true):
     const ascending = order === "asc";
 
     if (field === "date") {
-      dataQuery = dataQuery.order("sort_date", { ascending, nullsFirst: false });
+      dataQuery = dataQuery
+        .order("sort_date", { ascending, nullsFirst: false })
+        .order("first_air_date", { ascending, nullsFirst: false });
     } else if (field === "rating") {
       dataQuery = dataQuery.order("rating", { ascending, nullsFirst: false });
     }
   } else {
-    dataQuery = dataQuery.order("sort_date", { ascending: false, nullsFirst: false });
+    dataQuery = dataQuery
+      .order("sort_date", { ascending: false, nullsFirst: false })
+      .order("first_air_date", { ascending: false, nullsFirst: false });
   }
 
   // 用唯一 ID 打破日期或评分相同时的排序平局，防止跨页重复或漏项。
