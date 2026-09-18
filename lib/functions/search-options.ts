@@ -33,6 +33,6 @@ async function fetchSearchOptions(): Promise<SearchOptions> {
 }
 
 export const fetchSearchOptionsServer = unstable_cache(fetchSearchOptions, ["search-options-v1"], {
-  revalidate: 3600,
+  revalidate: 86400,
   tags: ["media"],
 });

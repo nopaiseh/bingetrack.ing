@@ -18,7 +18,7 @@ function RuntimeValue({ runtime }: { runtime: number }) {
     <div className="mb-2 flex flex-wrap items-baseline gap-x-2.5 gap-y-1">
       {days > 0 && (
         <span className="inline-flex items-baseline gap-1">
-          <span className="font-mono text-3xl sm:text-4xl lg:text-4xl xl:text-5xl tracking-tighter text-white drop-shadow-[0_0_10px_rgba(255,255,255,0.2)]">
+          <span className="font-mono text-3xl sm:text-4xl lg:text-4xl xl:text-5xl tracking-tighter text-white">
             <AnimatedNumber value={days} />
           </span>
           <span className="font-medium text-white/50 text-sm sm:text-base">天</span>
@@ -26,7 +26,7 @@ function RuntimeValue({ runtime }: { runtime: number }) {
       )}
       {hours > 0 && (
         <span className="inline-flex items-baseline gap-1">
-          <span className="font-mono text-3xl sm:text-4xl lg:text-4xl xl:text-5xl tracking-tighter text-white drop-shadow-[0_0_10px_rgba(255,255,255,0.2)]">
+          <span className="font-mono text-3xl sm:text-4xl lg:text-4xl xl:text-5xl tracking-tighter text-white">
             <AnimatedNumber value={hours} />
           </span>
           <span className="font-medium text-white/50 text-sm sm:text-base">小时</span>
@@ -34,7 +34,7 @@ function RuntimeValue({ runtime }: { runtime: number }) {
       )}
       {(minutes > 0 || isZero) && (
         <span className="inline-flex items-baseline gap-1">
-          <span className="font-mono text-3xl sm:text-4xl lg:text-4xl xl:text-5xl tracking-tighter text-white drop-shadow-[0_0_10px_rgba(255,255,255,0.2)]">
+          <span className="font-mono text-3xl sm:text-4xl lg:text-4xl xl:text-5xl tracking-tighter text-white">
             <AnimatedNumber value={minutes} />
           </span>
           <span className="font-medium text-white/50 text-sm sm:text-base">分钟</span>
@@ -98,7 +98,7 @@ export default function MediaRuntimeCards({
           </div>
           <div className="mb-2 flex items-baseline gap-2">
             <span
-              className="font-mono text-3xl sm:text-4xl lg:text-4xl xl:text-5xl tracking-tighter text-accent-light text-[var(--accent-light)] drop-shadow-[0_0_10px_var(--accent-glow-soft)]"
+              className="font-mono text-3xl sm:text-4xl lg:text-4xl xl:text-5xl tracking-tighter text-accent-light text-[var(--accent-light)]"
               style={{ color: "var(--accent-light)" }}
             >
               <AnimatedNumber value={completionPercent} />%
@@ -107,8 +107,8 @@ export default function MediaRuntimeCards({
           </div>
         </div>
         <div className="mt-4 border-t border-white/10 pt-4">
-          <div className="progress-track h-2 w-full overflow-hidden rounded-full shadow-inner">
-            <div className="h-full rounded-full bg-linear-to-r from-[var(--accent-dark)] to-[var(--accent-hover)] shadow-[0_0_12px_var(--accent-glow)]" style={{ width: `${completionPercent}%` }} />
+          <div className="progress-track h-1.5 w-full overflow-hidden rounded-full shadow-inner">
+            <div className="h-full rounded-full bg-linear-to-r from-[var(--accent-dark)] to-[var(--accent-hover)]" style={{ width: `${completionPercent}%` }} />
           </div>
         </div>
       </div>

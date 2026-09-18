@@ -30,7 +30,7 @@ function ItemCard({ item, type, eager, highPriority }: { item: MediaCard; type: 
       </div>
       
       <div className="flex flex-col space-y-1.5 grow px-3 py-2.5 min-w-0">
-        <h3 className="font-serif-movie text-sm font-bold text-white truncate drop-shadow-[0_0_8px_rgba(255,255,255,0.2)] group-hover:text-[var(--accent-hover)] group-hover:drop-shadow-[0_0_5px_var(--accent-glow)] transition-colors duration-300" title={item.title}>
+        <h3 className="font-serif-movie text-sm font-bold text-white truncate group-hover:text-[var(--accent-hover)] transition-colors duration-300" title={item.title}>
           {item.title}
         </h3>
 
@@ -52,7 +52,7 @@ function ItemCard({ item, type, eager, highPriority }: { item: MediaCard; type: 
             <span
               key={`tag-${i}`}
               title={tag} 
-              className="surface-muted inline-flex items-center shrink truncate rounded-md border border-white/10 px-1.5 py-0.5 text-[10px] font-medium tracking-wide text-white/70 backdrop-blur-md transition-all duration-300 group-hover:border-[var(--accent-border)] group-hover:bg-[var(--accent-soft)] group-hover:text-[var(--accent-hover)] group-hover:shadow-[0_4px_10px_var(--accent-glow-soft)]"
+              className="inline-flex items-center shrink truncate rounded-md border border-white/10 bg-white/5 px-1.5 py-0.5 text-[10px] font-medium tracking-wide text-white/70 backdrop-blur-md transition-all duration-300 group-hover:border-[var(--accent-border)] group-hover:bg-[var(--accent-soft)] group-hover:text-white"
             >
               {tag}
             </span>
@@ -116,11 +116,11 @@ export default function MediaRow({
   return (
     <div className="group/row relative">
       <div className="flex justify-between items-end mb-5 pr-1 border-b border-white/10 pb-3">
-        <h2 className="text-xl font-bold tracking-wide text-white drop-shadow-[0_0_10px_rgba(255,255,255,0.2)]">
+        <h2 className="text-xl font-bold tracking-wide text-white">
           {title}
         </h2>
         {viewAllLink && (
-          <Link href={viewAllLink} className="text-sm text-white/60 hover:text-[var(--accent-hover)] hover:drop-shadow-[0_0_5px_var(--accent-glow)] transition-all duration-300 uppercase tracking-wider">
+          <Link href={viewAllLink} className="text-sm text-white/60 hover:text-[var(--accent-hover)] transition-all duration-300 uppercase tracking-wider">
             查看全部 &rarr;
           </Link>
         )}
@@ -132,7 +132,7 @@ export default function MediaRow({
         onClick={() => handleScroll("left")}
         aria-label={`向左滚动 ${title}`}
         disabled={!canScrollLeft}
-        className={`surface-panel absolute -left-3 top-1/2 -translate-y-1/2 z-20 hidden lg:flex size-10 items-center justify-center rounded-full border border-white/20 text-white/80 transition-all duration-300 hover:border-[var(--accent-border-hover)] hover:bg-[var(--accent-soft)] hover:text-[var(--accent-hover)] hover:scale-110 active:scale-95 hover:shadow-[0_0_16px_var(--accent-glow)] ${
+        className={`surface-panel absolute -left-3 top-1/2 -translate-y-1/2 z-20 hidden lg:flex size-10 items-center justify-center rounded-full text-white/80 shadow-lg shadow-black/40 transition-all duration-200 hover:border-white/30 hover:bg-white/15 hover:text-white hover:scale-105 active:scale-95 ${
           canScrollLeft
             ? "opacity-0 group-hover/row:opacity-100 pointer-events-auto"
             : "opacity-0 pointer-events-none"
@@ -147,7 +147,7 @@ export default function MediaRow({
         onClick={() => handleScroll("right")}
         aria-label={`向右滚动 ${title}`}
         disabled={!canScrollRight}
-        className={`surface-panel absolute -right-3 top-1/2 -translate-y-1/2 z-20 hidden lg:flex size-10 items-center justify-center rounded-full border border-white/20 text-white/80 transition-all duration-300 hover:border-[var(--accent-border-hover)] hover:bg-[var(--accent-soft)] hover:text-[var(--accent-hover)] hover:scale-110 active:scale-95 hover:shadow-[0_0_16px_var(--accent-glow)] ${
+        className={`surface-panel absolute -right-3 top-1/2 -translate-y-1/2 z-20 hidden lg:flex size-10 items-center justify-center rounded-full text-white/80 shadow-lg shadow-black/40 transition-all duration-200 hover:border-white/30 hover:bg-white/15 hover:text-white hover:scale-105 active:scale-95 ${
           canScrollRight
             ? "opacity-0 group-hover/row:opacity-100 pointer-events-auto"
             : "opacity-0 pointer-events-none"

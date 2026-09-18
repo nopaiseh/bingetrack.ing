@@ -26,6 +26,7 @@ export default defineConfig({
         soft: "var(--accent-soft)",
         border: "var(--accent-border)",
         glow: "var(--accent-glow)",
+        contrast: "var(--accent-contrast)",
       },
     },
   },

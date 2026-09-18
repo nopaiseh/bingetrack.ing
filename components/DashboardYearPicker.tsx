@@ -49,7 +49,7 @@ export default function DashboardYearPicker({
         className="surface-control group flex w-35 cursor-pointer items-center gap-2 rounded-xl py-2.5 pl-4 pr-3 transition-all hover:border-white/20 hover:bg-white/10 hover:shadow-[0_6px_20px_rgba(0,0,0,0.3)]"
         onClick={/* 点击年份选择区域时展开候选列表。 */ () => setIsOpen(true)}
       >
-        <span className="i-material-symbols-calendar-today-rounded inline-block size-4 text-[var(--accent)] transition-colors group-hover:text-[var(--accent-hover)] group-hover:drop-shadow-[0_0_5px_var(--accent-glow)]" aria-hidden="true" />
+        <span className="i-material-symbols-calendar-today-rounded inline-block size-4 text-[var(--accent)] transition-colors group-hover:text-[var(--accent-hover)]" aria-hidden="true" />
         <input
           type="text"
           value={isOpen ? query : selectedYear}
@@ -91,7 +91,7 @@ export default function DashboardYearPicker({
       </label>
 
       {isOpen && (
-        <div className="surface-overlay absolute right-0 top-full z-50 mt-2 w-36 overflow-hidden rounded-2xl border border-white/15 shadow-[0_20px_50px_rgba(0,0,0,0.65)] backdrop-blur-2xl">
+        <div className="surface-overlay absolute right-0 top-full z-50 mt-2 w-36 overflow-hidden rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.65)]">
           <div id="dashboard-year-options" role="listbox" aria-label="年份" className="custom-scrollbar flex max-h-64 flex-col overflow-y-auto p-1">
             {options.length > 0 ? options.map(/* 将候选年份渲染为支持选中态和键盘定位的选项按钮。 */ (year, index) => (
               <button
@@ -104,7 +104,7 @@ export default function DashboardYearPicker({
                 onClick={/* 确认点击的年份并关闭选择列表。 */ () => selectYear(year)}
                 className={`w-full shrink-0 rounded-xl border-l-2 px-4 py-2.5 text-left font-mono text-sm transition-all ${
                   selectedYear === year || activeIndex === index
-                    ? "surface-active border-[var(--accent)] font-bold text-accent-hover text-[var(--accent-hover)] drop-shadow-[0_0_8px_var(--accent-glow)]"
+                    ? "surface-active border-[var(--accent)] font-bold text-accent-hover text-[var(--accent-hover)]"
                     : "border-transparent text-white/70 hover:bg-white/10 hover:text-white"
                 }`}
                 style={

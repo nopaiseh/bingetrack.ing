@@ -8,7 +8,8 @@ import { getCachedMediaById, getCachedSeasonsBySeriesId } from "@/lib/functions/
 import { buildSeasonMetadata } from "@/lib/seo/media";
 import { formatRuntime } from "@/lib/format-runtime";
 
-export const revalidate = 60;
+// 季详情页按 24 小时长缓存，数据变更通过 revalidatePath/revalidateTag 即时失效。
+export const revalidate = 86400;
 
 const PAGE_SIZE = 10;
 type StatusFilter = "all" | "watched" | "unwatched";

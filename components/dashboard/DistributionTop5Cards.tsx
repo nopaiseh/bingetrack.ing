@@ -16,8 +16,8 @@ function DistributionCard({ title, icon, items }: { title: string; icon: string;
         {items.map((item) => (
           <div key={item.name} className="flex items-center gap-3">
             <span className="w-20 truncate text-sm text-white/70" title={item.name}>{item.name}</span>
-            <div className="progress-track h-2 flex-1 overflow-hidden rounded-full">
-              <div className="h-full rounded-full bg-linear-to-r from-[var(--accent)] to-[var(--accent-hover)] shadow-[0_0_8px_var(--accent-glow)] transition-all duration-500" style={{ width: `${item.percent}%` }} />
+            <div className="progress-track h-1.5 flex-1 overflow-hidden rounded-full">
+              <div className="h-full rounded-full bg-linear-to-r from-[var(--accent)] to-[var(--accent-hover)] transition-all duration-500" style={{ width: `${item.percent}%` }} />
             </div>
             <span className="text-xs text-white/60 w-8 text-right font-mono">{item.percent}%</span>
           </div>

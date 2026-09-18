@@ -93,7 +93,7 @@ export default function NavigationProgressBar() {
       style={{ opacity: visible ? 1 : 0 }}
     >
       <div
-        className="h-full bg-linear-to-r from-[var(--accent-dark)] via-[var(--accent)] to-[var(--accent-hover)] shadow-[0_0_12px_var(--accent-glow-strong)] transition-[width] duration-200 ease-out"
+        className="h-full bg-linear-to-r from-[var(--accent-dark)] via-[var(--accent)] to-[var(--accent-hover)] shadow-[0_0_6px_var(--accent-glow-soft)] transition-[width] duration-200 ease-out"
         style={{ width: `${progress}%` }}
       />
     </div>

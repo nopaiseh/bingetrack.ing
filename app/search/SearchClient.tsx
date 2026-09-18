@@ -238,7 +238,7 @@ function SearchContent({ initialOptions, initialResult }: SearchProps) {
           <div className="group relative grid gap-2 sm:block">
             <div className="relative">
               <div className="pointer-events-none absolute inset-y-0 left-0 z-10 flex items-center pl-5">
-                <span className="i-material-symbols-search-rounded inline-block size-4 text-white/50 group-focus-within:text-white group-focus-within:drop-shadow-[0_0_8px_rgba(255,255,255,0.6)] transition-all duration-300" aria-hidden="true" />
+                <span className="i-material-symbols-search-rounded inline-block size-4 text-white/50 group-focus-within:text-white transition-all duration-300" aria-hidden="true" />
               </div>
 
               <input
@@ -263,7 +263,7 @@ function SearchContent({ initialOptions, initialResult }: SearchProps) {
               {query && (
                 <button onClick={/* 清空搜索词，后续由防抖逻辑同步到 URL。 */ () => {
                   setQuery("");
-                }} className="text-white/50 hover:text-[var(--accent-hover)] hover:drop-shadow-[0_0_5px_var(--accent-glow)] transition-all duration-300" aria-label="清除搜索">
+                }} className="text-white/50 hover:text-[var(--accent-hover)] transition-all duration-300" aria-label="清除搜索">
                   <span className="i-material-symbols-close-rounded inline-block size-5" aria-hidden="true" />
                 </button>
               )}
@@ -275,14 +275,14 @@ function SearchContent({ initialOptions, initialResult }: SearchProps) {
                 onClick={/* 切换高级筛选区域的展开状态。 */ () => setShowAdvanced(!showAdvanced)}
                 className={`relative flex min-h-11 items-center gap-2 rounded-xl px-4 py-2 text-sm font-medium transition-all duration-300 backdrop-blur-2xl ${
                   showAdvanced
-                    ? "surface-active text-[var(--accent-hover)] border border-[var(--accent-border)] shadow-[0_4px_15px_var(--accent-glow-soft)] drop-shadow-[0_0_3px_var(--accent-glow-soft)]"
+                    ? "filter-option-active shadow-md"
                     : "filter-option"
                 }`}
               >
                 <span className="i-material-symbols-tune-rounded inline-block size-4" aria-hidden="true" />
                 {showAdvanced ? "收起筛选" : "高级筛选"}
                 {!showAdvanced && hasActiveFilters && (
-                  <span className="absolute -top-1 -right-1 w-3 h-3 bg-[var(--accent)] rounded-full border border-black/50 shadow-[0_0_8px_var(--accent-glow)] animate-pulse"></span>
+                  <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-[var(--accent)] rounded-full border border-black/50"></span>
                 )}
               </button>
             </div>
@@ -297,7 +297,7 @@ function SearchContent({ initialOptions, initialResult }: SearchProps) {
 
                   return (
                     <div key={category.id} className="flex flex-col items-start gap-3 border-b border-white/10 py-4 sm:flex-row sm:gap-0">
-                      <span className="text-white/60 text-sm font-medium w-16 shrink-0 mt-1.5 tracking-wider drop-shadow-[0_0_5px_rgba(255,255,255,0.1)]">
+                      <span className="text-white/60 text-sm font-medium w-16 shrink-0 mt-1.5 tracking-wider">
                         {category.label}
                       </span>
                       <div className="flex flex-wrap gap-x-3 gap-y-2 flex-1 items-center">
@@ -339,7 +339,7 @@ function SearchContent({ initialOptions, initialResult }: SearchProps) {
                 })}
 
                 <div className="flex flex-col items-start gap-3 border-b border-white/10 py-4 sm:flex-row sm:items-center sm:gap-0">
-                  <span className="text-white/60 text-sm font-medium w-16 shrink-0 tracking-wider drop-shadow-[0_0_5px_rgba(255,255,255,0.1)]">
+                  <span className="text-white/60 text-sm font-medium w-16 shrink-0 tracking-wider">
                     年份
                   </span>
                   <div className="flex w-full flex-col items-start gap-3 sm:w-auto sm:flex-row sm:items-center sm:gap-4">
@@ -363,14 +363,20 @@ function SearchContent({ initialOptions, initialResult }: SearchProps) {
                           aria-label="开始年份"
                           value={filters.year?.[0] || ""}
                           onChange={/* 将选择的值作为起始年份交给范围校正逻辑。 */ (e) => handleYearChange("start", e.target.value)}
-                          className="filter-option min-h-10 w-full min-w-0 cursor-pointer appearance-none rounded-lg py-1.5 pl-3 pr-8 text-[13px] backdrop-blur-2xl transition-all outline-none focus:border-white/40 focus:bg-white/10 sm:min-w-25"
+                          className={`min-h-10 w-full min-w-0 cursor-pointer appearance-none rounded-lg py-1.5 pl-3 pr-8 text-[13px] backdrop-blur-2xl transition-all outline-none sm:min-w-25 ${
+                            filters.year?.[0]
+                              ? "filter-option-active font-semibold"
+                              : "filter-option focus:border-white/40 focus:bg-white/10"
+                          }`}
                         >
                           <option value="" disabled hidden className="bg-neutral-900 text-neutral-300">开始年份</option>
                           {yearOptions.map(/* 将年份渲染为起始年份下拉选项。 */ (y) => (
                             <option key={y} value={y} className="bg-neutral-900 text-neutral-300">{y}</option>
                           ))}
                         </select>
-                        <span className="i-material-symbols-expand-more-rounded absolute right-3 top-1/2 inline-block size-3 -translate-y-1/2 text-white/50 group-hover:text-white pointer-events-none transition-colors" aria-hidden="true" />
+                        <span className={`i-material-symbols-expand-more-rounded absolute right-3 top-1/2 inline-block size-3 -translate-y-1/2 pointer-events-none transition-colors ${
+                          filters.year?.[0] ? "text-current opacity-90" : "text-white/50 group-hover:text-white"
+                        }`} aria-hidden="true" />
                       </div>
 
                       <span className="text-white/60 text-[13px] font-medium px-1">至</span>
@@ -380,21 +386,27 @@ function SearchContent({ initialOptions, initialResult }: SearchProps) {
                           aria-label="结束年份"
                           value={filters.year?.[1] || ""}
                           onChange={/* 将选择的值作为结束年份交给范围校正逻辑。 */ (e) => handleYearChange("end", e.target.value)}
-                          className="filter-option min-h-10 w-full min-w-0 cursor-pointer appearance-none rounded-lg py-1.5 pl-3 pr-8 text-[13px] backdrop-blur-2xl transition-all outline-none focus:border-white/40 focus:bg-white/10 sm:min-w-25"
+                          className={`min-h-10 w-full min-w-0 cursor-pointer appearance-none rounded-lg py-1.5 pl-3 pr-8 text-[13px] backdrop-blur-2xl transition-all outline-none sm:min-w-25 ${
+                            filters.year?.[1]
+                              ? "filter-option-active font-semibold"
+                              : "filter-option focus:border-white/40 focus:bg-white/10"
+                          }`}
                         >
                           <option value="" disabled hidden className="bg-neutral-900 text-neutral-300">最终年份</option>
                           {yearOptions.map(/* 将年份渲染为结束年份下拉选项。 */ (y) => (
                             <option key={y} value={y} className="bg-neutral-900 text-neutral-300">{y}</option>
                           ))}
                         </select>
-                        <span className="i-material-symbols-expand-more-rounded absolute right-3 top-1/2 inline-block size-3 -translate-y-1/2 text-white/50 group-hover:text-white pointer-events-none transition-colors" aria-hidden="true" />
+                        <span className={`i-material-symbols-expand-more-rounded absolute right-3 top-1/2 inline-block size-3 -translate-y-1/2 pointer-events-none transition-colors ${
+                          filters.year?.[1] ? "text-current opacity-90" : "text-white/50 group-hover:text-white"
+                        }`} aria-hidden="true" />
                       </div>
                     </div>
                   </div>
                 </div>
 
                 <div className="flex flex-col items-start gap-3 py-4 sm:flex-row sm:gap-0">
-                  <span className="text-white/60 text-sm font-medium w-16 shrink-0 mt-1.5 tracking-wider drop-shadow-[0_0_5px_rgba(255,255,255,0.1)]">
+                  <span className="text-white/60 text-sm font-medium w-16 shrink-0 mt-1.5 tracking-wider">
                     排序
                   </span>
                   <div className="flex flex-wrap gap-x-3 gap-y-2 flex-1 items-center">
@@ -431,10 +443,10 @@ function SearchContent({ initialOptions, initialResult }: SearchProps) {
 
         <section ref={resultsRef} className="w-full scroll-mt-24" aria-labelledby="search-results-heading">
           <div className="mb-8 flex flex-col items-start justify-between gap-3 sm:flex-row sm:items-center">
-            <h2 id="search-results-heading" className="text-2xl font-bold text-white tracking-wide drop-shadow-[0_0_10px_rgba(255,255,255,0.2)]">
+            <h2 id="search-results-heading" className="text-2xl font-bold text-white tracking-wide">
               {query ? (
                 <>
-                  <span className="text-[var(--accent-hover)] drop-shadow-[0_0_5px_var(--accent-glow)]">&quot;{query}&quot;</span> 的搜索结果
+                  <span className="text-[var(--accent-hover)]">&quot;{query}&quot;</span> 的搜索结果
                 </>
               ) : (
                 "搜索结果"
@@ -446,12 +458,12 @@ function SearchContent({ initialOptions, initialResult }: SearchProps) {
                   onClick={/* 清空所有筛选并恢复默认日期降序。 */ () => {
                     setFilters({ type: [], status: [], genre: [], region: [], language: [], year: [], sort: ["date_desc"] });
                   }}
-                  className="text-sm text-white/60 hover:text-[var(--accent-hover)] hover:drop-shadow-[0_0_5px_var(--accent-glow)] transition-all duration-300"
+                  className="text-sm text-white/60 hover:text-[var(--accent-hover)] transition-all duration-300"
                 >
                   清空筛选
                 </button>
               )}
-              <span className="surface-muted min-w-32 rounded-full border border-white/10 px-4 py-1.5 text-center text-sm font-medium text-white shadow-[0_4px_10px_rgba(0,0,0,0.2)] backdrop-blur-2xl drop-shadow-[0_0_8px_rgba(255,255,255,0.1)] transition-all">
+              <span className="surface-muted min-w-32 rounded-full border border-white/10 px-4 py-1.5 text-center text-sm font-medium text-white shadow-[0_4px_10px_rgba(0,0,0,0.2)] backdrop-blur-2xl transition-all">
                 {isLoading ? "加载中..." : requestError ? "加载失败" : `找到 ${total} 部作品`}
               </span>
             </div>
@@ -493,7 +505,7 @@ function SearchContent({ initialOptions, initialResult }: SearchProps) {
                 <span className="i-material-symbols-chevron-left-rounded inline-block size-4" aria-hidden="true" />
               </button>
               {pageNumbers(page, totalPages).map(/* 将页码窗口中的一页渲染为分页按钮。 */ (pageNumber) => (
-                <button key={pageNumber} onClick={/* 跳转到点击的结果页。 */ () => goToPage(pageNumber)} aria-current={pageNumber === page ? "page" : undefined} className={`min-w-10 rounded-xl border px-3 py-2 text-center text-sm transition-all ${pageNumber === page ? "surface-active border-[var(--accent-border)] text-[var(--accent-hover)] font-bold shadow-[0_4px_10px_var(--accent-glow-soft)]" : "surface-muted border-white/10 text-white/70 hover:bg-white/10 hover:text-white"}`}>
+                <button key={pageNumber} onClick={/* 跳转到点击的结果页。 */ () => goToPage(pageNumber)} aria-current={pageNumber === page ? "page" : undefined} className={`min-w-10 rounded-xl px-3 py-2 text-center text-sm transition-all ${pageNumber === page ? "filter-option-active shadow-md" : "surface-muted border border-white/10 text-white/70 hover:bg-white/10 hover:text-white"}`}>
                   {pageNumber}
                 </button>
               ))}
@@ -508,7 +520,7 @@ function SearchContent({ initialOptions, initialResult }: SearchProps) {
       <button
         onClick={scrollToTop}
         aria-label="返回页面顶部"
-        className={`surface-muted fixed bottom-22 right-4 z-50 flex size-12 items-center justify-center rounded-full border border-white/10 text-white/70 shadow-[0_4px_15px_rgba(0,0,0,0.2)] backdrop-blur-2xl transition-all duration-300 hover:scale-105 hover:border-[var(--accent-border-hover)] hover:bg-white/10 hover:text-[var(--accent-hover)] hover:shadow-[0_6px_25px_var(--accent-glow)] hover:drop-shadow-[0_0_5px_var(--accent-glow)] sm:right-8 lg:right-12 ${
+        className={`surface-muted fixed bottom-22 right-4 z-50 flex size-12 items-center justify-center rounded-full border border-white/10 text-white/70 shadow-[0_4px_15px_rgba(0,0,0,0.3)] backdrop-blur-2xl transition-all duration-300 hover:scale-105 hover:border-[var(--accent-border-hover)] hover:bg-white/10 hover:text-[var(--accent-hover)] hover:shadow-lg hover:shadow-black/50 sm:right-8 lg:right-12 ${
           showScrollTop ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10 pointer-events-none"
         }`}
       >

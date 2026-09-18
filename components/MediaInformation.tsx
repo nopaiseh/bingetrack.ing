@@ -11,7 +11,7 @@ import MediaRatingBadge from "./MediaRatingBadge";
 function MediaPoster({ media }: { media: Media }) {
   return (
     <div className="relative w-full max-w-80 shrink-0 self-center lg:w-80 lg:self-start">
-      <div className="surface-muted relative z-10 aspect-2/3 w-full overflow-hidden rounded-2xl border border-white/15 shadow-[0_25px_60px_-15px_rgba(0,0,0,0.8)] backdrop-blur-2xl ring-1 ring-white/10 transition-transform duration-500 hover:scale-[1.02]">
+      <div className="surface-card relative z-10 aspect-2/3 w-full overflow-hidden rounded-2xl shadow-[0_25px_60px_-15px_rgba(0,0,0,0.8)] transition-transform duration-500 hover:scale-[1.02]">
         {media.cover_url ? (
           <Image src={media.cover_url} alt={media.title} fill sizes="(max-width: 393px) calc(100vw - 74px), 320px" className="object-cover transition-transform duration-700 hover:scale-105" priority />
         ) : (
@@ -29,7 +29,7 @@ function MediaPoster({ media }: { media: Media }) {
 function StatusBadge({ status }: { status?: string }) {
   if (status === "watched") {
     return (
-      <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 text-xs font-bold backdrop-blur-2xl shadow-[0_4px_12px_rgba(16,185,129,0.25)] drop-shadow-[0_0_6px_rgba(16,185,129,0.4)] cursor-default transition-all duration-300 hover:bg-emerald-500/25 hover:shadow-[0_4px_16px_rgba(16,185,129,0.35)]">
+      <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-500/10 text-emerald-300 border border-emerald-500/20 text-xs font-medium backdrop-blur-2xl cursor-default transition-colors">
         <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
           <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7"/>
         </svg>
@@ -40,10 +40,10 @@ function StatusBadge({ status }: { status?: string }) {
 
   if (status === "watching") {
     return (
-      <div className="flex cursor-default items-center gap-1.5 rounded-full border border-sky-400/30 bg-sky-400/15 px-3 py-1.5 text-xs font-bold text-sky-300 shadow-[0_4px_12px_rgba(56,189,248,0.2)] backdrop-blur-2xl transition-all duration-300 hover:bg-sky-400/25 hover:shadow-[0_4px_16px_rgba(56,189,248,0.3)]">
+      <div className="flex cursor-default items-center gap-1.5 rounded-full border border-sky-400/20 bg-sky-400/10 px-3 py-1.5 text-xs font-medium text-sky-300 backdrop-blur-2xl transition-colors">
         <span className="relative flex size-2">
           <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-sky-400 opacity-75 duration-1000" />
-          <span className="relative inline-flex size-2 rounded-full bg-sky-300 shadow-[0_0_8px_rgba(125,211,252,0.8)]" />
+          <span className="relative inline-flex size-2 rounded-full bg-sky-300" />
         </span>
         正在看
       </div>
@@ -51,7 +51,7 @@ function StatusBadge({ status }: { status?: string }) {
   }
 
   return (
-    <div className="surface-muted interactive-control flex cursor-pointer items-center gap-1.5 rounded-full border border-white/10 px-3 py-1.5 text-xs font-medium text-white/70 shadow-[0_4px_10px_rgba(0,0,0,0.2)] backdrop-blur-2xl transition-all duration-300 hover:border-[var(--accent-border)] hover:bg-[var(--accent-soft)] hover:text-[var(--accent-light)] hover:shadow-[0_4px_15px_var(--accent-glow-soft)]">
+    <div className="surface-muted interactive-control flex cursor-pointer items-center gap-1.5 rounded-full border border-white/10 px-3 py-1.5 text-xs font-medium text-white/70 backdrop-blur-2xl transition-colors hover:border-white/20 hover:bg-white/10 hover:text-white">
       <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
         <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
       </svg>
@@ -78,8 +78,8 @@ function MetadataRow({ label, children }: { label: string; children: React.React
 function SectionHeading({ children }: { children: ReactNode }) {
   return (
     <div className="mb-3 flex items-center gap-2">
-      <div className="h-5 w-1 rounded-sm bg-[var(--accent)] shadow-[0_0_8px_var(--accent-glow)]" />
-      <h2 className="text-sm font-bold tracking-widest text-white/90">{children}</h2>
+      <div className="h-4 w-1 rounded-full bg-[var(--accent)] opacity-85" />
+      <h2 className="text-sm font-semibold tracking-wider text-white/90">{children}</h2>
     </div>
   );
 }
@@ -197,7 +197,7 @@ export default function MediaInformation({
             <div className="flex flex-1 flex-col">
             <div className="mb-4 md:mb-8">
               <div className="mb-6 mt-4">
-                <h1 className="font-serif-movie text-balance text-3xl font-bold tracking-tight text-white drop-shadow-[0_0_15px_rgba(255,255,255,0.3)] sm:text-4xl lg:text-5xl">
+                <h1 className="font-serif-movie text-balance text-3xl font-bold tracking-tight bg-linear-to-b from-white via-white/95 to-white/75 bg-clip-text text-transparent sm:text-4xl lg:text-5xl">
                   {media.title}
                 </h1>
               </div>
@@ -208,7 +208,7 @@ export default function MediaInformation({
                 {runtimeLabel && (
                   <>
                     <span className="text-white/20 hidden sm:inline">•</span>
-                    <span className="text-white/60 drop-shadow-[0_0_5px_rgba(255,255,255,0.1)]">
+                    <span className="text-white/60">
                       {runtimeLabel}
                     </span>
                   </>
@@ -240,8 +240,8 @@ export default function MediaInformation({
       {seasons && (
         <div className="mb-12 mt-12">
           <div className="flex items-center gap-2 mb-6">
-            <div className="w-1 h-5 bg-[var(--accent)] rounded-sm shadow-[0_0_8px_var(--accent-glow)]"></div> 
-            <h3 className="text-white/90 font-bold text-lg drop-shadow-[0_0_5px_rgba(255,255,255,0.2)] tracking-widest">
+            <div className="w-1 h-4 bg-[var(--accent)] rounded-full opacity-85" /> 
+            <h3 className="text-white/90 font-bold text-lg tracking-wider">
               季度列表
             </h3>
           </div>

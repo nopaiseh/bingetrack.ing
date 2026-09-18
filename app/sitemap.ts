@@ -2,7 +2,7 @@ import type { MetadataRoute } from "next";
 import { getSitemapMediaEntries } from "@/lib/functions/media-repo";
 import { SITE_URL } from "@/lib/site";
 
-export const revalidate = 3600;
+export const revalidate = 86400;
 
 /** 合并固定页面和数据库中的媒体地址生成站点地图；查询失败时退回固定页面列表。 */
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {

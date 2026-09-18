@@ -7,7 +7,7 @@ export default function NotFound() {
       
       <div className="flex flex-col items-center gap-6 animate-fade-in px-6 text-center">
         
-        <h1 className="text-7xl md:text-9xl font-black tracking-tight text-transparent bg-clip-text bg-linear-to-r from-[var(--accent)] to-[var(--accent-dark)] drop-shadow-[0_0_24px_var(--accent-glow)]">
+        <h1 className="text-7xl md:text-9xl font-black tracking-tight text-transparent bg-clip-text bg-linear-to-b from-white via-white/85 to-white/30">
           404
         </h1>
 

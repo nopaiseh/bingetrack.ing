@@ -8,8 +8,8 @@ import { getCachedMediaById, getCachedSeasonsBySeriesId } from "@/lib/functions/
 import type { Metadata } from "next";
 import { buildMediaJsonLd, buildMediaMetadata, serializeJsonLd } from "@/lib/seo/media";
 
-// 详情页按需生成，缓存 60 秒后允许重新验证。
-export const revalidate = 60;
+// 详情页按需生成，日常走 24 小时长缓存，数据变更通过 revalidatePath/revalidateTag 即时失效。
+export const revalidate = 86400;
 
 /** 构建时不枚举电视剧 ID，详情页由访问触发按需生成。 */
 export function generateStaticParams() { return []; }
