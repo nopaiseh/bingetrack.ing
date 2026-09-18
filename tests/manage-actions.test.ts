@@ -1,7 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { saveReference, deleteReference, searchChoices, saveCollectionMember } from "@/app/manage/reference-actions";
+import { manualRevalidateCache } from "@/app/manage/actions";
 import { requireOwner } from "@/lib/auth/server";
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 vi.mock("@/lib/auth/server", () => ({ requireOwner: vi.fn() }));
 vi.mock("next/cache", () => ({ revalidatePath: vi.fn(), revalidateTag: vi.fn() }));
 vi.mock("next/navigation", () => ({ redirect: vi.fn() }));
@@ -79,5 +80,16 @@ describe("关联资料服务端操作", () => {
     expect(from).toHaveBeenCalledWith("languages");
     expect(chain.insert).toHaveBeenCalledWith({ name: "英语" });
     expect(result).toEqual({ saved: true });
+  });
+  it("manualRevalidateCache 检查站长身份并触发 revalidateTag 和 revalidatePath", async () => {
+    const result = await manualRevalidateCache();
+    expect(result).toEqual({ saved: true });
+    expect(revalidateTag).toHaveBeenCalledWith("media", { expire: 0 });
+    expect(revalidatePath).toHaveBeenCalledWith("/", "layout");
+  });
+  it("manualRevalidateCache 未授权时捕获异常并返回错误信息", async () => {
+    vi.mocked(requireOwner).mockRejectedValue(new Error("unauthorized"));
+    const result = await manualRevalidateCache();
+    expect(result.error).toContain("unauthorized");
   });
 });

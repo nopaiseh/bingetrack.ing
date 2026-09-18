@@ -8,7 +8,8 @@ export const metadata: Metadata = {
   description: "浏览已看、在看与想看的电视剧记录。",
 };
 
-export const revalidate = 60;
+// 电视剧目录按 24 小时长缓存，数据变更由管理端即时按需刷新。
+export const revalidate = 86400;
 
 const DEFAULT_SERIES_STATS = { total: 0, watched: 0, watching: 0, want: 0, upcoming: 0 };
 

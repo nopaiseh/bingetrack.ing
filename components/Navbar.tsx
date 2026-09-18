@@ -46,38 +46,39 @@ export default function Navbar() {
   };
 
   return (
-    <nav aria-label="主要导航" className="surface-overlay fixed left-0 top-0 z-50 w-full border-x-0 border-t-0 transition-all duration-300">
-      <div className="flex h-16 w-full max-w-7xl items-center justify-between px-4 sm:px-6 lg:mx-auto lg:px-8">
+    <nav aria-label="主要导航" className="fixed top-0 inset-x-0 z-50 pointer-events-none transition-all duration-300">
+      <div className="container mx-auto max-w-7xl px-4 pt-2.5 sm:px-6 sm:pt-4 lg:px-8">
+        <div className="surface-panel pointer-events-auto flex h-14 w-full items-center justify-between px-4 sm:px-6 rounded-2xl shadow-[0_16px_36px_-10px_rgba(0,0,0,0.7)]">
         <div className="flex items-center gap-6">
           <Link
             href="/"
             className="flex items-center gap-2.5 group cursor-pointer"
             onClick={closeMenu}
           >
-            <span className="i-material-symbols-terminal-rounded inline-block size-4 text-[var(--accent)] group-hover:rotate-12 group-hover:drop-shadow-[0_0_10px_var(--accent-glow-strong)] transition-all duration-300" aria-hidden="true" />
-            <span className="font-mono text-xl font-light tracking-tight drop-shadow-[0_0_12px_rgba(255,255,255,0.1)]">
-              <span className="bg-clip-text text-transparent bg-linear-to-br from-white via-white/80 to-white/50">
+            <span className="i-material-symbols-terminal-rounded inline-block size-4 text-[var(--accent)] group-hover:rotate-12 transition-transform duration-300" aria-hidden="true" />
+            <span className="font-mono text-xl font-light tracking-tight">
+              <span className="bg-clip-text text-transparent bg-linear-to-br from-white via-white/90 to-white/60">
                 bingetrack
               </span>
-              <span className="text-[var(--accent)] font-black -mx-0.5 drop-shadow-[0_0_8px_var(--accent-glow-strong)]">
+              <span className="text-[var(--accent)] font-black -mx-0.5">
                 .
               </span>
-              <span className="bg-clip-text text-transparent bg-linear-to-br from-white/90 to-white/40">
+              <span className="bg-clip-text text-transparent bg-linear-to-br from-white/90 to-white/50">
                 ing
               </span>
             </span>
           </Link>
 
-          <div className="hidden lg:flex items-center gap-5 text-sm font-medium">
+          <div className="hidden lg:flex items-center gap-1.5 text-sm font-medium">
             {navItems.map(/* 为桌面导航生成栏目链接并标记当前栏目。 */ (item) => (
               <Link
                 key={item.name}
                 href={item.href}
                 aria-current={isActive(item.href) ? "page" : undefined}
-                className={`transition-all duration-300 ${
+                className={`rounded-lg px-3 py-1.5 transition-all duration-200 ${
                   isActive(item.href)
-                    ? "text-[var(--accent)] font-bold drop-shadow-[0_0_12px_var(--accent-glow-strong)] scale-105" 
-                    : "text-white/60 hover:text-[var(--accent-hover)] hover:drop-shadow-[0_0_10px_var(--accent-glow)]" 
+                    ? "surface-active text-[var(--accent)] font-semibold shadow-xs" 
+                    : "text-white/65 hover:text-white hover:bg-white/5" 
                 }`}
               >
                 {item.name}
@@ -96,7 +97,7 @@ export default function Navbar() {
               aria-label="搜索"
               className="absolute inset-y-0 left-0 flex items-center pl-3.5 cursor-pointer z-10"
             >
-              <span className="i-material-symbols-search-rounded inline-block size-4 text-white/50 group-focus-within:text-white group-focus-within:drop-shadow-[0_0_8px_rgba(255,255,255,0.6)] transition-all duration-300" aria-hidden="true" />
+              <span className="i-material-symbols-search-rounded inline-block size-4 text-white/50 group-focus-within:text-white transition-colors duration-300" aria-hidden="true" />
             </button>
             <input
               name="q"
@@ -105,26 +106,26 @@ export default function Navbar() {
               maxLength={MAX_SEARCH_QUERY_LENGTH}
               title={`搜索词最多 ${MAX_SEARCH_QUERY_LENGTH} 个字符`}
               className="surface-control text-white text-sm rounded-full
-              block w-36 focus:w-56 sm:w-44 lg:focus:w-56 pl-10 pr-4 py-2 transition-all duration-500 ease-out
+              block w-36 focus:w-56 sm:w-44 lg:focus:w-56 pl-10 pr-4 py-1.5 transition-all duration-500 ease-out
               placeholder-white/50 outline-none"
             />
           </form>
 
           {auth.signedIn ? (
             <form action="/auth/logout" method="POST" onSubmit={closeMenu}>
-              <button type="submit" className="surface-control shrink-0 cursor-pointer rounded-full px-3.5 py-2 text-sm font-medium text-white/90 transition-all duration-200 hover:border-white/40 hover:bg-white/10 hover:text-white hover:shadow-[0_0_12px_rgba(255,255,255,0.15)] active:scale-95">退出</button>
+              <button type="submit" className="surface-control shrink-0 cursor-pointer rounded-full px-3.5 py-1.5 text-sm font-medium text-white/90 transition-all duration-200 hover:border-white/40 hover:bg-white/10 hover:text-white active:scale-95">退出</button>
             </form>
           ) : (
             <button type="button" disabled={auth.busy} onClick={() => {
               closeMenu();
               void auth.signIn();
-            }} className="surface-control shrink-0 cursor-pointer rounded-full px-3.5 py-2 text-sm font-medium text-white/90 transition-all duration-200 hover:border-white/40 hover:bg-white/10 hover:text-white hover:shadow-[0_0_12px_rgba(255,255,255,0.15)] active:scale-95 disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:border-white/20 disabled:hover:bg-transparent disabled:hover:shadow-none disabled:active:scale-100">
+            }} className="surface-control shrink-0 cursor-pointer rounded-full px-3.5 py-1.5 text-sm font-medium text-white/90 transition-all duration-200 hover:border-white/40 hover:bg-white/10 hover:text-white active:scale-95 disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:border-white/20 disabled:hover:bg-transparent disabled:hover:shadow-none disabled:active:scale-100">
               {auth.busy ? "验证中…" : "登录"}
             </button>
           )}
 
           <button
-            className="surface-control flex size-10 shrink-0 cursor-pointer items-center justify-center rounded-full text-white/80 outline-none transition-all duration-200 hover:border-white/40 hover:bg-white/10 hover:text-white hover:shadow-[0_0_12px_rgba(255,255,255,0.15)] active:scale-95 lg:hidden"
+            className="surface-control flex size-9 shrink-0 cursor-pointer items-center justify-center rounded-full text-white/80 outline-none transition-all duration-200 hover:border-white/40 hover:bg-white/10 hover:text-white active:scale-95 lg:hidden"
             aria-label={isMobileMenuOpen ? "关闭导航菜单" : "打开导航菜单"}
             aria-expanded={isMobileMenuOpen}
             aria-controls="mobile-navigation"
@@ -139,22 +140,22 @@ export default function Navbar() {
         id="mobile-navigation"
         aria-hidden={!isMobileMenuOpen}
         inert={!isMobileMenuOpen ? true : undefined}
-        className={`surface-overlay overflow-hidden border-b border-white/10 shadow-[0_15px_40px_rgba(0,0,0,0.5)] backdrop-blur-3xl transition-all duration-500 ease-in-out lg:hidden ${
+        className={`surface-overlay pointer-events-auto w-full mt-2 overflow-hidden rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.65)] backdrop-blur-3xl transition-all duration-500 ease-in-out lg:hidden ${
           isMobileMenuOpen
             ? "max-h-[32rem] opacity-100 py-4"
-            : "max-h-0 opacity-0 py-0 border-transparent"
+            : "max-h-0 opacity-0 py-0 border-transparent pointer-events-none"
         }`}
       >
-        <div className="flex flex-col gap-4 px-4 text-base font-medium sm:px-6">
+        <div className="flex flex-col gap-3 px-4 text-base font-medium sm:px-6">
           {navItems.map(/* 为移动菜单生成栏目链接并标记当前栏目。 */ (item) => (
             <Link
               key={item.name}
               href={item.href}
               aria-current={isActive(item.href) ? "page" : undefined}
-              className={`block py-2 transition-all ${
+              className={`block rounded-lg px-3 py-2 transition-all ${
                 isActive(item.href)
-                  ? "text-[var(--accent)] font-bold drop-shadow-[0_0_12px_var(--accent-glow-strong)] translate-x-2"
-                  : "text-white/60 hover:text-[var(--accent-hover)] hover:drop-shadow-[0_0_10px_var(--accent-glow)] hover:translate-x-1"
+                  ? "surface-active text-[var(--accent)] font-semibold"
+                  : "text-white/65 hover:text-white hover:bg-white/5"
               }`}
               onClick={closeMenu}
             >
@@ -171,7 +172,7 @@ export default function Navbar() {
               aria-label="搜索"
               className="absolute inset-y-0 left-0 flex items-center pl-3.5 cursor-pointer z-10"
             >
-              <span className="i-material-symbols-search-rounded inline-block size-4 text-white/50 group-focus-within:text-white group-focus-within:drop-shadow-[0_0_8px_rgba(255,255,255,0.6)] transition-all duration-300" aria-hidden="true" />
+              <span className="i-material-symbols-search-rounded inline-block size-4 text-white/50 group-focus-within:text-white transition-colors duration-300" aria-hidden="true" />
             </button>
 
             <input
@@ -185,7 +186,8 @@ export default function Navbar() {
           </form>
         </div>
       </div>
-      {auth.error && <p role="alert" className="border-t border-white/10 px-4 py-3 text-sm text-red-300">{auth.error}</p>}
+      {auth.error && <p role="alert" className="pointer-events-auto mt-2 w-full rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-300 backdrop-blur-xl">{auth.error}</p>}
+      </div>
     </nav>
   );
 }

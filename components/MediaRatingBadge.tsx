@@ -23,8 +23,8 @@ export function getRatingTier(rating: number | null | undefined): RatingTierInfo
   if (num >= 9.0) {
     return {
       label: "神作",
-      badgeClass: "border-amber-400/60 bg-linear-to-r from-amber-500/20 via-yellow-400/25 to-amber-500/20 text-amber-300 shadow-[0_0_12px_rgba(251,191,36,0.35)] ring-1 ring-amber-400/30",
-      glowClass: "drop-shadow-[0_0_8px_rgba(251,191,36,0.8)] text-yellow-300",
+      badgeClass: "border-amber-400/35 bg-amber-400/10 text-amber-300 ring-1 ring-amber-400/20 shadow-[0_1px_0_0_rgba(251,191,36,0.15)_inset]",
+      glowClass: "text-amber-300",
       textClass: "text-amber-300 font-bold",
       icon: "i-material-symbols-stars-rounded",
       isMasterpiece: true,
@@ -33,35 +33,35 @@ export function getRatingTier(rating: number | null | undefined): RatingTierInfo
   if (num >= 8.0) {
     return {
       label: "佳作",
-      badgeClass: "border-amber-500/40 bg-amber-500/15 text-amber-400 shadow-[0_0_8px_rgba(251,191,36,0.2)]",
-      glowClass: "drop-shadow-[0_0_5px_rgba(251,191,36,0.6)] text-amber-400",
-      textClass: "text-amber-400 font-semibold",
+      badgeClass: "border-amber-300/25 bg-amber-300/5 text-amber-200/90 shadow-[0_1px_0_0_rgba(255,255,255,0.06)_inset]",
+      glowClass: "text-amber-200/90",
+      textClass: "text-amber-200/90 font-medium",
       icon: "i-material-symbols-star-rounded",
     };
   }
   if (num >= 7.0) {
     return {
       label: "良作",
-      badgeClass: "border-emerald-500/35 bg-emerald-500/15 text-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.15)]",
-      glowClass: "drop-shadow-[0_0_5px_rgba(52,211,153,0.5)] text-emerald-400",
-      textClass: "text-emerald-400 font-medium",
+      badgeClass: "border-emerald-400/20 bg-emerald-400/5 text-emerald-300/85 shadow-[0_1px_0_0_rgba(255,255,255,0.06)_inset]",
+      glowClass: "text-emerald-300/85",
+      textClass: "text-emerald-300/85 font-medium",
       icon: "i-material-symbols-star-rounded",
     };
   }
   if (num >= 6.0) {
     return {
       label: "尚可",
-      badgeClass: "border-sky-500/30 bg-sky-500/15 text-sky-400 shadow-[0_0_8px_rgba(56,189,248,0.15)]",
-      glowClass: "drop-shadow-[0_0_5px_rgba(56,189,248,0.5)] text-sky-400",
-      textClass: "text-sky-400 font-medium",
+      badgeClass: "border-sky-400/20 bg-sky-400/5 text-sky-300/80 shadow-[0_1px_0_0_rgba(255,255,255,0.06)_inset]",
+      glowClass: "text-sky-300/80",
+      textClass: "text-sky-300/80 font-medium",
       icon: "i-material-symbols-star-rounded",
     };
   }
   if (num >= 5.0) {
     return {
       label: "及格",
-      badgeClass: "border-zinc-400/30 bg-zinc-500/15 text-zinc-300",
-      glowClass: "drop-shadow-[0_0_4px_rgba(255,255,255,0.2)] text-zinc-300",
+      badgeClass: "border-white/10 bg-white/5 text-zinc-300 shadow-[0_1px_0_0_rgba(255,255,255,0.06)_inset]",
+      glowClass: "text-zinc-300",
       textClass: "text-zinc-300 font-medium",
       icon: "i-material-symbols-star-half-rounded",
     };
@@ -69,45 +69,45 @@ export function getRatingTier(rating: number | null | undefined): RatingTierInfo
   if (num >= 4.0) {
     return {
       label: "平庸",
-      badgeClass: "border-stone-500/25 bg-stone-500/15 text-stone-400",
-      glowClass: "text-stone-400",
-      textClass: "text-stone-400",
+      badgeClass: "border-white/8 bg-white/[0.03] text-zinc-400 shadow-[0_1px_0_0_rgba(255,255,255,0.04)_inset]",
+      glowClass: "text-zinc-400",
+      textClass: "text-zinc-400",
       icon: "i-material-symbols-star-outline-rounded",
     };
   }
   if (num >= 3.0) {
     return {
       label: "较差",
-      badgeClass: "border-purple-500/25 bg-purple-500/15 text-purple-400",
-      glowClass: "text-purple-400",
-      textClass: "text-purple-400",
+      badgeClass: "border-purple-400/15 bg-purple-400/5 text-purple-300/70 shadow-[0_1px_0_0_rgba(255,255,255,0.04)_inset]",
+      glowClass: "text-purple-300/70",
+      textClass: "text-purple-300/70",
       icon: "i-material-symbols-star-outline-rounded",
     };
   }
   if (num >= 2.0) {
     return {
       label: "烂片",
-      badgeClass: "border-rose-500/35 bg-rose-500/15 text-rose-400 shadow-[0_0_8px_rgba(244,63,94,0.15)]",
-      glowClass: "drop-shadow-[0_0_5px_rgba(244,63,94,0.5)] text-rose-400",
-      textClass: "text-rose-400",
+      badgeClass: "border-rose-400/15 bg-rose-400/5 text-rose-300/70 shadow-[0_1px_0_0_rgba(255,255,255,0.04)_inset]",
+      glowClass: "text-rose-300/70",
+      textClass: "text-rose-300/70",
       icon: "i-material-symbols-thumb-down-rounded",
     };
   }
   if (num >= 1.0) {
     return {
       label: "灾难",
-      badgeClass: "border-red-600/45 bg-red-950/40 text-red-400 shadow-[0_0_10px_rgba(239,68,68,0.25)]",
-      glowClass: "drop-shadow-[0_0_6px_rgba(239,68,68,0.7)] text-red-400",
-      textClass: "text-red-400 font-bold",
+      badgeClass: "border-red-500/20 bg-red-950/20 text-red-300/75 shadow-[0_1px_0_0_rgba(255,255,255,0.04)_inset]",
+      glowClass: "text-red-300/75",
+      textClass: "text-red-300/75 font-semibold",
       icon: "i-material-symbols-warning-rounded",
     };
   }
   // 0.0 ~ 0.9
   return {
     label: "神烂",
-    badgeClass: "border-red-800/60 bg-black/70 text-red-400 shadow-[0_0_12px_rgba(185,28,28,0.3)]",
-    glowClass: "drop-shadow-[0_0_6px_rgba(185,28,28,0.8)] text-red-400",
-    textClass: "text-red-400 font-black",
+    badgeClass: "border-red-700/25 bg-red-950/30 text-red-400/80 ring-1 ring-red-500/15 shadow-[0_1px_0_0_rgba(255,255,255,0.04)_inset]",
+    glowClass: "text-red-400/80",
+    textClass: "text-red-400/80 font-semibold",
     icon: "i-material-symbols-skull-rounded",
   };
 }

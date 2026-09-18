@@ -3,15 +3,17 @@
 import { useEffect, useState } from "react";
 
 const PALETTES = [
-  { id: "default", name: "红毯经典", colorClass: "bg-red-500", glowColor: "rgba(239,68,68,0.5)" },
-  { id: "cyber", name: "赛博霓虹", colorClass: "bg-sky-400", glowColor: "rgba(56,189,248,0.5)" },
-  { id: "sepia", name: "复古胶片", colorClass: "bg-amber-500", glowColor: "rgba(245,158,11,0.5)" },
+  { id: "default", name: "红毯经典", colorClass: "bg-rose-500", glowColor: "rgba(244,63,94,0.6)" },
+  { id: "cyber", name: "赛博霓虹", colorClass: "bg-sky-400", glowColor: "rgba(14,165,233,0.6)" },
+  { id: "sepia", name: "复古胶片", colorClass: "bg-amber-400", glowColor: "rgba(245,158,11,0.6)" },
+  { id: "noir", name: "黑曜钛白", colorClass: "bg-zinc-100", glowColor: "rgba(255,255,255,0.5)" },
 ] as const;
 
 const THEME_COLORS: Record<string, string> = {
-  default: "#140606",
-  cyber: "#050b14",
-  sepia: "#140d06",
+  default: "#140507",
+  cyber: "#050c18",
+  sepia: "#140c04",
+  noir: "#09090b",
 };
 
 /** 提供零运行负担的影院氛围主题切换控件，并持久化到本地存储。 */
@@ -38,7 +40,7 @@ export default function ThemeToggle() {
 
     const meta = document.querySelector('meta[name="theme-color"]');
     if (meta) {
-      meta.setAttribute("content", THEME_COLORS[themeId] || "#140606");
+      meta.setAttribute("content", THEME_COLORS[themeId] || "#140507");
     }
   };
 

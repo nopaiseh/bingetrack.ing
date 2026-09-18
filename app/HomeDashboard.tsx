@@ -68,14 +68,14 @@ function MediaStatusCard({
       <div className="flex flex-col gap-3 mt-1">
         <div className="flex justify-between items-end">
           <span className="text-sm text-white/50">部数</span>
-          <span className="text-2xl font-mono text-white drop-shadow-[0_0_5px_rgba(255,255,255,0.2)]">
+          <span className="text-2xl font-mono text-white">
             <AnimatedNumber value={count} /> <span className="text-xs text-white/60 font-normal">部</span>
           </span>
         </div>
         {seasonsCount !== undefined && (
           <div className="flex justify-between items-end">
             <span className="text-sm text-white/50">季数</span>
-            <span className="text-2xl font-mono text-white drop-shadow-[0_0_5px_rgba(255,255,255,0.2)]">
+            <span className="text-2xl font-mono text-white">
               <AnimatedNumber value={seasonsCount} /> <span className="text-xs text-white/60 font-normal">季</span>
             </span>
           </div>
@@ -83,7 +83,7 @@ function MediaStatusCard({
         {episodesCount !== undefined && (
           <div className="flex justify-between items-end">
             <span className="text-sm text-white/50">集数</span>
-            <span className="text-2xl font-mono text-white drop-shadow-[0_0_5px_rgba(255,255,255,0.2)]">
+            <span className="text-2xl font-mono text-white">
               <AnimatedNumber value={episodesCount} /> <span className="text-xs text-white/60 font-normal">集</span>
             </span>
           </div>
@@ -198,7 +198,7 @@ export default function HomeDashboard({
 
   return (
     <div className="container mx-auto flex max-w-7xl flex-col gap-6 px-4 py-12 pt-24 sm:px-6 lg:px-8">
-      <section aria-labelledby="dashboard-title" className="relative z-10 mb-2 rounded-3xl border border-white/10 bg-[var(--surface-panel)] px-5 pb-5 pt-6 shadow-[0_24px_80px_rgba(0,0,0,0.24)] sm:px-7 sm:pb-6 sm:pt-8 lg:px-10 lg:pb-8 lg:pt-10">
+      <section aria-labelledby="dashboard-title" className="surface-panel relative z-10 mb-2 rounded-3xl px-5 pb-5 pt-6 sm:px-7 sm:pb-6 sm:pt-8 lg:px-10 lg:pb-8 lg:pt-10">
         <div className="relative">
           <div className="mb-5 flex items-center gap-3 text-[11px] font-semibold uppercase tracking-[0.24em] text-[var(--accent-light)]/90">
             <span className="h-px w-8 bg-[var(--accent)]" />
@@ -246,12 +246,13 @@ export default function HomeDashboard({
             {/* 平滑滑动的物理胶囊底块 */}
             <div
               aria-hidden="true"
-              className="surface-active pointer-events-none absolute top-1.5 bottom-1.5 rounded-lg border border-[var(--accent-border)] shadow-[0_4px_15px_var(--accent-glow-soft)] drop-shadow-[0_0_5px_var(--accent-glow)] transition-transform duration-300 ease-out"
+              className="pointer-events-none absolute top-1.5 bottom-1.5 rounded-lg border shadow-md shadow-black/30 transition-transform duration-300 ease-out"
               style={{
                 width: `calc((100% - 12px) / ${tabs.length})`,
                 transform: `translateX(calc(${tabs.indexOf(activeTab)} * 100%))`,
-                background: "var(--accent-soft)",
-                borderColor: "var(--accent-border)",
+                background: "var(--accent)",
+                borderColor: "var(--accent)",
+                boxShadow: "0 4px 14px -2px var(--accent-glow-soft), inset 0 1px 0 rgba(255, 255, 255, 0.25)",
               }}
             />
 
@@ -263,12 +264,12 @@ export default function HomeDashboard({
                 id={`dashboard-tab-${tabIds[tab]}`}
                 aria-controls={`dashboard-panel-${tabIds[tab]}`}
                 aria-selected={activeTab === tab}
-                className={`relative z-10 px-5 py-2 rounded-lg text-sm font-medium transition-colors duration-200 ${
+                className={`relative z-10 px-5 py-2 rounded-lg text-sm transition-colors duration-200 ${
                   activeTab === tab
-                    ? "text-accent-hover text-[var(--accent-hover)] font-bold drop-shadow-[0_0_8px_var(--accent-glow)]"
+                    ? "font-semibold"
                     : "text-white/70 hover:text-white"
                 }`}
-                style={activeTab === tab ? { color: "var(--accent-hover)" } : undefined}
+                style={activeTab === tab ? { color: "var(--accent-contrast)" } : undefined}
               >
                 {tab}
               </button>
@@ -325,7 +326,7 @@ export default function HomeDashboard({
 
               <div className="progress-track h-1.5 w-full overflow-hidden rounded-full shadow-inner">
                 <div
-                  className="h-full bg-linear-to-r from-[var(--accent-dark)] to-[var(--accent-hover)] shadow-[0_0_12px_var(--accent-glow)] rounded-full"
+                  className="h-full bg-linear-to-r from-[var(--accent-dark)] to-[var(--accent-hover)] rounded-full"
                   style={{ width: `${moviesPercent}%` }}
                 />
               </div>
@@ -368,7 +369,7 @@ export default function HomeDashboard({
               
               <div className="progress-track h-1.5 w-full overflow-hidden rounded-full shadow-inner">
                 <div
-                  className="h-full bg-linear-to-r from-[var(--accent-dark)] to-[var(--accent-hover)] shadow-[0_0_12px_var(--accent-glow)] rounded-full"
+                  className="h-full bg-linear-to-r from-[var(--accent-dark)] to-[var(--accent-hover)] rounded-full"
                   style={{ width: `${seriesPercent}%` }}
                 />
               </div>

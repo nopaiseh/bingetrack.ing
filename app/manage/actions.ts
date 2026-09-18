@@ -42,3 +42,15 @@ export async function deleteMedia(_previous: ActionResult, form: FormData): Prom
   revalidatePath("/", "layout");
   redirect("/manage?deleted=1");
 }
+
+/** 手动使公开数据缓存即时失效，同步数据库最新状态。仅站长可触发。 */
+export async function manualRevalidateCache(): Promise<ActionResult> {
+  try {
+    await requireOwner();
+    revalidateTag("media", { expire: 0 });
+    revalidatePath("/", "layout");
+    return { saved: true };
+  } catch (error) {
+    return { error: error instanceof Error ? error.message : "刷新缓存失败。" };
+  }
+}

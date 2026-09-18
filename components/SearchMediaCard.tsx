@@ -7,7 +7,7 @@ import MediaRatingBadge from "./MediaRatingBadge";
 /** 为搜索卡片提供高度拟真且美观的加载骨架。 */
 export function SearchMediaCardSkeleton() {
   return (
-    <div className="search-media-card surface-card flex flex-col overflow-hidden rounded-xl border border-white/10">
+    <div className="search-media-card surface-card flex flex-col overflow-hidden rounded-xl">
       {/* 拟真海报占位，带暗黑景深与极简胶片图标 */}
       <div className="relative flex aspect-2/3 w-full items-center justify-center overflow-hidden bg-white/4">
         <SkeletonBlock className="absolute inset-0 rounded-none bg-transparent" />
@@ -57,7 +57,7 @@ export function SearchMediaCard({ item, returnHref }: { item: MediaCard; returnH
 
 
       <div className="flex flex-col space-y-1.5 px-3 py-2.5">
-        <h3 className="font-serif-movie truncate text-sm font-bold text-white transition-colors duration-300 drop-shadow-[0_0_8px_rgba(255,255,255,0.2)] group-hover:text-[var(--accent-hover)] group-hover:drop-shadow-[0_0_5px_var(--accent-glow)]" title={item.title}>{item.title}</h3>
+        <h3 className="font-serif-movie truncate text-sm font-bold text-white transition-colors duration-300 group-hover:text-[var(--accent-hover)]" title={item.title}>{item.title}</h3>
         <div className="flex items-center justify-between text-xs">
           <span className="font-medium text-white/60">{item.date ? item.date.substring(0, 4) : "未知"}</span>
           <MediaRatingBadge
@@ -68,7 +68,7 @@ export function SearchMediaCard({ item, returnHref }: { item: MediaCard; returnH
         </div>
         <div className="mt-1.5 flex items-center gap-1.5 w-full overflow-hidden">
           {tags.map(/* 将一个类型或语言标签渲染为统一可截断的紧凑徽标。 */ (tag, index) => (
-            <span key={`${tag}-${index}`} title={tag} className="surface-muted inline-flex items-center shrink truncate rounded-md border border-white/10 px-1.5 py-0.5 text-[10px] font-medium tracking-wide text-white/70 backdrop-blur-md transition-all duration-300 group-hover:border-[var(--accent-border)] group-hover:bg-[var(--accent-soft)] group-hover:text-[var(--accent-hover)] group-hover:shadow-[0_4px_10px_var(--accent-glow-soft)]">{tag}</span>
+            <span key={`${tag}-${index}`} title={tag} className="inline-flex items-center shrink truncate rounded-md border border-white/10 bg-white/5 px-1.5 py-0.5 text-[10px] font-medium tracking-wide text-white/70 backdrop-blur-md transition-all duration-300 group-hover:border-[var(--accent-border)] group-hover:bg-[var(--accent-soft)] group-hover:text-white">{tag}</span>
           ))}
         </div>
       </div>

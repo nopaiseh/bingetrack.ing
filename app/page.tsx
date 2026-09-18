@@ -7,7 +7,8 @@ import {
 import { buildMediaDistributions } from "@/lib/functions/media-distributions";
 import type { MediaCard, Summary } from "@/lib/types";
 
-export const revalidate = 60;
+// 首页按 24 小时长缓存静态生成，数据变更由管理端 revalidatePath/revalidateTag 即时按需刷新。
+export const revalidate = 86400;
 
 const EMPTY_DISTRIBUTIONS = buildMediaDistributions([]);
 

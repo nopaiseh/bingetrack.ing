@@ -22,6 +22,7 @@ test("renders theme toggle buttons with accessible roles", () => {
   expect(screen.getByRole("button", { name: "切换为红毯经典主题" })).toBeInTheDocument();
   expect(screen.getByRole("button", { name: "切换为赛博霓虹主题" })).toBeInTheDocument();
   expect(screen.getByRole("button", { name: "切换为复古胶片主题" })).toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "切换为黑曜钛白主题" })).toBeInTheDocument();
 });
 
 test("switches theme on click and persists to document and localStorage", async () => {
@@ -34,6 +35,13 @@ test("switches theme on click and persists to document and localStorage", async 
   expect(document.documentElement.getAttribute("data-theme")).toBe("cyber");
   expect(localStorage.getItem("bingetrack-theme")).toBe("cyber");
   expect(cyberButton).toHaveAttribute("aria-pressed", "true");
+
+  const noirButton = screen.getByRole("button", { name: "切换为黑曜钛白主题" });
+  await user.click(noirButton);
+
+  expect(document.documentElement.getAttribute("data-theme")).toBe("noir");
+  expect(localStorage.getItem("bingetrack-theme")).toBe("noir");
+  expect(noirButton).toHaveAttribute("aria-pressed", "true");
 
   const defaultButton = screen.getByRole("button", { name: "切换为红毯经典主题" });
   await user.click(defaultButton);

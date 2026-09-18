@@ -8,7 +8,8 @@ export const metadata: Metadata = {
   description: "浏览已看、想看与即将上映的电影记录。",
 };
 
-export const revalidate = 60;
+// 电影目录按 24 小时长缓存，数据变更由管理端即时按需刷新。
+export const revalidate = 86400;
 
 const DEFAULT_MOVIE_STATS = { total: 0, watched: 0, want: 0, upcoming: 0 };
 
