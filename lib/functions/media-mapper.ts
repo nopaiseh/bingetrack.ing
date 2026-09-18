@@ -24,7 +24,7 @@ export function mapViewRowToMedia(
     id: String(item.id),
     title: item.title ?? "",
     alternate_title: item.alternate_title ?? null,
-    date: String(item.sort_date ?? item.release_year ?? item.release_date ?? ""),
+    date: String(item.first_air_date ?? item.sort_date ?? item.release_year ?? item.release_date ?? ""),
     release_year: item.release_year ?? "",
     runtime: item.runtime ?? null,
     rating: item.rating ?? item.average_rating ?? null,
@@ -46,7 +46,7 @@ export function mapViewRowToMediaCard(item: ViewAllMediaRow): MediaCard {
   return {
     id: String(item.id),
     title: item.title ?? "",
-    date: String(item.sort_date ?? item.release_year ?? item.release_date ?? ""),
+    date: String(item.first_air_date ?? item.sort_date ?? item.release_year ?? item.release_date ?? ""),
     release_year: item.release_year ?? "",
     rating: item.rating ?? item.average_rating ?? null,
     genres: sortNames(item.genres),

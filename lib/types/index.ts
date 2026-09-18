@@ -138,6 +138,8 @@ export interface ViewAllMediaRow {
   title?: string | null;
   alternate_title?: string | null;
   sort_date?: string | null;
+  first_air_date?: string | null;
+  last_air_date?: string | null;
   release_date?: string | null;
   release_year?: string | number | null;
   runtime?: number | null;

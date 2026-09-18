@@ -59,7 +59,11 @@ export function SearchMediaCard({ item, returnHref }: { item: MediaCard; returnH
       <div className="flex flex-col space-y-1.5 px-3 py-2.5">
         <h3 className="font-serif-movie truncate text-sm font-bold text-white transition-colors duration-300 group-hover:text-[var(--accent-hover)]" title={item.title}>{item.title}</h3>
         <div className="flex items-center justify-between text-xs">
-          <span className="font-medium text-white/60">{item.date ? item.date.substring(0, 4) : "未知"}</span>
+          <span className="font-medium text-white/60">
+            {item.type === "series"
+              ? item.release_year || (item.date ? item.date.substring(0, 4) : "未知")
+              : item.date ? item.date.substring(0, 4) : "未知"}
+          </span>
           <MediaRatingBadge
             rating={item.rating}
             size="sm"
