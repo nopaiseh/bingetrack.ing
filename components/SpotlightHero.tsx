@@ -74,9 +74,9 @@ export default function SpotlightHero({ items, yearLabel }: SpotlightHeroProps) 
                 )}
               </div>
 
-              {/* 电影标题（艺术衬线体，冷白微金属质感渐变） */}
+              {/* 电影标题（艺术衬线体） */}
               <h2
-                className="font-serif-movie text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight bg-linear-to-b from-white via-white/95 to-white/70 bg-clip-text text-transparent line-clamp-2"
+                className="font-serif-movie text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight text-white drop-shadow-[0_0_20px_rgba(255,255,255,0.2)] line-clamp-2"
                 title={currentItem.title}
               >
                 {currentItem.title}

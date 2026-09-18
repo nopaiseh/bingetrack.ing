@@ -246,13 +246,12 @@ export default function HomeDashboard({
             {/* 平滑滑动的物理胶囊底块 */}
             <div
               aria-hidden="true"
-              className="pointer-events-none absolute top-1.5 bottom-1.5 rounded-lg border shadow-md shadow-black/30 transition-transform duration-300 ease-out"
+              className="surface-active pointer-events-none absolute top-1.5 bottom-1.5 rounded-lg border border-[var(--accent-border)] shadow-[0_4px_15px_var(--accent-glow-soft)] transition-transform duration-300 ease-out"
               style={{
                 width: `calc((100% - 12px) / ${tabs.length})`,
                 transform: `translateX(calc(${tabs.indexOf(activeTab)} * 100%))`,
-                background: "var(--accent)",
-                borderColor: "var(--accent)",
-                boxShadow: "0 4px 14px -2px var(--accent-glow-soft), inset 0 1px 0 rgba(255, 255, 255, 0.25)",
+                background: "var(--accent-soft)",
+                borderColor: "var(--accent-border)",
               }}
             />
 
@@ -264,12 +263,12 @@ export default function HomeDashboard({
                 id={`dashboard-tab-${tabIds[tab]}`}
                 aria-controls={`dashboard-panel-${tabIds[tab]}`}
                 aria-selected={activeTab === tab}
-                className={`relative z-10 px-5 py-2 rounded-lg text-sm transition-colors duration-200 ${
+                className={`relative z-10 px-5 py-2 rounded-lg text-sm font-medium transition-colors duration-200 ${
                   activeTab === tab
-                    ? "font-semibold"
+                    ? "text-accent-hover text-[var(--accent-hover)] font-bold"
                     : "text-white/70 hover:text-white"
                 }`}
-                style={activeTab === tab ? { color: "var(--accent-contrast)" } : undefined}
+                style={activeTab === tab ? { color: "var(--accent-hover)" } : undefined}
               >
                 {tab}
               </button>

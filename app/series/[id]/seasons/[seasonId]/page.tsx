@@ -209,14 +209,14 @@ export default async function SeasonPage({
           <div className="flex items-center gap-2 overflow-x-auto">
             <span className="i-material-symbols-filter-list-rounded ml-1 size-4 shrink-0 text-white/60 inline-block" aria-hidden="true" />
             {(["all", "watched", "unwatched"] as const).map(/* 生成观看状态筛选链接，切换状态时回到第一页。 */ (value) => (
-              <Link key={value} href={seasonHref({ page: 1, status: value })} className={`shrink-0 rounded-lg px-4 py-1.5 text-[13px] backdrop-blur-2xl transition-all duration-300 ${status === value ? "filter-option-active" : "filter-option"}`}>
+              <Link key={value} href={seasonHref({ page: 1, status: value })} className={`shrink-0 rounded-lg border px-4 py-1.5 text-[13px] backdrop-blur-2xl transition-all duration-300 ${status === value ? "surface-active border-[var(--accent-border)] font-bold text-[var(--accent-hover)] shadow-[0_4px_10px_var(--accent-glow-soft)] drop-shadow-[0_0_3px_var(--accent-glow-soft)]" : "surface-muted border-white/10 text-white/70 shadow-[0_4px_10px_rgba(0,0,0,0.2)] hover:border-white/20 hover:bg-white/10 hover:text-white hover:shadow-[0_6px_15px_rgba(0,0,0,0.3)] hover:drop-shadow-[0_0_8px_rgba(255,255,255,0.5)]"}`}>
                 {{ all: "全部", watched: "已看", unwatched: "未看" }[value]}
               </Link>
             ))}
           </div>
           <div className="flex items-center gap-2 text-sm">
             <span className="text-white/60">集数</span>
-            <Link href={seasonHref({ page: 1, order: order === "asc" ? "desc" : "asc" })} className="filter-option rounded-lg px-4 py-1.5 text-[13px] font-medium text-white/80 backdrop-blur-2xl transition-all duration-300 hover:text-white">
+            <Link href={seasonHref({ page: 1, order: order === "asc" ? "desc" : "asc" })} className="surface-active rounded-lg border border-[var(--accent-border)] px-4 py-1.5 text-[13px] font-bold text-[var(--accent-hover)] shadow-[0_4px_10px_var(--accent-glow-soft)] backdrop-blur-2xl drop-shadow-[0_0_3px_var(--accent-glow-soft)] transition-all duration-300 hover:bg-[var(--accent-soft)]">
               {order === "asc" ? "升序 ↑" : "降序 ↓"}
             </Link>
             <span className="ml-auto text-white/60 sm:ml-2">{seasonData.total} 集</span>
@@ -235,7 +235,7 @@ export default async function SeasonPage({
           <nav className="mt-10 flex flex-wrap items-center justify-center gap-2" aria-label="剧集分页">
             {page > 1 && <Link href={seasonHref({ page: page - 1 })} className="surface-muted interactive-control rounded-xl border border-white/10 p-2.5 text-white/60" aria-label="上一页"><span className="i-material-symbols-chevron-left-rounded inline-block size-4" aria-hidden="true" /></Link>}
             {pageNumbers(page, totalPages).map(/* 生成保留当前筛选条件的页码链接，并标记当前页。 */ (pageNumber) => (
-              <Link key={pageNumber} href={seasonHref({ page: pageNumber })} className={`min-w-10 rounded-xl px-3 py-2 text-center text-sm transition-all ${pageNumber === page ? "filter-option-active shadow-md" : "surface-muted border border-white/10 text-white/70 hover:bg-white/10 hover:text-white"}`}>
+              <Link key={pageNumber} href={seasonHref({ page: pageNumber })} className={`min-w-10 rounded-xl border px-3 py-2 text-center text-sm ${pageNumber === page ? "surface-active border-[var(--accent-border)] text-[var(--accent-hover)] font-bold shadow-[0_4px_10px_var(--accent-glow-soft)]" : "surface-muted border-white/10 text-white/70 hover:bg-white/10 hover:text-white"}`}>
                 {pageNumber}
               </Link>
             ))}

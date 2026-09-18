@@ -543,21 +543,21 @@ body::before {
   }
 
   .filter-option-active {
-    border: 1px solid var(--accent);
-    background: var(--accent);
+    border: 1px solid var(--accent-border-hover);
+    background: var(--accent-soft);
     -webkit-backdrop-filter: blur(16px);
     backdrop-filter: blur(16px);
-    color: var(--accent-contrast, #ffffff);
-    font-weight: 600;
-    box-shadow: 0 4px 14px -2px var(--accent-glow-soft), inset 0 1px 0 rgba(255, 255, 255, 0.25);
+    color: var(--accent-hover);
+    font-weight: 700;
+    box-shadow: 0 4px 15px var(--accent-glow-soft), inset 0 1px 0 var(--accent-border);
     transition: transform 180ms cubic-bezier(0.16, 1, 0.3, 1), border-color 180ms, background-color 180ms, color 180ms, box-shadow 180ms;
   }
 
   .filter-option-active:hover {
     border-color: var(--accent-hover);
-    background: var(--accent-hover);
-    color: var(--accent-contrast, #ffffff);
-    box-shadow: 0 6px 18px -2px var(--accent-glow), inset 0 1px 0 rgba(255, 255, 255, 0.35);
+    background: var(--accent-soft);
+    color: var(--accent-light);
+    box-shadow: 0 6px 20px var(--accent-glow), inset 0 1px 0 var(--accent-border-hover);
   }
 
   .filter-option-active:active {
