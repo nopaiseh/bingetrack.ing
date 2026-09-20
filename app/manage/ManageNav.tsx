@@ -15,7 +15,7 @@ const groups = [
   { label: "关联资料", items: [
     { label: "人物", value: "people", icon: "i-material-symbols-group-rounded", isChild: false },
     { label: "系列", value: "collections", icon: "i-material-symbols-collections-bookmark-rounded", isChild: false },
-    { label: "题材流派", value: "genres", icon: "i-material-symbols-sell-rounded", isChild: false },
+    { label: "类型", value: "genres", icon: "i-material-symbols-sell-rounded", isChild: false },
     { label: "地区", value: "regions", icon: "i-material-symbols-public-rounded", isChild: false },
     { label: "语言", value: "languages", icon: "i-material-symbols-translate-rounded", isChild: false },
   ] },
