@@ -6,6 +6,7 @@ import { Media, SeasonInfo } from "@/lib/types";
 import { formatRuntime } from "@/lib/format-runtime";
 import SearchTag from "./SearchTag";
 import MediaRatingBadge from "./MediaRatingBadge";
+import ExpandableCastList from "./ExpandableCastList";
 
 /** 展示并预加载详情海报；无图片时显示暂无海报占位。 */
 function MediaPoster({ media }: { media: Media }) {
@@ -140,11 +141,7 @@ function MediaCredits({ media }: { media: Media }) {
       </div>
       <div>
         <SectionHeading>主演</SectionHeading>
-        <div className="flex flex-wrap gap-2.5">
-          {media.casts && media.casts.length > 0
-            ? media.casts.map(/* 将演员姓名渲染为演员分类搜索链接。 */ (castMember) => <SearchTag key={castMember} label={castMember} category="cast" />)
-            : <span className="text-sm text-white/30">-</span>}
-        </div>
+        <ExpandableCastList casts={media.casts} initialLimit={12} />
       </div>
     </div>
   );
@@ -225,14 +222,14 @@ export default function MediaInformation({
           </div>
 
           <div className="mt-8 border-t border-white/10 pt-6">
-            <div className="mb-6">
-              <MediaCredits media={media} />
-            </div>
-            <div className="border-t border-white/10 pt-6">
+            <div className="mb-8">
               <SectionHeading>剧情简介</SectionHeading>
-              <p className="text-left text-sm leading-7 tracking-wide text-white/70 wrap-break-word md:text-base">
+              <p className="text-left text-sm leading-7 tracking-wide text-white/75 wrap-break-word md:text-base">
                 {media.summary || "暂无简介。"}
               </p>
+            </div>
+            <div className="border-t border-white/10 pt-6">
+              <MediaCredits media={media} />
             </div>
           </div>
         </div>
@@ -262,11 +259,11 @@ export default function MediaInformation({
                   <span className="image-label absolute left-2 top-2 rounded-lg border border-white/10 px-2 py-1 text-[11px] text-white/75 backdrop-blur-md">第 {season.seasonNumber} 季</span>
                 </div>
                 <div className="flex flex-1 flex-col p-4">
-                  <h4 className="mb-2 line-clamp-2 text-sm font-bold text-white/85 transition-colors group-hover:text-[var(--accent-hover)]">
+                  <h4 className="mb-2 truncate text-sm font-bold text-white/85 transition-colors group-hover:text-[var(--accent-hover)]" title={season.title}>
                     {season.title}
                   </h4>
                   <div className="mt-auto flex flex-wrap items-center gap-x-2 gap-y-1 font-mono text-xs text-white/50">
-                    {season.releaseYearRange && <span>{season.releaseYearRange}</span>}
+                    {season.releaseYearRange && <span>{season.releaseYearRange.replace(/\s*-\s*/g, "–")}</span>}
                     {season.releaseYearRange && <span>•</span>}
                     <span>{season.episodeCount} 集</span>
                   </div>

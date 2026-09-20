@@ -22,7 +22,7 @@ export interface Media {
 
 // 服务端传给浏览器的卡片字段集合，不包含详情页专用数据；可按需携带精选摘要。
 export type MediaCard = Pick<Media,
-  "id" | "title" | "date" | "release_year" | "rating" | "genres" | "languages" | "cover_url" | "type"
+  "id" | "title" | "date" | "release_year" | "rating" | "genres" | "languages" | "cover_url" | "type" | "status"
 > & {
   summary?: string;
 };

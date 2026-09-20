@@ -3,7 +3,7 @@
 import { MAX_SEARCH_QUERY_LENGTH } from "@/lib/api/search-limits";
 
 import { useNavbarAuth } from "@/lib/auth/use-navbar-auth";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 
@@ -13,6 +13,39 @@ export default function Navbar() {
   const auth = useNavbarAuth();
   const pathname = usePathname();
   const router = useRouter();
+  const searchInputRef = useRef<HTMLInputElement>(null);
+
+  /** 监听全局键盘快捷键（'/' 与 '⌘K / Ctrl+K'），快捷聚焦搜索框或跳转搜索页。 */
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const isCmdK = (e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k";
+      const isSlash = e.key === "/" && !e.metaKey && !e.ctrlKey && !e.altKey;
+
+      if (!isCmdK && !isSlash) return;
+
+      const target = e.target as HTMLElement | null;
+      const isEditable =
+        target?.isContentEditable ||
+        target?.tagName === "INPUT" ||
+        target?.tagName === "TEXTAREA" ||
+        target?.tagName === "SELECT";
+
+      if (isSlash && isEditable) return;
+
+      e.preventDefault();
+
+      if (window.innerWidth < 640 || !searchInputRef.current) {
+        router.push("/search");
+        return;
+      }
+
+      searchInputRef.current.focus();
+      searchInputRef.current.select();
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [router]);
 
   /** 关闭移动端导航菜单。 */
   const closeMenu = () => setIsMobileMenuOpen(false);
@@ -100,16 +133,30 @@ export default function Navbar() {
               <span className="i-material-symbols-search-rounded inline-block size-4 text-white/50 group-focus-within:text-white transition-colors duration-300" aria-hidden="true" />
             </button>
             <input
+              ref={searchInputRef}
               name="q"
               type="text"
               placeholder="搜索"
               maxLength={MAX_SEARCH_QUERY_LENGTH}
               title={`搜索词最多 ${MAX_SEARCH_QUERY_LENGTH} 个字符`}
               className="surface-control text-white text-sm rounded-full
-              block w-36 focus:w-56 sm:w-44 lg:focus:w-56 pl-10 pr-4 py-1.5 transition-all duration-500 ease-out
+              block w-36 focus:w-56 sm:w-44 lg:focus:w-56 pl-10 pr-9 py-1.5 transition-all duration-500 ease-out
               placeholder-white/50 outline-none"
             />
+            <kbd className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 hidden sm:inline-flex items-center rounded border border-white/15 bg-white/5 px-1.5 py-0.5 text-[10px] font-mono text-white/40 group-focus-within:opacity-0 transition-opacity">
+              ⌘K
+            </kbd>
           </form>
+
+          {/* 移动端独立搜索按钮：单手直达搜索页 */}
+          <Link
+            href="/search"
+            aria-label="搜索影视"
+            onClick={closeMenu}
+            className="surface-control flex size-9 shrink-0 cursor-pointer items-center justify-center rounded-full text-white/80 outline-none transition-all duration-200 hover:border-white/40 hover:bg-white/10 hover:text-white active:scale-95 sm:hidden"
+          >
+            <span className="i-material-symbols-search-rounded inline-block size-4.5" aria-hidden="true" />
+          </Link>
 
           {auth.signedIn ? (
             <form action="/auth/logout" method="POST" onSubmit={closeMenu}>

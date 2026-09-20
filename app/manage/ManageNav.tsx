@@ -30,7 +30,10 @@ export default function ManageNav() {
   /** 关联资料使用独立路由，影视保留可分享的类型筛选。 */
   function href(value: string) { return value.startsWith("tv_") || value === "movie" ? `/manage?type=${value}` : `/manage/references/${value}`; }
   return <aside className="min-w-0 lg:sticky lg:top-24 lg:self-start">
-    <div className="mb-6 hidden px-3 lg:block"><p className="mt-2 text-xl font-semibold text-white">内容工作台</p></div>
+    <div className="mb-4 hidden px-3 lg:block"><p className="mt-2 text-xl font-semibold text-white">内容工作台</p></div>
+    <div className="mb-6 hidden lg:block">
+      <RefreshCacheButton />
+    </div>
     <div className="lg:hidden flex items-center justify-between gap-3">
       <label className="flex-1">管理类别<select value={active} onChange={/* 切换分类时进入该类别第一页。 */ event => { if (mayLeaveEditor()) router.push(rememberedList(event.target.value, href(event.target.value))); }}>
         {!active && <option value="" disabled>编辑内容</option>}
@@ -43,7 +46,6 @@ export default function ManageNav() {
     <nav aria-label="内容管理分类" className="hidden space-y-6 lg:block">{groups.map(/* 两组分类共八个入口。 */ group => <div key={group.label}><p className="mb-2 px-3 text-xs text-white/50">{group.label}</p><div className="space-y-1">{group.items.map(/* 图标辅助辨认，选中态不只依赖颜色。 */ item => <Link key={item.value} href={href(item.value)} onClick={event => { if (event.button || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return; event.preventDefault(); router.push(rememberedList(item.value, href(item.value))); }} aria-current={active === item.value ? "page" : undefined} className={`flex items-center gap-3 rounded-xl border px-3 py-3 text-sm transition-colors ${active === item.value ? "surface-active border-[var(--accent-border)] font-semibold text-[var(--accent)] shadow-[0_4px_15px_var(--accent-glow-soft)]" : "border-transparent text-white/70 hover:bg-white/5 hover:text-white"}`}><span className={`${item.icon} size-4.5 inline-block shrink-0`} aria-hidden="true" />{item.label}</Link>)}</div></div>)}</nav>
     <div className="mt-6 hidden space-y-2 border-t border-white/10 pt-5 text-sm text-white/60 lg:block">
       <Link href="/settings" className="flex items-center gap-3 p-3 transition-colors hover:text-white"><span className="i-material-symbols-settings-rounded size-4.5 inline-block shrink-0" aria-hidden="true" />账号安全</Link>
-      <RefreshCacheButton />
     </div>
   </aside>;
 }

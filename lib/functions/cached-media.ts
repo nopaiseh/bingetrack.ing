@@ -8,12 +8,12 @@ import { withRetry } from "./retry";
 import type { Summary } from "@/lib/types";
 
 // 公开详情长缓存 24 小时，函数参数参与缓存键；数据变更由 "media" tag 即时失效。
-export const getCachedMediaById = cache(unstable_cache(getMediaById, ["public-media-detail-v1"], {
+export const getCachedMediaById = cache(unstable_cache(getMediaById, ["public-media-detail-v2"], {
   revalidate: 86400,
   tags: ["media"],
 }));
 
-export const getCachedSeasonsBySeriesId = cache(unstable_cache(getSeasonsBySeriesId, ["public-media-seasons-v1"], {
+export const getCachedSeasonsBySeriesId = cache(unstable_cache(getSeasonsBySeriesId, ["public-media-seasons-v2"], {
   revalidate: 86400,
   tags: ["media"],
 }));
@@ -22,14 +22,14 @@ export const getCachedSeasonsBySeriesId = cache(unstable_cache(getSeasonsBySerie
 export const searchCachedMedia = unstable_cache(
   /** 解析缓存键中的查询参数并执行媒体搜索。 */
   async (query: string) => searchMediaServer(parseMediaSearchParams(new URLSearchParams(query))),
-  ["public-media-search-v1"],
+  ["public-media-search-v2"],
   { revalidate: 3600, tags: ["media"] },
 );
 
 // 榜单数据按类型、年份与数量长缓存 24 小时。
 export const getCachedTopMediaServer = cache(unstable_cache(
   fetchTopMediaServer,
-  ["public-media-top-v1"],
+  ["public-media-top-v2"],
   { revalidate: 86400, tags: ["media"] },
 ));
 

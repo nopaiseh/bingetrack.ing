@@ -5,6 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { MediaCard } from "@/lib/types";
 import MediaRatingBadge from "./MediaRatingBadge";
+import MediaCardStatusBadge from "./MediaCardStatusBadge";
 
 /** 展示卡片海报、年份、评分及最多四个标签，并按参数控制图片加载优先级。 */
 function ItemCard({ item, type, eager, highPriority }: { item: MediaCard; type: "movies" | "series"; eager: boolean; highPriority: boolean }) {
@@ -20,24 +21,25 @@ function ItemCard({ item, type, eager, highPriority }: { item: MediaCard; type: 
             alt={item.title}
             fill
             className="object-cover transition-transform duration-500 ease-out group-hover:scale-105"
-            sizes="(max-width: 639px) 144px, 176px"
+            sizes="(max-width: 639px) 160px, 192px"
             priority={highPriority}
             loading={highPriority ? undefined : eager ? "eager" : "lazy"}
           />
         ) : (
           <span className="i-material-symbols-image-outline-rounded inline-block size-10 text-white/30 drop-shadow-md" aria-hidden="true" />
         )}
+        <MediaCardStatusBadge status={item.status} />
       </div>
       
       <div className="flex flex-col space-y-1.5 grow px-3 py-2.5 min-w-0">
-        <h3 className="font-serif-movie text-sm font-bold text-white truncate group-hover:text-[var(--accent-hover)] transition-colors duration-300" title={item.title}>
+        <h3 className="font-serif-movie truncate text-sm font-bold text-white transition-colors duration-300 group-hover:text-[var(--accent-hover)]" title={item.title}>
           {item.title}
         </h3>
 
-        <div className="flex justify-between items-center text-xs">
-          <span className="text-white/60 font-medium">
+        <div className="flex items-center justify-between gap-1.5 min-w-0 text-xs">
+          <span className="text-white/60 font-medium whitespace-nowrap shrink-0">
             {type === "series"
-              ? item.release_year || (item.date ? item.date.substring(0, 4) : "未知")
+              ? String(item.release_year || (item.date ? item.date.substring(0, 4) : "未知")).replace(/\s*-\s*/g, "–")
               : item.date ? item.date.substring(0, 4) : "未知"}
           </span>
           <MediaRatingBadge
@@ -178,7 +180,7 @@ export default function MediaRow({
             <Link
               href={`/${mediaType}/${media.id}`}
               key={media.id}
-              className="surface-card interactive-media-card group flex w-36 flex-none snap-start cursor-pointer flex-col overflow-hidden rounded-xl last:snap-end sm:w-44"
+              className="surface-card interactive-media-card group flex w-40 flex-none snap-start cursor-pointer flex-col overflow-hidden rounded-xl last:snap-end sm:w-48"
             >
               <ItemCard item={media} type={mediaType} eager={index < eagerCount} highPriority={eagerCount > 0 && index === 0} />
             </Link>

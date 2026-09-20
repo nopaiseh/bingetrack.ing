@@ -70,5 +70,78 @@ describe("readEditableMedia", () => {
     expect(result?.actors).toEqual(["Actor A"]);
     expect(result?.directors).toEqual(["Director B"]);
   });
+
+  it("读取电视剧时从 v_all_media 动态读取观看状态与评分", async () => {
+    const mockDb = {
+      from: vi.fn((table: string) => ({
+        select: vi.fn(() => ({
+          eq: vi.fn(() => ({
+            maybeSingle: vi.fn(async () => {
+              if (table === "media_items") {
+                return {
+                  data: {
+                    id: "22222222-2222-4222-8222-222222222222",
+                    type: "tv_series",
+                    title: "Test Series",
+                  },
+                  error: null,
+                };
+              }
+              if (table === "v_all_media") {
+                return {
+                  data: { status: "watching", rating: 8.8 },
+                  error: null,
+                };
+              }
+              return { data: null, error: null };
+            }),
+            order: vi.fn(async () => ({ data: [], error: null })),
+            then: (resolve: (val: unknown) => void) => resolve({ data: [], error: null }),
+          })),
+        })),
+      })),
+    } as unknown as SupabaseClient;
+
+    const result = await readEditableMedia(mockDb, "22222222-2222-4222-8222-222222222222");
+    expect(result).not.toBeNull();
+    expect(result?.status).toBe("watching");
+    expect(result?.rating).toBe(8.8);
+  });
+
+  it("读取剧季时根据 v_media_season_summaries 集数统计动态计算观看状态", async () => {
+    const mockDb = {
+      from: vi.fn((table: string) => ({
+        select: vi.fn(() => ({
+          eq: vi.fn(() => ({
+            maybeSingle: vi.fn(async () => {
+              if (table === "media_items") {
+                return {
+                  data: {
+                    id: "33333333-3333-4333-8333-333333333333",
+                    type: "tv_season",
+                    title: "第 1 季",
+                  },
+                  error: null,
+                };
+              }
+              if (table === "v_media_season_summaries") {
+                return {
+                  data: { episode_count: 10, watched_episode_count: 10 },
+                  error: null,
+                };
+              }
+              return { data: null, error: null };
+            }),
+            order: vi.fn(async () => ({ data: [], error: null })),
+            then: (resolve: (val: unknown) => void) => resolve({ data: [], error: null }),
+          })),
+        })),
+      })),
+    } as unknown as SupabaseClient;
+
+    const result = await readEditableMedia(mockDb, "33333333-3333-4333-8333-333333333333");
+    expect(result).not.toBeNull();
+    expect(result?.status).toBe("watched");
+  });
 });
 

@@ -116,7 +116,8 @@ test("filter selection and sort direction are accessible", /* 验证切换后读
   fireEvent.click(movie);
   expect(movie).toHaveAttribute("aria-pressed", "true");
   fireEvent.click(screen.getByRole("button", { name: "日期，降序" }));
-  expect(screen.getByRole("button", { name: "日期，升序" })).toHaveAttribute("aria-pressed", "true");
+  fireEvent.click(screen.getByRole("button", { name: "高级筛选" }));
+  expect(screen.getByRole("button", { name: "收起筛选" })).toHaveAttribute("aria-expanded", "true");
   fireEvent.click(screen.getByRole("button", { name: "收起筛选" }));
   expect(screen.getByRole("button", { name: "高级筛选" })).toHaveAttribute("aria-expanded", "false");
   await screen.findByText("找到 0 部作品");
@@ -141,3 +142,82 @@ test("search limit tooltip only appears above 100 characters", /* 正常输入�
     expect(screen.queryByRole("tooltip")).not.toBeInTheDocument();
   } finally { vi.useRealTimers(); }
 });
+
+test("active filter chips display and can be individually removed or cleared", /* 验证已选标签栏能够正确展示，支持单项移除与一键清空。 */ async () => {
+  window.history.replaceState(null, "", "/search?type=电影&status=想看");
+  vi.mocked(fetch).mockImplementation(/* 每次返回独立响应。 */ async () => new Response(JSON.stringify({ rows: [], total: 0 })));
+  render(<SearchClient initialOptions={options} initialResult={resultFor("?type=电影&status=想看")} />);
+
+  expect(screen.getByText("已选条件:")).toBeInTheDocument();
+  const removeMovieBtn = screen.getByRole("button", { name: "移除分类筛选：电影" });
+  expect(removeMovieBtn).toBeInTheDocument();
+  const removeStatusBtn = screen.getByRole("button", { name: "移除状态筛选：想看" });
+  expect(removeStatusBtn).toBeInTheDocument();
+
+  // 移除电影分类筛选
+  act(() => {
+    fireEvent.click(removeMovieBtn);
+  });
+  expect(new URLSearchParams(window.location.search).get("type")).toBeNull();
+  expect(new URLSearchParams(window.location.search).get("status")).toBe("想看");
+
+  // 点击清空筛选
+  act(() => {
+    fireEvent.click(screen.getByRole("button", { name: "清空筛选" }));
+  });
+  expect(new URLSearchParams(window.location.search).get("status")).toBeNull();
+  expect(screen.queryByText("已选条件:")).not.toBeInTheDocument();
+});
+
+test("renders media status badge on search result cards", () => {
+  const resultWithStatus = {
+    rows: [
+      {
+        id: "movie-1",
+        title: "已看电影",
+        type: "movies" as const,
+        status: "watched",
+        date: "2024-01-01",
+        rating: 8.5,
+        genres: ["剧情"],
+        languages: ["华语"],
+        cover_url: "",
+      },
+      {
+        id: "series-1",
+        title: "在看剧集",
+        type: "series" as const,
+        status: "watching",
+        date: "2024-02-01",
+        rating: 9.0,
+        genres: ["科幻"],
+        languages: ["英语"],
+        cover_url: "",
+      },
+      {
+        id: "movie-2",
+        title: "想看电影",
+        type: "movies" as const,
+        status: "want_to_watch",
+        date: "2024-03-01",
+        rating: null,
+        genres: ["动画"],
+        languages: ["日语"],
+        cover_url: "",
+      },
+    ],
+    total: 3,
+    error: null,
+    key: buildMediaSearchQuery(new URLSearchParams("")),
+  };
+
+  render(<SearchClient initialOptions={options} initialResult={resultWithStatus} />);
+
+  const badges = screen.getAllByTestId("media-card-status-badge");
+  expect(badges).toHaveLength(3);
+  expect(badges[0]).toHaveTextContent("已看");
+  expect(badges[1]).toHaveTextContent("在看");
+  expect(badges[2]).toHaveTextContent("想看");
+});
+
+

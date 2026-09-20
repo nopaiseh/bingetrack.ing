@@ -5,6 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { MediaCard } from "@/lib/types";
 import MediaRatingBadge from "./MediaRatingBadge";
+import MediaCardStatusBadge from "./MediaCardStatusBadge";
 
 interface SpotlightHeroProps {
   items: MediaCard[];
@@ -28,7 +29,7 @@ export default function SpotlightHero({ items, yearLabel }: SpotlightHeroProps) 
   return (
     <section
       aria-label="焦点精选展台"
-      className="surface-panel relative overflow-hidden rounded-3xl p-6 sm:p-8 lg:p-10 transition-all duration-500 shadow-[0_24px_80px_rgba(0,0,0,0.65)]"
+      className="surface-panel relative overflow-hidden rounded-3xl p-5 sm:p-7 lg:p-9 transition-all duration-500 shadow-[0_24px_80px_rgba(0,0,0,0.65)]"
     >
       {/* 电影幕布氛围光晕层 (Dynamic Cinema Ambient Backdrop) */}
       {currentItem.cover_url && (
@@ -99,12 +100,12 @@ export default function SpotlightHero({ items, yearLabel }: SpotlightHeroProps) 
               {/* 真实剧情简介（Description） */}
               <div className="mt-4">
                 {currentItem.summary ? (
-                  <p className="text-sm sm:text-base leading-relaxed text-white/75 line-clamp-3 sm:line-clamp-4 font-normal">
+                  <p className="text-sm sm:text-base leading-relaxed text-white/75 line-clamp-2 sm:line-clamp-3 md:line-clamp-4 font-normal">
                     {currentItem.summary}
                   </p>
                 ) : (
                   <p className="text-sm sm:text-base leading-relaxed text-white/70 italic">
-                    收录于影史与年度精选档案，点击下方按钮回顾完整剧照、演职员与详情。
+                    收录于影史与年度精选档案，点击下方按钮查看完整剧照、演职员与详情。
                   </p>
                 )}
               </div>
@@ -121,7 +122,7 @@ export default function SpotlightHero({ items, yearLabel }: SpotlightHeroProps) 
                 href={mediaPath}
                 className="surface-control group inline-flex items-center gap-2 rounded-xl border border-[var(--accent-border)] bg-[var(--accent-soft)] px-6 py-2.5 text-sm font-semibold text-white backdrop-blur-xl shadow-lg shadow-black/40 transition-all duration-300 hover:border-[var(--accent)] hover:bg-[var(--accent)] hover:scale-[1.03] active:scale-[0.98]"
               >
-                <span>立即回顾</span>
+                <span>{currentItem.type === "series" ? "查看影剧" : "查看影片"}</span>
                 <span className="i-material-symbols-arrow-forward-rounded size-4 transition-transform group-hover:translate-x-1" aria-hidden="true" />
               </Link>
             </div>
@@ -152,6 +153,7 @@ export default function SpotlightHero({ items, yearLabel }: SpotlightHeroProps) 
                   </div>
                 )}
                 <div className="absolute inset-0 bg-linear-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover/poster:opacity-100 transition-opacity duration-300" />
+                <MediaCardStatusBadge status={currentItem.status} />
               </Link>
             </div>
 

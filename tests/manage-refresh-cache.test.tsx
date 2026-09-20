@@ -13,7 +13,7 @@ describe("RefreshCacheButton", () => {
     vi.mocked(actions.manualRevalidateCache).mockResolvedValue({ saved: true });
 
     render(<RefreshCacheButton />);
-    const button = screen.getByRole("button", { name: /刷新前台缓存/i });
+    const button = screen.getByRole("button", { name: /刷新缓存/i });
     expect(button).toBeInTheDocument();
 
     fireEvent.click(button);
@@ -28,7 +28,7 @@ describe("RefreshCacheButton", () => {
     vi.mocked(actions.manualRevalidateCache).mockResolvedValue({ saved: true });
 
     render(<RefreshCacheButton compact />);
-    const button = screen.getByRole("button", { name: /刷新前台缓存/i });
+    const button = screen.getByRole("button", { name: /刷新缓存/i });
     expect(button).toBeInTheDocument();
     expect(screen.getByText("刷新缓存")).toBeInTheDocument();
   });
