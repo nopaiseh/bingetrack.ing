@@ -8,10 +8,46 @@ import type { Choice } from "@/lib/admin/catalog";
 import { saveMedia, deleteMedia, type ActionResult } from "@/app/manage/actions";
 import { mediaTypes, type MediaInput, type ManagedMediaType } from "@/lib/admin/media-form";
 
+const typeConfigs: Record<ManagedMediaType, { label: string; icon: string; badgeClass: string; textClass: string; borderClass: string; bgClass: string }> = {
+  movie: {
+    label: "电影",
+    icon: "i-material-symbols-movie-rounded",
+    badgeClass: "bg-rose-500/10 text-rose-300 border-rose-500/25",
+    textClass: "text-rose-300",
+    borderClass: "!border-rose-500/30",
+    bgClass: "!bg-rose-500/15",
+  },
+  tv_series: {
+    label: "电视剧",
+    icon: "i-material-symbols-tv-rounded",
+    badgeClass: "bg-sky-500/10 text-sky-300 border-sky-500/25",
+    textClass: "text-sky-300",
+    borderClass: "!border-sky-500/30",
+    bgClass: "!bg-sky-500/15",
+  },
+  tv_season: {
+    label: "剧季",
+    icon: "i-material-symbols-layers-rounded",
+    badgeClass: "bg-amber-500/10 text-amber-300 border-amber-500/25",
+    textClass: "text-amber-300",
+    borderClass: "!border-amber-500/30",
+    bgClass: "!bg-amber-500/15",
+  },
+  tv_episode: {
+    label: "剧集",
+    icon: "i-material-symbols-video-library-rounded",
+    badgeClass: "bg-emerald-500/10 text-emerald-300 border-emerald-500/25",
+    textClass: "text-emerald-300",
+    borderClass: "!border-emerald-500/30",
+    bgClass: "!bg-emerald-500/15",
+  },
+};
+
 /** 用同一表单编辑电影、剧集、季和集，保持各字段有明确标签。 */
 export default function MediaForm({ item, initialType = "movie", parent, nextNumber, impact }: { item?: MediaInput; initialType?: ManagedMediaType; parent?: Choice; nextNumber?: number; impact?: { seasons: number; episodes: number } }) {
   const field = useDraftFields();
   const [type, setType] = useState<ManagedMediaType>(item?.type ?? initialType);
+  const [coverPreview, setCoverPreview] = useState(item?.cover_url ?? "");
   const [dirty, setDirty] = useState(false);
   const [state, action, pending] = useActionState(async (previous: ActionResult, form: FormData) => {
     setDirty(false);
@@ -27,25 +63,166 @@ export default function MediaForm({ item, initialType = "movie", parent, nextNum
       <fieldset disabled={pending || deleting} className="space-y-7">
         <legend className="sr-only">媒体资料</legend>
         <input type="hidden" name="id" value={item?.id ?? ""} />
+
+        {/* 顶部影视类型标识（编辑时为只读发光胶囊，新建时为现代分段单选控件） */}
+        {item ? (
+          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/10 pb-5">
+            <div className="flex items-center gap-3">
+              <span className="text-xs font-semibold tracking-wider text-neutral-400">媒体类型</span>
+              <div className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-semibold backdrop-blur-md ${typeConfigs[type].badgeClass}`}>
+                <span className={`${typeConfigs[type].icon} size-3.5 inline-block`} aria-hidden="true" />
+                <span>{typeConfigs[type].label}</span>
+              </div>
+            </div>
+            <input type="hidden" name="type" value={type} />
+          </div>
+        ) : (
+          <div className="space-y-2 border-b border-white/10 pb-5">
+            <div className="flex items-center justify-between">
+              <label htmlFor="media-type-select" className="text-xs font-semibold tracking-wider text-neutral-300">
+                类型
+              </label>
+              <span className="text-[11px] text-neutral-500">选择后将自动适配表单结构</span>
+            </div>
+            <div className="admin-segmented-group" role="tablist" aria-label="媒体类型快捷选择">
+              {(Object.keys(typeConfigs) as ManagedMediaType[]).map(t => {
+                const config = typeConfigs[t];
+                const isSelected = type === t;
+                return (
+                  <button
+                    key={t}
+                    type="button"
+                    role="tab"
+                    aria-selected={isSelected}
+                    onClick={() => setType(t)}
+                    className={`flex items-center gap-2 transition-all duration-200 ${
+                      isSelected
+                        ? `${config.bgClass} ${config.textClass} ${config.borderClass} font-semibold shadow-sm`
+                        : "!border-transparent text-neutral-400 hover:text-white hover:!bg-white/5"
+                    }`}
+                  >
+                    <span className={`${config.icon} size-4 inline-block`} aria-hidden="true" />
+                    <span>{config.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+            <select
+              id="media-type-select"
+              name="type"
+              value={type}
+              onChange={event => setType(event.target.value as ManagedMediaType)}
+              className="sr-only"
+              tabIndex={-1}
+            >
+              {Object.entries(mediaTypes).map(([value, label]) => (
+                <option key={value} value={value}>{label}</option>
+              ))}
+            </select>
+          </div>
+        )}
+
+        {/* 基础元数据双列严整网格 */}
         <div className="grid gap-5 sm:grid-cols-2">
-          {item ? <><input type="hidden" name="type" value={type} /><p className="text-sm text-neutral-400">类型：{mediaTypes[type]}</p></> : <label>类型<select name="type" value={type} onChange={/* 切换新建条目的类型，编辑时类型不可更改。 */ event => setType(event.target.value as ManagedMediaType)}>{Object.entries(mediaTypes).map(/* 渲染四种受支持类型。 */ ([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label>}
-          <label>标题<input name="title" {...field("title", item?.title)} maxLength={300} required /></label>
-          <label>其他标题<input name="alternate_title" {...field("alternate_title", item?.alternate_title)} maxLength={300} /></label>
-          <label>发行日期<input type="date" name="release_date" {...field("release_date", item?.release_date)} /></label>
-          <label>时长（分钟）<input type="number" name="runtime" min="0" max="100000" step="any" {...field("runtime", item?.runtime)} /></label>
-          <label>封面地址（TMDB）<input type="url" name="cover_url" {...field("cover_url", item?.cover_url)} maxLength={2000} placeholder="https://image.tmdb.org/t/p/…" /></label>
+          <div>
+            <div className="mb-1.5 flex items-center justify-between">
+              <label htmlFor="field-title">标题</label>
+              <span className="text-[11px] font-normal text-rose-400/80">必填</span>
+            </div>
+            <input id="field-title" name="title" {...field("title", item?.title)} maxLength={300} placeholder="作品名称" required />
+          </div>
+          <div>
+            <div className="mb-1.5 flex items-center justify-between">
+              <label htmlFor="field-alt-title">其他标题</label>
+              <span className="text-[11px] font-normal text-neutral-500">原名 / 译名（可选）</span>
+            </div>
+            <input id="field-alt-title" name="alternate_title" {...field("alternate_title", item?.alternate_title)} maxLength={300} placeholder="外文原名或别名" />
+          </div>
+          <div>
+            <div className="mb-1.5 flex items-center justify-between">
+              <label htmlFor="field-release-date">发行日期</label>
+              <span className="text-[11px] font-normal text-neutral-500">公映或首播</span>
+            </div>
+            <input id="field-release-date" type="date" name="release_date" {...field("release_date", item?.release_date)} />
+          </div>
+          <div>
+            <div className="mb-1.5 flex items-center justify-between">
+              <label htmlFor="field-runtime">时长（分钟）</label>
+              <span className="text-[11px] font-normal text-neutral-500">分钟</span>
+            </div>
+            <input id="field-runtime" type="number" name="runtime" min="0" max="100000" step="any" {...field("runtime", item?.runtime)} placeholder="例如：120" />
+          </div>
+          <div className="sm:col-span-2">
+            <div className="mb-1.5 flex items-center justify-between">
+              <label htmlFor="field-cover-url">封面地址（TMDB）</label>
+              <span className="text-[11px] font-normal text-neutral-500">支持 TMDB 或外部图床</span>
+            </div>
+            <div className="flex items-center gap-3">
+              <div className="flex-1 min-w-0">
+                <input
+                  id="field-cover-url"
+                  type="url"
+                  name="cover_url"
+                  defaultValue={item?.cover_url ?? ""}
+                  onChange={e => { setCoverPreview(e.target.value.trim()); setDirty(true); }}
+                  maxLength={2000}
+                  placeholder="https://image.tmdb.org/t/p/original/…"
+                />
+              </div>
+              {coverPreview && (
+                <div className="relative h-11 w-8 shrink-0 overflow-hidden rounded-md border border-white/15 bg-black/40 shadow-sm" title="海报预览">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={coverPreview}
+                    alt="封面预览"
+                    className="h-full w-full object-cover"
+                    onError={e => { (e.currentTarget as HTMLElement).style.display = "none"; }}
+                    onLoad={e => { (e.currentTarget as HTMLElement).style.display = "block"; }}
+                  />
+                </div>
+              )}
+            </div>
+          </div>
           {isChild && <>
             <ChoicePicker key={type} kind={type === "tv_season" ? "tv_series" : "tv_season"} name="parent_id" label={type === "tv_season" ? "所属电视剧" : "所属剧季"} multiple={false} initial={parent && parent.detail === (type === "tv_season" ? "tv_series" : "tv_season") ? [parent] : []} />
-            <label>{type === "tv_season" ? "季编号（特别篇可填 0）" : "集编号"}<input type="number" name="number" min="0" max="100000" step="1" {...field("number", item?.number ?? nextNumber)} required /></label>
+            <div>
+              <div className="mb-1.5 flex items-center justify-between">
+                <label htmlFor="field-number">{type === "tv_season" ? "季编号（特别篇可填 0）" : "集编号"}</label>
+                <span className="text-[11px] font-normal text-rose-400/80">必填</span>
+              </div>
+              <input id="field-number" type="number" name="number" min="0" max="100000" step="1" {...field("number", item?.number ?? nextNumber)} required />
+            </div>
           </>}
         </div>
-        <label>简介<textarea name="summary" rows={5} maxLength={20000} {...field("summary", item?.summary)} /></label>
+
+        {/* 剧情简介 */}
+        <div>
+          <div className="mb-1.5 flex items-center justify-between">
+            <label htmlFor="field-summary">简介</label>
+            <span className="text-[11px] font-normal text-neutral-500">故事概要</span>
+          </div>
+          <textarea id="field-summary" name="summary" rows={5} maxLength={20000} {...field("summary", item?.summary)} placeholder="输入剧情梗概…" />
+        </div>
+
+        {/* 观看记录 */}
         {type === "movie" || type === "tv_episode" ? (
           <section className="surface-muted rounded-2xl border border-white/10 p-5 sm:p-6">
             <h2 className="admin-section-title mb-4 text-lg font-medium text-white">观看记录</h2>
             <div className="grid gap-5 sm:grid-cols-2">
-              <label>观看状态<select name="status" {...field("status", item?.status ?? "want_to_watch")}><option value="want_to_watch">没看过</option><option value="watched">看过</option></select></label>
-              <label>评分（0–10，可留空）<input type="number" name="rating" min="0" max="10" step="0.1" {...field("rating", item?.rating)} /></label>
+              <div>
+                <label htmlFor="field-status" className="mb-1.5 block">观看状态</label>
+                <select id="field-status" name="status" {...field("status", item?.status ?? "want_to_watch")}>
+                  <option value="want_to_watch">没看过</option>
+                  <option value="watched">看过</option>
+                </select>
+              </div>
+              <div>
+                <div className="mb-1.5 flex items-center justify-between">
+                  <label htmlFor="field-rating">评分（0–10，可留空）</label>
+                  <span className="text-[11px] font-normal text-neutral-500">满分 10</span>
+                </div>
+                <input id="field-rating" type="number" name="rating" min="0" max="10" step="0.1" {...field("rating", item?.rating)} placeholder="例如：8.5" />
+              </div>
             </div>
           </section>
         ) : (
@@ -65,6 +242,8 @@ export default function MediaForm({ item, initialType = "movie", parent, nextNum
             </div>
           </section>
         )}
+
+        {/* 关联资料 */}
         <section>
           <h2 className="admin-section-title mb-2 text-lg font-medium text-white">关联资料</h2>
           <p className="mb-4 text-sm text-neutral-400">搜索已有资料，或新增并关联。移除标签只解除当前作品的关联；演员可用上移按钮调整顺序。</p>

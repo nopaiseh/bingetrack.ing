@@ -130,10 +130,10 @@ export default function StatusModal({
           type="button"
           onClick={handleClose}
           aria-label="关闭提示"
-          className="absolute right-3.5 top-3.5 flex h-8 w-8 items-center justify-center rounded-full text-neutral-400 transition-colors hover:bg-white/10 hover:text-white focus-visible:outline-2 focus-visible:outline-white sm:right-4 sm:top-4"
+          className="absolute right-3.5 top-3.5 flex !h-8 !w-8 !min-h-0 !p-0 items-center justify-center !rounded-full !border-0 !bg-transparent !shadow-none text-neutral-400 transition-colors hover:!bg-white/10 hover:text-white focus-visible:outline-2 focus-visible:outline-white sm:right-4 sm:top-4"
         >
           <svg
-            className="h-4.5 w-4.5"
+            className="size-4.5 shrink-0"
             fill="none"
             viewBox="0 0 24 24"
             stroke="currentColor"
