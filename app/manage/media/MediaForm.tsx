@@ -40,13 +40,31 @@ export default function MediaForm({ item, initialType = "movie", parent, nextNum
           </>}
         </div>
         <label>简介<textarea name="summary" rows={5} maxLength={20000} {...field("summary", item?.summary)} /></label>
-        <section className="surface-muted rounded-2xl border border-white/10 p-5 sm:p-6">
-          <h2 className="admin-section-title mb-4 text-lg font-medium text-white">观看记录</h2>
-          <div className="grid gap-5 sm:grid-cols-2">
-            <label>观看状态<select name="status" {...field("status", item?.status ?? "want_to_watch")}><option value="want_to_watch">没看过</option><option value="watched">看过</option></select></label>
-            <label>评分（0–10，可留空）<input type="number" name="rating" min="0" max="10" step="0.1" {...field("rating", item?.rating)} /></label>
-          </div>
-        </section>
+        {type === "movie" || type === "tv_episode" ? (
+          <section className="surface-muted rounded-2xl border border-white/10 p-5 sm:p-6">
+            <h2 className="admin-section-title mb-4 text-lg font-medium text-white">观看记录</h2>
+            <div className="grid gap-5 sm:grid-cols-2">
+              <label>观看状态<select name="status" {...field("status", item?.status ?? "want_to_watch")}><option value="want_to_watch">没看过</option><option value="watched">看过</option></select></label>
+              <label>评分（0–10，可留空）<input type="number" name="rating" min="0" max="10" step="0.1" {...field("rating", item?.rating)} /></label>
+            </div>
+          </section>
+        ) : (
+          <section className="surface-muted rounded-2xl border border-white/10 p-5 sm:p-6">
+            <h2 className="admin-section-title mb-4 text-lg font-medium text-white">观看记录</h2>
+            <div className="space-y-2">
+              <div className="flex items-center gap-3">
+                <span className="text-sm text-neutral-400">观看状态：</span>
+                <span className="surface-muted rounded-full border border-white/10 px-3 py-1 text-xs text-neutral-200">
+                  {item?.status === "watched" ? "看过" : item?.status === "watching" ? "在看" : "没看过"}
+                  {item?.rating != null ? ` · ${item.rating} 分` : ""}
+                </span>
+              </div>
+              <p className="text-xs text-neutral-400">
+                {type === "tv_series" ? "电视剧" : "剧季"}的观看状态由下属剧集自动汇总决定，不可在此直接删改。
+              </p>
+            </div>
+          </section>
+        )}
         <section>
           <h2 className="admin-section-title mb-2 text-lg font-medium text-white">关联资料</h2>
           <p className="mb-4 text-sm text-neutral-400">搜索已有资料，或新增并关联。移除标签只解除当前作品的关联；演员可用上移按钮调整顺序。</p>

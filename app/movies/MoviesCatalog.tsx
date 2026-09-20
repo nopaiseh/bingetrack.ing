@@ -1,3 +1,4 @@
+import Link from "next/link";
 import MediaRow from "@/components/MediaRow";
 import { MediaCatalogProps } from "@/lib/types";
 
@@ -8,10 +9,10 @@ export default function MoviesCatalog({
   stats,
 }: MediaCatalogProps) {
   const statItems = [
-    { label: "电影总数量", value: stats?.total || 0 },
-    { label: "已看的电影", value: stats?.watched || 0 },
-    { label: "想看的电影", value: stats?.want || 0 },
-    { label: "近期将上映", value: stats?.upcoming || 0 },
+    { label: "电影总数量", value: stats?.total || 0, href: "/search?type=电影" },
+    { label: "已看的电影", value: stats?.watched || 0, href: "/search?type=电影&status=已看" },
+    { label: "想看的电影", value: stats?.want || 0, href: "/search?type=电影&status=想看" },
+    { label: "近期将上映", value: stats?.upcoming || 0, href: "/search?type=电影&sort=date_desc" },
   ];
 
   return (
@@ -21,15 +22,22 @@ export default function MoviesCatalog({
 
         
         <div className="mb-10 grid grid-cols-2 gap-4 md:mb-12 lg:mb-16 lg:grid-cols-4">
-          {statItems.map(/* 将一项电影统计渲染为标签与数值卡片。 */ (stat, idx) => (
-            <div key={idx} className="surface-card interactive-card group flex flex-col rounded-2xl p-4 sm:p-5 lg:p-6">
-              <h2 className="font-medium uppercase text-white/50 text-xs tracking-widest mb-2">
-                {stat.label}
-              </h2>
+          {statItems.map(/* 将一项电影统计渲染为可点击跳转的卡片。 */ (stat) => (
+            <Link
+              key={stat.label}
+              href={stat.href}
+              className="surface-card interactive-card group flex flex-col justify-between rounded-2xl p-4 sm:p-5 lg:p-6 transition-all duration-300 hover:scale-[1.02] cursor-pointer"
+            >
+              <div className="flex items-center justify-between mb-2">
+                <h2 className="font-medium uppercase text-white/50 text-xs tracking-widest group-hover:text-white/70 transition-colors">
+                  {stat.label}
+                </h2>
+                <span className="i-material-symbols-arrow-outward-rounded size-3.5 text-white/30 transition-all duration-200 group-hover:text-[var(--accent)] group-hover:translate-x-0.5 group-hover:-translate-y-0.5" aria-hidden="true" />
+              </div>
               <p className="font-mono text-3xl tracking-tight text-white group-hover:text-[var(--accent-hover)] transition-colors">
                 {stat.value}
               </p>
-            </div>
+            </Link>
           ))}
         </div>
 

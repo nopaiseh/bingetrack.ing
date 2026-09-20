@@ -3,15 +3,28 @@ export function SkeletonBlock({ className = "" }: { className?: string }) {
   return <div className={`shimmer-wave rounded-xl ${className}`} />;
 }
 
-/** 模拟海报卡片的图片、标题及辅助信息布局。 */
+/** 模拟海报卡片的图片、两行标题及辅助信息布局，与真实卡片尺寸完全对齐防抖。 */
 function PosterSkeleton() {
   return (
-    <div className="surface-card w-36 shrink-0 overflow-hidden rounded-xl sm:w-44">
-      <SkeletonBlock className="aspect-2/3 w-full rounded-none" />
-      <div className="space-y-2 p-3">
-        <SkeletonBlock className="h-4 w-3/4" />
-        <SkeletonBlock className="h-3 w-full" />
-        <SkeletonBlock className="h-4 w-2/3" />
+    <div className="surface-card flex w-40 flex-none shrink-0 flex-col overflow-hidden rounded-xl sm:w-48">
+      <div className="relative flex aspect-2/3 w-full items-center justify-center overflow-hidden bg-white/4">
+        <SkeletonBlock className="absolute inset-0 rounded-none bg-transparent" />
+        <span className="i-material-symbols-image-outline-rounded inline-block size-8 text-white/15 drop-shadow" aria-hidden="true" />
+      </div>
+      <div className="flex flex-col space-y-1.5 px-3 py-2.5">
+        <SkeletonBlock className="h-4 w-4/5 rounded-md" />
+        <div className="flex items-center justify-between pt-0.5">
+          <SkeletonBlock className="h-2.5 w-9 rounded-md" />
+          <div className="flex items-center gap-1">
+            <span className="i-material-symbols-star-rounded inline-block size-3 text-amber-400/20" aria-hidden="true" />
+            <SkeletonBlock className="h-2.5 w-6 rounded-md" />
+          </div>
+        </div>
+        <div className="mt-1.5 flex items-center gap-1.5 w-full overflow-hidden">
+          <SkeletonBlock className="h-4 w-11 shrink-0 rounded-md" />
+          <SkeletonBlock className="h-4 w-11 shrink-0 rounded-md" />
+          <SkeletonBlock className="h-4 w-10 shrink-0 rounded-md" />
+        </div>
       </div>
     </div>
   );

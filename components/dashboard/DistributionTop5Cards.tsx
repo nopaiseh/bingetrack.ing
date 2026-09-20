@@ -5,12 +5,12 @@ import type { DistributionItem, MediaDistribution } from "@/lib/types";
 /** 展示一个分布维度的名称和占比条，数据为空时显示暂无数据。 */
 function DistributionCard({ title, icon, items }: { title: string; icon: string; items: DistributionItem[] }) {
   return (
-    <div className="surface-card interactive-card group h-full rounded-2xl p-4 sm:p-5 lg:p-6">
+    <div className="surface-card h-full rounded-2xl p-4 sm:p-5 lg:p-6">
       <div className="mb-5 flex h-8 items-center gap-3 text-sm text-white/70">
-        <div className="surface-raised flex size-8 shrink-0 items-center justify-center rounded-lg shadow-[0_4px_10px_rgba(0,0,0,0.1)] transition-colors duration-300 group-hover:bg-[var(--accent-soft)] group-hover:text-[var(--accent-hover)] group-hover:shadow-[0_4px_10px_var(--accent-glow-soft)]">
-          <span className={`${icon} size-4 inline-block`} aria-hidden="true" />
+        <div className="surface-raised flex size-8 shrink-0 items-center justify-center rounded-lg shadow-[0_4px_10px_rgba(0,0,0,0.1)]">
+          <span className={`${icon} size-4 inline-block text-[var(--accent)]`} aria-hidden="true" />
         </div>
-        <span className="font-medium tracking-wide text-white/80 transition-colors group-hover:text-white">{title}</span>
+        <span className="font-medium tracking-wide text-white/80">{title}</span>
       </div>
       <div className="flex flex-col gap-3">
         {items.map((item) => (

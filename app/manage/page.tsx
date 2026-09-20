@@ -22,6 +22,44 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
   const { data, count, error } = await query.order("title").order("id").range((page - 1) * 25, page * 25 - 1);
   if (error) throw new Error("无法读取管理列表，请稍后重试。");
   const rows = data as unknown as { id: string; title: string; type: ManagedMediaType; cover_url: string | null; release_date: string | null; tv_seasons: { season_number: number; episodes?: { count: number }[]; parent?: { title: string } | null } | null; tv_episodes: { episode_number: number; parent?: { media_items?: { title: string } | null; series?: { title: string } | null } | null } | null; seasons?: { count: number }[]; tracking: { status: string; rating: number | null } | { status: string; rating: number | null }[] | null }[];
+  const seriesStatusMap = new Map<string, { status: string; rating: number | null }>();
+  const seasonStatusMap = new Map<string, { status: string }>();
+
+  if (rows.length > 0) {
+    const ids = rows.map(r => r.id);
+    if (type === "tv_series") {
+      const { data: statusList } = await db
+        .from("v_all_media")
+        .select("id, status, rating")
+        .in("id", ids);
+      if (statusList) {
+        for (const item of statusList) {
+          seriesStatusMap.set(item.id, {
+            status: item.status ?? "want_to_watch",
+            rating: item.rating != null ? Number(item.rating) : null,
+          });
+        }
+      }
+    } else if (type === "tv_season") {
+      const { data: summaryList } = await db
+        .from("v_media_season_summaries")
+        .select("id, episode_count, watched_episode_count")
+        .in("id", ids);
+      if (summaryList) {
+        for (const item of summaryList) {
+          const episodeCount = Number(item.episode_count ?? 0);
+          const watchedCount = Number(item.watched_episode_count ?? 0);
+          const status = episodeCount > 0 && watchedCount === episodeCount
+            ? "watched"
+            : watchedCount > 0
+              ? "watching"
+              : "want_to_watch";
+          seasonStatusMap.set(item.id, { status });
+        }
+      }
+    }
+  }
+
   /** 保留当前筛选条件生成分页地址。 */
   function pageUrl(next: number) {
     return `/manage?${new URLSearchParams({ q, type, parent, page: String(next) })}`;
@@ -41,10 +79,22 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
     </form>
     {rows.length > 0 && <ul className="surface-panel divide-y divide-white/10 overflow-hidden rounded-2xl">{rows.map(/* 兼容 PostgREST 根据唯一外键返回的单对象关系。 */ item => {
       const tracking = Array.isArray(item.tracking) ? item.tracking[0] : item.tracking;
+      let status = tracking?.status ?? "want_to_watch";
+      let rating = tracking?.rating != null ? Number(tracking.rating) : null;
+      if (item.type === "tv_series") {
+        const derived = seriesStatusMap.get(item.id);
+        status = derived?.status ?? "want_to_watch";
+        rating = derived?.rating ?? null;
+      } else if (item.type === "tv_season") {
+        const derived = seasonStatusMap.get(item.id);
+        status = derived?.status ?? "want_to_watch";
+        rating = null;
+      }
+      const statusLabel = status === "watched" ? "看过" : status === "watching" ? "在看" : "没看过";
       return <li key={item.id}>
       <Link href={`/manage/media/${item.id}?type=${item.type}`} className="group flex flex-col gap-3 p-5 transition-colors hover:bg-white/5 sm:flex-row sm:items-center sm:justify-between sm:px-6">
         <div className="flex min-w-0 items-center gap-4">{item.cover_url && <Image src={item.cover_url} alt="" width={44} height={66} className="h-16 w-11 shrink-0 rounded-md object-cover" />}<div className="min-w-0"><h2 className="break-words font-medium text-white transition-colors group-hover:text-[var(--accent-hover)]">{item.title}</h2><p className="mt-1 text-sm text-neutral-400">{mediaTypes[item.type]}{item.release_date ? ` · ${item.release_date}` : ""}</p><p className="mt-1 text-xs text-neutral-400">{item.tv_seasons ? `${item.tv_seasons.parent?.title ?? "未知剧集"} · 第 ${item.tv_seasons.season_number} 季` : item.tv_episodes ? `${item.tv_episodes.parent?.series?.title ?? ""} · ${item.tv_episodes.parent?.media_items?.title ?? "未知季"} · 第 ${item.tv_episodes.episode_number} 集` : ""}{item.type === "tv_series" ? `${item.seasons?.[0]?.count ?? 0} 季` : item.type === "tv_season" ? ` · ${item.tv_seasons?.episodes?.[0]?.count ?? 0} 集` : ""}</p></div></div>
-        <span className="surface-muted w-fit shrink-0 rounded-full border border-white/10 px-3 py-1 text-xs text-neutral-300">{tracking?.status === "watched" ? "看过" : "没看过"}{tracking?.rating != null ? ` · ${tracking.rating} 分` : ""}</span>
+        <span className="surface-muted w-fit shrink-0 rounded-full border border-white/10 px-3 py-1 text-xs text-neutral-300">{statusLabel}{rating != null ? ` · ${rating} 分` : ""}</span>
       </Link>
     </li>; })}</ul>}
     {!rows.length && <p className="surface-panel rounded-2xl px-6 py-16 text-center text-neutral-400">没有符合条件的条目。</p>}

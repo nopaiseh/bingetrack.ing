@@ -26,9 +26,24 @@ export async function readEditableMedia(db: SupabaseClient, id: string): Promise
       .map(/* 提取关联对象名称并过滤无效条目。 */ row => (row[key] as { name?: string } | null | undefined)?.name)
       .filter((name): name is string => typeof name === "string" && name.length > 0);
   }
+  let status: "watched" | "watching" | "want_to_watch" = "want_to_watch";
+  let rating: number | null = null;
+  if (media.data.type === "tv_series") {
+    const { data: seriesStatus } = await db.from("v_all_media").select("status,rating").eq("id", id).maybeSingle();
+    status = (seriesStatus?.status as "watched" | "watching" | "want_to_watch") ?? "want_to_watch";
+    rating = seriesStatus?.rating != null ? Number(seriesStatus.rating) : null;
+  } else if (media.data.type === "tv_season") {
+    const { data: seasonSummary } = await db.from("v_media_season_summaries").select("episode_count,watched_episode_count").eq("id", id).maybeSingle();
+    const episodeCount = Number(seasonSummary?.episode_count ?? 0);
+    const watchedCount = Number(seasonSummary?.watched_episode_count ?? 0);
+    status = episodeCount > 0 && watchedCount === episodeCount ? "watched" : watchedCount > 0 ? "watching" : "want_to_watch";
+  } else {
+    status = (tracking.data?.status as "watched" | "want_to_watch") ?? "want_to_watch";
+    rating = tracking.data?.rating ?? null;
+  }
   return { ...media.data, parent_id: season.data?.series_id ?? episode.data?.season_id ?? null,
     number: season.data?.season_number ?? episode.data?.episode_number ?? null,
-    status: tracking.data?.status ?? "want_to_watch", rating: tracking.data?.rating ?? null,
+    status, rating,
     genres: names(genres.data, "genres"), languages: names(languages.data, "languages"), regions: names(regions.data, "regions"),
     collections: names(collections.data, "media_series"),
     actors: names(credits.data, "people", "actor"), directors: names(credits.data, "people", "director") } as MediaInput;

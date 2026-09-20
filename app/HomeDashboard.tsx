@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Link from "next/link";
 import dynamic from "next/dynamic";
 import { PosterRowSkeleton } from "@/components/LoadingSkeletons";
 import DashboardYearPicker from "@/components/DashboardYearPicker";
@@ -30,6 +31,16 @@ const EMPTY_MEDIA_DISTRIBUTION: MediaDistribution = {
   genres: [],
 };
 
+/** 按媒体分类与观看状态生成搜索链接；指定年份时同时限定起止年份。 */
+function getStatusSearchLink(type: "电影" | "电视剧", status: "已看" | "在看" | "想看", year: string) {
+  const params = new URLSearchParams({ type, status });
+  if (year !== "All Time") {
+    params.set("startYear", year);
+    params.set("endYear", year);
+  }
+  return `/search?${params.toString()}`;
+}
+
 /** 按媒体分类生成评分降序的搜索链接；指定年份时同时限定起止年份。 */
 function getSearchViewAllLink(type: "电影" | "电视剧", year: string) {
   const params = new URLSearchParams({ type, sort: "rating_desc" });
@@ -46,24 +57,32 @@ function percent(value: number, total: number) {
   return Math.min(Math.max(Math.round((value / total) * 100), 0), 100);
 }
 
-/** 按传入标题和图标展示媒体部数，并在提供数据时补充季数与集数。 */
+/** 按传入标题和图标展示媒体部数，并在提供数据时补充季数与集数；提供 href 时作为可点击跳转卡片。 */
 function MediaStatusCard({
   title,
   icon,
   count,
   seasonsCount,
   episodesCount,
+  href,
 }: {
   title: string;
   icon: string;
   count: number;
   seasonsCount?: number;
   episodesCount?: number;
+  href?: string;
 }) {
-  return (
-    <div className="surface-card interactive-card group flex flex-col gap-4 rounded-2xl p-4 sm:p-5">
-      <div className="text-white/80 font-bold text-sm flex items-center gap-2.5 border-b border-white/10 pb-2.5 group-hover:text-[var(--accent-hover)] transition-colors">
-        <span className={`${icon} size-4 inline-block text-[var(--accent)]/80 group-hover:text-[var(--accent-hover)]`} aria-hidden="true" /> {title}
+  const content = (
+    <>
+      <div className="text-white/80 font-bold text-sm flex items-center justify-between border-b border-white/10 pb-2.5 transition-colors group-hover:text-[var(--accent-hover)]">
+        <div className="flex items-center gap-2.5">
+          <span className={`${icon} size-4 inline-block text-[var(--accent)]/80 group-hover:text-[var(--accent-hover)]`} aria-hidden="true" />
+          <span>{title}</span>
+        </div>
+        {href && (
+          <span className="i-material-symbols-arrow-outward-rounded size-3.5 text-white/30 transition-all duration-200 group-hover:text-[var(--accent)] group-hover:translate-x-0.5 group-hover:-translate-y-0.5" aria-hidden="true" />
+        )}
       </div>
       <div className="flex flex-col gap-3 mt-1">
         <div className="flex justify-between items-end">
@@ -89,6 +108,23 @@ function MediaStatusCard({
           </div>
         )}
       </div>
+    </>
+  );
+
+  if (href) {
+    return (
+      <Link
+        href={href}
+        className="surface-card interactive-card group flex flex-col gap-4 rounded-2xl p-4 sm:p-5 transition-all duration-300 hover:scale-[1.02] cursor-pointer"
+      >
+        {content}
+      </Link>
+    );
+  }
+
+  return (
+    <div className="surface-card flex flex-col gap-4 rounded-2xl p-4 sm:p-5">
+      {content}
     </div>
   );
 }
@@ -197,25 +233,25 @@ export default function HomeDashboard({
     : (displayedTopMovies.length > 0 ? displayedTopMovies : topMovies);
 
   return (
-    <div className="container mx-auto flex max-w-7xl flex-col gap-6 px-4 py-12 pt-24 sm:px-6 lg:px-8">
-      <section aria-labelledby="dashboard-title" className="surface-panel relative z-10 mb-2 rounded-3xl px-5 pb-5 pt-6 sm:px-7 sm:pb-6 sm:pt-8 lg:px-10 lg:pb-8 lg:pt-10">
+    <div className="container mx-auto flex max-w-7xl flex-col gap-6 px-4 pb-12 pt-20 sm:pt-22 sm:px-6 lg:pt-24 lg:px-8">
+      <section aria-labelledby="dashboard-title" className="surface-panel relative z-10 mb-2 rounded-3xl p-5 sm:p-6 lg:px-8 lg:py-6">
         <div className="relative">
-          <div className="mb-5 flex items-center gap-3 text-[11px] font-semibold uppercase tracking-[0.24em] text-[var(--accent-light)]/90">
+          <div className="mb-3 flex items-center gap-3 text-[11px] font-semibold uppercase tracking-[0.24em] text-[var(--accent-light)]/90">
             <span className="h-px w-8 bg-[var(--accent)]" />
             <span>{selectedYear === "All Time" ? "全时段档案" : `${selectedYear} 年度档案`}</span>
           </div>
 
           <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
             <div className="max-w-3xl">
-              <h1 id="dashboard-title" className="font-mono text-4xl font-semibold leading-none tracking-[-0.055em] text-white sm:text-5xl lg:text-7xl">
+              <h1 id="dashboard-title" className="font-mono text-3xl font-semibold leading-none tracking-[-0.055em] text-white sm:text-4xl lg:text-5xl">
                 媒体全景
               </h1>
-              <p className="mt-4 max-w-xl text-sm leading-6 text-white/55 sm:text-base">
+              <p className="mt-2 max-w-xl text-xs leading-5 text-white/55 sm:mt-2.5 sm:text-sm sm:leading-6">
                 收录我倾注在光影、声音与文字里的时光。
               </p>
             </div>
 
-            <dl className="grid grid-cols-3 gap-2 border-t border-white/10 pt-5 lg:min-w-100 lg:border-l lg:border-t-0 lg:pl-8 lg:pt-0">
+            <dl className="grid grid-cols-3 gap-2 border-t border-white/10 pt-4 lg:min-w-100 lg:border-l lg:border-t-0 lg:pl-8 lg:pt-0">
               <div>
                 <dt className="text-[11px] tracking-wide text-white/60">电影总计</dt>
                 <dd className="mt-1 font-mono text-xl font-medium text-white sm:text-2xl">
@@ -241,7 +277,7 @@ export default function HomeDashboard({
           </div>
         </div>
 
-        <div className="relative mt-7 flex flex-col items-start justify-between gap-4 border-t border-white/10 pt-5 md:flex-row md:items-center">
+        <div className="relative mt-5 flex flex-col items-start justify-between gap-4 border-t border-white/10 pt-4 md:flex-row md:items-center">
           <div className="surface-control relative flex items-center rounded-xl p-1.5" role="tablist" aria-label="仪表板视图">
             {/* 平滑滑动的物理胶囊底块 */}
             <div
@@ -298,13 +334,13 @@ export default function HomeDashboard({
           <div key="overview" id="dashboard-panel-overview" role="tabpanel" aria-labelledby="dashboard-tab-overview" className="flex flex-col gap-4 md:gap-6">
             <SpotlightHero items={spotlightCandidates} yearLabel={selectedYear} />
 
-            <div className="dashboard-deferred surface-card interactive-card group flex flex-col gap-6 rounded-2xl p-4 sm:p-5 lg:p-6">
+            <div className="dashboard-deferred surface-card flex flex-col gap-6 rounded-2xl p-4 sm:p-5 lg:p-6">
               <div className="flex items-center border-b border-white/10 pb-3">
                 <div className="flex items-center gap-2">
                   <div className="stat-icon flex items-center justify-center rounded-lg p-2">
                     <span className="i-material-symbols-movie-rounded size-4 inline-block" aria-hidden="true" />
                   </div>
-                  <span className="text-sm font-bold text-white/80 group-hover:text-white transition-colors tracking-wide">
+                  <span className="text-sm font-bold text-white/80 tracking-wide">
                     电影看板
                   </span>
                 </div>
@@ -315,11 +351,13 @@ export default function HomeDashboard({
                   title="已观看"
                   icon="i-material-symbols-check-circle-outline-rounded"
                   count={watchedMovies}
+                  href={getStatusSearchLink("电影", "已看", selectedYear)}
                 />
                 <MediaStatusCard
                   title="想要看"
                   icon="i-material-symbols-pause-circle-outline-rounded"
                   count={unwatchedMovies}
+                  href={getStatusSearchLink("电影", "想看", selectedYear)}
                 />
               </div>
 
@@ -331,13 +369,13 @@ export default function HomeDashboard({
               </div>
             </div>
 
-            <div className="dashboard-deferred surface-card interactive-card group flex flex-col gap-6 rounded-2xl p-4 sm:p-5 lg:p-6">
+            <div className="dashboard-deferred surface-card flex flex-col gap-6 rounded-2xl p-4 sm:p-5 lg:p-6">
               <div className="flex items-center border-b border-white/10 pb-3">
                 <div className="flex items-center gap-2">
                   <div className="stat-icon flex items-center justify-center rounded-lg p-2">
                     <span className="i-material-symbols-tv-rounded size-4 inline-block" aria-hidden="true" />
                   </div>
-                  <span className="text-sm font-bold text-white/80 group-hover:text-white transition-colors tracking-wide">
+                  <span className="text-sm font-bold text-white/80 tracking-wide">
                     电视剧看板
                   </span>
                 </div>
@@ -350,12 +388,14 @@ export default function HomeDashboard({
                   count={watchedSeries}
                   seasonsCount={currentYearData?.watched_seasons ?? 0}
                   episodesCount={currentYearData?.watched_series_episodes ?? 0}
+                  href={getStatusSearchLink("电视剧", "已看", selectedYear)}
                 />
                 <MediaStatusCard
                   title="正在看"
                   icon="i-material-symbols-play-circle-outline-rounded"
                   count={watchingSeries}
                   seasonsCount={currentYearData?.watching_seasons ?? 0}
+                  href={getStatusSearchLink("电视剧", "在看", selectedYear)}
                 />
                 <MediaStatusCard
                   title="想要看"
@@ -363,6 +403,7 @@ export default function HomeDashboard({
                   count={unwatchedSeries}
                   seasonsCount={currentYearData?.unwatched_seasons ?? 0}
                   episodesCount={currentYearData?.unwatched_episodes ?? 0}
+                  href={getStatusSearchLink("电视剧", "想看", selectedYear)}
                 />
               </div>
               

@@ -17,9 +17,9 @@ export class MediaRepositoryError extends Error {
 }
 
 // 列表只读取卡片需要的字段，避免把简介和演职员等详情数据传到客户端。
-const MEDIA_CARD_COLUMNS = "id,type,title,sort_date,first_air_date,last_air_date,release_year,rating,genres,languages,cover_url";
+const MEDIA_CARD_COLUMNS = "id,type,title,sort_date,first_air_date,last_air_date,release_year,rating,genres,languages,cover_url,status";
 // 榜单精选读取卡片字段及简介摘要，供首页展台和精选展示使用。
-const TOP_MEDIA_COLUMNS = "id,type,title,sort_date,first_air_date,last_air_date,release_year,rating,genres,languages,cover_url,summary";
+const TOP_MEDIA_COLUMNS = "id,type,title,sort_date,first_air_date,last_air_date,release_year,rating,genres,languages,cover_url,status,summary";
 // 限制通过 URL 参数传递给 PostgREST 的 ID 数量上限，防止超出网关的 URL 长度限制（HTTP 414）。
 const MAX_FILTER_IDS = 100;
 

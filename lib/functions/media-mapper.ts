@@ -52,6 +52,7 @@ export function mapViewRowToMediaCard(item: ViewAllMediaRow): MediaCard {
     genres: sortNames(item.genres),
     languages: sortNames(item.languages),
     cover_url: item.cover_url ?? "",
+    status: item.status || undefined,
     type: item.type === "movie" || item.type === "movies" ? "movies" : "series",
   };
 }

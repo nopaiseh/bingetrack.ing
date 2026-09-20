@@ -58,13 +58,13 @@ export default function MediaRuntimeCards({
 
   return (
     <div className="grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-6 lg:grid-cols-3">
-      <div className="surface-card interactive-card group flex flex-col justify-between rounded-2xl p-4 sm:p-5 lg:p-6">
+      <div className="surface-card flex flex-col justify-between rounded-2xl p-4 sm:p-5 lg:p-6">
         <div>
           <div className="mb-2 flex items-center gap-2 text-sm text-white/60">
             <div className="stat-icon flex items-center justify-center rounded-lg p-2">
               <span className="i-material-symbols-play-circle-outline-rounded size-4 inline-block" aria-hidden="true" />
             </div>
-            <span className="text-sm font-bold tracking-wide text-white/80 transition-colors group-hover:text-white">已看总时长</span>
+            <span className="text-sm font-bold tracking-wide text-white/80">已看总时长</span>
           </div>
           <RuntimeValue runtime={watchedRuntime} />
         </div>
@@ -73,13 +73,13 @@ export default function MediaRuntimeCards({
         </p>
       </div>
 
-      <div className="surface-card interactive-card group flex flex-col justify-between rounded-2xl p-4 sm:p-5 lg:p-6">
+      <div className="surface-card flex flex-col justify-between rounded-2xl p-4 sm:p-5 lg:p-6">
         <div>
           <div className="mb-2 flex items-center gap-2 text-sm text-white/60">
             <div className="stat-icon flex items-center justify-center rounded-lg p-2">
               <span className="i-material-symbols-layers-rounded size-4 inline-block" aria-hidden="true" />
             </div>
-            <span className="text-sm font-bold tracking-wide text-white/80 transition-colors group-hover:text-white">待看总时长</span>
+            <span className="text-sm font-bold tracking-wide text-white/80">待看总时长</span>
           </div>
           <RuntimeValue runtime={unwatchedRuntime} />
         </div>
@@ -88,13 +88,13 @@ export default function MediaRuntimeCards({
         </p>
       </div>
 
-      <div className="surface-card interactive-card group flex flex-col justify-between rounded-2xl p-4 sm:p-5 lg:p-6">
+      <div className="surface-card flex flex-col justify-between rounded-2xl p-4 sm:p-5 lg:p-6">
         <div>
           <div className="mb-2 flex items-center gap-2 text-sm text-white/60">
             <div className="stat-icon flex items-center justify-center rounded-lg p-2">
               <span className="i-material-symbols-pie-chart-outline-rounded size-4 inline-block" aria-hidden="true" />
             </div>
-            <span className="text-sm font-bold tracking-wide text-white/80 transition-colors group-hover:text-white">完成进度</span>
+            <span className="text-sm font-bold tracking-wide text-white/80">完成进度</span>
           </div>
           <div className="mb-2 flex items-baseline gap-2">
             <span

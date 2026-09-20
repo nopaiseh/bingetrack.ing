@@ -37,8 +37,8 @@ export default function RefreshCacheButton({ className = "", compact = false }: 
         type="button"
         onClick={handleRefresh}
         disabled={isPending}
-        title="清除并刷新前台 CDN 缓存（在 Supabase 直接修改数据后使用）"
-        aria-label="刷新前台缓存"
+        title="清除并刷新 CDN 缓存（在 Supabase 直接修改数据后使用）"
+        aria-label="刷新缓存"
         className={`inline-flex items-center gap-1.5 rounded-xl border border-white/10 px-3 py-2 text-xs font-medium transition-colors hover:bg-white/10 hover:text-white disabled:opacity-50 ${
           status === "success"
             ? "border-emerald-500/30 text-emerald-400 bg-emerald-500/10"
@@ -68,7 +68,7 @@ export default function RefreshCacheButton({ className = "", compact = false }: 
         type="button"
         onClick={handleRefresh}
         disabled={isPending}
-        title="清除并刷新前台 CDN 缓存（在 Supabase 直接修改数据后使用）"
+        title="清除并刷新 CDN 缓存（在 Supabase 直接修改数据后使用）"
         className={`flex w-full items-center gap-3 rounded-xl p-3 text-sm transition-colors hover:text-white disabled:opacity-50 ${
           status === "success"
             ? "text-emerald-400 bg-emerald-500/10"
@@ -88,7 +88,7 @@ export default function RefreshCacheButton({ className = "", compact = false }: 
           aria-hidden="true"
         />
         <span className="truncate">
-          {isPending ? "正在刷新缓存..." : status === "success" ? "缓存已刷新 ✓" : status === "error" ? (errorMessage || "刷新失败") : "刷新前台缓存"}
+          {isPending ? "正在刷新缓存..." : status === "success" ? "缓存已刷新 ✓" : status === "error" ? (errorMessage || "刷新失败") : "刷新缓存"}
         </span>
       </button>
     </div>

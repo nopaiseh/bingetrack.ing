@@ -182,13 +182,13 @@ export default function MediaRatingBadge({
   // sm 尺寸（卡片紧凑型，深度收窄阔度）
   return (
     <div
-      className={`inline-flex shrink-0 items-center gap-0.5 rounded border px-1 py-0.5 text-xs backdrop-blur-md transition-all duration-300 ${tier.badgeClass} ${className}`}
+      className={`inline-flex shrink-0 items-center gap-1 rounded border px-1.5 py-0.5 text-xs backdrop-blur-md transition-all duration-300 ${tier.badgeClass} ${className}`}
       title={`${scoreText} 分 · ${tier.label}`}
     >
       <span className={`${tier.icon} size-2.5 inline-block shrink-0 ${tier.glowClass}`} aria-hidden="true" />
-      <span className="font-mono text-[11px] font-bold leading-none tracking-tight">{scoreText}</span>
+      <span className="font-mono text-xs font-bold leading-none tracking-tight">{scoreText}</span>
       {showTier && (
-        <span className="text-[10px] font-medium opacity-85 border-l border-current/25 pl-0.5 ml-0.5 leading-none tracking-tighter">
+        <span className="text-[10px] font-normal opacity-70 border-l border-current/25 pl-1 ml-0.5 leading-none tracking-tight">
           {tier.label}
         </span>
       )}

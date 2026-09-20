@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { expect, it, vi } from "vitest";
 import MediaForm from "@/app/manage/media/MediaForm";
@@ -22,4 +22,30 @@ it("关联资料命名冲突后保留用户输入", async () => {
   await user.click(screen.getByRole("button", { name: "保存资料" }));
   expect(await screen.findByRole("alert")).toHaveTextContent("名称已经存在");
   expect(screen.getByLabelText("名称", { exact: true })).toHaveValue("剧情");
+});
+
+it("电影和剧集显示可编辑观看状态，电视剧和剧季显示只读说明", () => {
+  const { unmount } = render(<MediaForm initialType="movie" />);
+  expect(screen.getByLabelText("观看状态")).toBeInTheDocument();
+  expect(screen.getByLabelText(/评分/)).toBeInTheDocument();
+
+  // 切换为电视剧
+  fireEvent.change(screen.getByLabelText("类型"), { target: { value: "tv_series" } });
+  expect(screen.queryByRole("combobox", { name: "观看状态" })).not.toBeInTheDocument();
+  expect(screen.getByText(/电视剧的观看状态由下属剧集自动汇总决定/)).toBeInTheDocument();
+
+  // 切换为剧季
+  fireEvent.change(screen.getByLabelText("类型"), { target: { value: "tv_season" } });
+  expect(screen.queryByRole("combobox", { name: "观看状态" })).not.toBeInTheDocument();
+  expect(screen.getByText(/剧季的观看状态由下属剧集自动汇总决定/)).toBeInTheDocument();
+
+  // 切换为剧集
+  fireEvent.change(screen.getByLabelText("类型"), { target: { value: "tv_episode" } });
+  expect(screen.getByLabelText("观看状态")).toBeInTheDocument();
+  expect(screen.getByLabelText(/评分/)).toBeInTheDocument();
+  unmount();
+
+  render(<MediaForm initialType="tv_series" />);
+  expect(screen.queryByRole("combobox", { name: "观看状态" })).not.toBeInTheDocument();
+  expect(screen.getByText(/电视剧的观看状态由下属剧集自动汇总决定/)).toBeInTheDocument();
 });

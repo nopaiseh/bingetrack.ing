@@ -3,6 +3,7 @@ import Link from "next/link";
 import type { MediaCard } from "@/lib/types";
 import { SkeletonBlock } from "./LoadingSkeletons";
 import MediaRatingBadge from "./MediaRatingBadge";
+import MediaCardStatusBadge from "./MediaCardStatusBadge";
 
 /** 为搜索卡片提供高度拟真且美观的加载骨架。 */
 export function SearchMediaCardSkeleton() {
@@ -15,8 +16,8 @@ export function SearchMediaCardSkeleton() {
       </div>
 
       {/* 文本与标签信息占位，与真实卡片高度及间距完全统一 */}
-      <div className="flex flex-col space-y-2 px-3 py-2.5">
-        <SkeletonBlock className="h-3.5 w-4/5 rounded-md" />
+      <div className="flex flex-col space-y-1.5 px-3 py-2.5">
+        <SkeletonBlock className="h-4 w-4/5 rounded-md" />
         <div className="flex items-center justify-between pt-0.5">
           <SkeletonBlock className="h-2.5 w-9 rounded-md" />
           <div className="flex items-center gap-1">
@@ -53,15 +54,16 @@ export function SearchMediaCard({ item, returnHref }: { item: MediaCard; returnH
         ) : (
           <span className="i-material-symbols-image-outline-rounded inline-block size-10 text-white/30 drop-shadow-md" aria-hidden="true" />
         )}
+        <MediaCardStatusBadge status={item.status} />
       </div>
 
 
       <div className="flex flex-col space-y-1.5 px-3 py-2.5">
         <h3 className="font-serif-movie truncate text-sm font-bold text-white transition-colors duration-300 group-hover:text-[var(--accent-hover)]" title={item.title}>{item.title}</h3>
-        <div className="flex items-center justify-between text-xs">
-          <span className="font-medium text-white/60">
+        <div className="flex items-center justify-between gap-1.5 min-w-0 text-xs">
+          <span className="font-medium text-white/60 whitespace-nowrap shrink-0">
             {item.type === "series"
-              ? item.release_year || (item.date ? item.date.substring(0, 4) : "未知")
+              ? String(item.release_year || (item.date ? item.date.substring(0, 4) : "未知")).replace(/\s*-\s*/g, "–")
               : item.date ? item.date.substring(0, 4) : "未知"}
           </span>
           <MediaRatingBadge

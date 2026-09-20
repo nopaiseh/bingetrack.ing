@@ -51,6 +51,49 @@ test("submits trimmed desktop search text to the search route", /* 验证桌面�
   expect(push).toHaveBeenCalledWith("/search?q=%E6%B2%99%E4%B8%98");
 });
 
+test("provides standalone search link on mobile", () => {
+  render(<Navbar />);
+  const mobileSearchLink = screen.getByRole("link", { name: "搜索影视" });
+  expect(mobileSearchLink).toBeInTheDocument();
+  expect(mobileSearchLink).toHaveAttribute("href", "/search");
+});
+
+test("renders ⌘K shortcut hint badge on desktop search form", () => {
+  render(<Navbar />);
+  expect(screen.getByText("⌘K")).toBeInTheDocument();
+});
+
+test("focuses desktop search input when Cmd+K or / is pressed", async () => {
+  const user = userEvent.setup();
+  // Ensure desktop viewport width
+  window.innerWidth = 1024;
+  render(<Navbar />);
+
+  const desktopInput = screen.getAllByPlaceholderText("搜索")[0];
+  expect(desktopInput).not.toHaveFocus();
+
+  // Press '/'
+  await user.keyboard("/");
+  expect(desktopInput).toHaveFocus();
+
+  // Blur and test Cmd+K
+  (desktopInput as HTMLInputElement).blur();
+  expect(desktopInput).not.toHaveFocus();
+
+  await user.keyboard("{Meta>}k{/Meta}");
+  expect(desktopInput).toHaveFocus();
+});
+
+test("navigates to /search when shortcut is triggered on mobile viewport", async () => {
+  const user = userEvent.setup();
+  window.innerWidth = 375;
+  render(<Navbar />);
+
+  await user.keyboard("{Meta>}k{/Meta}");
+  expect(push).toHaveBeenCalledWith("/search");
+});
+
+
 
 test("导航栏直接登录，站长登录后展示管理和退出，不展示设置", async () => {
   const user = userEvent.setup();
