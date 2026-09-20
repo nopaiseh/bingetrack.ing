@@ -2,7 +2,7 @@
 export const referenceTypes = {
   people: { label: "人物", table: "people", link: "media_credits", key: "person_id", alternate: true },
   collections: { label: "系列", table: "media_series", link: "media_item_series", key: "series_id", alternate: true },
-  genres: { label: "类型", table: "genres", link: "media_genres", key: "genre_id", alternate: false },
+  genres: { label: "题材流派", table: "genres", link: "media_genres", key: "genre_id", alternate: false },
   regions: { label: "地区", table: "regions", link: "media_regions", key: "region_id", alternate: false },
   languages: { label: "语言", table: "languages", link: "media_languages", key: "language_id", alternate: false },
 } as const;

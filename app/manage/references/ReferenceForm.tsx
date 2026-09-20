@@ -15,8 +15,8 @@ export default function ReferenceForm({ kind, item, count = 0, onSaved }: { onSa
     <UnsavedGuard dirty={dirty && !pending && !deleting} />
     <form action={action} onInput={() => setDirty(true)} className="surface-panel space-y-5 rounded-2xl p-5 sm:p-7"><fieldset disabled={pending || deleting} className="space-y-5"><legend className="sr-only">{referenceTypes[kind].label}资料</legend>
       {onSaved && <input type="hidden" name="return_list" value="1" />}<input type="hidden" name="kind" value={kind} /><input type="hidden" name="id" value={item?.id ?? ""} />
-      <label>名称<input name="name" {...field("name", item?.name)} required maxLength={200} /></label>
-      {referenceTypes[kind].alternate && <label>别名<input name="alternate_name" {...field("alternate_name", item?.alternate_name)} maxLength={300} /></label>}
+      <label>名称<input name="name" {...field("name", item?.name)} required maxLength={200} placeholder={`输入${referenceTypes[kind].label}名称`} /></label>
+      {referenceTypes[kind].alternate && <label>别名<input name="alternate_name" {...field("alternate_name", item?.alternate_name)} maxLength={300} placeholder="外文名或别称（可选）" /></label>}
       {item && <p className="text-sm text-neutral-400">修改名称后，已有作品会继续关联这项资料。</p>}
       <p role="alert" className="text-sm text-red-300">{state.error}</p><button className="admin-primary">{pending ? "正在保存…" : "保存资料"}</button>
     </fieldset></form>
