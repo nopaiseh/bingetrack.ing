@@ -195,10 +195,8 @@ export default function MediaForm({ item, initialType = "movie", lockType = fals
             />
             <div>
               <div className="mb-1.5 flex items-center justify-between">
-                <label htmlFor="field-number">{type === "tv_season" ? "季编号" : "集编号"}</label>
-                <span className="text-[11px] font-normal text-rose-400/80">
-                  {type === "tv_season" ? "特别篇填 0 · 必填" : "必填"}
-                </span>
+                <label htmlFor="field-number">{type === "tv_season" ? "季编号（特别篇可填 0）" : "集编号"}</label>
+                <span className="text-[11px] font-normal text-rose-400/80">必填</span>
               </div>
               <div className="relative flex items-center">
                 <span className="pointer-events-none absolute left-3.5 select-none text-sm font-medium text-neutral-400">第</span>

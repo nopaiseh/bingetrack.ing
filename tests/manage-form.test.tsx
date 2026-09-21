@@ -73,3 +73,12 @@ it("电影和电视剧展示关联资料，剧季和剧集不展示关联资料"
   render(<MediaForm initialType="tv_episode" />);
   expect(screen.queryByText("关联资料")).not.toBeInTheDocument();
 });
+
+it("剧季和剧集编号输入框拥有正确无歧义的无障碍标签", () => {
+  const { unmount } = render(<MediaForm initialType="tv_season" />);
+  expect(screen.getByLabelText("季编号（特别篇可填 0）")).toBeInTheDocument();
+  unmount();
+
+  render(<MediaForm initialType="tv_episode" />);
+  expect(screen.getByLabelText("集编号", { exact: true })).toBeInTheDocument();
+});
