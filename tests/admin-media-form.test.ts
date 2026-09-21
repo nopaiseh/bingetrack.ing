@@ -50,4 +50,47 @@ describe("管理媒体输入", () => {
     expect(seasonResult.status).toBe("want_to_watch");
     expect(seasonResult.rating).toBeNull();
   });
+  it("剧季和剧集条目强制清空所有关联资料", () => {
+    const parentId = "11111111-1111-4111-8111-111111111111";
+    const seasonForm = form({
+      type: "tv_season",
+      title: "第 1 季",
+      parent_id: parentId,
+      number: "1",
+      genres: "动作\n剧情",
+      languages: "英语",
+      regions: "美国",
+      actors: "演员一",
+      directors: "导演一",
+      collections: "系列一",
+    });
+    const seasonResult = parseMediaForm(seasonForm);
+    expect(seasonResult.genres).toEqual([]);
+    expect(seasonResult.languages).toEqual([]);
+    expect(seasonResult.regions).toEqual([]);
+    expect(seasonResult.actors).toEqual([]);
+    expect(seasonResult.directors).toEqual([]);
+    expect(seasonResult.collections).toEqual([]);
+
+    const episodeForm = form({
+      type: "tv_episode",
+      title: "第 1 集",
+      parent_id: parentId,
+      number: "1",
+      genres: "动作",
+      actors: "演员一",
+    });
+    const episodeResult = parseMediaForm(episodeForm);
+    expect(episodeResult.genres).toEqual([]);
+    expect(episodeResult.actors).toEqual([]);
+
+    const movieForm = form({
+      type: "movie",
+      genres: "动作\n剧情",
+      actors: "演员一",
+    });
+    const movieResult = parseMediaForm(movieForm);
+    expect(movieResult.genres).toEqual(["动作", "剧情"]);
+    expect(movieResult.actors).toEqual(["演员一"]);
+  });
 });

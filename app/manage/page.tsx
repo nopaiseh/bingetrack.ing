@@ -70,7 +70,22 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
       <Link href={`/manage/media/new${type ? `?type=${type}${parent ? `&parent=${parent}` : ""}` : ""}`} className="admin-button admin-primary shrink-0">新增{type ? mediaTypes[type] : "媒体"}</Link>
     </div>
     {params.deleted === "1" && <StatusModal message="条目及其下属资料已删除。" />}
-    {parent && <p className="mb-5"><Link href={`/manage/media/${parent}`} className="underline">返回上级条目</Link></p>}
+    {parent && (
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-[var(--accent-border)] bg-[var(--accent-soft)]/40 px-4 py-3 text-sm">
+        <div className="flex items-center gap-2 text-neutral-200">
+          <span className="i-material-symbols-filter-alt-rounded size-4.5 text-[var(--accent)] shrink-0" aria-hidden="true" />
+          <span>当前仅显示所选条目的下属{mediaTypes[type]}</span>
+        </div>
+        <div className="flex items-center gap-3">
+          <Link href={`/manage/media/${parent}`} className="text-xs text-neutral-300 underline hover:text-white transition-colors">
+            返回上级条目
+          </Link>
+          <Link href={`/manage?type=${type}`} className="admin-button !py-1 !px-3 text-xs">
+            查看全部{mediaTypes[type]}
+          </Link>
+        </div>
+      </div>
+    )}
     <form className="surface-panel mb-6 rounded-2xl p-4 sm:p-6 grid grid-cols-[minmax(0,1fr)_auto] items-end gap-3">
       <label>搜索标题<input name="q" defaultValue={q} maxLength={200} placeholder="输入电影、剧集或单集名称" /></label>
       <input type="hidden" name="type" value={type} />

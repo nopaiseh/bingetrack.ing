@@ -35,4 +35,18 @@ describe("管理关联选择器", () => {
     await waitFor(() => expect(screen.queryByRole("alert")).not.toBeInTheDocument());
     expect(screen.getByRole("button", { name: "Doe, Jane" })).toBeInTheDocument();
   });
+  it("单选模式下展示紧凑卡片，点击更换可重新搜索", async () => {
+    const user = userEvent.setup();
+    const { container } = render(
+      <ChoicePicker kind="tv_series" name="parent_id" label="所属电视剧" multiple={false} required initial={[{ id: "s-1", name: "原剧集" }]} />
+    );
+    expect(screen.getByText("必填")).toBeInTheDocument();
+    expect(screen.getByText("原剧集")).toBeInTheDocument();
+    expect(container.querySelector('input[name="parent_id"]')).toHaveValue("s-1");
+    expect(screen.queryByRole("combobox")).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: /更换/ }));
+    expect(container.querySelector('input[name="parent_id"]')).toHaveValue("");
+    expect(screen.getByRole("combobox")).toBeInTheDocument();
+  });
 });
