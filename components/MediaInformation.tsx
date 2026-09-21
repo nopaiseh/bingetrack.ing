@@ -1,5 +1,4 @@
 import Image from "next/image";
-import Link from "next/link";
 import { Suspense, type ReactNode } from "react";
 import MediaBackLink, { DefaultMediaBackLink } from "./MediaBackLink";
 import { Media, SeasonInfo } from "@/lib/types";
@@ -7,6 +6,7 @@ import { formatRuntime } from "@/lib/format-runtime";
 import SearchTag from "./SearchTag";
 import MediaRatingBadge from "./MediaRatingBadge";
 import ExpandableCastList from "./ExpandableCastList";
+import SeasonRow from "./SeasonRow";
 
 /** 展示并预加载详情海报；无图片时显示暂无海报占位。 */
 function MediaPoster({ media }: { media: Media }) {
@@ -235,48 +235,7 @@ export default function MediaInformation({
         </div>
       
       {seasons && (
-        <div className="mb-12 mt-12">
-          <div className="flex items-center gap-2 mb-6">
-            <div className="w-1 h-4 bg-[var(--accent)] rounded-full opacity-85" /> 
-            <h3 className="text-white/90 font-bold text-lg tracking-wider">
-              季度列表
-            </h3>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
-            {seasons.map(/* 将一季渲染为含海报、标题、年份范围和集数的详情链接。 */ (season) => (
-              <Link
-                key={season.id}
-                href={`/series/${media.id}/seasons/${season.id}`}
-                className="surface-card interactive-media-card group flex cursor-pointer flex-col overflow-hidden rounded-xl text-left"
-              >
-                <div className="image-overlay relative aspect-2/3 w-full overflow-hidden">
-                  {season.coverUrl ? (
-                    <Image src={season.coverUrl} alt={`${season.title} 海报`} fill className="object-cover transition-transform duration-500 group-hover:scale-105" sizes="(max-width: 639px) 50vw, (max-width: 1023px) 33vw, 20vw" />
-                  ) : (
-                    <div className="flex h-full items-center justify-center text-white/30"><span className="i-material-symbols-image-outline-rounded inline-block size-9" aria-hidden="true" /></div>
-                  )}
-                  <span className="image-label absolute left-2 top-2 rounded-lg border border-white/10 px-2 py-1 text-[11px] text-white/75 backdrop-blur-md">第 {season.seasonNumber} 季</span>
-                </div>
-                <div className="flex flex-1 flex-col p-4">
-                  <h4 className="mb-2 truncate text-sm font-bold text-white/85 transition-colors group-hover:text-[var(--accent-hover)]" title={season.title}>
-                    {season.title}
-                  </h4>
-                  <div className="mt-auto flex flex-wrap items-center gap-x-2 gap-y-1 font-mono text-xs text-white/50">
-                    {season.releaseYearRange && <span>{season.releaseYearRange.replace(/\s*-\s*/g, "–")}</span>}
-                    {season.releaseYearRange && <span>•</span>}
-                    <span>{season.episodeCount} 集</span>
-                  </div>
-                </div>
-              </Link>
-            ))}
-            {seasons.length === 0 && (
-              <div className="surface-muted col-span-full rounded-xl border border-white/10 px-6 py-10 text-center text-sm text-white/60">
-                暂无季集数据
-              </div>
-            )}
-          </div>
-        </div>
+        <SeasonRow seriesId={media.id} seasons={seasons} />
       )}
         
         {relatedContent && <div className={seasons ? "" : "mt-12"}>{relatedContent}</div>}

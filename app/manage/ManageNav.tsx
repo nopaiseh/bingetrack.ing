@@ -1,6 +1,6 @@
 "use client";
 import { useEffect } from "react";
-import { rememberedList, mayLeaveEditor } from "@/lib/admin/navigation";
+import { mayLeaveEditor } from "@/lib/admin/navigation";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import RefreshCacheButton from "./RefreshCacheButton";
@@ -39,7 +39,13 @@ export default function ManageNav() {
       <RefreshCacheButton />
     </div>
     <div className="lg:hidden flex items-center justify-between gap-3">
-      <label className="flex-1">管理类别<select value={active} onChange={/* 切换分类时进入该类别第一页。 */ event => { if (mayLeaveEditor()) router.push(rememberedList(event.target.value, href(event.target.value))); }}>
+      <label className="flex-1">管理类别<select value={active} onChange={/* 切换分类时进入该类别第一页。 */ event => {
+        if (mayLeaveEditor()) {
+          const targetHref = href(event.target.value);
+          try { sessionStorage.setItem(`manage:list:${event.target.value}`, targetHref); } catch {}
+          router.push(targetHref);
+        }
+      }}>
         {!active && <option value="" disabled>编辑内容</option>}
         {groups.map(/* 保持移动端与桌面的分组一致。 */ group => <optgroup key={group.label} label={group.label}>{group.items.map(/* 分类入口。 */ item => <option key={item.value} value={item.value}>{item.label}</option>)}</optgroup>)}
       </select></label>
@@ -60,8 +66,14 @@ export default function ManageNav() {
                   href={href(item.value)}
                   onClick={event => {
                     if (event.button || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+                    if (!mayLeaveEditor()) {
+                      event.preventDefault();
+                      return;
+                    }
                     event.preventDefault();
-                    router.push(rememberedList(item.value, href(item.value)));
+                    const targetHref = href(item.value);
+                    try { sessionStorage.setItem(`manage:list:${item.value}`, targetHref); } catch {}
+                    router.push(targetHref);
                   }}
                   aria-current={isSelected ? "page" : undefined}
                   className={`group relative flex items-center gap-3 rounded-xl border px-3 transition-all duration-200 ${

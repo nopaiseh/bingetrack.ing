@@ -71,6 +71,12 @@ export function parseMediaForm(form: FormData): MediaInput {
   const effectiveStatus: "watched" | "want_to_watch" = isDerivedStatus ? "want_to_watch" : (status as "watched" | "want_to_watch");
   const rating = isDerivedStatus ? null : numeric("rating", 10);
   if (rating !== null && Math.abs(rating * 10 - Math.round(rating * 10)) > 1e-8) throw new Error("评分最多保留一位小数。");
+  const isChild = type === "tv_season" || type === "tv_episode";
   return { id, type: type as ManagedMediaType, title, alternate_title: string("alternate_title"), summary: string("summary", 20000), cover_url, release_date, runtime: numeric("runtime", 100000), parent_id, number, status: effectiveStatus, rating,
-    genres: names("genres"), languages: names("languages"), regions: names("regions"), actors: names("actors"), directors: names("directors"), collections: names("collections") };
+    genres: isChild ? [] : names("genres"),
+    languages: isChild ? [] : names("languages"),
+    regions: isChild ? [] : names("regions"),
+    actors: isChild ? [] : names("actors"),
+    directors: isChild ? [] : names("directors"),
+    collections: isChild ? [] : names("collections") };
 }

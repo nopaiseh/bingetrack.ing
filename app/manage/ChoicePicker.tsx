@@ -5,8 +5,8 @@ import { searchChoices } from "./reference-actions";
 import type { Choice } from "@/lib/admin/catalog";
 
 /** 搜索已有资料并显式选择；名称标签可新增，父条目只能选已有内容。 */
-export default function ChoicePicker({ kind, name, label, initial = [], multiple = true, allowCreate = false, onSelect }: {
-  kind: string; name: string; label: string; initial?: Choice[]; multiple?: boolean; allowCreate?: boolean; onSelect?: (value: Choice[]) => void;
+export default function ChoicePicker({ kind, name, label, initial = [], multiple = true, allowCreate = false, required = false, onSelect }: {
+  kind: string; name: string; label: string; initial?: Choice[]; multiple?: boolean; allowCreate?: boolean; required?: boolean; onSelect?: (value: Choice[]) => void;
 }) {
   const [selected, setSelected] = useState(initial);
   const [term, setTerm] = useState("");
@@ -38,12 +38,42 @@ export default function ChoicePicker({ kind, name, label, initial = [], multiple
   /** 关联名称去重，单选父级保存真实 ID。 */
   function choose(choice: Choice) {
     change(multiple ? [...selected.filter(item => item.name !== choice.name), choice] : [choice]);
+    if (!multiple) {
+      setOpen(false);
+      setTerm("");
+    }
   }
   return <div ref={root} className="relative min-w-0" onBlur={/* 焦点离开整个选择器后关闭结果。 */ event => { if (!event.currentTarget.contains(event.relatedTarget)) setOpen(false); }}>
     <input type="hidden" name={name} value={multiple ? selected.map(item => item.name).join("\n") : selected[0]?.id ?? ""} />
-    <label htmlFor={listId}>{label}</label>
-    {selected.length > 0 && <ul className="my-2.5 flex flex-wrap gap-2">{selected.map(/* 已选名称可独立移除和调整演员顺序。 */ (item, index) => <li key={item.id} className="admin-tag-chip group/chip max-w-full"><span className="break-words">{item.name}</span>{multiple && index > 0 && <button type="button" aria-label={`上移${item.name}`} className="!min-h-0 !p-1 !border-0 !bg-transparent text-neutral-400 hover:text-white transition-colors" onClick={() => { const next = [...selected]; [next[index - 1], next[index]] = [next[index], next[index - 1]]; change(next); }}>↑</button>}<button type="button" aria-label={`移除关联：${item.name}`} className="!min-h-0 !px-1.5 !py-0.5 !border-0 !bg-transparent text-neutral-400 hover:text-rose-300 transition-colors" onClick={() => change(selected.filter(value => value.id !== item.id))}>×</button></li>)}</ul>}
-    <input ref={input} className="mt-2" id={listId} value={term} autoComplete="off" placeholder={`搜索${label}`} role="combobox" aria-autocomplete="list" aria-haspopup="dialog" aria-expanded={open} aria-controls={`${listId}-results`} onFocus={() => setOpen(true)} onChange={event => { setTerm(event.target.value); setOpen(true); }} onKeyDown={event => { if (event.key === "Escape") setOpen(false); if (event.key === "Enter") { event.preventDefault(); setOpen(true); } }} />
+    <div className="mb-1.5 flex items-center justify-between">
+      <label htmlFor={!multiple && selected.length > 0 ? undefined : listId}>{label}</label>
+      {required && <span className="text-[11px] font-normal text-rose-400/80">必填</span>}
+    </div>
+    {multiple && selected.length > 0 && <ul className="my-2.5 flex flex-wrap gap-2">{selected.map(/* 已选名称可独立移除和调整演员顺序。 */ (item, index) => <li key={item.id} className="admin-tag-chip group/chip max-w-full"><span className="break-words">{item.name}</span>{index > 0 && <button type="button" aria-label={`上移${item.name}`} className="!min-h-0 !p-1 !border-0 !bg-transparent text-neutral-400 hover:text-white transition-colors" onClick={() => { const next = [...selected]; [next[index - 1], next[index]] = [next[index], next[index - 1]]; change(next); }}>↑</button>}<button type="button" aria-label={`移除关联：${item.name}`} className="!min-h-0 !px-1.5 !py-0.5 !border-0 !bg-transparent text-neutral-400 hover:text-rose-300 transition-colors" onClick={() => change(selected.filter(value => value.id !== item.id))}>×</button></li>)}</ul>}
+    {!multiple && selected.length > 0 ? (
+      <div className="flex h-[42px] items-center justify-between gap-2 rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-sm">
+        <div className="flex min-w-0 items-center gap-2">
+          <span className="i-material-symbols-folder-rounded size-4 shrink-0 text-[var(--accent)]" aria-hidden="true" />
+          <span className="truncate font-medium text-white">{selected[0].name}</span>
+          {selected[0].detail && <span className="truncate text-xs text-neutral-400">({selected[0].detail})</span>}
+        </div>
+        <button
+          type="button"
+          aria-label={`更换${label}：当前为${selected[0].name}`}
+          className="!min-h-0 !border-0 !bg-transparent !p-1 text-xs text-neutral-400 transition-colors hover:text-white shrink-0"
+          onClick={() => {
+            change([]);
+            setTerm("");
+            setOpen(true);
+            setTimeout(() => input.current?.focus(), 50);
+          }}
+        >
+          更换
+        </button>
+      </div>
+    ) : (
+      <input ref={input} id={listId} value={term} autoComplete="off" placeholder={`搜索${label}`} role="combobox" aria-autocomplete="list" aria-haspopup="dialog" aria-expanded={open} aria-controls={`${listId}-results`} onFocus={() => setOpen(true)} onChange={event => { setTerm(event.target.value); setOpen(true); }} onKeyDown={event => { if (event.key === "Escape") setOpen(false); if (event.key === "Enter") { event.preventDefault(); setOpen(true); } }} />
+    )}
     {open && <div role="dialog" aria-label={`${label}搜索结果`} id={`${listId}-results`} onMouseDown={event => { event.preventDefault(); }} className="surface-panel absolute z-30 mt-2 max-h-64 w-full overflow-y-auto rounded-xl p-2">
       {loading && <p role="status" className="p-2 text-sm text-neutral-400">正在搜索…</p>}
       {error && <p role="alert" className="p-2 text-sm text-red-300">{error}</p>}

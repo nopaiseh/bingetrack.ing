@@ -49,3 +49,36 @@ it("电影和剧集显示可编辑观看状态，电视剧和剧季显示只读�
   expect(screen.queryByRole("combobox", { name: "观看状态" })).not.toBeInTheDocument();
   expect(screen.getByText(/电视剧的观看状态由下属剧集自动汇总决定/)).toBeInTheDocument();
 });
+
+it("lockType 为真时锁定媒体类型，不展示分段切换控件", () => {
+  render(<MediaForm initialType="tv_episode" lockType={true} />);
+  expect(screen.queryByRole("tablist", { name: "媒体类型快捷选择" })).not.toBeInTheDocument();
+  expect(screen.getByText("媒体类型")).toBeInTheDocument();
+  expect(screen.getByText("剧集")).toBeInTheDocument();
+});
+
+it("电影和电视剧展示关联资料，剧季和剧集不展示关联资料", () => {
+  const { unmount: unmount1 } = render(<MediaForm initialType="movie" />);
+  expect(screen.getByText("关联资料")).toBeInTheDocument();
+  unmount1();
+
+  const { unmount: unmount2 } = render(<MediaForm initialType="tv_series" />);
+  expect(screen.getByText("关联资料")).toBeInTheDocument();
+  unmount2();
+
+  const { unmount: unmount3 } = render(<MediaForm initialType="tv_season" />);
+  expect(screen.queryByText("关联资料")).not.toBeInTheDocument();
+  unmount3();
+
+  render(<MediaForm initialType="tv_episode" />);
+  expect(screen.queryByText("关联资料")).not.toBeInTheDocument();
+});
+
+it("剧季和剧集编号输入框拥有正确无歧义的无障碍标签", () => {
+  const { unmount } = render(<MediaForm initialType="tv_season" />);
+  expect(screen.getByLabelText("季编号（特别篇可填 0）")).toBeInTheDocument();
+  unmount();
+
+  render(<MediaForm initialType="tv_episode" />);
+  expect(screen.getByLabelText("集编号", { exact: true })).toBeInTheDocument();
+});

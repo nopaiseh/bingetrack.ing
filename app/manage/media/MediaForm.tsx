@@ -44,7 +44,7 @@ const typeConfigs: Record<ManagedMediaType, { label: string; icon: string; badge
 };
 
 /** 用同一表单编辑电影、剧集、季和集，保持各字段有明确标签。 */
-export default function MediaForm({ item, initialType = "movie", parent, nextNumber, impact }: { item?: MediaInput; initialType?: ManagedMediaType; parent?: Choice; nextNumber?: number; impact?: { seasons: number; episodes: number } }) {
+export default function MediaForm({ item, initialType = "movie", lockType = false, parent, nextNumber, impact }: { item?: MediaInput; initialType?: ManagedMediaType; lockType?: boolean; parent?: Choice; nextNumber?: number; impact?: { seasons: number; episodes: number } }) {
   const field = useDraftFields();
   const [type, setType] = useState<ManagedMediaType>(item?.type ?? initialType);
   const [coverPreview, setCoverPreview] = useState(item?.cover_url ?? "");
@@ -64,8 +64,8 @@ export default function MediaForm({ item, initialType = "movie", parent, nextNum
         <legend className="sr-only">媒体资料</legend>
         <input type="hidden" name="id" value={item?.id ?? ""} />
 
-        {/* 顶部影视类型标识（编辑时为只读发光胶囊，新建时为现代分段单选控件） */}
-        {item ? (
+        {/* 顶部影视类型标识（编辑时或锁定模式下为只读发光胶囊，新建未锁定时为现代分段单选控件） */}
+        {(item || lockType) ? (
           <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/10 pb-5">
             <div className="flex items-center gap-3">
               <span className="text-xs font-semibold tracking-wider text-neutral-400">媒体类型</span>
@@ -184,13 +184,38 @@ export default function MediaForm({ item, initialType = "movie", parent, nextNum
             </div>
           </div>
           {isChild && <>
-            <ChoicePicker key={type} kind={type === "tv_season" ? "tv_series" : "tv_season"} name="parent_id" label={type === "tv_season" ? "所属电视剧" : "所属剧季"} multiple={false} initial={parent && parent.detail === (type === "tv_season" ? "tv_series" : "tv_season") ? [parent] : []} />
+            <ChoicePicker
+              key={type}
+              kind={type === "tv_season" ? "tv_series" : "tv_season"}
+              name="parent_id"
+              label={type === "tv_season" ? "所属电视剧" : "所属剧季"}
+              multiple={false}
+              required
+              initial={parent && parent.detail === (type === "tv_season" ? "tv_series" : "tv_season") ? [parent] : []}
+            />
             <div>
               <div className="mb-1.5 flex items-center justify-between">
                 <label htmlFor="field-number">{type === "tv_season" ? "季编号（特别篇可填 0）" : "集编号"}</label>
                 <span className="text-[11px] font-normal text-rose-400/80">必填</span>
               </div>
-              <input id="field-number" type="number" name="number" min="0" max="100000" step="1" {...field("number", item?.number ?? nextNumber)} required />
+              <div className="relative flex items-center">
+                <span className="pointer-events-none absolute left-3.5 select-none text-sm font-medium text-neutral-400">第</span>
+                <input
+                  id="field-number"
+                  type="number"
+                  name="number"
+                  min="0"
+                  max="100000"
+                  step="1"
+                  {...field("number", item?.number ?? nextNumber)}
+                  required
+                  placeholder="1"
+                  className="!pl-9 !pr-10 font-semibold"
+                />
+                <span className="pointer-events-none absolute right-3.5 select-none text-sm font-medium text-neutral-400">
+                  {type === "tv_season" ? "季" : "集"}
+                </span>
+              </div>
             </div>
           </>}
         </div>
@@ -243,12 +268,14 @@ export default function MediaForm({ item, initialType = "movie", parent, nextNum
           </section>
         )}
 
-        {/* 关联资料 */}
-        <section>
-          <h2 className="admin-section-title mb-2 text-lg font-medium text-white">关联资料</h2>
-          <p className="mb-4 text-sm text-neutral-400">搜索已有资料，或新增并关联。移除标签只解除当前作品的关联；演员可用上移按钮调整顺序。</p>
-          <div className="grid gap-5 sm:grid-cols-2">{([['genres','类型标签'],['languages','语言'],['regions','地区'],['directors','导演'],['actors','演员'],['collections','系列']] as const).map(/* 名称标签与现有事务字段对应。 */ ([name, label]) => <ChoicePicker key={name} kind={name === "actors" || name === "directors" ? "people" : name} name={name} label={label} allowCreate initial={(item?.[name] ?? []).map(value => ({ id: value, name: value }))} />)}</div>
-        </section>
+        {/* 关联资料：仅电影和电视剧展示，剧季与剧集继承所属主条目资料 */}
+        {!isChild && (
+          <section>
+            <h2 className="admin-section-title mb-2 text-lg font-medium text-white">关联资料</h2>
+            <p className="mb-4 text-sm text-neutral-400">搜索已有资料，或新增并关联。移除标签只解除当前作品的关联；演员可用上移按钮调整顺序。</p>
+            <div className="grid gap-5 sm:grid-cols-2">{([['genres','类型标签'],['languages','语言'],['regions','地区'],['directors','导演'],['actors','演员'],['collections','系列']] as const).map(/* 名称标签与现有事务字段对应。 */ ([name, label]) => <ChoicePicker key={name} kind={name === "actors" || name === "directors" ? "people" : name} name={name} label={label} allowCreate initial={(item?.[name] ?? []).map(value => ({ id: value, name: value }))} />)}</div>
+          </section>
+        )}
         <div className="surface-overlay sticky bottom-4 z-20 flex flex-wrap items-center justify-between gap-3 rounded-xl p-3"><div><p className="text-sm text-neutral-300">{dirty ? "有未保存的修改" : "资料已载入"}</p><p role="alert" className="text-sm text-red-300">{state.error}</p></div><button type="submit" className="admin-primary">{pending ? "正在保存…" : "保存资料"}</button></div>
       </fieldset>
     </form>
