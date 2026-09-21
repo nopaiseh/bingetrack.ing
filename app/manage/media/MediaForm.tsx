@@ -235,7 +235,10 @@ export default function MediaForm({ item, initialType = "movie", lockType = fals
             <h2 className="admin-section-title mb-4 text-lg font-medium text-white">观看记录</h2>
             <div className="grid gap-5 sm:grid-cols-2">
               <div>
-                <label htmlFor="field-status" className="mb-1.5 block">观看状态</label>
+                <div className="mb-1.5 flex items-center justify-between">
+                  <label htmlFor="field-status">观看状态</label>
+                  <span className="text-[11px] font-normal text-neutral-500">标记观看进度</span>
+                </div>
                 <select id="field-status" name="status" {...field("status", item?.status ?? "want_to_watch")}>
                   <option value="want_to_watch">没看过</option>
                   <option value="watched">看过</option>
