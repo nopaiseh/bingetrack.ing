@@ -244,9 +244,9 @@ video {
 
   /* 默认：经典红毯 (Red Carpet) - 沉浸波尔多丝绒酒红黑曜石 + 电影大片绯红 */
   --canvas: #140507;
-  --surface-panel: rgba(30, 12, 16, 0.86);
-  --surface-overlay: rgba(24, 10, 13, 0.86);
-  --surface-card: rgba(34, 14, 19, 0.78);
+  --surface-panel: rgba(28, 11, 15, 0.74);
+  --surface-overlay: rgba(22, 9, 12, 0.78);
+  --surface-card: rgba(32, 13, 18, 0.70);
   --accent: #f43f5e;
   --accent-contrast: #ffffff;
   --accent-hover: #fb7185;
@@ -276,9 +276,9 @@ video {
 /* 赛博深空/霓虹 (Cyber Cobalt) - 沉浸深海钴蓝黑曜石 + IMAX 电光钴蓝 */
 [data-theme="cyber"] {
   --canvas: #050c18;
-  --surface-panel: rgba(10, 22, 42, 0.86);
-  --surface-overlay: rgba(8, 18, 34, 0.86);
-  --surface-card: rgba(14, 28, 52, 0.78);
+  --surface-panel: rgba(8, 18, 36, 0.74);
+  --surface-overlay: rgba(6, 14, 28, 0.78);
+  --surface-card: rgba(12, 24, 46, 0.70);
   --accent: #0ea5e9;
   --accent-contrast: #020c18;
   --accent-hover: #38bdf8;
@@ -298,9 +298,9 @@ video {
 /* 复古胶片 (Warm Sepia) - 沉浸暖胶卷浓缩咖啡黑曜石 + 35mm 奥斯卡暖金 */
 [data-theme="sepia"] {
   --canvas: #140c04;
-  --surface-panel: rgba(32, 20, 10, 0.86);
-  --surface-overlay: rgba(26, 16, 8, 0.86);
-  --surface-card: rgba(38, 24, 12, 0.78);
+  --surface-panel: rgba(28, 17, 9, 0.74);
+  --surface-overlay: rgba(22, 13, 7, 0.78);
+  --surface-card: rgba(32, 20, 10, 0.70);
   --accent: #f59e0b;
   --accent-contrast: #140902;
   --accent-hover: #fcd34d;
@@ -320,9 +320,9 @@ video {
 /* 黑曜钛白 (Obsidian Noir) - 极致黑白暗房单色 + 钛金白 + 零色彩干扰 */
 [data-theme="noir"] {
   --canvas: #09090b;
-  --surface-panel: rgba(18, 18, 22, 0.86);
-  --surface-overlay: rgba(14, 14, 17, 0.86);
-  --surface-card: rgba(24, 24, 28, 0.78);
+  --surface-panel: rgba(16, 16, 20, 0.74);
+  --surface-overlay: rgba(12, 12, 15, 0.78);
+  --surface-card: rgba(22, 22, 26, 0.70);
   --accent: #ffffff;
   --accent-contrast: #09090b;
   --accent-hover: #f4f4f5;
@@ -364,7 +364,32 @@ video {
   background: var(--surface-control);
   filter: brightness(1.25);
   outline: none;
-  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.4),
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.4);
+}
+
+select:not(.filter-option) {
+  appearance: none;
+  -webkit-appearance: none;
+  cursor: pointer;
+  padding-right: 2.5rem;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='rgba(255,255,255,0.45)' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.85rem center;
+  background-size: 1.15rem 1.15rem;
+}
+
+select:not(.filter-option):hover {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='rgba(255,255,255,0.85)' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+}
+
+select:not(.filter-option):focus,
+select:not(.filter-option):focus-visible {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='rgba(255,255,255,0.95)' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+}
+
+select:not(.filter-option) option {
+  background-color: var(--surface-control, #140507);
+  color: #f5f5f5;
 }
 
 body::before {
@@ -384,6 +409,35 @@ body::before {
 }
 
 @layer components {
+  /* 顶部滚动渐进式羽化遮罩：内容向上滚动穿过导航栏时，自然模糊并消融在深色画布中 */
+  .navbar-scroll-blur-mask {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 5.5rem;
+    pointer-events: none;
+    z-index: -1;
+    -webkit-backdrop-filter: blur(16px);
+    backdrop-filter: blur(16px);
+    -webkit-mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 1) 0%, rgba(0, 0, 0, 0.85) 30%, rgba(0, 0, 0, 0) 100%);
+    mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 1) 0%, rgba(0, 0, 0, 0.85) 30%, rgba(0, 0, 0, 0) 100%);
+    background: linear-gradient(
+      to bottom,
+      color-mix(in srgb, var(--canvas) 92%, transparent) 0%,
+      color-mix(in srgb, var(--canvas) 75%, transparent) 35%,
+      color-mix(in srgb, var(--canvas) 25%, transparent) 70%,
+      transparent 100%
+    );
+    transition: background 500ms;
+  }
+
+  @media (min-width: 640px) {
+    .navbar-scroll-blur-mask {
+      height: 6rem;
+    }
+  }
+
   .film-grain-overlay {
     position: fixed;
     inset: 0;
@@ -398,30 +452,44 @@ body::before {
   }
 
   .surface-panel {
-    background: var(--surface-panel);
-    -webkit-backdrop-filter: blur(24px) saturate(190%);
-    backdrop-filter: blur(24px) saturate(190%);
-    border: 1px solid rgba(255, 255, 255, 0.10);
-    box-shadow: 0 1px 0 0 rgba(255, 255, 255, 0.10) inset,
-                0 24px 60px -15px rgba(0, 0, 0, 0.75);
+    background:
+      linear-gradient(135deg, rgba(255, 255, 255, 0.07) 0%, rgba(255, 255, 255, 0.01) 40%, transparent 100%),
+      var(--surface-panel);
+    -webkit-backdrop-filter: blur(20px) saturate(200%) contrast(104%);
+    backdrop-filter: blur(20px) saturate(200%) contrast(104%);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    box-shadow:
+      inset 0 1px 1px 0 rgba(255, 255, 255, 0.22),
+      inset 0 -1px 1px 0 rgba(0, 0, 0, 0.35),
+      0 4px 14px rgba(0, 0, 0, 0.35),
+      0 24px 60px -15px rgba(0, 0, 0, 0.75);
   }
 
   .surface-overlay {
-    background: var(--surface-overlay);
-    -webkit-backdrop-filter: blur(24px) saturate(200%);
-    backdrop-filter: blur(24px) saturate(200%);
-    border: 1px solid rgba(255, 255, 255, 0.10);
-    box-shadow: 0 1px 0 0 rgba(255, 255, 255, 0.10) inset,
-                0 16px 40px -8px rgba(0, 0, 0, 0.65);
+    background:
+      linear-gradient(135deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.015) 45%, transparent 100%),
+      var(--surface-overlay);
+    -webkit-backdrop-filter: blur(24px) saturate(210%) contrast(105%);
+    backdrop-filter: blur(24px) saturate(210%) contrast(105%);
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    box-shadow:
+      inset 0 1px 1px 0 rgba(255, 255, 255, 0.26),
+      inset 0 -1px 1px 0 rgba(0, 0, 0, 0.40),
+      0 6px 18px rgba(0, 0, 0, 0.45),
+      0 28px 68px -10px rgba(0, 0, 0, 0.80);
   }
 
   .surface-card {
-    background: var(--surface-card);
-    -webkit-backdrop-filter: blur(24px) saturate(180%);
-    backdrop-filter: blur(24px) saturate(180%);
+    background:
+      linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.01) 40%, transparent 100%),
+      var(--surface-card);
+    -webkit-backdrop-filter: blur(16px) saturate(190%) contrast(102%);
+    backdrop-filter: blur(16px) saturate(190%) contrast(102%);
     border: 1px solid rgba(255, 255, 255, 0.10);
-    box-shadow: 0 1px 0 0 rgba(255, 255, 255, 0.10) inset,
-                0 16px 36px -12px rgba(0, 0, 0, 0.65);
+    box-shadow:
+      inset 0 1px 1px 0 rgba(255, 255, 255, 0.16),
+      inset 0 -1px 1px 0 rgba(0, 0, 0, 0.25),
+      0 12px 30px -10px rgba(0, 0, 0, 0.65);
   }
 
   .surface-control {
@@ -482,10 +550,14 @@ body::before {
   }
 
   .interactive-card:hover {
-    border-color: rgba(255, 255, 255, 0.16);
-    background: var(--card-hover-bg);
-    box-shadow: 0 16px 36px -12px rgba(0, 0, 0, 0.65),
-                inset 0 1px 0 rgba(255, 255, 255, 0.12);
+    border-color: rgba(255, 255, 255, 0.20);
+    background:
+      linear-gradient(135deg, rgba(255, 255, 255, 0.09) 0%, rgba(255, 255, 255, 0.02) 40%, transparent 100%),
+      var(--card-hover-bg);
+    box-shadow:
+      inset 0 1px 1px 0 rgba(255, 255, 255, 0.28),
+      inset 0 -1px 1px 0 rgba(0, 0, 0, 0.35),
+      0 18px 40px -10px rgba(0, 0, 0, 0.75);
   }
 
   .interactive-media-card {
@@ -496,10 +568,14 @@ body::before {
   .interactive-media-card:hover {
     transform: translateY(-0.375rem);
     border-color: var(--accent-border-hover);
-    background: var(--card-hover-bg);
-    box-shadow: 0 20px 36px -10px rgba(0, 0, 0, 0.75),
-                0 0 20px -4px var(--accent-glow-soft),
-                inset 0 1px 0 rgba(255, 255, 255, 0.2);
+    background:
+      linear-gradient(135deg, rgba(255, 255, 255, 0.12) 0%, rgba(255, 255, 255, 0.02) 40%, transparent 100%),
+      var(--card-hover-bg);
+    box-shadow:
+      inset 0 1px 1px 0 rgba(255, 255, 255, 0.32),
+      inset 0 -1px 1px 0 rgba(0, 0, 0, 0.40),
+      0 20px 36px -10px rgba(0, 0, 0, 0.75),
+      0 0 24px -4px var(--accent-glow-soft);
   }
 
   .interactive-control {

@@ -26,6 +26,28 @@
   outline: none;
   box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.3), 0 0 0 3px var(--accent-glow-soft);
 }
+.admin-shell select {
+  appearance: none;
+  -webkit-appearance: none;
+  cursor: pointer;
+  padding-right: 2.5rem;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='rgba(255,255,255,0.45)' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.85rem center;
+  background-size: 1.15rem 1.15rem;
+}
+.admin-shell select:hover {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='rgba(255,255,255,0.85)' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+}
+.admin-shell select:focus,
+.admin-shell select:focus-visible {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='rgba(255,255,255,0.95)' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+}
+.admin-shell select option {
+  background-color: #1a0b11;
+  color: #f5f5f5;
+  padding: 0.5rem;
+}
 .admin-shell input[type="date"]::-webkit-calendar-picker-indicator {
   filter: invert(0.85) brightness(1.2);
   cursor: pointer;
@@ -78,8 +100,21 @@
 .admin-heading { font-size: clamp(1.75rem, 3vw, 2.5rem); font-weight: 700; letter-spacing: -.04em; line-height: 1.25; color: white; }
 .admin-section-title { display: flex; align-items: center; gap: .75rem; }
 .admin-section-title::before { content: ""; width: .25rem; height: 1.25rem; border-radius: 9999px; background: var(--accent); box-shadow: 0 0 12px var(--accent-glow); }
-/* 原生 dialog 提供焦点约束与 Escape 关闭，窄屏保持可滚动。 */
-.admin-quick-dialog { margin: auto; width: min(36rem, calc(100% - 2rem)); max-height: calc(100dvh - 2rem); overflow-y: auto; border: 1px solid rgba(255, 255, 255, 0.16); border-radius: 1.5rem; padding: 1.5rem; background: var(--surface-panel); color: #f5f5f5; backdrop-filter: blur(24px); box-shadow: 0 25px 60px rgba(0, 0, 0, 0.7); }
+.admin-quick-dialog {
+  margin: auto; width: min(36rem, calc(100% - 2rem)); max-height: calc(100dvh - 2rem);
+  overflow-y: auto; border: 1px solid rgba(255, 255, 255, 0.16); border-radius: 1.5rem;
+  padding: 1.5rem;
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.015) 45%, transparent 100%),
+    var(--surface-panel);
+  color: #f5f5f5;
+  backdrop-filter: blur(24px) saturate(200%);
+  -webkit-backdrop-filter: blur(24px) saturate(200%);
+  box-shadow:
+    inset 0 1px 1px 0 rgba(255, 255, 255, 0.25),
+    inset 0 -1px 1px 0 rgba(0, 0, 0, 0.35),
+    0 25px 60px rgba(0, 0, 0, 0.75);
+}
 .admin-quick-dialog::backdrop { background: rgb(0 0 0 / .65); backdrop-filter: blur(8px); }
 
 /* 分段单选胶囊控制器（Segmented Control） */

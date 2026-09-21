@@ -80,8 +80,9 @@ export default function Navbar() {
 
   return (
     <nav aria-label="主要导航" className="fixed top-0 inset-x-0 z-50 pointer-events-none transition-all duration-300">
+      <div aria-hidden="true" className="navbar-scroll-blur-mask" />
       <div className="container mx-auto max-w-7xl px-4 pt-2.5 sm:px-6 sm:pt-4 lg:px-8">
-        <div className="surface-panel pointer-events-auto flex h-14 w-full items-center justify-between px-4 sm:px-6 rounded-2xl shadow-[0_16px_36px_-10px_rgba(0,0,0,0.7)]">
+        <div className="surface-panel pointer-events-auto flex h-14 w-full items-center justify-between px-4 sm:px-6 rounded-2xl">
         <div className="flex items-center gap-6">
           <Link
             href="/"
@@ -187,7 +188,7 @@ export default function Navbar() {
         id="mobile-navigation"
         aria-hidden={!isMobileMenuOpen}
         inert={!isMobileMenuOpen ? true : undefined}
-        className={`surface-overlay pointer-events-auto w-full mt-2 overflow-hidden rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.65)] backdrop-blur-3xl transition-all duration-500 ease-in-out lg:hidden ${
+        className={`surface-overlay pointer-events-auto w-full mt-2 overflow-hidden rounded-2xl transition-all duration-500 ease-in-out lg:hidden ${
           isMobileMenuOpen
             ? "max-h-[32rem] opacity-100 py-4"
             : "max-h-0 opacity-0 py-0 border-transparent pointer-events-none"
