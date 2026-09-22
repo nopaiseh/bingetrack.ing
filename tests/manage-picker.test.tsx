@@ -12,10 +12,22 @@ describe("管理关联选择器", () => {
     await user.click(screen.getByRole("combobox", { name: "演员" }));
     await user.click(await screen.findByRole("button", { name: "Doe, Jane" }));
     expect(container.querySelector('input[name="actors"]')).toHaveValue("张三\nDoe, Jane");
+    // 测试上移
     await user.click(screen.getByRole("button", { name: "上移Doe, Jane" }));
     expect(container.querySelector('input[name="actors"]')).toHaveValue("Doe, Jane\n张三");
+    // 测试下移
+    await user.click(screen.getByRole("button", { name: "下移Doe, Jane" }));
+    expect(container.querySelector('input[name="actors"]')).toHaveValue("张三\nDoe, Jane");
     await user.click(screen.getByRole("button", { name: "移除关联：张三" }));
     expect(container.querySelector('input[name="actors"]')).toHaveValue("Doe, Jane");
+  });
+  it("非排序字段（如类型）不展示排序箭头与番位徽标", () => {
+    render(<ChoicePicker kind="genres" name="genres" label="类型标签" initial={[{ id: "g1", name: "综艺" }, { id: "g2", name: "竞技" }]} />);
+    expect(screen.getByText("综艺")).toBeInTheDocument();
+    expect(screen.getByText("竞技")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /上移/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /下移/ })).not.toBeInTheDocument();
+    expect(screen.queryByText("#1")).not.toBeInTheDocument();
   });
   it("父级只接受搜索结果的 ID，不能把输入文本当成上级", async () => {
     const user = userEvent.setup();
