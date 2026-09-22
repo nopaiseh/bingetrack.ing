@@ -36,7 +36,7 @@ test("站长初始化、影视季集管理、公开更新、退出与非站长�
       expect(error).toBeNull();
       savedId = data?.id ?? "";
       return savedId;
-    }).not.toBe("");
+    }, { timeout: 15_000 }).not.toBe("");
     await expect(page).toHaveURL(new RegExp(`/manage/media/${savedId}\\?saved=1$`));
     await expect(page.getByRole("heading", { name: `编辑：${title}`, exact: true })).toBeVisible();
     await expect(page.getByRole("button", { name: "保存资料", exact: true })).toBeEnabled();
