@@ -35,13 +35,11 @@ export default function ChoicePicker({ kind, name, label, initial = [], multiple
     setSelected(next); onSelect?.(next);
     root.current?.dispatchEvent(new Event("input", { bubbles: true }));
   }
-  /** 关联名称去重，单选父级保存真实 ID。 */
+  /** 关联名称去重，单选父级保存真实 ID。选择后清理检索词并关闭下拉。 */
   function choose(choice: Choice) {
     change(multiple ? [...selected.filter(item => item.name !== choice.name), choice] : [choice]);
-    if (!multiple) {
-      setOpen(false);
-      setTerm("");
-    }
+    setOpen(false);
+    setTerm("");
   }
   return <div ref={root} className="relative min-w-0" onBlur={/* 焦点离开整个选择器后关闭结果。 */ event => { if (!event.currentTarget.contains(event.relatedTarget)) setOpen(false); }}>
     <input type="hidden" name={name} value={multiple ? selected.map(item => item.name).join("\n") : selected[0]?.id ?? ""} />
