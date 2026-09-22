@@ -275,8 +275,8 @@ export default function MediaForm({ item, initialType = "movie", lockType = fals
         {!isChild && (
           <section>
             <h2 className="admin-section-title mb-2 text-lg font-medium text-white">关联资料</h2>
-            <p className="mb-4 text-sm text-neutral-400">搜索已有资料，或新增并关联。移除标签只解除当前作品的关联；演员可用上移按钮调整顺序。</p>
-            <div className="grid gap-5 sm:grid-cols-2">{([['genres','类型标签'],['languages','语言'],['regions','地区'],['directors','导演'],['actors','演员'],['collections','系列']] as const).map(/* 名称标签与现有事务字段对应。 */ ([name, label]) => <ChoicePicker key={name} kind={name === "actors" || name === "directors" ? "people" : name} name={name} label={label} allowCreate initial={(item?.[name] ?? []).map(value => ({ id: value, name: value }))} />)}</div>
+            <p className="mb-4 text-sm text-neutral-400">搜索已有资料，或新增并关联。移除标签只解除当前作品的关联；演员可用箭头调整顺序（番位）。</p>
+            <div className="grid gap-5 sm:grid-cols-2">{([['genres','类型标签'],['languages','语言'],['regions','地区'],['directors','导演'],['actors','演员'],['collections','系列']] as const).map(/* 名称标签与现有事务字段对应。 */ ([name, label]) => <ChoicePicker key={name} kind={name === "actors" || name === "directors" ? "people" : name} name={name} label={label} allowCreate sortable={name === "actors"} initial={(item?.[name] ?? []).map(value => ({ id: value, name: value }))} />)}</div>
           </section>
         )}
         <div className="surface-overlay sticky bottom-4 z-20 flex flex-wrap items-center justify-between gap-3 rounded-xl p-3"><div><p className="text-sm text-neutral-300">{dirty ? "有未保存的修改" : "资料已载入"}</p><p role="alert" className="text-sm text-red-300">{state.error}</p></div><button type="submit" className="admin-primary">{pending ? "正在保存…" : "保存资料"}</button></div>
