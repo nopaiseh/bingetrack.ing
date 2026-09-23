@@ -138,20 +138,24 @@ export default function MediaForm({ item, initialType = "movie", lockType = fals
             </div>
             <input id="field-alt-title" name="alternate_title" {...field("alternate_title", item?.alternate_title)} maxLength={300} placeholder="外文原名或别名" />
           </div>
-          <div>
-            <div className="mb-1.5 flex items-center justify-between">
-              <label htmlFor="field-release-date">发行日期</label>
-              <span className="text-[11px] font-normal text-neutral-500">公映或首播</span>
-            </div>
-            <input id="field-release-date" type="date" name="release_date" {...field("release_date", item?.release_date)} />
-          </div>
-          <div>
-            <div className="mb-1.5 flex items-center justify-between">
-              <label htmlFor="field-runtime">时长（分钟）</label>
-              <span className="text-[11px] font-normal text-neutral-500">分钟</span>
-            </div>
-            <input id="field-runtime" type="number" name="runtime" min="0" max="100000" step="any" {...field("runtime", item?.runtime)} placeholder="例如：120" />
-          </div>
+          {(type === "movie" || type === "tv_episode") && (
+            <>
+              <div>
+                <div className="mb-1.5 flex items-center justify-between">
+                  <label htmlFor="field-release-date">发行日期</label>
+                  <span className="text-[11px] font-normal text-neutral-500">公映或首播</span>
+                </div>
+                <input id="field-release-date" type="date" name="release_date" {...field("release_date", item?.release_date)} />
+              </div>
+              <div>
+                <div className="mb-1.5 flex items-center justify-between">
+                  <label htmlFor="field-runtime">时长（分钟）</label>
+                  <span className="text-[11px] font-normal text-neutral-500">分钟</span>
+                </div>
+                <input id="field-runtime" type="number" name="runtime" min="0" max="100000" step="any" {...field("runtime", item?.runtime)} placeholder="例如：120" />
+              </div>
+            </>
+          )}
           <div className="sm:col-span-2">
             <div className="mb-1.5 flex items-center justify-between">
               <label htmlFor="field-cover-url">封面地址（TMDB）</label>
@@ -273,10 +277,70 @@ export default function MediaForm({ item, initialType = "movie", lockType = fals
 
         {/* 关联资料：仅电影和电视剧展示，剧季与剧集继承所属主条目资料 */}
         {!isChild && (
-          <section>
-            <h2 className="admin-section-title mb-2 text-lg font-medium text-white">关联资料</h2>
-            <p className="mb-4 text-sm text-neutral-400">搜索已有资料，或新增并关联。移除标签只解除当前作品的关联；演员可用箭头调整顺序（番位）。</p>
-            <div className="grid gap-5 sm:grid-cols-2">{([['genres','类型标签'],['languages','语言'],['regions','地区'],['directors','导演'],['actors','演员'],['collections','系列']] as const).map(/* 名称标签与现有事务字段对应。 */ ([name, label]) => <ChoicePicker key={name} kind={name === "actors" || name === "directors" ? "people" : name} name={name} label={label} allowCreate sortable={name === "actors"} initial={(item?.[name] ?? []).map(value => ({ id: value, name: value }))} />)}</div>
+          <section className="space-y-6">
+            <div>
+              <h2 className="admin-section-title mb-1.5 text-lg font-medium text-white">关联资料</h2>
+              <p className="text-sm text-neutral-400">
+                搜索已有资料或新增关联。移除标签只解除当前作品关联；演员支持按番位灵活调整顺序。
+              </p>
+            </div>
+
+            {/* 基础属性（2列平衡网格） */}
+            <div className="grid gap-5 sm:grid-cols-2">
+              <ChoicePicker
+                kind="genres"
+                name="genres"
+                label="类型标签"
+                icon="i-material-symbols-sell-rounded"
+                allowCreate
+                initial={(item?.genres ?? []).map((v) => ({ id: v, name: v }))}
+              />
+              <ChoicePicker
+                kind="languages"
+                name="languages"
+                label="语言"
+                icon="i-material-symbols-translate-rounded"
+                allowCreate
+                initial={(item?.languages ?? []).map((v) => ({ id: v, name: v }))}
+              />
+              <ChoicePicker
+                kind="regions"
+                name="regions"
+                label="地区"
+                icon="i-material-symbols-public-rounded"
+                allowCreate
+                initial={(item?.regions ?? []).map((v) => ({ id: v, name: v }))}
+              />
+              <ChoicePicker
+                kind="collections"
+                name="collections"
+                label="系列"
+                icon="i-material-symbols-collections-bookmark-rounded"
+                allowCreate
+                initial={(item?.collections ?? []).map((v) => ({ id: v, name: v }))}
+              />
+            </div>
+
+            {/* 演职主创（导演与演员全宽舒展展示） */}
+            <div className="space-y-5">
+              <ChoicePicker
+                kind="people"
+                name="directors"
+                label="导演"
+                icon="i-material-symbols-movie-rounded"
+                allowCreate
+                initial={(item?.directors ?? []).map((v) => ({ id: v, name: v }))}
+              />
+              <ChoicePicker
+                kind="people"
+                name="actors"
+                label="演员"
+                icon="i-material-symbols-group-rounded"
+                allowCreate
+                sortable
+                initial={(item?.actors ?? []).map((v) => ({ id: v, name: v }))}
+              />
+            </div>
           </section>
         )}
         <div className="surface-overlay sticky bottom-4 z-20 flex flex-wrap items-center justify-between gap-3 rounded-xl p-3"><div><p className="text-sm text-neutral-300">{dirty ? "有未保存的修改" : "资料已载入"}</p><p role="alert" className="text-sm text-red-300">{state.error}</p></div><button type="submit" className="admin-primary">{pending ? "正在保存…" : "保存资料"}</button></div>

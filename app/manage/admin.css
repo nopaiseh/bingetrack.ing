@@ -142,29 +142,61 @@
   border-width: 1px !important;
 }
 
+/* 关联资料 Bento 卡片容器 */
+.choice-picker-card {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.04) 0%, rgba(255, 255, 255, 0.015) 100%), rgba(18, 8, 12, 0.6);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  border-radius: 1rem;
+  padding: 1.125rem;
+  transition: border-color 200ms ease, box-shadow 200ms ease, background-color 200ms ease;
+}
+.choice-picker-card:hover {
+  border-color: rgba(255, 255, 255, 0.18);
+  background-color: rgba(24, 10, 16, 0.75);
+}
+.choice-picker-card:focus-within {
+  border-color: rgba(255, 255, 255, 0.28);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.35), 0 0 0 1px rgba(255, 255, 255, 0.1);
+}
+
 /* 关联资料已选标签胶囊（Tag Chips） */
 .admin-tag-chip {
   display: inline-flex;
   align-items: center;
   gap: .375rem;
-  padding: .3rem .5rem .3rem .625rem;
+  padding: .325rem .55rem .325rem .65rem;
   font-size: .8125rem;
-  color: rgba(255, 255, 255, 0.9);
-  background: rgba(255, 255, 255, 0.06);
+  line-height: 1.25;
+  color: rgba(255, 255, 255, 0.92);
+  background: rgba(255, 255, 255, 0.07);
   border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: .625rem;
   backdrop-filter: blur(8px);
-  transition: all 180ms ease;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+  transition: all 180ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 .admin-tag-chip:hover {
-  background: rgba(255, 255, 255, 0.10);
-  border-color: rgba(255, 255, 255, 0.22);
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.24);
+  transform: translateY(-0.5px);
 }
 .admin-tag-chip button {
   min-height: 0 !important;
   border: 0 !important;
   box-shadow: none !important;
-  background: transparent;
-  padding: 0;
+  background: transparent !important;
+  padding: 0 !important;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: .25rem;
+  opacity: .7;
+  transition: opacity 150ms ease, background-color 150ms ease, color 150ms ease;
+}
+.admin-tag-chip button:hover {
+  opacity: 1;
 }
 

@@ -61,6 +61,12 @@ export function useNavbarAuth() {
     authenticating.current = true;
     setBusy(true);
     setError("");
+    // 本地开发环境免密直接登录，生产环境保持 Passkey 验证
+    if (process.env.NODE_ENV === "development") {
+      window.location.replace("/auth/dev-login");
+      return;
+    }
+
     try {
       const { data, error } = await getAuthBrowser().auth.signInWithPasskey();
       if (error) {
