@@ -36,19 +36,25 @@ describe("管理媒体输入", () => {
   it("允许特别篇编号为零", () => {
     expect(parseMediaForm(form({ type: "tv_season", parent_id: "11111111-1111-4111-8111-111111111111", number: "0" })).number).toBe(0);
   });
-  it("电视剧与剧季无需提供状态和评分，始终重置为安全默认值", () => {
-    const seriesResult = parseMediaForm(form({ type: "tv_series", title: "测试剧集", status: "", rating: "9.5" }));
+  it("电视剧与剧季无需提供状态、评分、发行日期与时长，始终重置为安全默认值", () => {
+    const seriesResult = parseMediaForm(form({ type: "tv_series", title: "测试剧集", status: "", rating: "9.5", release_date: "2024-01-01", runtime: "60" }));
     expect(seriesResult.status).toBe("want_to_watch");
     expect(seriesResult.rating).toBeNull();
+    expect(seriesResult.release_date).toBeNull();
+    expect(seriesResult.runtime).toBeNull();
 
     const seasonForm = new FormData();
     seasonForm.set("type", "tv_season");
     seasonForm.set("title", "第 1 季");
     seasonForm.set("parent_id", "11111111-1111-4111-8111-111111111111");
     seasonForm.set("number", "1");
+    seasonForm.set("release_date", "2024-02-01");
+    seasonForm.set("runtime", "45");
     const seasonResult = parseMediaForm(seasonForm);
     expect(seasonResult.status).toBe("want_to_watch");
     expect(seasonResult.rating).toBeNull();
+    expect(seasonResult.release_date).toBeNull();
+    expect(seasonResult.runtime).toBeNull();
   });
   it("剧季和剧集条目强制清空所有关联资料", () => {
     const parentId = "11111111-1111-4111-8111-111111111111";

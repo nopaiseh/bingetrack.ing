@@ -82,3 +82,30 @@ it("剧季和剧集编号输入框拥有正确无歧义的无障碍标签", () =
   render(<MediaForm initialType="tv_episode" />);
   expect(screen.getByLabelText("集编号", { exact: true })).toBeInTheDocument();
 });
+
+it("电影和剧集显示发行日期和时长，电视剧和剧季不显示", () => {
+  const { unmount } = render(<MediaForm initialType="movie" />);
+  expect(screen.getByLabelText("发行日期")).toBeInTheDocument();
+  expect(screen.getByLabelText("时长（分钟）")).toBeInTheDocument();
+
+  // 切换为电视剧
+  fireEvent.change(screen.getByLabelText("类型"), { target: { value: "tv_series" } });
+  expect(screen.queryByLabelText("发行日期")).not.toBeInTheDocument();
+  expect(screen.queryByLabelText("时长（分钟）")).not.toBeInTheDocument();
+
+  // 切换为剧季
+  fireEvent.change(screen.getByLabelText("类型"), { target: { value: "tv_season" } });
+  expect(screen.queryByLabelText("发行日期")).not.toBeInTheDocument();
+  expect(screen.queryByLabelText("时长（分钟）")).not.toBeInTheDocument();
+
+  // 切换为剧集
+  fireEvent.change(screen.getByLabelText("类型"), { target: { value: "tv_episode" } });
+  expect(screen.getByLabelText("发行日期")).toBeInTheDocument();
+  expect(screen.getByLabelText("时长（分钟）")).toBeInTheDocument();
+  unmount();
+
+  render(<MediaForm initialType="tv_series" />);
+  expect(screen.queryByLabelText("发行日期")).not.toBeInTheDocument();
+  expect(screen.queryByLabelText("时长（分钟）")).not.toBeInTheDocument();
+});
+

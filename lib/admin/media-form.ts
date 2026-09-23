@@ -63,16 +63,16 @@ export function parseMediaForm(form: FormData): MediaInput {
     try { url = new URL(cover_url); } catch { throw new Error("封面地址必须是有效的 TMDB HTTPS 地址。"); }
     if (url.protocol !== "https:" || !(url.hostname === "tmdb.org" || url.hostname.endsWith(".tmdb.org")) || url.username || url.password || url.port) throw new Error("封面请使用 TMDB HTTPS 图片地址。");
   }
-  const release_date = string("release_date");
+  const isDerived = type === "tv_series" || type === "tv_season";
+  const release_date = isDerived ? null : string("release_date");
   if (release_date && (!/^\d{4}-\d{2}-\d{2}$/.test(release_date) || !Number.isFinite(Date.parse(release_date)) || new Date(release_date).toISOString().slice(0, 10) !== release_date)) throw new Error("发行日期无效。");
-  const isDerivedStatus = type === "tv_series" || type === "tv_season";
   const status = string("status");
-  if (!isDerivedStatus && status !== "watched" && status !== "want_to_watch") throw new Error("请选择看过或没看过。");
-  const effectiveStatus: "watched" | "want_to_watch" = isDerivedStatus ? "want_to_watch" : (status as "watched" | "want_to_watch");
-  const rating = isDerivedStatus ? null : numeric("rating", 10);
+  if (!isDerived && status !== "watched" && status !== "want_to_watch") throw new Error("请选择看过或没看过。");
+  const effectiveStatus: "watched" | "want_to_watch" = isDerived ? "want_to_watch" : (status as "watched" | "want_to_watch");
+  const rating = isDerived ? null : numeric("rating", 10);
   if (rating !== null && Math.abs(rating * 10 - Math.round(rating * 10)) > 1e-8) throw new Error("评分最多保留一位小数。");
   const isChild = type === "tv_season" || type === "tv_episode";
-  return { id, type: type as ManagedMediaType, title, alternate_title: string("alternate_title"), summary: string("summary", 20000), cover_url, release_date, runtime: numeric("runtime", 100000), parent_id, number, status: effectiveStatus, rating,
+  return { id, type: type as ManagedMediaType, title, alternate_title: string("alternate_title"), summary: string("summary", 20000), cover_url, release_date, runtime: isDerived ? null : numeric("runtime", 100000), parent_id, number, status: effectiveStatus, rating,
     genres: isChild ? [] : names("genres"),
     languages: isChild ? [] : names("languages"),
     regions: isChild ? [] : names("regions"),
