@@ -15,6 +15,10 @@ updates:
       - dependency-name: "@types/node"
         update-types:
           - version-update:semver-major
+      # eslint-config-next 的 React 插件尚不兼容 ESLint 10（react/display-name 加载失败）；支持后移除。
+      - dependency-name: eslint
+        update-types:
+          - version-update:semver-major
     groups:
       production-dependencies:
         dependency-type: production
