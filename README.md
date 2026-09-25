@@ -72,7 +72,6 @@ lib/
 scripts/                环境检查、站长初始化、部署检查和性能测量
 supabase/
   migrations/           版本化数据库迁移（首个迁移为基线结构）
-  archive/              已实施的历史增量 SQL，保留供追溯
   fixtures/             本地与 CI 的固定测试数据
   tests/                数据库 pgTAP 测试
   config.toml           本地 Supabase 配置

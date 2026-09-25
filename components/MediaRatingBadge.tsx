@@ -8,7 +8,7 @@ export interface RatingTierInfo {
 }
 
 /** 按 10 级梯度推导评分的视觉体系、标签与光影配置。 */
-export function getRatingTier(rating: number | null | undefined): RatingTierInfo {
+function getRatingTier(rating: number | null | undefined): RatingTierInfo {
   if (rating == null) {
     return {
       label: "未评分",
