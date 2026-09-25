@@ -1,10 +1,10 @@
 import { getSupabasePublicServer } from "@/lib/supabase/public-server";
 import { mapViewRowToMedia, mapViewRowToMediaCard } from "@/lib/functions/media-mapper";
 import { buildMediaDistributions, type DistributionCountRow } from "@/lib/functions/media-distributions";
-import { quotePostgrestFilterValue } from "@/lib/functions/postgrest-filter";
 import { isMediaId } from "@/lib/functions/media-id";
 import { withRetry } from "@/lib/functions/retry";
 import { EpisodeInfo, MediaCard, Media, MediaDistributions, SeasonEpisodePage, SeasonInfo, ViewAllMediaRow, FetchMediaListOptions } from "@/lib/types";
+import { reportHandledError } from "@/lib/report-error";
 
 
 // 统一为查询失败附加操作名称和原始错误，让页面区分加载失败与查无记录。
@@ -20,8 +20,6 @@ export class MediaRepositoryError extends Error {
 const MEDIA_CARD_COLUMNS = "id,type,title,sort_date,first_air_date,last_air_date,release_year,rating,genres,languages,cover_url,status";
 // 榜单精选读取卡片字段及简介摘要，供首页展台和精选展示使用。
 const TOP_MEDIA_COLUMNS = "id,type,title,sort_date,first_air_date,last_air_date,release_year,rating,genres,languages,cover_url,status,summary";
-// 限制通过 URL 参数传递给 PostgREST 的 ID 数量上限，防止超出网关的 URL 长度限制（HTTP 414）。
-const MAX_FILTER_IDS = 100;
 
 /** 只将 PostgREST 表缺失或 PostgreSQL 关系缺失错误识别为聚合视图缺失。 */
 function isMissingAggregateView(error: { code?: string } | null): boolean {
@@ -127,7 +125,7 @@ async function addSeriesReleaseYearRanges<T extends MediaCard>(
     .in("series_id", seriesIds);
 
   if (error || !data) {
-    if (error) console.error("Failed to fetch series release year ranges:", error);
+    if (error) reportHandledError("Failed to fetch series release year ranges:", error);
     return items;
   }
 
@@ -181,7 +179,7 @@ export async function getMediaById(id: string): Promise<Media | null> {
       .order("position", { ascending: true, nullsFirst: false });
 
     if (seriesError) {
-      console.error(`Failed to fetch series memberships for media ${id}:`, seriesError);
+      reportHandledError(`Failed to fetch series memberships for media ${id}:`, seriesError);
     }
 
     const seriesNames = (seriesData ?? []).flatMap(/* 兼容对象或数组形式的系列关联，只收集非空系列名称。 */ (membership) => {
@@ -210,7 +208,7 @@ export async function getRelatedBySeries(seriesName: string, currentId: string):
       .order("position", { ascending: true, nullsFirst: false });
 
     if (seriesError || !seriesItems || seriesItems.length === 0) {
-      if (seriesError) console.error(`Failed to fetch related media IDs for series ${seriesName}:`, seriesError);
+      if (seriesError) reportHandledError(`Failed to fetch related media IDs for series ${seriesName}:`, seriesError);
       return [];
     }
 
@@ -224,7 +222,7 @@ export async function getRelatedBySeries(seriesName: string, currentId: string):
       .order("id", { ascending: true });
 
     if (error || !data) {
-      console.error(`Failed to fetch related media details for series ${seriesName}:`, error);
+      reportHandledError(`Failed to fetch related media details for series ${seriesName}:`, error);
       return [];
     }
 
@@ -295,7 +293,7 @@ export async function getSeasonsBySeriesId(seriesId: string): Promise<SeasonInfo
       : { data: [], error: null };
 
     if (mediaItemsError) {
-      console.error(`Failed to fetch season summaries for series ${seriesId}:`, mediaItemsError);
+      reportHandledError(`Failed to fetch season summaries for series ${seriesId}:`, mediaItemsError);
     }
 
     const seasonMedia = new Map((mediaItems ?? []).map(/* 以媒体 ID 建立完整行的查找表条目。 */ (item) => [item.id, item]));
@@ -551,118 +549,29 @@ export async function fetchMediaCardsServer(opts: FetchMediaListOptions = {}): P
   return withRetry(async () => (await fetchMediaList(opts, false)).rows);
 }
 
-/** 合并分类搜索命中，统一应用属性筛选与稳定排序，再分页读取卡片并按需查询总数。 */
+/** 按关键词与分类取得候选条目，统一应用属性筛选与稳定排序，再分页读取卡片并按需查询总数。 */
 async function fetchMediaList(opts: FetchMediaListOptions, includeTotal = true): Promise<{ rows: MediaCard[]; total: number }> {
   const db = getSupabasePublicServer();
   const {
     type, seriesOnly = false, creditRole, status, genre, region, language, startYear, endYear, q, sort, limit = 30, offset = 0,
   } = opts || {};
 
-  let dataQuery = db.from("v_all_media").select(MEDIA_CARD_COLUMNS);
-  let countQuery = db.from("v_all_media").select("id", { count: "exact", head: true });
-
   const types = type?.split(",").filter(Boolean) ?? [];
   const creditRoles = creditRole?.split(",").filter(/* 只接受导演和演员两类演职员角色。 */ (role) => role === "director" || role === "actor") ?? [];
   const hasQuery = typeof q === "string" && q.trim().length > 0;
-  const queryText = hasQuery ? `%${q.trim()}%` : "";
-  const quotedQueryText = quotePostgrestFilterValue(queryText);
-  const titleSearchFilter = `title.ilike.${quotedQueryText},alternate_title.ilike.${quotedQueryText}`;
-  // 输入关键词且未限定分类时，同时搜索片名、作品系列名及导演和演员姓名。
-  const searchesAllCategories = hasQuery && types.length === 0 && !seriesOnly && creditRoles.length === 0;
-  const searchedTypes = searchesAllCategories ? ["movie", "tv_series"] : types;
-  const searchesSeries = searchesAllCategories || seriesOnly;
-  const searchedCreditRoles = searchesAllCategories ? ["director", "actor"] : creditRoles;
+  // 关键词和“系列”分类的匹配需要跨表合并，交给数据库函数完成，避免把命中 ID 回传到 URL 而被截断。
+  const usesSearchFunction = hasQuery || seriesOnly;
+  // 无关键词时省略 p_query 使用函数默认值：计数请求走 HEAD 查询串，null 会被序列化成字符串 "null"。
+  const searchArgs = { ...(hasQuery ? { p_query: q.trim() } : {}), p_types: types, p_series_only: seriesOnly, p_credit_roles: creditRoles };
+  /** 从搜索函数或列表视图选取字段，二者返回相同的 v_all_media 行，后续筛选可共用。 */
+  const source = (columns: string, options?: { count: "exact"; head: true }) => usesSearchFunction
+    ? db.rpc("search_media", searchArgs, options).select(columns)
+    : db.from("v_all_media").select(columns, options);
 
-  let seriesItemIds: string[] = [];
-  if (searchesSeries) {
-    let seriesQuery = db
-      .from("media_item_series")
-      .select("media_item_id, media_series!inner(name)");
-    if (hasQuery) {
-      seriesQuery = seriesQuery.ilike("media_series.name", queryText);
-    }
+  let dataQuery = source(MEDIA_CARD_COLUMNS);
+  let countQuery = source("id", { count: "exact", head: true });
 
-    const { data: seriesItems, error: seriesError } = await seriesQuery;
-    if (seriesError) {
-      console.error("Failed to filter media by series:", seriesError);
-      throw new MediaRepositoryError("filter media by series", seriesError);
-    }
-
-    seriesItemIds = Array.from(new Set((seriesItems ?? []).map(/* 提取作品系列匹配到的媒体 ID。 */ (item) => item.media_item_id)));
-  }
-
-  let classificationHandlesQuery = false;
-
-  if (hasQuery && (searchedTypes.length > 0 || searchesSeries || searchedCreditRoles.length > 0)) {
-    const [titleResult, creditResult] = await Promise.all([
-      searchedTypes.length > 0 || searchesSeries
-        ? db.from("v_all_media").select("id, type").or(titleSearchFilter)
-        : Promise.resolve({ data: [], error: null }),
-      searchedCreditRoles.length > 0
-        ? db
-            .from("media_credits")
-            .select("media_item_id, people!inner(name)")
-            .in("role", searchedCreditRoles)
-            .or(`name.ilike.${quotedQueryText},alternate_name.ilike.${quotedQueryText}`, {
-              referencedTable: "people",
-            })
-        : Promise.resolve({ data: [], error: null }),
-    ]);
-
-    if (titleResult.error || creditResult.error) {
-      console.error("Failed to filter media by search category:", titleResult.error ?? creditResult.error);
-      throw new MediaRepositoryError("filter media by search category", titleResult.error ?? creditResult.error);
-    }
-
-    const titleMatches = titleResult.data ?? [];
-    const typedTitleIds = searchedTypes.length > 0
-      ? titleMatches
-          .filter(/* 只保留类型属于当前搜索分类的标题命中。 */ (item) => searchedTypes.includes(String(item.type)))
-          .map(/* 将匹配条目的 ID 转为字符串以合并搜索结果。 */ (item) => String(item.id))
-      : [];
-
-    let seriesTitleIds: string[] = [];
-    if (seriesOnly && titleMatches.length > 0) {
-      const { data: seriesTitleItems, error: seriesTitleError } = await db
-        .from("media_item_series")
-        .select("media_item_id")
-        .in("media_item_id", titleMatches.map(/* 提取标题命中的字符串 ID，用于查询作品系列关联。 */ (item) => String(item.id)));
-
-      if (seriesTitleError) {
-        console.error("Failed to filter series media by title:", seriesTitleError);
-        throw new MediaRepositoryError("filter series media by title", seriesTitleError);
-      }
-
-      seriesTitleIds = (seriesTitleItems ?? []).map(/* 提取同时命中标题和作品系列关联的媒体 ID。 */ (item) => item.media_item_id);
-    }
-
-    // 各搜索分类的命中结果取并集并去重，限制单次查询 ID 上限，再统一叠加状态、年份等筛选条件。
-    const matchingIds = Array.from(new Set([
-      ...(searchesSeries ? seriesItemIds : []),
-      ...typedTitleIds,
-      ...seriesTitleIds,
-      ...(creditResult.data ?? []).map(/* 提取演职员搜索命中的媒体 ID。 */ (credit) => credit.media_item_id),
-    ])).slice(0, MAX_FILTER_IDS);
-    if (matchingIds.length === 0) {
-      return { rows: [], total: 0 };
-    }
-
-    dataQuery = dataQuery.in("id", matchingIds);
-    countQuery = countQuery.in("id", matchingIds);
-    classificationHandlesQuery = true;
-  } else if (seriesOnly && types.length > 0) {
-    const boundedSeriesIds = seriesItemIds.slice(0, MAX_FILTER_IDS);
-    const typeFilter = `type.in.(${types.join(",")})`;
-    const filters = boundedSeriesIds.length > 0
-      ? `${typeFilter},id.in.(${boundedSeriesIds.join(",")})`
-      : typeFilter;
-    dataQuery = dataQuery.or(filters);
-    countQuery = countQuery.or(filters);
-  } else if (seriesOnly) {
-    const boundedSeriesIds = seriesItemIds.slice(0, MAX_FILTER_IDS);
-    dataQuery = dataQuery.in("id", boundedSeriesIds);
-    countQuery = countQuery.in("id", boundedSeriesIds);
-  } else if (types.length > 0) {
+  if (!usesSearchFunction && types.length > 0) {
     dataQuery = dataQuery.in("type", types);
     countQuery = countQuery.in("type", types);
   }
@@ -694,10 +603,6 @@ async function fetchMediaList(opts: FetchMediaListOptions, includeTotal = true):
   if (endYear) {
     dataQuery = dataQuery.lte("first_air_date", `${endYear}-12-31`);
     countQuery = countQuery.lte("first_air_date", `${endYear}-12-31`);
-  }
-  if (!classificationHandlesQuery && !seriesOnly && hasQuery) {
-    dataQuery = dataQuery.or(titleSearchFilter);
-    countQuery = countQuery.or(titleSearchFilter);
   }
 
   if (sort) {
@@ -734,7 +639,7 @@ async function fetchMediaList(opts: FetchMediaListOptions, includeTotal = true):
 
   if (!data) return { rows: [], total };
 
-  const mappedResults: MediaCard[] = data.map(/* 将分页查询结果转换为卡片对象。 */ (item: ViewAllMediaRow) => mapViewRowToMediaCard(item));
+  const mappedResults: MediaCard[] = (data as unknown as ViewAllMediaRow[]).map(/* 将分页查询结果转换为卡片对象。 */ (item) => mapViewRowToMediaCard(item));
   const results = await addSeriesReleaseYearRanges(db, mappedResults);
 
   return { rows: results, total };

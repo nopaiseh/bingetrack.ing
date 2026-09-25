@@ -87,9 +87,9 @@ describe("关联资料服务端操作", () => {
     expect(revalidateTag).toHaveBeenCalledWith("media", { expire: 0 });
     expect(revalidatePath).toHaveBeenCalledWith("/", "layout");
   });
-  it("manualRevalidateCache 未授权时捕获异常并返回错误信息", async () => {
-    vi.mocked(requireOwner).mockRejectedValue(new Error("unauthorized"));
-    const result = await manualRevalidateCache();
-    expect(result.error).toContain("unauthorized");
+  it("manualRevalidateCache 未授权时让身份校验的重定向继续向上抛出", async () => {
+    vi.mocked(requireOwner).mockRejectedValue(new Error("NEXT_REDIRECT"));
+    await expect(manualRevalidateCache()).rejects.toThrow("NEXT_REDIRECT");
+    expect(revalidateTag).not.toHaveBeenCalled();
   });
 });

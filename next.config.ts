@@ -1,6 +1,7 @@
 import { withSentryConfig } from "@sentry/nextjs/config";
 import type { NextConfig } from "next";
 import { resolveSentryEnvironment } from "./lib/sentry-environment";
+import { sentryIngestOrigin } from "./lib/sentry-dsn";
 
 const isDevelopment = process.env.NODE_ENV === "development";
 
@@ -23,7 +24,7 @@ const contentSecurityPolicy = [
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' data: blob: https://image.tmdb.org https://*.tmdb.org",
   "font-src 'self' data:",
-  `connect-src 'self' https://*.supabase.co https://o4512027852668928.ingest.de.sentry.io${localAuthOrigin()}`,
+  `connect-src 'self' https://*.supabase.co ${sentryIngestOrigin()}${localAuthOrigin()}`,
   "upgrade-insecure-requests",
 ].join("; ");
 

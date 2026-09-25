@@ -45,8 +45,9 @@ export async function deleteMedia(_previous: ActionResult, form: FormData): Prom
 
 /** 手动使公开数据缓存即时失效，同步数据库最新状态。仅站长可触发。 */
 export async function manualRevalidateCache(): Promise<ActionResult> {
+  // 身份校验放在 try 之外，会话过期时的重定向不能被当成普通错误吞掉。
+  await requireOwner();
   try {
-    await requireOwner();
     revalidateTag("media", { expire: 0 });
     revalidatePath("/", "layout");
     return { saved: true };

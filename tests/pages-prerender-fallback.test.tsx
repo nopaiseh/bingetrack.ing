@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import React from "react";
 import { render } from "@testing-library/react";
 
@@ -31,6 +31,13 @@ import MoviesPage from "@/app/movies/page";
 import HomePage from "@/app/page";
 
 describe("Prerender graceful fallbacks", () => {
+  beforeEach(() => {
+    process.env.NEXT_PHASE = "phase-production-build";
+  });
+  afterEach(() => {
+    delete process.env.NEXT_PHASE;
+  });
+
   it("SeriesPage 在数据加载抛错时不抛出异常并返回降级内容", async () => {
     const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
     try {
@@ -76,5 +83,17 @@ describe("Prerender graceful fallbacks", () => {
     } finally {
       errorSpy.mockRestore();
     }
+  });
+});
+
+describe("Runtime data failures", () => {
+  // 运行期失败必须抛出，ISR 才会保留上一次成功生成的页面而不是缓存空数据。
+  it.each([
+    ["SeriesPage", SeriesPage],
+    ["MoviesPage", MoviesPage],
+    ["HomePage", HomePage],
+  ])("%s 在运行期数据加载抛错时重新抛出", async (_name, Page) => {
+    delete process.env.NEXT_PHASE;
+    await expect(Page()).rejects.toThrow("Supabase outage");
   });
 });

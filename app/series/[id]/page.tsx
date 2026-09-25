@@ -1,4 +1,4 @@
-import { notFound } from "next/navigation";
+import { notFound, permanentRedirect } from "next/navigation";
 import { getRelatedBySeries } from "@/lib/functions/media-repo";
 import MediaInformation from "@/components/MediaInformation";
 import MediaRow from "@/components/MediaRow";
@@ -6,7 +6,7 @@ import { RelatedMediaLoadingSkeleton } from "@/components/LoadingSkeletons";
 import { Suspense } from "react";
 import { getCachedMediaById, getCachedSeasonsBySeriesId } from "@/lib/functions/cached-media";
 import type { Metadata } from "next";
-import { buildMediaJsonLd, buildMediaMetadata, serializeJsonLd } from "@/lib/seo/media";
+import { buildMediaJsonLd, buildMediaMetadata, getMediaPath, serializeJsonLd } from "@/lib/seo/media";
 
 // 详情页按需生成，日常走 24 小时长缓存，数据变更通过 revalidatePath/revalidateTag 即时失效。
 export const revalidate = 86400;
@@ -50,6 +50,8 @@ export default async function SeriesDetailPage({
     getCachedSeasonsBySeriesId(id),
   ]);
   if (!series) notFound();
+  // 电影 ID 访问电视剧路径时跳转到规范地址，避免用电视剧布局渲染电影。
+  if (series.type !== "series") permanentRedirect(getMediaPath(series));
   const jsonLd = buildMediaJsonLd(series);
 
   const episodeYears = seasons.flatMap(/* 从季的年份范围提取四位年份，缺失时不贡献年份。 */ (season) => season.releaseYearRange?.match(/\d{4}/g) ?? []);

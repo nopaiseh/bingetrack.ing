@@ -5,10 +5,11 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import NavigationProgressBar from "@/components/NavigationProgressBar";
 import { SITE_URL } from "@/lib/site";
+import { THEME_COLORS, THEME_INIT_SCRIPT } from "@/lib/themes";
 import "./globals.css";
 
 export const viewport: Viewport = {
-  themeColor: "#140606",
+  themeColor: THEME_COLORS.default,
   colorScheme: "dark",
   width: "device-width",
   initialScale: 1,
@@ -49,7 +50,7 @@ export default function RootLayout({
         <link rel="dns-prefetch" href="https://image.tmdb.org" />
         <script
           dangerouslySetInnerHTML={{
-            __html: `(function(){try{var t=localStorage.getItem("bingetrack-theme");if(t)document.documentElement.setAttribute("data-theme",t);}catch(e){}})();`,
+            __html: THEME_INIT_SCRIPT,
           }}
         />
       </head>

@@ -1,4 +1,5 @@
 import type { MetadataRoute } from "next";
+import { THEME_COLORS } from "@/lib/themes";
 
 /** 为 PWA 提供站点应用清单，支持桌面与移动端添加为独立应用。 */
 export default function manifest(): MetadataRoute.Manifest {
@@ -8,8 +9,8 @@ export default function manifest(): MetadataRoute.Manifest {
     description: "记录、检索并回顾电影与电视剧观看历程。",
     start_url: "/",
     display: "standalone",
-    background_color: "#140606",
-    theme_color: "#140606",
+    background_color: THEME_COLORS.default,
+    theme_color: THEME_COLORS.default,
     icons: [
       {
         src: "/favicon.ico",

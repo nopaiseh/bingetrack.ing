@@ -1,4 +1,4 @@
-import { notFound } from "next/navigation";
+import { notFound, permanentRedirect } from "next/navigation";
 import { getRelatedBySeries } from "@/lib/functions/media-repo";
 import MediaInformation from "@/components/MediaInformation";
 import MediaRow from "@/components/MediaRow";
@@ -6,7 +6,7 @@ import { RelatedMediaLoadingSkeleton } from "@/components/LoadingSkeletons";
 import { Suspense } from "react";
 import { getCachedMediaById } from "@/lib/functions/cached-media";
 import type { Metadata } from "next";
-import { buildMediaJsonLd, buildMediaMetadata, serializeJsonLd } from "@/lib/seo/media";
+import { buildMediaJsonLd, buildMediaMetadata, getMediaPath, serializeJsonLd } from "@/lib/seo/media";
 
 // 详情页按需生成，日常走 24 小时长缓存，数据变更通过 revalidatePath/revalidateTag 即时失效。
 export const revalidate = 86400;
@@ -38,7 +38,7 @@ async function RelatedMovies({ seriesNames, currentId }: { seriesNames: string[]
   );
 }
 
-/** 读取电影详情，缺失时进入 404；输出详情、结构化数据及异步相关作品区。 */
+/** 读取电影详情，缺失时进入 404、类型不符时跳转规范地址；输出详情、结构化数据及异步相关作品区。 */
 export default async function MovieDetailPage({
   params,
 }: {
@@ -47,6 +47,8 @@ export default async function MovieDetailPage({
   const { id } = await params;
   const movie = await getCachedMediaById(id);
   if (!movie) notFound();
+  // 电视剧 ID 访问电影路径时跳转到规范地址，避免用电影布局渲染电视剧。
+  if (movie.type !== "movies") permanentRedirect(getMediaPath(movie));
   const jsonLd = buildMediaJsonLd(movie);
 
   return (

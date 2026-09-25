@@ -1,26 +1,21 @@
+import { createHash, timingSafeEqual } from "node:crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { revalidatePath, revalidateTag } from "next/cache";
-import { requireOwner } from "@/lib/auth/server";
 
-async function isAuthorized(request: NextRequest): Promise<boolean> {
-  // 1. 检查环境变量配置的独立调用密钥（供脚本、curl 或外部工具使用）
-  const configuredSecret = process.env.REVALIDATE_SECRET;
-  const requestSecret = request.nextUrl.searchParams.get("secret");
-  if (configuredSecret && requestSecret === configuredSecret) {
-    return true;
-  }
-
-  // 2. 或者检查当前请求是否来自已登录的站长会话
-  try {
-    await requireOwner();
-    return true;
-  } catch {
-    return false;
-  }
+/** 以固定长度摘要做常量时间比较，避免通过响应时间推测密钥。 */
+function secretMatches(provided: string, expected: string): boolean {
+  const digest = (value: string) => createHash("sha256").update(value).digest();
+  return timingSafeEqual(digest(provided), digest(expected));
 }
 
-export async function GET(request: NextRequest) {
-  if (!(await isAuthorized(request))) {
+/**
+ * 供脚本或外部工具刷新公开缓存；只接受 POST 与 `Authorization: Bearer <REVALIDATE_SECRET>`。
+ * 不读取登录 Cookie，跨站页面无法借站长会话触发；站长在管理区使用 Server Action 刷新。
+ */
+export async function POST(request: NextRequest) {
+  const configuredSecret = process.env.REVALIDATE_SECRET?.trim();
+  const provided = request.headers.get("authorization")?.match(/^Bearer\s+(.+)$/i)?.[1]?.trim();
+  if (!configuredSecret || !provided || !secretMatches(provided, configuredSecret)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -33,8 +28,3 @@ export async function GET(request: NextRequest) {
     timestamp: new Date().toISOString(),
   });
 }
-
-export async function POST(request: NextRequest) {
-  return GET(request);
-}
-
