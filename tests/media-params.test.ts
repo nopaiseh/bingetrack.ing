@@ -61,3 +61,9 @@ test("validates top-media type, year, and limit", /* 验证榜单类型、有效
     ApiValidationError,
   );
 });
+
+test("accepts only a single whitelisted sort and statuses the view produces", () => {
+  assert.equal(parseMediaSearchParams(new URLSearchParams({ sort: "date_asc" })).sort, "date_asc");
+  assert.throws(() => parseMediaSearchParams(new URLSearchParams({ sort: "date_asc,rating_desc" })), /Invalid sort/);
+  assert.throws(() => parseMediaSearchParams(new URLSearchParams({ status: "unwatched" })), /Invalid status/);
+});

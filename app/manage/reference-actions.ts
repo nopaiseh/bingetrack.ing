@@ -7,13 +7,18 @@ import { revalidatePath, revalidateTag } from "next/cache";
 import { redirect } from "next/navigation";
 import type { ActionResult } from "./actions";
 
+/** 转义 LIKE 通配符与转义符，使输入的 %、_ 按字面匹配。 */
+function escapeLikePattern(term: string) {
+  return term.replace(/[\\%_]/g, (char) => `\\${char}`);
+}
+
 /** 搜索只返回展示所需字段；每次调用仍独立验证站长身份。 */
 export async function searchChoices(kind: string, term: string): Promise<{ choices: Choice[]; error?: string }> {
   const { db } = await requireOwner();
   const media = ["movie", "tv_series", "tv_season", "tv_episode", "media"].includes(kind);
   if (!media && !isReferenceType(kind)) return { choices: [], error: "不支持的资料类别。" };
   const table = media ? "media_items" : referenceTypes[kind as keyof typeof referenceTypes].table;
-  let query = db.from(table).select(media ? "id,title,type,cover_url,season:tv_seasons!tv_seasons_id_fkey(season_number,parent:media_items!tv_seasons_series_id_fkey(title))" : "id,name").ilike(media ? "title" : "name", `%${term.trim().slice(0, 200)}%`).order(media ? "title" : "name").order("id").limit(20);
+  let query = db.from(table).select(media ? "id,title,type,cover_url,season:tv_seasons!tv_seasons_id_fkey(season_number,parent:media_items!tv_seasons_series_id_fkey(title))" : "id,name").ilike(media ? "title" : "name", `%${escapeLikePattern(term.trim().slice(0, 200))}%`).order(media ? "title" : "name").order("id").limit(20);
   if (media) query = kind === "media" ? query.in("type", ["movie", "tv_series", "tv_season", "tv_episode"]) : query.eq("type", kind);
   const { data, error } = await query;
   if (error) return { choices: [], error: "搜索失败，请重试。" };

@@ -1,7 +1,7 @@
 /* eslint-disable @next/next/no-html-link-for-pages */
 import { render, screen, act } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { expect, test, vi } from "vitest";
+import { expect, onTestFinished, test, vi } from "vitest";
 import {
   AdminLoadingSkeleton,
   SeasonDetailLoadingSkeleton,
@@ -67,6 +67,11 @@ test("NavigationProgressBar starts on internal link click and finishes on route 
       <a href="https://example.com" id="external-link">外部</a>
     </div>
   );
+
+  // 进度条在捕获阶段处理点击；冒泡阶段再取消默认跳转（与 next/link 一致），避免 jsdom 报告无法导航到其他文档。
+  const preventDocumentNavigation = (event: MouseEvent) => event.preventDefault();
+  window.addEventListener("click", preventDocumentNavigation);
+  onTestFinished(() => window.removeEventListener("click", preventDocumentNavigation));
 
   // Initially hidden
   expect(screen.queryByRole("progressbar")).not.toBeInTheDocument();

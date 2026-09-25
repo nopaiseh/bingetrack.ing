@@ -11,7 +11,8 @@ export class ApiValidationError extends Error {
 
 const MEDIA_TYPES = new Set(["movie", "tv_series"]);
 const CREDIT_ROLES = new Set(["director", "actor"]);
-const STATUSES = new Set(["want_to_watch", "watching", "watched", "unwatched"]);
+// 与 v_all_media 实际产生的状态一致；视图不会输出 "unwatched"。
+const STATUSES = new Set(["want_to_watch", "watching", "watched"]);
 const SORTS = new Set(["date_asc", "date_desc", "rating_asc", "rating_desc"]);
 
 // 拒绝非安全整数，并把合法数值限制在允许范围，约束分页请求大小。
@@ -41,6 +42,13 @@ function parseList(
     throw new ApiValidationError(`Invalid ${name}`);
   }
   return values.length > 0 ? values.join(",") : undefined;
+}
+
+/** 排序只接受单个白名单值，避免逗号拼接的多个值通过校验后被错误解析。 */
+function parseSort(value: string | null): string | undefined {
+  if (!value) return undefined;
+  if (!SORTS.has(value)) throw new ApiValidationError("Invalid sort");
+  return value;
 }
 
 /** 允许空年份，其他值必须为 1888 到当前 UTC 年份加五之间的四位年份。 */
@@ -75,7 +83,7 @@ export function parseMediaSearchParams(searchParams: URLSearchParams): FetchMedi
     language: parseList(searchParams.get("language"), "language"),
     startYear,
     endYear,
-    sort: parseList(searchParams.get("sort"), "sort", SORTS),
+    sort: parseSort(searchParams.get("sort")),
     limit: parseBoundedInteger(searchParams.get("limit"), 30, 1, 100),
     offset: parseBoundedInteger(searchParams.get("offset"), 0, 0, 100_000),
   };

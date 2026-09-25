@@ -54,6 +54,22 @@ test("站长初始化、影视季集管理、公开更新、退出与非站长�
     await initialize(ownerEmail);
     await expect(page.getByRole("heading", { name: "Passkey 设置" })).toBeVisible();
 
+    // 浏览器后退也受未保存修改保护：取消时留在本页并保留输入，确认后才离开。
+    await page.goto("/manage");
+    await page.goto("/manage/media/new");
+    await page.getByLabel("标题", { exact: true }).fill(`${prefix} unsaved`);
+    const dialogs: string[] = [];
+    page.once("dialog", dialog => { dialogs.push(dialog.message()); void dialog.dismiss(); });
+    await page.goBack();
+    await expect.poll(() => dialogs.length).toBe(1);
+    await expect(page).toHaveURL(/\/manage\/media\/new$/);
+    await expect(page.getByLabel("标题", { exact: true })).toHaveValue(`${prefix} unsaved`);
+    page.once("dialog", dialog => { dialogs.push(dialog.message()); void dialog.accept(); });
+    await page.goBack();
+    await expect.poll(() => dialogs.length).toBe(2);
+    await expect(page).toHaveURL(/\/manage$/);
+    expect(dialogs).toEqual(["还有未保存的修改，确定离开吗？", "还有未保存的修改，确定离开吗？"]);
+
     // 八类导航与关联资料可独立创建、修改和删除。
     for (const [kind, label] of [["people", "人物"], ["collections", "系列"], ["genres", "类型"], ["regions", "地区"]]) {
       await page.goto(`/manage/references/${kind}/new`);

@@ -8,8 +8,7 @@ import { getCachedMediaById, getCachedSeasonsBySeriesId } from "@/lib/functions/
 import { buildSeasonMetadata } from "@/lib/seo/media";
 import { formatRuntime } from "@/lib/format-runtime";
 
-// 季详情页按 24 小时长缓存，数据变更通过 revalidatePath/revalidateTag 即时失效。
-export const revalidate = 86400;
+// 季详情页读取分页与筛选查询参数，按请求渲染：剧集分页每次查询数据库，电视剧与季摘要使用带 "media" 标签的数据缓存。
 
 const PAGE_SIZE = 10;
 type StatusFilter = "all" | "watched" | "unwatched";

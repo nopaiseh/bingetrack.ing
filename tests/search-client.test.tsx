@@ -159,7 +159,8 @@ test("active filter chips display and can be individually removed or cleared", /
     fireEvent.click(removeMovieBtn);
   });
   expect(new URLSearchParams(window.location.search).get("type")).toBeNull();
-  expect(new URLSearchParams(window.location.search).get("status")).toBe("想看");
+  // 旧版中文值在读取时已规范化，改动筛选后地址改写为规范值。
+  expect(new URLSearchParams(window.location.search).get("status")).toBe("want_to_watch");
 
   // 点击清空筛选
   act(() => {

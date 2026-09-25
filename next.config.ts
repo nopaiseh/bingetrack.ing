@@ -2,31 +2,15 @@ import { withSentryConfig } from "@sentry/nextjs/config";
 import type { NextConfig } from "next";
 import { resolveSentryEnvironment } from "./lib/sentry-environment";
 import { sentryIngestOrigin } from "./lib/sentry-dsn";
+import { buildContentSecurityPolicy } from "./lib/csp";
 
 const isDevelopment = process.env.NODE_ENV === "development";
 
-/** 本地 Supabase 认证需要浏览器访问其 HTTP 端口；仅开发模式允许配置中的回环地址。 */
-function localAuthOrigin() {
-  if (!isDevelopment || !process.env.NEXT_PUBLIC_SUPABASE_URL) return "";
-  try {
-    const url = new URL(process.env.NEXT_PUBLIC_SUPABASE_URL);
-    return ["localhost", "127.0.0.1", "[::1]"].includes(url.hostname) ? ` ${url.origin}` : "";
-  } catch { return ""; }
-}
-
-const contentSecurityPolicy = [
-  "default-src 'self'",
-  "base-uri 'self'",
-  "form-action 'self'",
-  "frame-ancestors 'none'",
-  "object-src 'none'",
-  `script-src 'self' 'unsafe-inline'${isDevelopment ? " 'unsafe-eval'" : ""}`,
-  "style-src 'self' 'unsafe-inline'",
-  "img-src 'self' data: blob: https://image.tmdb.org https://*.tmdb.org",
-  "font-src 'self' data:",
-  `connect-src 'self' https://*.supabase.co ${sentryIngestOrigin()}${localAuthOrigin()}`,
-  "upgrade-insecure-requests",
-].join("; ");
+const contentSecurityPolicy = buildContentSecurityPolicy({
+  isDevelopment,
+  supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL,
+  sentryOrigin: sentryIngestOrigin(),
+});
 
 const nextConfig: NextConfig = {
   // 把构建时确定的 Sentry 环境标签注入浏览器、Node 和 Edge 代码。

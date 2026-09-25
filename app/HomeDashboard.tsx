@@ -32,13 +32,8 @@ const EMPTY_MEDIA_DISTRIBUTION: MediaDistribution = {
 };
 
 /** 按媒体分类与观看状态生成搜索链接；指定年份时同时限定起止年份。 */
-function getStatusSearchLink(type: "movie" | "tv_series" | "电影" | "电视剧", status: string, year: string) {
-  const typeMap: Record<string, string> = { 电影: "movie", 电视剧: "tv_series", movie: "movie", tv_series: "tv_series" };
-  const statusMap: Record<string, string> = { 已看: "watched", 在看: "watching", 想看: "want_to_watch", watched: "watched", watching: "watching", want_to_watch: "want_to_watch" };
-  const params = new URLSearchParams({
-    type: typeMap[type] || type,
-    status: statusMap[status] || status,
-  });
+function getStatusSearchLink(type: "movie" | "tv_series", status: "watched" | "watching" | "want_to_watch", year: string) {
+  const params = new URLSearchParams({ type, status });
   if (year !== "All Time") {
     params.set("startYear", year);
     params.set("endYear", year);
@@ -47,9 +42,8 @@ function getStatusSearchLink(type: "movie" | "tv_series" | "电影" | "电视剧
 }
 
 /** 按媒体分类生成评分降序的搜索链接；指定年份时同时限定起止年份。 */
-function getSearchViewAllLink(type: "movie" | "tv_series" | "电影" | "电视剧", year: string) {
-  const typeMap: Record<string, string> = { 电影: "movie", 电视剧: "tv_series", movie: "movie", tv_series: "tv_series" };
-  const params = new URLSearchParams({ type: typeMap[type] || type, sort: "rating_desc" });
+function getSearchViewAllLink(type: "movie" | "tv_series", year: string) {
+  const params = new URLSearchParams({ type, sort: "rating_desc" });
   if (year !== "All Time") {
     params.set("startYear", year);
     params.set("endYear", year);
@@ -245,9 +239,9 @@ export default function HomeDashboard({
   // 请求中途切回全时段时，被取消的请求不会复位加载状态，因此只在选定年份时采用该状态。
   const isTopMediaLoading = topMediaLoading && selectedYear !== "All Time";
 
-  const spotlightCandidates = selectedYear === "All Time"
-    ? topMovies
-    : (displayedTopMovies.length > 0 ? displayedTopMovies : topMovies);
+  // 所选年份没有榜单（或仍在加载）时展示全时段精选，标签也随之显示为全时段，避免年份与内容不符。
+  const showYearSpotlight = selectedYear !== "All Time" && displayedTopMovies.length > 0;
+  const spotlightCandidates = showYearSpotlight ? displayedTopMovies : topMovies;
 
   return (
     <div className="container mx-auto flex max-w-7xl flex-col gap-6 px-4 pb-12 pt-20 sm:pt-22 sm:px-6 lg:pt-24 lg:px-8">
@@ -349,7 +343,7 @@ export default function HomeDashboard({
         )}
         {activeTab === "总览" && (
           <div key="overview" id="dashboard-panel-overview" role="tabpanel" aria-labelledby="dashboard-tab-overview" className="flex flex-col gap-4 md:gap-6">
-            <SpotlightHero items={spotlightCandidates} yearLabel={selectedYear} />
+            <SpotlightHero items={spotlightCandidates} yearLabel={showYearSpotlight ? selectedYear : "All Time"} />
 
             <div className="dashboard-deferred surface-card flex flex-col gap-6 rounded-2xl p-4 sm:p-5 lg:p-6">
               <div className="flex items-center border-b border-white/10 pb-3">
