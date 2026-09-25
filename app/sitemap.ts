@@ -1,6 +1,7 @@
 import type { MetadataRoute } from "next";
 import { getSitemapMediaEntries } from "@/lib/functions/media-repo";
 import { SITE_URL } from "@/lib/site";
+import { reportHandledError } from "@/lib/report-error";
 
 export const revalidate = 86400;
 
@@ -23,7 +24,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       })),
     ];
   } catch (error) {
-    console.error("Falling back to static sitemap routes:", error);
+    reportHandledError("Falling back to static sitemap routes:", error);
     return staticRoutes;
   }
 }

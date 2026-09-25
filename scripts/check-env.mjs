@@ -1,6 +1,8 @@
 const requiredVariables = [
   "NEXT_PUBLIC_SUPABASE_URL",
   "NEXT_PUBLIC_SUPABASE_ANON_KEY",
+  // 生产部署的规范地址、站点地图和 Passkey 依赖正式站点地址，不能静默回退到内置域名。
+  ...(process.env.VERCEL_ENV === "production" ? ["NEXT_PUBLIC_SITE_URL"] : []),
 ];
 
 const missingVariables = requiredVariables.filter(

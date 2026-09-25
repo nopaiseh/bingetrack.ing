@@ -221,3 +221,22 @@ test("renders media status badge on search result cards", () => {
 });
 
 
+
+test("the results heading follows the committed URL query, not unsubmitted input", async () => {
+  vi.useFakeTimers();
+  try {
+    window.history.replaceState(null, "", "/search?q=旧词");
+    render(<SearchClient initialOptions={options} initialResult={resultFor(window.location.search)} />);
+    fireEvent.change(screen.getByRole("textbox", { name: "搜索媒体" }), { target: { value: "新词" } });
+    // 防抖尚未写入地址前，标题仍对应当前结果。
+    expect(screen.getByRole("heading", { name: /旧词/ })).toBeInTheDocument();
+    await act(() => vi.advanceTimersByTimeAsync(500));
+    expect(screen.getByRole("heading", { name: /新词/ })).toBeInTheDocument();
+  } finally { vi.useRealTimers(); }
+});
+
+test("the hidden back-to-top button is removed from keyboard focus", () => {
+  window.history.replaceState(null, "", "/search");
+  render(<SearchClient initialOptions={options} initialResult={resultFor(window.location.search)} />);
+  expect(screen.getByLabelText("返回页面顶部", { selector: "button" })).toHaveAttribute("inert");
+});

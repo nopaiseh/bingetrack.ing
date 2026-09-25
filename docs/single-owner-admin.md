@@ -6,7 +6,7 @@
 
 ## 部署顺序
 
-1. `supabase/archive/single-owner-admin.sql` 已于 2026-09-09 应用到生产，作为迁移记录保留，不要重复执行。`current_schema.sql` 已同步这些结构；本地重建和 CI 只需载入当前快照，再载入测试数据。
+1. `supabase/archive/single-owner-admin.sql` 已于 2026-09-09 应用到生产，作为迁移记录保留，不要重复执行。这些结构已包含在基线迁移 `supabase/migrations/20260925000000_initial_schema.sql` 中；本地重建和 CI 由 Supabase CLI 应用迁移，再载入测试数据。
 2. 部署包含 `/auth/confirm`、`/manage`、`/settings` 的应用。公开 Supabase URL 和 anon key 沿用原配置，`@supabase/ssr` 已锁定版本。
 3. 在 Supabase Authentication 关闭新用户注册、匿名登录及不使用的登录提供商；启用 Passkey。RP display name 为 `bingetrack.ing`，RP ID 为 `bingetrack.ing`，Origins 仅列实际需要的 `https://bingetrack.ing` 和 `https://www.bingetrack.ing`。Site URL 设置为实际规范域名。RP ID 绑定后保持不变。Vercel 随机 Preview 域名不使用生产 Passkey。
 4. 用下述运维工具为站长指定的邮箱创建唯一账号并生成初始化链接；工具不发送邮件。邮箱确认由站长通过后台信任流程完成，首次创建没有密码。真实邮箱只放在被忽略的本地配置中。
@@ -46,7 +46,7 @@ node --env-file=.env.local scripts/prepare-owner-login.mjs
 
 本地 Supabase 配置已关闭注册，并启用 `localhost` RP。绑定测试凭证时使用 `http://localhost:3000`，不能用生产项目或 `127.0.0.1` 凭证代替。公开 E2E 仍可使用原有 `127.0.0.1` 地址。
 
-数据库重建顺序：`current_schema.sql` → `fixtures/e2e_seed.sql`。CI 执行 `supabase test db`，包含账号隔离、原子保存、重复编号回滚、完整树删除和公开读取的 pgTAP 测试。测试账号和数据只存在于回滚事务。
+数据库重建顺序：`supabase/migrations/`（`supabase start` 或 `supabase db reset` 自动应用）→ `fixtures/e2e_seed.sql`。CI 执行 `supabase test db`，包含账号隔离、原子保存、重复编号回滚、完整树删除和公开读取的 pgTAP 测试。测试账号和数据只存在于回滚事务。
 
 管理页使用私有、不可共享的会话响应；公开数据仍使用原公开客户端。成功保存／删除后失效 `media` 标签并重新验证页面布局。已在 CDN 缓存的公开 API 响应可能按现有的 30–60 秒 TTL 和 stale-while-revalidate 窗口短暂保留旧结果；已打开的其他浏览器也需要刷新。
 

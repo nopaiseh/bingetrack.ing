@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getCachedTopMediaServer } from "@/lib/functions/cached-media";
 import { ApiValidationError, parseTopMediaParams } from "@/lib/api/media-params";
+import { reportHandledError } from "@/lib/report-error";
 
 /** 校验榜单类型、年份与数量并返回排名结果，设置 60 秒共享缓存；参数错误返回 400，查询失败返回 503。 */
 export async function GET(request: Request) {
@@ -14,7 +15,7 @@ export async function GET(request: Request) {
     if (error instanceof ApiValidationError) {
       return NextResponse.json({ error: error.message }, { status: 400 });
     }
-    console.error("Top media API request failed:", error);
+    reportHandledError("Top media API request failed:", error);
     return NextResponse.json({ error: "Unable to load top media" }, { status: 503 });
   }
 }

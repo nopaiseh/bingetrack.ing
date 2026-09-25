@@ -1,5 +1,6 @@
 import MoviesCatalog from './MoviesCatalog';
 import { fetchMediaCardsServer, fetchStatsServer } from '@/lib/functions/media-repo';
+import { handlePageDataError } from '@/lib/functions/page-data';
 import type { MediaCard } from '@/lib/types';
 import type { Metadata } from "next";
 
@@ -13,7 +14,7 @@ export const revalidate = 86400;
 
 const DEFAULT_MOVIE_STATS = { total: 0, watched: 0, want: 0, upcoming: 0 };
 
-/** 并行读取电影统计及最近的已看、想看卡片，再交给目录组件展示；在静态预渲染或数据库超时时降级渲染基础骨架，避免阻断构建。 */
+/** 并行读取电影统计及最近的已看、想看卡片，再交给目录组件展示；仅构建期失败时降级渲染基础骨架，运行期失败保留旧页面。 */
 export default async function MoviesPage() {
   let stats = DEFAULT_MOVIE_STATS;
   let watchedRes: MediaCard[] = [];
@@ -34,7 +35,7 @@ export default async function MoviesPage() {
     watchedRes = fetchedWatched;
     wantRes = fetchedWant;
   } catch (error) {
-    console.error("Failed to fetch movies page data, falling back to empty catalog:", error);
+    handlePageDataError("movies page", error);
   }
 
   return (

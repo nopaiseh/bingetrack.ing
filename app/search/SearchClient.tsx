@@ -689,9 +689,9 @@ function SearchContent({ initialOptions, initialResult }: SearchProps) {
         <section ref={resultsRef} className="w-full scroll-mt-24" aria-labelledby="search-results-heading">
           <div className="mb-8 flex flex-col items-start justify-between gap-3 sm:flex-row sm:items-center">
             <h2 id="search-results-heading" className="text-2xl font-bold text-white tracking-wide">
-              {query ? (
+              {urlQuery ? (
                 <>
-                  <span className="text-[var(--accent-hover)]">&quot;{query}&quot;</span> 的搜索结果
+                  <span className="text-[var(--accent-hover)]">&quot;{urlQuery}&quot;</span> 的搜索结果
                 </>
               ) : (
                 "搜索结果"
@@ -755,6 +755,7 @@ function SearchContent({ initialOptions, initialResult }: SearchProps) {
       <button
         onClick={scrollToTop}
         aria-label="返回页面顶部"
+        inert={!showScrollTop}
         className={`surface-muted fixed bottom-22 right-4 z-50 flex size-12 items-center justify-center rounded-full border border-white/10 text-white/70 shadow-[0_4px_15px_rgba(0,0,0,0.3)] backdrop-blur-2xl transition-all duration-300 hover:scale-105 hover:border-[var(--accent-border-hover)] hover:bg-white/10 hover:text-[var(--accent-hover)] hover:shadow-lg hover:shadow-black/50 sm:right-8 lg:right-12 ${
           showScrollTop ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10 pointer-events-none"
         }`}

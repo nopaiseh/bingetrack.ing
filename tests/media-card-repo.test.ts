@@ -3,6 +3,7 @@ import { beforeEach, expect, test, vi } from "vitest";
 const state = vi.hoisted(/* 在模块模拟提升阶段创建共享查询记录和模拟结果容器。 */ () => ({
   executed: [] as Array<{
     table: string;
+    args?: Record<string, unknown>;
     columns?: string;
     head?: boolean;
     orders?: Array<{ column: string; ascending?: boolean; nullsFirst?: boolean }>;
@@ -14,18 +15,19 @@ const state = vi.hoisted(/* 在模块模拟提升阶段创建共享查询记录�
 vi.mock("@/lib/supabase/public-server", /* 提供可记录查询的 Supabase 模块替身。 */ () => ({
   getSupabasePublicServer: /* 返回带链式查询接口的公开服务端客户端替身。 */ () => ({
     /** 为指定表创建查询记录，并返回可等待的链式接口。 */
-    from(table: string) {
+    from(table: string, rpcArgs?: Record<string, unknown>, rpcOptions?: { head?: boolean }) {
       const request: {
         table: string;
+        args?: Record<string, unknown>;
         columns?: string;
         head?: boolean;
         orders: Array<{ column: string; ascending?: boolean; nullsFirst?: boolean }>;
         gtes: Array<{ column: string; value: unknown }>;
         ltes: Array<{ column: string; value: unknown }>;
-      } = { table, orders: [], gtes: [], ltes: [] };
+      } = { table, args: rpcArgs, head: rpcOptions?.head, orders: [], gtes: [], ltes: [] };
       const chain = {
         /** 记录所选字段及是否仅查询计数，并返回链对象继续调用。 */
-        select(columns: string, options?: { head?: boolean }) { request.columns = columns; request.head = options?.head; return chain; },
+        select(columns: string, options?: { head?: boolean }) { request.columns = columns; request.head = options?.head ?? request.head; return chain; },
         eq: /* 忽略等值筛选并返回同一模拟查询链。 */ () => chain, in: /* 忽略集合筛选并返回同一模拟查询链。 */ () => chain,
         order: /* 记录排序参数并返回同一模拟查询链。 */ (column: string, opts?: { ascending?: boolean; nullsFirst?: boolean }) => {
           request.orders.push({ column, ascending: opts?.ascending, nullsFirst: opts?.nullsFirst });
@@ -50,9 +52,9 @@ vi.mock("@/lib/supabase/public-server", /* 提供可记录查询的 Supabase 模
       };
       return chain;
     },
-    rpc(fn: string) {
-      state.executed.push({ table: `rpc:${fn}` });
-      return Promise.resolve(state.results[`rpc:${fn}`] ?? { data: [], error: null });
+    /** RPC 与表查询共用可链式调用的记录接口，结果按 `rpc:<函数名>` 取得。 */
+    rpc(fn: string, args?: Record<string, unknown>, options?: { head?: boolean }) {
+      return this.from(`rpc:${fn}`, args, options);
     },
   }),
 }));
@@ -153,3 +155,24 @@ test("fetchMediaCardsServer applies decoupled year interval filter on last_air_d
   expect(query?.ltes).toEqual([{ column: "first_air_date", value: "2015-12-31" }]);
 });
 
+
+test("keyword search matches inside the database function without ID round-trips", async () => {
+  state.results["rpc:search_media"] = { data: [{ id: "m", type: "movie", title: "Movie" }], error: null, count: 250 };
+  const result = await searchMediaServer({ q: "  星光 ", type: "movie", creditRole: "actor", limit: 30 });
+  expect(result.total).toBe(250);
+  expect(state.executed.map((query) => query.table)).toEqual(["rpc:search_media", "rpc:search_media"]);
+  expect(state.executed[0].args).toEqual({ p_query: "星光", p_types: ["movie"], p_series_only: false, p_credit_roles: ["actor"] });
+  expect(state.executed.filter((query) => query.head)).toHaveLength(1);
+});
+
+test("series-only browsing uses the database function; plain catalogs keep the view", async () => {
+  await searchMediaServer({ seriesOnly: true, type: "movie" });
+  expect(state.executed.every((query) => query.table === "rpc:search_media")).toBe(true);
+  // 计数请求走 HEAD 查询串，null 会变成字符串 "null"，因此无关键词时必须省略 p_query。
+  expect(state.executed.every((query) => query.args && !("p_query" in query.args))).toBe(true);
+  expect(state.executed[0].args).toMatchObject({ p_series_only: true, p_types: ["movie"] });
+
+  state.executed = [];
+  await searchMediaServer({ type: "movie" });
+  expect(state.executed.every((query) => query.table === "v_all_media")).toBe(true);
+});

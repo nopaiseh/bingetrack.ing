@@ -242,6 +242,9 @@ export default function HomeDashboard({
     return /* 取消当前年份尚未完成的榜单请求。 */ () => controller.abort();
   }, [selectedYear]);
 
+  // 请求中途切回全时段时，被取消的请求不会复位加载状态，因此只在选定年份时采用该状态。
+  const isTopMediaLoading = topMediaLoading && selectedYear !== "All Time";
+
   const spotlightCandidates = selectedYear === "All Time"
     ? topMovies
     : (displayedTopMovies.length > 0 ? displayedTopMovies : topMovies);
@@ -339,7 +342,7 @@ export default function HomeDashboard({
             {topMediaError}
           </div>
         )}
-        {topMediaLoading && selectedYear !== "All Time" && (
+        {isTopMediaLoading && (
           <div role="status" className="surface-muted mb-6 rounded-xl border border-white/10 px-4 py-3 text-sm text-white/60">
             正在加载 {selectedYear} 年度精选…
           </div>
@@ -464,7 +467,7 @@ export default function HomeDashboard({
             <DistributionTop5Cards distribution={movieDistribution} />
 
             <div className="space-y-12 mt-4">
-              {topMediaLoading ? (
+              {isTopMediaLoading ? (
                 <PosterRowSkeleton />
               ) : (
                 <MediaRow
@@ -499,7 +502,7 @@ export default function HomeDashboard({
             <DistributionTop5Cards distribution={seriesDistribution} />
 
             <div className="space-y-12 mt-4">
-              {topMediaLoading ? (
+              {isTopMediaLoading ? (
                 <PosterRowSkeleton />
               ) : (
                 <MediaRow

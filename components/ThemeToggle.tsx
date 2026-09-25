@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { THEME_COLORS, THEME_STORAGE_KEY, type ThemeId } from "@/lib/themes";
 
 const PALETTES = [
   { id: "default", name: "红毯经典", colorClass: "bg-rose-500", glowColor: "rgba(244,63,94,0.6)" },
@@ -8,13 +9,6 @@ const PALETTES = [
   { id: "sepia", name: "复古胶片", colorClass: "bg-amber-400", glowColor: "rgba(245,158,11,0.6)" },
   { id: "noir", name: "黑曜钛白", colorClass: "bg-zinc-100", glowColor: "rgba(255,255,255,0.5)" },
 ] as const;
-
-const THEME_COLORS: Record<string, string> = {
-  default: "#140507",
-  cyber: "#050c18",
-  sepia: "#140c04",
-  noir: "#09090b",
-};
 
 /** 提供零运行负担的影院氛围主题切换控件，并持久化到本地存储。 */
 export default function ThemeToggle() {
@@ -28,19 +22,19 @@ export default function ThemeToggle() {
     return () => cancelAnimationFrame(handle);
   }, []);
 
-  const handleSelect = (themeId: string) => {
+  const handleSelect = (themeId: ThemeId) => {
     setCurrentTheme(themeId);
     if (themeId === "default") {
       document.documentElement.removeAttribute("data-theme");
-      try { localStorage.removeItem("bingetrack-theme"); } catch {}
+      try { localStorage.removeItem(THEME_STORAGE_KEY); } catch {}
     } else {
       document.documentElement.setAttribute("data-theme", themeId);
-      try { localStorage.setItem("bingetrack-theme", themeId); } catch {}
+      try { localStorage.setItem(THEME_STORAGE_KEY, themeId); } catch {}
     }
 
     const meta = document.querySelector('meta[name="theme-color"]');
     if (meta) {
-      meta.setAttribute("content", THEME_COLORS[themeId] || "#140507");
+      meta.setAttribute("content", THEME_COLORS[themeId]);
     }
   };
 

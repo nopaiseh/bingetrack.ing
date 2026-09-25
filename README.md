@@ -71,7 +71,7 @@ lib/
   types/                共享类型
 scripts/                环境检查、站长初始化、部署检查和性能测量
 supabase/
-  scripts/              当前数据库结构快照
+  migrations/           版本化数据库迁移（首个迁移为基线结构）
   archive/              已实施的历史增量 SQL，保留供追溯
   fixtures/             本地与 CI 的固定测试数据
   tests/                数据库 pgTAP 测试
@@ -85,7 +85,7 @@ docs/                   部署及管理操作说明
 
 Next.js 的 `proxy.ts`、`instrumentation*.ts`、Sentry 初始化文件和各工具配置保留在根目录，方便框架发现。`.next/`、`coverage/`、`test-results/`、`.lighthouse/` 等为忽略提交的生成文件。
 
-公开数据主要通过 `lib/functions/` 读取视图并统一映射；新增媒体字段时同步数据库快照、共享类型和映射。认证客户端与匿名公开客户端各自保留，避免公开缓存携带用户会话。
+公开数据主要通过 `lib/functions/` 读取视图并统一映射；新增媒体字段时新增数据库迁移，并同步共享类型和映射。认证客户端与匿名公开客户端各自保留，避免公开缓存携带用户会话。
 
 ## 检查与测试
 

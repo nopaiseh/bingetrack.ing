@@ -1,4 +1,5 @@
--- 应用数据库结构快照，用于重建本地测试环境；文件本身不代表线上数据库当前状态。
+-- 初始迁移：2026-09-25 时生产 public schema 的完整结构，作为版本化迁移的基线。
+-- 生产库已具备这些结构，需用 `supabase migration repair --status applied 20260925000000` 标记为已应用，不要重复执行。
 
 create schema if not exists extensions;
 create extension if not exists pg_trgm with schema extensions;
@@ -1033,7 +1034,6 @@ revoke all on function public.admin_delete_media(uuid,text) from public, anon;
 grant execute on function public.admin_delete_media(uuid,text) to authenticated;
 
 -- 管理工作台增量：在已有单站长结构上执行；不修改现有业务数据。
-begin;
 
 -- 系列与成员关系沿用唯一站长的 RLS；匿名角色保持只读。
 grant insert, update, delete on public.media_series, public.media_item_series to authenticated;
@@ -1076,4 +1076,9 @@ begin
 end $$;
 revoke all on function public.manage_save_media(jsonb) from public, anon;
 grant execute on function public.manage_save_media(jsonb) to authenticated;
-commit;
+
+-- 与生产一致：postgres 角色今后在 public 中新建的表、函数和序列不再自动授权给 anon/authenticated，
+-- 新对象必须在迁移中显式授权。
+alter default privileges for role postgres in schema public revoke all on tables from anon, authenticated;
+alter default privileges for role postgres in schema public revoke all on functions from anon, authenticated;
+alter default privileges for role postgres in schema public revoke all on sequences from anon, authenticated;

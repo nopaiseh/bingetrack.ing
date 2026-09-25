@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { searchMediaServer } from "@/lib/functions/media-repo";
 import { ApiValidationError, parseMediaSearchParams } from "@/lib/api/media-params";
+import { reportHandledError } from "@/lib/report-error";
 
 /** 校验搜索参数并返回卡片与总数，设置 30 秒共享缓存；参数错误返回 400，查询失败返回 503。 */
 export async function GET(request: Request) {
@@ -14,7 +15,7 @@ export async function GET(request: Request) {
     if (err instanceof ApiValidationError) {
       return NextResponse.json({ error: err.message }, { status: 400 });
     }
-    console.error("Media API request failed:", err);
+    reportHandledError("Media API request failed:", err);
     return NextResponse.json({ error: "Unable to load media" }, { status: 503 });
   }
 }
