@@ -5,7 +5,6 @@
 ## 文件职责
 
 - `migrations/`：版本化结构迁移；新环境、本地和 CI 都从这里重建。
-- `archive/`：引入迁移前已应用的历史增量 SQL，内容已并入基线迁移，仅供追溯，不要执行。
 - `fixtures/e2e_seed.sql`：确定性的浏览器测试数据，仅用于本地和 CI。
 - `tests/`：公开数据语义与站长权限、事务行为的 pgTAP 测试。
 - `config.toml`、`seed.sql`：Supabase CLI 配置与默认种子入口；默认种子有意留空，测试数据单独加载。

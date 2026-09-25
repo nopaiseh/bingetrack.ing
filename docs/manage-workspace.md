@@ -18,7 +18,7 @@
 
 每个 Server Action 独立调用 `requireOwner()`；数据库通过 `site_owner` 和 RLS 再校验站长。没有在客户端暴露运维密钥，也没有增加认证绕过开关。
 
-`supabase/archive/manage-catalog.sql` 已于 2026-09-11 应用到生产，并已包含在基线迁移 `20260925000000_initial_schema.sql` 中。新增的 `manage_save_media(jsonb)` 使用调用者权限，在同一事务中调用原有媒体保存函数并维护系列关联。匿名角色没有执行权限；原 `admin_save_media` 保留供已有应用版本使用，其命名与删除 `/admin` 网页路由无关。
+管理工作台的结构增量已于 2026-09-11 应用到生产，并已包含在基线迁移 `20260925000000_initial_schema.sql` 中。新增的 `manage_save_media(jsonb)` 使用调用者权限，在同一事务中调用原有媒体保存函数并维护系列关联。匿名角色没有执行权限；原 `admin_save_media` 保留供已有应用版本使用，其命名与删除 `/admin` 网页路由无关。
 
 回滚应用时可保留数据库扩展，它与旧版兼容。如果需要完全撤回数据库扩展，先回滚依赖 `manage_save_media` 的应用，再删除该函数、系列两张表的六条 `Owner` 策略，并撤销这两张表向 `authenticated` 的 INSERT、UPDATE、DELETE 权限。不要删除系列数据或原有只读策略。
 

@@ -1,4 +1,4 @@
-export type MediaType = "movies" | "series";
+type MediaType = "movies" | "series";
 
 export interface Media {
   id: string;
@@ -99,17 +99,12 @@ export interface Summary {
   unwatched_episodes: number;
 }
 
-export interface Stats {
+interface Stats {
   total?: number;
   watched?: number;
   watching?: number;
   want?: number;
   upcoming?: number;
-
-  totalSeries?: number;
-  totalSeasons?: number;
-  totalEpisodes?: number;
-  totalUpcomingEpisodes?: number;
 }
 
 export interface MediaCatalogProps {

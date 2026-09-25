@@ -1,5 +1,4 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import React from "react";
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import { buildMediaDistributions } from "@/lib/functions/media-distributions";
 import type { Summary } from "@/lib/types";

@@ -6,7 +6,7 @@
 
 ## 部署顺序
 
-1. `supabase/archive/single-owner-admin.sql` 已于 2026-09-09 应用到生产，作为迁移记录保留，不要重复执行。这些结构已包含在基线迁移 `supabase/migrations/20260925000000_initial_schema.sql` 中；本地重建和 CI 由 Supabase CLI 应用迁移，再载入测试数据。
+1. 单人管理的结构增量已于 2026-09-09 应用到生产，已包含在基线迁移 `supabase/migrations/20260925000000_initial_schema.sql` 中；本地重建和 CI 由 Supabase CLI 应用迁移，再载入测试数据。
 2. 部署包含 `/auth/confirm`、`/manage`、`/settings` 的应用。公开 Supabase URL 和 anon key 沿用原配置，`@supabase/ssr` 已锁定版本。
 3. 在 Supabase Authentication 关闭新用户注册、匿名登录及不使用的登录提供商；启用 Passkey。RP display name 为 `bingetrack.ing`，RP ID 为 `bingetrack.ing`，Origins 仅列实际需要的 `https://bingetrack.ing` 和 `https://www.bingetrack.ing`。Site URL 设置为实际规范域名。RP ID 绑定后保持不变。Vercel 随机 Preview 域名不使用生产 Passkey。
 4. 用下述运维工具为站长指定的邮箱创建唯一账号并生成初始化链接；工具不发送邮件。邮箱确认由站长通过后台信任流程完成，首次创建没有密码。真实邮箱只放在被忽略的本地配置中。

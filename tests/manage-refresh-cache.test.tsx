@@ -1,5 +1,4 @@
 import { describe, expect, it, vi } from "vitest";
-import React from "react";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import RefreshCacheButton from "@/app/manage/RefreshCacheButton";
 import * as actions from "@/app/manage/actions";

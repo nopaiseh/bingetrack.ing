@@ -1,5 +1,5 @@
 /** 判断当前是否处于 `next build` 预渲染阶段。 */
-export function isBuildPhase(): boolean {
+function isBuildPhase(): boolean {
   return process.env.NEXT_PHASE === "phase-production-build";
 }
 
