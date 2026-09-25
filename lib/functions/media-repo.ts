@@ -503,6 +503,8 @@ export async function fetchTopMediaServer(
       .select(TOP_MEDIA_COLUMNS)
       .eq("type", mediaType)
       .order("rating", { ascending: false, nullsFirst: false })
+      // 同分时按 ID 排序，保证榜单名次稳定。
+      .order("id", { ascending: true })
       .limit(limit);
 
     if (year) {

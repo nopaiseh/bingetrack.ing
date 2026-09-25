@@ -74,6 +74,10 @@ describe("关联资料服务端操作", () => {
     const result = await searchChoices("tv_season", "query");
     expect(result.choices[0].detail).toBe("未知剧集 · 第 1 季");
   });
+  it("searchChoices 将输入中的 %、_ 与反斜杠按字面匹配", async () => {
+    await searchChoices("people", " 50%_off\\ ");
+    expect(chain.ilike).toHaveBeenCalledWith("name", "%50\\%\\_off\\\\%");
+  });
   it("支持对 languages（语言）进行新增与保存", async () => {
     chain.single.mockResolvedValue({ data: { id }, error: null });
     const result = await saveReference({}, form({ kind: "languages", name: "英语", return_list: "1" }));

@@ -1,5 +1,5 @@
 import { expect, test } from "vitest";
-import { buildMediaSearchQuery } from "@/lib/api/search-state";
+import { buildMediaSearchQuery, readFilters } from "@/lib/api/search-state";
 import { parseMediaSearchParams } from "@/lib/api/media-params";
 
 test("server and browser query conversion preserves all search categories", /* 验证服务端与浏览器共用的转换函数保留分类、状态、属性、年份及分页条件。 */ () => {
@@ -17,4 +17,13 @@ test("server and browser query conversion preserves all search categories", /* �
 
 test.each(["-1", "NaN", "Infinity", "1.5"])("invalid page %s uses the first page", /* 对每个非法页码验证 API 偏移量回退为零。 */ (page) => {
   expect(new URLSearchParams(buildMediaSearchQuery(new URLSearchParams({ page }))).get("offset")).toBe("0");
+});
+
+test("legacy Chinese filter values are normalised when read from the URL", () => {
+  expect(readFilters(new URLSearchParams({ type: "电影,movie,系列", status: "已看,unknown" }))).toMatchObject({
+    type: ["movie", "series"],
+    status: ["watched", "unknown"],
+  });
+  const query = new URLSearchParams(buildMediaSearchQuery(new URLSearchParams({ status: "已看,unknown" })));
+  expect(query.get("status")).toBe("watched");
 });

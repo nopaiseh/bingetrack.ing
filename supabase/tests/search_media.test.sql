@@ -1,6 +1,6 @@
 begin;
 
-select plan(9);
+select plan(10);
 
 select ok(
   has_function_privilege('anon', 'public.search_media(text, text[], boolean, text[])', 'EXECUTE')
@@ -21,6 +21,11 @@ select ok(
     where oid = 'public.search_media(text, text[], boolean, text[])'::regprocedure and prosecdef
   ),
   'search RPC has no PUBLIC grant and runs with invoker privileges'
+);
+
+select ok(
+  (select proconfig is null from pg_proc where oid = 'public.search_media(text, text[], boolean, text[])'::regprocedure),
+  'search RPC has no SET clause, so the planner can inline it'
 );
 
 -- 超过旧版 100 个 ID 上限的标题命中，用于验证结果不再被截断。

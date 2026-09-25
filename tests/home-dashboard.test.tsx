@@ -14,7 +14,11 @@ vi.mock("@/components/LoadingSkeletons", () => ({
   PosterRowSkeleton: () => <div data-testid="poster-skeleton" />,
 }));
 
-vi.mock("@/components/SpotlightHero", () => ({ default: () => null }));
+vi.mock("@/components/SpotlightHero", () => ({
+  default: ({ items, yearLabel }: { items: { id: string }[]; yearLabel?: string }) => (
+    <div data-testid="spotlight" data-year={yearLabel} data-ids={items.map((item) => item.id).join(",")} />
+  ),
+}));
 vi.mock("@/components/AnimatedNumber", () => ({ default: ({ value }: { value: number }) => <>{value}</> }));
 
 vi.mock("@/components/DashboardYearPicker", () => ({
@@ -59,5 +63,23 @@ describe("HomeDashboard", () => {
 
     expect(screen.queryByTestId("poster-skeleton")).not.toBeInTheDocument();
     expect(screen.getAllByTestId("dynamic").some((element) => element.dataset.title === "影史精选")).toBe(true);
+  });
+
+  it("所选年份榜单为空时展示全时段精选，标签也显示为全时段", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => new Response("[]")));
+    render(
+      <HomeDashboard
+        summary={[{ release_year: "2024" } as unknown as Summary]}
+        topMovies={[{ id: "all-time-pick" } as never]}
+        topSeries={[]}
+        distributions={buildMediaDistributions([])}
+      />,
+    );
+    await act(async () => {
+      fireEvent.click(screen.getByText("year-2024"));
+    });
+    const spotlight = screen.getByTestId("spotlight");
+    expect(spotlight.dataset.ids).toBe("all-time-pick");
+    expect(spotlight.dataset.year).toBe("All Time");
   });
 });

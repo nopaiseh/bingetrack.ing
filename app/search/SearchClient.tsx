@@ -22,6 +22,57 @@ function pageNumbers(current: number, total: number) {
   return Array.from({ length: end - start + 1 }, /* 将窗口内的索引转换为实际页码。 */ (_, index) => start + index);
 }
 
+const TYPE_OPTIONS = [
+  { value: "movie", label: "电影" },
+  { value: "tv_series", label: "电视剧" },
+  { value: "series", label: "系列" },
+  { value: "director", label: "导演" },
+  { value: "actor", label: "演员" },
+];
+
+const STATUS_OPTIONS = [
+  { value: "want_to_watch", label: "想看" },
+  { value: "watching", label: "在看" },
+  { value: "watched", label: "已看" },
+];
+
+const PRIMARY_CATEGORIES = [
+  { id: "type", label: "分类", options: TYPE_OPTIONS, multiSelect: true },
+  { id: "status", label: "状态", options: STATUS_OPTIONS, multiSelect: true },
+];
+
+const SORT_OPTIONS = [
+  { id: "date", label: "日期" },
+  { id: "rating", label: "评分" },
+];
+
+/** 按规范值查找选项文案，未知值原样显示。 */
+function optionLabel(options: { value: string; label: string }[], value: string) {
+  return options.find(/* 查找与规范值对应的选项。 */ (option) => option.value === value)?.label ?? value;
+}
+
+/** 渲染一个已选条件标签及其移除按钮；分类与状态使用强调色，其余属性使用中性色。 */
+function FilterChip({ category, label, accent = false, onRemove }: { category: string; label: string; accent?: boolean; onRemove: () => void }) {
+  return (
+    <span
+      className={`inline-flex items-center gap-1 rounded-md border px-2.5 py-1 text-xs font-medium text-white shadow-xs ${
+        accent ? "border-[var(--accent-border)] bg-[var(--accent-soft)]" : "border-white/15 bg-white/10"
+      }`}
+    >
+      <span className="text-white/60">{category}:</span>
+      <span>{label}</span>
+      <button
+        type="button"
+        aria-label={`移除${category}筛选：${label}`}
+        onClick={onRemove}
+        className="ml-0.5 rounded p-0.5 text-white/70 hover:bg-white/15 hover:text-white transition-colors"
+      >
+        <span className="i-material-symbols-close-rounded size-3 inline-block" aria-hidden="true" />
+      </button>
+    </span>
+  );
+}
+
 /** 以 URL 为筛选和分页状态来源，复用服务端首屏结果，并管理搜索、防抖请求和交互界面。 */
 function SearchContent({ initialOptions, initialResult }: SearchProps) {
   const pathname = usePathname();
@@ -163,55 +214,6 @@ function SearchContent({ initialOptions, initialResult }: SearchProps) {
     resultsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
   };
 
-  const TYPE_OPTIONS = [
-    { value: "movie", label: "电影" },
-    { value: "tv_series", label: "电视剧" },
-    { value: "series", label: "系列" },
-    { value: "director", label: "导演" },
-    { value: "actor", label: "演员" },
-  ];
-
-  const STATUS_OPTIONS = [
-    { value: "want_to_watch", label: "想看" },
-    { value: "watching", label: "在看" },
-    { value: "watched", label: "已看" },
-  ];
-
-  const TYPE_LABEL_MAP: Record<string, string> = {
-    movie: "电影",
-    tv_series: "电视剧",
-    series: "系列",
-    director: "导演",
-    actor: "演员",
-    电影: "电影",
-    电视剧: "电视剧",
-  };
-
-  const STATUS_LABEL_MAP: Record<string, string> = {
-    want_to_watch: "想看",
-    watching: "在看",
-    watched: "已看",
-    想看: "想看",
-    在看: "在看",
-    已看: "已看",
-  };
-
-  const CANONICAL_MAP: Record<string, string> = {
-    电影: "movie",
-    电视剧: "tv_series",
-    系列: "series",
-    导演: "director",
-    演员: "actor",
-    想看: "want_to_watch",
-    在看: "watching",
-    已看: "watched",
-  };
-
-  const PRIMARY_CATEGORIES = [
-    { id: "type", label: "分类", options: TYPE_OPTIONS, multiSelect: true },
-    { id: "status", label: "状态", options: STATUS_OPTIONS, multiSelect: true },
-  ];
-
   const ADVANCED_CATEGORIES = [
     { id: "genre", label: "类型", options: genreOptions, multiSelect: true },
     { id: "region", label: "地区", options: regionOptions, multiSelect: true },
@@ -224,16 +226,12 @@ function SearchContent({ initialOptions, initialResult }: SearchProps) {
       const currentSelected = prev[categoryId] || [];
       if (value === "全部") return { ...prev, [categoryId]: [] };
       if (!isMultiSelect) return { ...prev, [categoryId]: [value] };
-
-      const matchValue = (item: string) => item === value || CANONICAL_MAP[item] === value || CANONICAL_MAP[value] === item;
-      if (currentSelected.some(matchValue)) {
-        return { ...prev, [categoryId]: currentSelected.filter(/* 从已选列表中移除再次点击的选项。 */ (item) => !matchValue(item)) };
-      } else {
-        const newSelected = [...currentSelected, value];
-        const hasSelectedAll = allOptions.length > 0 && allOptions.every(/* 判断该分类的所有可选值是否均已选中。 */ (opt) => newSelected.some((item) => item === opt || CANONICAL_MAP[item] === opt));
-        if (hasSelectedAll) return { ...prev, [categoryId]: [] };
-        return { ...prev, [categoryId]: newSelected };
+      if (currentSelected.includes(value)) {
+        return { ...prev, [categoryId]: currentSelected.filter(/* 从已选列表中移除再次点击的选项。 */ (item) => item !== value) };
       }
+      const newSelected = [...currentSelected, value];
+      const hasSelectedAll = allOptions.length > 0 && allOptions.every(/* 判断该分类的所有可选值是否均已选中。 */ (opt) => newSelected.includes(opt));
+      return { ...prev, [categoryId]: hasSelectedAll ? [] : newSelected };
     });
   };
 
@@ -279,11 +277,6 @@ function SearchContent({ initialOptions, initialResult }: SearchProps) {
     (filters.language?.length ?? 0) > 0 ||
     (filters.year?.length > 0 && (filters.year[0] !== "" || filters.year[1] !== ""))
   );
-
-  const SORT_OPTIONS = [
-    { id: "date", label: "日期" },
-    { id: "rating", label: "评分" },
-  ];
 
   return (
     <div className="min-h-screen text-white/90 pt-24 pb-12 selection:bg-[var(--accent-soft)] selection:text-white font-sans relative">
@@ -369,7 +362,7 @@ function SearchContent({ initialOptions, initialResult }: SearchProps) {
                       </button>
 
                       {category.options.map(/* 渲染分类选项按钮。 */ (option) => {
-                        const isSelected = activeSelections.includes(option.value) || activeSelections.some((val) => CANONICAL_MAP[val] === option.value);
+                        const isSelected = activeSelections.includes(option.value);
                         return (
                           <button
                             key={option.value}
@@ -555,100 +548,20 @@ function SearchContent({ initialOptions, initialResult }: SearchProps) {
                 已选条件:
               </span>
 
-              {filters.type?.map((t) => {
-                const label = TYPE_LABEL_MAP[t] || t;
-                return (
-                  <span
-                    key={`chip-type-${t}`}
-                    className="inline-flex items-center gap-1 rounded-md border border-[var(--accent-border)] bg-[var(--accent-soft)] px-2.5 py-1 text-xs font-medium text-white shadow-xs"
-                  >
-                    <span className="text-white/60">分类:</span>
-                    <span>{label}</span>
-                    <button
-                      type="button"
-                      aria-label={`移除分类筛选：${label}`}
-                      onClick={() => toggleFilter("type", t, true, TYPE_OPTIONS.map((o) => o.value))}
-                      className="ml-0.5 rounded p-0.5 text-white/70 hover:bg-white/15 hover:text-white transition-colors"
-                    >
-                      <span className="i-material-symbols-close-rounded size-3 inline-block" aria-hidden="true" />
-                    </button>
-                  </span>
-                );
-              })}
-
-              {filters.status?.map((s) => {
-                const label = STATUS_LABEL_MAP[s] || s;
-                return (
-                  <span
-                    key={`chip-status-${s}`}
-                    className="inline-flex items-center gap-1 rounded-md border border-[var(--accent-border)] bg-[var(--accent-soft)] px-2.5 py-1 text-xs font-medium text-white shadow-xs"
-                  >
-                    <span className="text-white/60">状态:</span>
-                    <span>{label}</span>
-                    <button
-                      type="button"
-                      aria-label={`移除状态筛选：${label}`}
-                      onClick={() => toggleFilter("status", s, true, STATUS_OPTIONS.map((o) => o.value))}
-                      className="ml-0.5 rounded p-0.5 text-white/70 hover:bg-white/15 hover:text-white transition-colors"
-                    >
-                      <span className="i-material-symbols-close-rounded size-3 inline-block" aria-hidden="true" />
-                    </button>
-                  </span>
-                );
-              })}
-
+              {filters.type?.map((t) => (
+                <FilterChip key={`chip-type-${t}`} category="分类" label={optionLabel(TYPE_OPTIONS, t)} accent onRemove={() => toggleFilter("type", t, true, TYPE_OPTIONS.map((o) => o.value))} />
+              ))}
+              {filters.status?.map((s) => (
+                <FilterChip key={`chip-status-${s}`} category="状态" label={optionLabel(STATUS_OPTIONS, s)} accent onRemove={() => toggleFilter("status", s, true, STATUS_OPTIONS.map((o) => o.value))} />
+              ))}
               {filters.genre?.map((g) => (
-                <span
-                  key={`chip-genre-${g}`}
-                  className="inline-flex items-center gap-1 rounded-md border border-white/15 bg-white/10 px-2.5 py-1 text-xs font-medium text-white shadow-xs"
-                >
-                  <span className="text-white/60">类型:</span>
-                  <span>{g}</span>
-                  <button
-                    type="button"
-                    aria-label={`移除类型筛选：${g}`}
-                    onClick={() => toggleFilter("genre", g, true, genreOptions)}
-                    className="ml-0.5 rounded p-0.5 text-white/70 hover:bg-white/15 hover:text-white transition-colors"
-                  >
-                    <span className="i-material-symbols-close-rounded size-3 inline-block" aria-hidden="true" />
-                  </button>
-                </span>
+                <FilterChip key={`chip-genre-${g}`} category="类型" label={g} onRemove={() => toggleFilter("genre", g, true, genreOptions)} />
               ))}
-
               {filters.region?.map((r) => (
-                <span
-                  key={`chip-region-${r}`}
-                  className="inline-flex items-center gap-1 rounded-md border border-white/15 bg-white/10 px-2.5 py-1 text-xs font-medium text-white shadow-xs"
-                >
-                  <span className="text-white/60">地区:</span>
-                  <span>{r}</span>
-                  <button
-                    type="button"
-                    aria-label={`移除地区筛选：${r}`}
-                    onClick={() => toggleFilter("region", r, true, regionOptions)}
-                    className="ml-0.5 rounded p-0.5 text-white/70 hover:bg-white/15 hover:text-white transition-colors"
-                  >
-                    <span className="i-material-symbols-close-rounded size-3 inline-block" aria-hidden="true" />
-                  </button>
-                </span>
+                <FilterChip key={`chip-region-${r}`} category="地区" label={r} onRemove={() => toggleFilter("region", r, true, regionOptions)} />
               ))}
-
               {filters.language?.map((l) => (
-                <span
-                  key={`chip-language-${l}`}
-                  className="inline-flex items-center gap-1 rounded-md border border-white/15 bg-white/10 px-2.5 py-1 text-xs font-medium text-white shadow-xs"
-                >
-                  <span className="text-white/60">语言:</span>
-                  <span>{l}</span>
-                  <button
-                    type="button"
-                    aria-label={`移除语言筛选：${l}`}
-                    onClick={() => toggleFilter("language", l, true, languageOptions)}
-                    className="ml-0.5 rounded p-0.5 text-white/70 hover:bg-white/15 hover:text-white transition-colors"
-                  >
-                    <span className="i-material-symbols-close-rounded size-3 inline-block" aria-hidden="true" />
-                  </button>
-                </span>
+                <FilterChip key={`chip-language-${l}`} category="语言" label={l} onRemove={() => toggleFilter("language", l, true, languageOptions)} />
               ))}
 
               {filters.year?.some(Boolean) && (

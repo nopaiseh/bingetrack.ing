@@ -52,7 +52,8 @@ export default function ChoicePicker({
       } catch {
         if (active) setError("搜索失败，请重新输入后重试。");
       } finally {
-        setLoading(false);
+        // 被新搜索取代的旧请求不能结束加载状态，否则新请求进行中会闪回“无结果”。
+        if (active) setLoading(false);
       }
     }, 250);
     return () => {
