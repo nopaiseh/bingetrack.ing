@@ -25,9 +25,9 @@
     "postinstall": "node scripts/patch-unocss.mjs && node scripts/patch-next-code-frame.mjs"
   },
   "dependencies": {
-    "@sentry/nextjs": "10.75.0",
+    "@sentry/nextjs": "10.75.2",
     "@supabase/ssr": "0.12.7",
-    "@supabase/supabase-js": "2.116.0",
+    "@supabase/supabase-js": "2.117.0",
     "@vercel/speed-insights": "^2.0.0",
     "next": "16.3.5",
     "postcss": "8.5.28",
