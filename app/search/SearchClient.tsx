@@ -196,6 +196,17 @@ function SearchContent({ initialOptions, initialResult }: SearchProps) {
     已看: "已看",
   };
 
+  const CANONICAL_MAP: Record<string, string> = {
+    电影: "movie",
+    电视剧: "tv_series",
+    系列: "series",
+    导演: "director",
+    演员: "actor",
+    想看: "want_to_watch",
+    在看: "watching",
+    已看: "watched",
+  };
+
   const PRIMARY_CATEGORIES = [
     { id: "type", label: "分类", options: TYPE_OPTIONS, multiSelect: true },
     { id: "status", label: "状态", options: STATUS_OPTIONS, multiSelect: true },
@@ -214,11 +225,12 @@ function SearchContent({ initialOptions, initialResult }: SearchProps) {
       if (value === "全部") return { ...prev, [categoryId]: [] };
       if (!isMultiSelect) return { ...prev, [categoryId]: [value] };
 
-      if (currentSelected.includes(value)) {
-        return { ...prev, [categoryId]: currentSelected.filter(/* 从已选列表中移除再次点击的选项。 */ (item) => item !== value) };
+      const matchValue = (item: string) => item === value || CANONICAL_MAP[item] === value || CANONICAL_MAP[value] === item;
+      if (currentSelected.some(matchValue)) {
+        return { ...prev, [categoryId]: currentSelected.filter(/* 从已选列表中移除再次点击的选项。 */ (item) => !matchValue(item)) };
       } else {
         const newSelected = [...currentSelected, value];
-        const hasSelectedAll = allOptions.length > 0 && allOptions.every(/* 判断该分类的所有可选值是否均已选中。 */ (opt) => newSelected.includes(opt));
+        const hasSelectedAll = allOptions.length > 0 && allOptions.every(/* 判断该分类的所有可选值是否均已选中。 */ (opt) => newSelected.some((item) => item === opt || CANONICAL_MAP[item] === opt));
         if (hasSelectedAll) return { ...prev, [categoryId]: [] };
         return { ...prev, [categoryId]: newSelected };
       }
@@ -357,7 +369,7 @@ function SearchContent({ initialOptions, initialResult }: SearchProps) {
                       </button>
 
                       {category.options.map(/* 渲染分类选项按钮。 */ (option) => {
-                        const isSelected = activeSelections.includes(option.value);
+                        const isSelected = activeSelections.includes(option.value) || activeSelections.some((val) => CANONICAL_MAP[val] === option.value);
                         return (
                           <button
                             key={option.value}
