@@ -50,7 +50,7 @@ export default function ThemeToggle() {
       aria-label="影院氛围主题"
       className="surface-control flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs backdrop-blur-md"
     >
-      <span className="text-[11px] font-medium text-white/70">氛围</span>
+      <span className="text-xs font-medium text-white/80">氛围</span>
       <div className="flex items-center gap-1">
         {PALETTES.map((palette) => {
           const isActive = currentTheme === palette.id;

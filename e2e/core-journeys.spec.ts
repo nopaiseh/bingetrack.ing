@@ -22,12 +22,12 @@ test("type and year filters update the URL and results", /* 验证媒体分类�
   await expect(page.getByText("找到 2 部作品")).toBeVisible();
 
   await page.getByRole("button", { name: "电视剧" }).click();
-  await expect(page).toHaveURL(/type=%E7%94%B5%E8%A7%86%E5%89%A7/);
+  await expect(page).toHaveURL(/type=tv_series/);
   await expect(page.getByText("找到 1 部作品")).toBeVisible();
   await expect(page.getByRole("link", { name: /测试剧集：城市信号/ })).toBeVisible();
   await expect(page.getByRole("link", { name: /测试电影：星光档案/ })).toHaveCount(0);
 
-  await page.goto("/search?type=%E7%94%B5%E8%A7%86%E5%89%A7&startYear=2025&endYear=2025");
+  await page.goto("/search?type=tv_series&startYear=2025&endYear=2025");
   await expect(page.getByText("找到 1 部作品")).toBeVisible();
   await expect(page.getByRole("link", { name: /测试剧集：城市信号/ })).toBeVisible();
 });
@@ -54,7 +54,7 @@ test("search pagination requests the next offset and keeps filters", /* 用分�
     });
   });
 
-  await page.goto("/search?type=%E7%94%B5%E5%BD%B1");
+  await page.goto("/search?type=movie");
   await page.getByRole("textbox", { name: "搜索媒体", exact: true }).fill("分页测试");
   await expect(page.getByText("分页测试电影 0")).toBeVisible();
   await page.getByRole("navigation", { name: "搜索结果分页" })
@@ -62,7 +62,7 @@ test("search pagination requests the next offset and keeps filters", /* 用分�
     .click();
 
   await expect(page).toHaveURL(/page=2/);
-  await expect(page).toHaveURL(/type=%E7%94%B5%E5%BD%B1/);
+  await expect(page).toHaveURL(/type=movie/);
   await expect(page.getByText("分页测试电影 30")).toBeVisible();
 });
 

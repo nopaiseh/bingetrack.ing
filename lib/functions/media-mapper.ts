@@ -10,6 +10,18 @@ function sortNames(names: string[] | null | undefined): string[] {
   return [...(names ?? [])].sort(nameCollator.compare);
 }
 
+/** 将 TMDB 的原始尺寸 (original) 图片地址优化为合适宽度的分发地址，减少前端与优化服务器的源图带宽消耗。 */
+export function optimizeTmdbImageUrl(
+  url: string | null | undefined,
+  targetSize: "w342" | "w500" | "w780" = "w500",
+): string {
+  if (!url) return "";
+  if (url.includes("image.tmdb.org/t/p/original/")) {
+    return url.replace("/t/p/original/", `/t/p/${targetSize}/`);
+  }
+  return url;
+}
+
 // 将数据库字段转换为详情对象，补齐空值、统一路由类型并排序分类名称。
 export function mapViewRowToMedia(
   item: ViewAllMediaRow,
@@ -33,7 +45,7 @@ export function mapViewRowToMedia(
     regions: sortNames(item.regions),
     status: item.status || undefined,
     summary: item.summary ?? "",
-    cover_url: item.cover_url ?? "",
+    cover_url: optimizeTmdbImageUrl(item.cover_url, "w500"),
     casts: item.casts ?? [],
     directors: item.directors ?? [],
     type: mediaType,
@@ -51,7 +63,7 @@ export function mapViewRowToMediaCard(item: ViewAllMediaRow): MediaCard {
     rating: item.rating ?? item.average_rating ?? null,
     genres: sortNames(item.genres),
     languages: sortNames(item.languages),
-    cover_url: item.cover_url ?? "",
+    cover_url: optimizeTmdbImageUrl(item.cover_url, "w500"),
     status: item.status || undefined,
     type: item.type === "movie" || item.type === "movies" ? "movies" : "series",
   };

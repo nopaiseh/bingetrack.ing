@@ -2,6 +2,8 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 
+const formatYearLabel = (year: string) => (year === "All Time" ? "全时段" : year);
+
 /** 渲染可搜索的年份选择框，支持键盘定位、确认、取消及点击外部关闭。 */
 export default function DashboardYearPicker({
   years,
@@ -18,7 +20,11 @@ export default function DashboardYearPicker({
   const pickerRef = useRef<HTMLDivElement>(null);
   const options = useMemo(
     /** 把年份转成字符串并按输入文本筛选，复用未变化的筛选结果。 */
-    () => years.map(String).filter(/* 忽略大小写判断年份文本是否包含输入词。 */ (year) => year.toLowerCase().includes(query.toLowerCase())),
+    () =>
+      years.map(String).filter(/* 忽略大小写判断年份文本或展示文案是否包含输入词。 */ (year) => {
+        const q = query.toLowerCase();
+        return year.toLowerCase().includes(q) || formatYearLabel(year).toLowerCase().includes(q);
+      }),
     [query, years],
   );
 
@@ -52,7 +58,7 @@ export default function DashboardYearPicker({
         <span className="i-material-symbols-calendar-today-rounded inline-block size-4 text-[var(--accent)] transition-colors group-hover:text-[var(--accent-hover)]" aria-hidden="true" />
         <input
           type="text"
-          value={isOpen ? query : selectedYear}
+          value={isOpen ? query : formatYearLabel(selectedYear)}
           onChange={/* 更新年份查询，展开列表并将键盘定位重置到首项。 */ (event) => {
             setQuery(event.target.value);
             setIsOpen(true);
@@ -77,7 +83,7 @@ export default function DashboardYearPicker({
               event.currentTarget.blur();
             }
           }}
-          placeholder={selectedYear}
+          placeholder={formatYearLabel(selectedYear)}
           role="combobox"
           aria-label="筛选年份"
           aria-expanded={isOpen}
@@ -85,7 +91,7 @@ export default function DashboardYearPicker({
           aria-autocomplete="list"
           aria-activedescendant={activeIndex >= 0 ? `dashboard-year-option-${activeIndex}` : undefined}
           style={{ background: "transparent", outline: "none", boxShadow: "none" }}
-          className="w-full cursor-pointer !bg-transparent hover:!bg-transparent focus:!bg-transparent !border-none !shadow-none font-mono text-sm text-white outline-none placeholder:text-white/50 focus-visible:outline-none"
+          className="w-full cursor-pointer !bg-transparent hover:!bg-transparent focus:!bg-transparent !border-none !shadow-none text-sm text-white outline-none placeholder:text-white/50 focus-visible:outline-none"
         />
         <span className={`i-material-symbols-expand-more-rounded inline-block size-3 text-white/50 transition-transform duration-300 ${isOpen ? "rotate-180 text-white" : "group-hover:text-white"}`} aria-hidden="true" />
       </label>
@@ -102,7 +108,7 @@ export default function DashboardYearPicker({
                 aria-selected={selectedYear === year}
                 onMouseEnter={/* 将鼠标指向的年份设为当前活动选项。 */ () => setActiveIndex(index)}
                 onClick={/* 确认点击的年份并关闭选择列表。 */ () => selectYear(year)}
-                className={`w-full shrink-0 rounded-xl border-l-2 px-4 py-2.5 text-left font-mono text-sm transition-all ${
+                className={`w-full shrink-0 rounded-xl border-l-2 px-4 py-2.5 text-left text-sm transition-all ${
                   selectedYear === year || activeIndex === index
                     ? "surface-active border-[var(--accent)] font-bold text-accent-hover text-[var(--accent-hover)]"
                     : "border-transparent text-white/70 hover:bg-white/10 hover:text-white"
@@ -117,10 +123,10 @@ export default function DashboardYearPicker({
                     : undefined
                 }
               >
-                {year}
+                {formatYearLabel(year)}
               </button>
             )) : (
-              <div className="px-5 py-4 text-center font-mono text-sm text-white/50">无结果</div>
+              <div className="px-5 py-4 text-center text-sm text-white/50">无结果</div>
             )}
           </div>
         </div>

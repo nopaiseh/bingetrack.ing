@@ -163,9 +163,53 @@ function SearchContent({ initialOptions, initialResult }: SearchProps) {
     resultsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
   };
 
+  const TYPE_OPTIONS = [
+    { value: "movie", label: "电影" },
+    { value: "tv_series", label: "电视剧" },
+    { value: "series", label: "系列" },
+    { value: "director", label: "导演" },
+    { value: "actor", label: "演员" },
+  ];
+
+  const STATUS_OPTIONS = [
+    { value: "want_to_watch", label: "想看" },
+    { value: "watching", label: "在看" },
+    { value: "watched", label: "已看" },
+  ];
+
+  const TYPE_LABEL_MAP: Record<string, string> = {
+    movie: "电影",
+    tv_series: "电视剧",
+    series: "系列",
+    director: "导演",
+    actor: "演员",
+    电影: "电影",
+    电视剧: "电视剧",
+  };
+
+  const STATUS_LABEL_MAP: Record<string, string> = {
+    want_to_watch: "想看",
+    watching: "在看",
+    watched: "已看",
+    想看: "想看",
+    在看: "在看",
+    已看: "已看",
+  };
+
+  const CANONICAL_MAP: Record<string, string> = {
+    电影: "movie",
+    电视剧: "tv_series",
+    系列: "series",
+    导演: "director",
+    演员: "actor",
+    想看: "want_to_watch",
+    在看: "watching",
+    已看: "watched",
+  };
+
   const PRIMARY_CATEGORIES = [
-    { id: "type", label: "分类", options: ["电影", "电视剧", "系列", "导演", "演员"], multiSelect: true },
-    { id: "status", label: "状态", options: ["想看", "在看", "已看"], multiSelect: true },
+    { id: "type", label: "分类", options: TYPE_OPTIONS, multiSelect: true },
+    { id: "status", label: "状态", options: STATUS_OPTIONS, multiSelect: true },
   ];
 
   const ADVANCED_CATEGORIES = [
@@ -181,11 +225,12 @@ function SearchContent({ initialOptions, initialResult }: SearchProps) {
       if (value === "全部") return { ...prev, [categoryId]: [] };
       if (!isMultiSelect) return { ...prev, [categoryId]: [value] };
 
-      if (currentSelected.includes(value)) {
-        return { ...prev, [categoryId]: currentSelected.filter(/* 从已选列表中移除再次点击的选项。 */ (item) => item !== value) };
+      const matchValue = (item: string) => item === value || CANONICAL_MAP[item] === value || CANONICAL_MAP[value] === item;
+      if (currentSelected.some(matchValue)) {
+        return { ...prev, [categoryId]: currentSelected.filter(/* 从已选列表中移除再次点击的选项。 */ (item) => !matchValue(item)) };
       } else {
         const newSelected = [...currentSelected, value];
-        const hasSelectedAll = allOptions.length > 0 && allOptions.every(/* 判断该分类的所有可选值是否均已选中。 */ (opt) => newSelected.includes(opt));
+        const hasSelectedAll = allOptions.length > 0 && allOptions.every(/* 判断该分类的所有可选值是否均已选中。 */ (opt) => newSelected.some((item) => item === opt || CANONICAL_MAP[item] === opt));
         if (hasSelectedAll) return { ...prev, [categoryId]: [] };
         return { ...prev, [categoryId]: newSelected };
       }
@@ -313,7 +358,7 @@ function SearchContent({ initialOptions, initialResult }: SearchProps) {
                     <div className="flex flex-wrap gap-x-3 gap-y-2 flex-1 items-center">
                       <button
                         aria-pressed={isAllSelected}
-                        onClick={/* 清除当前分类的限制。 */ () => toggleFilter(category.id, "全部", category.multiSelect, category.options)}
+                        onClick={/* 清除当前分类的限制。 */ () => toggleFilter(category.id, "全部", category.multiSelect, category.options.map((o) => o.value))}
                         className={`min-h-10 rounded-lg px-4 py-1.5 text-[13px] transition-all duration-300 backdrop-blur-2xl ${
                           isAllSelected
                             ? "filter-option-active"
@@ -324,19 +369,19 @@ function SearchContent({ initialOptions, initialResult }: SearchProps) {
                       </button>
 
                       {category.options.map(/* 渲染分类选项按钮。 */ (option) => {
-                        const isSelected = activeSelections.includes(option);
+                        const isSelected = activeSelections.includes(option.value) || activeSelections.some((val) => CANONICAL_MAP[val] === option.value);
                         return (
                           <button
-                            key={option}
+                            key={option.value}
                             aria-pressed={isSelected}
-                            onClick={/* 切换分类选项。 */ () => toggleFilter(category.id, option, category.multiSelect, category.options)}
+                            onClick={/* 切换分类选项。 */ () => toggleFilter(category.id, option.value, category.multiSelect, category.options.map((o) => o.value))}
                             className={`group flex min-h-10 items-center gap-1.5 rounded-lg px-4 py-1.5 text-[13px] transition-all duration-300 backdrop-blur-2xl ${
                               isSelected
                                 ? "filter-option-active"
                                 : "filter-option"
                             }`}
                           >
-                            {option}
+                            {option.label}
                             {isSelected && (
                               <span className="i-material-symbols-close-rounded ml-1 inline-block size-3 opacity-60 group-hover:opacity-100 transition-opacity" aria-hidden="true" />
                             )}
@@ -510,41 +555,47 @@ function SearchContent({ initialOptions, initialResult }: SearchProps) {
                 已选条件:
               </span>
 
-              {filters.type?.map((t) => (
-                <span
-                  key={`chip-type-${t}`}
-                  className="inline-flex items-center gap-1 rounded-md border border-[var(--accent-border)] bg-[var(--accent-soft)] px-2.5 py-1 text-xs font-medium text-white shadow-xs"
-                >
-                  <span className="text-white/60">分类:</span>
-                  <span>{t}</span>
-                  <button
-                    type="button"
-                    aria-label={`移除分类筛选：${t}`}
-                    onClick={() => toggleFilter("type", t, true, ["电影", "电视剧", "系列", "导演", "演员"])}
-                    className="ml-0.5 rounded p-0.5 text-white/70 hover:bg-white/15 hover:text-white transition-colors"
+              {filters.type?.map((t) => {
+                const label = TYPE_LABEL_MAP[t] || t;
+                return (
+                  <span
+                    key={`chip-type-${t}`}
+                    className="inline-flex items-center gap-1 rounded-md border border-[var(--accent-border)] bg-[var(--accent-soft)] px-2.5 py-1 text-xs font-medium text-white shadow-xs"
                   >
-                    <span className="i-material-symbols-close-rounded size-3 inline-block" aria-hidden="true" />
-                  </button>
-                </span>
-              ))}
+                    <span className="text-white/60">分类:</span>
+                    <span>{label}</span>
+                    <button
+                      type="button"
+                      aria-label={`移除分类筛选：${label}`}
+                      onClick={() => toggleFilter("type", t, true, TYPE_OPTIONS.map((o) => o.value))}
+                      className="ml-0.5 rounded p-0.5 text-white/70 hover:bg-white/15 hover:text-white transition-colors"
+                    >
+                      <span className="i-material-symbols-close-rounded size-3 inline-block" aria-hidden="true" />
+                    </button>
+                  </span>
+                );
+              })}
 
-              {filters.status?.map((s) => (
-                <span
-                  key={`chip-status-${s}`}
-                  className="inline-flex items-center gap-1 rounded-md border border-[var(--accent-border)] bg-[var(--accent-soft)] px-2.5 py-1 text-xs font-medium text-white shadow-xs"
-                >
-                  <span className="text-white/60">状态:</span>
-                  <span>{s}</span>
-                  <button
-                    type="button"
-                    aria-label={`移除状态筛选：${s}`}
-                    onClick={() => toggleFilter("status", s, true, ["想看", "在看", "已看"])}
-                    className="ml-0.5 rounded p-0.5 text-white/70 hover:bg-white/15 hover:text-white transition-colors"
+              {filters.status?.map((s) => {
+                const label = STATUS_LABEL_MAP[s] || s;
+                return (
+                  <span
+                    key={`chip-status-${s}`}
+                    className="inline-flex items-center gap-1 rounded-md border border-[var(--accent-border)] bg-[var(--accent-soft)] px-2.5 py-1 text-xs font-medium text-white shadow-xs"
                   >
-                    <span className="i-material-symbols-close-rounded size-3 inline-block" aria-hidden="true" />
-                  </button>
-                </span>
-              ))}
+                    <span className="text-white/60">状态:</span>
+                    <span>{label}</span>
+                    <button
+                      type="button"
+                      aria-label={`移除状态筛选：${label}`}
+                      onClick={() => toggleFilter("status", s, true, STATUS_OPTIONS.map((o) => o.value))}
+                      className="ml-0.5 rounded p-0.5 text-white/70 hover:bg-white/15 hover:text-white transition-colors"
+                    >
+                      <span className="i-material-symbols-close-rounded size-3 inline-block" aria-hidden="true" />
+                    </button>
+                  </span>
+                );
+              })}
 
               {filters.genre?.map((g) => (
                 <span

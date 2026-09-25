@@ -50,7 +50,7 @@ export default function SpotlightHero({ items, yearLabel }: SpotlightHeroProps) 
         </div>
       )}
 
-      <div className="relative z-10 flex flex-col lg:flex-row items-center justify-between gap-8">
+      <div className="relative z-10 flex flex-col lg:flex-row items-center justify-between gap-8 lg:gap-12 xl:gap-16">
           
           {/* 左侧：电影简介、类型标签与核心控制区 */}
           <div
@@ -129,13 +129,13 @@ export default function SpotlightHero({ items, yearLabel }: SpotlightHeroProps) 
           </div>
 
           {/* 右侧：立体海报画框与 1+3 联动画卷 */}
-          <div className="flex flex-col items-center gap-4 shrink-0 lg:max-w-xs w-full sm:w-auto order-1 lg:order-2">
+          <div className="flex flex-col items-center gap-5 shrink-0 lg:max-w-sm w-full sm:w-auto order-1 lg:order-2">
             {/* 主展示海报立体框 */}
             <div key={`poster-${currentItem.id}`} className="animate-spotlight-fade relative group/poster">
               <Link
                 href={mediaPath}
                 aria-label={`查看《${currentItem.title}》详情`}
-                className="surface-card interactive-media-card relative aspect-2/3 w-48 sm:w-56 block overflow-hidden rounded-2xl shadow-[0_24px_60px_-15px_rgba(0,0,0,0.85)]"
+                className="surface-card interactive-media-card relative aspect-2/3 w-48 sm:w-56 lg:w-60 block overflow-hidden rounded-2xl shadow-[0_24px_60px_-15px_rgba(0,0,0,0.85)]"
               >
                 {currentItem.cover_url ? (
                   <Image
@@ -145,7 +145,7 @@ export default function SpotlightHero({ items, yearLabel }: SpotlightHeroProps) 
                     priority
                     fetchPriority="high"
                     className="object-cover transition-transform duration-700 ease-out group-hover/poster:scale-105"
-                    sizes="(max-width: 639px) 192px, 224px"
+                    sizes="(max-width: 639px) 192px, (max-width: 1023px) 224px, 240px"
                   />
                 ) : (
                   <div className="flex h-full w-full items-center justify-center text-white/30">
@@ -162,7 +162,7 @@ export default function SpotlightHero({ items, yearLabel }: SpotlightHeroProps) 
               <div
                 role="tablist"
                 aria-label="展台候选精选"
-                className="surface-overlay flex items-center justify-center gap-2 rounded-2xl p-2 shadow-xl"
+                className="surface-overlay flex items-center justify-center gap-2.5 rounded-2xl p-2.5 shadow-xl"
               >
                 {spotlightList.map((media, idx) => {
                   const isActive = idx === activeIndex;
@@ -176,7 +176,7 @@ export default function SpotlightHero({ items, yearLabel }: SpotlightHeroProps) 
                       aria-controls="spotlight-panel"
                       aria-label={`切换展台为 ${media.title}`}
                       onClick={() => setSelectedId(media.id)}
-                      className={`group relative aspect-2/3 w-11 sm:w-12 overflow-hidden rounded-lg border backdrop-blur-md transition-all duration-300 cursor-pointer ${
+                      className={`group relative aspect-2/3 w-13 sm:w-14 overflow-hidden rounded-lg border backdrop-blur-md transition-all duration-300 cursor-pointer ${
                         isActive
                           ? "border-[var(--accent)] scale-105 -translate-y-1 shadow-lg shadow-black/60 ring-2 ring-[var(--accent-glow-soft)]"
                           : "border-white/10 opacity-60 hover:opacity-100 hover:-translate-y-1 hover:scale-105 hover:border-white/25"
@@ -185,11 +185,11 @@ export default function SpotlightHero({ items, yearLabel }: SpotlightHeroProps) 
                       {media.cover_url ? (
                         <Image
                           src={media.cover_url}
-                          alt=""
+                          alt={`${media.title} 海报`}
                           fill
                           loading="lazy"
                           className="object-cover"
-                          sizes="48px"
+                          sizes="56px"
                         />
                       ) : (
                         <span className="i-material-symbols-image-outline-rounded size-4 text-white/30" />

@@ -44,18 +44,25 @@ export function buildMediaSearchQuery(searchParams: URLSearchParams): string {
   if (query) params.set("q", query);
 
   if (filters.type && filters.type.length > 0) {
-    const typeMap: Record<string, string> = { 电影: "movie", 电视剧: "tv_series" };
-    const creditRoleMap: Record<string, string> = { 导演: "director", 演员: "actor" };
-    const mappedTypes = filters.type.map(/* 将中文媒体分类映射为数据库媒体类型。 */ (t) => typeMap[t]).filter(Boolean);
-    const mappedCreditRoles = filters.type.map(/* 将中文人员分类映射为导演或演员角色。 */ (t) => creditRoleMap[t]).filter(Boolean);
+    const typeMap: Record<string, string> = { movie: "movie", tv_series: "tv_series", 电影: "movie", 电视剧: "tv_series" };
+    const creditRoleMap: Record<string, string> = { director: "director", actor: "actor", 导演: "director", 演员: "actor" };
+    const mappedTypes = filters.type.map(/* 将媒体分类映射为数据库媒体类型。 */ (t) => typeMap[t]).filter(Boolean);
+    const mappedCreditRoles = filters.type.map(/* 将人员分类映射为导演或演员角色。 */ (t) => creditRoleMap[t]).filter(Boolean);
     if (mappedTypes.length > 0) params.set("type", mappedTypes.join(","));
-    if (filters.type.includes("系列")) params.set("series", "true");
+    if (filters.type.includes("series") || filters.type.includes("系列")) params.set("series", "true");
     if (mappedCreditRoles.length > 0) params.set("creditRole", mappedCreditRoles.join(","));
   }
 
   if (filters.status && filters.status.length > 0) {
-    const statusMap: Record<string, string> = { 想看: "want_to_watch", 在看: "watching", 已看: "watched" };
-    const mappedStatuses = filters.status.map(/* 将中文观看状态映射为 API 状态值。 */ (s) => statusMap[s]).filter(Boolean);
+    const statusMap: Record<string, string> = {
+      want_to_watch: "want_to_watch",
+      watching: "watching",
+      watched: "watched",
+      想看: "want_to_watch",
+      在看: "watching",
+      已看: "watched",
+    };
+    const mappedStatuses = filters.status.map(/* 将观看状态映射为 API 状态值。 */ (s) => statusMap[s]).filter(Boolean);
     if (mappedStatuses.length > 0) params.set("status", mappedStatuses.join(","));
   }
 

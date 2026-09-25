@@ -32,8 +32,13 @@ const EMPTY_MEDIA_DISTRIBUTION: MediaDistribution = {
 };
 
 /** 按媒体分类与观看状态生成搜索链接；指定年份时同时限定起止年份。 */
-function getStatusSearchLink(type: "电影" | "电视剧", status: "已看" | "在看" | "想看", year: string) {
-  const params = new URLSearchParams({ type, status });
+function getStatusSearchLink(type: "movie" | "tv_series" | "电影" | "电视剧", status: string, year: string) {
+  const typeMap: Record<string, string> = { 电影: "movie", 电视剧: "tv_series", movie: "movie", tv_series: "tv_series" };
+  const statusMap: Record<string, string> = { 已看: "watched", 在看: "watching", 想看: "want_to_watch", watched: "watched", watching: "watching", want_to_watch: "want_to_watch" };
+  const params = new URLSearchParams({
+    type: typeMap[type] || type,
+    status: statusMap[status] || status,
+  });
   if (year !== "All Time") {
     params.set("startYear", year);
     params.set("endYear", year);
@@ -42,8 +47,9 @@ function getStatusSearchLink(type: "电影" | "电视剧", status: "已看" | "�
 }
 
 /** 按媒体分类生成评分降序的搜索链接；指定年份时同时限定起止年份。 */
-function getSearchViewAllLink(type: "电影" | "电视剧", year: string) {
-  const params = new URLSearchParams({ type, sort: "rating_desc" });
+function getSearchViewAllLink(type: "movie" | "tv_series" | "电影" | "电视剧", year: string) {
+  const typeMap: Record<string, string> = { 电影: "movie", 电视剧: "tv_series", movie: "movie", tv_series: "tv_series" };
+  const params = new URLSearchParams({ type: typeMap[type] || type, sort: "rating_desc" });
   if (year !== "All Time") {
     params.set("startYear", year);
     params.set("endYear", year);
@@ -75,35 +81,35 @@ function MediaStatusCard({
 }) {
   const content = (
     <>
-      <div className="text-white/80 font-bold text-sm flex items-center justify-between border-b border-white/10 pb-2.5 transition-colors group-hover:text-[var(--accent-hover)]">
+      <div className="text-white/85 font-semibold text-sm flex items-center justify-between pb-1 transition-colors group-hover:text-[var(--accent-hover)]">
         <div className="flex items-center gap-2.5">
-          <span className={`${icon} size-4 inline-block text-[var(--accent)]/80 group-hover:text-[var(--accent-hover)]`} aria-hidden="true" />
+          <span className={`${icon} size-4 inline-block text-[var(--accent)] group-hover:text-[var(--accent-hover)]`} aria-hidden="true" />
           <span>{title}</span>
         </div>
         {href && (
-          <span className="i-material-symbols-arrow-outward-rounded size-3.5 text-white/30 transition-all duration-200 group-hover:text-[var(--accent)] group-hover:translate-x-0.5 group-hover:-translate-y-0.5" aria-hidden="true" />
+          <span className="i-material-symbols-arrow-outward-rounded size-3.5 text-white/40 transition-all duration-200 group-hover:text-[var(--accent)] group-hover:translate-x-0.5 group-hover:-translate-y-0.5" aria-hidden="true" />
         )}
       </div>
-      <div className="flex flex-col gap-3 mt-1">
+      <div className="flex flex-col gap-2.5 mt-1">
         <div className="flex justify-between items-end">
-          <span className="text-sm text-white/50">部数</span>
+          <span className="text-sm text-white/70">部数</span>
           <span className="text-2xl font-mono text-white">
-            <AnimatedNumber value={count} /> <span className="text-xs text-white/60 font-normal">部</span>
+            <AnimatedNumber value={count} /> <span className="text-xs text-white/70 font-normal">部</span>
           </span>
         </div>
         {seasonsCount !== undefined && (
           <div className="flex justify-between items-end">
-            <span className="text-sm text-white/50">季数</span>
+            <span className="text-sm text-white/70">季数</span>
             <span className="text-2xl font-mono text-white">
-              <AnimatedNumber value={seasonsCount} /> <span className="text-xs text-white/60 font-normal">季</span>
+              <AnimatedNumber value={seasonsCount} /> <span className="text-xs text-white/70 font-normal">季</span>
             </span>
           </div>
         )}
         {episodesCount !== undefined && (
           <div className="flex justify-between items-end">
-            <span className="text-sm text-white/50">集数</span>
+            <span className="text-sm text-white/70">集数</span>
             <span className="text-2xl font-mono text-white">
-              <AnimatedNumber value={episodesCount} /> <span className="text-xs text-white/60 font-normal">集</span>
+              <AnimatedNumber value={episodesCount} /> <span className="text-xs text-white/70 font-normal">集</span>
             </span>
           </div>
         )}
@@ -111,11 +117,13 @@ function MediaStatusCard({
     </>
   );
 
+  const containerClasses = "group flex flex-col gap-3.5 rounded-xl border border-white/[0.08] bg-white/[0.03] p-4 transition-all duration-300 hover:border-white/20 hover:bg-white/[0.06]";
+
   if (href) {
     return (
       <Link
         href={href}
-        className="surface-card interactive-card group flex flex-col gap-4 rounded-2xl p-4 sm:p-5 transition-all duration-300 hover:scale-[1.02] cursor-pointer"
+        className={`${containerClasses} cursor-pointer hover:scale-[1.01]`}
       >
         {content}
       </Link>
@@ -123,7 +131,7 @@ function MediaStatusCard({
   }
 
   return (
-    <div className="surface-card flex flex-col gap-4 rounded-2xl p-4 sm:p-5">
+    <div className={containerClasses}>
       {content}
     </div>
   );
@@ -180,6 +188,12 @@ export default function HomeDashboard({
   const unwatchedSeries = currentYearData?.unwatched_series || 0;
   const totalSeries = watchedSeries + watchingSeries + unwatchedSeries;
   const seriesPercent = percent(watchedSeries, totalSeries);
+
+  // 电视剧进度按已看集数占比计算，真实反映追剧进展并避免全 0% 空白条。
+  const watchedEpisodes = currentYearData?.watched_series_episodes ?? 0;
+  const unwatchedEpisodes = currentYearData?.unwatched_episodes ?? 0;
+  const totalEpisodes = currentYearData?.total_series_episodes ?? (watchedEpisodes + unwatchedEpisodes);
+  const seriesEpisodesPercent = percent(watchedEpisodes, totalEpisodes);
 
   const avgSeriesRating = currentYearData?.series_avg_rating || 0;
   const avgSeriesRatingPercent = percent(avgSeriesRating, 10);
@@ -253,19 +267,19 @@ export default function HomeDashboard({
 
             <dl className="grid grid-cols-3 gap-2 border-t border-white/10 pt-4 lg:min-w-100 lg:border-l lg:border-t-0 lg:pl-8 lg:pt-0">
               <div>
-                <dt className="text-[11px] tracking-wide text-white/60">电影总计</dt>
+                <dt className="text-[11px] tracking-wide text-white/75">电影总计</dt>
                 <dd className="mt-1 font-mono text-xl font-medium text-white sm:text-2xl">
                   <AnimatedNumber value={totalMovies} />
                 </dd>
               </div>
               <div>
-                <dt className="text-[11px] tracking-wide text-white/60">电视剧总计</dt>
+                <dt className="text-[11px] tracking-wide text-white/75">电视剧总计</dt>
                 <dd className="mt-1 font-mono text-xl font-medium text-white sm:text-2xl">
                   <AnimatedNumber value={totalSeries} />
                 </dd>
               </div>
               <div>
-                <dt className="text-[11px] tracking-wide text-white/60">完成进度</dt>
+                <dt className="text-[11px] tracking-wide text-white/75">完成进度</dt>
                 <dd
                   className="mt-1 font-mono text-xl font-medium text-accent-light text-[var(--accent-light)] sm:text-2xl"
                   style={{ color: "var(--accent-light)" }}
@@ -346,26 +360,32 @@ export default function HomeDashboard({
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <MediaStatusCard
                   title="已观看"
                   icon="i-material-symbols-check-circle-outline-rounded"
                   count={watchedMovies}
-                  href={getStatusSearchLink("电影", "已看", selectedYear)}
+                  href={getStatusSearchLink("movie", "watched", selectedYear)}
                 />
                 <MediaStatusCard
                   title="想要看"
-                  icon="i-material-symbols-pause-circle-outline-rounded"
+                  icon="i-material-symbols-bookmark-outline-rounded"
                   count={unwatchedMovies}
-                  href={getStatusSearchLink("电影", "想看", selectedYear)}
+                  href={getStatusSearchLink("movie", "want_to_watch", selectedYear)}
                 />
               </div>
 
-              <div className="progress-track h-1.5 w-full overflow-hidden rounded-full shadow-inner">
-                <div
-                  className="h-full bg-linear-to-r from-[var(--accent-dark)] to-[var(--accent-hover)] rounded-full"
-                  style={{ width: `${moviesPercent}%` }}
-                />
+              <div className="flex flex-col gap-2">
+                <div className="flex items-center justify-between text-xs text-white/75 font-medium">
+                  <span>观影完成度</span>
+                  <span className="font-mono text-white/90">{watchedMovies} / {totalMovies} 部 · {moviesPercent}%</span>
+                </div>
+                <div className="progress-track h-1.5 w-full overflow-hidden rounded-full shadow-inner">
+                  <div
+                    className="h-full bg-linear-to-r from-[var(--accent-dark)] to-[var(--accent-hover)] rounded-full transition-all duration-500"
+                    style={{ width: `${moviesPercent}%` }}
+                  />
+                </div>
               </div>
             </div>
 
@@ -381,37 +401,43 @@ export default function HomeDashboard({
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3">
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
                 <MediaStatusCard
                   title="已观看"
                   icon="i-material-symbols-check-circle-outline-rounded"
                   count={watchedSeries}
                   seasonsCount={currentYearData?.watched_seasons ?? 0}
                   episodesCount={currentYearData?.watched_series_episodes ?? 0}
-                  href={getStatusSearchLink("电视剧", "已看", selectedYear)}
+                  href={getStatusSearchLink("tv_series", "watched", selectedYear)}
                 />
                 <MediaStatusCard
                   title="正在看"
                   icon="i-material-symbols-play-circle-outline-rounded"
                   count={watchingSeries}
                   seasonsCount={currentYearData?.watching_seasons ?? 0}
-                  href={getStatusSearchLink("电视剧", "在看", selectedYear)}
+                  href={getStatusSearchLink("tv_series", "watching", selectedYear)}
                 />
                 <MediaStatusCard
                   title="想要看"
-                  icon="i-material-symbols-pause-circle-outline-rounded"
+                  icon="i-material-symbols-bookmark-outline-rounded"
                   count={unwatchedSeries}
                   seasonsCount={currentYearData?.unwatched_seasons ?? 0}
                   episodesCount={currentYearData?.unwatched_episodes ?? 0}
-                  href={getStatusSearchLink("电视剧", "想看", selectedYear)}
+                  href={getStatusSearchLink("tv_series", "want_to_watch", selectedYear)}
                 />
               </div>
               
-              <div className="progress-track h-1.5 w-full overflow-hidden rounded-full shadow-inner">
-                <div
-                  className="h-full bg-linear-to-r from-[var(--accent-dark)] to-[var(--accent-hover)] rounded-full"
-                  style={{ width: `${seriesPercent}%` }}
-                />
+              <div className="flex flex-col gap-2">
+                <div className="flex items-center justify-between text-xs text-white/75 font-medium">
+                  <span>追剧集数进度</span>
+                  <span className="font-mono text-white/90">{watchedEpisodes} / {totalEpisodes} 集 · {seriesEpisodesPercent}%</span>
+                </div>
+                <div className="progress-track h-1.5 w-full overflow-hidden rounded-full shadow-inner">
+                  <div
+                    className="h-full bg-linear-to-r from-[var(--accent-dark)] to-[var(--accent-hover)] rounded-full transition-all duration-500"
+                    style={{ width: `${seriesEpisodesPercent}%` }}
+                  />
+                </div>
               </div>
             </div>
           </div>
@@ -420,7 +446,7 @@ export default function HomeDashboard({
         {activeTab === "电影" && (
           <div key="movies" id="dashboard-panel-movies" role="tabpanel" aria-labelledby="dashboard-tab-movies" className="animate-fade-in flex flex-col gap-4 md:gap-6">
             <CategoryHeaderCards
-              year={selectedYear}
+              year={selectedYear === "All Time" ? "全时段" : selectedYear}
               categoryName="电影"
               watchedCount={watchedMovies}
               totalCount={totalMovies}
@@ -444,7 +470,7 @@ export default function HomeDashboard({
                 <MediaRow
                   title={selectedYear === "All Time" ? "影史精选" : `${selectedYear} 年度精选`}
                   items={selectedYear === "All Time" ? topMovies : displayedTopMovies}
-                  viewAllLink={getSearchViewAllLink("电影", selectedYear)}
+                  viewAllLink={getSearchViewAllLink("movie", selectedYear)}
                   type="movies"
                 />
               )}
@@ -455,7 +481,7 @@ export default function HomeDashboard({
         {activeTab === "电视剧" && (
           <div key="tv-series" id="dashboard-panel-tv-series" role="tabpanel" aria-labelledby="dashboard-tab-tv-series" className="animate-fade-in flex flex-col gap-4 md:gap-6">
             <CategoryHeaderCards
-              year={selectedYear}
+              year={selectedYear === "All Time" ? "全时段" : selectedYear}
               categoryName="电视剧"
               watchedCount={watchedSeries}
               totalCount={totalSeries}
@@ -479,7 +505,7 @@ export default function HomeDashboard({
                 <MediaRow
                   title={selectedYear === "All Time" ? "影史精选" : `${selectedYear} 年度精选`}
                   items={selectedYear === "All Time" ? topSeries : displayedTopSeries}
-                  viewAllLink={getSearchViewAllLink("电视剧", selectedYear)}
+                  viewAllLink={getSearchViewAllLink("tv_series", selectedYear)}
                   type="series"
                 />
               )}
