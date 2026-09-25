@@ -23,7 +23,7 @@ export default function CategoryHeaderCards({
   return (
     <div className="grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-6 lg:grid-cols-4">
       <div className="surface-card col-span-1 flex flex-col justify-center rounded-2xl p-4 sm:p-5 lg:col-span-3 lg:p-6">
-        <div className="text-white/60 mb-4 flex justify-between items-center">
+        <div className="text-white/75 mb-4 flex justify-between items-center">
           <i className="text-xl font-medium">{year} {categoryName} 阅览进度</i>
         </div>
         <div>
@@ -31,7 +31,7 @@ export default function CategoryHeaderCards({
             <span className="text-4xl font-mono text-white">
               <AnimatedNumber value={watchedCount} />
             </span>
-            <span className="text-sm text-white/50 font-medium">
+            <span className="text-sm text-white/70 font-medium">
               / <AnimatedNumber value={totalCount} /> 部 (已看 / 总数)
             </span>
           </div>
@@ -48,7 +48,7 @@ export default function CategoryHeaderCards({
       </div>
 
       <div className="surface-card col-span-1 flex flex-col justify-center rounded-2xl p-4 sm:p-5 lg:p-6">
-        <div className="text-white/60 mb-4 flex justify-between items-center">
+        <div className="text-white/75 mb-4 flex justify-between items-center">
           <i className="text-xl font-medium">平均{categoryName}评分</i>
         </div>
         <div>
@@ -56,7 +56,7 @@ export default function CategoryHeaderCards({
             <span className="text-4xl font-mono text-white">
               <AnimatedNumber value={avgRating || 0} decimals={1} />
             </span>
-            <span className="text-sm text-white/50 font-medium">/ 10</span>
+            <span className="text-sm text-white/70 font-medium">/ 10</span>
           </div>
           <div className="progress-track h-1.5 w-full overflow-hidden rounded-full shadow-inner">
             <div

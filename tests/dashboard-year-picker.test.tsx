@@ -41,3 +41,16 @@ test("closes without selecting when Escape is pressed", /* 验证 Escape 只关�
   expect(picker).toHaveAttribute("aria-expanded", "false");
   expect(onSelect).not.toHaveBeenCalled();
 });
+
+test("displays '全时段' when 'All Time' is selected", /* 验证选中 All Time 时输入框显示为全时段 */ () => {
+  render(
+    <DashboardYearPicker
+      years={["All Time", 2025, 2024]}
+      selectedYear="All Time"
+      onSelect={vi.fn()}
+    />,
+  );
+  const picker = screen.getByRole("combobox", { name: "筛选年份" });
+  expect(picker).toHaveValue("全时段");
+});
+

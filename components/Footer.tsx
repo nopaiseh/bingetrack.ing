@@ -28,9 +28,22 @@ export default function Footer() {
               </span>
             </Link>
             <span className="hidden sm:block text-white/20">|</span>
-            <span className="text-white/60 text-xs font-mono">
-              &copy; 1990 - {new Date().getFullYear()} 个人媒体记录平台
-            </span>
+            <div className="relative group inline-flex items-center">
+              <span
+                tabIndex={0}
+                className="text-white/70 text-xs font-mono cursor-help border-b border-dashed border-white/30 transition-colors hover:text-white hover:border-white/70 focus:text-white focus:border-white/70 focus:outline-none"
+                title="1990 为站长出生年份，记录人生至今的观影与追剧轨迹"
+              >
+                &copy; 1990 – {new Date().getFullYear()} 个人媒体记录平台
+              </span>
+              <span
+                role="tooltip"
+                className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-max max-w-[280px] sm:max-w-xs px-2.5 py-1.5 rounded-lg bg-neutral-900/95 border border-white/20 text-xs text-white/90 shadow-xl backdrop-blur-md opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-all duration-200 translate-y-1 group-hover:translate-y-0 group-focus-within:translate-y-0 z-50 text-center"
+              >
+                1990 为站长出生年份，记录人生至今的观影与追剧轨迹
+                <span className="absolute top-full left-1/2 -translate-x-1/2 -mt-px border-4 border-transparent border-t-neutral-900/95" />
+              </span>
+            </div>
           </div>
 
           <div className="flex flex-col sm:flex-row items-center justify-center lg:justify-end gap-4 text-white/50">
@@ -39,8 +52,8 @@ export default function Footer() {
                 href="https://nextjs.org/"
                 target="_blank"
                 rel="noreferrer"
-                title="Next.js"
-                aria-label="Next.js"
+                title="Next.js - 现代化全栈框架"
+                aria-label="Next.js 官网"
                 className="hover:text-white transition-colors duration-300"
               >
                 <svg className="size-4.5 fill-current" viewBox="0 0 24 24" aria-hidden="true">
@@ -52,8 +65,8 @@ export default function Footer() {
                 href="https://unocss.dev/"
                 target="_blank"
                 rel="noreferrer"
-                title="UnoCSS"
-                aria-label="UnoCSS"
+                title="UnoCSS - 即时原子化 CSS 引擎"
+                aria-label="UnoCSS 官网"
                 className="hover:text-[#FAD000] transition-colors duration-300"
               >
                 <svg className="size-4.5 fill-current" viewBox="0 0 220 220" aria-hidden="true">
@@ -67,8 +80,8 @@ export default function Footer() {
                 href="https://supabase.com/"
                 target="_blank"
                 rel="noreferrer"
-                title="Supabase"
-                aria-label="Supabase"
+                title="Supabase - 开源数据库平台"
+                aria-label="Supabase 官网"
                 className="hover:text-[#3ECF8E] transition-colors duration-300"
               >
                 <svg className="size-4.5 fill-current" viewBox="0 0 24 24" aria-hidden="true">
@@ -80,8 +93,8 @@ export default function Footer() {
                 href="https://vercel.com/"
                 target="_blank"
                 rel="noreferrer"
-                title="Vercel"
-                aria-label="Vercel"
+                title="Vercel - 前端云与部署平台"
+                aria-label="Vercel 官网"
                 className="hover:text-white transition-colors duration-300"
               >
                 <svg className="size-4 fill-current" viewBox="0 0 24 24" aria-hidden="true">
@@ -93,8 +106,8 @@ export default function Footer() {
                 href="https://sentry.io/"
                 target="_blank"
                 rel="noreferrer"
-                title="Sentry"
-                aria-label="Sentry"
+                title="Sentry - 异常监控与性能追踪"
+                aria-label="Sentry 官网"
                 className="hover:text-[#C9C1F0] transition-colors duration-300"
               >
                 <svg className="size-4.5 fill-current" viewBox="0 0 24 24" aria-hidden="true">
@@ -104,7 +117,7 @@ export default function Footer() {
 
               <span className="text-white/20">|</span>
 
-              <a href="https://github.com/nopaiseh/bingetrack.ing" target="_blank" rel="noreferrer" className="hover:text-white transition-colors duration-300" title="GitHub" aria-label="在GitHub上查看源码">
+              <a href="https://github.com/nopaiseh/bingetrack.ing" target="_blank" rel="noreferrer" className="hover:text-white transition-colors duration-300" title="GitHub - 站长源码仓库" aria-label="在 GitHub 上查看源码">
                 <svg className="size-5 fill-current" viewBox="0 0 24 24" aria-hidden="true">
                   <path d="M12 .7a11.5 11.5 0 0 0-3.64 22.4c.58.1.79-.25.79-.56v-2.23c-3.22.7-3.9-1.37-3.9-1.37-.53-1.34-1.29-1.7-1.29-1.7-1.05-.72.08-.71.08-.71 1.17.08 1.78 1.2 1.78 1.2 1.04 1.78 2.72 1.26 3.38.97.1-.75.4-1.26.74-1.55-2.57-.3-5.27-1.29-5.27-5.69 0-1.26.45-2.28 1.19-3.09-.12-.29-.52-1.46.11-3.05 0 0 .97-.31 3.16 1.18a10.9 10.9 0 0 1 5.76 0c2.2-1.49 3.16-1.18 3.16-1.18.63 1.59.23 2.76.11 3.05.74.81 1.19 1.83 1.19 3.09 0 4.41-2.71 5.39-5.29 5.68.42.36.79 1.06.79 2.14v3.17c0 .31.21.67.8.56A11.5 11.5 0 0 0 12 .7Z" />
                 </svg>

@@ -8,7 +8,7 @@ import MediaRatingBadge from "./MediaRatingBadge";
 import MediaCardStatusBadge from "./MediaCardStatusBadge";
 
 /** 展示卡片海报、年份、评分及最多四个标签，并按参数控制图片加载优先级。 */
-function ItemCard({ item, type, eager, highPriority }: { item: MediaCard; type: "movies" | "series"; eager: boolean; highPriority: boolean }) {
+function ItemCard({ item, type, eager, highPriority, hideStatusBadge }: { item: MediaCard; type: "movies" | "series"; eager: boolean; highPriority: boolean; hideStatusBadge?: boolean }) {
   // 合并类型与语言标签，优先展示前三个类型并补充语言，统一控制卡片高度。
   const tags = [...(item.genres ?? []).slice(0, 3), ...(item.languages ?? []).slice(0, 1)].slice(0, 3);
 
@@ -28,7 +28,7 @@ function ItemCard({ item, type, eager, highPriority }: { item: MediaCard; type: 
         ) : (
           <span className="i-material-symbols-image-outline-rounded inline-block size-10 text-white/30 drop-shadow-md" aria-hidden="true" />
         )}
-        <MediaCardStatusBadge status={item.status} />
+        {!hideStatusBadge && <MediaCardStatusBadge status={item.status} />}
       </div>
       
       <div className="flex flex-col space-y-1.5 grow px-3 py-2.5 min-w-0">
@@ -37,7 +37,7 @@ function ItemCard({ item, type, eager, highPriority }: { item: MediaCard; type: 
         </h3>
 
         <div className="flex items-center justify-between gap-1.5 min-w-0 text-xs">
-          <span className="text-white/60 font-medium whitespace-nowrap shrink-0">
+          <span className="text-white/70 font-medium whitespace-nowrap shrink-0">
             {type === "series"
               ? String(item.release_year || (item.date ? item.date.substring(0, 4) : "未知")).replace(/\s*-\s*/g, "–")
               : item.date ? item.date.substring(0, 4) : "未知"}
@@ -72,12 +72,14 @@ export default function MediaRow({
   viewAllLink,
   type,
   eagerCount = 0,
+  hideStatusBadge = false,
 }: {
   title: string;
   items: MediaCard[];
   viewAllLink?: string;
   type?: "movies" | "series";
   eagerCount?: number;
+  hideStatusBadge?: boolean;
 }) {
   const scrollerRef = useRef<HTMLDivElement>(null);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
@@ -122,7 +124,7 @@ export default function MediaRow({
           {title}
         </h2>
         {viewAllLink && (
-          <Link href={viewAllLink} className="text-sm text-white/60 hover:text-[var(--accent-hover)] transition-all duration-300 uppercase tracking-wider">
+          <Link href={viewAllLink} className="text-sm text-white/75 hover:text-[var(--accent-hover)] transition-all duration-300 uppercase tracking-wider">
             查看全部 &rarr;
           </Link>
         )}
@@ -182,7 +184,7 @@ export default function MediaRow({
               key={media.id}
               className="surface-card interactive-media-card group flex w-40 flex-none snap-start cursor-pointer flex-col overflow-hidden rounded-xl last:snap-end sm:w-48"
             >
-              <ItemCard item={media} type={mediaType} eager={index < eagerCount} highPriority={eagerCount > 0 && index === 0} />
+              <ItemCard item={media} type={mediaType} eager={index < eagerCount} highPriority={eagerCount > 0 && index === 0} hideStatusBadge={hideStatusBadge} />
             </Link>
           );
         })}

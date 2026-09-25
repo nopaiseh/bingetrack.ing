@@ -12,10 +12,10 @@ type SearchTagCategory =
 function getSearchHref(label: string, category: SearchTagCategory) {
   if (category === "director" || category === "cast" || category === "series") {
     const type = category === "director"
-      ? "导演"
+      ? "director"
       : category === "cast"
-        ? "演员"
-        : "系列";
+        ? "actor"
+        : "series";
     const params = new URLSearchParams({
       q: label,
       type,
