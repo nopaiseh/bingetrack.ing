@@ -200,3 +200,6 @@
   line-height: 1.4;
 }
 
+
+/* space-y 只跳过带 hidden 属性的元素；表单开头的无障碍 legend 与隐藏字段不占位，首个可见块不应再留出间距。 */
+.admin-shell :is(form, fieldset) > :nth-child(1 of :not(legend.sr-only, input[type="hidden"])) { margin-top: 0; }

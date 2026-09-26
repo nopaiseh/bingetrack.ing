@@ -1,3 +1,4 @@
+import BackToList from "../../BackToList";
 import { requireOwner } from "@/lib/auth/server";
 import { mediaTypes, type ManagedMediaType } from "@/lib/admin/media-form";
 import { isMediaId } from "@/lib/functions/media-id";
@@ -19,5 +20,5 @@ export default async function NewMediaPage({ searchParams }: { searchParams: Pro
     if (error) throw new Error("无法读取编号建议。");
     nextNumber = Math.min(100000, ((data as unknown as Record<string, number>[])?.[0]?.[column] ?? 0) + 1);
   }
-  return <section><h1 className="admin-heading mb-8">新增媒体</h1><MediaForm initialType={type} lockType={hasType} parent={parent} nextNumber={nextNumber} /></section>;
+  return <section><header className="mb-8"><BackToList category={type} /><h1 className="admin-heading">新增媒体</h1></header><MediaForm initialType={type} lockType={hasType} parent={parent} nextNumber={nextNumber} /></section>;
 }
