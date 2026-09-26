@@ -7,7 +7,7 @@ vi.mock("@/lib/auth/server", () => ({ requireOwner: vi.fn() }));
 vi.mock("next/cache", () => ({ revalidatePath: vi.fn(), revalidateTag: vi.fn() }));
 vi.mock("next/navigation", () => ({ redirect: vi.fn() }));
 const id = "11111111-1111-4111-8111-111111111111";
-const chain = { delete: vi.fn(), eq: vi.fn(), select: vi.fn(), update: vi.fn(), insert: vi.fn(), single: vi.fn(), ilike: vi.fn(), order: vi.fn(), limit: vi.fn(), in: vi.fn(), then: vi.fn((resolve: (val: unknown) => void) => resolve({ data: [], error: null })) };
+const chain = { delete: vi.fn(), eq: vi.fn(), select: vi.fn(), update: vi.fn(), insert: vi.fn(), single: vi.fn(), ilike: vi.fn(), or: vi.fn(), order: vi.fn(), limit: vi.fn(), in: vi.fn(), then: vi.fn((resolve: (val: unknown) => void) => resolve({ data: [], error: null })) };
 const from = vi.fn(() => chain);
 /** 用链式替身检查动作的白名单和确认条件；真实 RLS 与级联由数据库测试验证。 */
 beforeEach(() => {
@@ -75,8 +75,13 @@ describe("关联资料服务端操作", () => {
     expect(result.choices[0].detail).toBe("未知剧集 · 第 1 季");
   });
   it("searchChoices 将输入中的 %、_ 与反斜杠按字面匹配", async () => {
-    await searchChoices("people", " 50%_off\\ ");
+    await searchChoices("genres", " 50%_off\\ ");
     expect(chain.ilike).toHaveBeenCalledWith("name", "%50\\%\\_off\\\\%");
+  });
+  it("searchChoices 对人物同时按名称和别名搜索", async () => {
+    await searchChoices("people", " 50%_off\\ ");
+    expect(chain.or).toHaveBeenCalledWith('name.ilike."%50\\\\%\\\\_off\\\\\\\\%",alternate_name.ilike."%50\\\\%\\\\_off\\\\\\\\%"');
+    expect(chain.ilike).not.toHaveBeenCalled();
   });
   it("支持对 languages（语言）进行新增与保存", async () => {
     chain.single.mockResolvedValue({ data: { id }, error: null });
