@@ -30,9 +30,12 @@ function getSearchHref(label: string, category: SearchTagCategory) {
 export default function SearchTag({
   label,
   category,
+  note,
 }: {
   label: string;
   category: SearchTagCategory;
+  /** 附在名称后的次要说明（如饰演角色），不参与搜索。 */
+  note?: string;
 }) {
   return (
     <Link
@@ -40,6 +43,7 @@ export default function SearchTag({
       className="surface-subtle inline-flex items-center rounded-lg border border-white/10 px-3.5 py-1.5 text-sm font-medium tracking-wide text-white/70 transition-all duration-300 hover:border-white/20 hover:bg-white/10 hover:text-white"
     >
       {label}
+      {note && <>{" "}<span className="ml-1.5 font-normal text-white/40">{note}</span></>}
     </Link>
   );
 }

@@ -42,3 +42,10 @@ test("collapses casts beyond limit and toggles expansion on click", () => {
   expect(screen.getByRole("button", { name: "展开剩余 3 位演员" })).toHaveAttribute("aria-expanded", "false");
 });
 
+
+test("shows the character beside each actor while the link searches only the actor", () => {
+  render(<ExpandableCastList casts={["演员1", "演员2"]} characters={["角色甲", null]} />);
+  const link = screen.getByRole("link", { name: "演员1 饰 角色甲" });
+  expect(link).toHaveAttribute("href", "/search?q=%E6%BC%94%E5%91%981&type=actor");
+  expect(screen.getByRole("link", { name: "演员2" })).toBeInTheDocument();
+});

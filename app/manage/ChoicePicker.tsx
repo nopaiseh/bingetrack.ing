@@ -15,6 +15,7 @@ export default function ChoicePicker({
   allowCreate = false,
   required = false,
   sortable = name === "actors",
+  withCharacter = false,
   onSelect,
 }: {
   kind: string;
@@ -26,6 +27,8 @@ export default function ChoicePicker({
   allowCreate?: boolean;
   required?: boolean;
   sortable?: boolean;
+  /** 在每个已选标签内提供角色名输入，隐藏字段按「姓名<Tab>角色」逐行提交。 */
+  withCharacter?: boolean;
   onSelect?: (value: Choice[]) => void;
 }) {
   const [selected, setSelected] = useState(initial);
@@ -199,7 +202,11 @@ export default function ChoicePicker({
         if (!event.currentTarget.contains(event.relatedTarget)) setOpen(false);
       }}
     >
-      <input type="hidden" name={name} value={selected.map((item) => item.name).join("\n")} />
+      <input
+        type="hidden"
+        name={name}
+        value={selected.map((item) => (withCharacter && item.character ? `${item.name}\t${item.character}` : item.name)).join("\n")}
+      />
 
       {/* 卡片头部：图标 + 标题 + 数量徽章 */}
       <div className="mb-3 flex items-center justify-between">
@@ -232,6 +239,21 @@ export default function ChoicePicker({
                 </span>
               )}
               <span className="break-words font-medium">{item.name}</span>
+              {withCharacter && (
+                <input
+                  className="admin-chip-character"
+                  value={item.character ?? ""}
+                  maxLength={200}
+                  autoComplete="off"
+                  placeholder="饰演角色"
+                  aria-label={`${item.name}饰演的角色`}
+                  onChange={(event) => {
+                    // 制表符和换行是隐藏字段的分隔符，不能出现在角色名里。
+                    const character = event.target.value.replace(/[\t\r\n]+/g, " ");
+                    change(selected.map((value) => (value.id === item.id ? { ...value, character } : value)));
+                  }}
+                />
+              )}
                 {sortable ? (
                   <div className="ml-1 flex items-center gap-0.5 border-l border-white/15 pl-1">
                     {index > 0 && (

@@ -16,6 +16,8 @@ export interface Media {
   summary?: string;
   cover_url: string;
   casts?: string[];
+  // 与 casts 按位置对应的饰演角色，未填写时为 null。
+  characters?: (string | null)[];
   directors?: string[];
   type?: MediaType;
 }
@@ -147,6 +149,7 @@ export interface ViewAllMediaRow {
   summary?: string | null;
   cover_url?: string | null;
   casts?: string[] | null;
+  characters?: (string | null)[] | null;
   directors?: string[] | null;
   type?: string | null;
   series?: string[] | null;

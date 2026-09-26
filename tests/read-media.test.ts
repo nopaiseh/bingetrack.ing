@@ -32,7 +32,8 @@ describe("readEditableMedia", () => {
               if (table === "media_credits") {
                 return {
                   data: [
-                    { role: "actor", people: { name: "Actor A" } },
+                    { role: "actor", character_name: "Hero", people: { name: "Actor A" } },
+                    { role: "actor", character_name: null, people: { name: "Actor C" } },
                     { role: "actor", people: null },
                     null,
                     { role: "director", people: { name: "Director B" } },
@@ -67,7 +68,7 @@ describe("readEditableMedia", () => {
     expect(result?.title).toBe("Test Movie");
     expect(result?.genres).toEqual(["Action"]);
     expect(result?.collections).toEqual([]);
-    expect(result?.actors).toEqual(["Actor A"]);
+    expect(result?.actors).toEqual([{ name: "Actor A", character: "Hero" }, { name: "Actor C", character: null }]);
     expect(result?.directors).toEqual(["Director B"]);
   });
 
