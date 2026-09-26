@@ -15,7 +15,7 @@ export default async function ReferenceDetail({ params, searchParams }: { params
   if (!isReferenceType(kind) || (id !== "new" && !isMediaId(id))) notFound();
   const config = referenceTypes[kind];
   const search = await searchParams;
-  if (id === "new") return <section><BackToList category={kind} /><h1 className="admin-heading my-6">新增{config.label}</h1><ReferenceForm kind={kind} /></section>;
+  if (id === "new") return <section><header className="mb-8"><BackToList category={kind} /><h1 className="admin-heading">新增{config.label}</h1></header><ReferenceForm kind={kind} /></section>;
   const page = Math.min(100000, Math.max(1, parseInt(search.page ?? "1", 10) || 1));
   const [record, relations] = await Promise.all([
     db.from(config.table).select(config.alternate ? "id,name,alternate_name" : "id,name").eq("id", id).maybeSingle(),
@@ -25,7 +25,7 @@ export default async function ReferenceDetail({ params, searchParams }: { params
   if (!record.data) notFound();
   const item = record.data as unknown as { id: string; name: string; alternate_name?: string | null };
   const rows = relations.data as unknown as { media_item_id: string; role?: string; position?: number | null; media_items: { id: string; title: string; type: string } }[];
-  return <section><BackToList category={kind} /><h1 className="admin-heading my-6 break-words">编辑：{item.name}</h1>{search.saved && <StatusModal message="保存成功，关联作品已同步更新。" />}
+  return <section><header className="mb-8"><BackToList category={kind} /><h1 className="admin-heading break-words">编辑：{item.name}</h1></header>{search.saved && <StatusModal message="保存成功，关联作品已同步更新。" />}
     <ReferenceForm key={`${id}:${item.name}:${item.alternate_name}`} kind={kind} item={item} count={relations.count ?? 0} />
     <section className="mt-10 space-y-4"><h2 className="admin-section-title text-xl font-semibold text-white">关联作品 <span className="text-sm font-normal text-neutral-400">{relations.count ?? 0} 个关联</span></h2>{kind === "collections" && <><p className="text-sm text-neutral-400">顺序越小越靠前，相同顺序按作品 ID 排列。</p><CollectionMember series={id} /></>}
       {rows.map(row => <article key={`${row.media_item_id}:${row.role ?? ""}`} className="surface-panel space-y-3 rounded-2xl p-4"><Link href={`/manage/media/${row.media_item_id}`} className="block break-words font-medium text-white hover:text-[var(--accent-hover)]">{row.media_items?.title ?? "作品"} →</Link>{row.role && <p className="text-sm text-neutral-400">{row.role === "actor" ? "演员" : row.role === "director" ? "导演" : row.role}</p>}{kind === "collections" && <CollectionMember series={id} item={{ id: row.media_item_id, title: row.media_items?.title ?? "作品", position: row.position ?? null }} />}</article>)}
