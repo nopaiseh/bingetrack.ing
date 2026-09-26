@@ -1,14 +1,19 @@
 export const IDLE_TIMEOUT = 30 * 60 * 1000;
 
-/** 跨标签页保存操作时间；存储不可用时仍保留当前页面的计时保护。 */
-export function watchIdleSession(userId: string, onExpire: () => void) {
+/**
+ * 跨标签页保存操作时间；存储不可用时仍保留当前页面的计时保护。
+ * signedInAt 是本次会话的登录时间：存储里残留的上个会话时间早于它时以它为准，
+ * 否则开发登录、邮件链接等不经过 resetIdleSession 的新会话会在加载时立即被判定过期。
+ */
+export function watchIdleSession(userId: string, onExpire: () => void, signedInAt?: number) {
   const key = `bingetrack:activity:v1:${userId}`;
+  const floor = Number.isFinite(signedInAt) ? signedInAt! : 0;
   let last = Date.now();
   let expired = false;
   const read = () => {
     try {
       const value = Number(localStorage.getItem(key));
-      if (Number.isFinite(value) && value > 0) last = value;
+      if (Number.isFinite(value) && value > 0) last = Math.max(value, floor);
     } catch { /* 隐私模式下使用内存时间。 */ }
   };
   const write = () => {
