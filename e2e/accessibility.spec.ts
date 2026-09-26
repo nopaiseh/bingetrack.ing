@@ -71,17 +71,14 @@ test("键盘用户可以跳到主要内容", /* 用 Tab 和 Enter 验证跳到�
   await expect(page.locator("#main-content")).toBeFocused();
 });
 
-test("移动导航可以完全使用键盘操作", /* 在移动布局中用键盘打开菜单并进入电影栏目，验证菜单按钮焦点和跳转地址。 */ async ({ page }, testInfo) => {
-  test.skip(testInfo.project.name === "desktop", "桌面导航始终可见");
+test("手机底部标签栏可以完全使用键盘操作", /* 在手机布局中用键盘聚焦底部标签栏的电影入口并跳转，验证当前栏目标记。 */ async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== "phone", "底部标签栏仅在手机宽度出现");
   await page.goto("/");
 
-  const menuButton = page.getByRole("button", { name: "打开导航菜单" });
-  await menuButton.focus();
-  await page.keyboard.press("Enter");
-
-  await expect(page.getByRole("button", { name: "关闭导航菜单" })).toBeFocused();
-  const moviesLink = page.locator("#mobile-navigation").getByRole("link", { name: "电影" });
+  const tabBar = page.getByRole("navigation", { name: "底部导航" });
+  const moviesLink = tabBar.getByRole("link", { name: "电影" });
   await moviesLink.focus();
   await page.keyboard.press("Enter");
   await expect(page).toHaveURL(/\/movies$/);
+  await expect(tabBar.getByRole("link", { name: "电影" })).toHaveAttribute("aria-current", "page");
 });

@@ -4,10 +4,9 @@ import { useEffect, useState } from "react";
 import { THEME_COLORS, THEME_STORAGE_KEY, type ThemeId } from "@/lib/themes";
 
 const PALETTES = [
-  { id: "default", name: "红毯经典", colorClass: "bg-rose-500", glowColor: "rgba(244,63,94,0.6)" },
-  { id: "cyber", name: "赛博霓虹", colorClass: "bg-sky-400", glowColor: "rgba(14,165,233,0.6)" },
-  { id: "sepia", name: "复古胶片", colorClass: "bg-amber-400", glowColor: "rgba(245,158,11,0.6)" },
-  { id: "noir", name: "黑曜钛白", colorClass: "bg-zinc-100", glowColor: "rgba(255,255,255,0.5)" },
+  { id: "default", name: "极光玫瑰", colorClass: "bg-[#ff4d94]", glowColor: "rgba(255,77,148,0.6)" },
+  { id: "lagoon", name: "深海霓虹", colorClass: "bg-[#2ee6d6]", glowColor: "rgba(46,230,214,0.6)" },
+  { id: "golden", name: "金色时刻", colorClass: "bg-[#ffb627]", glowColor: "rgba(255,182,39,0.6)" },
 ] as const;
 
 /** 提供零运行负担的影院氛围主题切换控件，并持久化到本地存储。 */

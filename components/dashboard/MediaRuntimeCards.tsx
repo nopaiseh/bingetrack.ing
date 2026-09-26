@@ -107,8 +107,8 @@ export default function MediaRuntimeCards({
           </div>
         </div>
         <div className="mt-4 border-t border-white/10 pt-4">
-          <div className="progress-track h-1.5 w-full overflow-hidden rounded-full shadow-inner">
-            <div className="h-full rounded-full bg-linear-to-r from-[var(--accent-dark)] to-[var(--accent-hover)]" style={{ width: `${completionPercent}%` }} />
+          <div className="progress-track h-2 w-full overflow-hidden rounded-full">
+            <div className="progress-fill h-full rounded-full" style={{ width: `${completionPercent}%` }} />
           </div>
         </div>
       </div>

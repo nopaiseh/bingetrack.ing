@@ -5,6 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import type { SeasonInfo } from "@/lib/types";
 import MediaCardStatusBadge from "./MediaCardStatusBadge";
+import { edgeFadeMask } from "@/lib/edge-fade-mask";
 
 /**
  * 电视剧季列表横向平滑轮播组件。
@@ -105,20 +106,10 @@ export default function SeasonRow({
         <span className="i-material-symbols-chevron-right-rounded size-6 inline-block" aria-hidden="true" />
       </button>
 
-      {/* 左右滚动边缘暗影提示 */}
-      <div
-        className={`pointer-events-none absolute left-0 top-14 bottom-8 w-8 bg-gradient-to-r from-[var(--canvas)] to-transparent z-10 transition-opacity duration-300 ${
-          canScrollLeft ? "opacity-100" : "opacity-0"
-        }`}
-      />
-      <div
-        className={`pointer-events-none absolute right-0 top-14 bottom-8 w-8 bg-gradient-to-l from-[var(--canvas)] to-transparent z-10 transition-opacity duration-300 ${
-          canScrollRight ? "opacity-100" : "opacity-0"
-        }`}
-      />
-
+      {/* 左右滚动边缘渐隐：遮罩只作用于列表本身，淡出后透出背后的主题底色。 */}
       <div
         ref={scrollerRef}
+        style={edgeFadeMask(canScrollLeft, canScrollRight)}
         className="no-scrollbar -mb-8 flex snap-x snap-mandatory space-x-4 overflow-x-auto scroll-px-1 px-1 pb-12 pt-2 scroll-smooth"
       >
         {seasons.map((season) => {
