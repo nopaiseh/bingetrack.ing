@@ -12,3 +12,14 @@ export type Choice = { id: string; name: string; detail?: string; cover_url?: st
 export function isReferenceType(value: string): value is ReferenceType {
   return Object.hasOwn(referenceTypes, value);
 }
+
+/** 转义 LIKE 通配符与转义符，使输入的 %、_ 按字面匹配。 */
+export function escapeLikePattern(term: string) {
+  return term.replace(/[\\%_]/g, (char) => `\\${char}`);
+}
+
+/** 生成名称与别名的 PostgREST or 条件；值加引号，避免逗号、括号破坏过滤语法。 */
+export function nameOrAliasFilter(term: string) {
+  const quoted = `"${`%${escapeLikePattern(term)}%`.replace(/[\\"]/g, (char) => `\\${char}`)}"`;
+  return `name.ilike.${quoted},alternate_name.ilike.${quoted}`;
+}
