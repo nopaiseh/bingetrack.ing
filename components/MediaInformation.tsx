@@ -238,7 +238,7 @@ export default function MediaInformation({
         <SeasonRow seriesId={media.id} seasons={seasons} />
       )}
         
-        {relatedContent && <div className={seasons ? "" : "mt-12"}>{relatedContent}</div>}
+        {relatedContent && <div className={seasons ? "empty:hidden" : "mt-12 empty:hidden"}>{relatedContent}</div>}
       </div>
     </>
   );

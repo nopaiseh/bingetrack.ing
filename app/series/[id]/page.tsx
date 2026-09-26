@@ -28,10 +28,13 @@ async function RelatedSeries({ seriesNames, currentId }: { seriesNames: string[]
     seriesName,
     items: await getRelatedBySeries(seriesName, currentId),
   })));
+  // 系列里没有其他条目时不渲染任何节点，外层留白容器随之隐藏。
+  const groups = relatedGroups.filter(/* 只保留有其他条目的系列分组。 */ ({ items }) => items.length > 0);
+  if (groups.length === 0) return null;
 
   return (
     <div className="space-y-12">
-      {relatedGroups.map(/* 将一个相关作品分组渲染为横向卡片列表。 */ ({ seriesName, items }) => (
+      {groups.map(/* 将一个相关作品分组渲染为横向卡片列表。 */ ({ seriesName, items }) => (
         <MediaRow key={seriesName} title={`《${seriesName}》系列`} items={items} />
       ))}
     </div>
