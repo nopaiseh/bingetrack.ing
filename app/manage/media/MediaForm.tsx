@@ -338,7 +338,8 @@ export default function MediaForm({ item, initialType = "movie", lockType = fals
                 icon="i-material-symbols-group-rounded"
                 allowCreate
                 sortable
-                initial={(item?.actors ?? []).map((v) => ({ id: v, name: v }))}
+                withCharacter
+                initial={(item?.actors ?? []).map((v) => ({ id: v.name, name: v.name, character: v.character }))}
               />
             </div>
           </section>

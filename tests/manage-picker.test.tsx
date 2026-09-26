@@ -21,6 +21,18 @@ describe("管理关联选择器", () => {
     await user.click(screen.getByRole("button", { name: "移除关联：张三" }));
     expect(container.querySelector('input[name="actors"]')).toHaveValue("Doe, Jane");
   });
+  it("演员角色名随姓名以制表符提交，角色中的制表符被替换为空格", async () => {
+    const user = userEvent.setup();
+    const { container } = render(<ChoicePicker kind="people" name="actors" label="演员" withCharacter initial={[{ id: "a", name: "张三", character: "李四" }, { id: "b", name: "王五" }]} allowCreate />);
+    const hidden = () => container.querySelector('input[name="actors"]');
+    expect(hidden()).toHaveValue("张三\t李四\n王五");
+    await user.type(screen.getByRole("textbox", { name: "王五饰演的角色" }), "赵六");
+    expect(hidden()).toHaveValue("张三\t李四\n王五\t赵六");
+    fireEvent.change(screen.getByRole("textbox", { name: "张三饰演的角色" }), { target: { value: "甲\t乙" } });
+    expect(hidden()).toHaveValue("张三\t甲 乙\n王五\t赵六");
+    await user.clear(screen.getByRole("textbox", { name: "张三饰演的角色" }));
+    expect(hidden()).toHaveValue("张三\n王五\t赵六");
+  });
   it("非排序字段（如类型）不展示排序箭头与番位徽标", () => {
     render(<ChoicePicker kind="genres" name="genres" label="类型标签" initial={[{ id: "g1", name: "综艺" }, { id: "g2", name: "竞技" }]} />);
     expect(screen.getByText("综艺")).toBeInTheDocument();

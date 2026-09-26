@@ -7,7 +7,7 @@ export const referenceTypes = {
   languages: { label: "语言", table: "languages", link: "media_languages", key: "language_id", alternate: false },
 } as const;
 export type ReferenceType = keyof typeof referenceTypes;
-export type Choice = { id: string; name: string; detail?: string; cover_url?: string | null };
+export type Choice = { id: string; name: string; detail?: string; cover_url?: string | null; character?: string | null };
 /** 只允许八类管理内容中的关联资料类别。 */
 export function isReferenceType(value: string): value is ReferenceType {
   return Object.hasOwn(referenceTypes, value);

@@ -20,7 +20,16 @@ describe("管理媒体输入", () => {
     expect(() => parseMediaForm(form({ rating }))).toThrow();
   });
   it("逐行处理名称且保留名字中的逗号", () => {
-    expect(parseMediaForm(form({ actors: "Doe, Jane\n张三\n张三\n" })).actors).toEqual(["Doe, Jane", "张三"]);
+    expect(parseMediaForm(form({ actors: "Doe, Jane\n张三\n张三\n" })).actors).toEqual([{ name: "Doe, Jane", character: null }, { name: "张三", character: null }]);
+  });
+  it("演员行以制表符分隔饰演角色，空角色为 null，同名演员保留第一行", () => {
+    expect(parseMediaForm(form({ actors: "迈克·梅尔斯\t奥斯汀 / 邪恶博士\n张三\t \n迈克·梅尔斯\t别的角色" })).actors).toEqual([
+      { name: "迈克·梅尔斯", character: "奥斯汀 / 邪恶博士" },
+      { name: "张三", character: null },
+    ]);
+  });
+  it("拒绝过长的角色名", () => {
+    expect(() => parseMediaForm(form({ actors: `张三\t${"角".repeat(201)}` }))).toThrow();
   });
   it.each(["javascript:alert(1)", "https://image.tmdb.org.evil.test/a", "https://user@image.tmdb.org/a", "http://image.tmdb.org/a"])("拒绝不受支持的封面地址 %s", cover_url => {
     expect(() => parseMediaForm(form({ cover_url }))).toThrow();
@@ -97,6 +106,6 @@ describe("管理媒体输入", () => {
     });
     const movieResult = parseMediaForm(movieForm);
     expect(movieResult.genres).toEqual(["动作", "剧情"]);
-    expect(movieResult.actors).toEqual(["演员一"]);
+    expect(movieResult.actors).toEqual([{ name: "演员一", character: null }]);
   });
 });

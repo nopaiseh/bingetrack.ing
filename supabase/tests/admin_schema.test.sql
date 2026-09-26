@@ -85,6 +85,12 @@ select lives_ok($$delete from public.people where name='Catalog person'; delete 
 select is((select count(*)::integer from public.media_credits join public.media_items on media_item_id=media_items.id where title='Catalog movie'),0,'reference deletion removes links');
 select is((select count(*)::integer from public.media_items where title='Catalog movie'),1,'deleting reference data preserves movie');
 select is((select count(*)::integer from public.tracking join public.media_items on media_item_id=media_items.id where title='Catalog movie'),1,'deleting reference data preserves tracking');
+select lives_ok($$select public.admin_save_media(pg_temp.admin_payload('movie','Character movie') || '{"actors":[{"name":"Character actor","character":" Hero / Villain "},{"name":"Plain actor","character":null},"Legacy actor"],"directors":["Character director"]}')$$,'owner saves actors with character names');
+select is((select casts from public.v_all_media where title='Character movie'),array['Character actor','Plain actor','Legacy actor'],'casts keep credit order');
+select is((select characters from public.v_all_media where title='Character movie'),array['Hero / Villain',null,null]::text[],'characters align with casts and are trimmed');
+select throws_ok($$select public.admin_save_media(pg_temp.admin_payload('movie','Bad character') || '{"directors":[{"name":"Object director","character":"X"}]}')$$,'22023',null,'directors reject character objects');
+select throws_ok($$select public.admin_save_media(pg_temp.admin_payload('movie','Bad character') || jsonb_build_object('actors',jsonb_build_array(jsonb_build_object('name','Long','character',repeat('x',201)))))$$,'22023',null,'overlong character is rejected');
+select throws_ok($$update public.media_credits set character_name='Nope' where role='director' and media_item_id=(select id from public.media_items where title='Character movie')$$,'23514',null,'only actor credits may have a character');
 
 reset role;
 set local role anon;

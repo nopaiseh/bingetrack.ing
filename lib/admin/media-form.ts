@@ -2,6 +2,8 @@ import { isMediaId } from "@/lib/functions/media-id";
 
 export const mediaTypes = { movie: "电影", tv_series: "电视剧", tv_season: "剧季", tv_episode: "剧集" } as const;
 export type ManagedMediaType = keyof typeof mediaTypes;
+/** 演员及其饰演的角色；未填写角色时为 null。 */
+export type ActorCredit = { name: string; character: string | null };
 export type MediaInput = {
   id: string | null;
   type: ManagedMediaType;
@@ -18,7 +20,7 @@ export type MediaInput = {
   genres: string[];
   languages: string[];
   regions: string[];
-  actors: string[];
+  actors: ActorCredit[];
   directors: string[];
   collections?: string[];
 };
@@ -45,6 +47,19 @@ export function parseMediaForm(form: FormData): MediaInput {
   function names(key: string) {
     const values = [...new Set((string(key, 10000) ?? "").split(/\r?\n/).map(/* 去除每行首尾空白。 */ value => value.trim()).filter(Boolean))];
     if (values.length > 100 || values.some(/* 每个名称最多 200 字符。 */ value => value.length > 200)) throw new Error("关联名称过多或过长。");
+    return values;
+  }
+  /** 每行「姓名<Tab>角色」，角色可省略；同名演员只保留第一行。 */
+  function credits(key: string): ActorCredit[] {
+    const seen = new Set<string>();
+    const values = (string(key, 20000) ?? "").split(/\r?\n/).flatMap(/* 拆出姓名与角色并去除重复演员。 */ line => {
+      const [rawName, ...rest] = line.split("\t");
+      const name = rawName.trim();
+      if (!name || seen.has(name)) return [];
+      seen.add(name);
+      return [{ name, character: rest.join(" ").trim() || null }];
+    });
+    if (values.length > 100 || values.some(/* 姓名与角色各最多 200 字符。 */ value => value.name.length > 200 || (value.character?.length ?? 0) > 200)) throw new Error("关联名称过多或过长。");
     return values;
   }
   const id = string("id");
@@ -76,7 +91,7 @@ export function parseMediaForm(form: FormData): MediaInput {
     genres: isChild ? [] : names("genres"),
     languages: isChild ? [] : names("languages"),
     regions: isChild ? [] : names("regions"),
-    actors: isChild ? [] : names("actors"),
+    actors: isChild ? [] : credits("actors"),
     directors: isChild ? [] : names("directors"),
     collections: isChild ? [] : names("collections") };
 }

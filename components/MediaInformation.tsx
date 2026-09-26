@@ -141,7 +141,7 @@ function MediaCredits({ media }: { media: Media }) {
       </div>
       <div>
         <SectionHeading>主演</SectionHeading>
-        <ExpandableCastList casts={media.casts} initialLimit={12} />
+        <ExpandableCastList casts={media.casts} characters={media.characters} initialLimit={12} />
       </div>
     </div>
   );

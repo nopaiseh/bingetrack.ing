@@ -47,6 +47,7 @@ export function mapViewRowToMedia(
     summary: item.summary ?? "",
     cover_url: optimizeTmdbImageUrl(item.cover_url, "w500"),
     casts: item.casts ?? [],
+    characters: item.characters ?? [],
     directors: item.directors ?? [],
     type: mediaType,
     series: sortNames(overrideSeries ?? item.series),

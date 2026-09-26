@@ -191,4 +191,12 @@
 .admin-tag-chip button:hover {
   opacity: 1;
 }
+/* 演员标签内的角色输入框：保留全局控件的底色与焦点样式，只收紧尺寸。 */
+.admin-shell .admin-tag-chip input.admin-chip-character {
+  width: 7.5rem;
+  padding: .15rem .45rem;
+  border-radius: .4rem;
+  font-size: .75rem;
+  line-height: 1.4;
+}
 

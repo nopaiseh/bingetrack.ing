@@ -5,12 +5,14 @@ import SearchTag from "./SearchTag";
 
 interface ExpandableCastListProps {
   casts?: string[];
+  characters?: (string | null)[];
   initialLimit?: number;
 }
 
 /** 呈现支持折叠的主演名单，超出初始上限时提供展开全部与收起切换。 */
 export default function ExpandableCastList({
   casts = [],
+  characters = [],
   initialLimit = 12,
 }: ExpandableCastListProps) {
   const [isExpanded, setIsExpanded] = useState(false);
@@ -25,8 +27,8 @@ export default function ExpandableCastList({
   return (
     <div className="flex flex-col gap-3">
       <div className="flex flex-wrap gap-2.5">
-        {displayedCasts.map((castMember) => (
-          <SearchTag key={castMember} label={castMember} category="cast" />
+        {displayedCasts.map((castMember, index) => (
+          <SearchTag key={castMember} label={castMember} category="cast" note={characters[index] ? `饰 ${characters[index]}` : undefined} />
         ))}
       </div>
 
