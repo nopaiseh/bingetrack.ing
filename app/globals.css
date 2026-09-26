@@ -516,16 +516,6 @@ body::before {
     opacity: 0.7;
   }
 
-  /* 通栏玻璃（如页脚）不是悬浮物体：高光描边、边框与内顶光会在整条上沿和左侧画出硬线，交给元素自带的居中渐隐分隔线。 */
-  .surface-bleed {
-    border-width: 0;
-    box-shadow: none;
-  }
-
-  .surface-bleed::before {
-    display: none;
-  }
-
   /* 手机宽度下首屏看板紧贴导航栏，导航栏 30px 的背景模糊半径会采样到它的玻璃上沿，
      Chrome 会在导航栏内渲染出一条硬边。它的背后只有本就柔和的主题极光，去掉自身模糊视觉上无差别。 */
   @media (max-width: 767.98px) {
