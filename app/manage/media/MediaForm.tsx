@@ -253,7 +253,7 @@ export default function MediaForm({ item, initialType = "movie", lockType = fals
                   <label htmlFor="field-rating">评分（0–10，可留空）</label>
                   <span className="text-[11px] font-normal text-neutral-500">满分 10</span>
                 </div>
-                <input id="field-rating" type="number" name="rating" min="0" max="10" step="0.1" {...field("rating", item?.rating)} placeholder="例如：8.5" />
+                <input id="field-rating" type="number" name="rating" min="0" max="10" step="0.1" {...field("rating", item?.rating != null ? Number(item.rating).toFixed(1) : null)} placeholder="例如：8.5" />
               </div>
             </div>
           </section>
@@ -265,7 +265,7 @@ export default function MediaForm({ item, initialType = "movie", lockType = fals
                 <span className="text-sm text-neutral-400">观看状态：</span>
                 <span className="surface-muted rounded-full border border-white/10 px-3 py-1 text-xs text-neutral-200">
                   {item?.status === "watched" ? "看过" : item?.status === "watching" ? "在看" : "没看过"}
-                  {item?.rating != null ? ` · ${item.rating} 分` : ""}
+                  {item?.rating != null ? ` · ${Number(item.rating).toFixed(1)} 分` : ""}
                 </span>
               </div>
               <p className="text-xs text-neutral-400">

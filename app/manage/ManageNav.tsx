@@ -34,10 +34,6 @@ export default function ManageNav() {
   /** 关联资料使用独立路由，影视保留可分享的类型筛选。 */
   function href(value: string) { return value.startsWith("tv_") || value === "movie" ? `/manage?type=${value}` : `/manage/references/${value}`; }
   return <aside className="min-w-0 lg:sticky lg:top-24 lg:self-start">
-    <div className="mb-4 hidden px-3 lg:block"><p className="mt-2 text-xl font-semibold text-white">内容工作台</p></div>
-    <div className="mb-6 hidden lg:block">
-      <RefreshCacheButton />
-    </div>
     <div className="lg:hidden flex items-center justify-between gap-3">
       <label className="flex-1">管理类别<select value={active} onChange={/* 切换分类时进入该类别第一页。 */ event => {
         if (mayLeaveEditor()) {
@@ -53,7 +49,13 @@ export default function ManageNav() {
         <RefreshCacheButton compact />
       </div>
     </div>
-    <nav aria-label="内容管理分类" className="hidden space-y-6 lg:block">
+    {/* surface-panel 为普通样式类，不能加 lg: 前缀，故桌面侧栏单独包一层面板。 */}
+    <div className="surface-panel hidden rounded-2xl p-3 lg:block">
+    <div className="mb-4 px-3"><p className="mt-2 text-xl font-semibold text-white">内容工作台</p></div>
+    <div className="mb-6">
+      <RefreshCacheButton />
+    </div>
+    <nav aria-label="内容管理分类" className="space-y-6">
       {groups.map(group => (
         <div key={group.label}>
           <p className="mb-2 px-3 text-xs font-medium tracking-wider text-white/40">{group.label}</p>
@@ -107,8 +109,9 @@ export default function ManageNav() {
         </div>
       ))}
     </nav>
-    <div className="mt-6 hidden space-y-2 border-t border-white/10 pt-5 text-sm text-white/60 lg:block">
+    <div className="mt-6 space-y-2 border-t border-white/10 pt-5 text-sm text-white/60">
       <Link href="/settings" className="flex items-center gap-3 p-3 transition-colors hover:text-white"><span className="i-material-symbols-settings-rounded size-4.5 inline-block shrink-0" aria-hidden="true" />账号安全</Link>
+    </div>
     </div>
   </aside>;
 }
