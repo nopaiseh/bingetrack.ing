@@ -4,8 +4,17 @@ import { requireOwner } from "@/lib/auth/server";
 import { mediaTypes, type ManagedMediaType } from "@/lib/admin/media-form";
 import { isMediaId } from "@/lib/functions/media-id";
 import StatusModal from "./StatusModal";
+import ManagePagination from "./ManagePagination";
+import { redirect } from "next/navigation";
 
-/** 分页搜索全部影视，或查看指定剧集／季的下属条目。 */
+const PAGE_SIZE = 25;
+
+/** 只把表或视图缺失（迁移尚未应用）识别为可降级的错误，权限与网络错误照常抛出。 */
+function isMissingRelation(error: { code?: string } | null) {
+  return error?.code === "PGRST205" || error?.code === "42P01";
+}
+
+/** 分页搜索全部影视，或查看指定剧集／季的下属条目；按上映日期或最近一集播出日期倒序排列。 */
 export default async function AdminPage({ searchParams }: { searchParams: Promise<Record<string, string | undefined>> }) {
   const { db } = await requireOwner();
   const params = await searchParams;
@@ -15,12 +24,49 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
   const page = Math.min(100000, Math.max(1, Number.parseInt(params.page ?? "1", 10) || 1));
   const relation = parent && (type === "tv_season" || type === "tv_episode");
   const fields = `id,title,type,cover_url,release_date,tracking(status,rating),tv_seasons!tv_seasons_id_fkey${parent && type === "tv_season" ? "!inner" : ""}(series_id,season_number,parent:media_items!tv_seasons_series_id_fkey(title),episodes:tv_episodes!tv_episodes_season_id_fkey(count)),tv_episodes!tv_episodes_id_fkey${parent && type === "tv_episode" ? "!inner" : ""}(season_id,episode_number,parent:tv_seasons!tv_episodes_season_id_fkey(media_items!tv_seasons_id_fkey(title),series:media_items!tv_seasons_series_id_fkey(title))),seasons:tv_seasons!tv_seasons_series_id_fkey(count)`;
-  let query = db.from("media_items").select(fields, { count: "exact" }).eq("type", type);
-  if (q) query = query.ilike("title", `%${q}%`);
-  if (relation) query = query.eq(type === "tv_season" ? "tv_seasons.series_id" : "tv_episodes.season_id", parent);
-  if (relation) query = query.order(type === "tv_season" ? "tv_seasons(season_number)" : "tv_episodes(episode_number)");
-  const { data, count, error } = await query.order("title").order("id").range((page - 1) * 25, page * 25 - 1);
-  if (error) throw new Error("无法读取管理列表，请稍后重试。");
+  const detailFields = fields.replaceAll("!inner", "");
+  const offset = (page - 1) * PAGE_SIZE;
+
+  // 优先读取排序视图：电影、单集按上映日期倒序，剧集、剧季按最近一集播出日期倒序；同日期内按季号／集号倒序。
+  let orderQuery = db.from("v_manage_media_order").select("id", { count: "exact" }).eq("type", type);
+  if (q) orderQuery = orderQuery.ilike("title", `%${q}%`);
+  if (relation) orderQuery = orderQuery.eq("parent_id", parent);
+  const ordered = await orderQuery
+    .order("sort_date", { ascending: false, nullsFirst: false })
+    .order("item_number", { ascending: false, nullsFirst: false })
+    .order("title")
+    .order("id")
+    .range(offset, offset + PAGE_SIZE - 1);
+
+  let data: unknown[];
+  let count: number;
+  if (!ordered.error) {
+    const ids = (ordered.data ?? []).map((row) => row.id as string);
+    count = ordered.count ?? 0;
+    if (ids.length > 0) {
+      const details = await db.from("media_items").select(detailFields).in("id", ids);
+      if (details.error) throw new Error("无法读取管理列表，请稍后重试。");
+      const position = new Map(ids.map((id, index) => [id, index]));
+      const detailRows = (details.data ?? []) as unknown as { id: string }[];
+      data = [...detailRows].sort((a, b) => (position.get(a.id) ?? 0) - (position.get(b.id) ?? 0));
+    } else {
+      data = [];
+    }
+  } else if (isMissingRelation(ordered.error)) {
+    // 排序视图迁移尚未应用时，退回按条目自身上映日期倒序，保证管理页仍可使用。
+    let query = db.from("media_items").select(fields, { count: "exact" }).eq("type", type);
+    if (q) query = query.ilike("title", `%${q}%`);
+    if (relation) query = query.eq(type === "tv_season" ? "tv_seasons.series_id" : "tv_episodes.season_id", parent);
+    const fallback = await query.order("release_date", { ascending: false, nullsFirst: false }).order("title").order("id").range(offset, offset + PAGE_SIZE - 1);
+    if (fallback.error) throw new Error("无法读取管理列表，请稍后重试。");
+    data = fallback.data ?? [];
+    count = fallback.count ?? 0;
+  } else {
+    throw new Error("无法读取管理列表，请稍后重试。");
+  }
+
+  const totalPages = Math.max(1, Math.ceil(count / PAGE_SIZE));
+  if (page > totalPages) redirect(`/manage?${new URLSearchParams({ q, type, parent, page: String(totalPages) })}`);
   const rows = data as unknown as { id: string; title: string; type: ManagedMediaType; cover_url: string | null; release_date: string | null; tv_seasons: { season_number: number; episodes?: { count: number }[]; parent?: { title: string } | null } | null; tv_episodes: { episode_number: number; parent?: { media_items?: { title: string } | null; series?: { title: string } | null } | null } | null; seasons?: { count: number }[]; tracking: { status: string; rating: number | null } | { status: string; rating: number | null }[] | null }[];
   const seriesStatusMap = new Map<string, { status: string; rating: number | null }>();
   const seasonStatusMap = new Map<string, { status: string }>();
@@ -60,13 +106,9 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
     }
   }
 
-  /** 保留当前筛选条件生成分页地址。 */
-  function pageUrl(next: number) {
-    return `/manage?${new URLSearchParams({ q, type, parent, page: String(next) })}`;
-  }
   return <section>
     <div className="surface-panel mb-8 rounded-3xl p-5 sm:p-8 flex flex-wrap items-center justify-between gap-4">
-      <div><h1 className="admin-heading">{mediaTypes[type]}</h1><p className="mt-2 text-neutral-400">共 {count ?? 0} 个条目 · 管理影视与观看记录</p></div>
+      <div><h1 className="admin-heading">{mediaTypes[type]}</h1><p className="mt-2 text-neutral-400">共 {count} 个条目 · 管理影视与观看记录</p></div>
       <Link href={`/manage/media/new${type ? `?type=${type}${parent ? `&parent=${parent}` : ""}` : ""}`} className="admin-button admin-primary shrink-0">新增{type ? mediaTypes[type] : "媒体"}</Link>
     </div>
     {params.deleted === "1" && <StatusModal message="条目及其下属资料已删除。" />}
@@ -113,10 +155,6 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
       </Link>
     </li>; })}</ul>}
     {!rows.length && <p className="surface-panel rounded-2xl px-6 py-16 text-center text-neutral-400">没有符合条件的条目。</p>}
-    <nav aria-label="管理列表分页" className="mt-6 flex items-center justify-between">
-      {page > 1 ? <Link href={pageUrl(page - 1)} className="admin-button">上一页</Link> : <span />}
-      <span className="text-sm text-neutral-400">第 {page} 页</span>
-      {page * 25 < (count ?? 0) ? <Link href={pageUrl(page + 1)} className="admin-button">下一页</Link> : <span />}
-    </nav>
+    <ManagePagination page={page} totalPages={totalPages} params={{ q, type, parent }} />
   </section>;
 }

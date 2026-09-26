@@ -9,18 +9,12 @@ import { PAGE_SIZE, readFilters, writeFilters, readSearchPage, buildMediaSearchQ
 
 import { SearchMediaCard, SearchMediaCardSkeleton } from "@/components/SearchMediaCard";
 import SearchLoading from "./loading";
+import { pageNumbers } from "@/lib/pagination";
 
 type SearchProps = {
   initialOptions: SearchOptions;
   initialResult: { rows: MediaCard[]; total: number; key: string; error: string | null };
 };
-
-/** 生成最多五个连续页码，靠近首尾页时调整窗口以避免越界。 */
-function pageNumbers(current: number, total: number) {
-  const start = Math.max(1, Math.min(current - 2, total - 4));
-  const end = Math.min(total, start + 4);
-  return Array.from({ length: end - start + 1 }, /* 将窗口内的索引转换为实际页码。 */ (_, index) => start + index);
-}
 
 const TYPE_OPTIONS = [
   { value: "movie", label: "电影" },
