@@ -15,7 +15,7 @@ export default function ManagePagination({
 
   /** 保留当前筛选条件生成目标页地址。 */
   const pageUrl = (target: number) => `/manage?${new URLSearchParams({ ...params, page: String(target) })}`;
-  const arrowClass = "surface-control flex items-center rounded-xl p-2.5 text-white/70 transition-all hover:bg-white/10 hover:text-white";
+  const arrowClass = "surface-control flex items-center rounded-xl p-2.5 text-white/70 transition-all hover:text-white";
 
   return (
     <nav aria-label="管理列表分页" className="mt-6 flex flex-col items-center gap-3">

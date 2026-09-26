@@ -643,7 +643,7 @@ function SearchContent({ initialOptions, initialResult }: SearchProps) {
           
           {totalPages > 1 && !isLoading && (
             <nav className="mt-10 flex flex-wrap items-center justify-center gap-2" aria-label="搜索结果分页">
-              <button onClick={/* 返回上一页搜索结果。 */ () => goToPage(page - 1)} disabled={page === 1} className="surface-control rounded-xl p-2.5 text-white/70 transition-all hover:bg-white/10 hover:text-white disabled:pointer-events-none disabled:opacity-30" aria-label="上一页">
+              <button onClick={/* 返回上一页搜索结果。 */ () => goToPage(page - 1)} disabled={page === 1} className="surface-control rounded-xl p-2.5 text-white/70 transition-all hover:text-white disabled:pointer-events-none disabled:opacity-30" aria-label="上一页">
                 <span className="i-material-symbols-chevron-left-rounded inline-block size-4" aria-hidden="true" />
               </button>
               {pageNumbers(page, totalPages).map(/* 将页码窗口中的一页渲染为分页按钮。 */ (pageNumber) => (
@@ -651,7 +651,7 @@ function SearchContent({ initialOptions, initialResult }: SearchProps) {
                   {pageNumber}
                 </button>
               ))}
-              <button onClick={/* 前往下一页搜索结果。 */ () => goToPage(page + 1)} disabled={page === totalPages} className="surface-control rounded-xl p-2.5 text-white/70 transition-all hover:bg-white/10 hover:text-white disabled:pointer-events-none disabled:opacity-30" aria-label="下一页">
+              <button onClick={/* 前往下一页搜索结果。 */ () => goToPage(page + 1)} disabled={page === totalPages} className="surface-control rounded-xl p-2.5 text-white/70 transition-all hover:text-white disabled:pointer-events-none disabled:opacity-30" aria-label="下一页">
                 <span className="i-material-symbols-chevron-right-rounded inline-block size-4" aria-hidden="true" />
               </button>
             </nav>

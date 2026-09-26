@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 
 const formatYearLabel = (year: string) => (year === "All Time" ? "全时段" : year);
 
@@ -17,7 +18,9 @@ export default function DashboardYearPicker({
   const [isOpen, setIsOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [activeIndex, setActiveIndex] = useState(-1);
+  const [listPosition, setListPosition] = useState<{ top: number; right: number } | null>(null);
   const pickerRef = useRef<HTMLDivElement>(null);
+  const listRef = useRef<HTMLDivElement>(null);
   const options = useMemo(
     /** 把年份转成字符串并按输入文本筛选，复用未变化的筛选结果。 */
     () =>
@@ -31,7 +34,8 @@ export default function DashboardYearPicker({
   useEffect(/* 注册点击外部关闭的监听，并在卸载时清理。 */ () => {
     /** 点击选择框外部时关闭列表，清空查询和键盘定位状态。 */
     function handleClickOutside(event: MouseEvent) {
-      if (pickerRef.current && !pickerRef.current.contains(event.target as Node)) {
+      const target = event.target as Node;
+      if (pickerRef.current && !pickerRef.current.contains(target) && !listRef.current?.contains(target)) {
         setIsOpen(false);
         setQuery("");
         setActiveIndex(-1);
@@ -40,6 +44,22 @@ export default function DashboardYearPicker({
     document.addEventListener("mousedown", handleClickOutside);
     return /* 移除年份选择框的外部点击监听。 */ () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
+
+  useLayoutEffect(/* 展开时把列表定位到触发器下方，并随滚动与缩放同步。 */ () => {
+    if (!isOpen) return;
+    /** 读取触发器位置，换算为视口右对齐的固定定位坐标。 */
+    function updatePosition() {
+      const rect = pickerRef.current?.getBoundingClientRect();
+      if (rect) setListPosition({ top: rect.bottom + 8, right: window.innerWidth - rect.right });
+    }
+    updatePosition();
+    window.addEventListener("resize", updatePosition);
+    window.addEventListener("scroll", updatePosition, true);
+    return /* 收起列表时移除定位监听。 */ () => {
+      window.removeEventListener("resize", updatePosition);
+      window.removeEventListener("scroll", updatePosition, true);
+    };
+  }, [isOpen]);
 
   /** 通知父组件选择年份，并关闭列表、清空输入和定位状态。 */
   function selectYear(year: string) {
@@ -52,7 +72,7 @@ export default function DashboardYearPicker({
   return (
     <div className="relative" ref={pickerRef}>
       <label
-        className="surface-control group flex w-35 cursor-pointer items-center gap-2 rounded-xl py-2.5 pl-4 pr-3 transition-all hover:border-white/20 hover:bg-white/10 hover:shadow-[0_6px_20px_rgba(0,0,0,0.3)]"
+        className="surface-control group flex w-35 cursor-pointer items-center gap-2 rounded-full py-2.75 pl-4 pr-3.5"
         onClick={/* 点击年份选择区域时展开候选列表。 */ () => setIsOpen(true)}
       >
         <span className="i-material-symbols-calendar-today-rounded inline-block size-4 text-[var(--accent)] transition-colors group-hover:text-[var(--accent-hover)]" aria-hidden="true" />
@@ -90,14 +110,18 @@ export default function DashboardYearPicker({
           aria-controls="dashboard-year-options"
           aria-autocomplete="list"
           aria-activedescendant={activeIndex >= 0 ? `dashboard-year-option-${activeIndex}` : undefined}
-          style={{ background: "transparent", outline: "none", boxShadow: "none" }}
-          className="w-full cursor-pointer !bg-transparent hover:!bg-transparent focus:!bg-transparent !border-none !shadow-none text-sm text-white outline-none placeholder:text-white/50 focus-visible:outline-none"
+          className="w-full cursor-pointer bg-transparent text-sm text-white outline-none placeholder:text-white/50"
         />
         <span className={`i-material-symbols-expand-more-rounded inline-block size-3 text-white/50 transition-transform duration-300 ${isOpen ? "rotate-180 text-white" : "group-hover:text-white"}`} aria-hidden="true" />
       </label>
 
-      {isOpen && (
-        <div className="surface-overlay absolute right-0 top-full z-50 mt-2 w-36 overflow-hidden rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.65)]">
+      {/* 列表挂到 body：嵌套在带 backdrop-filter 的面板内时，毛玻璃只能模糊面板自身而透出下方海报。 */}
+      {isOpen && listPosition && createPortal(
+        <div
+          ref={listRef}
+          className="surface-overlay fixed z-50 w-36 overflow-hidden rounded-2xl"
+          style={{ top: listPosition.top, right: listPosition.right }}
+        >
           <div id="dashboard-year-options" role="listbox" aria-label="年份" className="custom-scrollbar flex max-h-64 flex-col overflow-y-auto p-1">
             {options.length > 0 ? options.map(/* 将候选年份渲染为支持选中态和键盘定位的选项按钮。 */ (year, index) => (
               <button
@@ -110,18 +134,9 @@ export default function DashboardYearPicker({
                 onClick={/* 确认点击的年份并关闭选择列表。 */ () => selectYear(year)}
                 className={`w-full shrink-0 rounded-xl border-l-2 px-4 py-2.5 text-left text-sm transition-all ${
                   selectedYear === year || activeIndex === index
-                    ? "surface-active border-[var(--accent)] font-bold text-accent-hover text-[var(--accent-hover)]"
+                    ? "surface-active border-accent font-bold text-accent-hover"
                     : "border-transparent text-white/70 hover:bg-white/10 hover:text-white"
                 }`}
-                style={
-                  selectedYear === year || activeIndex === index
-                    ? {
-                        color: "var(--accent-hover)",
-                        borderColor: "var(--accent)",
-                        backgroundColor: "var(--accent-soft)",
-                      }
-                    : undefined
-                }
               >
                 {formatYearLabel(year)}
               </button>
@@ -129,7 +144,8 @@ export default function DashboardYearPicker({
               <div className="px-5 py-4 text-center text-sm text-white/50">无结果</div>
             )}
           </div>
-        </div>
+        </div>,
+        document.body,
       )}
     </div>
   );

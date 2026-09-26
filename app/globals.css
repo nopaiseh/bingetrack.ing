@@ -1,5 +1,9 @@
 @unocss all;
 
+/* 重置与全局控件放在最低层，组件类（surface-* / filter-option）才能覆盖其边框与背景；UnoCSS 工具类未分层，始终优先。 */
+@layer base, components;
+
+@layer base {
 /* Universal Modern CSS Reset */
 *,
 *::before,
@@ -232,6 +236,7 @@ video {
 [hidden] {
   display: none;
 }
+}
 
 @view-transition {
   navigation: auto;
@@ -264,7 +269,6 @@ video {
   --card-hover-bg: rgba(52, 18, 58, 0.52);
   --surface-subtle: rgba(255, 255, 255, 0.04);
   --surface-muted: rgba(255, 255, 255, 0.06);
-  --surface-control: rgba(20, 6, 26, 0.85);
   --surface-skeleton: rgba(255, 255, 255, 0.08);
   --surface-raised: rgba(255, 255, 255, 0.10);
   --surface-recessed: rgba(14, 4, 18, 0.90);
@@ -274,6 +278,18 @@ video {
   --image-placeholder: rgba(0, 0, 0, 0.45);
   --image-label: rgba(0, 0, 0, 0.72);
   --grain-opacity: 0.038;
+
+  /* 毛玻璃控件（输入框、下拉、标签栏容器）：白色微透层 + 背景模糊，色相由底层主题透出。 */
+  --control-bg: rgba(255, 255, 255, 0.05);
+  --control-bg-hover: rgba(255, 255, 255, 0.08);
+  --control-bg-focus: rgba(255, 255, 255, 0.10);
+  --control-border: rgba(255, 255, 255, 0.12);
+  --control-border-hover: rgba(255, 255, 255, 0.24);
+  --control-blur: blur(16px) saturate(180%);
+  --control-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08), 0 2px 10px rgba(0, 0, 0, 0.22);
+  --select-chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='rgba(255,255,255,0.45)' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  --select-chevron-hover: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='rgba(255,255,255,0.85)' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  --select-chevron-focus: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='rgba(255,255,255,0.95)' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
 }
 
 /* 深海霓虹 (Lagoon) - 深海蓝黑底 + 青绿、电光蓝、紫罗兰极光；强调色偏亮，主行动按钮用深色文字 */
@@ -297,7 +313,6 @@ video {
   --aurora-2: rgba(47, 107, 255, 0.50);
   --aurora-3: rgba(139, 92, 246, 0.40);
   --card-hover-bg: rgba(12, 44, 60, 0.52);
-  --surface-control: rgba(2, 14, 22, 0.85);
   --surface-recessed: rgba(2, 10, 16, 0.90);
 }
 
@@ -322,67 +337,63 @@ video {
   --aurora-2: rgba(255, 78, 80, 0.45);
   --aurora-3: rgba(124, 58, 237, 0.35);
   --card-hover-bg: rgba(56, 30, 14, 0.52);
-  --surface-control: rgba(22, 11, 4, 0.85);
   --surface-recessed: rgba(16, 8, 3, 0.90);
 }
 
-/* 全局高对比度输入控件基底：赋予明确的下凹物理槽位感 (Recessed Well)，让人一眼看出是 input */
-:where(input:not([type="hidden"]):not([type="checkbox"]):not([type="radio"]):not([class*="bg-transparent"]), select:not(.filter-option), textarea) {
-  background-color: var(--surface-control);
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  border-radius: 0.75rem;
-  color: #f5f5f5;
-  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.5), 0 1px 0 rgba(255, 255, 255, 0.06);
-  transition: border-color 200ms, background-color 200ms, box-shadow 200ms;
-}
+/* 全局输入控件：与 .surface-control 共用同一套毛玻璃配方，保持输入框、下拉与标签栏的明度一致。 */
+@layer base {
+  :where(input:not([type="hidden"]):not([type="checkbox"]):not([type="radio"]):not([class*="bg-transparent"]), select:not(.filter-option), textarea) {
+    background-color: var(--control-bg);
+    -webkit-backdrop-filter: var(--control-blur);
+    backdrop-filter: var(--control-blur);
+    border: 1px solid var(--control-border);
+    border-radius: 0.75rem;
+    color: #f5f5f5;
+    box-shadow: var(--control-shadow);
+    transition: border-color 200ms, background-color 200ms, box-shadow 200ms;
+  }
 
-:where(input:not([type="hidden"]):not([type="checkbox"]):not([type="radio"]):not([class*="bg-transparent"]), select:not(.filter-option), textarea)::placeholder {
-  color: rgba(255, 255, 255, 0.55);
-}
+  :where(input:not([type="hidden"]):not([type="checkbox"]):not([type="radio"]):not([class*="bg-transparent"]), select:not(.filter-option), textarea)::placeholder {
+    color: rgba(255, 255, 255, 0.55);
+  }
 
-:where(input:not([type="hidden"]):not([type="checkbox"]):not([type="radio"]):not([class*="bg-transparent"]), select:not(.filter-option), textarea):hover {
-  border-color: rgba(255, 255, 255, 0.28);
-  background-color: var(--surface-control);
-  filter: brightness(1.15);
-}
+  :where(input:not([type="hidden"]):not([type="checkbox"]):not([type="radio"]):not([class*="bg-transparent"]), select:not(.filter-option), textarea):hover {
+    border-color: var(--control-border-hover);
+    background-color: var(--control-bg-hover);
+  }
 
-:where(input:not([type="hidden"]):not([type="checkbox"]):not([type="radio"]):not([class*="bg-transparent"]), select:not(.filter-option), textarea):focus {
-  border-color: var(--accent-border-hover);
-  background-color: var(--surface-control);
-  filter: brightness(1.25);
-  outline: none;
-  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.4);
-}
+  :where(input:not([type="hidden"]):not([type="checkbox"]):not([type="radio"]):not([class*="bg-transparent"]), select:not(.filter-option), textarea):focus {
+    border-color: var(--accent-border-hover);
+    background-color: var(--control-bg-focus);
+    outline: none;
+    box-shadow: var(--control-shadow), 0 0 0 3px var(--accent-glow-soft);
+  }
 
-select:not(.filter-option) {
-  appearance: none;
-  -webkit-appearance: none;
-  cursor: pointer;
-  padding-right: 2.5rem;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='rgba(255,255,255,0.45)' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: right 0.85rem center;
-  background-size: 1.15rem 1.15rem;
-}
+  select:not(.filter-option) {
+    appearance: none;
+    -webkit-appearance: none;
+    cursor: pointer;
+    padding-right: 2.5rem;
+    background-image: var(--select-chevron);
+    background-repeat: no-repeat;
+    background-position: right 0.85rem center;
+    background-size: 1.15rem 1.15rem;
+  }
 
-select:not(.filter-option):hover {
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='rgba(255,255,255,0.85)' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: right 0.85rem center;
-  background-size: 1.15rem 1.15rem;
-}
+  select:not(.filter-option):hover {
+    --select-chevron: var(--select-chevron-hover);
+  }
 
-select:not(.filter-option):focus,
-select:not(.filter-option):focus-visible {
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='rgba(255,255,255,0.95)' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: right 0.85rem center;
-  background-size: 1.15rem 1.15rem;
-}
+  select:not(.filter-option):focus,
+  select:not(.filter-option):focus-visible {
+    --select-chevron: var(--select-chevron-focus);
+  }
 
-select:not(.filter-option) option {
-  background-color: var(--surface-control, #140507);
-  color: #f5f5f5;
+  /* 原生下拉列表无法模糊背景，使用不透明画布色保证可读。 */
+  select:not(.filter-option) option {
+    background-color: var(--canvas);
+    color: #f5f5f5;
+  }
 }
 
 /* 全站极光底：三束主题色光晕固定铺在视口，让没有海报的页面（搜索、列表、管理）里的玻璃层同样有色彩可透。 */
@@ -505,6 +516,16 @@ body::before {
     opacity: 0.7;
   }
 
+  /* 通栏玻璃（如页脚）不是悬浮物体：高光描边、边框与内顶光会在整条上沿和左侧画出硬线，交给元素自带的居中渐隐分隔线。 */
+  .surface-bleed {
+    border-width: 0;
+    box-shadow: none;
+  }
+
+  .surface-bleed::before {
+    display: none;
+  }
+
   /* 手机宽度下首屏看板紧贴导航栏，导航栏 30px 的背景模糊半径会采样到它的玻璃上沿，
      Chrome 会在导航栏内渲染出一条硬边。它的背后只有本就柔和的主题极光，去掉自身模糊视觉上无差别。 */
   @media (max-width: 767.98px) {
@@ -541,23 +562,24 @@ body::before {
   }
 
   .surface-control {
-    background: var(--surface-control);
-    border: 1px solid rgba(255, 255, 255, 0.14);
-    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.5), 0 1px 0 rgba(255, 255, 255, 0.06);
+    background: var(--control-bg);
+    -webkit-backdrop-filter: var(--control-blur);
+    backdrop-filter: var(--control-blur);
+    border: 1px solid var(--control-border);
+    box-shadow: var(--control-shadow);
     transition: border-color 200ms, background-color 200ms, box-shadow 200ms;
   }
 
-  .surface-control:hover {
-    border-color: rgba(255, 255, 255, 0.28);
-    background: var(--surface-control);
-    filter: brightness(1.15);
+  .surface-control:hover:not(:disabled) {
+    border-color: var(--control-border-hover);
+    background: var(--control-bg-hover);
   }
 
   .surface-control:focus-within,
   .surface-control:focus {
     border-color: var(--accent-border-hover);
-    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.4),
-                0 0 0 1px var(--accent-glow-soft);
+    background: var(--control-bg-focus);
+    box-shadow: var(--control-shadow), 0 0 0 3px var(--accent-glow-soft);
   }
 
   .surface-muted {
@@ -635,10 +657,6 @@ body::before {
     background: var(--surface-raised);
     color: white;
   }
-
-  .text-accent { color: var(--accent); }
-  .text-accent-hover { color: var(--accent-hover); }
-  .text-accent-light { color: var(--accent-light); }
 
   .filter-option {
     border: 1px solid rgba(255, 255, 255, 0.10);
@@ -736,8 +754,7 @@ body::before {
   animation: spotlight-fade 350ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
-/* 主行动按钮：用较深的强调色承载文字，保证各主题下的对比度。
-   放在 @layer 之外：未分层的重置规则 a { color: inherit } 会压过分层内的文字颜色。 */
+/* 主行动按钮：用较深的强调色承载文字，保证各主题下的对比度。 */
 .button-accent {
   background: var(--accent-dark);
   color: var(--accent-contrast);
