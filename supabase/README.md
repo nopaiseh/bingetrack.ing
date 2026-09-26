@@ -27,6 +27,8 @@ supabase test db
 
 列表使用 `v_media_series_years` 汇总电视剧发行年份，使用 `v_media_season_summaries` 汇总季资料、总集数和已看集数。两个普通视图采用 `security_invoker`，公开角色只有读取权限；卡片年份保持数字范围。应用仅在视图缺失（`PGRST205`／`42P01`）时回退到旧查询，权限和网络错误会继续暴露。
 
+管理列表通过 `v_manage_media_order` 排序：电影与单集按上映日期，剧集与剧季按最近一集播出日期（尚无已播集时取最早一集），均为倒序；该视图仅授权登录用户读取。视图缺失时管理页回退为按条目自身上映日期排序。
+
 关键词搜索和“系列”分类通过 `search_media(p_query, p_types, p_series_only, p_credit_roles)` 在数据库内完成跨表匹配，返回 `v_all_media` 行；状态、类型标签、年份、排序、分页和精确计数由 PostgREST 在函数结果上叠加。普通目录浏览仍直接读取 `v_all_media`。
 
 ## 结构变更
