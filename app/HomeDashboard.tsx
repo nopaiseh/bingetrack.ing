@@ -7,6 +7,7 @@ import { PosterRowSkeleton } from "@/components/LoadingSkeletons";
 import DashboardYearPicker from "@/components/DashboardYearPicker";
 import SpotlightHero from "@/components/SpotlightHero";
 import AnimatedNumber from "@/components/AnimatedNumber";
+import { parseRuntimeParts } from "@/lib/format-runtime";
 import type { MediaCard, MediaDistribution, MediaDistributions, Summary } from "@/lib/types";
 
 const CategoryHeaderCards = dynamic(() => import("@/components/dashboard/CategoryHeaderCards"), {
@@ -57,67 +58,61 @@ function percent(value: number, total: number) {
   return Math.min(Math.max(Math.round((value / total) * 100), 0), 100);
 }
 
-/** 按传入标题和图标展示媒体部数，并在提供数据时补充季数与集数；提供 href 时作为可点击跳转卡片。 */
+/** 只保留最大的两个时间单位，让时长在窄卡片里也能一行放下。 */
+function compactRuntime(runtime: number) {
+  const { days, hours, minutes } = parseRuntimeParts(runtime);
+  if (days > 0) return `${days}天${hours}小时`;
+  if (hours > 0) return `${hours}小时${minutes}分钟`;
+  return `${minutes}分钟`;
+}
+
+/** 按传入标题和图标展示媒体部数，并用一行补充信息（时长或季数、集数）保持各卡片结构一致；提供 href 时作为可点击跳转卡片。 */
 function MediaStatusCard({
   title,
   icon,
   count,
-  seasonsCount,
-  episodesCount,
+  details,
+  detailsIcon,
   href,
 }: {
   title: string;
   icon: string;
   count: number;
-  seasonsCount?: number;
-  episodesCount?: number;
+  details: string;
+  detailsIcon?: string;
   href?: string;
 }) {
   const content = (
     <>
-      <div className="text-white/85 font-semibold text-sm flex items-center justify-between pb-1 transition-colors group-hover:text-[var(--accent-hover)]">
+      <div className="flex items-center justify-between text-sm font-semibold text-white/85 transition-colors group-hover:text-[var(--accent-hover)]">
         <div className="flex items-center gap-2.5">
           <span className={`${icon} size-4 inline-block text-[var(--accent)] group-hover:text-[var(--accent-hover)]`} aria-hidden="true" />
           <span>{title}</span>
         </div>
         {href && (
-          <span className="i-material-symbols-arrow-outward-rounded size-3.5 text-white/40 transition-all duration-200 group-hover:text-[var(--accent)] group-hover:translate-x-0.5 group-hover:-translate-y-0.5" aria-hidden="true" />
+          <span className="i-material-symbols-arrow-outward-rounded hidden size-3.5 text-white/40 sm:inline-block transition-all duration-200 group-hover:text-[var(--accent)] group-hover:translate-x-0.5 group-hover:-translate-y-0.5" aria-hidden="true" />
         )}
       </div>
-      <div className="flex flex-col gap-2.5 mt-1">
-        <div className="flex justify-between items-end">
-          <span className="text-sm text-white/70">部数</span>
-          <span className="text-2xl font-mono text-white">
-            <AnimatedNumber value={count} /> <span className="text-xs text-white/70 font-normal">部</span>
-          </span>
-        </div>
-        {seasonsCount !== undefined && (
-          <div className="flex justify-between items-end">
-            <span className="text-sm text-white/70">季数</span>
-            <span className="text-2xl font-mono text-white">
-              <AnimatedNumber value={seasonsCount} /> <span className="text-xs text-white/70 font-normal">季</span>
-            </span>
-          </div>
-        )}
-        {episodesCount !== undefined && (
-          <div className="flex justify-between items-end">
-            <span className="text-sm text-white/70">集数</span>
-            <span className="text-2xl font-mono text-white">
-              <AnimatedNumber value={episodesCount} /> <span className="text-xs text-white/70 font-normal">集</span>
-            </span>
-          </div>
-        )}
+      <div className="flex items-baseline gap-1.5">
+        <span className="font-mono text-3xl tracking-tight text-white sm:text-4xl">
+          <AnimatedNumber value={count} />
+        </span>
+        <span className="text-sm text-white/70">部</span>
       </div>
+      <p className="flex items-center gap-1.5 font-mono text-xs text-white/72">
+        {detailsIcon && <><span className={`${detailsIcon} size-3.5 shrink-0`} aria-hidden="true" /><span className="sr-only">时长</span></>}
+        <span>{details}</span>
+      </p>
     </>
   );
 
-  const containerClasses = "group flex flex-col gap-3.5 rounded-xl border border-white/[0.08] bg-white/[0.03] p-4 transition-all duration-300 hover:border-white/20 hover:bg-white/[0.06]";
+  const containerClasses = "surface-inline group flex min-w-0 flex-col gap-3 rounded-2xl p-3 sm:p-4 transition-all duration-300 hover:border-white/20 hover:bg-white/[0.07]";
 
   if (href) {
     return (
       <Link
         href={href}
-        className={`${containerClasses} cursor-pointer hover:scale-[1.01]`}
+        className={`${containerClasses} cursor-pointer`}
       >
         {content}
       </Link>
@@ -245,7 +240,7 @@ export default function HomeDashboard({
 
   return (
     <div className="container mx-auto flex max-w-7xl flex-col gap-6 px-4 pb-12 pt-20 sm:pt-22 sm:px-6 lg:pt-24 lg:px-8">
-      <section aria-labelledby="dashboard-title" className="surface-panel relative z-10 mb-2 rounded-3xl p-5 sm:p-6 lg:px-8 lg:py-6">
+      <section aria-labelledby="dashboard-title" className="surface-panel dashboard-intro relative z-10 mb-2 rounded-3xl p-5 sm:p-6 lg:px-8 lg:py-6">
         <div className="relative">
           <div className="mb-3 flex items-center gap-3 text-[11px] font-semibold uppercase tracking-[0.24em] text-[var(--accent-light)]/90">
             <span className="h-px w-8 bg-[var(--accent)]" />
@@ -254,10 +249,10 @@ export default function HomeDashboard({
 
           <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
             <div className="max-w-3xl">
-              <h1 id="dashboard-title" className="font-mono text-3xl font-semibold leading-none tracking-[-0.055em] text-white sm:text-4xl lg:text-5xl">
+              <h1 id="dashboard-title" className="font-serif-movie text-3xl font-black leading-none text-white sm:text-4xl lg:text-5xl">
                 媒体全景
               </h1>
-              <p className="mt-2 max-w-xl text-xs leading-5 text-white/55 sm:mt-2.5 sm:text-sm sm:leading-6">
+              <p className="mt-2 max-w-xl text-xs leading-5 text-white/72 sm:mt-2.5 sm:text-sm sm:leading-6">
                 收录我倾注在光影、声音与文字里的时光。
               </p>
             </div>
@@ -265,20 +260,20 @@ export default function HomeDashboard({
             <dl className="grid grid-cols-3 gap-2 border-t border-white/10 pt-4 lg:min-w-100 lg:border-l lg:border-t-0 lg:pl-8 lg:pt-0">
               <div>
                 <dt className="text-[11px] tracking-wide text-white/75">电影总计</dt>
-                <dd className="mt-1 font-mono text-xl font-medium text-white sm:text-2xl">
+                <dd className="mt-1 font-mono text-2xl font-normal tracking-tight text-white sm:text-3xl">
                   <AnimatedNumber value={totalMovies} />
                 </dd>
               </div>
               <div>
                 <dt className="text-[11px] tracking-wide text-white/75">电视剧总计</dt>
-                <dd className="mt-1 font-mono text-xl font-medium text-white sm:text-2xl">
+                <dd className="mt-1 font-mono text-2xl font-normal tracking-tight text-white sm:text-3xl">
                   <AnimatedNumber value={totalSeries} />
                 </dd>
               </div>
               <div>
                 <dt className="text-[11px] tracking-wide text-white/75">完成进度</dt>
                 <dd
-                  className="mt-1 font-mono text-xl font-medium text-accent-light text-[var(--accent-light)] sm:text-2xl"
+                  className="mt-1 font-mono text-2xl font-normal tracking-tight text-[var(--accent-light)] sm:text-3xl"
                   style={{ color: "var(--accent-light)" }}
                 >
                   <AnimatedNumber value={runtimePercent} />%
@@ -289,16 +284,14 @@ export default function HomeDashboard({
         </div>
 
         <div className="relative mt-5 flex flex-col items-start justify-between gap-4 border-t border-white/10 pt-4 md:flex-row md:items-center">
-          <div className="surface-control relative flex items-center rounded-xl p-1.5" role="tablist" aria-label="仪表板视图">
+          <div className="relative flex items-center rounded-full bg-black/25 p-1 shadow-[inset_0_1px_2px_rgba(0,0,0,0.4)]" role="tablist" aria-label="仪表板视图">
             {/* 平滑滑动的物理胶囊底块 */}
             <div
               aria-hidden="true"
-              className="surface-active pointer-events-none absolute top-1.5 bottom-1.5 rounded-lg border border-[var(--accent-border)] shadow-[0_4px_15px_var(--accent-glow-soft)] transition-transform duration-300 ease-out"
+              className="pointer-events-none absolute top-1 bottom-1 rounded-full bg-white/15 shadow-[inset_0_1px_0_rgba(255,255,255,0.3),0_4px_14px_rgba(0,0,0,0.25)] transition-transform duration-300 ease-out"
               style={{
-                width: `calc((100% - 12px) / ${tabs.length})`,
+                width: `calc((100% - 8px) / ${tabs.length})`,
                 transform: `translateX(calc(${tabs.indexOf(activeTab)} * 100%))`,
-                background: "var(--accent-soft)",
-                borderColor: "var(--accent-border)",
               }}
             />
 
@@ -310,12 +303,11 @@ export default function HomeDashboard({
                 id={`dashboard-tab-${tabIds[tab]}`}
                 aria-controls={`dashboard-panel-${tabIds[tab]}`}
                 aria-selected={activeTab === tab}
-                className={`relative z-10 px-5 py-2 rounded-lg text-sm font-medium transition-colors duration-200 ${
+                className={`relative z-10 px-5 py-2 rounded-full text-sm font-medium transition-colors duration-200 ${
                   activeTab === tab
-                    ? "text-accent-hover text-[var(--accent-hover)] font-bold"
-                    : "text-white/70 hover:text-white"
+                    ? "text-white font-bold"
+                    : "text-white/72 hover:text-white"
                 }`}
-                style={activeTab === tab ? { color: "var(--accent-hover)" } : undefined}
               >
                 {tab}
               </button>
@@ -345,7 +337,8 @@ export default function HomeDashboard({
           <div key="overview" id="dashboard-panel-overview" role="tabpanel" aria-labelledby="dashboard-tab-overview" className="flex flex-col gap-4 md:gap-6">
             <SpotlightHero items={spotlightCandidates} yearLabel={showYearSpotlight ? selectedYear : "All Time"} />
 
-            <div className="dashboard-deferred surface-card flex flex-col gap-6 rounded-2xl p-4 sm:p-5 lg:p-6">
+            <div className="grid grid-cols-1 gap-4 md:gap-6 xl:grid-cols-2">
+            <div className="dashboard-deferred surface-card flex h-full flex-col gap-6 rounded-3xl p-4 sm:p-5 lg:p-7">
               <div className="flex items-center border-b border-white/10 pb-3">
                 <div className="flex items-center gap-2">
                   <div className="stat-icon flex items-center justify-center rounded-lg p-2">
@@ -357,36 +350,40 @@ export default function HomeDashboard({
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 gap-3 sm:gap-4">
                 <MediaStatusCard
                   title="已观看"
                   icon="i-material-symbols-check-circle-outline-rounded"
                   count={watchedMovies}
+                  details={compactRuntime(moviesWatchedRuntime)}
+                  detailsIcon="i-material-symbols-schedule-outline-rounded"
                   href={getStatusSearchLink("movie", "watched", selectedYear)}
                 />
                 <MediaStatusCard
                   title="想要看"
                   icon="i-material-symbols-bookmark-outline-rounded"
                   count={unwatchedMovies}
+                  details={compactRuntime(moviesUnwatchedRuntime)}
+                  detailsIcon="i-material-symbols-schedule-outline-rounded"
                   href={getStatusSearchLink("movie", "want_to_watch", selectedYear)}
                 />
               </div>
 
-              <div className="flex flex-col gap-2">
+              <div className="mt-auto flex flex-col gap-2">
                 <div className="flex items-center justify-between text-xs text-white/75 font-medium">
                   <span>观影完成度</span>
                   <span className="font-mono text-white/90">{watchedMovies} / {totalMovies} 部 · {moviesPercent}%</span>
                 </div>
-                <div className="progress-track h-1.5 w-full overflow-hidden rounded-full shadow-inner">
+                <div className="progress-track h-2 w-full overflow-hidden rounded-full">
                   <div
-                    className="h-full bg-linear-to-r from-[var(--accent-dark)] to-[var(--accent-hover)] rounded-full transition-all duration-500"
+                    className="progress-fill h-full rounded-full transition-all duration-500"
                     style={{ width: `${moviesPercent}%` }}
                   />
                 </div>
               </div>
             </div>
 
-            <div className="dashboard-deferred surface-card flex flex-col gap-6 rounded-2xl p-4 sm:p-5 lg:p-6">
+            <div className="dashboard-deferred surface-card flex h-full flex-col gap-6 rounded-3xl p-4 sm:p-5 lg:p-7">
               <div className="flex items-center border-b border-white/10 pb-3">
                 <div className="flex items-center gap-2">
                   <div className="stat-icon flex items-center justify-center rounded-lg p-2">
@@ -398,44 +395,43 @@ export default function HomeDashboard({
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+              <div className="grid grid-cols-3 gap-2.5 sm:gap-4">
                 <MediaStatusCard
                   title="已观看"
                   icon="i-material-symbols-check-circle-outline-rounded"
                   count={watchedSeries}
-                  seasonsCount={currentYearData?.watched_seasons ?? 0}
-                  episodesCount={currentYearData?.watched_series_episodes ?? 0}
+                  details={`${currentYearData?.watched_seasons ?? 0}季 · ${watchedEpisodes}集`}
                   href={getStatusSearchLink("tv_series", "watched", selectedYear)}
                 />
                 <MediaStatusCard
                   title="正在看"
                   icon="i-material-symbols-play-circle-outline-rounded"
                   count={watchingSeries}
-                  seasonsCount={currentYearData?.watching_seasons ?? 0}
+                  details={`${currentYearData?.watching_seasons ?? 0}季`}
                   href={getStatusSearchLink("tv_series", "watching", selectedYear)}
                 />
                 <MediaStatusCard
                   title="想要看"
                   icon="i-material-symbols-bookmark-outline-rounded"
                   count={unwatchedSeries}
-                  seasonsCount={currentYearData?.unwatched_seasons ?? 0}
-                  episodesCount={currentYearData?.unwatched_episodes ?? 0}
+                  details={`${currentYearData?.unwatched_seasons ?? 0}季 · ${unwatchedEpisodes}集`}
                   href={getStatusSearchLink("tv_series", "want_to_watch", selectedYear)}
                 />
               </div>
               
-              <div className="flex flex-col gap-2">
+              <div className="mt-auto flex flex-col gap-2">
                 <div className="flex items-center justify-between text-xs text-white/75 font-medium">
                   <span>追剧集数进度</span>
                   <span className="font-mono text-white/90">{watchedEpisodes} / {totalEpisodes} 集 · {seriesEpisodesPercent}%</span>
                 </div>
-                <div className="progress-track h-1.5 w-full overflow-hidden rounded-full shadow-inner">
+                <div className="progress-track h-2 w-full overflow-hidden rounded-full">
                   <div
-                    className="h-full bg-linear-to-r from-[var(--accent-dark)] to-[var(--accent-hover)] rounded-full transition-all duration-500"
+                    className="progress-fill h-full rounded-full transition-all duration-500"
                     style={{ width: `${seriesEpisodesPercent}%` }}
                   />
                 </div>
               </div>
+            </div>
             </div>
           </div>
         )}

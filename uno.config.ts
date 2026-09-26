@@ -17,6 +17,9 @@ export default defineConfig({
     ],
   },
   theme: {
+    fontFamily: {
+      mono: "var(--font-geist-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
+    },
     colors: {
       accent: {
         DEFAULT: "var(--accent)",

@@ -242,29 +242,32 @@ video {
   accent-color: var(--accent);
   --font-serif-movie: "Songti SC", "Source Han Serif SC", "Noto Serif SC", "STSong", "SimSun", "Baskerville", "Georgia", serif;
 
-  /* 默认：经典红毯 (Red Carpet) - 沉浸波尔多丝绒酒红黑曜石 + 电影大片绯红 */
-  --canvas: #140507;
-  --surface-panel: rgba(28, 11, 15, 0.74);
-  --surface-overlay: rgba(22, 9, 12, 0.78);
-  --surface-card: rgba(32, 13, 18, 0.70);
-  --accent: #f43f5e;
+  /* 默认：极光玫瑰 (Aurora Rose) - 紫黑底 + 洋红、紫罗兰、橘光三束极光；主行动色用加深玫红承载白字 */
+  --canvas: #13051a;
+  --surface-panel: rgba(30, 10, 36, 0.42);
+  --surface-overlay: rgba(24, 8, 30, 0.64);
+  --surface-card: rgba(34, 12, 40, 0.34);
+  --accent: #ff4d94;
   --accent-contrast: #ffffff;
-  --accent-hover: #fb7185;
-  --accent-light: #fda4af;
-  --accent-dark: #e11d48;
-  --accent-soft: rgba(244, 63, 94, 0.20);
-  --accent-border: rgba(244, 63, 94, 0.45);
-  --accent-border-hover: rgba(251, 113, 133, 0.70);
-  --accent-glow: rgba(244, 63, 94, 0.55);
-  --accent-glow-strong: rgba(244, 63, 94, 0.85);
-  --accent-glow-soft: rgba(244, 63, 94, 0.28);
-  --card-hover-bg: rgba(46, 18, 26, 0.88);
+  --accent-hover: #ff79b0;
+  --accent-light: #ffa3c7;
+  --accent-dark: #e0206f;
+  --accent-soft: rgba(255, 77, 148, 0.20);
+  --accent-border: rgba(255, 77, 148, 0.45);
+  --accent-border-hover: rgba(255, 121, 176, 0.70);
+  --accent-glow: rgba(255, 77, 148, 0.55);
+  --accent-glow-strong: rgba(255, 77, 148, 0.85);
+  --accent-glow-soft: rgba(255, 77, 148, 0.28);
+  --aurora-1: rgba(255, 45, 135, 0.55);
+  --aurora-2: rgba(123, 47, 247, 0.50);
+  --aurora-3: rgba(255, 138, 61, 0.40);
+  --card-hover-bg: rgba(52, 18, 58, 0.52);
   --surface-subtle: rgba(255, 255, 255, 0.04);
   --surface-muted: rgba(255, 255, 255, 0.06);
-  --surface-control: rgba(18, 6, 9, 0.85);
+  --surface-control: rgba(20, 6, 26, 0.85);
   --surface-skeleton: rgba(255, 255, 255, 0.08);
   --surface-raised: rgba(255, 255, 255, 0.10);
-  --surface-recessed: rgba(13, 4, 6, 0.90);
+  --surface-recessed: rgba(14, 4, 18, 0.90);
   --border-default: rgba(255, 255, 255, 0.10);
   --border-hover: rgba(255, 255, 255, 0.22);
   --image-overlay: rgba(0, 0, 0, 0.35);
@@ -273,70 +276,54 @@ video {
   --grain-opacity: 0.038;
 }
 
-/* 赛博深空/霓虹 (Cyber Cobalt) - 沉浸深海钴蓝黑曜石 + IMAX 电光钴蓝 */
-[data-theme="cyber"] {
-  --canvas: #050c18;
-  --surface-panel: rgba(8, 18, 36, 0.74);
-  --surface-overlay: rgba(6, 14, 28, 0.78);
-  --surface-card: rgba(12, 24, 46, 0.70);
-  --accent: #0ea5e9;
-  --accent-contrast: #020c18;
-  --accent-hover: #38bdf8;
-  --accent-light: #7dd3fc;
-  --accent-dark: #0284c7;
-  --accent-soft: rgba(14, 165, 233, 0.20);
-  --accent-border: rgba(14, 165, 233, 0.45);
-  --accent-border-hover: rgba(56, 189, 248, 0.70);
-  --accent-glow: rgba(14, 165, 233, 0.55);
-  --accent-glow-strong: rgba(14, 165, 233, 0.85);
-  --accent-glow-soft: rgba(56, 189, 248, 0.28);
-  --card-hover-bg: rgba(20, 38, 70, 0.88);
-  --surface-control: rgba(6, 14, 26, 0.85);
-  --surface-recessed: rgba(4, 10, 18, 0.90);
+/* 深海霓虹 (Lagoon) - 深海蓝黑底 + 青绿、电光蓝、紫罗兰极光；强调色偏亮，主行动按钮用深色文字 */
+[data-theme="lagoon"] {
+  --canvas: #02111b;
+  --surface-panel: rgba(6, 26, 38, 0.42);
+  --surface-overlay: rgba(4, 20, 30, 0.64);
+  --surface-card: rgba(8, 30, 44, 0.34);
+  --accent: #2ee6d6;
+  --accent-contrast: #04201e;
+  --accent-hover: #5eead4;
+  --accent-light: #99f6e4;
+  --accent-dark: #14b8a6;
+  --accent-soft: rgba(46, 230, 214, 0.18);
+  --accent-border: rgba(46, 230, 214, 0.45);
+  --accent-border-hover: rgba(94, 234, 212, 0.70);
+  --accent-glow: rgba(46, 230, 214, 0.50);
+  --accent-glow-strong: rgba(46, 230, 214, 0.80);
+  --accent-glow-soft: rgba(46, 230, 214, 0.25);
+  --aurora-1: rgba(0, 217, 192, 0.45);
+  --aurora-2: rgba(47, 107, 255, 0.50);
+  --aurora-3: rgba(139, 92, 246, 0.40);
+  --card-hover-bg: rgba(12, 44, 60, 0.52);
+  --surface-control: rgba(2, 14, 22, 0.85);
+  --surface-recessed: rgba(2, 10, 16, 0.90);
 }
 
-/* 复古胶片 (Warm Sepia) - 沉浸暖胶卷浓缩咖啡黑曜石 + 35mm 奥斯卡暖金 */
-[data-theme="sepia"] {
-  --canvas: #140c04;
-  --surface-panel: rgba(28, 17, 9, 0.74);
-  --surface-overlay: rgba(22, 13, 7, 0.78);
-  --surface-card: rgba(32, 20, 10, 0.70);
-  --accent: #f59e0b;
-  --accent-contrast: #140902;
-  --accent-hover: #fcd34d;
-  --accent-light: #fef08a;
-  --accent-dark: #d97706;
-  --accent-soft: rgba(245, 158, 11, 0.20);
-  --accent-border: rgba(245, 158, 11, 0.45);
-  --accent-border-hover: rgba(251, 191, 36, 0.70);
-  --accent-glow: rgba(245, 158, 11, 0.55);
-  --accent-glow-strong: rgba(245, 158, 11, 0.85);
-  --accent-glow-soft: rgba(245, 158, 11, 0.28);
-  --card-hover-bg: rgba(50, 32, 16, 0.88);
-  --surface-control: rgba(18, 11, 5, 0.85);
-  --surface-recessed: rgba(13, 8, 4, 0.90);
-}
-
-/* 黑曜钛白 (Obsidian Noir) - 极致黑白暗房单色 + 钛金白 + 零色彩干扰 */
-[data-theme="noir"] {
-  --canvas: #09090b;
-  --surface-panel: rgba(16, 16, 20, 0.74);
-  --surface-overlay: rgba(12, 12, 15, 0.78);
-  --surface-card: rgba(22, 22, 26, 0.70);
-  --accent: #ffffff;
-  --accent-contrast: #09090b;
-  --accent-hover: #f4f4f5;
-  --accent-light: #ffffff;
-  --accent-dark: #d4d4d8;
-  --accent-soft: rgba(255, 255, 255, 0.12);
-  --accent-border: rgba(255, 255, 255, 0.30);
-  --accent-border-hover: rgba(255, 255, 255, 0.55);
-  --accent-glow: rgba(255, 255, 255, 0.30);
-  --accent-glow-strong: rgba(255, 255, 255, 0.50);
-  --accent-glow-soft: rgba(255, 255, 255, 0.15);
-  --card-hover-bg: rgba(32, 32, 38, 0.88);
-  --surface-control: rgba(12, 12, 15, 0.85);
-  --surface-recessed: rgba(8, 8, 10, 0.90);
+/* 金色时刻 (Golden Hour) - 暖棕黑底 + 琥珀、珊瑚与一抹紫罗兰；强调色偏亮，主行动按钮用深色文字 */
+[data-theme="golden"] {
+  --canvas: #160a05;
+  --surface-panel: rgba(34, 18, 8, 0.42);
+  --surface-overlay: rgba(28, 14, 6, 0.64);
+  --surface-card: rgba(38, 20, 10, 0.34);
+  --accent: #ffb627;
+  --accent-contrast: #1a0e02;
+  --accent-hover: #ffc95a;
+  --accent-light: #fde68a;
+  --accent-dark: #f59e0b;
+  --accent-soft: rgba(255, 182, 39, 0.18);
+  --accent-border: rgba(255, 182, 39, 0.45);
+  --accent-border-hover: rgba(255, 201, 90, 0.70);
+  --accent-glow: rgba(255, 182, 39, 0.50);
+  --accent-glow-strong: rgba(255, 182, 39, 0.80);
+  --accent-glow-soft: rgba(255, 182, 39, 0.25);
+  --aurora-1: rgba(255, 154, 31, 0.50);
+  --aurora-2: rgba(255, 78, 80, 0.45);
+  --aurora-3: rgba(124, 58, 237, 0.35);
+  --card-hover-bg: rgba(56, 30, 14, 0.52);
+  --surface-control: rgba(22, 11, 4, 0.85);
+  --surface-recessed: rgba(16, 8, 3, 0.90);
 }
 
 /* 全局高对比度输入控件基底：赋予明确的下凹物理槽位感 (Recessed Well)，让人一眼看出是 input */
@@ -398,20 +385,19 @@ select:not(.filter-option) option {
   color: #f5f5f5;
 }
 
+/* 全站极光底：三束主题色光晕固定铺在视口，让没有海报的页面（搜索、列表、管理）里的玻璃层同样有色彩可透。 */
 body::before {
   content: "";
   position: fixed;
-  top: 0;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 100vw;
-  max-width: 1440px;
-  height: 520px;
-  background: radial-gradient(ellipse 65% 45% at 50% -10%, var(--accent-glow-soft) 0%, transparent 75%);
+  inset: 0;
+  background:
+    radial-gradient(ellipse 60vmax 42vmax at 8% -6%, var(--aurora-1) 0%, transparent 70%),
+    radial-gradient(ellipse 48vmax 44vmax at 104% 46%, var(--aurora-2) 0%, transparent 70%),
+    radial-gradient(ellipse 52vmax 38vmax at -4% 108%, var(--aurora-3) 0%, transparent 70%);
   pointer-events: none;
   z-index: 0;
-  opacity: 0.65;
-  transition: opacity 500ms, background 500ms;
+  opacity: 0.75;
+  transition: opacity 500ms;
 }
 
 @layer components {
@@ -457,45 +443,101 @@ body::before {
     background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='filmGrainFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23filmGrainFilter)'/%3E%3C/svg%3E");
   }
 
+  /* 玻璃材质三层级：chrome（导航、浮层、HUD）> card（看板分区）> inline（卡内格子，无模糊）。
+     填充以低透明白色为主、主题底色为辅，让页面氛围光真正透过来；不要在玻璃内部再嵌套 backdrop-filter。 */
   .surface-panel {
+    position: relative;
     background:
-      linear-gradient(135deg, rgba(255, 255, 255, 0.07) 0%, rgba(255, 255, 255, 0.01) 40%, transparent 100%),
+      linear-gradient(180deg, rgba(255, 255, 255, 0.11) 0%, rgba(255, 255, 255, 0.035) 100%),
       var(--surface-panel);
-    -webkit-backdrop-filter: blur(20px) saturate(200%) contrast(104%);
-    backdrop-filter: blur(20px) saturate(200%) contrast(104%);
-    border: 1px solid rgba(255, 255, 255, 0.12);
+    -webkit-backdrop-filter: blur(30px) saturate(165%);
+    backdrop-filter: blur(30px) saturate(165%);
+    border: 1px solid rgba(255, 255, 255, 0.06);
     box-shadow:
-      inset 0 1px 1px 0 rgba(255, 255, 255, 0.22),
-      inset 0 -1px 1px 0 rgba(0, 0, 0, 0.35),
-      0 4px 14px rgba(0, 0, 0, 0.35),
-      0 24px 60px -15px rgba(0, 0, 0, 0.75);
+      inset 0 1px 0 0 rgba(255, 255, 255, 0.22),
+      0 22px 50px -22px rgba(0, 0, 0, 0.75);
   }
 
   .surface-overlay {
+    position: relative;
     background:
-      linear-gradient(135deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.015) 45%, transparent 100%),
+      linear-gradient(180deg, rgba(255, 255, 255, 0.12) 0%, rgba(255, 255, 255, 0.04) 100%),
       var(--surface-overlay);
-    -webkit-backdrop-filter: blur(24px) saturate(210%) contrast(105%);
-    backdrop-filter: blur(24px) saturate(210%) contrast(105%);
-    border: 1px solid rgba(255, 255, 255, 0.14);
+    -webkit-backdrop-filter: blur(32px) saturate(170%);
+    backdrop-filter: blur(32px) saturate(170%);
+    border: 1px solid rgba(255, 255, 255, 0.07);
     box-shadow:
-      inset 0 1px 1px 0 rgba(255, 255, 255, 0.26),
-      inset 0 -1px 1px 0 rgba(0, 0, 0, 0.40),
-      0 6px 18px rgba(0, 0, 0, 0.45),
-      0 28px 68px -10px rgba(0, 0, 0, 0.80);
+      inset 0 1px 0 0 rgba(255, 255, 255, 0.26),
+      0 28px 68px -18px rgba(0, 0, 0, 0.80);
   }
 
   .surface-card {
+    position: relative;
     background:
-      linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.01) 40%, transparent 100%),
+      linear-gradient(180deg, rgba(255, 255, 255, 0.085) 0%, rgba(255, 255, 255, 0.025) 100%),
       var(--surface-card);
-    -webkit-backdrop-filter: blur(16px) saturate(190%) contrast(102%);
-    backdrop-filter: blur(16px) saturate(190%) contrast(102%);
-    border: 1px solid rgba(255, 255, 255, 0.10);
+    -webkit-backdrop-filter: blur(22px) saturate(150%);
+    backdrop-filter: blur(22px) saturate(150%);
+    border: 1px solid rgba(255, 255, 255, 0.05);
     box-shadow:
-      inset 0 1px 1px 0 rgba(255, 255, 255, 0.16),
-      inset 0 -1px 1px 0 rgba(0, 0, 0, 0.25),
-      0 12px 30px -10px rgba(0, 0, 0, 0.65);
+      inset 0 1px 0 0 rgba(255, 255, 255, 0.16),
+      0 26px 50px -26px rgba(0, 0, 0, 0.70);
+  }
+
+  /* 高光描边：左上角接住光、向右下渐隐，模拟真实玻璃边缘的镜面反射。 */
+  .surface-panel::before,
+  .surface-overlay::before,
+  .surface-card::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    border-radius: inherit;
+    padding: 1px;
+    background: linear-gradient(140deg, rgba(255, 255, 255, 0.5) 0%, rgba(255, 255, 255, 0.1) 28%, transparent 55%, rgba(255, 255, 255, 0.14) 100%);
+    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    pointer-events: none;
+  }
+
+  .surface-card::before {
+    opacity: 0.7;
+  }
+
+  /* 手机宽度下首屏看板紧贴导航栏，导航栏 30px 的背景模糊半径会采样到它的玻璃上沿，
+     Chrome 会在导航栏内渲染出一条硬边。它的背后只有本就柔和的主题极光，去掉自身模糊视觉上无差别。 */
+  @media (max-width: 767.98px) {
+    .surface-panel.dashboard-intro {
+      -webkit-backdrop-filter: none;
+      backdrop-filter: none;
+    }
+  }
+
+  /* 卡内分组：只做分组不做材质，避免玻璃套玻璃。 */
+  .surface-inline {
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+  }
+
+  /* 详情页氛围光：海报大面积模糊后铺在内容之下，为玻璃层提供可透射的色彩。 */
+  .page-ambient {
+    position: absolute;
+    inset-inline: 0;
+    top: 0;
+    height: min(1100px, 140vh);
+    z-index: -1;
+    overflow: hidden;
+    pointer-events: none;
+    -webkit-mask-image: linear-gradient(to bottom, #000 40%, transparent 100%);
+    mask-image: linear-gradient(to bottom, #000 40%, transparent 100%);
+    animation: ambient-in 900ms ease-out both;
+  }
+
+  .page-ambient img {
+    filter: blur(100px) saturate(150%);
+    opacity: 0.55;
+    transform: scale(1.25);
   }
 
   .surface-control {
@@ -643,9 +685,13 @@ body::before {
   }
 
   .progress-track {
-    background: rgba(255, 255, 255, 0.06);
-    border: 1px solid rgba(255, 255, 255, 0.04);
-    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.4);
+    background: rgba(0, 0, 0, 0.3);
+    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.5), 0 1px 0 rgba(255, 255, 255, 0.06);
+  }
+
+  .progress-fill {
+    background: linear-gradient(90deg, var(--accent-dark), var(--accent-light));
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.4), 0 0 14px var(--accent-glow-soft);
   }
 
   .dashboard-deferred {
@@ -688,6 +734,48 @@ body::before {
 
 .animate-spotlight-fade {
   animation: spotlight-fade 350ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* 主行动按钮：用较深的强调色承载文字，保证各主题下的对比度。
+   放在 @layer 之外：未分层的重置规则 a { color: inherit } 会压过分层内的文字颜色。 */
+.button-accent {
+  background: var(--accent-dark);
+  color: var(--accent-contrast);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.32), 0 12px 28px -10px var(--accent-glow);
+  transition: filter 200ms, transform 200ms, box-shadow 200ms;
+}
+
+.button-accent:hover {
+  filter: brightness(1.1);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.4), 0 16px 34px -10px var(--accent-glow-strong);
+}
+
+@keyframes ambient-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* 不支持背景模糊或用户要求降低透明度时，玻璃退化为稳定的不透明面板，保证文字可读。 */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .surface-panel,
+  .surface-overlay,
+  .surface-card {
+    background: var(--surface-recessed);
+  }
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .surface-panel,
+  .surface-overlay,
+  .surface-card {
+    background: var(--surface-recessed);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+
+  .page-ambient {
+    display: none;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

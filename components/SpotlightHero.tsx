@@ -12,7 +12,7 @@ interface SpotlightHeroProps {
   yearLabel?: string;
 }
 
-/** 首页沉浸展台组件，全面对齐站内 surface-panel / surface-card 细腻毛玻璃质感，呈现焦点影片的海报、剧情简介与类型标签。 */
+/** 首页沉浸展台组件：标题与简介直接压在主题极光底上，呈现焦点影片的海报、剧情简介与类型标签。 */
 export default function SpotlightHero({ items, yearLabel }: SpotlightHeroProps) {
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
@@ -29,27 +29,8 @@ export default function SpotlightHero({ items, yearLabel }: SpotlightHeroProps) 
   return (
     <section
       aria-label="焦点精选展台"
-      className="surface-panel relative overflow-hidden rounded-3xl p-5 sm:p-7 lg:p-9 transition-all duration-500 shadow-[0_24px_80px_rgba(0,0,0,0.65)]"
+      className="px-1 py-4 sm:py-6 lg:py-8"
     >
-      {/* 电影幕布氛围光晕层 (Dynamic Cinema Ambient Backdrop) */}
-      {currentItem.cover_url && (
-        <div
-          key={`ambient-${currentItem.id}`}
-          aria-hidden="true"
-          className="pointer-events-none absolute -inset-16 overflow-hidden opacity-25 blur-[120px] saturate-160 transition-opacity duration-1000"
-        >
-          <Image
-            src={currentItem.cover_url}
-            alt=""
-            fill
-            sizes="(max-width: 1024px) 100vw, 1200px"
-            className="object-cover scale-125 object-center"
-          />
-          <div className="absolute inset-0 bg-gradient-to-t from-[var(--canvas)] via-transparent to-[var(--canvas)]/50" />
-          <div className="absolute inset-0 bg-gradient-to-r from-[var(--canvas)]/90 via-[var(--canvas)]/30 to-[var(--canvas)]/90" />
-        </div>
-      )}
-
       <div className="relative z-10 flex flex-col lg:flex-row items-center justify-between gap-8 lg:gap-12 xl:gap-16">
           
           {/* 左侧：电影简介、类型标签与核心控制区 */}
@@ -77,7 +58,7 @@ export default function SpotlightHero({ items, yearLabel }: SpotlightHeroProps) 
 
               {/* 电影标题（艺术衬线体） */}
               <h2
-                className="font-serif-movie text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight text-white drop-shadow-[0_0_20px_rgba(255,255,255,0.2)] line-clamp-2"
+                className="font-serif-movie text-4xl sm:text-5xl lg:text-6xl font-black leading-tight tracking-tight text-white drop-shadow-[0_2px_30px_rgba(0,0,0,0.45)] line-clamp-2"
                 title={currentItem.title}
               >
                 {currentItem.title}
@@ -89,7 +70,7 @@ export default function SpotlightHero({ items, yearLabel }: SpotlightHeroProps) 
                   {currentItem.genres.map((genre) => (
                     <span
                       key={genre}
-                      className="inline-flex items-center rounded-full border border-white/10 bg-white/5 px-2.5 py-0.5 text-xs font-medium text-white/75 backdrop-blur-md transition-all duration-300 hover:border-[var(--accent-border)] hover:bg-[var(--accent-soft)] hover:text-white"
+                      className="surface-inline inline-flex items-center rounded-full px-3 py-1 text-xs font-medium text-white/85"
                     >
                       {genre}
                     </span>
@@ -100,7 +81,7 @@ export default function SpotlightHero({ items, yearLabel }: SpotlightHeroProps) 
               {/* 真实剧情简介（Description） */}
               <div className="mt-4">
                 {currentItem.summary ? (
-                  <p className="text-sm sm:text-base leading-relaxed text-white/75 line-clamp-2 sm:line-clamp-3 md:line-clamp-4 font-normal">
+                  <p className="max-w-xl text-sm sm:text-base leading-relaxed text-white/80 line-clamp-2 sm:line-clamp-3 md:line-clamp-4 font-normal">
                     {currentItem.summary}
                   </p>
                 ) : (
@@ -110,21 +91,18 @@ export default function SpotlightHero({ items, yearLabel }: SpotlightHeroProps) 
                 )}
               </div>
 
-              {/* 评分品味胶囊 */}
-              <div className="mt-5 flex items-center gap-4">
-                <MediaRatingBadge rating={currentItem.rating} size="lg" showTier />
-              </div>
             </div>
 
-            {/* 行动呼吁按钮组 */}
+            {/* 行动呼吁与评分品味胶囊 */}
             <div className="mt-7 flex flex-wrap items-center gap-4">
               <Link
                 href={mediaPath}
-                className="surface-control group inline-flex items-center gap-2 rounded-xl border border-[var(--accent-border)] bg-[var(--accent-soft)] px-6 py-2.5 text-sm font-semibold text-white backdrop-blur-xl shadow-lg shadow-black/40 transition-all duration-300 hover:border-[var(--accent)] hover:bg-[var(--accent)] hover:scale-[1.03] active:scale-[0.98]"
+                className="button-accent group inline-flex h-12 items-center gap-2 rounded-full px-7 text-sm font-bold active:scale-[0.98]"
               >
                 <span>{currentItem.type === "series" ? "查看影剧" : "查看影片"}</span>
                 <span className="i-material-symbols-arrow-forward-rounded size-4 transition-transform group-hover:translate-x-1" aria-hidden="true" />
               </Link>
+              <MediaRatingBadge rating={currentItem.rating} size="lg" showTier />
             </div>
           </div>
 
@@ -135,7 +113,7 @@ export default function SpotlightHero({ items, yearLabel }: SpotlightHeroProps) 
               <Link
                 href={mediaPath}
                 aria-label={`查看《${currentItem.title}》详情`}
-                className="surface-card interactive-media-card relative aspect-2/3 w-48 sm:w-56 lg:w-60 block overflow-hidden rounded-2xl shadow-[0_24px_60px_-15px_rgba(0,0,0,0.85)]"
+                className="surface-card interactive-media-card relative aspect-2/3 w-48 sm:w-60 lg:w-72 block overflow-hidden rounded-3xl shadow-[0_50px_90px_-30px_rgba(0,0,0,0.9)]"
               >
                 {currentItem.cover_url ? (
                   <Image
@@ -145,13 +123,14 @@ export default function SpotlightHero({ items, yearLabel }: SpotlightHeroProps) 
                     priority
                     fetchPriority="high"
                     className="object-cover transition-transform duration-700 ease-out group-hover/poster:scale-105"
-                    sizes="(max-width: 639px) 192px, (max-width: 1023px) 224px, 240px"
+                    sizes="(max-width: 639px) 192px, (max-width: 1023px) 240px, 288px"
                   />
                 ) : (
                   <div className="flex h-full w-full items-center justify-center text-white/30">
                     <span className="i-material-symbols-movie-rounded size-12" aria-hidden="true" />
                   </div>
                 )}
+                <div className="absolute inset-0 bg-linear-to-br from-white/20 via-transparent to-transparent" aria-hidden="true" />
                 <div className="absolute inset-0 bg-linear-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover/poster:opacity-100 transition-opacity duration-300" />
                 <MediaCardStatusBadge status={currentItem.status} />
               </Link>

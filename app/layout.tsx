@@ -1,12 +1,21 @@
 import { Suspense } from "react";
 import type { Metadata, Viewport } from "next";
+import { Geist_Mono } from "next/font/google";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import MobileTabBar from "@/components/MobileTabBar";
 import NavigationProgressBar from "@/components/NavigationProgressBar";
 import { SITE_URL } from "@/lib/site";
 import { THEME_COLORS, THEME_INIT_SCRIPT } from "@/lib/themes";
 import "./globals.css";
+
+// 数字与品牌字标统一使用 Geist Mono，经 next/font 自托管以满足 font-src 'self' 策略。
+const geistMono = Geist_Mono({
+  subsets: ["latin"],
+  variable: "--font-geist-mono",
+  display: "swap",
+});
 
 export const viewport: Viewport = {
   themeColor: THEME_COLORS.default,
@@ -44,7 +53,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="zh-CN" suppressHydrationWarning>
+    <html lang="zh-CN" className={geistMono.variable} suppressHydrationWarning>
       <head>
         <link rel="preconnect" href="https://image.tmdb.org" crossOrigin="anonymous" />
         <link rel="dns-prefetch" href="https://image.tmdb.org" />
@@ -74,6 +83,7 @@ export default function RootLayout({
         </main>
 
         <Footer />
+        <MobileTabBar />
         <SpeedInsights />
       </body>
     </html>

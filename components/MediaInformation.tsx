@@ -165,20 +165,20 @@ export default function MediaInformation({
 
   return (
     <>
-      {/* 顶部电影氛围背景 (Cinematic Header Ambient Glow) */}
+      {/* 顶部电影氛围光：海报模糊后固定铺在视口顶部，为详情面板的玻璃层提供可透射的色彩。 */}
       {media.cover_url && (
         <div
           aria-hidden="true"
-          className="pointer-events-none fixed inset-x-0 top-0 h-[65vh] overflow-hidden opacity-20 blur-[100px] saturate-200 -z-10"
+          className="page-ambient fixed -z-10 h-[85vh]"
         >
           <Image
             src={media.cover_url}
             alt=""
             fill
-            className="object-cover scale-150 -translate-y-1/4"
+            sizes="640px"
+            className="object-cover"
             priority={false}
           />
-          <div className="absolute inset-0 bg-gradient-to-b from-transparent via-[var(--canvas)]/70 to-[var(--canvas)]" />
         </div>
       )}
 

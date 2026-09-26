@@ -18,26 +18,29 @@ test.beforeEach(/* 在每个响应式导航测试前模拟空数据库与搜索�
   });
 });
 
-test("search page navigation matches the current responsive breakpoint", /* 按桌面或移动断点验证导航菜单的可见性和开关行为。 */ async ({ page }, testInfo) => {
+test("search page navigation matches the current responsive breakpoint", /* 按断点验证顶部栏目链接与底部标签栏的可见性。 */ async ({ page }, testInfo) => {
   await page.goto("/search");
   await page.waitForLoadState("networkidle");
   const mainNav = page.getByRole("navigation", { name: "主要导航" });
   await expect(mainNav).toBeVisible();
 
-  const menuButton = page.getByRole("button", { name: "打开导航菜单" });
-  if (testInfo.project.name === "desktop") {
-    await expect(menuButton).toBeHidden();
-    await expect(mainNav.getByRole("link", { name: "电影" }).first()).toBeVisible();
+  const tabBar = page.getByRole("navigation", { name: "底部导航" });
+  await expect(page.getByRole("button", { name: "打开导航菜单" })).toHaveCount(0);
+  if (testInfo.project.name === "phone") {
+    // 768px 以下顶部只保留登录，栏目与搜索由底部标签栏承担。
+    await expect(tabBar).toBeVisible();
+    await expect(tabBar.getByRole("link", { name: "搜索" })).toHaveAttribute("aria-current", "page");
+    await expect(mainNav.getByRole("link", { name: "电影" })).toBeHidden();
   } else {
-    await expect(menuButton).toBeVisible();
+    // 平板与桌面直接在顶部展示栏目链接。
+    await expect(tabBar).toBeHidden();
+    await expect(mainNav.getByRole("link", { name: "电影" })).toBeVisible();
   }
 });
 
-test("navbar search preserves non-ASCII query text", /* 验证导航栏搜索能保留非 ASCII 关键词并正确跳转。 */ async ({ page }) => {
+test("navbar search preserves non-ASCII query text", /* 验证导航栏搜索能保留非 ASCII 关键词并正确跳转。 */ async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name === "phone", "768px 以下顶部不含搜索框，经底部标签栏进入搜索页");
   await page.goto("/search");
-  const menuButton = page.getByRole("button", { name: "打开导航菜单" });
-  if (await menuButton.isVisible()) await menuButton.click();
-
   const mainNav = page.getByRole("navigation", { name: "主要导航" });
   const search = mainNav.getByPlaceholder("搜索").filter({ visible: true });
   await search.fill("沙丘");
