@@ -273,8 +273,7 @@ export default function HomeDashboard({
               <div>
                 <dt className="text-[11px] tracking-wide text-white/75">完成进度</dt>
                 <dd
-                  className="mt-1 font-mono text-2xl font-normal tracking-tight text-[var(--accent-light)] sm:text-3xl"
-                  style={{ color: "var(--accent-light)" }}
+                  className="mt-1 font-mono text-2xl font-normal tracking-tight text-accent-light sm:text-3xl"
                 >
                   <AnimatedNumber value={runtimePercent} />%
                 </dd>

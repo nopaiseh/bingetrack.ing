@@ -46,3 +46,22 @@ it("其他标签页操作共享计时，新验证可开始新周期", () => {
   vi.advanceTimersByTime(1000);
   expect(expire).not.toHaveBeenCalled();
 });
+it("新会话不继承上个会话残留的过期操作时间", () => {
+  resetIdleSession("owner");
+  vi.setSystemTime(Date.now() + 2 * IDLE_TIMEOUT);
+  const expire = vi.fn();
+  stop = watchIdleSession("owner", expire, Date.now());
+  expect(expire).not.toHaveBeenCalled();
+  vi.advanceTimersByTime(IDLE_TIMEOUT - 1000);
+  expect(expire).not.toHaveBeenCalled();
+  vi.advanceTimersByTime(2000);
+  expect(expire).toHaveBeenCalledOnce();
+});
+it("登录后同样闲置 30 分钟的会话仍会过期", () => {
+  const signedInAt = Date.now();
+  resetIdleSession("owner");
+  vi.setSystemTime(signedInAt + IDLE_TIMEOUT);
+  const expire = vi.fn();
+  stop = watchIdleSession("owner", expire, signedInAt);
+  expect(expire).toHaveBeenCalledOnce();
+});

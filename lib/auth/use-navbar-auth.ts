@@ -34,11 +34,13 @@ export function useNavbarAuth() {
         stopIdle?.();
         currentUser = id;
         if (id) stopIdle = watchIdleSession(id, () => {
-          // 通过 POST 接口清理会话，再完整导航回首页以清除管理页内存与路由缓存。
-          void fetch("/auth/logout", { method: "POST" }).finally(() => {
-            window.location.replace("/");
-          });
-        });
+          // 通过 POST 接口清理会话，再完整导航回首页以清除管理页内存与路由缓存；接口不可达时退回本地清理，保证仍会登出。
+          void fetch("/auth/logout", { method: "POST" })
+            .catch(() => db.auth.signOut({ scope: "local" }))
+            .finally(() => {
+              window.location.replace("/");
+            });
+        }, Date.parse(session.user.last_sign_in_at ?? ""));
       }
       if (id) {
         // 离开 Auth 回调后才调用 RPC，避免会话锁重入。

@@ -148,7 +148,7 @@ export default function Navbar() {
               href="/manage"
               aria-label="管理"
               aria-current={isActive("/manage") ? "page" : undefined}
-              className="surface-control flex size-9 shrink-0 cursor-pointer items-center justify-center rounded-full text-white/80 outline-none transition-all duration-200 hover:border-white/40 hover:bg-white/10 hover:text-white active:scale-95 md:hidden"
+              className="surface-control flex size-9 shrink-0 cursor-pointer items-center justify-center rounded-full text-white/80 outline-none transition-all duration-200 hover:text-white active:scale-95 md:hidden"
             >
               <span className="i-material-symbols-settings-rounded inline-block size-4.5" aria-hidden="true" />
             </Link>
@@ -156,10 +156,10 @@ export default function Navbar() {
 
           {auth.signedIn ? (
             <form action="/auth/logout" method="POST">
-              <button type="submit" className="surface-control shrink-0 cursor-pointer rounded-full px-3.5 py-1.5 text-sm font-medium text-white/90 transition-all duration-200 hover:border-white/40 hover:bg-white/10 hover:text-white active:scale-95">退出</button>
+              <button type="submit" className="surface-control shrink-0 cursor-pointer rounded-full px-3.5 py-1.5 text-sm font-medium text-white/90 transition-all duration-200 hover:text-white active:scale-95">退出</button>
             </form>
           ) : (
-            <button type="button" disabled={auth.busy} onClick={() => void auth.signIn()} className="surface-control shrink-0 cursor-pointer rounded-full px-3.5 py-1.5 text-sm font-medium text-white/90 transition-all duration-200 hover:border-white/40 hover:bg-white/10 hover:text-white active:scale-95 disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:border-white/20 disabled:hover:bg-transparent disabled:hover:shadow-none disabled:active:scale-100">
+            <button type="button" disabled={auth.busy} onClick={() => void auth.signIn()} className="surface-control shrink-0 cursor-pointer rounded-full px-3.5 py-1.5 text-sm font-medium text-white/90 transition-all duration-200 hover:text-white active:scale-95 disabled:cursor-not-allowed disabled:opacity-60 disabled:active:scale-100">
               {auth.busy ? "验证中…" : "登录"}
             </button>
           )}

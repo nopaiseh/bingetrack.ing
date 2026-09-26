@@ -4,7 +4,7 @@ import ThemeToggle from "./ThemeToggle";
 /** 渲染站点页脚、品牌链接及所用平台标识。 */
 export default function Footer() {
   return (
-    <footer className="surface-panel content-visibility-auto relative z-1 mt-auto overflow-hidden border-x-0 border-b-0 pt-6 pb-28 md:pb-6 transition-all duration-300">
+    <footer className="surface-panel surface-bleed content-visibility-auto relative z-1 mt-auto overflow-hidden pt-6 pb-28 md:pb-6 transition-all duration-300">
       
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-3/4 h-px bg-linear-to-r from-transparent via-white/10 to-transparent"></div>
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-1/4 h-px bg-linear-to-r from-transparent via-white/20 to-transparent blur-[2px]"></div>

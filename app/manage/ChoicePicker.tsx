@@ -292,7 +292,7 @@ export default function ChoicePicker({
 
       {/* 嵌入式搜索框 */}
       <div className="relative flex items-center">
-        <span className="i-material-symbols-search-rounded pointer-events-none absolute left-3 size-4 text-white/40" aria-hidden="true" />
+        <span className="i-material-symbols-search-rounded pointer-events-none absolute left-3 z-10 size-4 text-white/40" aria-hidden="true" />
         <input
           ref={input}
           id={listId}
