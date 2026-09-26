@@ -6,19 +6,23 @@ export default function ManagePagination({
   page,
   totalPages,
   params,
+  basePath = "/manage",
+  label = "管理列表分页",
 }: {
   page: number;
   totalPages: number;
   params: Record<string, string>;
+  basePath?: string;
+  label?: string;
 }) {
   if (totalPages <= 1) return null;
 
   /** 保留当前筛选条件生成目标页地址。 */
-  const pageUrl = (target: number) => `/manage?${new URLSearchParams({ ...params, page: String(target) })}`;
+  const pageUrl = (target: number) => `${basePath}?${new URLSearchParams({ ...params, page: String(target) })}`;
   const arrowClass = "surface-control flex items-center rounded-xl p-2.5 text-white/70 transition-all hover:text-white";
 
   return (
-    <nav aria-label="管理列表分页" className="mt-6 flex flex-col items-center gap-3">
+    <nav aria-label={label} className="mt-6 flex flex-col items-center gap-3">
       <div className="flex flex-wrap items-center justify-center gap-2">
         {page > 1 ? (
           <Link href={pageUrl(page - 1)} className={arrowClass} aria-label="上一页">

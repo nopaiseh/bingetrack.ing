@@ -34,3 +34,10 @@ test("只有一页时不渲染分页", () => {
   const { container } = render(<ManagePagination page={1} totalPages={1} params={{ q: "", type: "movie", parent: "" }} />);
   expect(container).toBeEmptyDOMElement();
 });
+
+test("关联资料分页使用所在列表的地址", () => {
+  render(<ManagePagination page={2} totalPages={26} params={{ q: "" }} basePath="/manage/references/people" label="资料列表分页" />);
+
+  expect(screen.getByRole("navigation", { name: "资料列表分页" })).toBeInTheDocument();
+  expect(screen.getByRole("link", { name: "第 26 页" })).toHaveAttribute("href", "/manage/references/people?q=&page=26");
+});
