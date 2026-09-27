@@ -82,7 +82,7 @@ function EpisodeCard({ episode }: { episode: EpisodeInfo }) {
           <p className="mt-3 line-clamp-4 whitespace-pre-line text-sm leading-relaxed text-fg-muted sm:line-clamp-5 md:line-clamp-6" title={episode.summary}>
             {episode.summary}
           </p>
-        ) : <p className="mt-3 text-sm text-fg-faint">暂无简介。</p>}
+        ) : <p className="mt-3 text-sm text-fg-subtle">暂无简介。</p>}
       </div>
     </article>
   );
