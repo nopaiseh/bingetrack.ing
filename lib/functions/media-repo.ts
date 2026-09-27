@@ -3,7 +3,7 @@ import { mapViewRowToMedia, mapViewRowToMediaCard } from "@/lib/functions/media-
 import { buildMediaDistributions, type DistributionCountRow } from "@/lib/functions/media-distributions";
 import { isMediaId } from "@/lib/functions/media-id";
 import { withRetry } from "@/lib/functions/retry";
-import { EpisodeInfo, MediaCard, Media, MediaDistributions, SeasonEpisodePage, SeasonInfo, ViewAllMediaRow, FetchMediaListOptions } from "@/lib/types";
+import { EpisodeInfo, MediaCard, Media, MediaDistributions, SeasonEpisodePage, SeasonInfo, UpcomingRelease, ViewAllMediaRow, FetchMediaListOptions } from "@/lib/types";
 import { reportHandledError } from "@/lib/report-error";
 
 
@@ -526,6 +526,124 @@ export async function fetchTopMediaServer(
   });
 }
 
+// 首页缓存可能滞后一两天，每部剧多取几集、电影多取几部，浏览器按当天过滤后仍能补位。
+const UPCOMING_MOVIE_LIMIT = 12;
+const UPCOMING_EPISODE_POOL = 60;
+const UPCOMING_EPISODES_PER_SHOW = 3;
+
+type UpcomingEpisodeRow = {
+  id: string;
+  title: string | null;
+  release_date: string;
+  tv_episodes: {
+    season_id: string;
+    episode_number: number;
+    tv_seasons: { season_number: number; series_id: string } | Array<{ season_number: number; series_id: string }> | null;
+  } | Array<{
+    season_id: string;
+    episode_number: number;
+    tv_seasons: { season_number: number; series_id: string } | Array<{ season_number: number; series_id: string }> | null;
+  }> | null;
+};
+
+/** 返回 UTC 昨天的日期，作为候选下限，让比 UTC 慢的时区仍能看到当地“今天”上映的条目。 */
+function upcomingLowerBound(): string {
+  return new Date(Date.now() - 86_400_000).toISOString().slice(0, 10);
+}
+
+/** 读取即将上映的电影和即将播出的单集，组成首页倒计时展台的候选池；精确的当天过滤交给浏览器。 */
+export async function fetchUpcomingReleasesServer(): Promise<UpcomingRelease[]> {
+  return withRetry(async () => {
+    const db = getSupabasePublicServer();
+    const since = upcomingLowerBound();
+
+    const [moviesRes, episodesRes] = await Promise.all([
+      db.from("v_all_media")
+        .select(TOP_MEDIA_COLUMNS)
+        .eq("type", "movie")
+        .gte("sort_date", since)
+        .order("sort_date", { ascending: true })
+        .order("id", { ascending: true })
+        .limit(UPCOMING_MOVIE_LIMIT),
+      db.from("media_items")
+        .select("id,title,release_date,tv_episodes!inner(season_id,episode_number,tv_seasons!inner(season_number,series_id))")
+        .eq("type", "tv_episode")
+        .gte("release_date", since)
+        .order("release_date", { ascending: true })
+        .order("id", { ascending: true })
+        .limit(UPCOMING_EPISODE_POOL),
+    ]);
+
+    if (moviesRes.error || episodesRes.error) {
+      console.error("Failed to fetch upcoming releases:", moviesRes.error ?? episodesRes.error);
+      throw new MediaRepositoryError("fetch upcoming releases", moviesRes.error ?? episodesRes.error);
+    }
+
+    const movies = ((moviesRes.data ?? []) as ViewAllMediaRow[]).map(/* 将电影视图行转换为倒计时条目。 */ (row): UpcomingRelease => {
+      const card = mapViewRowToMediaCard(row);
+      return {
+        id: card.id,
+        kind: "movie",
+        groupId: card.id,
+        title: card.title,
+        releaseDate: String(row.sort_date),
+        cover_url: card.cover_url,
+        href: `/movies/${encodeURIComponent(card.id)}`,
+        genres: card.genres,
+        languages: card.languages,
+        ...(row.summary ? { summary: row.summary } : {}),
+      };
+    });
+
+    // 每部剧只保留最早的几集，控制候选池大小。
+    const perShow = new Map<string, number>();
+    const episodes = ((episodesRes.data ?? []) as UpcomingEpisodeRow[]).flatMap(/* 展开单集所属季与剧，超出每剧上限的单集丢弃。 */ (row) => {
+      const episode = firstRelated(row.tv_episodes);
+      const season = firstRelated(episode?.tv_seasons);
+      if (!episode || !season) return [];
+      const count = perShow.get(season.series_id) ?? 0;
+      if (count >= UPCOMING_EPISODES_PER_SHOW) return [];
+      perShow.set(season.series_id, count + 1);
+      return [{ row, seasonId: episode.season_id, episodeNumber: episode.episode_number, seasonNumber: season.season_number, seriesId: season.series_id }];
+    });
+
+    const seriesIds = [...perShow.keys()];
+    let seriesById = new Map<string, ViewAllMediaRow>();
+    if (seriesIds.length > 0) {
+      const { data, error } = await db.from("v_all_media").select(TOP_MEDIA_COLUMNS).eq("type", "tv_show").in("id", seriesIds);
+      if (error) {
+        console.error("Failed to fetch upcoming series:", error);
+        throw new MediaRepositoryError("fetch upcoming series", error);
+      }
+      seriesById = new Map(((data ?? []) as ViewAllMediaRow[]).map(/* 以剧集 ID 建立查找表。 */ (row) => [String(row.id), row]));
+    }
+
+    const shows = episodes.flatMap(/* 用所属剧的标题、海报和简介补全单集条目。 */ ({ row, seasonId, episodeNumber, seasonNumber, seriesId }): UpcomingRelease[] => {
+      const series = seriesById.get(seriesId);
+      if (!series) return [];
+      const card = mapViewRowToMediaCard(series);
+      const code = `第 ${seasonNumber} 季 · 第 ${episodeNumber} 集`;
+      return [{
+        id: String(row.id),
+        kind: "episode",
+        groupId: card.id,
+        title: card.title,
+        subtitle: row.title ? `${code} · ${row.title}` : code,
+        releaseDate: row.release_date,
+        cover_url: card.cover_url,
+        href: `/shows/${encodeURIComponent(card.id)}/seasons/${encodeURIComponent(seasonId)}`,
+        genres: card.genres,
+        languages: card.languages,
+        ...(series.summary ? { summary: series.summary } : {}),
+      }];
+    });
+
+    return [...movies, ...shows].sort(/* 按上映日期升序合并两类条目。 */ (left, right) =>
+      left.releaseDate.localeCompare(right.releaseDate) || left.id.localeCompare(right.id),
+    );
+  });
+}
+
 /** 调用分布计数 RPC，再转换为按媒体类型和年份组织的前五名统计。 */
 export async function fetchMediaDistributionsServer(): Promise<MediaDistributions> {
   return withRetry(async () => {
@@ -555,7 +673,7 @@ export async function fetchMediaCardsServer(opts: FetchMediaListOptions = {}): P
 async function fetchMediaList(opts: FetchMediaListOptions, includeTotal = true): Promise<{ rows: MediaCard[]; total: number }> {
   const db = getSupabasePublicServer();
   const {
-    type, seriesOnly = false, creditRole, status, genre, region, language, startYear, endYear, q, sort, limit = 30, offset = 0,
+    type, seriesOnly = false, creditRole, status, upcoming = false, genre, region, language, startYear, endYear, q, sort, limit = 30, offset = 0,
   } = opts || {};
 
   const types = type?.split(",").filter(Boolean) ?? [];
@@ -578,8 +696,14 @@ async function fetchMediaList(opts: FetchMediaListOptions, includeTotal = true):
     countQuery = countQuery.in("type", types);
   }
   // 数据查询与计数查询使用相同筛选条件，保证分页总数对应当前结果集。
-  if (status) {
-    const statuses = status.split(",");
+  // “即将上映”与观看状态同属状态筛选，多选时按任一满足合并；电影的 last_air_date 即上映日期，剧集为最后一集播出日期。
+  const statuses = status?.split(",") ?? [];
+  if (upcoming) {
+    const upcomingFilter = `last_air_date.gte.${new Date().toISOString().slice(0, 10)}`;
+    const filter = statuses.length > 0 ? `status.in.(${statuses.join(",")}),${upcomingFilter}` : upcomingFilter;
+    dataQuery = dataQuery.or(filter);
+    countQuery = countQuery.or(filter);
+  } else if (statuses.length > 0) {
     dataQuery = dataQuery.in("status", statuses);
     countQuery = countQuery.in("status", statuses);
   }

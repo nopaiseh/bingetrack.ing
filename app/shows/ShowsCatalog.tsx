@@ -14,7 +14,7 @@ export default function ShowsCatalog({
     { label: "已看的电视节目", value: stats?.watched || 0, href: "/search?type=tv_show&status=watched" },
     { label: "在看的电视节目", value: stats?.watching || 0, href: "/search?type=tv_show&status=watching" },
     { label: "想看的电视节目", value: stats?.want || 0, href: "/search?type=tv_show&status=want_to_watch" },
-    { label: "近期将播出", value: stats?.upcoming || 0, href: "/search?type=tv_show&sort=date_desc" },
+    { label: "近期将播出", value: stats?.upcoming || 0, href: "/search?type=tv_show&status=upcoming&sort=date_asc" },
   ];
 
   return (

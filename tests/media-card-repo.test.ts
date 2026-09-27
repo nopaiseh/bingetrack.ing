@@ -9,6 +9,7 @@ const state = vi.hoisted(/* 在模块模拟提升阶段创建共享查询记录�
     orders?: Array<{ column: string; ascending?: boolean; nullsFirst?: boolean }>;
     gtes?: Array<{ column: string; value: unknown }>;
     ltes?: Array<{ column: string; value: unknown }>;
+    ors?: string[];
   }>,
   results: {} as Record<string, { data: unknown; error: null | { code: string }; count?: number }>,
 }));
@@ -24,7 +25,8 @@ vi.mock("@/lib/supabase/public-server", /* 提供可记录查询的 Supabase 模
         orders: Array<{ column: string; ascending?: boolean; nullsFirst?: boolean }>;
         gtes: Array<{ column: string; value: unknown }>;
         ltes: Array<{ column: string; value: unknown }>;
-      } = { table, args: rpcArgs, head: rpcOptions?.head, orders: [], gtes: [], ltes: [] };
+        ors: string[];
+      } = { table, args: rpcArgs, head: rpcOptions?.head, orders: [], gtes: [], ltes: [], ors: [] };
       const chain = {
         /** 记录所选字段及是否仅查询计数，并返回链对象继续调用。 */
         select(columns: string, options?: { head?: boolean }) { request.columns = columns; request.head = options?.head ?? request.head; return chain; },
@@ -41,12 +43,16 @@ vi.mock("@/lib/supabase/public-server", /* 提供可记录查询的 Supabase 模
           request.ltes.push({ column, value });
           return chain;
         },
-        overlaps: () => chain, or: () => chain, range: /* 忽略分页范围并返回同一模拟查询链。 */ () => chain,
+        overlaps: () => chain, range: /* 忽略分页范围并返回同一模拟查询链。 */ () => chain, limit: /* 忽略条数限制并返回同一模拟查询链。 */ () => chain,
+        or: /* 记录“任一满足”筛选并返回同一模拟查询链。 */ (filter: string) => {
+          request.ors.push(filter);
+          return chain;
+        },
         /** 等待查询时保存请求记录，再把预设表结果交给后续 Promise 回调。 */
         then(resolve: (value: unknown) => unknown) {
           state.executed.push(request);
           const raw = state.results[table];
-          const result = typeof raw === "function" ? (raw as () => unknown)() : raw;
+          const result = typeof raw === "function" ? (raw as (req: typeof request) => unknown)(request) : raw;
           return Promise.resolve(result ?? { data: [], error: null, count: 0 }).then(resolve);
         },
       };
@@ -58,7 +64,7 @@ vi.mock("@/lib/supabase/public-server", /* 提供可记录查询的 Supabase 模
     },
   }),
 }));
-import { fetchMediaCardsServer, searchMediaServer, getSeasonsBySeriesId, fetchStatsServer, MediaRepositoryError } from "@/lib/functions/media-repo";
+import { fetchMediaCardsServer, searchMediaServer, getSeasonsBySeriesId, fetchStatsServer, fetchUpcomingReleasesServer, MediaRepositoryError } from "@/lib/functions/media-repo";
 
 beforeEach(/* 在每个测试前清空执行记录和模拟表结果。 */ () => { state.executed = []; state.results = {}; });
 
@@ -175,4 +181,29 @@ test("series-only browsing uses the database function; plain catalogs keep the v
   state.executed = [];
   await searchMediaServer({ type: "movie" });
   expect(state.executed.every((query) => query.table === "v_all_media")).toBe(true);
+});
+
+test("upcoming filter is OR-combined with watch statuses", /* 验证“即将上映”与观看状态同选时按任一满足合并，数据与计数查询一致。 */ async () => {
+  state.results.v_all_media = { data: [], error: null, count: 0 };
+  await searchMediaServer({ status: "want_to_watch", upcoming: true });
+  const [dataQuery, countQuery] = state.executed;
+  expect(dataQuery.ors).toEqual([expect.stringMatching(/^status\.in\.\(want_to_watch\),last_air_date\.gte\.\d{4}-\d{2}-\d{2}$/)]);
+  expect(countQuery.ors).toEqual(dataQuery.ors);
+});
+
+test("upcoming releases merge movies and next episodes with series details", /* 验证倒计时候选合并电影与单集，单集用所属剧的标题和海报并链接到季页。 */ async () => {
+  state.results.v_all_media = ((request: { columns?: string; gtes: Array<{ column: string }> }) => request.gtes.length > 0
+    ? { data: [{ id: "m1", type: "movie", title: "Dune", sort_date: "2026-10-09", genres: [], languages: [] }], error: null }
+    : { data: [{ id: "s1", type: "tv_show", title: "Severance", cover_url: "https://example.com/s.jpg", summary: "Office.", genres: [], languages: [] }], error: null }) as never;
+  state.results.media_items = { data: [
+    { id: "e1", title: "Echo", release_date: "2026-09-28", tv_episodes: { season_id: "season-3", episode_number: 5, tv_seasons: { season_number: 3, series_id: "s1" } } },
+  ], error: null };
+
+  const releases = await fetchUpcomingReleasesServer();
+  expect(releases.map((item) => item.id)).toEqual(["e1", "m1"]);
+  expect(releases[0]).toMatchObject({
+    kind: "episode", groupId: "s1", title: "Severance", subtitle: "第 3 季 · 第 5 集 · Echo",
+    href: "/shows/s1/seasons/season-3", cover_url: "https://example.com/s.jpg", summary: "Office.",
+  });
+  expect(releases[1]).toMatchObject({ kind: "movie", href: "/movies/m1", releaseDate: "2026-10-09" });
 });
