@@ -1,11 +1,11 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useId, useRef, useState } from "react";
 import { useDraftFields } from "../useDraftFields";
 import ChoicePicker from "../ChoicePicker";
 import UnsavedGuard from "../UnsavedGuard";
 import type { Choice } from "@/lib/admin/catalog";
-import { saveMedia, deleteMedia, type ActionResult } from "@/app/manage/actions";
+import { saveMedia, deleteMedia, type ActionResult } from "@/app/(admin)/manage/actions";
 import { mediaTypes, type MediaInput, type ManagedMediaType } from "@/lib/admin/media-form";
 
 const typeConfigs: Record<ManagedMediaType, { label: string; icon: string; badgeClass: string; textClass: string; borderClass: string; bgClass: string }> = {
@@ -56,6 +56,14 @@ export default function MediaForm({ item, initialType = "movie", lockType = fals
     return result;
   }, {});
   const [deleteState, deleteAction, deleting] = useActionState(deleteMedia, {});
+  const confirmDialog = useRef<HTMLDialogElement>(null);
+  const confirmHeading = useId();
+  const confirmInput = useRef<HTMLInputElement>(null);
+  /** 打开确认弹窗后直接聚焦名称输入框，省去一次点击。 */
+  function openConfirm() {
+    confirmDialog.current?.showModal();
+    confirmInput.current?.focus();
+  }
   const isChild = type === "tv_season" || type === "tv_episode";
   return <div className="space-y-10">
     <UnsavedGuard dirty={dirty && !pending && !deleting} />
@@ -344,19 +352,19 @@ export default function MediaForm({ item, initialType = "movie", lockType = fals
             </div>
           </section>
         )}
-        <div className="surface-overlay sticky bottom-4 z-20 flex flex-wrap items-center justify-between gap-3 rounded-xl p-3"><div><p className="text-sm text-neutral-300">{dirty ? "有未保存的修改" : "资料已载入"}</p><p role="alert" className="text-sm text-red-300">{state.error}</p></div><button type="submit" className="admin-primary">{pending ? "正在保存…" : "保存资料"}</button></div>
+        <div className="surface-overlay sticky bottom-4 z-20 flex flex-wrap items-center justify-between gap-3 rounded-xl p-3"><div><p className="text-sm text-neutral-300">{dirty ? "有未保存的修改" : "资料已载入"}</p><p role="alert" className="text-sm text-red-300">{state.error}</p></div><div className="flex flex-wrap items-center gap-3">{item && <button type="button" className="admin-danger" onClick={openConfirm}>删除条目</button>}<button type="submit" className="admin-primary">{pending ? "正在保存…" : "保存资料"}</button></div></div>
       </fieldset>
     </form>
-    {item && <details className="rounded-2xl border border-white/10 p-5 sm:p-8">
-      <summary className="mb-3 cursor-pointer text-sm text-red-200">删除条目</summary>
-      <p className="mb-4 text-sm leading-relaxed text-neutral-300">将永久删除「{item.title}」及其观看记录、评分和关联。{type === "tv_show" ? "所有下属季和集的资料、观看记录及评分也会一起删除。" : type === "tv_season" ? "此季的所有集及其观看记录和评分也会一起删除。" : ""}此操作无法撤销。</p>
+    {item && <dialog ref={confirmDialog} aria-labelledby={confirmHeading} className="admin-quick-dialog" onCancel={event => { if (deleting) event.preventDefault(); }}>
+      <h2 id={confirmHeading} className="break-words text-xl font-semibold text-white">永久删除「{item.title}」？</h2>
+      <p className="my-4 text-sm leading-relaxed text-neutral-300">将删除这个条目及其观看记录、评分和关联。{type === "tv_show" ? "所有下属季和集的资料、观看记录及评分也会一起删除。" : type === "tv_season" ? "此季的所有集及其观看记录和评分也会一起删除。" : ""}此操作无法撤销。</p>
       {impact && (isChild || type === "tv_show") && <p className="mb-4 text-sm text-red-200">本次还会删除 {impact.seasons} 季、{impact.episodes} 集及其观看记录。</p>}
       <form action={deleteAction} className="space-y-4">
         <input type="hidden" name="id" value={item.id ?? ""} />
-        <label>输入完整标题以确认删除<input name="confirm_title" required autoComplete="off" disabled={pending || deleting} /></label>
-        <p role="alert" className="text-red-300">{deleteState.error}</p>
-        <button className="admin-danger" type="submit" disabled={pending || deleting}>{deleting ? "正在删除…" : "永久删除"}</button>
+        <label>输入完整标题以确认删除<input ref={confirmInput} name="confirm_title" required autoComplete="off" disabled={pending || deleting} /></label>
+        <p role="alert" className="text-sm text-red-300">{deleteState.error}</p>
+        <div className="flex flex-wrap justify-end gap-3"><button type="button" disabled={deleting} onClick={() => confirmDialog.current?.close()}>取消</button><button className="admin-danger" type="submit" disabled={pending || deleting}>{deleting ? "正在删除…" : "永久删除"}</button></div>
       </form>
-    </details>}
+    </dialog>}
   </div>;
 }

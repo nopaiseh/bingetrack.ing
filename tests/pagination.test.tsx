@@ -1,7 +1,7 @@
 import { render, screen } from "@testing-library/react";
 import { expect, test } from "vitest";
 import { pageNumbers, paginationItems } from "@/lib/pagination";
-import ManagePagination from "@/app/manage/ManagePagination";
+import ManagePagination from "@/app/(admin)/manage/ManagePagination";
 
 test("页码窗口最多五页并在首尾处收拢", () => {
   expect(pageNumbers(1, 3)).toEqual([1, 2, 3]);

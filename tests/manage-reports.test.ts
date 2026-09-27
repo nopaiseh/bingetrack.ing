@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { deleteUnused } from "@/app/manage/report-actions";
+import { deleteUnused } from "@/app/(admin)/manage/report-actions";
 import { isReportKind, reportGroups, reportRowHref, reportRowType, reportTagLabels, reports } from "@/lib/admin/reports";
 import { requireOwner } from "@/lib/auth/server";
 import { revalidatePath } from "next/cache";

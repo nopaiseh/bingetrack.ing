@@ -1,10 +1,10 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { expect, it, vi } from "vitest";
-import MediaForm from "@/app/manage/media/MediaForm";
-import ReferenceForm from "@/app/manage/references/ReferenceForm";
-vi.mock("@/app/manage/actions", () => ({ saveMedia: vi.fn(async () => ({ error: "保存失败，请重试。" })), deleteMedia: vi.fn() }));
-vi.mock("@/app/manage/reference-actions", () => ({ saveReference: vi.fn(async () => ({ error: "名称已经存在。" })), deleteReference: vi.fn(), searchChoices: vi.fn() }));
+import MediaForm from "@/app/(admin)/manage/media/MediaForm";
+import ReferenceForm from "@/app/(admin)/manage/references/ReferenceForm";
+vi.mock("@/app/(admin)/manage/actions", () => ({ saveMedia: vi.fn(async () => ({ error: "保存失败，请重试。" })), deleteMedia: vi.fn() }));
+vi.mock("@/app/(admin)/manage/reference-actions", () => ({ saveReference: vi.fn(async () => ({ error: "名称已经存在。" })), deleteReference: vi.fn(), searchChoices: vi.fn() }));
 
 it("媒体保存失败后保留已填写资料与未保存提示", async () => {
   const user = userEvent.setup();

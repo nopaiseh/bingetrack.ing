@@ -1,6 +1,6 @@
 import { render, screen, fireEvent, act } from "@testing-library/react";
 import { expect, it, vi, beforeEach, afterEach } from "vitest";
-import StatusModal from "@/app/manage/StatusModal";
+import StatusModal from "@/app/(admin)/manage/StatusModal";
 
 beforeEach(() => {
   vi.useFakeTimers();

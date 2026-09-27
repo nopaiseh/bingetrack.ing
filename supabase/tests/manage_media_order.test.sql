@@ -1,5 +1,5 @@
 begin;
-select plan(7);
+select plan(13);
 
 -- 构造一部电影和两部剧集：剧集排序看最近已播集，未来集不提前把剧集顶到最前。
 insert into public.media_items(id,type,title,release_date) values
@@ -27,6 +27,19 @@ select is((select sort_date from public.v_manage_media_order where id='fb000000-
 select is((select sort_date from public.v_manage_media_order where id='fb000000-0000-4000-8000-000000000020'),current_date + 30,'series with no aired episode falls back to earliest episode');
 select is((select parent_id from public.v_manage_media_order where id='fb000000-0000-4000-8000-000000000013'),'fb000000-0000-4000-8000-000000000011'::uuid,'episode exposes its season as parent');
 select is((select item_number from public.v_manage_media_order where id='fb000000-0000-4000-8000-000000000011'),1,'season exposes its season number');
+
+-- 观看状态与评分：A 季看过一集、想看一集、未记录一集，B 季全部未记录。
+insert into public.tracking(media_item_id,status,rating) values
+  ('fb000000-0000-4000-8000-000000000001','watched',8.5),
+  ('fb000000-0000-4000-8000-000000000012','watched',7.0),
+  ('fb000000-0000-4000-8000-000000000013','want_to_watch',null);
+update public.media_items set alternate_title='Order alias' where id='fb000000-0000-4000-8000-000000000001';
+select is((select status from public.v_manage_media_order where id='fb000000-0000-4000-8000-000000000001'),'watched','movie status comes from its own tracking');
+select is((select rating from public.v_manage_media_order where id='fb000000-0000-4000-8000-000000000001'),8.5::numeric,'movie rating comes from its own tracking');
+select is((select alternate_title from public.v_manage_media_order where id='fb000000-0000-4000-8000-000000000001'),'Order alias','view exposes alternate title for search');
+select is((select status from public.v_manage_media_order where id='fb000000-0000-4000-8000-000000000010'),'watching','partly tracked series is watching');
+select is((select rating from public.v_manage_media_order where id='fb000000-0000-4000-8000-000000000010'),7.0::numeric,'series rating averages its episode ratings');
+select is((select status from public.v_manage_media_order where id='fb000000-0000-4000-8000-000000000020'),'want_to_watch','untracked series counts as not watched');
 
 set local role anon;
 select throws_ok($$select id from public.v_manage_media_order limit 1$$,'42501',null,'anonymous visitors cannot read the admin ordering view');

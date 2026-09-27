@@ -18,8 +18,18 @@ export function escapeLikePattern(term: string) {
   return term.replace(/[\\%_]/g, (char) => `\\${char}`);
 }
 
-/** 生成名称与别名的 PostgREST or 条件；值加引号，避免逗号、括号破坏过滤语法。 */
-export function nameOrAliasFilter(term: string) {
+/** 生成多列模糊匹配的 PostgREST or 条件；值加引号，避免逗号、括号破坏过滤语法。 */
+function ilikeAnyFilter(term: string, columns: string[]) {
   const quoted = `"${`%${escapeLikePattern(term)}%`.replace(/[\\"]/g, (char) => `\\${char}`)}"`;
-  return `name.ilike.${quoted},alternate_name.ilike.${quoted}`;
+  return columns.map((column) => `${column}.ilike.${quoted}`).join(",");
+}
+
+/** 生成名称与别名的 PostgREST or 条件。 */
+export function nameOrAliasFilter(term: string) {
+  return ilikeAnyFilter(term, ["name", "alternate_name"]);
+}
+
+/** 生成影视标题与副标题的 PostgREST or 条件。 */
+export function titleOrAliasFilter(term: string) {
+  return ilikeAnyFilter(term, ["title", "alternate_title"]);
 }

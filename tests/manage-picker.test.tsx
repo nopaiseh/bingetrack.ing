@@ -1,9 +1,9 @@
 import { render, screen, waitFor, fireEvent } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import ChoicePicker from "@/app/manage/ChoicePicker";
-import { searchChoices } from "@/app/manage/reference-actions";
-vi.mock("@/app/manage/reference-actions", () => ({ searchChoices: vi.fn() }));
+import ChoicePicker from "@/app/(admin)/manage/ChoicePicker";
+import { searchChoices } from "@/app/(admin)/manage/reference-actions";
+vi.mock("@/app/(admin)/manage/reference-actions", () => ({ searchChoices: vi.fn() }));
 beforeEach(() => { vi.mocked(searchChoices).mockResolvedValue({ choices: [{ id: "person-1", name: "Doe, Jane" }] }); });
 describe("管理关联选择器", () => {
   it("选择、排序与移除只改变当前表单的关联字段", async () => {

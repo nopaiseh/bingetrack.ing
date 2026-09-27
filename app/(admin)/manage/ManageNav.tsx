@@ -28,14 +28,14 @@ export default function ManageNav() {
   const pathname = usePathname();
   const params = useSearchParams();
   const router = useRouter();
-  const active = pathname.startsWith("/manage/reports") ? "reports" : pathname.startsWith("/manage/references/") ? pathname.split("/")[3] : params.get("type") ?? (pathname === "/manage" ? "movie" : "");
+  const active = pathname.startsWith("/settings") ? "settings" : pathname.startsWith("/manage/reports") ? "reports" : pathname.startsWith("/manage/references/") ? pathname.split("/")[3] : params.get("type") ?? (pathname === "/manage" ? "movie" : "");
   useEffect(() => {
     const isList = pathname === "/manage" || /^\/manage\/references\/[^/]+$/.test(pathname);
     if (!isList || !active) return;
     try { sessionStorage.setItem(`manage:list:${active}`, `${pathname}?${params.toString()}`); } catch { /* 隐私模式拒绝存储时仍可正常管理。 */ }
   }, [pathname, params, active]);
   /** 关联资料与报告使用独立路由，影视保留可分享的类型筛选。 */
-  function href(value: string) { return value === "reports" ? "/manage/reports" : value.startsWith("tv_") || value === "movie" ? `/manage?type=${value}` : `/manage/references/${value}`; }
+  function href(value: string) { return value === "settings" ? "/settings" : value === "reports" ? "/manage/reports" : value.startsWith("tv_") || value === "movie" ? `/manage?type=${value}` : `/manage/references/${value}`; }
   return <aside className="min-w-0 lg:sticky lg:top-24 lg:self-start">
     <div className="lg:hidden flex items-center justify-between gap-3">
       <label className="flex-1">管理类别<select value={active} onChange={/* 切换分类时进入该类别第一页。 */ event => {
@@ -47,6 +47,7 @@ export default function ManageNav() {
       }}>
         {!active && <option value="" disabled>编辑内容</option>}
         {groups.map(/* 保持移动端与桌面的分组一致。 */ group => <optgroup key={group.label} label={group.label}>{group.items.map(/* 分类入口。 */ item => <option key={item.value} value={item.value}>{item.label}</option>)}</optgroup>)}
+        <optgroup label="账号"><option value="settings">账号安全</option></optgroup>
       </select></label>
       <div className="shrink-0 self-end mb-1">
         <RefreshCacheButton compact />
@@ -70,11 +71,8 @@ export default function ManageNav() {
                   key={item.value}
                   href={href(item.value)}
                   onClick={event => {
+                    // 未保存确认已由 UnsavedGuard 在捕获阶段处理，取消时事件不会传到这里；此处再确认会弹两次。
                     if (event.button || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
-                    if (!mayLeaveEditor()) {
-                      event.preventDefault();
-                      return;
-                    }
                     event.preventDefault();
                     const targetHref = href(item.value);
                     try { sessionStorage.setItem(`manage:list:${item.value}`, targetHref); } catch {}
@@ -113,7 +111,7 @@ export default function ManageNav() {
       ))}
     </nav>
     <div className="mt-6 space-y-2 border-t border-white/10 pt-5 text-sm text-fg-muted">
-      <Link href="/settings" className="flex items-center gap-3 p-3 transition-colors hover:text-white"><span className="i-material-symbols-settings-rounded size-4.5 inline-block shrink-0" aria-hidden="true" />账号安全</Link>
+      <Link href="/settings" aria-current={active === "settings" ? "page" : undefined} className={`flex items-center gap-3 rounded-xl p-3 transition-colors hover:text-white ${active === "settings" ? "bg-[var(--accent-soft)] font-medium text-[var(--accent-light)]" : ""}`}><span className="i-material-symbols-settings-rounded size-4.5 inline-block shrink-0" aria-hidden="true" />账号安全</Link>
     </div>
     </div>
   </aside>;

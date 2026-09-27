@@ -70,6 +70,19 @@ test("站长初始化、影视季集管理、公开更新、退出与非站长�
     await expect(page).toHaveURL(/\/manage$/);
     expect(dialogs).toEqual(["还有未保存的修改，确定离开吗？", "还有未保存的修改，确定离开吗？"]);
 
+    // 从侧栏离开只询问一次；守卫记录被跳转替换，之后每次后退都有可见变化，不会停在同一页。
+    await page.goto("/manage/media/new");
+    await page.getByLabel("标题", { exact: true }).fill(`${prefix} leave by link`);
+    page.once("dialog", dialog => { dialogs.push(dialog.message()); void dialog.accept(); });
+    await page.getByRole("navigation", { name: "内容管理分类" }).getByRole("link", { name: "电视节目", exact: true }).click();
+    await expect(page).toHaveURL(/\/manage\?type=tv_show$/);
+    expect(dialogs).toHaveLength(3);
+    await page.goBack();
+    await expect(page).toHaveURL(/\/manage\/media\/new$/);
+    await page.goBack();
+    await expect(page).toHaveURL(/\/manage$/);
+    expect(dialogs).toHaveLength(3);
+
     // 八类导航与关联资料可独立创建、修改和删除。
     for (const [kind, label] of [["people", "人物"], ["collections", "系列"], ["genres", "类型"], ["regions", "地区"]]) {
       await page.goto(`/manage/references/${kind}/new`);
