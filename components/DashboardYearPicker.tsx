@@ -110,9 +110,9 @@ export default function DashboardYearPicker({
           aria-controls="dashboard-year-options"
           aria-autocomplete="list"
           aria-activedescendant={activeIndex >= 0 ? `dashboard-year-option-${activeIndex}` : undefined}
-          className="w-full cursor-pointer bg-transparent text-sm text-white outline-none placeholder:text-white/50"
+          className="w-full cursor-pointer bg-transparent text-sm text-white outline-none placeholder:text-fg-subtle"
         />
-        <span className={`i-material-symbols-expand-more-rounded inline-block size-3 text-white/50 transition-transform duration-300 ${isOpen ? "rotate-180 text-white" : "group-hover:text-white"}`} aria-hidden="true" />
+        <span className={`i-material-symbols-expand-more-rounded inline-block size-3 text-fg-subtle transition-transform duration-300 ${isOpen ? "rotate-180 text-white" : "group-hover:text-white"}`} aria-hidden="true" />
       </label>
 
       {/* 列表挂到 body：嵌套在带 backdrop-filter 的面板内时，毛玻璃只能模糊面板自身而透出下方海报。 */}
@@ -139,7 +139,7 @@ export default function DashboardYearPicker({
                 {formatYearLabel(year)}
               </button>
             )) : (
-              <div className="px-5 py-4 text-center text-sm text-white/50">无结果</div>
+              <div className="px-5 py-4 text-center text-sm text-fg-subtle">无结果</div>
             )}
           </div>
         </div>,

@@ -14,7 +14,7 @@ export default async function ReportsPage() {
       <p className="mt-2 text-neutral-400">找出缺漏、闲置与可疑的资料 · 点击条目直接前往修改</p>
     </div>
     <div className="space-y-8">{reportGroups().map(/* 与导航分组一致。 */ group => <div key={group.label}>
-      <h2 className="mb-3 px-1 text-sm font-medium tracking-wider text-white/50">{group.label}</h2>
+      <h2 className="mb-3 px-1 text-sm font-medium tracking-wider text-fg-subtle">{group.label}</h2>
       <ul className="grid gap-3 sm:grid-cols-2">{group.kinds.map(/* 每份报告一张卡片。 */ kind => {
         const config = reports[kind];
         const count = counts.get(kind);

@@ -12,9 +12,9 @@ function getRatingTier(rating: number | null | undefined): RatingTierInfo {
   if (rating == null) {
     return {
       label: "未评分",
-      badgeClass: "border-white/10 bg-white/5 text-white/50",
+      badgeClass: "border-white/10 bg-white/5 text-fg-subtle",
       glowClass: "",
-      textClass: "text-white/50",
+      textClass: "text-fg-subtle",
       icon: "i-material-symbols-star-outline-rounded",
     };
   }
@@ -60,18 +60,18 @@ function getRatingTier(rating: number | null | undefined): RatingTierInfo {
   if (num >= 5.0) {
     return {
       label: "及格",
-      badgeClass: "border-white/10 bg-white/5 text-zinc-300 shadow-[0_1px_0_0_rgba(255,255,255,0.06)_inset]",
-      glowClass: "text-zinc-300",
-      textClass: "text-zinc-300 font-medium",
+      badgeClass: "border-white/10 bg-white/5 text-fg-secondary shadow-[0_1px_0_0_rgba(255,255,255,0.06)_inset]",
+      glowClass: "text-fg-secondary",
+      textClass: "text-fg-secondary font-medium",
       icon: "i-material-symbols-star-half-rounded",
     };
   }
   if (num >= 4.0) {
     return {
       label: "平庸",
-      badgeClass: "border-white/8 bg-white/[0.03] text-zinc-400 shadow-[0_1px_0_0_rgba(255,255,255,0.04)_inset]",
-      glowClass: "text-zinc-400",
-      textClass: "text-zinc-400",
+      badgeClass: "border-white/8 bg-white/[0.03] text-fg-muted shadow-[0_1px_0_0_rgba(255,255,255,0.04)_inset]",
+      glowClass: "text-fg-muted",
+      textClass: "text-fg-muted",
       icon: "i-material-symbols-star-outline-rounded",
     };
   }
@@ -132,7 +132,7 @@ export default function MediaRatingBadge({
     const unratedPad = size === "lg" ? "px-2 py-0.5 text-xs" : size === "md" ? "px-1.5 py-0.5 text-xs" : "px-1 py-0.5 text-[10px]";
     return (
       <span
-        className={`inline-flex shrink-0 items-center rounded border border-white/10 ${unratedPad} font-medium leading-none text-white/70 backdrop-blur-md ${className}`}
+        className={`inline-flex shrink-0 items-center rounded border border-white/10 ${unratedPad} font-medium leading-none text-fg-secondary backdrop-blur-md ${className}`}
       >
         未评分
       </span>

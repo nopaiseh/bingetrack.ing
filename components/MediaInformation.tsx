@@ -16,7 +16,7 @@ function MediaPoster({ media }: { media: Media }) {
         {media.cover_url ? (
           <Image src={media.cover_url} alt={media.title} fill sizes="(max-width: 393px) calc(100vw - 74px), 320px" className="object-cover transition-transform duration-700 hover:scale-105" priority />
         ) : (
-          <div className="w-full h-full flex flex-col items-center justify-center text-white/60 gap-2">
+          <div className="w-full h-full flex flex-col items-center justify-center text-fg-muted gap-2">
             <span className="i-material-symbols-image-outline-rounded inline-block size-10 drop-shadow-md" aria-hidden="true" />
             <span className="text-sm">暂无海报</span>
           </div>
@@ -52,7 +52,7 @@ function StatusBadge({ status }: { status?: string }) {
   }
 
   return (
-    <div className="surface-muted interactive-control flex cursor-pointer items-center gap-1.5 rounded-full border border-white/10 px-3 py-1.5 text-xs font-medium text-white/70 backdrop-blur-2xl transition-colors hover:border-white/20 hover:bg-white/10 hover:text-white">
+    <div className="surface-muted interactive-control flex cursor-pointer items-center gap-1.5 rounded-full border border-white/10 px-3 py-1.5 text-xs font-medium text-fg-secondary backdrop-blur-2xl transition-colors hover:border-white/20 hover:bg-white/10 hover:text-white">
       <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
         <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
       </svg>
@@ -65,7 +65,7 @@ function StatusBadge({ status }: { status?: string }) {
 function MetadataRow({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="group -mx-3 flex flex-col items-start gap-3 rounded-xl border-b border-white/10 px-3 py-3 transition-colors last:border-0 hover:bg-white/5 sm:flex-row sm:gap-6">
-      <span className="text-base font-medium text-white/50 w-16 shrink-0 sm:pt-1 tracking-widest group-hover:text-white/70 transition-colors">
+      <span className="text-base font-medium text-fg-subtle w-16 shrink-0 sm:pt-1 tracking-widest group-hover:text-fg-secondary transition-colors">
         {label}
       </span>
       <div className="flex flex-wrap gap-2.5 flex-1">
@@ -80,7 +80,7 @@ function SectionHeading({ children }: { children: ReactNode }) {
   return (
     <div className="mb-3 flex items-center gap-2">
       <div className="h-4 w-1 rounded-full bg-[var(--accent)] opacity-85" />
-      <h2 className="text-sm font-semibold tracking-wider text-white/90">{children}</h2>
+      <h2 className="text-sm font-semibold tracking-wider text-fg">{children}</h2>
     </div>
   );
 }
@@ -92,26 +92,26 @@ function MediaMetadata({ media, includePeople = true, releaseDateLabel }: { medi
       {releaseDateLabel !== undefined && (
         <MetadataRow label="上映">
           {releaseDateLabel
-            ? <span className="surface-subtle inline-flex items-center rounded-lg border border-white/8 px-3.5 py-1.5 text-sm font-medium tracking-wide text-white/70">{releaseDateLabel}</span>
-            : <span className="text-sm text-white/30 sm:pt-1">-</span>}
+            ? <span className="surface-subtle inline-flex items-center rounded-lg border border-white/8 px-3.5 py-1.5 text-sm font-medium tracking-wide text-fg-secondary">{releaseDateLabel}</span>
+            : <span className="text-sm text-fg-faint sm:pt-1">-</span>}
         </MetadataRow>
       )}
       <MetadataRow label="类型">
         {media.genres?.length > 0 
           ? media.genres.map(/* 将媒体类型名称渲染为类型筛选链接。 */ (g) => <SearchTag key={g} label={g} category="genre" />)
-          : <span className="text-white/30 text-sm sm:pt-1">-</span>}
+          : <span className="text-fg-faint text-sm sm:pt-1">-</span>}
       </MetadataRow>
         
       <MetadataRow label="地区">
         {media.regions && media.regions.length > 0 
           ? media.regions.map(/* 将地区名称渲染为地区筛选链接。 */ (r) => <SearchTag key={r} label={r} category="region" />)
-          : <span className="text-white/30 text-sm sm:pt-1">-</span>}
+          : <span className="text-fg-faint text-sm sm:pt-1">-</span>}
       </MetadataRow>
 
       <MetadataRow label="语言">
         {media.languages?.length > 0 
           ? media.languages.map(/* 将语言名称渲染为语言筛选链接。 */ (l) => <SearchTag key={l} label={l} category="language" />)
-          : <span className="text-white/30 text-sm sm:pt-1">-</span>}
+          : <span className="text-fg-faint text-sm sm:pt-1">-</span>}
       </MetadataRow>
 
       {media.series && media.series.length > 0 && (
@@ -136,7 +136,7 @@ function MediaCredits({ media }: { media: Media }) {
         <div className="flex flex-wrap gap-2.5">
           {media.directors && media.directors.length > 0
             ? media.directors.map(/* 将导演姓名渲染为导演分类搜索链接。 */ (director) => <SearchTag key={director} label={director} category="director" />)
-            : <span className="text-sm text-white/30">-</span>}
+            : <span className="text-sm text-fg-faint">-</span>}
         </div>
       </div>
       <div>
@@ -188,7 +188,7 @@ export default function MediaInformation({
                 {runtimeLabel && (
                   <>
                     <span className="text-white/20 hidden sm:inline">•</span>
-                    <span className="text-white/60">
+                    <span className="text-fg-muted">
                       {runtimeLabel}
                     </span>
                   </>
@@ -207,7 +207,7 @@ export default function MediaInformation({
           <div className="mt-8 border-t border-white/10 pt-6">
             <div className="mb-8">
               <SectionHeading>剧情简介</SectionHeading>
-              <p className="text-left text-sm leading-7 tracking-wide text-white/75 wrap-break-word md:text-base">
+              <p className="text-left text-sm leading-7 tracking-wide text-fg-secondary wrap-break-word md:text-base">
                 {media.summary || "暂无简介。"}
               </p>
             </div>

@@ -19,7 +19,7 @@ export default function ManagePagination({
 
   /** 保留当前筛选条件生成目标页地址。 */
   const pageUrl = (target: number) => `${basePath}?${new URLSearchParams({ ...params, page: String(target) })}`;
-  const arrowClass = "surface-control flex items-center rounded-xl p-2.5 text-white/70 transition-all hover:text-white";
+  const arrowClass = "surface-control flex items-center rounded-xl p-2.5 text-fg-secondary transition-all hover:text-white";
 
   return (
     <nav aria-label={label} className="mt-6 flex flex-col items-center gap-3">
@@ -43,13 +43,13 @@ export default function ManagePagination({
               className={`min-w-10 rounded-xl px-3 py-2 text-center text-sm transition-all ${
                 item === page
                   ? "filter-option-active shadow-md"
-                  : "surface-muted border border-white/10 text-white/70 hover:bg-white/10 hover:text-white"
+                  : "surface-muted border border-white/10 text-fg-secondary hover:bg-white/10 hover:text-white"
               }`}
             >
               {item}
             </Link>
           ) : (
-            <span key={item} className="px-1 text-sm text-white/50" aria-hidden="true">…</span>
+            <span key={item} className="px-1 text-sm text-fg-subtle" aria-hidden="true">…</span>
           ),
         )}
         {page < totalPages ? (

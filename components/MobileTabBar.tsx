@@ -32,7 +32,7 @@ export default function MobileTabBar() {
             className={`flex flex-col items-center justify-center gap-0.5 rounded-full text-[11px] transition-colors duration-200 ${
               active
                 ? "bg-white/14 font-bold text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.28)]"
-                : "text-white/75 hover:text-white"
+                : "text-fg-secondary hover:text-white"
             }`}
           >
             <span className={`${tab.icon} size-5 ${active ? "text-[var(--accent-light)]" : ""}`} aria-hidden="true" />

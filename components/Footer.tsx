@@ -26,12 +26,12 @@ export default function Footer() {
                 </span>
               </Link>
               <span className="hidden sm:block text-white/20">|</span>
-              <span className="text-white/70 text-xs font-mono">
+              <span className="text-fg-secondary text-xs font-mono">
                 &copy; 1990 – {new Date().getFullYear()} 个人媒体记录平台
               </span>
             </div>
 
-            <div className="flex flex-col sm:flex-row items-center justify-center lg:justify-end gap-4 text-white/50">
+            <div className="flex flex-col sm:flex-row items-center justify-center lg:justify-end gap-4 text-fg-subtle">
               <div className="flex items-center gap-3.5 sm:gap-4">
                 <a
                   href="https://nextjs.org/"

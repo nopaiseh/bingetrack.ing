@@ -27,7 +27,7 @@ function ItemCard({ item, type, eager, highPriority, hideStatusBadge }: { item: 
             loading={highPriority ? undefined : eager ? "eager" : "lazy"}
           />
         ) : (
-          <span className="i-material-symbols-image-outline-rounded inline-block size-10 text-white/30 drop-shadow-md" aria-hidden="true" />
+          <span className="i-material-symbols-image-outline-rounded inline-block size-10 text-fg-faint drop-shadow-md" aria-hidden="true" />
         )}
         {!hideStatusBadge && <MediaCardStatusBadge status={item.status} />}
       </div>
@@ -38,7 +38,7 @@ function ItemCard({ item, type, eager, highPriority, hideStatusBadge }: { item: 
         </h3>
 
         <div className="flex items-center justify-between gap-1.5 min-w-0 text-xs">
-          <span className="text-white/70 font-medium whitespace-nowrap shrink-0">
+          <span className="text-fg-secondary font-medium whitespace-nowrap shrink-0">
             {type === "shows"
               ? String(item.release_year || (item.date ? item.date.substring(0, 4) : "未知")).replace(/\s*-\s*/g, "–")
               : item.date ? item.date.substring(0, 4) : "未知"}
@@ -55,7 +55,7 @@ function ItemCard({ item, type, eager, highPriority, hideStatusBadge }: { item: 
             <span
               key={`tag-${i}`}
               title={tag} 
-              className="inline-flex items-center shrink truncate rounded-md border border-white/10 bg-white/5 px-1.5 py-0.5 text-[10px] font-medium tracking-wide text-white/70 backdrop-blur-md transition-all duration-300 group-hover:border-[var(--accent-border)] group-hover:bg-[var(--accent-soft)] group-hover:text-white"
+              className="inline-flex items-center shrink truncate rounded-md border border-white/10 bg-white/5 px-1.5 py-0.5 text-[10px] font-medium tracking-wide text-fg-secondary backdrop-blur-md transition-all duration-300 group-hover:border-[var(--accent-border)] group-hover:bg-[var(--accent-soft)] group-hover:text-white"
             >
               {tag}
             </span>
@@ -125,7 +125,7 @@ export default function MediaRow({
           {title}
         </h2>
         {viewAllLink && (
-          <Link href={viewAllLink} className="text-sm text-white/75 hover:text-[var(--accent-hover)] transition-all duration-300 uppercase tracking-wider">
+          <Link href={viewAllLink} className="text-sm text-fg-secondary hover:text-[var(--accent-hover)] transition-all duration-300 uppercase tracking-wider">
             查看全部 &rarr;
           </Link>
         )}
@@ -137,7 +137,7 @@ export default function MediaRow({
         onClick={() => handleScroll("left")}
         aria-label={`向左滚动 ${title}`}
         disabled={!canScrollLeft}
-        className={`surface-panel absolute -left-3 top-1/2 -translate-y-1/2 z-20 hidden lg:flex size-10 items-center justify-center rounded-full text-white/80 shadow-lg shadow-black/40 transition-all duration-200 hover:border-white/30 hover:bg-white/15 hover:text-white hover:scale-105 active:scale-95 ${
+        className={`surface-panel absolute -left-3 top-1/2 -translate-y-1/2 z-20 hidden lg:flex size-10 items-center justify-center rounded-full text-fg-secondary shadow-lg shadow-black/40 transition-all duration-200 hover:border-white/30 hover:bg-white/15 hover:text-white hover:scale-105 active:scale-95 ${
           canScrollLeft
             ? "opacity-0 group-hover/row:opacity-100 pointer-events-auto"
             : "opacity-0 pointer-events-none"
@@ -152,7 +152,7 @@ export default function MediaRow({
         onClick={() => handleScroll("right")}
         aria-label={`向右滚动 ${title}`}
         disabled={!canScrollRight}
-        className={`surface-panel absolute -right-3 top-1/2 -translate-y-1/2 z-20 hidden lg:flex size-10 items-center justify-center rounded-full text-white/80 shadow-lg shadow-black/40 transition-all duration-200 hover:border-white/30 hover:bg-white/15 hover:text-white hover:scale-105 active:scale-95 ${
+        className={`surface-panel absolute -right-3 top-1/2 -translate-y-1/2 z-20 hidden lg:flex size-10 items-center justify-center rounded-full text-fg-secondary shadow-lg shadow-black/40 transition-all duration-200 hover:border-white/30 hover:bg-white/15 hover:text-white hover:scale-105 active:scale-95 ${
           canScrollRight
             ? "opacity-0 group-hover/row:opacity-100 pointer-events-auto"
             : "opacity-0 pointer-events-none"

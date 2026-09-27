@@ -58,7 +58,7 @@ export default function SeasonRow({
         <div className="flex items-center gap-2 mb-5 border-b border-white/10 pb-3">
           <h2 className="text-xl font-bold tracking-wide text-white">季度列表</h2>
         </div>
-        <div className="surface-muted rounded-xl border border-white/10 px-6 py-10 text-center text-sm text-white/60">
+        <div className="surface-muted rounded-xl border border-white/10 px-6 py-10 text-center text-sm text-fg-muted">
           暂无季集数据
         </div>
       </div>
@@ -70,7 +70,7 @@ export default function SeasonRow({
       <div className="flex justify-between items-end mb-5 pr-1 border-b border-white/10 pb-3">
         <div className="flex items-center gap-2">
           <h2 className="text-xl font-bold tracking-wide text-white">季度列表</h2>
-          <span className="text-xs text-white/50 font-medium tracking-normal">
+          <span className="text-xs text-fg-subtle font-medium tracking-normal">
             共 {seasons.length} 季
           </span>
         </div>
@@ -82,7 +82,7 @@ export default function SeasonRow({
         onClick={() => handleScroll("left")}
         aria-label="向左滚动季度列表"
         disabled={!canScrollLeft}
-        className={`surface-panel absolute -left-3 top-1/2 -translate-y-1/2 z-20 hidden lg:flex size-10 items-center justify-center rounded-full text-white/80 shadow-lg shadow-black/40 transition-all duration-200 hover:border-white/30 hover:bg-white/15 hover:text-white hover:scale-105 active:scale-95 ${
+        className={`surface-panel absolute -left-3 top-1/2 -translate-y-1/2 z-20 hidden lg:flex size-10 items-center justify-center rounded-full text-fg-secondary shadow-lg shadow-black/40 transition-all duration-200 hover:border-white/30 hover:bg-white/15 hover:text-white hover:scale-105 active:scale-95 ${
           canScrollLeft
             ? "opacity-0 group-hover/row:opacity-100 pointer-events-auto"
             : "opacity-0 pointer-events-none"
@@ -97,7 +97,7 @@ export default function SeasonRow({
         onClick={() => handleScroll("right")}
         aria-label="向右滚动季度列表"
         disabled={!canScrollRight}
-        className={`surface-panel absolute -right-3 top-1/2 -translate-y-1/2 z-20 hidden lg:flex size-10 items-center justify-center rounded-full text-white/80 shadow-lg shadow-black/40 transition-all duration-200 hover:border-white/30 hover:bg-white/15 hover:text-white hover:scale-105 active:scale-95 ${
+        className={`surface-panel absolute -right-3 top-1/2 -translate-y-1/2 z-20 hidden lg:flex size-10 items-center justify-center rounded-full text-fg-secondary shadow-lg shadow-black/40 transition-all duration-200 hover:border-white/30 hover:bg-white/15 hover:text-white hover:scale-105 active:scale-95 ${
           canScrollRight
             ? "opacity-0 group-hover/row:opacity-100 pointer-events-auto"
             : "opacity-0 pointer-events-none"
@@ -135,9 +135,9 @@ export default function SeasonRow({
                     sizes="(max-width: 639px) 160px, 192px"
                   />
                 ) : (
-                  <span className="i-material-symbols-image-outline-rounded inline-block size-10 text-white/30 drop-shadow-md" aria-hidden="true" />
+                  <span className="i-material-symbols-image-outline-rounded inline-block size-10 text-fg-faint drop-shadow-md" aria-hidden="true" />
                 )}
-                <span className="image-label absolute left-2 top-2 rounded-lg border border-white/10 px-2 py-1 text-[11px] text-white/75 backdrop-blur-md">
+                <span className="image-label absolute left-2 top-2 rounded-lg border border-white/10 px-2 py-1 text-[11px] text-fg-secondary backdrop-blur-md">
                   第 {season.seasonNumber} 季
                 </span>
                 <MediaCardStatusBadge status={status} />
@@ -151,11 +151,11 @@ export default function SeasonRow({
                   {season.title}
                 </h3>
 
-                <div className="flex items-center justify-between text-xs text-white/60 font-medium">
+                <div className="flex items-center justify-between text-xs text-fg-muted font-medium">
                   <span className="whitespace-nowrap truncate">
                     {season.releaseYearRange ? season.releaseYearRange.replace(/\s*-\s*/g, "–") : "–"}
                   </span>
-                  <span className="shrink-0 text-white/50 ml-1">
+                  <span className="shrink-0 text-fg-subtle ml-1">
                     {season.watchedEpisodeCount > 0
                       ? `${season.watchedEpisodeCount}/${season.episodeCount} 集`
                       : `${season.episodeCount} 集`}

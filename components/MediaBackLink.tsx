@@ -9,9 +9,9 @@ export function DefaultMediaBackLink({ type }: { type: "movies" | "shows" }) {
 }
 
 /** 用统一箭头和样式渲染传入地址与标签的返回链接。 */
-function BackLink({ href, label }: { href: string; label: string }) {
+export function BackLink({ href, label, className = "mb-6" }: { href: string; label: string; className?: string }) {
   return (
-    <Link href={href} className="surface-control interactive-control group mb-6 inline-flex w-fit items-center rounded-xl px-4 py-2 text-sm font-medium text-white/70">
+    <Link href={href} className={`${className} surface-control interactive-control group inline-flex w-fit items-center rounded-xl px-4 py-2 text-sm font-medium text-fg-secondary`}>
       <span className="mr-2 transition-transform duration-300 group-hover:-translate-x-1">←</span>
       {label}
     </Link>

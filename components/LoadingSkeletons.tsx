@@ -68,7 +68,7 @@ export function CatalogLoadingSkeleton() {
 /** 为首页标题、统计、图表和媒体列表展示加载骨架。 */
 export function HomeLoadingSkeleton() {
   return (
-    <section className="container mx-auto flex max-w-7xl flex-col gap-8 px-4 pb-12 pt-24 sm:px-6 lg:px-8" aria-label="正在加载首页">
+    <section className="container mx-auto flex max-w-7xl flex-col gap-6 px-4 pb-12 pt-20 sm:pt-22 sm:px-6 lg:pt-24 lg:px-8" aria-label="正在加载首页">
       <SkeletonBlock className="h-14 w-72 max-w-full" />
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
         {Array.from({ length: 3 }, /* 为首页统计区域生成一个占位块。 */ (_, index) => <SkeletonBlock key={index} className="h-40" />)}
