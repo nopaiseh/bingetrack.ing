@@ -6,7 +6,8 @@ import { searchChoices } from "./reference-actions";
 import type { Choice } from "@/lib/admin/catalog";
 
 /** 下拉挂到 body：嵌套在带 backdrop-filter 的卡片内时，毛玻璃只能模糊卡片自身而显得透明。
- * 外包 admin-shell 以沿用管理区的按钮样式；定位随滚动与缩放同步到触发器下方、与选择器等宽。 */
+ * 外包 admin-shell 以沿用管理区的按钮样式；定位随滚动与缩放同步，与选择器等宽。
+ * 固定定位无法随页面滚入视口，下方空间不足时改向上展开，并按可用空间限制高度。 */
 function FloatingResults({ root, input, listRef, id, label, children }: {
   root: RefObject<HTMLDivElement | null>;
   input: RefObject<HTMLInputElement | null>;
@@ -15,13 +16,24 @@ function FloatingResults({ root, input, listRef, id, label, children }: {
   label: string;
   children: ReactNode;
 }) {
-  const [position, setPosition] = useState<{ top: number; left: number; width: number } | null>(null);
+  const [position, setPosition] = useState<{ top?: number; bottom?: number; left: number; width: number; maxHeight: number } | null>(null);
   useLayoutEffect(() => {
-    /** 以选择器定宽、搜索框下沿定高，换算为视口固定定位坐标。 */
+    /** 以选择器定宽、搜索框上下沿定位，选择空间较大的一侧展开。 */
     function update() {
       const box = root.current?.getBoundingClientRect();
       const anchor = input.current?.getBoundingClientRect() ?? box;
-      if (box && anchor) setPosition({ top: anchor.bottom + 8, left: box.left, width: box.width });
+      if (!box || !anchor) return;
+      const gap = 8;
+      const margin = 16;
+      const below = window.innerHeight - anchor.bottom - gap - margin;
+      const above = anchor.top - gap - margin;
+      const upward = below < 256 && above > below;
+      setPosition({
+        ...(upward ? { bottom: window.innerHeight - anchor.top + gap } : { top: anchor.bottom + gap }),
+        left: box.left,
+        width: box.width,
+        maxHeight: Math.max(120, Math.min(256, upward ? above : below)),
+      });
     }
     update();
     window.addEventListener("resize", update);
@@ -43,7 +55,7 @@ function FloatingResults({ root, input, listRef, id, label, children }: {
           event.preventDefault();
         }}
         style={position}
-        className="surface-overlay custom-scrollbar fixed z-50 max-h-64 overflow-y-auto rounded-xl p-2"
+        className="surface-overlay custom-scrollbar fixed z-50 overflow-y-auto rounded-xl p-2"
       >
         {children}
       </div>
