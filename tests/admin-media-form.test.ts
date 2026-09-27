@@ -45,8 +45,8 @@ describe("管理媒体输入", () => {
   it("允许特别篇编号为零", () => {
     expect(parseMediaForm(form({ type: "tv_season", parent_id: "11111111-1111-4111-8111-111111111111", number: "0" })).number).toBe(0);
   });
-  it("电视剧与剧季无需提供状态、评分、发行日期与时长，始终重置为安全默认值", () => {
-    const seriesResult = parseMediaForm(form({ type: "tv_series", title: "测试剧集", status: "", rating: "9.5", release_date: "2024-01-01", runtime: "60" }));
+  it("电视节目与季无需提供状态、评分、发行日期与时长，始终重置为安全默认值", () => {
+    const seriesResult = parseMediaForm(form({ type: "tv_show", title: "测试剧集", status: "", rating: "9.5", release_date: "2024-01-01", runtime: "60" }));
     expect(seriesResult.status).toBe("want_to_watch");
     expect(seriesResult.rating).toBeNull();
     expect(seriesResult.release_date).toBeNull();
@@ -65,7 +65,7 @@ describe("管理媒体输入", () => {
     expect(seasonResult.release_date).toBeNull();
     expect(seasonResult.runtime).toBeNull();
   });
-  it("剧季和剧集条目强制清空所有关联资料", () => {
+  it("季和单集条目强制清空所有关联资料", () => {
     const parentId = "11111111-1111-4111-8111-111111111111";
     const seasonForm = form({
       type: "tv_season",

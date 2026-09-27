@@ -1,6 +1,6 @@
 import { isMediaId } from "@/lib/functions/media-id";
 
-export const mediaTypes = { movie: "电影", tv_series: "电视剧", tv_season: "剧季", tv_episode: "剧集" } as const;
+export const mediaTypes = { movie: "电影", tv_show: "电视节目", tv_season: "季", tv_episode: "单集" } as const;
 export type ManagedMediaType = keyof typeof mediaTypes;
 /** 演员及其饰演的角色；未填写角色时为 null。 */
 export type ActorCredit = { name: string; character: string | null };
@@ -78,7 +78,7 @@ export function parseMediaForm(form: FormData): MediaInput {
     try { url = new URL(cover_url); } catch { throw new Error("封面地址必须是有效的 TMDB HTTPS 地址。"); }
     if (url.protocol !== "https:" || !(url.hostname === "tmdb.org" || url.hostname.endsWith(".tmdb.org")) || url.username || url.password || url.port) throw new Error("封面请使用 TMDB HTTPS 图片地址。");
   }
-  const isDerived = type === "tv_series" || type === "tv_season";
+  const isDerived = type === "tv_show" || type === "tv_season";
   const release_date = isDerived ? null : string("release_date");
   if (release_date && (!/^\d{4}-\d{2}-\d{2}$/.test(release_date) || !Number.isFinite(Date.parse(release_date)) || new Date(release_date).toISOString().slice(0, 10) !== release_date)) throw new Error("发行日期无效。");
   const status = string("status");

@@ -72,7 +72,7 @@ describe("readEditableMedia", () => {
     expect(result?.directors).toEqual(["Director B"]);
   });
 
-  it("读取电视剧时从 v_all_media 动态读取观看状态与评分", async () => {
+  it("读取电视节目时从 v_all_media 动态读取观看状态与评分", async () => {
     const mockDb = {
       from: vi.fn((table: string) => ({
         select: vi.fn(() => ({
@@ -82,7 +82,7 @@ describe("readEditableMedia", () => {
                 return {
                   data: {
                     id: "22222222-2222-4222-8222-222222222222",
-                    type: "tv_series",
+                    type: "tv_show",
                     title: "Test Series",
                   },
                   error: null,
@@ -109,7 +109,7 @@ describe("readEditableMedia", () => {
     expect(result?.rating).toBe(8.8);
   });
 
-  it("读取剧季时根据 v_media_season_summaries 集数统计动态计算观看状态", async () => {
+  it("读取季时根据 v_media_season_summaries 集数统计动态计算观看状态", async () => {
     const mockDb = {
       from: vi.fn((table: string) => ({
         select: vi.fn(() => ({

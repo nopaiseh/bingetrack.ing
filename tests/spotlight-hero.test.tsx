@@ -60,7 +60,7 @@ test("renders first item as spotlight with title, description, genres and tier b
   expect(screen.getByText("9.7")).toBeInTheDocument();
   expect(screen.getByTestId("media-card-status-badge")).toHaveTextContent("已看");
 
-  const ctaLink = screen.getByRole("link", { name: /查看影片|查看影剧/ });
+  const ctaLink = screen.getByRole("link", { name: /查看影片|查看节目/ });
   expect(ctaLink).toHaveAttribute("href", "/movies/shawshank");
 });
 
@@ -76,7 +76,7 @@ test("clicking gallery thumbnail switches active spotlight item with description
   expect(screen.getByText(/一组宇航员穿过虫洞探索宜居的新星系/)).toBeInTheDocument();
   expect(screen.getByText("科幻")).toBeInTheDocument();
   expect(screen.getByText("9.4")).toBeInTheDocument();
-  expect(screen.getByRole("link", { name: /查看影片|查看影剧/ })).toHaveAttribute("href", "/movies/interstellar");
+  expect(screen.getByRole("link", { name: /查看影片|查看节目/ })).toHaveAttribute("href", "/movies/interstellar");
 
   // Switch to bad-movie (which lacks summary, checks fallback description)
   const badMovieThumb = screen.getByRole("tab", { name: "切换展台为 纯正大烂片" });
@@ -86,6 +86,6 @@ test("clicking gallery thumbnail switches active spotlight item with description
   expect(screen.getByText("烂片")).toBeInTheDocument();
   expect(screen.getByText("2.1")).toBeInTheDocument();
   expect(screen.getByText(/收录于影史与年度精选档案/)).toBeInTheDocument();
-  expect(screen.getByRole("link", { name: /查看影片|查看影剧/ })).toHaveAttribute("href", "/movies/bad-movie");
+  expect(screen.getByRole("link", { name: /查看影片|查看节目/ })).toHaveAttribute("href", "/movies/bad-movie");
 });
 

@@ -9,7 +9,7 @@ import MediaCardStatusBadge from "./MediaCardStatusBadge";
 import { edgeFadeMask } from "@/lib/edge-fade-mask";
 
 /** 展示卡片海报、年份、评分及最多四个标签，并按参数控制图片加载优先级。 */
-function ItemCard({ item, type, eager, highPriority, hideStatusBadge }: { item: MediaCard; type: "movies" | "series"; eager: boolean; highPriority: boolean; hideStatusBadge?: boolean }) {
+function ItemCard({ item, type, eager, highPriority, hideStatusBadge }: { item: MediaCard; type: "movies" | "shows"; eager: boolean; highPriority: boolean; hideStatusBadge?: boolean }) {
   // 合并类型与语言标签，优先展示前三个类型并补充语言，统一控制卡片高度。
   const tags = [...(item.genres ?? []).slice(0, 3), ...(item.languages ?? []).slice(0, 1)].slice(0, 3);
 
@@ -39,7 +39,7 @@ function ItemCard({ item, type, eager, highPriority, hideStatusBadge }: { item: 
 
         <div className="flex items-center justify-between gap-1.5 min-w-0 text-xs">
           <span className="text-white/70 font-medium whitespace-nowrap shrink-0">
-            {type === "series"
+            {type === "shows"
               ? String(item.release_year || (item.date ? item.date.substring(0, 4) : "未知")).replace(/\s*-\s*/g, "–")
               : item.date ? item.date.substring(0, 4) : "未知"}
           </span>
@@ -78,7 +78,7 @@ export default function MediaRow({
   title: string;
   items: MediaCard[];
   viewAllLink?: string;
-  type?: "movies" | "series";
+  type?: "movies" | "shows";
   eagerCount?: number;
   hideStatusBadge?: boolean;
 }) {

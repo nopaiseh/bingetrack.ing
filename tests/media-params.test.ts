@@ -9,7 +9,7 @@ import {
 test("parses and clamps valid media search parameters", /* 验证合法查询参数正确解析，分页数值按允许范围截断。 */ () => {
   const params = parseMediaSearchParams(new URLSearchParams({
     q: "科幻",
-    type: "movie,tv_series",
+    type: "movie,tv_show",
     status: "watched,watching",
     sort: "rating_desc",
     startYear: "2020",
@@ -19,7 +19,7 @@ test("parses and clamps valid media search parameters", /* 验证合法查询参
   }));
 
   assert.equal(params.q, "科幻");
-  assert.equal(params.type, "movie,tv_series");
+  assert.equal(params.type, "movie,tv_show");
   assert.equal(params.limit, 100);
   assert.equal(params.offset, 0);
 });
@@ -39,8 +39,8 @@ test("rejects invalid filter values and reversed year ranges", /* 验证未知�
 
 test("validates top-media type, year, and limit", /* 验证榜单类型、有效年份和数量解析，以及非法年份拒绝行为。 */ () => {
   assert.deepEqual(
-    parseTopMediaParams(new URLSearchParams({ type: "tv_series", year: "2024", limit: "20" })),
-    { type: "tv_series", year: "2024", limit: 20 },
+    parseTopMediaParams(new URLSearchParams({ type: "tv_show", year: "2024", limit: "20" })),
+    { type: "tv_show", year: "2024", limit: 20 },
   );
   assert.throws(
     /** 传入非年份文本以验证榜单参数拒绝该值。 */
@@ -49,13 +49,13 @@ test("validates top-media type, year, and limit", /* 验证榜单类型、有效
   );
   assert.throws(
     /** 传入低于支持范围的年份以验证校验失败。 */
-    () => parseTopMediaParams(new URLSearchParams({ type: "tv_series", year: "0000" })),
+    () => parseTopMediaParams(new URLSearchParams({ type: "tv_show", year: "0000" })),
     ApiValidationError,
   );
   assert.throws(
     /** 传入超过当前年份六年的值以验证上界限制。 */
     () => parseTopMediaParams(new URLSearchParams({
-      type: "tv_series",
+      type: "tv_show",
       year: String(new Date().getUTCFullYear() + 6),
     })),
     ApiValidationError,

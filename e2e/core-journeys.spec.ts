@@ -21,13 +21,13 @@ test("type and year filters update the URL and results", /* 验证媒体分类�
   await page.goto("/search");
   await expect(page.getByText("找到 2 部作品")).toBeVisible();
 
-  await page.getByRole("button", { name: "电视剧" }).click();
-  await expect(page).toHaveURL(/type=tv_series/);
+  await page.getByRole("button", { name: "电视节目" }).click();
+  await expect(page).toHaveURL(/type=tv_show/);
   await expect(page.getByText("找到 1 部作品")).toBeVisible();
   await expect(page.getByRole("link", { name: /测试剧集：城市信号/ })).toBeVisible();
   await expect(page.getByRole("link", { name: /测试电影：星光档案/ })).toHaveCount(0);
 
-  await page.goto("/search?type=tv_series&startYear=2025&endYear=2025");
+  await page.goto("/search?type=tv_show&startYear=2025&endYear=2025");
   await expect(page.getByText("找到 1 部作品")).toBeVisible();
   await expect(page.getByRole("link", { name: /测试剧集：城市信号/ })).toBeVisible();
 });
@@ -66,13 +66,13 @@ test("search pagination requests the next offset and keeps filters", /* 用分�
   await expect(page.getByText("分页测试电影 30")).toBeVisible();
 });
 
-test("series and season pages render episode progress and filtering", /* 验证电视剧到季页面的导航、剧集标题及未看筛选。 */ async ({ page }) => {
-  await page.goto(`/series/${SERIES_ID}`);
+test("series and season pages render episode progress and filtering", /* 验证电视节目到季页面的导航、单集标题及未看筛选。 */ async ({ page }) => {
+  await page.goto(`/shows/${SERIES_ID}`);
   await expect(page.getByRole("heading", { level: 1, name: "测试剧集：城市信号" })).toBeVisible();
   await expect(page.getByRole("link", { name: /城市信号 第一季.*2 集/ })).toBeVisible();
 
   await page.getByRole("link", { name: /城市信号 第一季/ }).click();
-  await expect(page).toHaveURL(new RegExp(`/series/${SERIES_ID}/seasons/${SEASON_ID}`));
+  await expect(page).toHaveURL(new RegExp(`/shows/${SERIES_ID}/seasons/${SEASON_ID}`));
   await expect(page.getByRole("heading", { level: 1, name: "城市信号 第一季" })).toBeVisible();
   await expect(page.getByRole("heading", { level: 2, name: "启程" })).toBeVisible();
   await expect(page.getByRole("heading", { level: 2, name: "回声" })).toBeVisible();

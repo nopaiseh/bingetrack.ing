@@ -13,7 +13,7 @@ vi.mock("@/lib/functions/cached-media", () => ({
 }));
 
 // Mock catalog and dashboard components to inspect props
-vi.mock("@/app/series/SeriesCatalog", () => ({
+vi.mock("@/app/shows/ShowsCatalog", () => ({
   default: (props: unknown) => <div data-testid="series-catalog" data-props={JSON.stringify(props)} />,
 }));
 
@@ -25,7 +25,7 @@ vi.mock("@/app/HomeDashboard", () => ({
   default: (props: unknown) => <div data-testid="home-dashboard" data-props={JSON.stringify(props)} />,
 }));
 
-import SeriesPage from "@/app/series/page";
+import SeriesPage from "@/app/shows/page";
 import MoviesPage from "@/app/movies/page";
 import HomePage from "@/app/page";
 

@@ -183,8 +183,8 @@ export default function MediaInformation({
       )}
 
       <div className="container relative z-10 mx-auto max-w-7xl px-4 pb-12 pt-24 sm:px-6 lg:px-8">
-        <Suspense fallback={<DefaultMediaBackLink type={media.type === "series" ? "series" : "movies"} />}>
-          <MediaBackLink type={media.type === "series" ? "series" : "movies"} />
+        <Suspense fallback={<DefaultMediaBackLink type={media.type === "shows" ? "shows" : "movies"} />}>
+          <MediaBackLink type={media.type === "shows" ? "shows" : "movies"} />
         </Suspense>
 
         <div className="surface-panel rounded-3xl p-5 sm:p-6 lg:p-8">

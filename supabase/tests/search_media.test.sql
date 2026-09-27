@@ -53,7 +53,7 @@ select is(
 );
 
 select is(
-  (select count(*)::integer from public.search_media('检索上限回归', array['tv_series'])),
+  (select count(*)::integer from public.search_media('检索上限回归', array['tv_show'])),
   0,
   'a type category limits title matches to that type'
 );

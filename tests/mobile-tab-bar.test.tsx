@@ -14,15 +14,15 @@ test("渲染四个主要栏目并只标记首页为当前页", () => {
   const nav = screen.getByRole("navigation", { name: "底部导航" });
   const links = screen.getAllByRole("link");
   expect(nav).toContainElement(links[0]);
-  expect(links.map((link) => link.getAttribute("href"))).toEqual(["/", "/movies", "/series", "/search"]);
+  expect(links.map((link) => link.getAttribute("href"))).toEqual(["/", "/movies", "/shows", "/search"]);
   expect(screen.getByRole("link", { name: "首页" })).toHaveAttribute("aria-current", "page");
   expect(screen.getByRole("link", { name: "电影" })).not.toHaveAttribute("aria-current");
 });
 
 test("详情等子路径按前缀标记所属栏目", () => {
-  pathname.value = "/series/abc";
+  pathname.value = "/shows/abc";
   render(<MobileTabBar />);
 
-  expect(screen.getByRole("link", { name: "电视剧" })).toHaveAttribute("aria-current", "page");
+  expect(screen.getByRole("link", { name: "电视节目" })).toHaveAttribute("aria-current", "page");
   expect(screen.getByRole("link", { name: "首页" })).not.toHaveAttribute("aria-current");
 });

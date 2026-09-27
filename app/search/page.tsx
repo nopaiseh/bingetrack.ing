@@ -1,9 +1,10 @@
+import { notFound } from "next/navigation";
 import SearchClient from "./SearchClient";
 import { fetchSearchOptionsServer, type SearchOptions } from "@/lib/functions/search-options";
 import { searchCachedMedia } from "@/lib/functions/cached-media";
 import { searchMediaServer } from "@/lib/functions/media-repo";
 import { ApiValidationError, parseMediaSearchParams } from "@/lib/api/media-params";
-import { buildMediaSearchQuery } from "@/lib/api/search-state";
+import { buildMediaSearchQuery, hasOnlyKnownFilterValues } from "@/lib/api/search-state";
 import { reportHandledError } from "@/lib/report-error";
 import type { FetchMediaListOptions, MediaCard } from "@/lib/types";
 
@@ -17,7 +18,7 @@ function isCacheableSearch(params: FetchMediaListOptions, options: SearchOptions
     && within(params.language, options.languages);
 }
 
-/** 将路由参数规范化为查询字符串，校验后读取首屏结果，再传给客户端搜索组件。 */
+/** 分类、状态或排序含未知值时返回 404；否则将路由参数规范化为查询字符串，校验后读取首屏结果，再传给客户端搜索组件。 */
 export default async function SearchPage({ searchParams }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
@@ -27,6 +28,7 @@ export default async function SearchPage({ searchParams }: {
     const first = Array.isArray(value) ? value[0] : value;
     if (first !== undefined) params.set(key, first);
   }
+  if (!hasOnlyKnownFilterValues(params)) notFound();
   const key = buildMediaSearchQuery(params);
   const initialOptions = await fetchSearchOptionsServer();
 

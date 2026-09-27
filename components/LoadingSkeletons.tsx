@@ -146,11 +146,11 @@ export function AdminLoadingSkeleton() {
   );
 }
 
-/** 为电视剧分季详情页面提供海报、统计与分集列表骨架。 */
+/** 为电视节目分季详情页面提供海报、统计与分集列表骨架。 */
 export function SeasonDetailLoadingSkeleton() {
   return (
     <div className="min-h-screen pb-16 pt-24">
-      <section className="container mx-auto max-w-7xl space-y-6 px-4 sm:px-6 lg:px-8" aria-label="正在加载本季剧集">
+      <section className="container mx-auto max-w-7xl space-y-6 px-4 sm:px-6 lg:px-8" aria-label="正在加载本季单集">
         <SkeletonBlock className="h-10 w-44" />
         <div className="surface-panel flex flex-col gap-6 rounded-3xl p-5 sm:p-6 lg:flex-row lg:p-8">
           <SkeletonBlock className="aspect-2/3 w-full max-w-72 shrink-0 self-center lg:w-72 lg:self-start" />

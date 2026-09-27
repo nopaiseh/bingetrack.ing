@@ -18,7 +18,7 @@ type SearchProps = {
 
 const TYPE_OPTIONS = [
   { value: "movie", label: "电影" },
-  { value: "tv_series", label: "电视剧" },
+  { value: "tv_show", label: "电视节目" },
   { value: "series", label: "系列" },
   { value: "director", label: "导演" },
   { value: "actor", label: "演员" },
@@ -291,7 +291,7 @@ function SearchContent({ initialOptions, initialResult }: SearchProps) {
                 onChange={/* 将搜索输入框内容写入本地输入状态。 */ (e) => {
                   setQuery(e.target.value);
                 }}
-                placeholder="搜索电影、电视剧、导演或演员..."
+                placeholder="搜索电影、电视节目、导演或演员..."
                 className="surface-control relative z-0 w-full rounded-2xl py-4 pl-12 pr-12 text-base text-white outline-none transition-all duration-300 placeholder:text-white/50 sm:py-5 sm:pr-40 sm:text-lg"
               />
               {inputTooLong && (

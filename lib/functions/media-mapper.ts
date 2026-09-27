@@ -26,11 +26,11 @@ function optimizeTmdbImageUrl(
 export function mapViewRowToMedia(
   item: ViewAllMediaRow,
   overrideSeries?: string[] | null,
-  overrideType?: "movies" | "series",
+  overrideType?: "movies" | "shows",
 ): Media {
-  const mediaType: "movies" | "series" =
+  const mediaType: "movies" | "shows" =
     overrideType ??
-    (item.type === "movie" || item.type === "movies" ? "movies" : "series");
+    (item.type === "movie" || item.type === "movies" ? "movies" : "shows");
 
   return {
     id: String(item.id),
@@ -66,6 +66,6 @@ export function mapViewRowToMediaCard(item: ViewAllMediaRow): MediaCard {
     languages: sortNames(item.languages),
     cover_url: optimizeTmdbImageUrl(item.cover_url, "w500"),
     status: item.status || undefined,
-    type: item.type === "movie" || item.type === "movies" ? "movies" : "series",
+    type: item.type === "movie" || item.type === "movies" ? "movies" : "shows",
   };
 }

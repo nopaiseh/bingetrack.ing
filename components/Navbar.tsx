@@ -49,7 +49,7 @@ export default function Navbar() {
   const navItems = [
     { name: "首页", href: "/" },
     { name: "电影", href: "/movies" },
-    { name: "电视剧", href: "/series" },
+    { name: "电视节目", href: "/shows" },
     ...(auth.owner ? [{ name: "管理", href: "/manage" }] : []),
   ];
 

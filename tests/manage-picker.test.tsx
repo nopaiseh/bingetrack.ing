@@ -43,7 +43,7 @@ describe("管理关联选择器", () => {
   });
   it("父级只接受搜索结果的 ID，不能把输入文本当成上级", async () => {
     const user = userEvent.setup();
-    const { container } = render(<ChoicePicker kind="tv_series" name="parent_id" label="所属电视剧" multiple={false} />);
+    const { container } = render(<ChoicePicker kind="tv_show" name="parent_id" label="所属电视节目" multiple={false} />);
     await user.type(screen.getByRole("combobox"), "随意文字");
     expect(container.querySelector('input[name="parent_id"]')).toHaveValue("");
     expect(screen.queryByRole("button", { name: /新增并关联/ })).not.toBeInTheDocument();
@@ -62,7 +62,7 @@ describe("管理关联选择器", () => {
   it("单选模式下展示紧凑卡片，点击更换可重新搜索", async () => {
     const user = userEvent.setup();
     const { container } = render(
-      <ChoicePicker kind="tv_series" name="parent_id" label="所属电视剧" multiple={false} required initial={[{ id: "s-1", name: "原剧集" }]} />
+      <ChoicePicker kind="tv_show" name="parent_id" label="所属电视节目" multiple={false} required initial={[{ id: "s-1", name: "原剧集" }]} />
     );
     expect(screen.getByText("必填")).toBeInTheDocument();
     expect(screen.getByText("原剧集")).toBeInTheDocument();

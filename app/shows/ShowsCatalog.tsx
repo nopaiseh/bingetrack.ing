@@ -2,19 +2,19 @@ import Link from "next/link";
 import MediaRow from "@/components/MediaRow";
 import { MediaCatalogProps } from "@/lib/types";
 
-/** 将电视剧统计及已看、在看、想看列表渲染为目录页。 */
-export default function SeriesCatalog({
+/** 将电视节目统计及已看、在看、想看列表渲染为目录页。 */
+export default function ShowsCatalog({
   watched,
   watching,
   want,
   stats,
 }: MediaCatalogProps) {
   const statItems = [
-    { label: "影剧总数量", value: stats?.total || 0, href: "/search?type=tv_series" },
-    { label: "已看的影剧", value: stats?.watched || 0, href: "/search?type=tv_series&status=watched" },
-    { label: "在看的影剧", value: stats?.watching || 0, href: "/search?type=tv_series&status=watching" },
-    { label: "想看的影剧", value: stats?.want || 0, href: "/search?type=tv_series&status=want_to_watch" },
-    { label: "近期将播出", value: stats?.upcoming || 0, href: "/search?type=tv_series&sort=date_desc" },
+    { label: "电视节目总数量", value: stats?.total || 0, href: "/search?type=tv_show" },
+    { label: "已看的电视节目", value: stats?.watched || 0, href: "/search?type=tv_show&status=watched" },
+    { label: "在看的电视节目", value: stats?.watching || 0, href: "/search?type=tv_show&status=watching" },
+    { label: "想看的电视节目", value: stats?.want || 0, href: "/search?type=tv_show&status=want_to_watch" },
+    { label: "近期将播出", value: stats?.upcoming || 0, href: "/search?type=tv_show&sort=date_desc" },
   ];
 
   return (
@@ -24,7 +24,7 @@ export default function SeriesCatalog({
 
         
         <div className="mb-8 grid grid-cols-2 gap-3.5 sm:gap-4 md:mb-10 md:grid-cols-3 lg:grid-cols-5">
-          {statItems.map(/* 将一项电视剧统计渲染为可点击跳转的卡片。 */ (stat) => (
+          {statItems.map(/* 将一项电视节目统计渲染为可点击跳转的卡片。 */ (stat) => (
             <Link
               key={stat.label}
               href={stat.href}
@@ -45,9 +45,9 @@ export default function SeriesCatalog({
 
         
         <div className="space-y-12">
-          <MediaRow title="我已看" items={watched ?? []} eagerCount={2} viewAllLink="/search?type=tv_series&status=watched" type="series" hideStatusBadge />
-          <MediaRow title="我在看" items={watching ?? []} eagerCount={watched?.length ? 0 : 2} viewAllLink="/search?type=tv_series&status=watching" type="series" hideStatusBadge />
-          <MediaRow title="我想看" items={want ?? []} eagerCount={watched?.length || watching?.length ? 0 : 2} viewAllLink="/search?type=tv_series&status=want_to_watch" type="series" hideStatusBadge />
+          <MediaRow title="我已看" items={watched ?? []} eagerCount={2} viewAllLink="/search?type=tv_show&status=watched" type="shows" hideStatusBadge />
+          <MediaRow title="我在看" items={watching ?? []} eagerCount={watched?.length ? 0 : 2} viewAllLink="/search?type=tv_show&status=watching" type="shows" hideStatusBadge />
+          <MediaRow title="我想看" items={want ?? []} eagerCount={watched?.length || watching?.length ? 0 : 2} viewAllLink="/search?type=tv_show&status=want_to_watch" type="shows" hideStatusBadge />
         </div>
       </div>
     </div>      

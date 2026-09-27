@@ -11,9 +11,9 @@ export async function readParent(db: SupabaseClient, id: string): Promise<Choice
 }
 /** 使用精确计数显示删除范围，不把数据库的返回行数上限当成实际数量。 */
 export async function readImpact(db: SupabaseClient, id: string, type: string) {
-  if (type !== "tv_series" && type !== "tv_season") return { seasons: 0, episodes: 0 };
-  const seasonQuery = type === "tv_series" ? db.from("tv_seasons").select("id", { count: "exact", head: true }).eq("series_id", id) : Promise.resolve({ count: 0, error: null });
-  const episodeQuery = type === "tv_series" ? db.from("tv_episodes").select("id,tv_seasons!tv_episodes_season_id_fkey!inner(series_id)", { count: "exact", head: true }).eq("tv_seasons.series_id", id) : db.from("tv_episodes").select("id", { count: "exact", head: true }).eq("season_id", id);
+  if (type !== "tv_show" && type !== "tv_season") return { seasons: 0, episodes: 0 };
+  const seasonQuery = type === "tv_show" ? db.from("tv_seasons").select("id", { count: "exact", head: true }).eq("series_id", id) : Promise.resolve({ count: 0, error: null });
+  const episodeQuery = type === "tv_show" ? db.from("tv_episodes").select("id,tv_seasons!tv_episodes_season_id_fkey!inner(series_id)", { count: "exact", head: true }).eq("tv_seasons.series_id", id) : db.from("tv_episodes").select("id", { count: "exact", head: true }).eq("season_id", id);
   const [seasons, episodes] = await Promise.all([seasonQuery, episodeQuery]);
   if (seasons.error || episodes.error) throw new Error("无法核对下属内容数量，请重试。");
   return { seasons: seasons.count ?? 0, episodes: episodes.count ?? 0 };
@@ -47,7 +47,7 @@ async function readAcrossSeasons(db: SupabaseClient, seasons: { id: string; seas
   return undefined;
 }
 
-/** 读取紧邻的前后条目方便连续编辑：剧季限同一剧集，单集可跨季衔接。 */
+/** 读取紧邻的前后条目方便连续编辑：季限同一电视节目，单集可跨季衔接。 */
 export async function readSiblings(db: SupabaseClient, type: string, parentId: string | null | undefined, number: number | null | undefined): Promise<{ previous?: Sibling; next?: Sibling }> {
   if ((type !== "tv_season" && type !== "tv_episode") || !parentId || number == null) return {};
   const table = type === "tv_season" ? "tv_seasons" : "tv_episodes";

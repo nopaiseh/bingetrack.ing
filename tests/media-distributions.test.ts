@@ -8,7 +8,7 @@ test("builds top-five distributions and percentages from database counts", /* �
     { media_type: "movies", release_year: "All Time", dimension: "regions", name: "香港", item_count: 4 },
     { media_type: "movies", release_year: "2024", dimension: "genres", name: "剧情", item_count: 3 },
     { media_type: "movies", release_year: "2024", dimension: "genres", name: "动作", item_count: 1 },
-    { media_type: "series", release_year: "2024", dimension: "languages", name: "韩语", item_count: 2 },
+    { media_type: "shows", release_year: "2024", dimension: "languages", name: "韩语", item_count: 2 },
   ];
 
   const distributions = buildMediaDistributions(rows);
@@ -21,13 +21,13 @@ test("builds top-five distributions and percentages from database counts", /* �
     { name: "剧情", count: 3, percent: 75 },
     { name: "动作", count: 1, percent: 25 },
   ]);
-  assert.deepEqual(distributions.series["2024"].languages, [
+  assert.deepEqual(distributions.shows["2024"].languages, [
     { name: "韩语", count: 2, percent: 100 },
   ]);
 });
 
-test("always supplies empty All Time buckets", /* 验证无数据时仍提供电影和电视剧的空 All Time 分组。 */ () => {
+test("always supplies empty All Time buckets", /* 验证无数据时仍提供电影和电视节目的空 All Time 分组。 */ () => {
   const distributions = buildMediaDistributions([]);
   assert.deepEqual(distributions.movies["All Time"], { regions: [], languages: [], genres: [] });
-  assert.deepEqual(distributions.series["All Time"], { regions: [], languages: [], genres: [] });
+  assert.deepEqual(distributions.shows["All Time"], { regions: [], languages: [], genres: [] });
 });

@@ -1,4 +1,4 @@
-type MediaType = "movies" | "series";
+type MediaType = "movies" | "shows";
 
 export interface Media {
   id: string;

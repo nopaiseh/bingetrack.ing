@@ -8,9 +8,9 @@ import RefreshCacheButton from "./RefreshCacheButton";
 const groups = [
   { label: "影视内容", items: [
     { label: "电影", value: "movie", icon: "i-material-symbols-movie-rounded", isChild: false },
-    { label: "电视剧", value: "tv_series", icon: "i-material-symbols-tv-rounded", isChild: false },
-    { label: "剧季", value: "tv_season", icon: "i-material-symbols-layers-rounded", isChild: true },
-    { label: "剧集", value: "tv_episode", icon: "i-material-symbols-video-library-rounded", isChild: true },
+    { label: "电视节目", value: "tv_show", icon: "i-material-symbols-tv-rounded", isChild: false },
+    { label: "季", value: "tv_season", icon: "i-material-symbols-layers-rounded", isChild: true },
+    { label: "单集", value: "tv_episode", icon: "i-material-symbols-video-library-rounded", isChild: true },
   ] },
   { label: "关联资料", items: [
     { label: "人物", value: "people", icon: "i-material-symbols-group-rounded", isChild: false },

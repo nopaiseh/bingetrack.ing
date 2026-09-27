@@ -9,11 +9,11 @@ const SEASON_ID = "50000000-0000-4000-8000-000000000003";
 const routes = [
   { name: "首页", path: "/" },
   { name: "电影目录", path: "/movies" },
-  { name: "电视剧目录", path: "/series" },
+  { name: "电视节目目录", path: "/shows" },
   { name: "搜索", path: "/search" },
   { name: "电影详情", path: `/movies/${MOVIE_ID}` },
-  { name: "电视剧详情", path: `/series/${SERIES_ID}` },
-  { name: "季度详情", path: `/series/${SERIES_ID}/seasons/${SEASON_ID}` },
+  { name: "电视节目详情", path: `/shows/${SERIES_ID}` },
+  { name: "季度详情", path: `/shows/${SERIES_ID}/seasons/${SEASON_ID}` },
 ];
 
 type AxeViolation = {

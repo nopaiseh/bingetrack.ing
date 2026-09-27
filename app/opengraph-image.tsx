@@ -22,7 +22,7 @@ export default function OpenGraphImage() {
       <div style={{ color: "#f87171", fontSize: 30, letterSpacing: 8 }}>MEDIA JOURNAL</div>
       <div style={{ display: "flex", marginTop: 26, fontSize: 78, fontWeight: 700 }}>bingetrack.ing</div>
       <div style={{ display: "flex", marginTop: 24, maxWidth: 850, color: "#d4d4d8", fontSize: 34 }}>
-        记录、检索并回顾电影与电视剧观看历程
+        记录、检索并回顾电影与电视节目观看历程
       </div>
     </div>,
     size,

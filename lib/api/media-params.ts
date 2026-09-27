@@ -9,7 +9,7 @@ export class ApiValidationError extends Error {
   }
 }
 
-const MEDIA_TYPES = new Set(["movie", "tv_series"]);
+const MEDIA_TYPES = new Set(["movie", "tv_show"]);
 const CREDIT_ROLES = new Set(["director", "actor"]);
 // 与 v_all_media 实际产生的状态一致；视图不会输出 "unwatched"。
 const STATUSES = new Set(["want_to_watch", "watching", "watched"]);
@@ -89,14 +89,14 @@ export function parseMediaSearchParams(searchParams: URLSearchParams): FetchMedi
   };
 }
 
-/** 只接受电影或电视剧榜单，校验可选年份并把返回条数限制在 1 到 20。 */
+/** 只接受电影或电视节目榜单，校验可选年份并把返回条数限制在 1 到 20。 */
 export function parseTopMediaParams(searchParams: URLSearchParams) {
   const type = searchParams.get("type");
-  if (type !== "movie" && type !== "tv_series") {
+  if (type !== "movie" && type !== "tv_show") {
     throw new ApiValidationError("Invalid media type");
   }
 
   const year = parseYear(searchParams.get("year"), "year") ?? null;
   const limit = parseBoundedInteger(searchParams.get("limit"), 10, 1, 20);
-  return { type: type as "movie" | "tv_series", year, limit };
+  return { type: type as "movie" | "tv_show", year, limit };
 }

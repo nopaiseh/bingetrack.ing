@@ -5,10 +5,10 @@ import { SITE_URL } from "@/lib/site";
 
 const DESCRIPTION_LENGTH = 160;
 
-/** 修剪并截取媒体简介，缺少简介时按电影或电视剧生成默认描述。 */
+/** 修剪并截取媒体简介，缺少简介时按电影或电视节目生成默认描述。 */
 export function getMediaDescription(media: Media): string {
-  const fallback = media.type === "series"
-    ? `查看《${media.title}》的季度、剧集与观看记录。`
+  const fallback = media.type === "shows"
+    ? `查看《${media.title}》的季度、单集与观看记录。`
     : `查看《${media.title}》的观看记录与详细信息。`;
   const summary = media.summary?.trim();
   return summary ? summary.slice(0, DESCRIPTION_LENGTH) : fallback;
@@ -16,7 +16,7 @@ export function getMediaDescription(media: Media): string {
 
 /** 按媒体类型选取详情栏目，并对媒体 ID 编码形成规范路径。 */
 export function getMediaPath(media: Media): string {
-  const section = media.type === "series" ? "series" : "movies";
+  const section = media.type === "shows" ? "shows" : "movies";
   return `/${section}/${encodeURIComponent(media.id)}`;
 }
 
@@ -48,11 +48,11 @@ export function buildMediaMetadata(media: Media): Metadata {
   };
 }
 
-/** 按电影或电视剧生成 JSON-LD，并仅在存在数据时补充人员、产地、语言和时长等字段。 */
+/** 按电影或电视节目生成 JSON-LD，并仅在存在数据时补充人员、产地、语言和时长等字段。 */
 export function buildMediaJsonLd(media: Media): Record<string, unknown> {
   const jsonLd: Record<string, unknown> = {
     "@context": "https://schema.org",
-    "@type": media.type === "series" ? "TVSeries" : "Movie",
+    "@type": media.type === "shows" ? "TVSeries" : "Movie",
     name: media.title,
     url: `${SITE_URL}${getMediaPath(media)}`,
     description: getMediaDescription(media),
@@ -71,11 +71,11 @@ export function buildMediaJsonLd(media: Media): Record<string, unknown> {
   return jsonLd;
 }
 
-/** 生成季页面的规范地址与分享信息，图片依次回退到电视剧海报和站点默认图片。 */
+/** 生成季页面的规范地址与分享信息，图片依次回退到电视节目海报和站点默认图片。 */
 export function buildSeasonMetadata(series: Media, season: SeasonInfo): Metadata {
-  const path = `/series/${encodeURIComponent(series.id)}/seasons/${encodeURIComponent(season.id)}`;
+  const path = `/shows/${encodeURIComponent(series.id)}/seasons/${encodeURIComponent(season.id)}`;
   const description = season.summary?.trim().slice(0, DESCRIPTION_LENGTH)
-    || `查看《${series.title}》${season.title}的剧集与观看记录。`;
+    || `查看《${series.title}》${season.title}的单集与观看记录。`;
   const image = season.coverUrl || series.cover_url || "/opengraph-image";
 
   return {

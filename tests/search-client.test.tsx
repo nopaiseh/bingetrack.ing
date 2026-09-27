@@ -144,9 +144,9 @@ test("search limit tooltip only appears above 100 characters", /* 正常输入�
 });
 
 test("active filter chips display and can be individually removed or cleared", /* 验证已选标签栏能够正确展示，支持单项移除与一键清空。 */ async () => {
-  window.history.replaceState(null, "", "/search?type=电影&status=想看");
+  window.history.replaceState(null, "", "/search?type=movie&status=want_to_watch");
   vi.mocked(fetch).mockImplementation(/* 每次返回独立响应。 */ async () => new Response(JSON.stringify({ rows: [], total: 0 })));
-  render(<SearchClient initialOptions={options} initialResult={resultFor("?type=电影&status=想看")} />);
+  render(<SearchClient initialOptions={options} initialResult={resultFor("?type=movie&status=want_to_watch")} />);
 
   expect(screen.getByText("已选条件:")).toBeInTheDocument();
   const removeMovieBtn = screen.getByRole("button", { name: "移除分类筛选：电影" });
@@ -159,7 +159,6 @@ test("active filter chips display and can be individually removed or cleared", /
     fireEvent.click(removeMovieBtn);
   });
   expect(new URLSearchParams(window.location.search).get("type")).toBeNull();
-  // 旧版中文值在读取时已规范化，改动筛选后地址改写为规范值。
   expect(new URLSearchParams(window.location.search).get("status")).toBe("want_to_watch");
 
   // 点击清空筛选
@@ -187,7 +186,7 @@ test("renders media status badge on search result cards", () => {
       {
         id: "series-1",
         title: "在看剧集",
-        type: "series" as const,
+        type: "shows" as const,
         status: "watching",
         date: "2024-02-01",
         rating: 9.0,

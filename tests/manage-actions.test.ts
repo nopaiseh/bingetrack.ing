@@ -64,7 +64,7 @@ describe("关联资料服务端操作", () => {
     expect(result).toEqual({ saved: true });
     expect(chain.delete).toHaveBeenCalled();
   });
-  it("searchChoices 容忍缺失的上级剧集资料而不崩溃", async () => {
+  it("searchChoices 容忍缺失的上级电视节目资料而不崩溃", async () => {
     chain.then.mockImplementation((resolve: (val: unknown) => void) =>
       resolve({
         data: [{ id, title: "第 1 季", type: "tv_season", cover_url: null, season: { season_number: 1, parent: null } }],
@@ -72,7 +72,7 @@ describe("关联资料服务端操作", () => {
       })
     );
     const result = await searchChoices("tv_season", "query");
-    expect(result.choices[0].detail).toBe("未知剧集 · 第 1 季");
+    expect(result.choices[0].detail).toBe("未知电视节目 · 第 1 季");
   });
   it("searchChoices 将输入中的 %、_ 与反斜杠按字面匹配", async () => {
     await searchChoices("genres", " 50%_off\\ ");

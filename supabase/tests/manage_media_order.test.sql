@@ -4,12 +4,12 @@ select plan(7);
 -- 构造一部电影和两部剧集：剧集排序看最近已播集，未来集不提前把剧集顶到最前。
 insert into public.media_items(id,type,title,release_date) values
   ('fb000000-0000-4000-8000-000000000001','movie','Order movie','2024-05-01'),
-  ('fb000000-0000-4000-8000-000000000010','tv_series','Order series A',null),
+  ('fb000000-0000-4000-8000-000000000010','tv_show','Order series A',null),
   ('fb000000-0000-4000-8000-000000000011','tv_season','Order A S1',null),
   ('fb000000-0000-4000-8000-000000000012','tv_episode','Order A E1','2023-01-01'),
   ('fb000000-0000-4000-8000-000000000013','tv_episode','Order A E2','2025-03-01'),
   ('fb000000-0000-4000-8000-000000000014','tv_episode','Order A E3',current_date + 365),
-  ('fb000000-0000-4000-8000-000000000020','tv_series','Order series B',null),
+  ('fb000000-0000-4000-8000-000000000020','tv_show','Order series B',null),
   ('fb000000-0000-4000-8000-000000000021','tv_season','Order B S1',null),
   ('fb000000-0000-4000-8000-000000000022','tv_episode','Order B E1',current_date + 30);
 insert into public.tv_seasons(id,series_id,season_number) values
