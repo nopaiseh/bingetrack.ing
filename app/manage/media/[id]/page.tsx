@@ -16,13 +16,13 @@ export default async function EditMediaPage({ params, searchParams }: { params: 
   if (!isMediaId(id)) notFound();
   const item = await readEditableMedia(db, id);
   if (!item || !Object.hasOwn(mediaTypes, item.type)) notFound();
-  const childType = item.type === "tv_series" ? "tv_season" : item.type === "tv_season" ? "tv_episode" : null;
+  const childType = item.type === "tv_show" ? "tv_season" : item.type === "tv_season" ? "tv_episode" : null;
   const [parent, impact, siblings] = await Promise.all([readParent(db, item.parent_id ?? ""), readImpact(db, id, item.type), readSiblings(db, item.type, item.parent_id, item.number)]);
   const grandparent = parent?.detail === "tv_season" ? await db.from("tv_seasons").select("series_id").eq("id", parent.id).single() : null;
-  if (grandparent?.error) throw new Error("无法读取电视剧资料。");
+  if (grandparent?.error) throw new Error("无法读取电视节目资料。");
   const ancestor = grandparent?.data ? await readParent(db, grandparent.data.series_id) : undefined;
   const { saved } = await searchParams;
-  const rootType = ancestor ? "tv_series" : parent?.detail ?? item.type;
+  const rootType = ancestor ? "tv_show" : parent?.detail ?? item.type;
   const unit = item.type === "tv_season" ? "季" : "集";
   /** 渲染前后条目链接；没有相邻条目时保留占位，避免按钮位置跳动。 */
   const siblingLink = (sibling: Sibling | undefined, direction: "previous" | "next") => {
@@ -44,7 +44,7 @@ export default async function EditMediaPage({ params, searchParams }: { params: 
       <div className="flex flex-wrap gap-3">
         {item.parent_id && <Link className="admin-button" href={`/manage/media/${item.parent_id}`}>上级条目</Link>}
         {childType && <><Link className="admin-button" href={`/manage?type=${childType}&parent=${id}`}>管理下属{mediaTypes[childType]}</Link><Link className="admin-button" href={`/manage/media/new?type=${childType}&parent=${id}`}>新增{mediaTypes[childType]}</Link></>}
-        {(item.type === "movie" || item.type === "tv_series") && <Link className="admin-button" href={`/${item.type === "movie" ? "movies" : "series"}/${id}`}>查看公开页面</Link>}
+        {(item.type === "movie" || item.type === "tv_show") && <Link className="admin-button" href={`/${item.type === "movie" ? "movies" : "shows"}/${id}`}>查看公开页面</Link>}
       </div>
     </header>
     {(siblings.previous || siblings.next) && <nav aria-label={`相邻${mediaTypes[item.type as keyof typeof mediaTypes]}`} className="mb-6 grid grid-cols-2 gap-3">{siblingLink(siblings.previous, "previous")}{siblingLink(siblings.next, "next")}</nav>}

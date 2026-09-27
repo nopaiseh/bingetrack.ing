@@ -6,7 +6,7 @@ import { usePathname } from "next/navigation";
 const TABS = [
   { name: "首页", href: "/", icon: "i-material-symbols-home-rounded" },
   { name: "电影", href: "/movies", icon: "i-material-symbols-movie-rounded" },
-  { name: "电视剧", href: "/series", icon: "i-material-symbols-tv-rounded" },
+  { name: "电视节目", href: "/shows", icon: "i-material-symbols-tv-rounded" },
   { name: "搜索", href: "/search", icon: "i-material-symbols-search-rounded" },
 ];
 

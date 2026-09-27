@@ -11,7 +11,7 @@ const routes = [
   { name: "home", path: "/" },
   { name: "search", path: "/search" },
   { name: "movies", path: "/movies" },
-  { name: "series", path: "/series" },
+  { name: "shows", path: "/shows" },
 ];
 
 /** 读取可选的测量路径覆盖值，并要求其为指定前缀下的站内路径。 */
@@ -36,14 +36,14 @@ function firstHref(html, pattern) {
   return html.match(pattern)?.[1]?.replaceAll("&amp;", "&") ?? null;
 }
 
-/** 从配置或目录 HTML 中发现电影、电视剧及季详情地址，加入 Lighthouse 测量列表。 */
+/** 从配置或目录 HTML 中发现电影、电视节目及季详情地址，加入 Lighthouse 测量列表。 */
 async function addDynamicRoutes() {
   const moviesHtml = await fetchHtml("/movies");
-  const seriesHtml = await fetchHtml("/series");
+  const seriesHtml = await fetchHtml("/shows");
   const moviePath = configuredPath("LIGHTHOUSE_MOVIE_PATH", "/movies")
     ?? firstHref(moviesHtml, /href="(\/movies\/[^"?#]+(?:\?[^"#]*)?)"/);
-  const seriesPath = configuredPath("LIGHTHOUSE_SERIES_PATH", "/series")
-    ?? firstHref(seriesHtml, /href="(\/series\/[^"?#]+(?:\?[^"#]*)?)"/);
+  const seriesPath = configuredPath("LIGHTHOUSE_SERIES_PATH", "/shows")
+    ?? firstHref(seriesHtml, /href="(\/shows\/[^"?#]+(?:\?[^"#]*)?)"/);
 
   if (!moviePath || !seriesPath) {
     throw new Error("Could not discover movie and series detail samples. Set LIGHTHOUSE_MOVIE_PATH and LIGHTHOUSE_SERIES_PATH.");
@@ -55,7 +55,7 @@ async function addDynamicRoutes() {
   );
 
   const seasonPath = configuredPath("LIGHTHOUSE_SEASON_PATH", `${seriesPath.split("?")[0]}/seasons`)
-    ?? firstHref(await fetchHtml(seriesPath), /href="(\/series\/[^"?#]+\/seasons\/[^"?#]+(?:\?[^"#]*)?)"/);
+    ?? firstHref(await fetchHtml(seriesPath), /href="(\/shows\/[^"?#]+\/seasons\/[^"?#]+(?:\?[^"#]*)?)"/);
   if (!seasonPath) {
     throw new Error("Could not discover a season detail sample. Set LIGHTHOUSE_SEASON_PATH.");
   }

@@ -6,7 +6,7 @@ export default function manifest(): MetadataRoute.Manifest {
   return {
     name: "bingetrack.ing - 个人媒体记录平台",
     short_name: "bingetrack",
-    description: "记录、检索并回顾电影与电视剧观看历程。",
+    description: "记录、检索并回顾电影与电视节目观看历程。",
     start_url: "/",
     display: "standalone",
     background_color: THEME_COLORS.default,

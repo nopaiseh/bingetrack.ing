@@ -17,8 +17,8 @@ const typeConfigs: Record<ManagedMediaType, { label: string; icon: string; badge
     borderClass: "!border-rose-500/30",
     bgClass: "!bg-rose-500/15",
   },
-  tv_series: {
-    label: "电视剧",
+  tv_show: {
+    label: "电视节目",
     icon: "i-material-symbols-tv-rounded",
     badgeClass: "bg-sky-500/10 text-sky-300 border-sky-500/25",
     textClass: "text-sky-300",
@@ -26,7 +26,7 @@ const typeConfigs: Record<ManagedMediaType, { label: string; icon: string; badge
     bgClass: "!bg-sky-500/15",
   },
   tv_season: {
-    label: "剧季",
+    label: "季",
     icon: "i-material-symbols-layers-rounded",
     badgeClass: "bg-amber-500/10 text-amber-300 border-amber-500/25",
     textClass: "text-amber-300",
@@ -34,7 +34,7 @@ const typeConfigs: Record<ManagedMediaType, { label: string; icon: string; badge
     bgClass: "!bg-amber-500/15",
   },
   tv_episode: {
-    label: "剧集",
+    label: "单集",
     icon: "i-material-symbols-video-library-rounded",
     badgeClass: "bg-emerald-500/10 text-emerald-300 border-emerald-500/25",
     textClass: "text-emerald-300",
@@ -43,7 +43,7 @@ const typeConfigs: Record<ManagedMediaType, { label: string; icon: string; badge
   },
 };
 
-/** 用同一表单编辑电影、剧集、季和集，保持各字段有明确标签。 */
+/** 用同一表单编辑电影、电视节目、季和单集，保持各字段有明确标签。 */
 export default function MediaForm({ item, initialType = "movie", lockType = false, parent, nextNumber, impact }: { item?: MediaInput; initialType?: ManagedMediaType; lockType?: boolean; parent?: Choice; nextNumber?: number; impact?: { seasons: number; episodes: number } }) {
   const field = useDraftFields();
   const [type, setType] = useState<ManagedMediaType>(item?.type ?? initialType);
@@ -190,12 +190,12 @@ export default function MediaForm({ item, initialType = "movie", lockType = fals
           {isChild && <>
             <ChoicePicker
               key={type}
-              kind={type === "tv_season" ? "tv_series" : "tv_season"}
+              kind={type === "tv_season" ? "tv_show" : "tv_season"}
               name="parent_id"
-              label={type === "tv_season" ? "所属电视剧" : "所属剧季"}
+              label={type === "tv_season" ? "所属电视节目" : "所属季"}
               multiple={false}
               required
-              initial={parent && parent.detail === (type === "tv_season" ? "tv_series" : "tv_season") ? [parent] : []}
+              initial={parent && parent.detail === (type === "tv_season" ? "tv_show" : "tv_season") ? [parent] : []}
             />
             <div>
               <div className="mb-1.5 flex items-center justify-between">
@@ -269,13 +269,13 @@ export default function MediaForm({ item, initialType = "movie", lockType = fals
                 </span>
               </div>
               <p className="text-xs text-neutral-400">
-                {type === "tv_series" ? "电视剧" : "剧季"}的观看状态由下属剧集自动汇总决定，不可在此直接删改。
+                {type === "tv_show" ? "电视节目" : "季"}的观看状态由下属单集自动汇总决定，不可在此直接删改。
               </p>
             </div>
           </section>
         )}
 
-        {/* 关联资料：仅电影和电视剧展示，剧季与剧集继承所属主条目资料 */}
+        {/* 关联资料：仅电影和电视节目展示，季与单集继承所属主条目资料 */}
         {!isChild && (
           <section className="space-y-6">
             <div>
@@ -349,8 +349,8 @@ export default function MediaForm({ item, initialType = "movie", lockType = fals
     </form>
     {item && <details className="rounded-2xl border border-white/10 p-5 sm:p-8">
       <summary className="mb-3 cursor-pointer text-sm text-red-200">删除条目</summary>
-      <p className="mb-4 text-sm leading-relaxed text-neutral-300">将永久删除「{item.title}」及其观看记录、评分和关联。{type === "tv_series" ? "所有下属季和集的资料、观看记录及评分也会一起删除。" : type === "tv_season" ? "此季的所有集及其观看记录和评分也会一起删除。" : ""}此操作无法撤销。</p>
-      {impact && (isChild || type === "tv_series") && <p className="mb-4 text-sm text-red-200">本次还会删除 {impact.seasons} 季、{impact.episodes} 集及其观看记录。</p>}
+      <p className="mb-4 text-sm leading-relaxed text-neutral-300">将永久删除「{item.title}」及其观看记录、评分和关联。{type === "tv_show" ? "所有下属季和集的资料、观看记录及评分也会一起删除。" : type === "tv_season" ? "此季的所有集及其观看记录和评分也会一起删除。" : ""}此操作无法撤销。</p>
+      {impact && (isChild || type === "tv_show") && <p className="mb-4 text-sm text-red-200">本次还会删除 {impact.seasons} 季、{impact.episodes} 集及其观看记录。</p>}
       <form action={deleteAction} className="space-y-4">
         <input type="hidden" name="id" value={item.id ?? ""} />
         <label>输入完整标题以确认删除<input name="confirm_title" required autoComplete="off" disabled={pending || deleting} /></label>

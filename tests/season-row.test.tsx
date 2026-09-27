@@ -33,7 +33,7 @@ const mockSeasons: SeasonInfo[] = [
   },
 ];
 
-describe("SeasonRow 电视剧季列表横向平滑轮播", () => {
+describe("SeasonRow 电视节目季列表横向平滑轮播", () => {
   it("无季度数据时显示友好占位提示", () => {
     render(<SeasonRow seriesId="series-1" seasons={[]} />);
     expect(screen.getByText("暂无季集数据")).toBeInTheDocument();
@@ -63,9 +63,9 @@ describe("SeasonRow 电视剧季列表横向平滑轮播", () => {
 
     // 跳转链接匹配
     const links = screen.getAllByRole("link");
-    expect(links[0]).toHaveAttribute("href", "/series/series-1/seasons/season-1");
-    expect(links[1]).toHaveAttribute("href", "/series/series-1/seasons/season-2");
-    expect(links[2]).toHaveAttribute("href", "/series/series-1/seasons/season-3");
+    expect(links[0]).toHaveAttribute("href", "/shows/series-1/seasons/season-1");
+    expect(links[1]).toHaveAttribute("href", "/shows/series-1/seasons/season-2");
+    expect(links[2]).toHaveAttribute("href", "/shows/series-1/seasons/season-3");
   });
 });
 

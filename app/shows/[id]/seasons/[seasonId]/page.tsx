@@ -8,13 +8,13 @@ import { getCachedMediaById, getCachedSeasonsBySeriesId } from "@/lib/functions/
 import { buildSeasonMetadata } from "@/lib/seo/media";
 import { formatRuntime } from "@/lib/format-runtime";
 
-// 季详情页读取分页与筛选查询参数，按请求渲染：剧集分页每次查询数据库，电视剧与季摘要使用带 "media" 标签的数据缓存。
+// 季详情页读取分页与筛选查询参数，按请求渲染：单集分页每次查询数据库，电视节目与季摘要使用带 "media" 标签的数据缓存。
 
 const PAGE_SIZE = 10;
 type StatusFilter = "all" | "watched" | "unwatched";
 type EpisodeOrder = "asc" | "desc";
 
-/** 并行读取电视剧与季摘要，找到目标季后生成元数据；缺失时返回未找到标题。 */
+/** 并行读取电视节目与季摘要，找到目标季后生成元数据；缺失时返回未找到标题。 */
 export async function generateMetadata({
   params,
 }: {
@@ -30,7 +30,7 @@ export async function generateMetadata({
   return buildSeasonMetadata(series, season);
 }
 
-/** 渲染单集卡片，展示剧集封面、集数、标题、观看状态、上映日期和简介。 */
+/** 渲染单集卡片，展示单集封面、集数、标题、观看状态、上映日期和简介。 */
 function EpisodeCard({ episode }: { episode: EpisodeInfo }) {
   const watched = episode.status === "watched";
   const episodeRuntimeLabel = formatRuntime(episode.runtime);
@@ -94,7 +94,7 @@ function pageNumbers(current: number, total: number) {
   return Array.from({ length: end - start + 1 }, /* 把分页窗口索引转换为页码。 */ (_, index) => start + index);
 }
 
-/** 校验季页面的分页和筛选输入，并行加载详情、剧集与季列表，渲染统计和翻页导航。 */
+/** 校验季页面的分页和筛选输入，并行加载详情、单集与季列表，渲染统计和翻页导航。 */
 export default async function SeasonPage({
   params,
   searchParams,
@@ -130,7 +130,7 @@ export default async function SeasonPage({
   };
   /** 为当前季生成包含指定分页或筛选条件的地址。 */
   const seasonHref = (values: { page?: number; status?: StatusFilter; order?: EpisodeOrder } = {}) =>
-    `/series/${id}/seasons/${seasonId}${queryString(values)}`;
+    `/shows/${id}/seasons/${seasonId}${queryString(values)}`;
 
   if (page > totalPages) redirect(seasonHref({ page: totalPages }));
 
@@ -144,7 +144,7 @@ export default async function SeasonPage({
   return (
     <div className="min-h-screen pb-16 pt-24 text-white/90">
       <div className="container mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <Link href={`/series/${id}`} className="surface-muted interactive-control mb-6 inline-flex items-center gap-2 rounded-xl border border-white/10 px-4 py-2 text-sm text-white/60 backdrop-blur-xl">
+        <Link href={`/shows/${id}`} className="surface-muted interactive-control mb-6 inline-flex items-center gap-2 rounded-xl border border-white/10 px-4 py-2 text-sm text-white/60 backdrop-blur-xl">
           <span className="i-material-symbols-chevron-left-rounded inline-block size-4" aria-hidden="true" /> 返回《{series.title}》
         </Link>
 
@@ -167,15 +167,15 @@ export default async function SeasonPage({
                   </p>
                 </div>
                 <div className="flex items-center gap-2">
-              {previousSeason && <Link href={`/series/${id}/seasons/${previousSeason.id}`} className="surface-recessed interactive-control rounded-xl border border-white/10 p-2.5 text-white/60" aria-label={`上一季：第 ${previousSeason.seasonNumber} 季`}><span className="i-material-symbols-chevron-left-rounded inline-block size-4" aria-hidden="true" /></Link>}
+              {previousSeason && <Link href={`/shows/${id}/seasons/${previousSeason.id}`} className="surface-recessed interactive-control rounded-xl border border-white/10 p-2.5 text-white/60" aria-label={`上一季：第 ${previousSeason.seasonNumber} 季`}><span className="i-material-symbols-chevron-left-rounded inline-block size-4" aria-hidden="true" /></Link>}
               <div className="surface-recessed flex max-w-72 gap-1 overflow-x-auto rounded-xl border border-white/10 p-1">
                 {seasons.map(/* 为一个季渲染切换链接，并突出当前季。 */ (season) => (
-                  <Link key={season.id} href={`/series/${id}/seasons/${season.id}`} className={`shrink-0 rounded-lg px-3 py-1.5 text-xs transition-colors ${season.id === seasonId ? "surface-active border border-[var(--accent-border)] font-bold text-[var(--accent-hover)] shadow-[0_4px_10px_var(--accent-glow-soft)]" : "text-white/60 hover:bg-white/10 hover:text-white"}`}>
+                  <Link key={season.id} href={`/shows/${id}/seasons/${season.id}`} className={`shrink-0 rounded-lg px-3 py-1.5 text-xs transition-colors ${season.id === seasonId ? "surface-active border border-[var(--accent-border)] font-bold text-[var(--accent-hover)] shadow-[0_4px_10px_var(--accent-glow-soft)]" : "text-white/60 hover:bg-white/10 hover:text-white"}`}>
                     第 {season.seasonNumber} 季
                   </Link>
                 ))}
               </div>
-              {nextSeason && <Link href={`/series/${id}/seasons/${nextSeason.id}`} className="surface-recessed interactive-control rounded-xl border border-white/10 p-2.5 text-white/60" aria-label={`下一季：第 ${nextSeason.seasonNumber} 季`}><span className="i-material-symbols-chevron-right-rounded inline-block size-4" aria-hidden="true" /></Link>}
+              {nextSeason && <Link href={`/shows/${id}/seasons/${nextSeason.id}`} className="surface-recessed interactive-control rounded-xl border border-white/10 p-2.5 text-white/60" aria-label={`下一季：第 ${nextSeason.seasonNumber} 季`}><span className="i-material-symbols-chevron-right-rounded inline-block size-4" aria-hidden="true" /></Link>}
                 </div>
               </div>
               {seasonData.season.summary && (
@@ -224,14 +224,14 @@ export default async function SeasonPage({
 
         {seasonData.episodes.length > 0 ? (
           <div className="space-y-3">
-            {seasonData.episodes.map(/* 将当前页的一集数据渲染为剧集卡片。 */ (episode) => <EpisodeCard key={episode.id} episode={episode} />)}
+            {seasonData.episodes.map(/* 将当前页的一集数据渲染为单集卡片。 */ (episode) => <EpisodeCard key={episode.id} episode={episode} />)}
           </div>
         ) : (
-          <div className="surface-muted rounded-2xl border border-white/10 py-20 text-center text-white/60">当前筛选下暂无剧集</div>
+          <div className="surface-muted rounded-2xl border border-white/10 py-20 text-center text-white/60">当前筛选下暂无单集</div>
         )}
 
         {totalPages > 1 && (
-          <nav className="mt-10 flex flex-wrap items-center justify-center gap-2" aria-label="剧集分页">
+          <nav className="mt-10 flex flex-wrap items-center justify-center gap-2" aria-label="单集分页">
             {page > 1 && <Link href={seasonHref({ page: page - 1 })} className="surface-muted interactive-control rounded-xl border border-white/10 p-2.5 text-white/60" aria-label="上一页"><span className="i-material-symbols-chevron-left-rounded inline-block size-4" aria-hidden="true" /></Link>}
             {pageNumbers(page, totalPages).map(/* 生成保留当前筛选条件的页码链接，并标记当前页。 */ (pageNumber) => (
               <Link key={pageNumber} href={seasonHref({ page: pageNumber })} className={`min-w-10 rounded-xl border px-3 py-2 text-center text-sm ${pageNumber === page ? "surface-active border-[var(--accent-border)] text-[var(--accent-hover)] font-bold shadow-[0_4px_10px_var(--accent-glow-soft)]" : "surface-muted border-white/10 text-white/70 hover:bg-white/10 hover:text-white"}`}>

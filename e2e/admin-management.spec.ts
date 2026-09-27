@@ -102,16 +102,16 @@ test("站长初始化、影视季集管理、公开更新、退出与非站长�
     const tracking = await db.from("tracking").select("status,rating").eq("media_item_id", movie).single();
     expect(tracking.data).toMatchObject({ status: "watched", rating: 0 });
 
-    await page.goto("/manage/media/new?type=tv_series");
+    await page.goto("/manage/media/new?type=tv_show");
     await page.getByLabel("标题", { exact: true }).fill(`${prefix} series`);
     const series = await save();
-    await page.getByRole("link", { name: "新增剧季", exact: true }).click();
+    await page.getByRole("link", { name: "新增季", exact: true }).click();
     await expect(page.getByRole("heading", { name: "新增媒体", exact: true })).toBeVisible();
     await expect(page.locator('input[name="parent_id"]')).toHaveValue(series);
     await page.getByLabel("标题", { exact: true }).fill(`${prefix} season`);
     await page.getByLabel("季编号（特别篇可填 0）").fill("1");
     const season = await save();
-    await page.getByRole("link", { name: "新增剧集", exact: true }).click();
+    await page.getByRole("link", { name: "新增单集", exact: true }).click();
     await expect(page.getByRole("heading", { name: "新增媒体", exact: true })).toBeVisible();
     await expect(page.locator('input[name="parent_id"]')).toHaveValue(season);
     await page.getByLabel("标题", { exact: true }).fill(`${prefix} episode`);

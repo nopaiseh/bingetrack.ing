@@ -77,8 +77,8 @@ test("search retains exact pagination totals", /* 验证搜索仍执行计数请
   expect(state.executed.filter(/* 选出仅请求计数头的查询记录。 */ (query) => query.head)).toHaveLength(1);
 });
 
-test("series card years use aggregates without transferring episodes", /* 验证电视剧卡片从聚合视图读取年份范围，不传输逐集数据。 */ async () => {
-  state.results.v_all_media = { data: [{ id: "s", type: "tv_series", release_year: "2020 - Present" }], error: null };
+test("series card years use aggregates without transferring episodes", /* 验证电视节目卡片从聚合视图读取年份范围，不传输逐集数据。 */ async () => {
+  state.results.v_all_media = { data: [{ id: "s", type: "tv_show", release_year: "2020 - Present" }], error: null };
   state.results.v_media_series_years = { data: [{ series_id: "s", first_year: 2020, last_year: 2027 }], error: null };
   expect((await fetchMediaCardsServer())[0].release_year).toBe("2020 - 2027");
   expect(state.executed.map(/* 提取查询表名以断言实际访问的数据源。 */ (query) => query.table)).toEqual(["v_all_media", "v_media_series_years"]);
@@ -108,7 +108,7 @@ test("fetchStatsServer converts string counts to numbers including upcoming", /*
     data: [{ total: "10", watched: "5", watching: "2", want: "3", upcoming: "1" }],
     error: null,
   };
-  const stats = await fetchStatsServer("tv_series");
+  const stats = await fetchStatsServer("tv_show");
   expect(stats).toEqual({
     total: 10,
     watched: 5,
@@ -137,8 +137,8 @@ test("fetchMediaCardsServer retries on transient gateway timeout and succeeds on
 });
 
 test("fetchMediaCardsServer applies compound date sort with sort_date, first_air_date and id", async () => {
-  state.results.v_all_media = { data: [{ id: "s1", type: "tv_series" }], error: null };
-  await fetchMediaCardsServer({ type: "tv_series", sort: "date_desc", limit: 10 });
+  state.results.v_all_media = { data: [{ id: "s1", type: "tv_show" }], error: null };
+  await fetchMediaCardsServer({ type: "tv_show", sort: "date_desc", limit: 10 });
   const query = state.executed.find((req) => req.table === "v_all_media");
   expect(query?.orders).toEqual([
     { column: "sort_date", ascending: false, nullsFirst: false },
@@ -148,8 +148,8 @@ test("fetchMediaCardsServer applies compound date sort with sort_date, first_air
 });
 
 test("fetchMediaCardsServer applies decoupled year interval filter on last_air_date and first_air_date", async () => {
-  state.results.v_all_media = { data: [{ id: "s1", type: "tv_series" }], error: null };
-  await fetchMediaCardsServer({ type: "tv_series", startYear: "2010", endYear: "2015", limit: 10 });
+  state.results.v_all_media = { data: [{ id: "s1", type: "tv_show" }], error: null };
+  await fetchMediaCardsServer({ type: "tv_show", startYear: "2010", endYear: "2015", limit: 10 });
   const query = state.executed.find((req) => req.table === "v_all_media");
   expect(query?.gtes).toEqual([{ column: "last_air_date", value: "2010-01-01" }]);
   expect(query?.ltes).toEqual([{ column: "first_air_date", value: "2015-12-31" }]);

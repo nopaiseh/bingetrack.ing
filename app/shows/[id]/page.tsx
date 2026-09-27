@@ -1,4 +1,4 @@
-import { notFound, permanentRedirect } from "next/navigation";
+import { notFound } from "next/navigation";
 import { getRelatedBySeries } from "@/lib/functions/media-repo";
 import MediaInformation from "@/components/MediaInformation";
 import MediaRow from "@/components/MediaRow";
@@ -6,19 +6,19 @@ import { RelatedMediaLoadingSkeleton } from "@/components/LoadingSkeletons";
 import { Suspense } from "react";
 import { getCachedMediaById, getCachedSeasonsBySeriesId } from "@/lib/functions/cached-media";
 import type { Metadata } from "next";
-import { buildMediaJsonLd, buildMediaMetadata, getMediaPath, serializeJsonLd } from "@/lib/seo/media";
+import { buildMediaJsonLd, buildMediaMetadata, serializeJsonLd } from "@/lib/seo/media";
 
 // 详情页按需生成，日常走 24 小时长缓存，数据变更通过 revalidatePath/revalidateTag 即时失效。
 export const revalidate = 86400;
 
-/** 构建时不枚举电视剧 ID，详情页由访问触发按需生成。 */
+/** 构建时不枚举电视节目 ID，详情页由访问触发按需生成。 */
 export function generateStaticParams() { return []; }
 
-/** 用缓存的电视剧详情生成页面与分享元数据；无记录时返回未找到标题。 */
+/** 用缓存的电视节目详情生成页面与分享元数据；无记录时返回未找到标题。 */
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
   const { id } = await params;
   const series = await getCachedMediaById(id);
-  if (!series) return { title: "电视剧未找到" };
+  if (!series) return { title: "电视节目未找到" };
   return buildMediaMetadata(series);
 }
 
@@ -41,7 +41,7 @@ async function RelatedSeries({ seriesNames, currentId }: { seriesNames: string[]
   );
 }
 
-/** 并行加载电视剧与季摘要，汇总剧集年份和观看进度，再展示详情、各季和相关作品。 */
+/** 并行加载电视节目与季摘要，汇总单集年份和观看进度，再展示详情、各季和相关作品。 */
 export default async function SeriesDetailPage({
   params,
 }: {
@@ -53,8 +53,8 @@ export default async function SeriesDetailPage({
     getCachedSeasonsBySeriesId(id),
   ]);
   if (!series) notFound();
-  // 电影 ID 访问电视剧路径时跳转到规范地址，避免用电视剧布局渲染电影。
-  if (series.type !== "series") permanentRedirect(getMediaPath(series));
+  // 电影 ID 不属于电视节目路径。
+  if (series.type !== "shows") notFound();
   const jsonLd = buildMediaJsonLd(series);
 
   const episodeYears = seasons.flatMap(/* 从季的年份范围提取四位年份，缺失时不贡献年份。 */ (season) => season.releaseYearRange?.match(/\d{4}/g) ?? []);
@@ -63,8 +63,8 @@ export default async function SeriesDetailPage({
   const releaseYearRange = firstEpisodeYear !== null && lastEpisodeYear !== null
     ? (firstEpisodeYear === lastEpisodeYear ? String(firstEpisodeYear) : `${firstEpisodeYear} - ${lastEpisodeYear}`)
     : series.date?.slice(0, 4) ?? "";
-  const totalEpisodes = seasons.reduce(/* 将本季集数累加到电视剧总集数。 */ (total, season) => total + season.episodeCount, 0);
-  const watchedEpisodes = seasons.reduce(/* 将本季已看集数累加到电视剧已看总集数。 */ (total, season) => total + season.watchedEpisodeCount, 0);
+  const totalEpisodes = seasons.reduce(/* 将本季集数累加到电视节目总集数。 */ (total, season) => total + season.episodeCount, 0);
+  const watchedEpisodes = seasons.reduce(/* 将本季已看集数累加到电视节目已看总集数。 */ (total, season) => total + season.watchedEpisodeCount, 0);
   const episodeDerivedStatus = totalEpisodes === 0
     ? series.status
     : watchedEpisodes === totalEpisodes

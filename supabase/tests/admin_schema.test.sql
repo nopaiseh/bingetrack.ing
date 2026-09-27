@@ -34,7 +34,7 @@ select is((select count(*)::integer from public.site_owner),0,'other user cannot
 do $$ begin perform set_config('request.jwt.claim.sub','fa000000-0000-4000-8000-000000000001',true); end $$;
 select is(public.is_site_owner(),true,'designated owner is recognized');
 select lives_ok($$insert into admin_test_ids values ('movie',public.admin_save_media(pg_temp.admin_payload('movie','Admin test movie') || '{"genres":["Admin genre"],"actors":["Doe, Jane"]}'))$$,'owner creates media and relations atomically');
-select lives_ok($$insert into admin_test_ids values ('series',public.admin_save_media(pg_temp.admin_payload('tv_series','Admin test series')))$$,'owner creates series');
+select lives_ok($$insert into admin_test_ids values ('series',public.admin_save_media(pg_temp.admin_payload('tv_show','Admin test series')))$$,'owner creates series');
 select lives_ok($$insert into admin_test_ids values ('season',public.admin_save_media(pg_temp.admin_payload('tv_season','Admin test season',(select id from admin_test_ids where name='series'),1)))$$,'owner creates season');
 select lives_ok($$insert into admin_test_ids values ('episode',public.admin_save_media(pg_temp.admin_payload('tv_episode','Admin test episode',(select id from admin_test_ids where name='season'),1)))$$,'owner creates episode');
 select lives_ok($$select public.admin_save_media(pg_temp.admin_payload('movie','Admin updated movie') || jsonb_build_object('id',(select id from admin_test_ids where name='movie'),'status','watched','rating',8.5))$$,'owner updates watched state and rating');
@@ -44,7 +44,7 @@ select is((select count(*)::integer from public.media_genres where media_item_id
 select throws_ok($$select public.admin_save_media(pg_temp.admin_payload('tv_episode','Duplicate episode',(select id from admin_test_ids where name='season'),1))$$,'23505',null,'duplicate episode number is rejected');
 select is((select count(*)::integer from public.media_items where title='Duplicate episode'),0,'failed relation save leaves no orphan media');
 select throws_ok($$select public.admin_save_media(pg_temp.admin_payload('tv_season','Wrong parent',(select id from admin_test_ids where name='movie'),1))$$,'P0002',null,'movie cannot be parent of season');
-select throws_ok($$select public.admin_save_media(pg_temp.admin_payload('tv_series','Change type') || jsonb_build_object('id',(select id from admin_test_ids where name='movie')))$$,'22023',null,'existing media type cannot change');
+select throws_ok($$select public.admin_save_media(pg_temp.admin_payload('tv_show','Change type') || jsonb_build_object('id',(select id from admin_test_ids where name='movie')))$$,'22023',null,'existing media type cannot change');
 select throws_ok($$select public.admin_delete_media((select id from admin_test_ids where name='series'),'Wrong title')$$,'22023',null,'delete requires exact title confirmation');
 
 do $$ begin perform set_config('request.jwt.claim.sub','fa000000-0000-4000-8000-000000000002',true); end $$;

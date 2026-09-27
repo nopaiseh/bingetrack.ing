@@ -30,7 +30,7 @@ export const metadata: Metadata = {
     default: "bingetrack.ing - 个人媒体记录平台",
     template: "%s | bingetrack.ing",
   },
-  description: "记录、检索并回顾电影与电视剧观看历程。",
+  description: "记录、检索并回顾电影与电视节目观看历程。",
   applicationName: "bingetrack.ing",
   appleWebApp: {
     capable: true,
@@ -42,7 +42,7 @@ export const metadata: Metadata = {
     locale: "zh_CN",
     siteName: "bingetrack.ing",
     title: "bingetrack.ing - 个人媒体记录平台",
-    description: "记录、检索并回顾电影与电视剧观看历程。",
+    description: "记录、检索并回顾电影与电视节目观看历程。",
   },
 };
 

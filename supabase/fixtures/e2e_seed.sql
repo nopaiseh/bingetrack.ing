@@ -20,7 +20,7 @@ insert into public.media_items (
   id, type, title, alternate_title, summary, cover_url, release_date, runtime
 ) values
   ('50000000-0000-4000-8000-000000000001', 'movie', '测试电影：星光档案', 'Fixture Movie', '用于端到端测试的虚构电影。', null, '2024-03-15', 120),
-  ('50000000-0000-4000-8000-000000000002', 'tv_series', '测试剧集：城市信号', 'Fixture Series', '用于端到端测试的虚构电视剧。', null, '2025-01-01', null),
+  ('50000000-0000-4000-8000-000000000002', 'tv_show', '测试剧集：城市信号', 'Fixture Series', '用于端到端测试的虚构电视剧。', null, '2025-01-01', null),
   ('50000000-0000-4000-8000-000000000003', 'tv_season', '城市信号 第一季', 'Fixture Season One', '测试季度简介。', null, '2025-01-01', null),
   ('50000000-0000-4000-8000-000000000004', 'tv_episode', '启程', 'Pilot Signal', '第一集测试简介。', null, '2025-01-02', 45),
   ('50000000-0000-4000-8000-000000000005', 'tv_episode', '回声', 'Signal Echo', '第二集测试简介。', null, '2025-01-09', 50);

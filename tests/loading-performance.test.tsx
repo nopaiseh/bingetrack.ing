@@ -37,7 +37,7 @@ test("AdminLoadingSkeleton renders accessible label and structured placeholders"
 
 test("SeasonDetailLoadingSkeleton renders accessible label and placeholders", () => {
   render(<SeasonDetailLoadingSkeleton />);
-  const container = screen.getByLabelText("正在加载本季剧集");
+  const container = screen.getByLabelText("正在加载本季单集");
   expect(container).toBeInTheDocument();
   const shimmers = container.querySelectorAll(".shimmer-wave");
   expect(shimmers.length).toBeGreaterThan(10);

@@ -25,16 +25,16 @@ test("honors mapped type and series overrides", /* 验证详情映射接受外�
   const media = mapViewRowToMedia(
     { id: 42, type: "movie", title: null },
     ["B", "A"],
-    "series",
+    "shows",
   );
 
   assert.equal(media.id, "42");
-  assert.equal(media.type, "series");
+  assert.equal(media.type, "shows");
   assert.deepEqual(media.series, ["A", "B"]);
 });
 
 test("card mapping preserves display fields and excludes detail payloads", /* 验证卡片保留展示字段，同时排除简介、演职员和时长等详情数据。 */ () => {
-  const row = { id: 42, type: "tv_series", title: "Series", sort_date: "2020-01-01",
+  const row = { id: 42, type: "tv_show", title: "Series", sort_date: "2020-01-01",
     release_year: "2020 - 2026", rating: 8, genres: ["B", "A"], languages: ["English"],
     summary: "Long summary", casts: ["Actor"], directors: ["Director"], runtime: 4000 };
   const card = mapViewRowToMediaCard(row);

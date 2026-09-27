@@ -8,7 +8,7 @@ import MediaCardStatusBadge from "./MediaCardStatusBadge";
 import { edgeFadeMask } from "@/lib/edge-fade-mask";
 
 /**
- * 电视剧季列表横向平滑轮播组件。
+ * 电视节目季列表横向平滑轮播组件。
  * 遵循全站卡片统一尺寸规范（w-40 sm:w-48），无论季数多少均保持视觉协调且不侵占纵向空间。
  */
 export default function SeasonRow({
@@ -122,7 +122,7 @@ export default function SeasonRow({
           return (
             <Link
               key={season.id}
-              href={`/series/${seriesId}/seasons/${season.id}`}
+              href={`/shows/${seriesId}/seasons/${season.id}`}
               className="surface-card interactive-media-card group flex w-40 flex-none snap-start cursor-pointer flex-col overflow-hidden rounded-xl last:snap-end sm:w-48"
             >
               <div className="image-placeholder relative flex aspect-2/3 w-full items-center justify-center overflow-hidden">

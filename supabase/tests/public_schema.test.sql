@@ -64,8 +64,8 @@ select ok(
 );
 
 select ok(
-  has_function_privilege('anon', 'public.get_top_tv_series_by_year(integer, integer)', 'EXECUTE')
-    and has_function_privilege('authenticated', 'public.get_top_tv_series_by_year(integer, integer)', 'EXECUTE'),
+  has_function_privilege('anon', 'public.get_top_tv_shows_by_year(integer, integer)', 'EXECUTE')
+    and has_function_privilege('authenticated', 'public.get_top_tv_shows_by_year(integer, integer)', 'EXECUTE'),
   'public roles can execute the year-specific TV ranking RPC'
 );
 
@@ -93,7 +93,7 @@ select ok(
     from pg_proc p
     cross join lateral aclexplode(coalesce(p.proacl, acldefault('f', p.proowner))) acl
     where p.oid in (
-      'public.get_top_tv_series_by_year(integer, integer)'::regprocedure,
+      'public.get_top_tv_shows_by_year(integer, integer)'::regprocedure,
       'public.get_media_distribution_counts()'::regprocedure,
       'public.get_media_stats(text)'::regprocedure,
       'public.get_season_episode_page(uuid, uuid, text, text, integer, integer)'::regprocedure
@@ -109,7 +109,7 @@ select ok(
     select 1
     from pg_proc
     where oid in (
-      'public.get_top_tv_series_by_year(integer, integer)'::regprocedure,
+      'public.get_top_tv_shows_by_year(integer, integer)'::regprocedure,
       'public.get_media_distribution_counts()'::regprocedure,
       'public.get_media_stats(text)'::regprocedure,
       'public.get_season_episode_page(uuid, uuid, text, text, integer, integer)'::regprocedure
@@ -144,7 +144,7 @@ select results_eq(
 );
 
 select results_eq(
-  $$select * from public.get_media_stats('tv_series')$$,
+  $$select * from public.get_media_stats('tv_show')$$,
   $$
     with upcoming_series as (
       select distinct s.series_id
@@ -166,7 +166,7 @@ select results_eq(
       ) as upcoming
     from public.v_all_media as media
     left join upcoming_series as u on u.series_id = media.id
-    where media.type::text = 'tv_series'
+    where media.type::text = 'tv_show'
   $$,
   'anonymous tv series stats match the equivalent direct read query'
 );

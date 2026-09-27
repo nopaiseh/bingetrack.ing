@@ -99,7 +99,7 @@ export default function SpotlightHero({ items, yearLabel }: SpotlightHeroProps) 
                 href={mediaPath}
                 className="button-accent group inline-flex h-12 items-center gap-2 rounded-full px-7 text-sm font-bold active:scale-[0.98]"
               >
-                <span>{currentItem.type === "series" ? "查看影剧" : "查看影片"}</span>
+                <span>{currentItem.type === "shows" ? "查看节目" : "查看影片"}</span>
                 <span className="i-material-symbols-arrow-forward-rounded size-4 transition-transform group-hover:translate-x-1" aria-hidden="true" />
               </Link>
               <MediaRatingBadge rating={currentItem.rating} size="lg" showTier />

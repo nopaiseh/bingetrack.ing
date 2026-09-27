@@ -24,45 +24,45 @@ it("关联资料命名冲突后保留用户输入", async () => {
   expect(screen.getByLabelText("名称", { exact: true })).toHaveValue("剧情");
 });
 
-it("电影和剧集显示可编辑观看状态，电视剧和剧季显示只读说明", () => {
+it("电影和单集显示可编辑观看状态，电视节目和季显示只读说明", () => {
   const { unmount } = render(<MediaForm initialType="movie" />);
   expect(screen.getByLabelText("观看状态")).toBeInTheDocument();
   expect(screen.getByLabelText(/评分/)).toBeInTheDocument();
 
-  // 切换为电视剧
-  fireEvent.change(screen.getByLabelText("类型"), { target: { value: "tv_series" } });
+  // 切换为电视节目
+  fireEvent.change(screen.getByLabelText("类型"), { target: { value: "tv_show" } });
   expect(screen.queryByRole("combobox", { name: "观看状态" })).not.toBeInTheDocument();
-  expect(screen.getByText(/电视剧的观看状态由下属剧集自动汇总决定/)).toBeInTheDocument();
+  expect(screen.getByText(/电视节目的观看状态由下属单集自动汇总决定/)).toBeInTheDocument();
 
-  // 切换为剧季
+  // 切换为季
   fireEvent.change(screen.getByLabelText("类型"), { target: { value: "tv_season" } });
   expect(screen.queryByRole("combobox", { name: "观看状态" })).not.toBeInTheDocument();
-  expect(screen.getByText(/剧季的观看状态由下属剧集自动汇总决定/)).toBeInTheDocument();
+  expect(screen.getByText(/季的观看状态由下属单集自动汇总决定/)).toBeInTheDocument();
 
-  // 切换为剧集
+  // 切换为单集
   fireEvent.change(screen.getByLabelText("类型"), { target: { value: "tv_episode" } });
   expect(screen.getByLabelText("观看状态")).toBeInTheDocument();
   expect(screen.getByLabelText(/评分/)).toBeInTheDocument();
   unmount();
 
-  render(<MediaForm initialType="tv_series" />);
+  render(<MediaForm initialType="tv_show" />);
   expect(screen.queryByRole("combobox", { name: "观看状态" })).not.toBeInTheDocument();
-  expect(screen.getByText(/电视剧的观看状态由下属剧集自动汇总决定/)).toBeInTheDocument();
+  expect(screen.getByText(/电视节目的观看状态由下属单集自动汇总决定/)).toBeInTheDocument();
 });
 
 it("lockType 为真时锁定媒体类型，不展示分段切换控件", () => {
   render(<MediaForm initialType="tv_episode" lockType={true} />);
   expect(screen.queryByRole("tablist", { name: "媒体类型快捷选择" })).not.toBeInTheDocument();
   expect(screen.getByText("媒体类型")).toBeInTheDocument();
-  expect(screen.getByText("剧集")).toBeInTheDocument();
+  expect(screen.getByText("单集")).toBeInTheDocument();
 });
 
-it("电影和电视剧展示关联资料，剧季和剧集不展示关联资料", () => {
+it("电影和电视节目展示关联资料，季和单集不展示关联资料", () => {
   const { unmount: unmount1 } = render(<MediaForm initialType="movie" />);
   expect(screen.getByText("关联资料")).toBeInTheDocument();
   unmount1();
 
-  const { unmount: unmount2 } = render(<MediaForm initialType="tv_series" />);
+  const { unmount: unmount2 } = render(<MediaForm initialType="tv_show" />);
   expect(screen.getByText("关联资料")).toBeInTheDocument();
   unmount2();
 
@@ -74,7 +74,7 @@ it("电影和电视剧展示关联资料，剧季和剧集不展示关联资料"
   expect(screen.queryByText("关联资料")).not.toBeInTheDocument();
 });
 
-it("剧季和剧集编号输入框拥有正确无歧义的无障碍标签", () => {
+it("季和单集编号输入框拥有正确无歧义的无障碍标签", () => {
   const { unmount } = render(<MediaForm initialType="tv_season" />);
   expect(screen.getByLabelText("季编号（特别篇可填 0）")).toBeInTheDocument();
   unmount();
@@ -83,28 +83,28 @@ it("剧季和剧集编号输入框拥有正确无歧义的无障碍标签", () =
   expect(screen.getByLabelText("集编号", { exact: true })).toBeInTheDocument();
 });
 
-it("电影和剧集显示发行日期和时长，电视剧和剧季不显示", () => {
+it("电影和单集显示发行日期和时长，电视节目和季不显示", () => {
   const { unmount } = render(<MediaForm initialType="movie" />);
   expect(screen.getByLabelText("发行日期")).toBeInTheDocument();
   expect(screen.getByLabelText("时长（分钟）")).toBeInTheDocument();
 
-  // 切换为电视剧
-  fireEvent.change(screen.getByLabelText("类型"), { target: { value: "tv_series" } });
+  // 切换为电视节目
+  fireEvent.change(screen.getByLabelText("类型"), { target: { value: "tv_show" } });
   expect(screen.queryByLabelText("发行日期")).not.toBeInTheDocument();
   expect(screen.queryByLabelText("时长（分钟）")).not.toBeInTheDocument();
 
-  // 切换为剧季
+  // 切换为季
   fireEvent.change(screen.getByLabelText("类型"), { target: { value: "tv_season" } });
   expect(screen.queryByLabelText("发行日期")).not.toBeInTheDocument();
   expect(screen.queryByLabelText("时长（分钟）")).not.toBeInTheDocument();
 
-  // 切换为剧集
+  // 切换为单集
   fireEvent.change(screen.getByLabelText("类型"), { target: { value: "tv_episode" } });
   expect(screen.getByLabelText("发行日期")).toBeInTheDocument();
   expect(screen.getByLabelText("时长（分钟）")).toBeInTheDocument();
   unmount();
 
-  render(<MediaForm initialType="tv_series" />);
+  render(<MediaForm initialType="tv_show" />);
   expect(screen.queryByLabelText("发行日期")).not.toBeInTheDocument();
   expect(screen.queryByLabelText("时长（分钟）")).not.toBeInTheDocument();
 });

@@ -38,7 +38,7 @@ export async function readEditableMedia(db: SupabaseClient, id: string): Promise
   }
   let status: "watched" | "watching" | "want_to_watch" = "want_to_watch";
   let rating: number | null = null;
-  if (media.data.type === "tv_series") {
+  if (media.data.type === "tv_show") {
     const { data: seriesStatus } = await db.from("v_all_media").select("status,rating").eq("id", id).maybeSingle();
     status = (seriesStatus?.status as "watched" | "watching" | "want_to_watch") ?? "want_to_watch";
     rating = seriesStatus?.rating != null ? Number(seriesStatus.rating) : null;

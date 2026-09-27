@@ -33,7 +33,7 @@ const EMPTY_MEDIA_DISTRIBUTION: MediaDistribution = {
 };
 
 /** 按媒体分类与观看状态生成搜索链接；指定年份时同时限定起止年份。 */
-function getStatusSearchLink(type: "movie" | "tv_series", status: "watched" | "watching" | "want_to_watch", year: string) {
+function getStatusSearchLink(type: "movie" | "tv_show", status: "watched" | "watching" | "want_to_watch", year: string) {
   const params = new URLSearchParams({ type, status });
   if (year !== "All Time") {
     params.set("startYear", year);
@@ -43,7 +43,7 @@ function getStatusSearchLink(type: "movie" | "tv_series", status: "watched" | "w
 }
 
 /** 按媒体分类生成评分降序的搜索链接；指定年份时同时限定起止年份。 */
-function getSearchViewAllLink(type: "movie" | "tv_series", year: string) {
+function getSearchViewAllLink(type: "movie" | "tv_show", year: string) {
   const params = new URLSearchParams({ type, sort: "rating_desc" });
   if (year !== "All Time") {
     params.set("startYear", year);
@@ -126,7 +126,7 @@ function MediaStatusCard({
   );
 }
 
-/** 根据年份和总览、电影、电视剧标签组织统计、分布及榜单；年份变化时加载对应榜单。 */
+/** 根据年份和总览、电影、电视节目标签组织统计、分布及榜单；年份变化时加载对应榜单。 */
 export default function HomeDashboard({
   summary,
   topMovies,
@@ -139,11 +139,11 @@ export default function HomeDashboard({
   distributions: MediaDistributions;
 }) {
   const [activeTab, setActiveTab] = useState("总览");
-  const tabs = ["总览", "电影", "电视剧"];
+  const tabs = ["总览", "电影", "电视节目"];
   const tabIds: Record<string, string> = {
     总览: "overview",
     电影: "movies",
-    电视剧: "tv-series",
+    电视节目: "tv-shows",
   };
 
   const [selectedYear, setSelectedYear] = useState("All Time");
@@ -157,7 +157,7 @@ export default function HomeDashboard({
     (item) => String(item.release_year) === String(selectedYear),
   );
   const movieDistribution = distributions.movies[selectedYear] ?? EMPTY_MEDIA_DISTRIBUTION;
-  const seriesDistribution = distributions.series[selectedYear] ?? EMPTY_MEDIA_DISTRIBUTION;
+  const seriesDistribution = distributions.shows[selectedYear] ?? EMPTY_MEDIA_DISTRIBUTION;
 
   // 电影总数采用已看与未看之和；进度按已看数量占比计算。
   const watchedMovies = currentYearData?.watched_movies || 0;
@@ -171,14 +171,14 @@ export default function HomeDashboard({
   const moviesUnwatchedRuntime = currentYearData?.movies_unwatched_runtime ?? 0;
   const totalMoviesRuntime = currentYearData?.total_movies_runtime ?? 0;
 
-  // 电视剧总数包含已看、在看和未看三种状态，在看不计入已看进度。
+  // 电视节目总数包含已看、在看和未看三种状态，在看不计入已看进度。
   const watchedSeries = currentYearData?.watched_series || 0;
   const watchingSeries = currentYearData?.watching_series || 0;
   const unwatchedSeries = currentYearData?.unwatched_series || 0;
   const totalSeries = watchedSeries + watchingSeries + unwatchedSeries;
   const seriesPercent = percent(watchedSeries, totalSeries);
 
-  // 电视剧进度按已看集数占比计算，真实反映追剧进展并避免全 0% 空白条。
+  // 电视节目进度按已看集数占比计算，真实反映追剧进展并避免全 0% 空白条。
   const watchedEpisodes = currentYearData?.watched_series_episodes ?? 0;
   const unwatchedEpisodes = currentYearData?.unwatched_episodes ?? 0;
   const totalEpisodes = currentYearData?.total_series_episodes ?? (watchedEpisodes + unwatchedEpisodes);
@@ -200,7 +200,7 @@ export default function HomeDashboard({
     }
 
     const controller = new AbortController();
-    /** 并行加载该年的电影和电视剧榜单，更新加载状态与结果，并显示非取消类错误。 */
+    /** 并行加载该年的电影和电视节目榜单，更新加载状态与结果，并显示非取消类错误。 */
     const loadTopMedia = async () => {
       try {
         setTopMediaError(null);
@@ -209,7 +209,7 @@ export default function HomeDashboard({
         setDisplayedTopSeries([]);
         const [moviesResponse, seriesResponse] = await Promise.all([
           fetch(`/api/top-media?type=movie&year=${encodeURIComponent(selectedYear)}&limit=10`, { signal: controller.signal }),
-          fetch(`/api/top-media?type=tv_series&year=${encodeURIComponent(selectedYear)}&limit=10`, { signal: controller.signal }),
+          fetch(`/api/top-media?type=tv_show&year=${encodeURIComponent(selectedYear)}&limit=10`, { signal: controller.signal }),
         ]);
         if (!moviesResponse.ok || !seriesResponse.ok) throw new Error("Failed to load top media");
         const [movies, series] = await Promise.all([moviesResponse.json(), seriesResponse.json()]);
@@ -265,7 +265,7 @@ export default function HomeDashboard({
                 </dd>
               </div>
               <div>
-                <dt className="text-[11px] tracking-wide text-white/75">电视剧总计</dt>
+                <dt className="text-[11px] tracking-wide text-white/75">电视节目总计</dt>
                 <dd className="mt-1 font-mono text-2xl font-normal tracking-tight text-white sm:text-3xl">
                   <AnimatedNumber value={totalSeries} />
                 </dd>
@@ -389,7 +389,7 @@ export default function HomeDashboard({
                     <span className="i-material-symbols-tv-rounded size-4 inline-block" aria-hidden="true" />
                   </div>
                   <span className="text-sm font-bold text-white/80 tracking-wide">
-                    电视剧看板
+                    电视节目看板
                   </span>
                 </div>
               </div>
@@ -400,27 +400,27 @@ export default function HomeDashboard({
                   icon="i-material-symbols-check-circle-outline-rounded"
                   count={watchedSeries}
                   details={`${currentYearData?.watched_seasons ?? 0}季 · ${watchedEpisodes}集`}
-                  href={getStatusSearchLink("tv_series", "watched", selectedYear)}
+                  href={getStatusSearchLink("tv_show", "watched", selectedYear)}
                 />
                 <MediaStatusCard
                   title="正在看"
                   icon="i-material-symbols-play-circle-outline-rounded"
                   count={watchingSeries}
                   details={`${currentYearData?.watching_seasons ?? 0}季`}
-                  href={getStatusSearchLink("tv_series", "watching", selectedYear)}
+                  href={getStatusSearchLink("tv_show", "watching", selectedYear)}
                 />
                 <MediaStatusCard
                   title="想要看"
                   icon="i-material-symbols-bookmark-outline-rounded"
                   count={unwatchedSeries}
                   details={`${currentYearData?.unwatched_seasons ?? 0}季 · ${unwatchedEpisodes}集`}
-                  href={getStatusSearchLink("tv_series", "want_to_watch", selectedYear)}
+                  href={getStatusSearchLink("tv_show", "want_to_watch", selectedYear)}
                 />
               </div>
               
               <div className="mt-auto flex flex-col gap-2">
                 <div className="flex items-center justify-between text-xs text-white/75 font-medium">
-                  <span>追剧集数进度</span>
+                  <span>单集观看进度</span>
                   <span className="font-mono text-white/90">{watchedEpisodes} / {totalEpisodes} 集 · {seriesEpisodesPercent}%</span>
                 </div>
                 <div className="progress-track h-2 w-full overflow-hidden rounded-full">
@@ -470,11 +470,11 @@ export default function HomeDashboard({
           </div>
         )}
 
-        {activeTab === "电视剧" && (
-          <div key="tv-series" id="dashboard-panel-tv-series" role="tabpanel" aria-labelledby="dashboard-tab-tv-series" className="animate-fade-in flex flex-col gap-4 md:gap-6">
+        {activeTab === "电视节目" && (
+          <div key="tv-shows" id="dashboard-panel-tv-shows" role="tabpanel" aria-labelledby="dashboard-tab-tv-shows" className="animate-fade-in flex flex-col gap-4 md:gap-6">
             <CategoryHeaderCards
               year={selectedYear === "All Time" ? "全时段" : selectedYear}
-              categoryName="电视剧"
+              categoryName="电视节目"
               watchedCount={watchedSeries}
               totalCount={totalSeries}
               watchedPercent={seriesPercent}
@@ -497,8 +497,8 @@ export default function HomeDashboard({
                 <MediaRow
                   title={selectedYear === "All Time" ? "影史精选" : `${selectedYear} 年度精选`}
                   items={selectedYear === "All Time" ? topSeries : displayedTopSeries}
-                  viewAllLink={getSearchViewAllLink("tv_series", selectedYear)}
-                  type="series"
+                  viewAllLink={getSearchViewAllLink("tv_show", selectedYear)}
+                  type="shows"
                 />
               )}
             </div>

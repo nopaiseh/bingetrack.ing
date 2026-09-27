@@ -7,7 +7,7 @@ export const revalidate = 86400;
 
 /** 合并固定页面和数据库中的媒体地址生成站点地图；查询失败时退回固定页面列表。 */
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const staticRoutes: MetadataRoute.Sitemap = ["", "/movies", "/series", "/search"].map(/* 为固定页面设置绝对地址、更新频率和优先级，首页权重最高。 */ (path) => ({
+  const staticRoutes: MetadataRoute.Sitemap = ["", "/movies", "/shows", "/search"].map(/* 为固定页面设置绝对地址、更新频率和优先级，首页权重最高。 */ (path) => ({
     url: `${SITE_URL}${path}`,
     changeFrequency: path === "" ? "daily" : "weekly",
     priority: path === "" ? 1 : 0.8,

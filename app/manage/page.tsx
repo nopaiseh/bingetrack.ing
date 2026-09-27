@@ -14,7 +14,7 @@ function isMissingRelation(error: { code?: string } | null) {
   return error?.code === "PGRST205" || error?.code === "42P01";
 }
 
-/** 分页搜索全部影视，或查看指定剧集／季的下属条目；按上映日期或最近一集播出日期倒序排列。 */
+/** 分页搜索全部影视，或查看指定电视节目／季的下属条目；按上映日期或最近一集播出日期倒序排列。 */
 export default async function AdminPage({ searchParams }: { searchParams: Promise<Record<string, string | undefined>> }) {
   const { db } = await requireOwner();
   const params = await searchParams;
@@ -27,7 +27,7 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
   const detailFields = fields.replaceAll("!inner", "");
   const offset = (page - 1) * PAGE_SIZE;
 
-  // 优先读取排序视图：电影、单集按上映日期倒序，剧集、剧季按最近一集播出日期倒序；同日期内按季号／集号倒序。
+  // 优先读取排序视图：电影、单集按上映日期倒序，电视节目、季按最近一集播出日期倒序；同日期内按季号／集号倒序。
   let orderQuery = db.from("v_manage_media_order").select("id", { count: "exact" }).eq("type", type);
   if (q) orderQuery = orderQuery.ilike("title", `%${q}%`);
   if (relation) orderQuery = orderQuery.eq("parent_id", parent);
@@ -73,7 +73,7 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
 
   if (rows.length > 0) {
     const ids = rows.map(r => r.id);
-    if (type === "tv_series") {
+    if (type === "tv_show") {
       const { data: statusList } = await db
         .from("v_all_media")
         .select("id, status, rating")
@@ -129,7 +129,7 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
       </div>
     )}
     <form className="surface-panel mb-6 rounded-2xl p-4 sm:p-6 grid grid-cols-[minmax(0,1fr)_auto] items-end gap-3">
-      <label>搜索标题<input name="q" defaultValue={q} maxLength={200} placeholder="输入电影、剧集或单集名称" /></label>
+      <label>搜索标题<input name="q" defaultValue={q} maxLength={200} placeholder="输入电影、电视节目、季或单集名称" /></label>
       <input type="hidden" name="type" value={type} />
       {parent && <input type="hidden" name="parent" value={parent} />}
       <button type="submit">筛选</button>
@@ -138,7 +138,7 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
       const tracking = Array.isArray(item.tracking) ? item.tracking[0] : item.tracking;
       let status = tracking?.status ?? "want_to_watch";
       let rating = tracking?.rating != null ? Number(tracking.rating) : null;
-      if (item.type === "tv_series") {
+      if (item.type === "tv_show") {
         const derived = seriesStatusMap.get(item.id);
         status = derived?.status ?? "want_to_watch";
         rating = derived?.rating ?? null;
@@ -150,7 +150,7 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
       const statusLabel = status === "watched" ? "看过" : status === "watching" ? "在看" : "没看过";
       return <li key={item.id}>
       <Link href={`/manage/media/${item.id}?type=${item.type}`} className="group flex flex-col gap-3 p-5 transition-colors hover:bg-white/5 sm:flex-row sm:items-center sm:justify-between sm:px-6">
-        <div className="flex min-w-0 items-center gap-4">{item.cover_url && <Image src={item.cover_url} alt="" width={44} height={66} className="h-16 w-11 shrink-0 rounded-md object-cover" />}<div className="min-w-0"><h2 className="break-words font-medium text-white transition-colors group-hover:text-[var(--accent-hover)]">{item.title}</h2><p className="mt-1 text-sm text-neutral-400">{mediaTypes[item.type]}{item.release_date ? ` · ${item.release_date}` : ""}</p><p className="mt-1 text-xs text-neutral-400">{item.tv_seasons ? `${item.tv_seasons.parent?.title ?? "未知剧集"} · 第 ${item.tv_seasons.season_number} 季` : item.tv_episodes ? `${item.tv_episodes.parent?.series?.title ?? ""} · ${item.tv_episodes.parent?.media_items?.title ?? "未知季"} · 第 ${item.tv_episodes.episode_number} 集` : ""}{item.type === "tv_series" ? `${item.seasons?.[0]?.count ?? 0} 季` : item.type === "tv_season" ? ` · ${item.tv_seasons?.episodes?.[0]?.count ?? 0} 集` : ""}</p></div></div>
+        <div className="flex min-w-0 items-center gap-4">{item.cover_url && <Image src={item.cover_url} alt="" width={44} height={66} className="h-16 w-11 shrink-0 rounded-md object-cover" />}<div className="min-w-0"><h2 className="break-words font-medium text-white transition-colors group-hover:text-[var(--accent-hover)]">{item.title}</h2><p className="mt-1 text-sm text-neutral-400">{mediaTypes[item.type]}{item.release_date ? ` · ${item.release_date}` : ""}</p><p className="mt-1 text-xs text-neutral-400">{item.tv_seasons ? `${item.tv_seasons.parent?.title ?? "未知电视节目"} · 第 ${item.tv_seasons.season_number} 季` : item.tv_episodes ? `${item.tv_episodes.parent?.series?.title ?? ""} · ${item.tv_episodes.parent?.media_items?.title ?? "未知季"} · 第 ${item.tv_episodes.episode_number} 集` : ""}{item.type === "tv_show" ? `${item.seasons?.[0]?.count ?? 0} 季` : item.type === "tv_season" ? ` · ${item.tv_seasons?.episodes?.[0]?.count ?? 0} 集` : ""}</p></div></div>
         <span className="surface-muted w-fit shrink-0 rounded-full border border-white/10 px-3 py-1 text-xs text-neutral-300">{statusLabel}{rating != null ? ` · ${rating.toFixed(1)} 分` : ""}</span>
       </Link>
     </li>; })}</ul>}

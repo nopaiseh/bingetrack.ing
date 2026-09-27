@@ -62,7 +62,7 @@ export function SearchMediaCard({ item, returnHref }: { item: MediaCard; returnH
         <h3 className="font-serif-movie truncate text-sm font-bold text-white transition-colors duration-300 group-hover:text-[var(--accent-hover)]" title={item.title}>{item.title}</h3>
         <div className="flex items-center justify-between gap-1.5 min-w-0 text-xs">
           <span className="font-medium text-white/60 whitespace-nowrap shrink-0">
-            {item.type === "series"
+            {item.type === "shows"
               ? String(item.release_year || (item.date ? item.date.substring(0, 4) : "未知")).replace(/\s*-\s*/g, "–")
               : item.date ? item.date.substring(0, 4) : "未知"}
           </span>

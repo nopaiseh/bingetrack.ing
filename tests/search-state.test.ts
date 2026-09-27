@@ -1,15 +1,15 @@
 import { expect, test } from "vitest";
-import { buildMediaSearchQuery, readFilters } from "@/lib/api/search-state";
+import { buildMediaSearchQuery, hasOnlyKnownFilterValues } from "@/lib/api/search-state";
 import { parseMediaSearchParams } from "@/lib/api/media-params";
 
 test("server and browser query conversion preserves all search categories", /* 验证服务端与浏览器共用的转换函数保留分类、状态、属性、年份及分页条件。 */ () => {
   const query = buildMediaSearchQuery(new URLSearchParams({
-    q: " 王家卫 ", type: "电影,电视剧,导演,演员,系列", status: "已看,想看,在看",
+    q: " 王家卫 ", type: "movie,tv_show,director,actor,series", status: "watched,want_to_watch,watching",
     genre: "剧情,喜剧", region: "香港", language: "粤语", startYear: "1990", endYear: "2025",
     sort: "rating_desc", page: "2",
   }));
   expect(parseMediaSearchParams(new URLSearchParams(query))).toEqual({
-    q: "王家卫", type: "movie,tv_series", creditRole: "director,actor", seriesOnly: true,
+    q: "王家卫", type: "movie,tv_show", creditRole: "director,actor", seriesOnly: true,
     status: "watched,want_to_watch,watching", genre: "剧情,喜剧", region: "香港", language: "粤语",
     startYear: "1990", endYear: "2025", sort: "rating_desc", limit: 30, offset: 30,
   });
@@ -19,11 +19,17 @@ test.each(["-1", "NaN", "Infinity", "1.5"])("invalid page %s uses the first page
   expect(new URLSearchParams(buildMediaSearchQuery(new URLSearchParams({ page }))).get("offset")).toBe("0");
 });
 
-test("legacy Chinese filter values are normalised when read from the URL", () => {
-  expect(readFilters(new URLSearchParams({ type: "电影,movie,系列", status: "已看,unknown" }))).toMatchObject({
-    type: ["movie", "series"],
-    status: ["watched", "unknown"],
-  });
-  const query = new URLSearchParams(buildMediaSearchQuery(new URLSearchParams({ status: "已看,unknown" })));
-  expect(query.get("status")).toBe("watched");
+test.each<Record<string, string>>([
+  { type: "电影" },
+  { type: "tv_series" },
+  { status: "已看" },
+  { sort: "评分" },
+])("unknown filter values %o are rejected", /* 验证分类、状态和排序中的旧版中文值与未知值都判定为无效地址。 */ (params) => {
+  expect(hasOnlyKnownFilterValues(new URLSearchParams(params))).toBe(false);
+});
+
+test("canonical filter values and free-text attributes are accepted", /* 验证规范值通过校验，类型、地区等属性的中文取值不受影响。 */ () => {
+  expect(hasOnlyKnownFilterValues(new URLSearchParams({
+    q: "王家卫", type: "movie,tv_show,series", status: "watched", sort: "rating_desc", genre: "剧情", region: "香港",
+  }))).toBe(true);
 });

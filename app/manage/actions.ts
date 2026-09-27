@@ -10,7 +10,7 @@ export type ActionResult = { error?: string; saved?: boolean };
 
 /** 将数据库错误转换成可以采取行动的提示，不暴露 SQL 细节。 */
 function writeError(code?: string) {
-  if (code === "23505") return "同一剧集或季中已存在这个编号，请更换编号。";
+  if (code === "23505") return "同一电视节目或季中已存在这个编号，请更换编号。";
   if (code === "23503" || code === "P0002") return "资料或上级条目已不存在，请刷新后重试。";
   if (code === "42501") return "没有写入权限，请检查站长账号配置。";
   return "保存失败，请检查字段或数据库配置后重试。";

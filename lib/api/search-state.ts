@@ -1,29 +1,28 @@
 export const PAGE_SIZE = 30;
 export type SearchFilters = Record<string, string[]>;
 
-// 旧版链接用中文值表示分类与状态；只在读取 URL 时统一转换为规范值，其余代码只处理规范值。
-const LEGACY_FILTER_VALUES: Record<string, string> = {
-  电影: "movie",
-  电视剧: "tv_series",
-  系列: "series",
-  导演: "director",
-  演员: "actor",
-  想看: "want_to_watch",
-  在看: "watching",
-  已看: "watched",
-};
+const TYPE_VALUES = new Set(["movie", "tv_show", "series", "director", "actor"]);
+const STATUS_VALUES = new Set(["want_to_watch", "watching", "watched"]);
+const SORT_VALUES = new Set(["date_asc", "date_desc", "rating_asc", "rating_desc"]);
 
-/** 拆分逗号列表，把旧版中文值转换为规范值并去重。 */
-function readCanonicalList(value: string | null): string[] {
-  const values = value?.split(",").filter(Boolean).map(/* 转换旧版中文值。 */ (item) => LEGACY_FILTER_VALUES[item] ?? item) ?? [];
-  return [...new Set(values)];
+/** 拆分逗号列表并去重。 */
+function readList(value: string | null): string[] {
+  return [...new Set(value?.split(",").filter(Boolean) ?? [])];
+}
+
+/** 分类、状态和排序只接受规范值，出现任何未知值都视为无效地址。 */
+export function hasOnlyKnownFilterValues(searchParams: URLSearchParams): boolean {
+  const within = (key: string, allowed: Set<string>) =>
+    readList(searchParams.get(key)).every(/* 检查每个值是否为规范值。 */ (value) => allowed.has(value));
+  const sort = searchParams.get("sort");
+  return within("type", TYPE_VALUES) && within("status", STATUS_VALUES) && (sort === null || SORT_VALUES.has(sort));
 }
 
 /** 从 URL 读取多选筛选和年份范围，缺省排序使用日期降序。 */
 export function readFilters(searchParams: URLSearchParams): SearchFilters {
   return {
-    type: readCanonicalList(searchParams.get("type")),
-    status: readCanonicalList(searchParams.get("status")),
+    type: readList(searchParams.get("type")),
+    status: readList(searchParams.get("status")),
     genre: searchParams.get("genre")?.split(",").filter(Boolean) ?? [],
     region: searchParams.get("region")?.split(",").filter(Boolean) ?? [],
     language: searchParams.get("language")?.split(",").filter(Boolean) ?? [],
@@ -61,12 +60,12 @@ export function buildMediaSearchQuery(searchParams: URLSearchParams): string {
   const params = new URLSearchParams();
   if (query) params.set("q", query);
 
-  const mediaTypes = filters.type.filter(/* 媒体分类映射为数据库媒体类型。 */ (t) => t === "movie" || t === "tv_series");
+  const mediaTypes = filters.type.filter(/* 媒体分类映射为数据库媒体类型。 */ (t) => t === "movie" || t === "tv_show");
   const creditRoles = filters.type.filter(/* 人员分类映射为导演或演员角色。 */ (t) => t === "director" || t === "actor");
   if (mediaTypes.length > 0) params.set("type", mediaTypes.join(","));
   if (filters.type.includes("series")) params.set("series", "true");
   if (creditRoles.length > 0) params.set("creditRole", creditRoles.join(","));
-  const statuses = filters.status.filter(/* 忽略无法识别的状态值，与旧版链接的宽松解析保持一致。 */ (s) => s === "want_to_watch" || s === "watching" || s === "watched");
+  const statuses = filters.status.filter(/* 忽略无法识别的状态值。 */ (s) => STATUS_VALUES.has(s));
   if (statuses.length > 0) params.set("status", statuses.join(","));
 
   if (filters.genre && filters.genre.length > 0) params.set("genre", filters.genre.join(","));

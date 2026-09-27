@@ -13,7 +13,7 @@ export const revalidate = 86400;
 
 const EMPTY_DISTRIBUTIONS = buildMediaDistributions([]);
 
-/** 并行读取年度统计、电影和电视剧榜单及分布数据，组成首页看板的初始数据；仅构建期失败时降级为空看板，运行期失败保留旧页面。 */
+/** 并行读取年度统计、电影和电视节目榜单及分布数据，组成首页看板的初始数据；仅构建期失败时降级为空看板，运行期失败保留旧页面。 */
 export default async function HomePage() {
   let summary: Summary[] = [];
   let topMovies: MediaCard[] = [];
@@ -24,7 +24,7 @@ export default async function HomePage() {
     const [fetchedSummary, fetchedTopMovies, fetchedTopSeries, fetchedDistributions] = await Promise.all([
       getCachedReleaseYearStats(),
       getCachedTopMediaServer("movie", null, 10),
-      getCachedTopMediaServer("tv_series", null, 10),
+      getCachedTopMediaServer("tv_show", null, 10),
       getCachedMediaDistributionsServer(),
     ]);
     summary = fetchedSummary;
