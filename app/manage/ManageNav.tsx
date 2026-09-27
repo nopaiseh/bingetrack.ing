@@ -61,7 +61,7 @@ export default function ManageNav() {
     <nav aria-label="内容管理分类" className="space-y-6">
       {groups.map(group => (
         <div key={group.label}>
-          <p className="mb-2 px-3 text-xs font-medium tracking-wider text-white/40">{group.label}</p>
+          <p className="mb-2 px-3 text-xs font-medium tracking-wider text-fg-subtle">{group.label}</p>
           <div className="space-y-1">
             {group.items.map(item => {
               const isSelected = active === item.value;
@@ -86,7 +86,7 @@ export default function ManageNav() {
                   } ${
                     isSelected
                       ? "border-[var(--accent-border)] bg-[var(--accent-soft)] font-medium text-[var(--accent-light)] shadow-[0_2px_12px_var(--accent-glow-soft)]"
-                      : "border-transparent text-white/70 hover:bg-white/5 hover:text-white"
+                      : "border-transparent text-fg-secondary hover:bg-white/5 hover:text-white"
                   }`}
                 >
                   {item.isChild && (
@@ -112,7 +112,7 @@ export default function ManageNav() {
         </div>
       ))}
     </nav>
-    <div className="mt-6 space-y-2 border-t border-white/10 pt-5 text-sm text-white/60">
+    <div className="mt-6 space-y-2 border-t border-white/10 pt-5 text-sm text-fg-muted">
       <Link href="/settings" className="flex items-center gap-3 p-3 transition-colors hover:text-white"><span className="i-material-symbols-settings-rounded size-4.5 inline-block shrink-0" aria-hidden="true" />账号安全</Link>
     </div>
     </div>

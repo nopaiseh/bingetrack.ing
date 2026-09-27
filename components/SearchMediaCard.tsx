@@ -52,7 +52,7 @@ export function SearchMediaCard({ item, returnHref }: { item: MediaCard; returnH
             sizes="(max-width: 639px) 50vw, (max-width: 1023px) 33vw, (max-width: 1279px) 20vw, 16vw"
           />
         ) : (
-          <span className="i-material-symbols-image-outline-rounded inline-block size-10 text-white/30 drop-shadow-md" aria-hidden="true" />
+          <span className="i-material-symbols-image-outline-rounded inline-block size-10 text-fg-faint drop-shadow-md" aria-hidden="true" />
         )}
         <MediaCardStatusBadge status={item.status} />
       </div>
@@ -61,7 +61,7 @@ export function SearchMediaCard({ item, returnHref }: { item: MediaCard; returnH
       <div className="flex flex-col space-y-1.5 px-3 py-2.5">
         <h3 className="font-serif-movie truncate text-sm font-bold text-white transition-colors duration-300 group-hover:text-[var(--accent-hover)]" title={item.title}>{item.title}</h3>
         <div className="flex items-center justify-between gap-1.5 min-w-0 text-xs">
-          <span className="font-medium text-white/60 whitespace-nowrap shrink-0">
+          <span className="font-medium text-fg-muted whitespace-nowrap shrink-0">
             {item.type === "shows"
               ? String(item.release_year || (item.date ? item.date.substring(0, 4) : "未知")).replace(/\s*-\s*/g, "–")
               : item.date ? item.date.substring(0, 4) : "未知"}
@@ -74,7 +74,7 @@ export function SearchMediaCard({ item, returnHref }: { item: MediaCard; returnH
         </div>
         <div className="mt-1.5 flex items-center gap-1.5 w-full overflow-hidden">
           {tags.map(/* 将一个类型或语言标签渲染为统一可截断的紧凑徽标。 */ (tag, index) => (
-            <span key={`${tag}-${index}`} title={tag} className="inline-flex items-center shrink truncate rounded-md border border-white/10 bg-white/5 px-1.5 py-0.5 text-[10px] font-medium tracking-wide text-white/70 backdrop-blur-md transition-all duration-300 group-hover:border-[var(--accent-border)] group-hover:bg-[var(--accent-soft)] group-hover:text-white">{tag}</span>
+            <span key={`${tag}-${index}`} title={tag} className="inline-flex items-center shrink truncate rounded-md border border-white/10 bg-white/5 px-1.5 py-0.5 text-[10px] font-medium tracking-wide text-fg-secondary backdrop-blur-md transition-all duration-300 group-hover:border-[var(--accent-border)] group-hover:bg-[var(--accent-soft)] group-hover:text-white">{tag}</span>
           ))}
         </div>
       </div>

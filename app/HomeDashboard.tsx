@@ -84,22 +84,22 @@ function MediaStatusCard({
 }) {
   const content = (
     <>
-      <div className="flex items-center justify-between text-sm font-semibold text-white/85 transition-colors group-hover:text-[var(--accent-hover)]">
+      <div className="flex items-center justify-between text-sm font-semibold text-fg transition-colors group-hover:text-[var(--accent-hover)]">
         <div className="flex items-center gap-2.5">
           <span className={`${icon} size-4 inline-block text-[var(--accent)] group-hover:text-[var(--accent-hover)]`} aria-hidden="true" />
           <span>{title}</span>
         </div>
         {href && (
-          <span className="i-material-symbols-arrow-outward-rounded hidden size-3.5 text-white/40 sm:inline-block transition-all duration-200 group-hover:text-[var(--accent)] group-hover:translate-x-0.5 group-hover:-translate-y-0.5" aria-hidden="true" />
+          <span className="i-material-symbols-arrow-outward-rounded hidden size-3.5 text-fg-subtle sm:inline-block transition-all duration-200 group-hover:text-[var(--accent)] group-hover:translate-x-0.5 group-hover:-translate-y-0.5" aria-hidden="true" />
         )}
       </div>
       <div className="flex items-baseline gap-1.5">
         <span className="font-mono text-3xl tracking-tight text-white sm:text-4xl">
           <AnimatedNumber value={count} />
         </span>
-        <span className="text-sm text-white/70">部</span>
+        <span className="text-sm text-fg-secondary">部</span>
       </div>
-      <p className="flex items-center gap-1.5 font-mono text-xs text-white/72">
+      <p className="flex items-center gap-1.5 font-mono text-xs text-fg-secondary">
         {detailsIcon && <><span className={`${detailsIcon} size-3.5 shrink-0`} aria-hidden="true" /><span className="sr-only">时长</span></>}
         <span>{details}</span>
       </p>
@@ -252,26 +252,26 @@ export default function HomeDashboard({
               <h1 id="dashboard-title" className="font-serif-movie text-3xl font-black leading-none text-white sm:text-4xl lg:text-5xl">
                 媒体全景
               </h1>
-              <p className="mt-2 max-w-xl text-xs leading-5 text-white/72 sm:mt-2.5 sm:text-sm sm:leading-6">
+              <p className="mt-2 max-w-xl text-xs leading-5 text-fg-secondary sm:mt-2.5 sm:text-sm sm:leading-6">
                 收录我倾注在光影、声音与文字里的时光。
               </p>
             </div>
 
             <dl className="grid grid-cols-3 gap-2 border-t border-white/10 pt-4 lg:min-w-100 lg:border-l lg:border-t-0 lg:pl-8 lg:pt-0">
               <div>
-                <dt className="text-[11px] tracking-wide text-white/75">电影总计</dt>
+                <dt className="text-[11px] tracking-wide text-fg-secondary">电影总计</dt>
                 <dd className="mt-1 font-mono text-2xl font-normal tracking-tight text-white sm:text-3xl">
                   <AnimatedNumber value={totalMovies} />
                 </dd>
               </div>
               <div>
-                <dt className="text-[11px] tracking-wide text-white/75">电视节目总计</dt>
+                <dt className="text-[11px] tracking-wide text-fg-secondary">电视节目总计</dt>
                 <dd className="mt-1 font-mono text-2xl font-normal tracking-tight text-white sm:text-3xl">
                   <AnimatedNumber value={totalSeries} />
                 </dd>
               </div>
               <div>
-                <dt className="text-[11px] tracking-wide text-white/75">完成进度</dt>
+                <dt className="text-[11px] tracking-wide text-fg-secondary">完成进度</dt>
                 <dd
                   className="mt-1 font-mono text-2xl font-normal tracking-tight text-accent-light sm:text-3xl"
                 >
@@ -306,7 +306,7 @@ export default function HomeDashboard({
                 className={`relative z-10 px-5 py-2 rounded-full text-sm font-medium transition-colors duration-200 ${
                   activeTab === tab
                     ? "text-white font-bold"
-                    : "text-white/72 hover:text-white"
+                    : "text-fg-secondary hover:text-white"
                 }`}
               >
                 {tab}
@@ -329,7 +329,7 @@ export default function HomeDashboard({
           </div>
         )}
         {isTopMediaLoading && (
-          <div role="status" className="surface-muted mb-6 rounded-xl border border-white/10 px-4 py-3 text-sm text-white/60">
+          <div role="status" className="surface-muted mb-6 rounded-xl border border-white/10 px-4 py-3 text-sm text-fg-muted">
             正在加载 {selectedYear} 年度精选…
           </div>
         )}
@@ -344,7 +344,7 @@ export default function HomeDashboard({
                   <div className="stat-icon flex items-center justify-center rounded-lg p-2">
                     <span className="i-material-symbols-movie-rounded size-4 inline-block" aria-hidden="true" />
                   </div>
-                  <span className="text-sm font-bold text-white/80 tracking-wide">
+                  <span className="text-sm font-bold text-fg-secondary tracking-wide">
                     电影看板
                   </span>
                 </div>
@@ -370,9 +370,9 @@ export default function HomeDashboard({
               </div>
 
               <div className="mt-auto flex flex-col gap-2">
-                <div className="flex items-center justify-between text-xs text-white/75 font-medium">
+                <div className="flex items-center justify-between text-xs text-fg-secondary font-medium">
                   <span>观影完成度</span>
-                  <span className="font-mono text-white/90">{watchedMovies} / {totalMovies} 部 · {moviesPercent}%</span>
+                  <span className="font-mono text-fg">{watchedMovies} / {totalMovies} 部 · {moviesPercent}%</span>
                 </div>
                 <div className="progress-track h-2 w-full overflow-hidden rounded-full">
                   <div
@@ -389,7 +389,7 @@ export default function HomeDashboard({
                   <div className="stat-icon flex items-center justify-center rounded-lg p-2">
                     <span className="i-material-symbols-tv-rounded size-4 inline-block" aria-hidden="true" />
                   </div>
-                  <span className="text-sm font-bold text-white/80 tracking-wide">
+                  <span className="text-sm font-bold text-fg-secondary tracking-wide">
                     电视节目看板
                   </span>
                 </div>
@@ -420,9 +420,9 @@ export default function HomeDashboard({
               </div>
               
               <div className="mt-auto flex flex-col gap-2">
-                <div className="flex items-center justify-between text-xs text-white/75 font-medium">
+                <div className="flex items-center justify-between text-xs text-fg-secondary font-medium">
                   <span>单集观看进度</span>
-                  <span className="font-mono text-white/90">{watchedEpisodes} / {totalEpisodes} 集 · {seriesEpisodesPercent}%</span>
+                  <span className="font-mono text-fg">{watchedEpisodes} / {totalEpisodes} 集 · {seriesEpisodesPercent}%</span>
                 </div>
                 <div className="progress-track h-2 w-full overflow-hidden rounded-full">
                   <div

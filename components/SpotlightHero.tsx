@@ -48,9 +48,9 @@ export default function SpotlightHero({ items, yearLabel }: SpotlightHeroProps) 
                   <span className="size-1.5 rounded-full bg-[var(--accent)] animate-pulse" />
                   {yearLabel && yearLabel !== "All Time" ? `${yearLabel} · 站长力荐` : "影史精选 · 站长力荐"}
                 </span>
-                <span className="text-xs font-mono text-white/70">{releaseYear}</span>
+                <span className="text-xs font-mono text-fg-secondary">{releaseYear}</span>
                 {currentItem.languages && currentItem.languages.length > 0 && (
-                  <span className="text-xs text-white/70">
+                  <span className="text-xs text-fg-secondary">
                     {currentItem.languages.slice(0, 2).join(" / ")}
                   </span>
                 )}
@@ -70,7 +70,7 @@ export default function SpotlightHero({ items, yearLabel }: SpotlightHeroProps) 
                   {currentItem.genres.map((genre) => (
                     <span
                       key={genre}
-                      className="surface-inline inline-flex items-center rounded-full px-3 py-1 text-xs font-medium text-white/85"
+                      className="surface-inline inline-flex items-center rounded-full px-3 py-1 text-xs font-medium text-fg"
                     >
                       {genre}
                     </span>
@@ -81,11 +81,11 @@ export default function SpotlightHero({ items, yearLabel }: SpotlightHeroProps) 
               {/* 真实剧情简介（Description） */}
               <div className="mt-4">
                 {currentItem.summary ? (
-                  <p className="max-w-xl text-sm sm:text-base leading-relaxed text-white/80 line-clamp-2 sm:line-clamp-3 md:line-clamp-4 font-normal">
+                  <p className="max-w-xl text-sm sm:text-base leading-relaxed text-fg-secondary line-clamp-2 sm:line-clamp-3 md:line-clamp-4 font-normal">
                     {currentItem.summary}
                   </p>
                 ) : (
-                  <p className="text-sm sm:text-base leading-relaxed text-white/70 italic">
+                  <p className="text-sm sm:text-base leading-relaxed text-fg-secondary italic">
                     收录于影史与年度精选档案，点击下方按钮查看完整剧照、演职员与详情。
                   </p>
                 )}
@@ -126,7 +126,7 @@ export default function SpotlightHero({ items, yearLabel }: SpotlightHeroProps) 
                     sizes="(max-width: 639px) 192px, (max-width: 1023px) 240px, 288px"
                   />
                 ) : (
-                  <div className="flex h-full w-full items-center justify-center text-white/30">
+                  <div className="flex h-full w-full items-center justify-center text-fg-faint">
                     <span className="i-material-symbols-movie-rounded size-12" aria-hidden="true" />
                   </div>
                 )}
@@ -171,7 +171,7 @@ export default function SpotlightHero({ items, yearLabel }: SpotlightHeroProps) 
                           sizes="56px"
                         />
                       ) : (
-                        <span className="i-material-symbols-image-outline-rounded size-4 text-white/30" />
+                        <span className="i-material-symbols-image-outline-rounded size-4 text-fg-faint" />
                       )}
                       {isActive && (
                         <div className="absolute bottom-0 inset-x-1 h-0.5 rounded-full bg-[var(--accent)] shadow-[0_0_8px_var(--accent-glow)]" />

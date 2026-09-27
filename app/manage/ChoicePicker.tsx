@@ -316,7 +316,7 @@ export default function ChoicePicker({
       <div className="mb-3 flex items-center justify-between">
         <div className="flex items-center gap-2">
           {icon && <span className={`${icon} size-4 text-[var(--accent)] shrink-0`} aria-hidden="true" />}
-          <label htmlFor={listId} className="cursor-pointer font-medium text-sm text-white/90">
+          <label htmlFor={listId} className="cursor-pointer font-medium text-sm text-fg">
             {label}
           </label>
           <span
@@ -419,7 +419,7 @@ export default function ChoicePicker({
 
       {/* 嵌入式搜索框 */}
       <div className="relative flex items-center">
-        <span className="i-material-symbols-search-rounded pointer-events-none absolute left-3 z-10 size-4 text-white/40" aria-hidden="true" />
+        <span className="i-material-symbols-search-rounded pointer-events-none absolute left-3 z-10 size-4 text-fg-subtle" aria-hidden="true" />
         <input
           {...comboboxProps}
           placeholder={`搜索${label}…`}

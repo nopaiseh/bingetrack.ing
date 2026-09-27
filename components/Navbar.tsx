@@ -105,7 +105,7 @@ export default function Navbar() {
                 className={`rounded-lg px-3 py-1.5 transition-all duration-200 ${
                   isActive(item.href)
                     ? "surface-active text-[var(--accent)] font-semibold shadow-xs" 
-                    : "text-white/65 hover:text-white hover:bg-white/5" 
+                    : "text-fg-muted hover:text-white hover:bg-white/5" 
                 }`}
               >
                 {item.name}
@@ -124,7 +124,7 @@ export default function Navbar() {
               aria-label="搜索"
               className="absolute inset-y-0 left-0 flex items-center pl-3.5 cursor-pointer z-10"
             >
-              <span className="i-material-symbols-search-rounded inline-block size-4 text-white/50 group-focus-within:text-white transition-colors duration-300" aria-hidden="true" />
+              <span className="i-material-symbols-search-rounded inline-block size-4 text-fg-subtle group-focus-within:text-white transition-colors duration-300" aria-hidden="true" />
             </button>
             <input
               ref={searchInputRef}
@@ -137,7 +137,7 @@ export default function Navbar() {
               block w-44 lg:focus:w-56 pl-10 pr-9 py-1.5 transition-all duration-500 ease-out
               placeholder-white/50 outline-none"
             />
-            <kbd className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 inline-flex items-center rounded border border-white/15 bg-white/5 px-1.5 py-0.5 text-[10px] font-mono text-white/40 group-focus-within:opacity-0 transition-opacity">
+            <kbd className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 inline-flex items-center rounded border border-white/15 bg-white/5 px-1.5 py-0.5 text-[10px] font-mono text-fg-subtle group-focus-within:opacity-0 transition-opacity">
               ⌘K
             </kbd>
           </form>
@@ -148,7 +148,7 @@ export default function Navbar() {
               href="/manage"
               aria-label="管理"
               aria-current={isActive("/manage") ? "page" : undefined}
-              className="surface-control flex size-9 shrink-0 cursor-pointer items-center justify-center rounded-full text-white/80 outline-none transition-all duration-200 hover:text-white active:scale-95 md:hidden"
+              className="surface-control flex size-9 shrink-0 cursor-pointer items-center justify-center rounded-full text-fg-secondary outline-none transition-all duration-200 hover:text-white active:scale-95 md:hidden"
             >
               <span className="i-material-symbols-settings-rounded inline-block size-4.5" aria-hidden="true" />
             </Link>
@@ -156,10 +156,10 @@ export default function Navbar() {
 
           {auth.signedIn ? (
             <form action="/auth/logout" method="POST">
-              <button type="submit" className="surface-control shrink-0 cursor-pointer rounded-full px-3.5 py-1.5 text-sm font-medium text-white/90 transition-all duration-200 hover:text-white active:scale-95">退出</button>
+              <button type="submit" className="surface-control shrink-0 cursor-pointer rounded-full px-3.5 py-1.5 text-sm font-medium text-fg transition-all duration-200 hover:text-white active:scale-95">退出</button>
             </form>
           ) : (
-            <button type="button" disabled={auth.busy} onClick={() => void auth.signIn()} className="surface-control shrink-0 cursor-pointer rounded-full px-3.5 py-1.5 text-sm font-medium text-white/90 transition-all duration-200 hover:text-white active:scale-95 disabled:cursor-not-allowed disabled:opacity-60 disabled:active:scale-100">
+            <button type="button" disabled={auth.busy} onClick={() => void auth.signIn()} className="surface-control shrink-0 cursor-pointer rounded-full px-3.5 py-1.5 text-sm font-medium text-fg transition-all duration-200 hover:text-white active:scale-95 disabled:cursor-not-allowed disabled:opacity-60 disabled:active:scale-100">
               {auth.busy ? "验证中…" : "登录"}
             </button>
           )}

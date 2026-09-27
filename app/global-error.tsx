@@ -11,12 +11,12 @@ export default function GlobalError({ error }: { error: Error & { digest?: strin
 
   return (
     <html lang="zh-CN">
-      <body className="min-h-screen bg-[var(--canvas)] text-white/90">
+      <body className="min-h-screen bg-[var(--canvas)] text-fg">
         <main className="mx-auto flex min-h-screen max-w-3xl items-center justify-center px-6 py-24">
           <section className="surface-muted w-full rounded-2xl border border-red-400/20 p-8 text-center">
             <p className="font-mono text-sm font-bold tracking-widest text-red-400">暂时无法加载</p>
             <h1 className="mt-3 text-2xl font-bold text-white">应用程序遇到问题</h1>
-            <p className="mx-auto mt-3 max-w-lg text-sm leading-6 text-white/60">
+            <p className="mx-auto mt-3 max-w-lg text-sm leading-6 text-fg-muted">
               请稍后重试，或立即重新加载应用程序。
             </p>
             <button

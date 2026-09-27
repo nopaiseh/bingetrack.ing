@@ -18,9 +18,9 @@ export default function ShowsCatalog({
   ];
 
   return (
-    <div className="relative text-white/90 pt-14 min-h-[60vh]">
+    <div className="relative text-fg pt-14 min-h-[60vh]">
       <div className="absolute top-0 inset-x-0 h-[40vh] bg-linear-to-b from-white/5 to-transparent pointer-events-none -z-10" />
-      <div className="container relative z-1 mx-auto w-full max-w-7xl px-4 pb-16 pt-12 sm:px-6 lg:px-8">
+      <div className="container relative z-1 mx-auto w-full max-w-7xl px-4 pb-12 pt-12 sm:px-6 lg:px-8">
 
         
         <div className="mb-8 grid grid-cols-2 gap-3.5 sm:gap-4 md:mb-10 md:grid-cols-3 lg:grid-cols-5">
@@ -31,10 +31,10 @@ export default function ShowsCatalog({
               className="surface-card interactive-card group flex flex-col justify-between rounded-xl p-3.5 sm:p-4.5 transition-all duration-300 hover:scale-[1.02] cursor-pointer"
             >
               <div className="flex items-center justify-between mb-1.5">
-                <h2 className="font-medium uppercase text-white/70 text-xs tracking-widest group-hover:text-white/90 transition-colors">
+                <h2 className="font-medium uppercase text-fg-secondary text-xs tracking-widest group-hover:text-fg transition-colors">
                   {stat.label}
                 </h2>
-                <span className="i-material-symbols-arrow-outward-rounded size-3.5 text-white/40 transition-all duration-200 group-hover:text-[var(--accent)] group-hover:translate-x-0.5 group-hover:-translate-y-0.5" aria-hidden="true" />
+                <span className="i-material-symbols-arrow-outward-rounded size-3.5 text-fg-subtle transition-all duration-200 group-hover:text-[var(--accent)] group-hover:translate-x-0.5 group-hover:-translate-y-0.5" aria-hidden="true" />
               </div>
               <p className="font-mono text-2xl sm:text-3xl tracking-tight text-white group-hover:text-[var(--accent-hover)] transition-colors">
                 {stat.value}

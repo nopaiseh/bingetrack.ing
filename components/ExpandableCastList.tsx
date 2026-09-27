@@ -18,7 +18,7 @@ export default function ExpandableCastList({
   const [isExpanded, setIsExpanded] = useState(false);
 
   if (!casts || casts.length === 0) {
-    return <span className="text-sm text-white/30">-</span>;
+    return <span className="text-sm text-fg-faint">-</span>;
   }
 
   const hasOverflow = casts.length > initialLimit;
@@ -38,7 +38,7 @@ export default function ExpandableCastList({
             type="button"
             onClick={() => setIsExpanded((prev) => !prev)}
             aria-expanded={isExpanded}
-            className="surface-subtle inline-flex items-center gap-1.5 rounded-lg border border-white/10 px-3 py-1.5 text-xs font-medium text-white/70 transition-all duration-200 hover:border-[var(--accent-border)] hover:bg-[var(--accent-soft)] hover:text-white"
+            className="surface-subtle inline-flex items-center gap-1.5 rounded-lg border border-white/10 px-3 py-1.5 text-xs font-medium text-fg-secondary transition-all duration-200 hover:border-[var(--accent-border)] hover:bg-[var(--accent-soft)] hover:text-white"
           >
             <span
               className={`inline-block size-3.5 transition-transform duration-200 ${

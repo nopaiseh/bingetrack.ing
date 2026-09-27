@@ -44,7 +44,7 @@ export default function RefreshCacheButton({ className = "", compact = false }: 
             ? "border-emerald-500/30 text-emerald-400 bg-emerald-500/10"
             : status === "error"
             ? "border-rose-500/30 text-rose-400 bg-rose-500/10"
-            : "text-white/70"
+            : "text-fg-secondary"
         } ${className}`}
       >
         <span
@@ -74,7 +74,7 @@ export default function RefreshCacheButton({ className = "", compact = false }: 
             ? "text-emerald-400 bg-emerald-500/10"
             : status === "error"
             ? "text-rose-400 bg-rose-500/10"
-            : "text-white/60 hover:bg-white/5"
+            : "text-fg-muted hover:bg-white/5"
         }`}
       >
         <span

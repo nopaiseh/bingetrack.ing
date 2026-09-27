@@ -31,6 +31,14 @@ export default defineConfig({
         glow: "var(--accent-glow)",
         contrast: "var(--accent-contrast)",
       },
+      // 深色背景上的文字层级；装饰性分隔符与占位图标仍直接用 text-white/N。
+      fg: {
+        DEFAULT: "rgb(255 255 255 / 0.9)", // 标题与正文
+        secondary: "rgb(255 255 255 / 0.75)", // 次要文字与可点击控件
+        muted: "rgb(255 255 255 / 0.6)", // 辅助说明
+        subtle: "rgb(255 255 255 / 0.45)", // 元信息与弱提示
+        faint: "rgb(255 255 255 / 0.3)", // 占位与空状态
+      },
     },
   },
   presets: [

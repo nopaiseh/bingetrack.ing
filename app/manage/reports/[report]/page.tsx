@@ -26,7 +26,7 @@ export default async function ReportPage({ params, searchParams }: { params: Pro
   if (page > totalPages) redirect(`/manage/reports/${report}?${new URLSearchParams({ q, page: String(totalPages) })}`);
   const rows = (data ?? []) as ReportRow[];
   return <section>
-    <Link href="/manage/reports" className="mb-4 inline-flex items-center gap-1 text-sm text-neutral-400 transition-colors hover:text-white"><span className="i-material-symbols-arrow-back-rounded size-4 inline-block" aria-hidden="true" />全部报告</Link>
+    <Link href="/manage/reports" className="mb-2 inline-block text-sm text-neutral-400 hover:text-white transition-colors">← 全部报告</Link>
     <div className="surface-panel mb-8 rounded-3xl p-5 sm:p-8">
       <h1 className="admin-heading">{config.label}</h1>
       <p className="mt-2 text-neutral-400">{q ? `找到 ${count ?? 0} ${config.unit}` : `共 ${count ?? 0} ${config.unit}`} · {config.description}</p>

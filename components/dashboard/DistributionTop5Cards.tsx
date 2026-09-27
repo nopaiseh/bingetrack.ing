@@ -6,23 +6,23 @@ import type { DistributionItem, MediaDistribution } from "@/lib/types";
 function DistributionCard({ title, icon, items }: { title: string; icon: string; items: DistributionItem[] }) {
   return (
     <div className="surface-card h-full rounded-2xl p-4 sm:p-5 lg:p-6">
-      <div className="mb-5 flex h-8 items-center gap-3 text-sm text-white/70">
+      <div className="mb-5 flex h-8 items-center gap-3 text-sm text-fg-secondary">
         <div className="surface-raised flex size-8 shrink-0 items-center justify-center rounded-lg shadow-[0_4px_10px_rgba(0,0,0,0.1)]">
           <span className={`${icon} size-4 inline-block text-[var(--accent)]`} aria-hidden="true" />
         </div>
-        <span className="font-medium tracking-wide text-white/80">{title}</span>
+        <span className="font-medium tracking-wide text-fg-secondary">{title}</span>
       </div>
       <div className="flex flex-col gap-3">
         {items.map((item) => (
           <div key={item.name} className="flex items-center gap-3">
-            <span className="w-20 truncate text-sm text-white/70" title={item.name}>{item.name}</span>
+            <span className="w-20 truncate text-sm text-fg-secondary" title={item.name}>{item.name}</span>
             <div className="progress-track h-1.5 flex-1 overflow-hidden rounded-full">
               <div className="progress-fill h-full rounded-full transition-all duration-500" style={{ width: `${item.percent}%` }} />
             </div>
-            <span className="text-xs text-white/60 w-8 text-right font-mono">{item.percent}%</span>
+            <span className="text-xs text-fg-muted w-8 text-right font-mono">{item.percent}%</span>
           </div>
         ))}
-        {items.length === 0 && <span className="py-6 text-center text-sm text-white/60">暂无数据</span>}
+        {items.length === 0 && <span className="py-6 text-center text-sm text-fg-muted">暂无数据</span>}
       </div>
     </div>
   );

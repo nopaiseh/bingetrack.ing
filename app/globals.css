@@ -747,6 +747,12 @@ body::before {
   outline: none;
 }
 
+/* 筛选下拉不走输入框的强调色焦点环，改用与其他筛选按钮一致的描边。 */
+select:is(.filter-option, .filter-option-active):focus-visible {
+  outline: 2px solid rgba(255, 255, 255, 0.7);
+  outline-offset: 3px;
+}
+
 @keyframes spotlight-fade {
   0% {
     opacity: 0;
