@@ -5,10 +5,10 @@ import Link from "next/link";
 import dynamic from "next/dynamic";
 import { PosterRowSkeleton } from "@/components/LoadingSkeletons";
 import DashboardYearPicker from "@/components/DashboardYearPicker";
-import SpotlightHero from "@/components/SpotlightHero";
+import UpcomingHero from "@/components/UpcomingHero";
 import AnimatedNumber from "@/components/AnimatedNumber";
 import { parseRuntimeParts } from "@/lib/format-runtime";
-import type { MediaCard, MediaDistribution, MediaDistributions, Summary } from "@/lib/types";
+import type { MediaCard, MediaDistribution, MediaDistributions, Summary, UpcomingRelease } from "@/lib/types";
 
 const CategoryHeaderCards = dynamic(() => import("@/components/dashboard/CategoryHeaderCards"), {
   loading: () => <div className="min-h-36 rounded-2xl bg-white/5 animate-pulse" />,
@@ -132,11 +132,15 @@ export default function HomeDashboard({
   topMovies,
   topSeries,
   distributions,
+  upcoming = [],
+  renderedOn,
 }: {
   summary: Summary[];
   topMovies: MediaCard[];
   topSeries: MediaCard[];
   distributions: MediaDistributions;
+  upcoming?: UpcomingRelease[];
+  renderedOn?: string;
 }) {
   const [activeTab, setActiveTab] = useState("总览");
   const tabs = ["总览", "电影", "电视节目"];
@@ -234,12 +238,10 @@ export default function HomeDashboard({
   // 请求中途切回全时段时，被取消的请求不会复位加载状态，因此只在选定年份时采用该状态。
   const isTopMediaLoading = topMediaLoading && selectedYear !== "All Time";
 
-  // 所选年份没有榜单（或仍在加载）时展示全时段精选，标签也随之显示为全时段，避免年份与内容不符。
-  const showYearSpotlight = selectedYear !== "All Time" && displayedTopMovies.length > 0;
-  const spotlightCandidates = showYearSpotlight ? displayedTopMovies : topMovies;
-
   return (
     <div className="container mx-auto flex max-w-7xl flex-col gap-6 px-4 pb-12 pt-20 sm:pt-22 sm:px-6 lg:pt-24 lg:px-8">
+      <UpcomingHero items={upcoming} renderedOn={renderedOn} />
+
       <section aria-labelledby="dashboard-title" className="surface-panel dashboard-intro relative z-10 mb-2 rounded-3xl p-5 sm:p-6 lg:px-8 lg:py-6">
         <div className="relative">
           <div className="mb-3 flex items-center gap-3 text-[11px] font-semibold uppercase tracking-[0.24em] text-[var(--accent-light)]/90">
@@ -335,8 +337,6 @@ export default function HomeDashboard({
         )}
         {activeTab === "总览" && (
           <div key="overview" id="dashboard-panel-overview" role="tabpanel" aria-labelledby="dashboard-tab-overview" className="flex flex-col gap-4 md:gap-6">
-            <SpotlightHero items={spotlightCandidates} yearLabel={showYearSpotlight ? selectedYear : "All Time"} />
-
             <div className="grid grid-cols-1 gap-4 md:gap-6 xl:grid-cols-2">
             <div className="dashboard-deferred surface-card flex h-full flex-col gap-6 rounded-3xl p-4 sm:p-5 lg:p-7">
               <div className="flex items-center border-b border-white/10 pb-3">

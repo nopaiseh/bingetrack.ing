@@ -28,6 +28,7 @@ const STATUS_OPTIONS = [
   { value: "want_to_watch", label: "想看" },
   { value: "watching", label: "在看" },
   { value: "watched", label: "已看" },
+  { value: "upcoming", label: "即将上映" },
 ];
 
 const PRIMARY_CATEGORIES = [

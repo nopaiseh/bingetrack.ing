@@ -29,6 +29,22 @@ export type MediaCard = Pick<Media,
   summary?: string;
 };
 
+// 首页倒计时展台的统一条目；以后新增音乐、书籍时只需扩展 kind 并补充对应查询。
+export interface UpcomingRelease {
+  id: string;
+  kind: "movie" | "episode";
+  // 同一作品的多个条目共用分组键，展台只保留其中最早的一条（如一部剧的下一集）。
+  groupId: string;
+  title: string;
+  subtitle?: string;
+  releaseDate: string;
+  cover_url: string;
+  href: string;
+  genres: string[];
+  languages: string[];
+  summary?: string;
+}
+
 export interface SeasonInfo {
   id: string;
   seasonNumber: number;
@@ -160,6 +176,8 @@ export interface FetchMediaListOptions {
   seriesOnly?: boolean;
   creditRole?: string | null;
   status?: string | null;
+  // 只保留仍有未上映内容的条目；与 status 同选时按“任一满足”合并。
+  upcoming?: boolean;
   genre?: string | null;
   region?: string | null;
   language?: string | null;

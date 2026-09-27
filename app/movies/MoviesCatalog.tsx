@@ -12,7 +12,7 @@ export default function MoviesCatalog({
     { label: "电影总数量", value: stats?.total || 0, href: "/search?type=movie" },
     { label: "已看的电影", value: stats?.watched || 0, href: "/search?type=movie&status=watched" },
     { label: "想看的电影", value: stats?.want || 0, href: "/search?type=movie&status=want_to_watch" },
-    { label: "近期将上映", value: stats?.upcoming || 0, href: "/search?type=movie&sort=date_desc" },
+    { label: "近期将上映", value: stats?.upcoming || 0, href: "/search?type=movie&status=upcoming&sort=date_asc" },
   ];
 
   return (

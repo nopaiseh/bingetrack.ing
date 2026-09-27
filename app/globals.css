@@ -768,6 +768,22 @@ select:is(.filter-option, .filter-option-active):focus-visible {
   animation: spotlight-fade 350ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
+@keyframes upcoming-progress {
+  from {
+    width: 0%;
+  }
+  to {
+    width: 100%;
+  }
+}
+
+/* 倒计时展台的轮播进度条，时长由组件内联指定。 */
+.animate-upcoming-progress {
+  animation-name: upcoming-progress;
+  animation-timing-function: linear;
+  animation-fill-mode: forwards;
+}
+
 /* 主行动按钮：用较深的强调色承载文字，保证各主题下的对比度。 */
 .button-accent {
   background: var(--accent-dark);

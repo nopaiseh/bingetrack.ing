@@ -13,9 +13,9 @@ vi.mock("@/components/LoadingSkeletons", () => ({
   PosterRowSkeleton: () => <div data-testid="poster-skeleton" />,
 }));
 
-vi.mock("@/components/SpotlightHero", () => ({
-  default: ({ items, yearLabel }: { items: { id: string }[]; yearLabel?: string }) => (
-    <div data-testid="spotlight" data-year={yearLabel} data-ids={items.map((item) => item.id).join(",")} />
+vi.mock("@/components/UpcomingHero", () => ({
+  default: ({ items }: { items: { id: string }[] }) => (
+    <div data-testid="upcoming" data-ids={items.map((item) => item.id).join(",")} />
   ),
 }));
 vi.mock("@/components/AnimatedNumber", () => ({ default: ({ value }: { value: number }) => <>{value}</> }));
@@ -64,21 +64,20 @@ describe("HomeDashboard", () => {
     expect(screen.getAllByTestId("dynamic").some((element) => element.dataset.title === "影史精选")).toBe(true);
   });
 
-  it("所选年份榜单为空时展示全时段精选，标签也显示为全时段", async () => {
+  it("倒计时展台不随年份切换而变化", async () => {
     vi.stubGlobal("fetch", vi.fn(async () => new Response("[]")));
     render(
       <HomeDashboard
         summary={[{ release_year: "2024" } as unknown as Summary]}
-        topMovies={[{ id: "all-time-pick" } as never]}
+        topMovies={[]}
         topSeries={[]}
         distributions={buildMediaDistributions([])}
+        upcoming={[{ id: "next-release" } as never]}
       />,
     );
     await act(async () => {
       fireEvent.click(screen.getByText("year-2024"));
     });
-    const spotlight = screen.getByTestId("spotlight");
-    expect(spotlight.dataset.ids).toBe("all-time-pick");
-    expect(spotlight.dataset.year).toBe("All Time");
+    expect(screen.getByTestId("upcoming").dataset.ids).toBe("next-release");
   });
 });

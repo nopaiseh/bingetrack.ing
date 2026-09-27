@@ -1,7 +1,7 @@
 import "server-only";
 import { cache } from "react";
 import { unstable_cache } from "next/cache";
-import { getMediaById, getSeasonsBySeriesId, searchMediaServer, fetchTopMediaServer, fetchMediaDistributionsServer } from "./media-repo";
+import { getMediaById, getSeasonsBySeriesId, searchMediaServer, fetchTopMediaServer, fetchMediaDistributionsServer, fetchUpcomingReleasesServer } from "./media-repo";
 import { parseMediaSearchParams } from "@/lib/api/media-params";
 import { getSupabasePublicServer } from "@/lib/supabase/public-server";
 import { withRetry } from "./retry";
@@ -30,6 +30,13 @@ export const searchCachedMedia = unstable_cache(
 export const getCachedTopMediaServer = cache(unstable_cache(
   fetchTopMediaServer,
   ["public-media-top-v2"],
+  { revalidate: 86400, tags: ["media"] },
+));
+
+// 即将上映候选池长缓存 24 小时；候选池留有余量，缓存滞后时由浏览器按当天过滤。
+export const getCachedUpcomingReleasesServer = cache(unstable_cache(
+  fetchUpcomingReleasesServer,
+  ["public-media-upcoming-v1"],
   { revalidate: 86400, tags: ["media"] },
 ));
 

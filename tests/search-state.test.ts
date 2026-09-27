@@ -11,8 +11,15 @@ test("server and browser query conversion preserves all search categories", /* �
   expect(parseMediaSearchParams(new URLSearchParams(query))).toEqual({
     q: "王家卫", type: "movie,tv_show", creditRole: "director,actor", seriesOnly: true,
     status: "watched,want_to_watch,watching", genre: "剧情,喜剧", region: "香港", language: "粤语",
-    startYear: "1990", endYear: "2025", sort: "rating_desc", limit: 30, offset: 30,
+    startYear: "1990", endYear: "2025", sort: "rating_desc", limit: 30, offset: 30, upcoming: false,
   });
+});
+
+test("the upcoming status option becomes a separate API flag", /* 验证“即将上映”状态选项转换为独立的 upcoming 参数，不混入观看状态。 */ () => {
+  expect(hasOnlyKnownFilterValues(new URLSearchParams({ status: "upcoming,want_to_watch" }))).toBe(true);
+  const params = parseMediaSearchParams(new URLSearchParams(buildMediaSearchQuery(new URLSearchParams({ status: "upcoming,want_to_watch" }))));
+  expect(params.status).toBe("want_to_watch");
+  expect(params.upcoming).toBe(true);
 });
 
 test.each(["-1", "NaN", "Infinity", "1.5"])("invalid page %s uses the first page", /* 对每个非法页码验证 API 偏移量回退为零。 */ (page) => {

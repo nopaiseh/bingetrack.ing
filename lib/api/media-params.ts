@@ -78,6 +78,7 @@ export function parseMediaSearchParams(searchParams: URLSearchParams): FetchMedi
     seriesOnly: searchParams.get("series") === "true",
     creditRole: parseList(searchParams.get("creditRole"), "credit role", CREDIT_ROLES),
     status: parseList(searchParams.get("status"), "status", STATUSES),
+    upcoming: searchParams.get("upcoming") === "true",
     genre: parseList(searchParams.get("genre"), "genre"),
     region: parseList(searchParams.get("region"), "region"),
     language: parseList(searchParams.get("language"), "language"),

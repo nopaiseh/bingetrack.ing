@@ -2,7 +2,9 @@ export const PAGE_SIZE = 30;
 export type SearchFilters = Record<string, string[]>;
 
 const TYPE_VALUES = new Set(["movie", "tv_show", "series", "director", "actor"]);
-const STATUS_VALUES = new Set(["want_to_watch", "watching", "watched"]);
+const STATUS_VALUES = new Set(["want_to_watch", "watching", "watched", "upcoming"]);
+// “即将上映”在页面上是一个状态选项，但发给 API 时单独成为 upcoming 参数。
+const WATCH_STATUS_VALUES = new Set(["want_to_watch", "watching", "watched"]);
 const SORT_VALUES = new Set(["date_asc", "date_desc", "rating_asc", "rating_desc"]);
 
 /** 拆分逗号列表并去重。 */
@@ -65,8 +67,9 @@ export function buildMediaSearchQuery(searchParams: URLSearchParams): string {
   if (mediaTypes.length > 0) params.set("type", mediaTypes.join(","));
   if (filters.type.includes("series")) params.set("series", "true");
   if (creditRoles.length > 0) params.set("creditRole", creditRoles.join(","));
-  const statuses = filters.status.filter(/* 忽略无法识别的状态值。 */ (s) => STATUS_VALUES.has(s));
+  const statuses = filters.status.filter(/* 忽略无法识别的状态值。 */ (s) => WATCH_STATUS_VALUES.has(s));
   if (statuses.length > 0) params.set("status", statuses.join(","));
+  if (filters.status.includes("upcoming")) params.set("upcoming", "true");
 
   if (filters.genre && filters.genre.length > 0) params.set("genre", filters.genre.join(","));
   if (filters.region && filters.region.length > 0) params.set("region", filters.region.join(","));
