@@ -19,20 +19,23 @@ const groups = [
     { label: "地区", value: "regions", icon: "i-material-symbols-public-rounded", isChild: false },
     { label: "语言", value: "languages", icon: "i-material-symbols-translate-rounded", isChild: false },
   ] },
+  { label: "数据检查", items: [
+    { label: "报告", value: "reports", icon: "i-material-symbols-fact-check-outline-rounded", isChild: false },
+  ] },
 ];
 /** 桌面侧栏和移动分类选择共用相同入口，筛选结果可直接收藏。 */
 export default function ManageNav() {
   const pathname = usePathname();
   const params = useSearchParams();
   const router = useRouter();
-  const active = pathname.startsWith("/manage/references/") ? pathname.split("/")[3] : params.get("type") ?? (pathname === "/manage" ? "movie" : "");
+  const active = pathname.startsWith("/manage/reports") ? "reports" : pathname.startsWith("/manage/references/") ? pathname.split("/")[3] : params.get("type") ?? (pathname === "/manage" ? "movie" : "");
   useEffect(() => {
     const isList = pathname === "/manage" || /^\/manage\/references\/[^/]+$/.test(pathname);
     if (!isList || !active) return;
     try { sessionStorage.setItem(`manage:list:${active}`, `${pathname}?${params.toString()}`); } catch { /* 隐私模式拒绝存储时仍可正常管理。 */ }
   }, [pathname, params, active]);
-  /** 关联资料使用独立路由，影视保留可分享的类型筛选。 */
-  function href(value: string) { return value.startsWith("tv_") || value === "movie" ? `/manage?type=${value}` : `/manage/references/${value}`; }
+  /** 关联资料与报告使用独立路由，影视保留可分享的类型筛选。 */
+  function href(value: string) { return value === "reports" ? "/manage/reports" : value.startsWith("tv_") || value === "movie" ? `/manage?type=${value}` : `/manage/references/${value}`; }
   return <aside className="min-w-0 lg:sticky lg:top-24 lg:self-start">
     <div className="lg:hidden flex items-center justify-between gap-3">
       <label className="flex-1">管理类别<select value={active} onChange={/* 切换分类时进入该类别第一页。 */ event => {
