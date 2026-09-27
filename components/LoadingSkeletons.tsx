@@ -114,7 +114,8 @@ export function RelatedMediaLoadingSkeleton() {
 /** 为后台管理页面提供头部、表单与条目列表骨架。 */
 export function AdminLoadingSkeleton() {
   return (
-    <section className="container mx-auto max-w-7xl px-4 pb-16 pt-24 sm:px-6 lg:px-8" aria-label="正在加载管理后台">
+    // 在管理外框的内容区内渲染，外框已提供边距，这里不再加容器与留白。
+    <section aria-label="正在加载管理后台">
       <div className="surface-panel mb-8 rounded-3xl p-5 sm:p-8 flex flex-wrap items-center justify-between gap-4">
         <div className="space-y-2">
           <SkeletonBlock className="h-8 w-36" />

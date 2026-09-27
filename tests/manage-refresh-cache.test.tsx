@@ -1,9 +1,9 @@
 import { describe, expect, it, vi } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
-import RefreshCacheButton from "@/app/manage/RefreshCacheButton";
-import * as actions from "@/app/manage/actions";
+import RefreshCacheButton from "@/app/(admin)/manage/RefreshCacheButton";
+import * as actions from "@/app/(admin)/manage/actions";
 
-vi.mock("@/app/manage/actions", () => ({
+vi.mock("@/app/(admin)/manage/actions", () => ({
   manualRevalidateCache: vi.fn(),
 }));
 

@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { saveReference, deleteReference, searchChoices, saveCollectionMember } from "@/app/manage/reference-actions";
-import { manualRevalidateCache } from "@/app/manage/actions";
+import { saveReference, deleteReference, searchChoices, saveCollectionMember } from "@/app/(admin)/manage/reference-actions";
+import { manualRevalidateCache } from "@/app/(admin)/manage/actions";
 import { requireOwner } from "@/lib/auth/server";
 import { revalidatePath, revalidateTag } from "next/cache";
 vi.mock("@/lib/auth/server", () => ({ requireOwner: vi.fn() }));
