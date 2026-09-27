@@ -329,7 +329,7 @@ export default function MediaForm({ item, initialType = "movie", lockType = fals
                 label="导演"
                 icon="i-material-symbols-movie-rounded"
                 allowCreate
-                initial={(item?.directors ?? []).map((v) => ({ id: v, name: v }))}
+                initial={(item?.directors ?? []).map((v) => ({ id: v.id ?? `new:${v.name}`, name: v.name, detail: v.alternate_name ?? undefined }))}
               />
               <ChoicePicker
                 kind="people"
@@ -339,7 +339,7 @@ export default function MediaForm({ item, initialType = "movie", lockType = fals
                 allowCreate
                 sortable
                 withCharacter
-                initial={(item?.actors ?? []).map((v) => ({ id: v.name, name: v.name, character: v.character }))}
+                initial={(item?.actors ?? []).map((v) => ({ id: v.id ?? `new:${v.name}`, name: v.name, detail: v.alternate_name ?? undefined, character: v.character }))}
               />
             </div>
           </section>

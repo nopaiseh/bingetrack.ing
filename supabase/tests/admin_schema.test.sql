@@ -92,6 +92,21 @@ select throws_ok($$select public.admin_save_media(pg_temp.admin_payload('movie',
 select throws_ok($$select public.admin_save_media(pg_temp.admin_payload('movie','Bad character') || jsonb_build_object('actors',jsonb_build_array(jsonb_build_object('name','Long','character',repeat('x',201)))))$$,'22023',null,'overlong character is rejected');
 select throws_ok($$update public.media_credits set character_name='Nope' where role='director' and media_item_id=(select id from public.media_items where title='Character movie')$$,'23514',null,'only actor credits may have a character');
 
+-- 同名人物以别名区分：保存时凭 ID 关联指定人物，无 ID 只匹配无别名的同名人物。
+select lives_ok($$insert into public.people(id,name,alternate_name) values
+  ('fa000000-0000-4000-8000-000000000101','Same name',null),
+  ('fa000000-0000-4000-8000-000000000102','Same name','Alias B')$$,'same name with different alias is allowed');
+select throws_ok($$insert into public.people(name,alternate_name) values('Same name','Alias B')$$,'23505',null,'same name and alias is rejected');
+select throws_ok($$insert into public.people(name) values('Same name')$$,'23505',null,'same name without alias is rejected');
+select lives_ok($$select public.admin_save_media(pg_temp.admin_payload('movie','Same name movie') || '{"actors":[{"id":"fa000000-0000-4000-8000-000000000102","name":"Same name","character":"B"},{"id":"fa000000-0000-4000-8000-000000000101","name":"Same name","character":"A"}],"directors":[{"id":"fa000000-0000-4000-8000-000000000102","name":"Same name"}]}')$$,'owner credits same-name people by id');
+select is((select array_agg(person_id::text order by credit_order) from public.media_credits where role='actor' and media_item_id=(select id from public.media_items where title='Same name movie')),array['fa000000-0000-4000-8000-000000000102','fa000000-0000-4000-8000-000000000101'],'both same-name actors are credited in order');
+select is((select person_id::text from public.media_credits where role='director' and media_item_id=(select id from public.media_items where title='Same name movie')),'fa000000-0000-4000-8000-000000000102','director keeps the chosen person');
+select lives_ok($$select public.admin_save_media(pg_temp.admin_payload('movie','Same name by text') || '{"actors":["Same name"]}')$$,'name without id still saves');
+select is((select person_id::text from public.media_credits where media_item_id=(select id from public.media_items where title='Same name by text')),'fa000000-0000-4000-8000-000000000101','name without id reuses the person without alias');
+select is((select count(*)::integer from public.people where name='Same name'),2,'name without id creates no duplicate person');
+select throws_ok($$select public.admin_save_media(pg_temp.admin_payload('movie','Missing person') || '{"actors":[{"id":"fa000000-0000-4000-8000-000000000199","name":"Ghost"}]}')$$,'P0002',null,'unknown person id is rejected');
+select throws_ok($$select public.admin_save_media(pg_temp.admin_payload('movie','Bad person id') || '{"actors":[{"id":"nope","name":"Ghost"}]}')$$,'22023',null,'malformed person id is rejected');
+
 reset role;
 set local role anon;
 select lives_ok($$select id,title from public.media_items limit 1$$,'public browsing still works');

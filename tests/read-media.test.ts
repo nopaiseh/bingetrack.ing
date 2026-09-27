@@ -32,11 +32,11 @@ describe("readEditableMedia", () => {
               if (table === "media_credits") {
                 return {
                   data: [
-                    { role: "actor", character_name: "Hero", people: { name: "Actor A" } },
-                    { role: "actor", character_name: null, people: { name: "Actor C" } },
+                    { role: "actor", character_name: "Hero", people: { id: "a1", name: "Actor A", alternate_name: "AA" } },
+                    { role: "actor", character_name: null, people: { id: "a3", name: "Actor C" } },
                     { role: "actor", people: null },
                     null,
-                    { role: "director", people: { name: "Director B" } },
+                    { role: "director", people: { id: "d1", name: "Director B", alternate_name: null } },
                   ],
                   error: null,
                 };
@@ -68,8 +68,8 @@ describe("readEditableMedia", () => {
     expect(result?.title).toBe("Test Movie");
     expect(result?.genres).toEqual(["Action"]);
     expect(result?.collections).toEqual([]);
-    expect(result?.actors).toEqual([{ name: "Actor A", character: "Hero" }, { name: "Actor C", character: null }]);
-    expect(result?.directors).toEqual(["Director B"]);
+    expect(result?.actors).toEqual([{ id: "a1", name: "Actor A", alternate_name: "AA", character: "Hero" }, { id: "a3", name: "Actor C", alternate_name: null, character: null }]);
+    expect(result?.directors).toEqual([{ id: "d1", name: "Director B", alternate_name: null }]);
   });
 
   it("读取电视节目时从 v_all_media 动态读取观看状态与评分", async () => {

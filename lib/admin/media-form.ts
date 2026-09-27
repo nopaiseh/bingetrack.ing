@@ -2,8 +2,10 @@ import { isMediaId } from "@/lib/functions/media-id";
 
 export const mediaTypes = { movie: "电影", tv_show: "电视节目", tv_season: "季", tv_episode: "单集" } as const;
 export type ManagedMediaType = keyof typeof mediaTypes;
+/** 关联人物；id 为 null 表示按名称匹配或新建无别名人物，同名人物只能凭 id 区分。 */
+export type PersonRef = { id: string | null; name: string; alternate_name?: string | null };
 /** 演员及其饰演的角色；未填写角色时为 null。 */
-export type ActorCredit = { name: string; character: string | null };
+export type ActorCredit = PersonRef & { character: string | null };
 export type MediaInput = {
   id: string | null;
   type: ManagedMediaType;
@@ -21,7 +23,7 @@ export type MediaInput = {
   languages: string[];
   regions: string[];
   actors: ActorCredit[];
-  directors: string[];
+  directors: PersonRef[];
   collections?: string[];
 };
 
@@ -49,15 +51,21 @@ export function parseMediaForm(form: FormData): MediaInput {
     if (values.length > 100 || values.some(/* 每个名称最多 200 字符。 */ value => value.length > 200)) throw new Error("关联名称过多或过长。");
     return values;
   }
-  /** 每行「姓名<Tab>角色」，角色可省略；同名演员只保留第一行。 */
+  /** 每行「人物 ID<Tab>姓名<Tab>角色」，ID 与角色可留空，无制表符的行视为仅有姓名；同一人物只保留第一行，无 ID 时按姓名去重。 */
   function credits(key: string): ActorCredit[] {
+    // 不整体 trim，首行空 ID 的前导制表符是格式的一部分。
+    const raw = form.get(key) ?? "";
+    if (typeof raw !== "string" || raw.length > 30000) throw new Error("关联名称过多或过长。");
     const seen = new Set<string>();
-    const values = (string(key, 20000) ?? "").split(/\r?\n/).flatMap(/* 拆出姓名与角色并去除重复演员。 */ line => {
-      const [rawName, ...rest] = line.split("\t");
+    const values = raw.split(/\r?\n/).flatMap(/* 拆出人物 ID、姓名与角色并去除重复人物。 */ line => {
+      const [rawId, rawName = "", ...rest] = line.includes("\t") ? line.split("\t") : ["", line];
+      const id = rawId.trim() || null;
       const name = rawName.trim();
-      if (!name || seen.has(name)) return [];
-      seen.add(name);
-      return [{ name, character: rest.join(" ").trim() || null }];
+      if (id && !isMediaId(id)) throw new Error("人物 ID 格式不正确。");
+      const identity = id ?? `name:${name}`;
+      if (!name || seen.has(identity)) return [];
+      seen.add(identity);
+      return [{ id, name, character: rest.join(" ").trim() || null }];
     });
     if (values.length > 100 || values.some(/* 姓名与角色各最多 200 字符。 */ value => value.name.length > 200 || (value.character?.length ?? 0) > 200)) throw new Error("关联名称过多或过长。");
     return values;
@@ -92,6 +100,6 @@ export function parseMediaForm(form: FormData): MediaInput {
     languages: isChild ? [] : names("languages"),
     regions: isChild ? [] : names("regions"),
     actors: isChild ? [] : credits("actors"),
-    directors: isChild ? [] : names("directors"),
+    directors: isChild ? [] : credits("directors").map(({ id, name }) => ({ id, name })),
     collections: isChild ? [] : names("collections") };
 }

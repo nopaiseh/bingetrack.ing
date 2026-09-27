@@ -1,8 +1,56 @@
 "use client";
 import Image from "next/image";
-import { useEffect, useId, useRef, useState } from "react";
+import { useEffect, useId, useLayoutEffect, useRef, useState, type ReactNode, type RefObject } from "react";
+import { createPortal } from "react-dom";
 import { searchChoices } from "./reference-actions";
 import type { Choice } from "@/lib/admin/catalog";
+
+/** 下拉挂到 body：嵌套在带 backdrop-filter 的卡片内时，毛玻璃只能模糊卡片自身而显得透明。
+ * 外包 admin-shell 以沿用管理区的按钮样式；定位随滚动与缩放同步到触发器下方、与选择器等宽。 */
+function FloatingResults({ root, input, listRef, id, label, children }: {
+  root: RefObject<HTMLDivElement | null>;
+  input: RefObject<HTMLInputElement | null>;
+  listRef: RefObject<HTMLDivElement | null>;
+  id: string;
+  label: string;
+  children: ReactNode;
+}) {
+  const [position, setPosition] = useState<{ top: number; left: number; width: number } | null>(null);
+  useLayoutEffect(() => {
+    /** 以选择器定宽、搜索框下沿定高，换算为视口固定定位坐标。 */
+    function update() {
+      const box = root.current?.getBoundingClientRect();
+      const anchor = input.current?.getBoundingClientRect() ?? box;
+      if (box && anchor) setPosition({ top: anchor.bottom + 8, left: box.left, width: box.width });
+    }
+    update();
+    window.addEventListener("resize", update);
+    window.addEventListener("scroll", update, true);
+    return () => {
+      window.removeEventListener("resize", update);
+      window.removeEventListener("scroll", update, true);
+    };
+  }, [root, input]);
+  if (!position) return null;
+  return createPortal(
+    <div className="admin-shell">
+      <div
+        ref={listRef}
+        role="dialog"
+        aria-label={`${label}搜索结果`}
+        id={id}
+        onMouseDown={(event) => {
+          event.preventDefault();
+        }}
+        style={position}
+        className="surface-overlay custom-scrollbar fixed z-50 max-h-64 overflow-y-auto rounded-xl p-2"
+      >
+        {children}
+      </div>
+    </div>,
+    document.body,
+  );
+}
 
 /** 搜索已有资料并显式选择；名称标签可新增，父条目只能选已有内容。 */
 export default function ChoicePicker({
@@ -39,7 +87,13 @@ export default function ChoicePicker({
   const [loading, setLoading] = useState(false);
   const root = useRef<HTMLDivElement>(null);
   const input = useRef<HTMLInputElement>(null);
+  const list = useRef<HTMLDivElement>(null);
   const listId = useId();
+  // 人物允许同名，以 ID 区分并以别名提示；其余资料名称唯一，按名称判重。
+  const byId = kind === "people";
+  const same = (a: Choice, b: Choice) => (byId ? a.id === b.id : a.name === b.name);
+  // 新建人物只会匹配无别名的同名者，已有这样的人物时不再提供新增。
+  const exists = (item: Choice) => item.name === term.trim() && (!byId || !item.detail);
 
   useEffect(() => {
     if (!open) return;
@@ -72,9 +126,9 @@ export default function ChoicePicker({
     root.current?.dispatchEvent(new Event("input", { bubbles: true }));
   }
 
-  /** 关联名称去重，单选父级保存真实 ID。选择后清理检索词并关闭下拉。 */
+  /** 关联资料去重，单选父级保存真实 ID。选择后清理检索词并关闭下拉。 */
   function choose(choice: Choice) {
-    change(multiple ? [...selected.filter((item) => item.name !== choice.name), choice] : [choice]);
+    change(multiple ? [...selected.filter((item) => !same(item, choice)), choice] : [choice]);
     setOpen(false);
     setTerm("");
   }
@@ -85,7 +139,7 @@ export default function ChoicePicker({
         ref={root}
         className="relative min-w-0"
         onBlur={(event) => {
-          if (!event.currentTarget.contains(event.relatedTarget)) setOpen(false);
+          if (!event.currentTarget.contains(event.relatedTarget) && !list.current?.contains(event.relatedTarget)) setOpen(false);
         }}
       >
         <input type="hidden" name={name} value={selected[0]?.id ?? ""} />
@@ -141,26 +195,18 @@ export default function ChoicePicker({
           />
         )}
         {open && (
-          <div
-            role="dialog"
-            aria-label={`${label}搜索结果`}
-            id={`${listId}-results`}
-            onMouseDown={(event) => {
-              event.preventDefault();
-            }}
-            className="surface-panel absolute z-30 mt-2 max-h-64 w-full overflow-y-auto rounded-xl p-2"
-          >
+          <FloatingResults root={root} input={input} listRef={list} id={`${listId}-results`} label={label}>
             {loading && <p role="status" className="p-2 text-sm text-neutral-400">正在搜索…</p>}
             {error && <p role="alert" className="p-2 text-sm text-red-300">{error}</p>}
             {!loading &&
               !error &&
               choices
-                .filter((item) => !selected.some((value) => value.name === item.name))
+                .filter((item) => !selected.some((value) => same(value, item)))
                 .map((item) => (
                   <button
                     key={item.id}
                     type="button"
-                    className="mb-1 !w-full !justify-start !border-transparent !bg-transparent text-left hover:!bg-white/5"
+                    className="choice-picker-option mb-1 !w-full !justify-start text-left"
                     onClick={() => choose(item)}
                   >
                     {item.cover_url && (
@@ -175,8 +221,8 @@ export default function ChoicePicker({
             {!loading && !error && choices.length === 0 && <p className="p-2 text-sm text-neutral-400">没有匹配资料</p>}
             {allowCreate &&
               term.trim() &&
-              !selected.some((item) => item.name === term.trim()) &&
-              !choices.some((item) => item.name === term.trim()) && (
+              !selected.some(exists) &&
+              !choices.some(exists) && (
                 <button
                   type="button"
                   className="!w-full !justify-start"
@@ -188,7 +234,7 @@ export default function ChoicePicker({
             <p className="p-2 text-xs text-neutral-400">
               {allowCreate ? "新名称将在保存资料时创建。" : "最多显示 20 项，可输入完整标题缩小范围。"}
             </p>
-          </div>
+          </FloatingResults>
         )}
       </div>
     );
@@ -199,13 +245,19 @@ export default function ChoicePicker({
       ref={root}
       className="choice-picker-card relative min-w-0"
       onBlur={(event) => {
-        if (!event.currentTarget.contains(event.relatedTarget)) setOpen(false);
+        if (!event.currentTarget.contains(event.relatedTarget) && !list.current?.contains(event.relatedTarget)) setOpen(false);
       }}
     >
       <input
         type="hidden"
         name={name}
-        value={selected.map((item) => (withCharacter && item.character ? `${item.name}\t${item.character}` : item.name)).join("\n")}
+        value={selected
+          .map((item) => {
+            // 人物逐行提交「ID<Tab>姓名<Tab>角色」，新建人物的 ID 留空。
+            const line = byId ? `${item.id.startsWith("new:") ? "" : item.id}\t${item.name}` : item.name;
+            return withCharacter && item.character ? `${line}\t${item.character}` : line;
+          })
+          .join("\n")}
       />
 
       {/* 卡片头部：图标 + 标题 + 数量徽章 */}
@@ -239,6 +291,7 @@ export default function ChoicePicker({
                 </span>
               )}
               <span className="break-words font-medium">{item.name}</span>
+              {byId && item.detail && <span className="break-words text-xs text-neutral-400">({item.detail})</span>}
               {withCharacter && (
                 <input
                   className="admin-chip-character"
@@ -344,26 +397,18 @@ export default function ChoicePicker({
 
       {/* 下拉结果浮层 */}
       {open && (
-        <div
-          role="dialog"
-          aria-label={`${label}搜索结果`}
-          id={`${listId}-results`}
-          onMouseDown={(event) => {
-            event.preventDefault();
-          }}
-          className="surface-panel absolute left-0 right-0 z-30 mt-2 max-h-64 overflow-y-auto rounded-xl p-2 shadow-2xl border border-white/15"
-        >
+        <FloatingResults root={root} input={input} listRef={list} id={`${listId}-results`} label={label}>
           {loading && <p role="status" className="p-2 text-sm text-neutral-400">正在搜索…</p>}
           {error && <p role="alert" className="p-2 text-sm text-red-300">{error}</p>}
           {!loading &&
             !error &&
             choices
-              .filter((item) => !selected.some((value) => value.name === item.name))
+              .filter((item) => !selected.some((value) => same(value, item)))
               .map((item) => (
                 <button
                   key={item.id}
                   type="button"
-                  className="mb-1 !w-full !justify-start !border-transparent !bg-transparent text-left hover:!bg-white/10 rounded-lg p-1.5 transition-colors flex items-center gap-2.5"
+                  className="choice-picker-option mb-1 !w-full !justify-start text-left rounded-lg p-1.5 flex items-center gap-2.5"
                   onClick={() => choose(item)}
                 >
                   {item.cover_url && (
@@ -378,8 +423,8 @@ export default function ChoicePicker({
           {!loading && !error && choices.length === 0 && <p className="p-2 text-sm text-neutral-400">没有匹配资料</p>}
           {allowCreate &&
             term.trim() &&
-            !selected.some((item) => item.name === term.trim()) &&
-            !choices.some((item) => item.name === term.trim()) && (
+            !selected.some(exists) &&
+            !choices.some(exists) && (
               <button
                 type="button"
                 className="!w-full !justify-start admin-primary !min-h-9 !py-1.5 !px-3 text-xs mb-1"
@@ -391,7 +436,7 @@ export default function ChoicePicker({
           <p className="p-2 text-[11px] text-neutral-400 border-t border-white/5 mt-1">
             {allowCreate ? "新名称将在保存资料时创建。" : "最多显示 20 项，可输入完整标题缩小范围。"}
           </p>
-        </div>
+        </FloatingResults>
       )}
     </div>
   );

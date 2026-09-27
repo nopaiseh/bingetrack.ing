@@ -20,16 +20,26 @@ describe("管理媒体输入", () => {
     expect(() => parseMediaForm(form({ rating }))).toThrow();
   });
   it("逐行处理名称且保留名字中的逗号", () => {
-    expect(parseMediaForm(form({ actors: "Doe, Jane\n张三\n张三\n" })).actors).toEqual([{ name: "Doe, Jane", character: null }, { name: "张三", character: null }]);
+    expect(parseMediaForm(form({ actors: "\tDoe, Jane\n\t张三\n\t张三\n" })).actors).toEqual([{ id: null, name: "Doe, Jane", character: null }, { id: null, name: "张三", character: null }]);
   });
   it("演员行以制表符分隔饰演角色，空角色为 null，同名演员保留第一行", () => {
-    expect(parseMediaForm(form({ actors: "迈克·梅尔斯\t奥斯汀 / 邪恶博士\n张三\t \n迈克·梅尔斯\t别的角色" })).actors).toEqual([
-      { name: "迈克·梅尔斯", character: "奥斯汀 / 邪恶博士" },
-      { name: "张三", character: null },
+    expect(parseMediaForm(form({ actors: "\t迈克·梅尔斯\t奥斯汀 / 邪恶博士\n\t张三\t \n\t迈克·梅尔斯\t别的角色" })).actors).toEqual([
+      { id: null, name: "迈克·梅尔斯", character: "奥斯汀 / 邪恶博士" },
+      { id: null, name: "张三", character: null },
     ]);
   });
+  it("同名人物凭 ID 区分，同一 ID 只保留第一行", () => {
+    const first = "00000000-0000-4000-8000-000000000001";
+    const second = "00000000-0000-4000-8000-000000000002";
+    const result = parseMediaForm(form({ actors: `${first}\t张伟\t甲\n${second}\t张伟\t乙\n${first}\t张伟\t丙`, directors: `${first}\t张伟\n\t张伟` }));
+    expect(result.actors).toEqual([{ id: first, name: "张伟", character: "甲" }, { id: second, name: "张伟", character: "乙" }]);
+    expect(result.directors).toEqual([{ id: first, name: "张伟" }, { id: null, name: "张伟" }]);
+  });
+  it("拒绝格式错误的人物 ID", () => {
+    expect(() => parseMediaForm(form({ actors: "not-a-uuid\t张三" }))).toThrow();
+  });
   it("拒绝过长的角色名", () => {
-    expect(() => parseMediaForm(form({ actors: `张三\t${"角".repeat(201)}` }))).toThrow();
+    expect(() => parseMediaForm(form({ actors: `\t张三\t${"角".repeat(201)}` }))).toThrow();
   });
   it.each(["javascript:alert(1)", "https://image.tmdb.org.evil.test/a", "https://user@image.tmdb.org/a", "http://image.tmdb.org/a"])("拒绝不受支持的封面地址 %s", cover_url => {
     expect(() => parseMediaForm(form({ cover_url }))).toThrow();
@@ -106,6 +116,6 @@ describe("管理媒体输入", () => {
     });
     const movieResult = parseMediaForm(movieForm);
     expect(movieResult.genres).toEqual(["动作", "剧情"]);
-    expect(movieResult.actors).toEqual([{ name: "演员一", character: null }]);
+    expect(movieResult.actors).toEqual([{ id: null, name: "演员一", character: null }]);
   });
 });

@@ -1,6 +1,6 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import type { ActorCredit, MediaInput } from "./media-form";
+import type { ActorCredit, MediaInput, PersonRef } from "./media-form";
 
 /** 并行读取编辑字段和关系，任何失败都终止，避免用空表单覆盖真实关联。 */
 export async function readEditableMedia(db: SupabaseClient, id: string): Promise<MediaInput | null> {
@@ -13,7 +13,7 @@ export async function readEditableMedia(db: SupabaseClient, id: string): Promise
     db.from("media_languages").select("languages(name)").eq("media_item_id", id),
     db.from("media_regions").select("regions(name)").eq("media_item_id", id),
     db.from("media_item_series").select("media_series(name)").eq("media_item_id", id),
-    db.from("media_credits").select("role,character_name,people(name)").eq("media_item_id", id).order("credit_order"),
+    db.from("media_credits").select("role,character_name,people(id,name,alternate_name)").eq("media_item_id", id).order("credit_order"),
   ]);
   if (results.some(/* 任一失败均禁止继续编辑。 */ result => result.error)) throw new Error("无法完整读取媒体资料，请重试。");
   const [media, tracking, season, episode, genres, languages, regions, collections, credits] = results;
@@ -26,15 +26,19 @@ export async function readEditableMedia(db: SupabaseClient, id: string): Promise
       .map(/* 提取关联对象名称并过滤无效条目。 */ row => (row[key] as { name?: string } | null | undefined)?.name)
       .filter((name): name is string => typeof name === "string" && name.length > 0);
   }
-  /** 演员与角色成对读取，保证编辑后重新保存不会丢失角色名。 */
-  function actorCredits(data: unknown): ActorCredit[] {
+  /** 人物连同 ID 和别名读取，重新保存时仍关联原人物，不会被同名人物替换。 */
+  function people(data: unknown, role: "actor" | "director"): (PersonRef & { character_name?: unknown })[] {
     if (!Array.isArray(data)) return [];
     return data.flatMap(/* 跳过无效行和缺少人物的关联。 */ row => {
-      if (!row || typeof row !== "object" || row.role !== "actor") return [];
-      const name = (row.people as { name?: string } | null | undefined)?.name;
-      if (typeof name !== "string" || name.length === 0) return [];
-      return [{ name, character: typeof row.character_name === "string" && row.character_name ? row.character_name : null }];
+      if (!row || typeof row !== "object" || row.role !== role) return [];
+      const person = row.people as { id?: string; name?: string; alternate_name?: string | null } | null | undefined;
+      if (typeof person?.id !== "string" || typeof person.name !== "string" || person.name.length === 0) return [];
+      return [{ id: person.id, name: person.name, alternate_name: person.alternate_name ?? null, character_name: row.character_name }];
     });
+  }
+  /** 演员与角色成对读取，保证编辑后重新保存不会丢失角色名。 */
+  function actorCredits(data: unknown): ActorCredit[] {
+    return people(data, "actor").map(({ character_name, ...person }) => ({ ...person, character: typeof character_name === "string" && character_name ? character_name : null }));
   }
   let status: "watched" | "watching" | "want_to_watch" = "want_to_watch";
   let rating: number | null = null;
@@ -56,5 +60,5 @@ export async function readEditableMedia(db: SupabaseClient, id: string): Promise
     status, rating,
     genres: names(genres.data, "genres"), languages: names(languages.data, "languages"), regions: names(regions.data, "regions"),
     collections: names(collections.data, "media_series"),
-    actors: actorCredits(credits.data), directors: names(credits.data, "people", "director") } as MediaInput;
+    actors: actorCredits(credits.data), directors: people(credits.data, "director").map(({ id, name, alternate_name }) => ({ id, name, alternate_name })) } as MediaInput;
 }
