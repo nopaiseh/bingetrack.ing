@@ -18,7 +18,7 @@ export default function ExpandableCastList({
   const [isExpanded, setIsExpanded] = useState(false);
 
   if (!casts || casts.length === 0) {
-    return <span className="text-sm text-fg-faint">-</span>;
+    return <span className="text-sm text-fg-subtle">-</span>;
   }
 
   const hasOverflow = casts.length > initialLimit;

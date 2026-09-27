@@ -93,25 +93,25 @@ function MediaMetadata({ media, includePeople = true, releaseDateLabel }: { medi
         <MetadataRow label="上映">
           {releaseDateLabel
             ? <span className="surface-subtle inline-flex items-center rounded-lg border border-white/8 px-3.5 py-1.5 text-sm font-medium tracking-wide text-fg-secondary">{releaseDateLabel}</span>
-            : <span className="text-sm text-fg-faint sm:pt-1">-</span>}
+            : <span className="text-sm text-fg-subtle sm:pt-1">-</span>}
         </MetadataRow>
       )}
       <MetadataRow label="类型">
         {media.genres?.length > 0 
           ? media.genres.map(/* 将媒体类型名称渲染为类型筛选链接。 */ (g) => <SearchTag key={g} label={g} category="genre" />)
-          : <span className="text-fg-faint text-sm sm:pt-1">-</span>}
+          : <span className="text-fg-subtle text-sm sm:pt-1">-</span>}
       </MetadataRow>
         
       <MetadataRow label="地区">
         {media.regions && media.regions.length > 0 
           ? media.regions.map(/* 将地区名称渲染为地区筛选链接。 */ (r) => <SearchTag key={r} label={r} category="region" />)
-          : <span className="text-fg-faint text-sm sm:pt-1">-</span>}
+          : <span className="text-fg-subtle text-sm sm:pt-1">-</span>}
       </MetadataRow>
 
       <MetadataRow label="语言">
         {media.languages?.length > 0 
           ? media.languages.map(/* 将语言名称渲染为语言筛选链接。 */ (l) => <SearchTag key={l} label={l} category="language" />)
-          : <span className="text-fg-faint text-sm sm:pt-1">-</span>}
+          : <span className="text-fg-subtle text-sm sm:pt-1">-</span>}
       </MetadataRow>
 
       {media.series && media.series.length > 0 && (
@@ -136,7 +136,7 @@ function MediaCredits({ media }: { media: Media }) {
         <div className="flex flex-wrap gap-2.5">
           {media.directors && media.directors.length > 0
             ? media.directors.map(/* 将导演姓名渲染为导演分类搜索链接。 */ (director) => <SearchTag key={director} label={director} category="director" />)
-            : <span className="text-sm text-fg-faint">-</span>}
+            : <span className="text-sm text-fg-subtle">-</span>}
         </div>
       </div>
       <div>
