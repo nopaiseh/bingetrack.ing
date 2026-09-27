@@ -65,7 +65,8 @@
 }
 /* 固定导航下保留聚焦控件的可见空间。 */
 .admin-shell :is(input, textarea, select, button, a) { scroll-margin-top: 6rem; }
-.admin-shell button, .admin-button {
+/* 下拉候选项使用全局 .dropdown-option，:where 排除它且不抬高优先级。 */
+.admin-shell button:where(:not(.dropdown-option)), .admin-button {
   display: inline-flex; align-items: center; justify-content: center; gap: .5rem;
   min-height: 2.75rem; border: 1px solid rgba(255, 255, 255, 0.16); border-radius: .75rem;
   padding: .65rem 1.1rem; background: var(--control-bg); color: #f5f5f5;
@@ -74,7 +75,7 @@
   font-size: .875rem; font-weight: 500; text-align: center;
   transition: background-color 200ms, border-color 200ms, box-shadow 200ms;
 }
-.admin-shell button:hover, .admin-button:hover {
+.admin-shell button:where(:not(.dropdown-option)):hover, .admin-button:hover {
   background: var(--card-hover-bg);
   border-color: var(--accent-border);
   box-shadow: 0 6px 18px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.18);
@@ -154,12 +155,6 @@
 }
 
 /* 关联资料已选标签胶囊（Tag Chips） */
-/* 下拉候选项：浮层本身已是毛玻璃，候选项只做悬停高亮，不再叠加模糊与阴影。 */
-.admin-shell .choice-picker-option {
-  border-color: transparent; background: transparent; box-shadow: none;
-  backdrop-filter: none; -webkit-backdrop-filter: none;
-}
-.admin-shell .choice-picker-option:hover { border-color: transparent; background: rgba(255, 255, 255, 0.1); box-shadow: none; }
 .admin-tag-chip {
   display: inline-flex;
   align-items: center;

@@ -92,7 +92,7 @@ test("站长初始化、影视季集管理、公开更新、退出与非站长�
     await page.getByLabel("观看状态").selectOption("watched");
     await page.getByLabel("评分（0–10，可留空）").fill("8.5");
     await page.getByLabel("类型标签").fill(`${prefix} genre`);
-    await page.getByRole("button", { name: `新增并关联「${prefix} genre」` }).click();
+    await page.getByRole("option", { name: `新增并关联「${prefix} genre」` }).click();
     const movie = await save();
     await page.getByLabel("标题", { exact: true }).fill(`${prefix} updated movie`);
     await page.getByLabel("评分（0–10，可留空）").fill("0");

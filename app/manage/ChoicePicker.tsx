@@ -1,6 +1,6 @@
 "use client";
 import Image from "next/image";
-import { useEffect, useId, useLayoutEffect, useRef, useState, type ReactNode, type RefObject } from "react";
+import { useEffect, useId, useLayoutEffect, useRef, useState, type ChangeEvent, type KeyboardEvent, type ReactNode, type RefObject } from "react";
 import { createPortal } from "react-dom";
 import { searchChoices } from "./reference-actions";
 import type { Choice } from "@/lib/admin/catalog";
@@ -8,12 +8,10 @@ import type { Choice } from "@/lib/admin/catalog";
 /** 下拉挂到 body：嵌套在带 backdrop-filter 的卡片内时，毛玻璃只能模糊卡片自身而显得透明。
  * 外包 admin-shell 以沿用管理区的按钮样式；定位随滚动与缩放同步，与选择器等宽。
  * 固定定位无法随页面滚入视口，下方空间不足时改向上展开，并按可用空间限制高度。 */
-function FloatingResults({ root, input, listRef, id, label, children }: {
+function FloatingResults({ root, input, listRef, children }: {
   root: RefObject<HTMLDivElement | null>;
   input: RefObject<HTMLInputElement | null>;
   listRef: RefObject<HTMLDivElement | null>;
-  id: string;
-  label: string;
   children: ReactNode;
 }) {
   const [position, setPosition] = useState<{ top?: number; bottom?: number; left: number; width: number; maxHeight: number } | null>(null);
@@ -48,9 +46,6 @@ function FloatingResults({ root, input, listRef, id, label, children }: {
     <div className="admin-shell">
       <div
         ref={listRef}
-        role="dialog"
-        aria-label={`${label}搜索结果`}
-        id={id}
         onMouseDown={(event) => {
           event.preventDefault();
         }}
@@ -97,6 +92,7 @@ export default function ChoicePicker({
   const [choices, setChoices] = useState<Choice[]>([]);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [activeIndex, setActiveIndex] = useState(-1);
   const root = useRef<HTMLDivElement>(null);
   const input = useRef<HTMLInputElement>(null);
   const list = useRef<HTMLDivElement>(null);
@@ -143,7 +139,108 @@ export default function ChoicePicker({
     change(multiple ? [...selected.filter((item) => !same(item, choice)), choice] : [choice]);
     setOpen(false);
     setTerm("");
+    setActiveIndex(-1);
   }
+
+  const newName = term.trim();
+  // 可定位的候选项：搜索结果在前，允许新增时末尾附新增项。
+  const options: { choice: Choice; create?: boolean }[] = [
+    ...(loading || error ? [] : choices.filter((item) => !selected.some((value) => same(value, item))).map((choice) => ({ choice }))),
+    ...(allowCreate && newName && !selected.some(exists) && !choices.some(exists)
+      ? [{ choice: { id: `new:${newName}`, name: newName }, create: true }]
+      : []),
+  ];
+  const active = Math.min(activeIndex, options.length - 1);
+  const resultsId = `${listId}-results`;
+  const optionId = (index: number) => `${listId}-option-${index}`;
+
+  // 键盘定位到列表可视区外的候选项时，把它滚入视野。
+  useEffect(() => {
+    if (open && active >= 0) document.getElementById(`${listId}-option-${active}`)?.scrollIntoView?.({ block: "nearest" });
+  }, [open, active, listId]);
+
+  /** 两种模式共用的搜索框行为：上下键定位候选项，回车确认，Escape 关闭。
+   * 搜索进行中回车不做选择，避免结果返回前误选新增项。 */
+  const comboboxProps = {
+    ref: input,
+    id: listId,
+    value: term,
+    autoComplete: "off",
+    role: "combobox",
+    "aria-autocomplete": "list",
+    "aria-haspopup": "listbox",
+    "aria-expanded": open,
+    "aria-controls": resultsId,
+    "aria-activedescendant": open && active >= 0 ? optionId(active) : undefined,
+    onFocus: () => setOpen(true),
+    onChange: (event: ChangeEvent<HTMLInputElement>) => {
+      setTerm(event.target.value);
+      setOpen(true);
+      // 防抖等待期间即视为搜索中，旧结果不可再被回车选中。
+      setLoading(true);
+      setActiveIndex(event.target.value.trim() ? 0 : -1);
+    },
+    onKeyDown: (event: KeyboardEvent<HTMLInputElement>) => {
+      if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+        event.preventDefault();
+        setOpen(true);
+        const next = event.key === "ArrowDown" ? Math.min(active + 1, options.length - 1) : Math.max(active - 1, 0);
+        setActiveIndex(next);
+      } else if (event.key === "Enter") {
+        event.preventDefault();
+        if (open && !loading && options[active]) choose(options[active].choice);
+        else setOpen(true);
+      } else if (event.key === "Escape") {
+        setOpen(false);
+      }
+    },
+  } as const;
+
+  const results = (
+    <>
+      {loading && <p role="status" className="p-2 text-sm text-neutral-400">正在搜索…</p>}
+      {error && <p role="alert" className="p-2 text-sm text-red-300">{error}</p>}
+      {!loading && !error && choices.length === 0 && <p className="p-2 text-sm text-neutral-400">没有匹配资料</p>}
+      {options.length > 0 && (
+        <div id={resultsId} role="listbox" aria-label={`${label}搜索结果`}>
+          {options.map(({ choice, create }, index) => (
+            <button
+              key={choice.id}
+              id={optionId(index)}
+              type="button"
+              role="option"
+              tabIndex={-1}
+              aria-selected={index === active}
+              data-active={index === active}
+              className="dropdown-option"
+              onMouseEnter={() => setActiveIndex(index)}
+              onClick={() => choose(choice)}
+            >
+              {create ? (
+                <>
+                  <span className="i-material-symbols-add-rounded size-4 shrink-0 text-[var(--accent)]" aria-hidden="true" />
+                  <span className="min-w-0 break-words">新增并关联「{newName}」</span>
+                </>
+              ) : (
+                <>
+                  {choice.cover_url && (
+                    <Image src={choice.cover_url} width={28} height={42} alt="" className="h-10 w-7 shrink-0 rounded object-cover shadow-sm" />
+                  )}
+                  <span className="min-w-0 break-words font-medium">
+                    {choice.name}
+                    {choice.detail && <span className="block text-xs font-normal text-neutral-400">{choice.detail}</span>}
+                  </span>
+                </>
+              )}
+            </button>
+          ))}
+        </div>
+      )}
+      <p className="p-2 text-[11px] text-neutral-400 border-t border-white/5 mt-1">
+        {allowCreate ? "新名称将在保存资料时创建。" : "最多显示 20 项，可输入完整标题缩小范围。"}
+      </p>
+    </>
+  );
 
   if (!multiple) {
     return (
@@ -182,70 +279,13 @@ export default function ChoicePicker({
           </div>
         ) : (
           <input
-            ref={input}
-            id={listId}
-            value={term}
-            autoComplete="off"
+            {...comboboxProps}
             placeholder={`搜索${label}`}
-            role="combobox"
-            aria-autocomplete="list"
-            aria-haspopup="dialog"
-            aria-expanded={open}
-            aria-controls={`${listId}-results`}
-            onFocus={() => setOpen(true)}
-            onChange={(event) => {
-              setTerm(event.target.value);
-              setOpen(true);
-            }}
-            onKeyDown={(event) => {
-              if (event.key === "Escape") setOpen(false);
-              if (event.key === "Enter") {
-                event.preventDefault();
-                setOpen(true);
-              }
-            }}
           />
         )}
         {open && (
-          <FloatingResults root={root} input={input} listRef={list} id={`${listId}-results`} label={label}>
-            {loading && <p role="status" className="p-2 text-sm text-neutral-400">正在搜索…</p>}
-            {error && <p role="alert" className="p-2 text-sm text-red-300">{error}</p>}
-            {!loading &&
-              !error &&
-              choices
-                .filter((item) => !selected.some((value) => same(value, item)))
-                .map((item) => (
-                  <button
-                    key={item.id}
-                    type="button"
-                    className="choice-picker-option mb-1 !w-full !justify-start text-left"
-                    onClick={() => choose(item)}
-                  >
-                    {item.cover_url && (
-                      <Image src={item.cover_url} width={28} height={42} alt="" className="h-10 w-7 shrink-0 rounded object-cover" />
-                    )}
-                    <span className="min-w-0 break-words">
-                      {item.name}
-                      {item.detail && <span className="block text-xs text-neutral-400">{item.detail}</span>}
-                    </span>
-                  </button>
-                ))}
-            {!loading && !error && choices.length === 0 && <p className="p-2 text-sm text-neutral-400">没有匹配资料</p>}
-            {allowCreate &&
-              term.trim() &&
-              !selected.some(exists) &&
-              !choices.some(exists) && (
-                <button
-                  type="button"
-                  className="!w-full !justify-start"
-                  onClick={() => choose({ id: `new:${term.trim()}`, name: term.trim() })}
-                >
-                  新增并关联「{term.trim()}」
-                </button>
-              )}
-            <p className="p-2 text-xs text-neutral-400">
-              {allowCreate ? "新名称将在保存资料时创建。" : "最多显示 20 项，可输入完整标题缩小范围。"}
-            </p>
+          <FloatingResults root={root} input={input} listRef={list}>
+            {results}
           </FloatingResults>
         )}
       </div>
@@ -381,73 +421,16 @@ export default function ChoicePicker({
       <div className="relative flex items-center">
         <span className="i-material-symbols-search-rounded pointer-events-none absolute left-3 z-10 size-4 text-white/40" aria-hidden="true" />
         <input
-          ref={input}
-          id={listId}
-          value={term}
-          autoComplete="off"
+          {...comboboxProps}
           placeholder={`搜索${label}…`}
-          role="combobox"
-          aria-autocomplete="list"
-          aria-haspopup="dialog"
-          aria-expanded={open}
-          aria-controls={`${listId}-results`}
-          onFocus={() => setOpen(true)}
-          onChange={(event) => {
-            setTerm(event.target.value);
-            setOpen(true);
-          }}
-          onKeyDown={(event) => {
-            if (event.key === "Escape") setOpen(false);
-            if (event.key === "Enter") {
-              event.preventDefault();
-              setOpen(true);
-            }
-          }}
           className="!pl-9 !py-2 !text-xs !bg-black/30 hover:!bg-black/40 focus:!bg-black/60 !rounded-xl"
         />
       </div>
 
       {/* 下拉结果浮层 */}
       {open && (
-        <FloatingResults root={root} input={input} listRef={list} id={`${listId}-results`} label={label}>
-          {loading && <p role="status" className="p-2 text-sm text-neutral-400">正在搜索…</p>}
-          {error && <p role="alert" className="p-2 text-sm text-red-300">{error}</p>}
-          {!loading &&
-            !error &&
-            choices
-              .filter((item) => !selected.some((value) => same(value, item)))
-              .map((item) => (
-                <button
-                  key={item.id}
-                  type="button"
-                  className="choice-picker-option mb-1 !w-full !justify-start text-left rounded-lg p-1.5 flex items-center gap-2.5"
-                  onClick={() => choose(item)}
-                >
-                  {item.cover_url && (
-                    <Image src={item.cover_url} width={28} height={42} alt="" className="h-10 w-7 shrink-0 rounded object-cover shadow-sm" />
-                  )}
-                  <span className="min-w-0 break-words font-medium text-sm text-white">
-                    {item.name}
-                    {item.detail && <span className="block text-xs font-normal text-neutral-400">{item.detail}</span>}
-                  </span>
-                </button>
-              ))}
-          {!loading && !error && choices.length === 0 && <p className="p-2 text-sm text-neutral-400">没有匹配资料</p>}
-          {allowCreate &&
-            term.trim() &&
-            !selected.some(exists) &&
-            !choices.some(exists) && (
-              <button
-                type="button"
-                className="!w-full !justify-start admin-primary !min-h-9 !py-1.5 !px-3 text-xs mb-1"
-                onClick={() => choose({ id: `new:${term.trim()}`, name: term.trim() })}
-              >
-                新增并关联「{term.trim()}」
-              </button>
-            )}
-          <p className="p-2 text-[11px] text-neutral-400 border-t border-white/5 mt-1">
-            {allowCreate ? "新名称将在保存资料时创建。" : "最多显示 20 项，可输入完整标题缩小范围。"}
-          </p>
+        <FloatingResults root={root} input={input} listRef={list}>
+          {results}
         </FloatingResults>
       )}
     </div>

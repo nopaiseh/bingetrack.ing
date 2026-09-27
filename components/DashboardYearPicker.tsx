@@ -132,11 +132,9 @@ export default function DashboardYearPicker({
                 aria-selected={selectedYear === year}
                 onMouseEnter={/* 将鼠标指向的年份设为当前活动选项。 */ () => setActiveIndex(index)}
                 onClick={/* 确认点击的年份并关闭选择列表。 */ () => selectYear(year)}
-                className={`w-full shrink-0 rounded-xl border-l-2 px-4 py-2.5 text-left text-sm transition-all ${
-                  selectedYear === year || activeIndex === index
-                    ? "surface-active border-accent font-bold text-accent-hover"
-                    : "border-transparent text-white/70 hover:bg-white/10 hover:text-white"
-                }`}
+                data-active={activeIndex === index}
+                data-current={selectedYear === year}
+                className="dropdown-option"
               >
                 {formatYearLabel(year)}
               </button>

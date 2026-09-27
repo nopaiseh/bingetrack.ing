@@ -26,22 +26,9 @@ export default function Footer() {
                 </span>
               </Link>
               <span className="hidden sm:block text-white/20">|</span>
-              <div className="relative group inline-flex items-center">
-                <span
-                  tabIndex={0}
-                  className="text-white/70 text-xs font-mono cursor-help border-b border-dashed border-white/30 transition-colors hover:text-white hover:border-white/70 focus:text-white focus:border-white/70 focus:outline-none"
-                  title="1990 为站长出生年份，记录人生至今的观影与追剧轨迹"
-                >
-                  &copy; 1990 – {new Date().getFullYear()} 个人媒体记录平台
-                </span>
-                <span
-                  role="tooltip"
-                  className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-max max-w-[280px] sm:max-w-xs px-2.5 py-1.5 rounded-lg bg-neutral-900/95 border border-white/20 text-xs text-white/90 shadow-xl backdrop-blur-md opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-all duration-200 translate-y-1 group-hover:translate-y-0 group-focus-within:translate-y-0 z-50 text-center"
-                >
-                  1990 为站长出生年份，记录人生至今的观影与追剧轨迹
-                  <span className="absolute top-full left-1/2 -translate-x-1/2 -mt-px border-4 border-transparent border-t-neutral-900/95" />
-                </span>
-              </div>
+              <span className="text-white/70 text-xs font-mono">
+                &copy; 1990 – {new Date().getFullYear()} 个人媒体记录平台
+              </span>
             </div>
 
             <div className="flex flex-col sm:flex-row items-center justify-center lg:justify-end gap-4 text-white/50">

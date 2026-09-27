@@ -165,23 +165,6 @@ export default function MediaInformation({
 
   return (
     <>
-      {/* 顶部电影氛围光：海报模糊后固定铺在视口顶部，为详情面板的玻璃层提供可透射的色彩。 */}
-      {media.cover_url && (
-        <div
-          aria-hidden="true"
-          className="page-ambient fixed -z-10 h-[85vh]"
-        >
-          <Image
-            src={media.cover_url}
-            alt=""
-            fill
-            sizes="640px"
-            className="object-cover"
-            priority={false}
-          />
-        </div>
-      )}
-
       <div className="container relative z-10 mx-auto max-w-7xl px-4 pb-12 pt-24 sm:px-6 lg:px-8">
         <Suspense fallback={<DefaultMediaBackLink type={media.type === "shows" ? "shows" : "movies"} />}>
           <MediaBackLink type={media.type === "shows" ? "shows" : "movies"} />
