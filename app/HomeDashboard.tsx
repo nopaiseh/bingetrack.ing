@@ -283,7 +283,8 @@ export default function HomeDashboard({
         </div>
 
         <div className="relative mt-5 flex flex-col items-start justify-between gap-4 border-t border-white/10 pt-4 md:flex-row md:items-center">
-          <div className="relative flex items-center rounded-full bg-black/25 p-1 shadow-[inset_0_1px_2px_rgba(0,0,0,0.4)]" role="tablist" aria-label="仪表板视图">
+          {/* 标签等宽（取最宽者），滑块按等分宽度平移才能与每个标签对齐。 */}
+          <div className="relative grid grid-flow-col auto-cols-fr items-center rounded-full bg-black/25 p-1 shadow-[inset_0_1px_2px_rgba(0,0,0,0.4)]" role="tablist" aria-label="仪表板视图">
             {/* 平滑滑动的物理胶囊底块 */}
             <div
               aria-hidden="true"
