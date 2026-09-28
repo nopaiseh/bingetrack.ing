@@ -6,6 +6,10 @@ import { revalidatePath, revalidateTag } from "next/cache";
 vi.mock("@/lib/auth/server", () => ({ requireOwner: vi.fn() }));
 vi.mock("next/cache", () => ({ revalidatePath: vi.fn(), revalidateTag: vi.fn() }));
 vi.mock("next/navigation", () => ({ redirect: vi.fn() }));
+vi.mock("@/lib/admin/revalidate-media", async (importOriginal) => ({
+  ...await importOriginal<typeof import("@/lib/admin/revalidate-media")>(),
+  affectedMediaIds: vi.fn(async (_db: unknown, ids: string[]) => ids),
+}));
 const id = "11111111-1111-4111-8111-111111111111";
 const chain = { delete: vi.fn(), eq: vi.fn(), select: vi.fn(), update: vi.fn(), insert: vi.fn(), single: vi.fn(), ilike: vi.fn(), or: vi.fn(), order: vi.fn(), limit: vi.fn(), in: vi.fn(), then: vi.fn((resolve: (val: unknown) => void) => resolve({ data: [], error: null })) };
 const from = vi.fn(() => chain);
@@ -63,6 +67,15 @@ describe("关联资料服务端操作", () => {
     const result = await saveCollectionMember({}, form({ series_id: id, media_item_id: id, intent: "remove" }));
     expect(result).toEqual({ saved: true });
     expect(chain.delete).toHaveBeenCalled();
+  });
+  it("调整系列成员只失效受影响条目与聚合数据，不清空全站缓存", async () => {
+    chain.select.mockResolvedValue({ data: [{ media_item_id: id }], error: null });
+    await saveCollectionMember({}, form({ series_id: id, media_item_id: id, intent: "remove" }));
+    expect(revalidateTag).toHaveBeenCalledWith(`media:item:${id}`, { expire: 0 });
+    expect(revalidateTag).toHaveBeenCalledWith("media:lists", { expire: 0 });
+    expect(revalidateTag).not.toHaveBeenCalledWith("media", expect.anything());
+    expect(revalidatePath).not.toHaveBeenCalledWith("/", "layout");
+    expect(revalidatePath).toHaveBeenCalledWith("/movies");
   });
   it("searchChoices 容忍缺失的上级电视节目资料而不崩溃", async () => {
     chain.then.mockImplementation((resolve: (val: unknown) => void) =>

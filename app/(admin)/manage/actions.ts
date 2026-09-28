@@ -1,10 +1,10 @@
 "use server";
 
 import { redirect } from "next/navigation";
-import { revalidatePath, revalidateTag } from "next/cache";
 import { requireOwner } from "@/lib/auth/server";
 import { parseMediaForm } from "@/lib/admin/media-form";
 import { isMediaId } from "@/lib/functions/media-id";
+import { affectedMediaIds, mergeAffected, revalidateAllMedia, revalidateMediaItems } from "@/lib/admin/revalidate-media";
 
 export type ActionResult = { error?: string; saved?: boolean };
 
@@ -23,10 +23,11 @@ export async function saveMedia(_previous: ActionResult, form: FormData): Promis
   try { payload = parseMediaForm(form); } catch (error) {
     return { error: error instanceof Error ? error.message : "资料格式不正确。" };
   }
+  // 保存前记下旧的上级与系列成员，条目移走后它们的详情页也要刷新。
+  const before = payload.id ? await affectedMediaIds(db, [payload.id]) : [];
   const { data, error } = await db.rpc("manage_save_media", { p_data: payload });
   if (error) return { error: writeError(error.code) };
-  revalidateTag("media", { expire: 0 });
-  revalidatePath("/", "layout");
+  revalidateMediaItems(mergeAffected(before, await affectedMediaIds(db, [String(data)])));
   redirect(`/manage/media/${data}?saved=1`);
 }
 
@@ -36,10 +37,11 @@ export async function deleteMedia(_previous: ActionResult, form: FormData): Prom
   const id = String(form.get("id") ?? "");
   const title = String(form.get("confirm_title") ?? "");
   if (!isMediaId(id) || !title) return { error: "请输入要删除的完整标题。" };
+  // 删除会级联移除关联，必须在删除前查出受影响的上级与系列成员。
+  const affected = await affectedMediaIds(db, [id]);
   const { error } = await db.rpc("admin_delete_media", { p_id: id, p_confirm_title: title });
   if (error) return { error: error.code === "22023" ? "标题不匹配，请输入当前条目的完整标题。" : writeError(error.code) };
-  revalidateTag("media", { expire: 0 });
-  revalidatePath("/", "layout");
+  revalidateMediaItems(affected);
   redirect("/manage?deleted=1");
 }
 
@@ -48,8 +50,7 @@ export async function manualRevalidateCache(): Promise<ActionResult> {
   // 身份校验放在 try 之外，会话过期时的重定向不能被当成普通错误吞掉。
   await requireOwner();
   try {
-    revalidateTag("media", { expire: 0 });
-    revalidatePath("/", "layout");
+    revalidateAllMedia();
     return { saved: true };
   } catch (error) {
     return { error: error instanceof Error ? error.message : "刷新缓存失败。" };
