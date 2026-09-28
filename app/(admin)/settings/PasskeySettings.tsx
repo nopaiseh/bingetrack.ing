@@ -59,14 +59,21 @@ export default function PasskeySettings({ initialKeys, initialError }: { initial
     </div>
     {message.text && <p role="status" className={`surface-muted rounded-xl border border-white/10 px-4 py-3 text-sm ${message.tone === "success" ? "text-emerald-300" : "text-red-200"}`}>{message.text}</p>}
     {!keys.length && <p className="surface-panel rounded-2xl px-6 py-16 text-center text-sm text-neutral-300">尚未绑定凭证。添加后即可使用 Passkey 登录。</p>}
-    <ul className="grid gap-5 lg:grid-cols-2">{keys.map(/* 每个凭证提供独立名称表单和移除操作。 */ key => <li key={key.id} className="surface-card rounded-2xl p-5 sm:p-6">
+    <ul className="grid gap-5 lg:grid-cols-2">{keys.map(/* 每个凭证提供独立名称表单和移除操作。 */ key => <li key={key.id} className="surface-card space-y-4 rounded-2xl border border-white/10 p-5 sm:p-6">
+      <div className="flex items-center gap-3">
+        <span className="inline-flex size-10 shrink-0 items-center justify-center rounded-xl border border-[var(--accent-border)] bg-[var(--accent-soft)] text-[var(--accent-light)]"><span className="i-material-symbols-key-rounded size-5" aria-hidden="true" /></span>
+        <div className="min-w-0">
+          <p className="truncate font-medium text-white">{key.friendly_name || "Passkey"}</p>
+          <p className="font-mono text-xs text-neutral-400">创建于 {key.created_at.slice(0, 10)}{key.last_used_at ? ` · 最后使用 ${key.last_used_at.slice(0, 10)}` : " · 尚未使用"}</p>
+        </div>
+      </div>
       <form action={rename} className="flex flex-wrap items-end gap-3">
         <input type="hidden" name="id" value={key.id} />
         <label className="min-w-0 basis-full">凭证名称<input name="name" defaultValue={key.friendly_name || "Passkey"} maxLength={120} required /></label>
         <button disabled={busy} type="submit">重命名</button>
         <button className="admin-danger" type="button" disabled={busy || keys.length < 2} onClick={/* 传入当前凭证并请求重新验证。 */ () => remove(key)}>移除</button>
       </form>
-      <p className="mt-3 text-xs text-neutral-400">创建于 {key.created_at.slice(0, 10)}{keys.length < 2 ? " · 请先添加备用凭证，再移除这个凭证。" : ""}</p>
+      {keys.length < 2 && <p className="text-xs text-neutral-400">请先添加备用凭证，再移除这个凭证。</p>}
     </li>)}</ul>
   </div>;
 }

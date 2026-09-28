@@ -1,3 +1,5 @@
+import { mediaTypes, type ManagedMediaType } from "./media-form";
+
 /** 管理区分类与关联表的固定映射，服务端不能接受任意表名。 */
 export const referenceTypes = {
   people: { label: "人物", table: "people", link: "media_credits", key: "person_id", alternate: true },
@@ -8,6 +10,16 @@ export const referenceTypes = {
 } as const;
 export type ReferenceType = keyof typeof referenceTypes;
 export type Choice = { id: string; name: string; detail?: string; cover_url?: string | null; character?: string | null };
+
+/** 影视选项需要的字段；季额外带出季号与所属电视节目标题。 */
+export const mediaChoiceFields = "id,title,type,cover_url,season:tv_seasons!tv_seasons_id_fkey(season_number,parent:media_items!tv_seasons_series_id_fkey(title))";
+export type MediaChoiceRow = { type?: ManagedMediaType | null; season?: { season_number: number; parent?: { title?: string } | null } | null };
+
+/** 影视选项的补充说明：季显示「节目 · 第 N 季」，其余显示类型名，搜索结果与预填上级保持一致。 */
+export function mediaChoiceDetail(row: MediaChoiceRow) {
+  if (row.season) return `${row.season.parent?.title ?? "未知电视节目"} · 第 ${row.season.season_number} 季`;
+  return row.type ? mediaTypes[row.type] : undefined;
+}
 /** 只允许八类管理内容中的关联资料类别。 */
 export function isReferenceType(value: string): value is ReferenceType {
   return Object.hasOwn(referenceTypes, value);

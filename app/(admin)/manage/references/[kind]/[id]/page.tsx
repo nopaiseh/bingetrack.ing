@@ -66,8 +66,10 @@ export default async function ReferenceDetail({ params, searchParams }: { params
   const memberRows = (members?.data ?? []) as unknown as { media_item_id: string; position?: number | null; media_items: RelatedMedia | null }[];
 
   return <section><header className="mb-8"><BackToList category={kind} /><h1 className="admin-heading break-words">编辑：{item.name}</h1></header>{search.saved && <StatusModal message="保存成功，关联作品已同步更新。" />}
-    <ReferenceForm key={`${id}:${item.name}:${item.alternate_name}`} kind={kind} item={item} count={count} />
-    <section className="mt-10 space-y-4"><h2 className="admin-section-title text-xl font-semibold text-white">关联作品 <span className="text-sm font-normal text-neutral-400">{kind === "people" ? `${works.length} 部作品 · ` : ""}{count} 个关联</span></h2>{collections && <><p className="text-sm text-neutral-400">顺序越小越靠前，相同顺序按作品 ID 排列。</p><CollectionMember series={id} /></>}
+    {/* 资料表单固定在左侧，右侧浏览关联作品时仍可随时改名保存。 */}
+    <div className="grid gap-8 lg:grid-cols-[20rem_minmax(0,1fr)] lg:items-start">
+    <div className="lg:sticky lg:top-24"><ReferenceForm key={`${id}:${item.name}:${item.alternate_name}`} kind={kind} item={item} count={count} /></div>
+    <section className="min-w-0 space-y-4"><h2 className="admin-section-title text-xl font-semibold text-white">{collections ? "系列作品" : "关联作品"} <span className="font-mono text-sm font-normal text-neutral-400">{kind === "people" ? `${works.length} 部作品 · ` : ""}{count} 个关联</span></h2>{collections && <><p className="text-sm text-neutral-400">顺序越小越靠前，相同顺序按作品 ID 排列。移除只解除关联，不会删除作品。</p><CollectionMember series={id} /></>}
       {groups.map(group => {
         const visible = group.works.filter(work => pageIds.has(work.media.id));
         if (!visible.length) return null;
@@ -79,5 +81,6 @@ export default async function ReferenceDetail({ params, searchParams }: { params
       {!count && <p className="py-6 text-sm text-neutral-400">还没有关联作品。</p>}
       <ManagePagination page={page} totalPages={totalPages} params={{}} basePath={basePath} label="关联作品分页" />
     </section>
+    </div>
   </section>;
 }

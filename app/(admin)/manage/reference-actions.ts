@@ -1,7 +1,6 @@
 "use server";
-import { mediaTypes, type ManagedMediaType } from "@/lib/admin/media-form";
 import { requireOwner } from "@/lib/auth/server";
-import { escapeLikePattern, isReferenceType, nameOrAliasFilter, referenceTypes, type Choice } from "@/lib/admin/catalog";
+import { escapeLikePattern, isReferenceType, mediaChoiceDetail, mediaChoiceFields, nameOrAliasFilter, referenceTypes, type Choice, type MediaChoiceRow } from "@/lib/admin/catalog";
 import { isMediaId } from "@/lib/functions/media-id";
 import { revalidatePath, revalidateTag } from "next/cache";
 import { redirect } from "next/navigation";
@@ -13,14 +12,14 @@ export async function searchChoices(kind: string, term: string): Promise<{ choic
   const media = ["movie", "tv_show", "tv_season", "tv_episode", "media"].includes(kind);
   if (!media && !isReferenceType(kind)) return { choices: [], error: "不支持的资料类别。" };
   const table = media ? "media_items" : referenceTypes[kind as keyof typeof referenceTypes].table;
-  let query = db.from(table).select(media ? "id,title,type,cover_url,season:tv_seasons!tv_seasons_id_fkey(season_number,parent:media_items!tv_seasons_series_id_fkey(title))" : kind === "people" ? "id,name,alternate_name" : "id,name").order(media ? "title" : "name").order("id").limit(20);
+  let query = db.from(table).select(media ? mediaChoiceFields : kind === "people" ? "id,name,alternate_name" : "id,name").order(media ? "title" : "name").order("id").limit(20);
   const search = term.trim().slice(0, 200);
   // 人物、系列同时匹配别名，其余资料与影视只按名称／标题匹配。
   query = !media && referenceTypes[kind as keyof typeof referenceTypes].alternate ? query.or(nameOrAliasFilter(search)) : query.ilike(media ? "title" : "name", `%${escapeLikePattern(search)}%`);
   if (media) query = kind === "media" ? query.in("type", ["movie", "tv_show", "tv_season", "tv_episode"]) : query.eq("type", kind);
   const { data, error } = await query;
   if (error) return { choices: [], error: "搜索失败，请重试。" };
-  return { choices: (data as unknown as { id: string; title?: string; name?: string; alternate_name?: string | null; type?: ManagedMediaType; cover_url?: string | null; season?: { season_number: number; parent?: { title?: string } | null } | null }[]).map(/* 统一名称和影视标题；人物以别名区分同名者。 */ row => ({ id: row.id, name: row.title ?? row.name ?? "", detail: row.season ? `${row.season.parent?.title ?? "未知电视节目"} · 第 ${row.season.season_number} 季` : row.type ? mediaTypes[row.type] : row.alternate_name ?? undefined, cover_url: row.cover_url })) };
+  return { choices: (data as unknown as (MediaChoiceRow & { id: string; title?: string; name?: string; alternate_name?: string | null; cover_url?: string | null })[]).map(/* 统一名称和影视标题；人物以别名区分同名者。 */ row => ({ id: row.id, name: row.title ?? row.name ?? "", detail: mediaChoiceDetail(row) ?? row.alternate_name ?? undefined, cover_url: row.cover_url })) };
 }
 
 /** 新建与编辑共用白名单，更新必须实际命中记录才报告成功。 */
