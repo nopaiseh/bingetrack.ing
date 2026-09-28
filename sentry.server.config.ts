@@ -14,6 +14,9 @@ Sentry.init({
     process.env.SENTRY_TRACES_SAMPLE_RATE,
   ),
 
+  // 不上报 Cookie 与请求／响应正文：Supabase 会话令牌存放在 Cookie 中，正文可能包含观看记录等个人数据。
   dataCollection: {
+    cookies: false,
+    httpBodies: [],
   },
 });
