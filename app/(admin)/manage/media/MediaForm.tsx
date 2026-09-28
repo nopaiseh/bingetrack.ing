@@ -167,7 +167,7 @@ export default function MediaForm({ item, initialType = "movie", lockType = fals
           <div className="sm:col-span-2">
             <div className="mb-1.5 flex items-center justify-between">
               <label htmlFor="field-cover-url">封面地址（TMDB）</label>
-              <span className="text-[11px] font-normal text-neutral-500">支持 TMDB 或外部图床</span>
+              <span className="text-[11px] font-normal text-neutral-500">仅支持 TMDB 图片地址</span>
             </div>
             <div className="flex items-center gap-3">
               <div className="flex-1 min-w-0">

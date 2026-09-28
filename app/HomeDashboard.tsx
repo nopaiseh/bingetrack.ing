@@ -496,7 +496,7 @@ export default function HomeDashboard({
                 <PosterRowSkeleton />
               ) : (
                 <MediaRow
-                  title={selectedYear === "All Time" ? "影史精选" : `${selectedYear} 年度精选`}
+                  title={selectedYear === "All Time" ? "剧集精选" : `${selectedYear} 年度精选`}
                   items={selectedYear === "All Time" ? topSeries : displayedTopSeries}
                   viewAllLink={getSearchViewAllLink("tv_show", selectedYear)}
                   type="shows"

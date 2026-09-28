@@ -8,19 +8,19 @@ type Key = { id: string; friendly_name?: string; created_at: string; last_used_a
 /** 管理本人凭证；删除前重新验证并保留最后一个凭证，降低误锁账号风险。 */
 export default function PasskeySettings({ initialKeys, initialError }: { initialKeys: Key[]; initialError: string }) {
   const [keys, setKeys] = useState(initialKeys);
-  const [message, setMessage] = useState(initialError);
+  const [message, setMessage] = useState<{ text: string; tone: "success" | "error" }>({ text: initialError, tone: "error" });
   const [busy, setBusy] = useState(false);
   /** 执行凭证变更并刷新列表，任何失败都保留当前页面。 */
   async function run(operation: () => Promise<void>) {
     setBusy(true);
-    setMessage("");
+    setMessage({ text: "", tone: "error" });
     try {
       await operation();
       const { data, error } = await getAuthBrowser().auth.passkey.list();
       if (error) throw error;
       setKeys(data ?? []);
-      setMessage("凭证已更新。");
-    } catch { setMessage("操作未完成，请重试；如取消了设备验证，凭证不会被更改。"); }
+      setMessage({ text: "凭证已更新。", tone: "success" });
+    } catch { setMessage({ text: "操作未完成，请重试；如取消了设备验证，凭证不会被更改。", tone: "error" }); }
     finally { setBusy(false); }
   }
   /** 唤起操作系统创建新凭证。 */
@@ -46,7 +46,7 @@ export default function PasskeySettings({ initialKeys, initialError }: { initial
   /** 用表单提供的名称更新凭证标签。 */
   async function rename(form: FormData) {
     const friendlyName = String(form.get("name") ?? "").trim();
-    if (!friendlyName || friendlyName.length > 120) { setMessage("凭证名称应为 1–120 个字符。"); return; }
+    if (!friendlyName || friendlyName.length > 120) { setMessage({ text: "凭证名称应为 1–120 个字符。", tone: "error" }); return; }
     await run(async function update() {
       const { error } = await getAuthBrowser().auth.passkey.update({ passkeyId: String(form.get("id")), friendlyName });
       if (error) throw error;
@@ -57,7 +57,7 @@ export default function PasskeySettings({ initialKeys, initialError }: { initial
       <h2 className="admin-section-title text-xl font-semibold text-white">已绑定凭证 <span className="text-sm font-normal text-neutral-400">{keys.length}</span></h2>
     <button type="button" onClick={add} disabled={busy} className="admin-primary">{busy ? "处理中…" : "添加 Passkey"}</button>
     </div>
-    {message && <p role="status" className="surface-muted rounded-xl border border-white/10 px-4 py-3 text-sm text-red-200">{message}</p>}
+    {message.text && <p role="status" className={`surface-muted rounded-xl border border-white/10 px-4 py-3 text-sm ${message.tone === "success" ? "text-emerald-300" : "text-red-200"}`}>{message.text}</p>}
     {!keys.length && <p className="surface-panel rounded-2xl px-6 py-16 text-center text-sm text-neutral-300">尚未绑定凭证。添加后即可使用 Passkey 登录。</p>}
     <ul className="grid gap-5 lg:grid-cols-2">{keys.map(/* 每个凭证提供独立名称表单和移除操作。 */ key => <li key={key.id} className="surface-card rounded-2xl p-5 sm:p-6">
       <form action={rename} className="flex flex-wrap items-end gap-3">
