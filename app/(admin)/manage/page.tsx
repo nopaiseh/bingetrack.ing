@@ -34,7 +34,7 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
   const offset = (page - 1) * PAGE_SIZE;
 
   // 优先读取排序视图：电影、单集按上映日期倒序，电视节目、季按最近一集播出日期倒序；同日期内按季号／集号倒序。
-  let orderQuery = db.from("v_manage_media_order").select("id", { count: "exact" }).eq("type", type);
+  let orderQuery = db.from("v_manage_media_order").select("id, status, rating", { count: "exact" }).eq("type", type);
   if (q) orderQuery = orderQuery.or(titleOrAliasFilter(q));
   if (relation) orderQuery = orderQuery.eq("parent_id", parent);
   if (status) orderQuery = orderQuery.eq("status", status);
@@ -49,8 +49,14 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
 
   let data: unknown[];
   let count: number;
+  // 电视节目与季的状态、评分由下属单集汇总；排序视图已算好，降级路径才需另行查询。
+  const derivedStatusMap = new Map<string, { status: string; rating: number | null }>();
   if (!ordered.error) {
-    const ids = (ordered.data ?? []).map((row) => row.id as string);
+    const orderedRows = (ordered.data ?? []) as unknown as { id: string; status: string | null; rating: number | string | null }[];
+    for (const row of orderedRows) {
+      derivedStatusMap.set(row.id, { status: row.status ?? "want_to_watch", rating: row.rating != null ? Number(row.rating) : null });
+    }
+    const ids = orderedRows.map((row) => row.id);
     count = ordered.count ?? 0;
     if (ids.length > 0) {
       const details = await db.from("media_items").select(detailFields).in("id", ids);
@@ -78,10 +84,7 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
   const filters = { q, type, parent, status, sort };
   if (page > totalPages) redirect(`/manage?${new URLSearchParams({ ...filters, page: String(totalPages) })}`);
   const rows = data as unknown as { id: string; title: string; type: ManagedMediaType; cover_url: string | null; release_date: string | null; tv_seasons: { season_number: number; episodes?: { count: number }[]; parent?: { title: string } | null } | null; tv_episodes: { episode_number: number; parent?: { media_items?: { title: string } | null; series?: { title: string } | null } | null } | null; seasons?: { count: number }[]; tracking: { status: string; rating: number | null } | { status: string; rating: number | null }[] | null }[];
-  const seriesStatusMap = new Map<string, { status: string; rating: number | null }>();
-  const seasonStatusMap = new Map<string, { status: string }>();
-
-  if (rows.length > 0) {
+  if (ordered.error && rows.length > 0) {
     const ids = rows.map(r => r.id);
     if (type === "tv_show") {
       const { data: statusList } = await db
@@ -90,7 +93,7 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
         .in("id", ids);
       if (statusList) {
         for (const item of statusList) {
-          seriesStatusMap.set(item.id, {
+          derivedStatusMap.set(item.id, {
             status: item.status ?? "want_to_watch",
             rating: item.rating != null ? Number(item.rating) : null,
           });
@@ -110,7 +113,7 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
             : watchedCount > 0
               ? "watching"
               : "want_to_watch";
-          seasonStatusMap.set(item.id, { status });
+          derivedStatusMap.set(item.id, { status, rating: null });
         }
       }
     }
@@ -151,11 +154,11 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
       let itemStatus = tracking?.status ?? "want_to_watch";
       let rating = tracking?.rating != null ? Number(tracking.rating) : null;
       if (item.type === "tv_show") {
-        const derived = seriesStatusMap.get(item.id);
+        const derived = derivedStatusMap.get(item.id);
         itemStatus = derived?.status ?? "want_to_watch";
         rating = derived?.rating ?? null;
       } else if (item.type === "tv_season") {
-        const derived = seasonStatusMap.get(item.id);
+        const derived = derivedStatusMap.get(item.id);
         itemStatus = derived?.status ?? "want_to_watch";
         rating = null;
       }

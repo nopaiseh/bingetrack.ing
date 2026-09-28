@@ -52,7 +52,8 @@ export async function GET(request: NextRequest) {
   }
 
   const next = request.nextUrl.searchParams.get("next");
-  const target = next && next.startsWith("/") && !next.startsWith("//") ? next : "/manage";
+  // 浏览器会把 "/\" 视同 "//"，两者都会被解析为协议相对的站外地址。
+  const target = next && next.startsWith("/") && !next.startsWith("//") && !next.startsWith("/\\") ? next : "/manage";
 
   return new NextResponse(null, {
     status: 303,
