@@ -16,7 +16,7 @@ where m.type = 'tv_show'::public.media_type and (gap.total = 0 or gap.missing is
 union all
 select m.id::text, m.type::text, m.id, m.title,
   c.context || case when gap.missing is null then '' else ' · 缺第 ' || array_to_string(gap.missing, '、') || ' 集' end,
-  array[case when gap.total = 0 then 'no_episodes' else 'episode_gap' end], 0, c.context
+  array[case when counts.total = 0 then 'no_episodes' else 'episode_gap' end], 0, c.context
 from public.media_items m
 join public.v_report_media_context c on c.id = m.id
 left join lateral (
