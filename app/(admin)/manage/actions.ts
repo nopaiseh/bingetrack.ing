@@ -1,12 +1,13 @@
 "use server";
 
 import { redirect } from "next/navigation";
+import { refresh } from "next/cache";
 import { requireOwner } from "@/lib/auth/server";
 import { parseMediaForm } from "@/lib/admin/media-form";
 import { isMediaId } from "@/lib/functions/media-id";
 import { affectedMediaIds, mergeAffected, revalidateAllMedia, revalidateMediaItems } from "@/lib/admin/revalidate-media";
 
-export type ActionResult = { error?: string; saved?: boolean };
+export type ActionResult = { error?: string; saved?: boolean; id?: string };
 
 /** 将数据库错误转换成可以采取行动的提示，不暴露 SQL 细节。 */
 function writeError(code?: string) {
@@ -16,7 +17,7 @@ function writeError(code?: string) {
   return "保存失败，请检查字段或数据库配置后重试。";
 }
 
-/** 保存媒体及关联资料；事务失败时不刷新公开缓存。 */
+/** 保存媒体及关联资料；事务失败时不刷新公开缓存。快速新增选择连续录入时留在当前页，只刷新侧栏数据。 */
 export async function saveMedia(_previous: ActionResult, form: FormData): Promise<ActionResult> {
   const { db } = await requireOwner();
   let payload;
@@ -28,6 +29,10 @@ export async function saveMedia(_previous: ActionResult, form: FormData): Promis
   const { data, error } = await db.rpc("manage_save_media", { p_data: payload });
   if (error) return { error: writeError(error.code) };
   revalidateMediaItems(mergeAffected(before, await affectedMediaIds(db, [String(data)])));
+  if (form.get("after") === "continue") {
+    refresh();
+    return { saved: true, id: String(data) };
+  }
   redirect(`/manage/media/${data}?saved=1`);
 }
 

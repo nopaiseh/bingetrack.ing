@@ -24,14 +24,22 @@ export default async function ReferenceList({ params, searchParams }: { params: 
   const totalPages = Math.max(1, Math.ceil((count ?? 0) / PAGE_SIZE));
   if (page > totalPages) redirect(`/manage/references/${kind}?${new URLSearchParams({ q, page: String(totalPages) })}`);
   const rows = data as unknown as { id: string; name: string; alternate_name?: string; [key: string]: unknown }[];
+  const quick = kind === "genres" || kind === "regions" || kind === "languages";
   return <section>
     <div className="surface-panel mb-8 rounded-3xl p-5 sm:p-8 flex flex-wrap items-center justify-between gap-4">
-      <div><h1 className="admin-heading">{config.label}</h1><p className="mt-2 text-neutral-400">共 {count ?? 0} 项资料 · 集中维护，关联作品同步更新</p></div>
-      {kind === "genres" || kind === "regions" || kind === "languages" ? <ReferenceQuickEdit kind={kind} /> : <Link className="admin-button admin-primary shrink-0" href={`/manage/references/${kind}/new`}>新增{config.label}</Link>}
+      <div><h1 className="admin-heading">{config.label}</h1><p className="mt-2 text-neutral-400">共 <span className="font-mono">{(count ?? 0).toLocaleString("en-US")}</span> 项资料 · 集中维护，关联作品同步更新</p></div>
+      {quick ? <ReferenceQuickEdit kind={kind} /> : <Link className="admin-button admin-primary shrink-0" href={`/manage/references/${kind}/new`}>新增{config.label}</Link>}
     </div>
     {search.deleted && <StatusModal message="资料及其关联已删除，影视作品已保留。" />}
     <form className="surface-panel mb-6 rounded-2xl p-4 sm:p-6 grid grid-cols-[minmax(0,1fr)_auto] items-end gap-3"><label>{config.alternate ? "搜索名称或别名" : "搜索名称"}<input name="q" defaultValue={q} maxLength={200} placeholder={config.alternate ? `搜索${config.label}名称或别名` : `搜索${config.label}`} /></label><button type="submit">搜索</button></form>
-    <ul className="surface-panel divide-y divide-white/10 overflow-hidden rounded-2xl">{rows.map(/* 引用计数来自嵌入聚合，不拉取全部作品。 */ row => <li key={row.id} className="flex items-center gap-3 pr-5"><Link href={`/manage/references/${kind}/${row.id}`} className="flex min-w-0 flex-1 items-center justify-between gap-4 p-5 transition-colors hover:bg-white/5"><div className="min-w-0"><h2 className="break-words font-medium text-white">{row.name}</h2>{row.alternate_name && <p className="mt-1 break-words text-sm text-neutral-400">{row.alternate_name}</p>}</div><span className="shrink-0 text-sm text-neutral-400">{(row[config.link] as { count: number }[])?.[0]?.count ?? 0} 个关联 →</span></Link>{(kind === "genres" || kind === "regions" || kind === "languages") && <ReferenceQuickEdit kind={kind} item={{ id: row.id, name: row.name }} count={(row[config.link] as { count: number }[])?.[0]?.count ?? 0} />}</li>)}</ul>
+    {/* 类型、地区、语言名称短，用卡片网格一屏看更多；人物与系列保留列表，显示别名。 */}
+    {quick ? <ul className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">{rows.map(/* 引用计数来自嵌入聚合，不拉取全部作品。 */ row => {
+      const links = (row[config.link] as { count: number }[])?.[0]?.count ?? 0;
+      return <li key={row.id} className="surface-panel flex items-center gap-3 rounded-2xl py-3.5 pl-5 pr-3.5">
+        <Link href={`/manage/references/${kind}/${row.id}`} className="group min-w-0 flex-1"><h2 className="break-words font-medium text-white transition-colors group-hover:text-[var(--accent-hover)]">{row.name}</h2><p className="mt-0.5 font-mono text-xs text-neutral-400">{links.toLocaleString("en-US")} 个关联 →</p></Link>
+        <ReferenceQuickEdit kind={kind} item={{ id: row.id, name: row.name }} count={links} />
+      </li>;
+    })}</ul> : <ul className="surface-panel divide-y divide-white/10 overflow-hidden rounded-2xl">{rows.map(/* 引用计数来自嵌入聚合，不拉取全部作品。 */ row => <li key={row.id}><Link href={`/manage/references/${kind}/${row.id}`} className="group flex min-w-0 items-center justify-between gap-4 p-5 transition-colors hover:bg-white/5 sm:px-6"><div className="min-w-0"><h2 className="break-words font-medium text-white transition-colors group-hover:text-[var(--accent-hover)]">{row.name}</h2>{row.alternate_name ? <p className="mt-1 break-words text-sm text-neutral-400">{row.alternate_name}</p> : kind === "people" && <p className="mt-1.5"><span className="surface-muted rounded-full border border-white/10 px-2.5 py-0.5 text-xs text-neutral-300">未填别名</span></p>}</div><span className="shrink-0 font-mono text-sm text-neutral-400">{((row[config.link] as { count: number }[])?.[0]?.count ?? 0).toLocaleString("en-US")} 个关联 →</span></Link></li>)}</ul>}
     {!rows.length && <div className="surface-panel rounded-2xl p-12 text-center"><p className="text-neutral-400">{q ? `没有匹配的资料，试试其他名称${config.alternate ? "或别名" : ""}。` : `还没有${config.label}，从第一项资料开始。`}</p></div>}
     <ManagePagination page={page} totalPages={totalPages} params={{ q }} basePath={`/manage/references/${kind}`} label="资料列表分页" />
   </section>;

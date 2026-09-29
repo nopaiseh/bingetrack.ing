@@ -4,7 +4,7 @@ import { useActionState, useId, useRef, useState } from "react";
 import { useDraftFields } from "../useDraftFields";
 import ChoicePicker from "../ChoicePicker";
 import UnsavedGuard from "../UnsavedGuard";
-import type { Choice } from "@/lib/admin/catalog";
+import type { ParentChoice } from "@/lib/admin/media-context";
 import { saveMedia, deleteMedia, type ActionResult } from "@/app/(admin)/manage/actions";
 import { mediaTypes, type MediaInput, type ManagedMediaType } from "@/lib/admin/media-form";
 
@@ -44,7 +44,7 @@ const typeConfigs: Record<ManagedMediaType, { label: string; icon: string; badge
 };
 
 /** 用同一表单编辑电影、电视节目、季和单集，保持各字段有明确标签。 */
-export default function MediaForm({ item, initialType = "movie", lockType = false, parent, nextNumber, impact }: { item?: MediaInput; initialType?: ManagedMediaType; lockType?: boolean; parent?: Choice; nextNumber?: number; impact?: { seasons: number; episodes: number } }) {
+export default function MediaForm({ item, initialType = "movie", lockType = false, parent, nextNumber, impact }: { item?: MediaInput; initialType?: ManagedMediaType; lockType?: boolean; parent?: ParentChoice; nextNumber?: number; impact?: { seasons: number; episodes: number } }) {
   const field = useDraftFields();
   const [type, setType] = useState<ManagedMediaType>(item?.type ?? initialType);
   const [coverPreview, setCoverPreview] = useState(item?.cover_url ?? "");
@@ -203,7 +203,7 @@ export default function MediaForm({ item, initialType = "movie", lockType = fals
               label={type === "tv_season" ? "所属电视节目" : "所属季"}
               multiple={false}
               required
-              initial={parent && parent.detail === (type === "tv_season" ? "tv_show" : "tv_season") ? [parent] : []}
+              initial={parent && parent.type === (type === "tv_season" ? "tv_show" : "tv_season") ? [parent] : []}
             />
             <div>
               <div className="mb-1.5 flex items-center justify-between">

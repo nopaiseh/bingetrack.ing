@@ -202,5 +202,43 @@
 }
 
 
+/* 左侧导航与剧集结构栏等高并跟随滚动，顶部对齐；内容超出时在栏内滚动。 */
+@media (min-width: 1024px) {
+  .admin-side-panel { height: min(46rem, calc(100dvh - 7rem)); overflow-y: auto; }
+}
+
+/* 新增季、集的虚线按钮，只出现在剧集结构栏与列表行尾。 */
+.admin-shell .admin-add {
+  min-height: 2.25rem;
+  padding: .45rem .75rem;
+  border-style: dashed;
+  border-color: var(--accent-border);
+  border-radius: .625rem;
+  background: color-mix(in srgb, var(--accent) 8%, transparent);
+  color: var(--accent-light);
+  box-shadow: none;
+  font-size: .8125rem;
+}
+.admin-shell .admin-add:hover { background: var(--accent-soft); color: white; }
+
+/* 观看状态圆点：实心看过、半满在看、空心没看过。 */
+.status-dot { display: inline-block; width: .5rem; height: .5rem; flex-shrink: 0; border-radius: 9999px; box-sizing: border-box; }
+.status-dot-watched { background: var(--accent-light); }
+.status-dot-watching { border: 2px solid var(--accent-light); background: linear-gradient(90deg, var(--accent-light) 50%, transparent 50%); }
+.status-dot-want_to_watch { border: 1.5px solid rgba(255, 255, 255, 0.45); }
+
+/* 手机端从底部滑出的选择面板，与快速编辑弹窗同一材质。 */
+.admin-sheet {
+  margin: auto 0 0; width: 100%; max-width: 100%; max-height: min(80dvh, 40rem);
+  display: flex; flex-direction: column; gap: .75rem;
+  border: 1px solid rgba(255, 255, 255, 0.16); border-bottom: 0; border-radius: 1.5rem 1.5rem 0 0;
+  padding: .625rem 1rem calc(1.5rem + env(safe-area-inset-bottom));
+  background: var(--surface-panel); color: #f5f5f5;
+  backdrop-filter: blur(24px) saturate(200%); -webkit-backdrop-filter: blur(24px) saturate(200%);
+  box-shadow: 0 -20px 50px rgba(0, 0, 0, 0.6);
+}
+.admin-sheet:not([open]) { display: none; }
+.admin-sheet::backdrop { background: rgb(0 0 0 / .65); backdrop-filter: blur(8px); }
+
 /* space-y 只跳过带 hidden 属性的元素；表单开头的无障碍 legend 与隐藏字段不占位，首个可见块不应再留出间距。 */
 .admin-shell :is(form, fieldset) > :nth-child(1 of :not(legend.sr-only, input[type="hidden"])) { margin-top: 0; }

@@ -1,13 +1,19 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import type { Choice } from "./catalog";
+import { mediaChoiceDetail, mediaChoiceFields, type Choice, type MediaChoiceRow } from "./catalog";
+import type { ManagedMediaType } from "./media-form";
+
+/** 上级选项另带类型，供判断层级；detail 只用于显示。 */
+export type ParentChoice = Choice & { type: ManagedMediaType };
 
 /** 读取真实上级名称及编号建议，避免让用户输入数据库 ID。 */
-export async function readParent(db: SupabaseClient, id: string): Promise<Choice | undefined> {
+export async function readParent(db: SupabaseClient, id: string): Promise<ParentChoice | undefined> {
   if (!id) return undefined;
-  const { data, error } = await db.from("media_items").select("id,title,type").eq("id", id).maybeSingle();
+  const { data, error } = await db.from("media_items").select(mediaChoiceFields).eq("id", id).maybeSingle();
   if (error) throw new Error("无法读取上级资料。");
-  return data ? { id: data.id, name: data.title, detail: data.type } : undefined;
+  if (!data) return undefined;
+  const row = data as unknown as MediaChoiceRow & { id: string; title: string; type: ManagedMediaType; cover_url: string | null };
+  return { id: row.id, name: row.title, detail: mediaChoiceDetail(row), cover_url: row.cover_url, type: row.type };
 }
 /** 使用精确计数显示删除范围，不把数据库的返回行数上限当成实际数量。 */
 export async function readImpact(db: SupabaseClient, id: string, type: string) {
