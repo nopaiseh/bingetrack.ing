@@ -11,7 +11,8 @@ select is(
       and c.relkind in ('r', 'p')
       and c.relrowsecurity
   ),
-  17,
+  -- 含 20260929010000 新增的 people_distinct_pairs。
+  18,
   'all public tables have RLS enabled'
 );
 
