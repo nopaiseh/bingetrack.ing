@@ -15,7 +15,7 @@ function structure(seasonCount: number, episodeCount: number): SeriesStructure {
     seasons, expandedSeasonId: seasons.at(-1)?.id ?? null, episodes,
     totalEpisodes: seasons.reduce((sum, season) => sum + season.episodeCount, 0),
     nextSeasonNumber: seasonCount + 1,
-    nextEpisode: { number: episodeCount + 1, releaseDate: null, runtime: null, afterTitle: null },
+    nextEpisode: { number: episodeCount + 1, releaseDate: null, runtime: null, afterTitle: null, dateBasis: "missing" },
   };
 }
 

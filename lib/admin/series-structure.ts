@@ -5,8 +5,11 @@ import type { ManagedMediaType } from "./media-form";
 export type WatchStatus = "watched" | "watching" | "want_to_watch";
 export type StructureEpisode = { id: string; number: number; title: string; watched: boolean; releaseDate: string | null; runtime: number | null };
 export type StructureSeason = { id: string; number: number; title: string; episodeCount: number; status: WatchStatus };
-/** 新增下一集的预填值：编号接续末集，日期按最近两集的间隔推算，时长沿用末集。 */
-export type NextEpisode = { number: number; releaseDate: string | null; runtime: number | null; afterTitle: string | null };
+/** 推算日期的依据：interval 按最近一次换日的间隔；single 只有一个日期，按每周；
+ * same_day 最近几集同一天上线（整季或整批上线），没有间隔可用；missing 没有日期；irregular 日期倒序或间隔超过一年。 */
+export type DateBasis = "interval" | "single" | "same_day" | "missing" | "irregular";
+/** 新增下一集的预填值：编号接续末集，日期按播出间隔推算，时长沿用末集。 */
+export type NextEpisode = { number: number; releaseDate: string | null; runtime: number | null; afterTitle: string | null; dateBasis: DateBasis };
 export type SeriesStructure = {
   show: { id: string; title: string; alternateTitle: string | null; coverUrl: string | null; status: WatchStatus; rating: number | null };
   seasons: StructureSeason[];
@@ -21,18 +24,20 @@ export type SeriesStructure = {
 const EPISODE_CHUNK = 1000;
 const DAY = 86_400_000;
 
-/** 按最近两个有日期的单集推算间隔，只有一个日期时按每周播出；日期跨度异常时不推算。 */
+/** 以末个有日期的单集为准，往前找最近一个不同的日期作为间隔：同一天上线多集（整批上线）时不会得到 0 天间隔。
+ * 只有一个日期时按每周推算；日期倒序或间隔超过一年时不推算。 */
 export function suggestNextEpisode(episodes: StructureEpisode[]): NextEpisode {
   const last = episodes.at(-1);
-  const dated = episodes.filter(episode => episode.releaseDate);
-  let releaseDate: string | null = null;
-  const latest = dated.at(-1)?.releaseDate;
-  if (latest) {
-    const previous = dated.at(-2)?.releaseDate;
-    const gap = previous ? Math.round((Date.parse(latest) - Date.parse(previous)) / DAY) : 7;
-    if (gap > 0 && gap <= 366) releaseDate = new Date(Date.parse(latest) + gap * DAY).toISOString().slice(0, 10);
-  }
-  return { number: Math.min(100000, (last?.number ?? 0) + 1), releaseDate, runtime: last?.runtime ?? null, afterTitle: last?.title ?? null };
+  const base = { number: Math.min(100000, (last?.number ?? 0) + 1), runtime: last?.runtime ?? null, afterTitle: last?.title ?? null };
+  const dates = episodes.flatMap(episode => (episode.releaseDate ? [episode.releaseDate] : []));
+  const latest = dates.at(-1);
+  if (!latest) return { ...base, releaseDate: null, dateBasis: "missing" };
+  const previous = dates.slice(0, -1).reverse().find(date => date !== latest);
+  const shift = (days: number) => new Date(Date.parse(latest) + days * DAY).toISOString().slice(0, 10);
+  if (!previous) return dates.length > 1 ? { ...base, releaseDate: null, dateBasis: "same_day" } : { ...base, releaseDate: shift(7), dateBasis: "single" };
+  const gap = Math.round((Date.parse(latest) - Date.parse(previous)) / DAY);
+  if (gap <= 0 || gap > 366) return { ...base, releaseDate: null, dateBasis: "irregular" };
+  return { ...base, releaseDate: shift(gap), dateBasis: "interval" };
 }
 
 /** 季的观看状态与列表、编辑页口径一致：全部看过为看过，部分看过为在看。 */

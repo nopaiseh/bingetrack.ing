@@ -6,16 +6,18 @@ import { isReportKind, reportRowHref, reportRowType, reportTagLabels, reports, t
 import ManagePagination from "../../ManagePagination";
 import StatusModal from "../../StatusModal";
 import BulkDelete from "../BulkDelete";
+import SimilarPeopleReport from "../SimilarPeopleReport";
 
 const PAGE_SIZE = 25;
 
 /** 分页显示单份报告，每行链接到可修正该问题的编辑页。 */
-export default async function ReportPage({ params, searchParams }: { params: Promise<{ report: string }>; searchParams: Promise<{ q?: string; page?: string; deleted?: string }> }) {
+export default async function ReportPage({ params, searchParams }: { params: Promise<{ report: string }>; searchParams: Promise<{ q?: string; page?: string; deleted?: string; merged?: string; dismissed?: string }> }) {
   const { db } = await requireOwner();
   const { report } = await params;
   if (!isReportKind(report)) notFound();
   const config = reports[report];
   const search = await searchParams;
+  if (report === "similar-people") return <SimilarPeopleReport db={db} merged={search.merged} dismissed={search.dismissed} />;
   const q = (search.q ?? "").slice(0, 200);
   const page = Math.min(100000, Math.max(1, Number.parseInt(search.page ?? "1", 10) || 1));
   let query = db.from(config.view).select("id,link_type,link_id,title,detail,tags,weight", { count: "exact" });

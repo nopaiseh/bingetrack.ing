@@ -33,22 +33,31 @@ function fakeDb(handlers: Record<string, (query: { filters: Record<string, unkno
 }
 
 describe("suggestNextEpisode", () => {
-  it("按最近两集的播出间隔推算日期，编号接续末集并沿用时长", () => {
-    expect(suggestNextEpisode([episode(6, "2025-02-21", 48), episode(7, "2025-02-28", 52)])).toEqual({ number: 8, releaseDate: "2025-03-07", runtime: 52, afterTitle: "第 7 集" });
+  it("按最近的播出间隔推算日期，编号接续末集并沿用时长", () => {
+    expect(suggestNextEpisode([episode(6, "2025-02-21", 48), episode(7, "2025-02-28", 52)])).toEqual({ number: 8, releaseDate: "2025-03-07", runtime: 52, afterTitle: "第 7 集", dateBasis: "interval" });
+  });
+
+  it("整批上线时越过同一天的多集，按上一批的间隔推算", () => {
+    const batches = [episode(1, "2026-09-09"), episode(2, "2026-09-09"), episode(3, "2026-09-16"), episode(4, "2026-09-16")];
+    expect(suggestNextEpisode(batches)).toMatchObject({ number: 5, releaseDate: "2026-09-23", dateBasis: "interval" });
+  });
+
+  it("最近几集都在同一天上线时不推算，并说明原因，不当成缺少日期", () => {
+    expect(suggestNextEpisode([episode(8, "2026-09-23"), episode(9, "2026-09-23")])).toMatchObject({ number: 10, releaseDate: null, dateBasis: "same_day" });
   });
 
   it("只有一个日期时按每周推算，没有日期时不预填", () => {
-    expect(suggestNextEpisode([episode(1, "2025-01-01")]).releaseDate).toBe("2025-01-08");
-    expect(suggestNextEpisode([episode(1, null), episode(2, null)]).releaseDate).toBeNull();
+    expect(suggestNextEpisode([episode(1, "2025-01-01")])).toMatchObject({ releaseDate: "2025-01-08", dateBasis: "single" });
+    expect(suggestNextEpisode([episode(1, null), episode(2, null)])).toMatchObject({ releaseDate: null, dateBasis: "missing" });
   });
 
-  it("日期倒序或间隔超过一年时不推算", () => {
-    expect(suggestNextEpisode([episode(1, "2025-03-01"), episode(2, "2025-01-01")]).releaseDate).toBeNull();
-    expect(suggestNextEpisode([episode(1, "2020-01-01"), episode(2, "2025-01-01")]).releaseDate).toBeNull();
+  it("末集日期较早或间隔超过一年时不推算", () => {
+    expect(suggestNextEpisode([episode(1, "2025-03-01"), episode(2, "2025-01-01")])).toMatchObject({ releaseDate: null, dateBasis: "irregular" });
+    expect(suggestNextEpisode([episode(1, "2020-01-01"), episode(2, "2025-01-01")])).toMatchObject({ releaseDate: null, dateBasis: "irregular" });
   });
 
   it("没有单集时从第 1 集开始", () => {
-    expect(suggestNextEpisode([])).toEqual({ number: 1, releaseDate: null, runtime: null, afterTitle: null });
+    expect(suggestNextEpisode([])).toEqual({ number: 1, releaseDate: null, runtime: null, afterTitle: null, dateBasis: "missing" });
   });
 });
 

@@ -6,6 +6,15 @@ import { mayLeaveEditor } from "@/lib/admin/navigation";
 import type { SeriesStructure } from "@/lib/admin/series-structure";
 import { formatCount, type QuickAddKind } from "./shared";
 
+/** 预填日期的来源说明，推算不出时说明原因。 */
+const dateHints = {
+  interval: "日期按最近的播出间隔推算，可直接修改。",
+  single: "只有一集有播出日期，按每周推算，可直接修改。",
+  same_day: "最近几集同一天上线，没有间隔可推算，请手动填写日期。",
+  missing: "最近几集没有播出日期，请手动填写。",
+  irregular: "播出日期倒序或间隔超过一年，未预填日期。",
+} as const;
+
 /** 就地新增单集或季：编号、日期与时长按已有资料预填；连续录入时保存后留在弹窗，侧栏随即刷新。 */
 export default function QuickAddDialog({ kind, structure, onClose }: { kind: QuickAddKind; structure: SeriesStructure; onClose: () => void }) {
   const dialog = useRef<HTMLDialogElement>(null);
@@ -61,21 +70,20 @@ export default function QuickAddDialog({ kind, structure, onClose }: { kind: Qui
           </div>
           {episode && <label>发行日期<input name="release_date" type="date" defaultValue={next?.releaseDate ?? ""} className="font-mono" /></label>}
         </div>
-        {episode && next?.releaseDate && <p className="-mt-2 text-xs text-neutral-400">日期按最近两集的播出间隔推算，可直接修改。</p>}
+        {episode && next && <p className="-mt-2 text-xs text-neutral-400">{dateHints[next.dateBasis]}</p>}
         <label>标题<input name="title" required maxLength={300} autoFocus placeholder={episode ? "单集标题" : `第 ${number} 季`} defaultValue={episode ? "" : `第 ${number} 季`} /></label>
         <label>其他标题<input name="alternate_title" maxLength={300} placeholder="外文原名或别名（可选）" /></label>
         {episode && <div className="grid gap-4 sm:grid-cols-2">
           <label>时长（分钟）<input name="runtime" type="number" min="0" max="100000" step="any" defaultValue={next?.runtime ?? ""} className="font-mono" /></label>
-          <label>观看状态<select name="status" defaultValue="want_to_watch"><option value="want_to_watch">没看过</option><option value="watched">看过</option></select></label>
+          <label>评分（可留空）<input name="rating" type="number" min="0" max="10" step="0.1" placeholder="填写即标为看过" className="font-mono" /></label>
         </div>}
         <details className="group">
           <summary className="flex cursor-pointer list-none items-center gap-2 py-1 text-sm text-neutral-300 hover:text-white">
-            <span className="i-material-symbols-chevron-right-rounded size-4.5 transition-transform group-open:rotate-90" aria-hidden="true" />更多字段：封面、简介{episode ? "、评分" : ""}
+            <span className="i-material-symbols-chevron-right-rounded size-4.5 transition-transform group-open:rotate-90" aria-hidden="true" />更多字段：封面、简介
           </summary>
           <div className="mt-3 space-y-4">
             <label>封面地址（TMDB）<input name="cover_url" type="url" maxLength={2000} placeholder="https://image.tmdb.org/t/p/original/…" /></label>
             <label>简介<textarea name="summary" rows={3} maxLength={20000} placeholder="输入剧情梗概…" /></label>
-            {episode && <label>评分（0–10，可留空）<input name="rating" type="number" min="0" max="10" step="0.1" placeholder="例如：8.5" className="font-mono" /></label>}
           </div>
         </details>
         <p role="alert" className="text-sm text-red-300">{state.error}</p>

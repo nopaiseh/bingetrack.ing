@@ -24,10 +24,14 @@ it("关联资料命名冲突后保留用户输入", async () => {
   expect(screen.getByLabelText("名称", { exact: true })).toHaveValue("剧情");
 });
 
-it("电影和单集显示可编辑观看状态，电视节目和季显示只读说明", () => {
+it("电影和单集由评分决定观看状态，电视节目和季显示只读说明", () => {
   const { unmount } = render(<MediaForm initialType="movie" />);
-  expect(screen.getByLabelText("观看状态")).toBeInTheDocument();
-  expect(screen.getByLabelText(/评分/)).toBeInTheDocument();
+  expect(screen.queryByRole("combobox", { name: "观看状态" })).not.toBeInTheDocument();
+  const rating = screen.getByLabelText(/评分/);
+  expect(rating).toHaveAccessibleDescription(/没看过.*填写评分即标为看过/);
+  fireEvent.change(rating, { target: { value: "0" } });
+  expect(rating).toHaveAccessibleDescription(/看过.*已评分，保存为看过/);
+  fireEvent.change(rating, { target: { value: "" } });
 
   // 切换为电视节目
   fireEvent.change(screen.getByLabelText("类型"), { target: { value: "tv_show" } });
@@ -41,7 +45,7 @@ it("电影和单集显示可编辑观看状态，电视节目和季显示只读�
 
   // 切换为单集
   fireEvent.change(screen.getByLabelText("类型"), { target: { value: "tv_episode" } });
-  expect(screen.getByLabelText("观看状态")).toBeInTheDocument();
+  expect(screen.queryByRole("combobox", { name: "观看状态" })).not.toBeInTheDocument();
   expect(screen.getByLabelText(/评分/)).toBeInTheDocument();
   unmount();
 

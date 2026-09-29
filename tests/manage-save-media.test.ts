@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { saveMedia } from "@/app/(admin)/manage/actions";
+import { deleteMedia, saveMedia } from "@/app/(admin)/manage/actions";
 import { requireOwner } from "@/lib/auth/server";
 import { refresh } from "next/cache";
 import { redirect } from "next/navigation";
@@ -25,10 +25,26 @@ function episodeForm(extra: Record<string, string> = {}) {
   return form;
 }
 
+const target = vi.fn();
+const from = vi.fn(() => ({ select: () => ({ eq: () => ({ maybeSingle: target }) }) }));
+
 beforeEach(() => {
   vi.clearAllMocks();
   rpc.mockResolvedValue({ data: saved, error: null });
-  vi.mocked(requireOwner).mockResolvedValue({ db: { rpc }, user: {} } as unknown as Awaited<ReturnType<typeof requireOwner>>);
+  target.mockResolvedValue({ data: { type: "movie" }, error: null });
+  vi.mocked(requireOwner).mockResolvedValue({ db: { rpc, from }, user: {} } as unknown as Awaited<ReturnType<typeof requireOwner>>);
+});
+
+describe("deleteMedia", () => {
+  /** /manage 已是概览页，删除后回到条目所属的列表；季与单集归入电视节目。 */
+  it.each([["movie", "movie"], ["tv_show", "tv_show"], ["tv_season", "tv_show"], ["tv_episode", "tv_show"]])("删除%s后回到 %s 列表", async (type, list) => {
+    target.mockResolvedValue({ data: { type }, error: null });
+    const form = new FormData();
+    form.set("id", saved);
+    form.set("confirm_title", "标题");
+    await deleteMedia({}, form);
+    expect(redirect).toHaveBeenCalledWith(`/manage?type=${list}&deleted=1`);
+  });
 });
 
 describe("saveMedia 快速新增", () => {

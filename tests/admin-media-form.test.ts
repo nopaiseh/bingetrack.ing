@@ -9,12 +9,16 @@ function form(values: Record<string, string> = {}) {
 }
 
 describe("管理媒体输入", () => {
-  it("只使用看过或没看过，空白评分和时长保持 null", () => {
+  it("没有评分即没看过，空白评分和时长保持 null", () => {
     expect(parseMediaForm(form())).toMatchObject({ status: "want_to_watch", rating: null, runtime: null });
-    expect(parseMediaForm(form({ status: "watched", rating: "0" })).rating).toBe(0);
   });
-  it.each(["watching", "", "finished"])("拒绝额外观看状态 %s", status => {
-    expect(() => parseMediaForm(form({ status }))).toThrow();
+  it("填写评分即看过，0 分也算已评分", () => {
+    expect(parseMediaForm(form({ rating: "0" }))).toMatchObject({ status: "watched", rating: 0 });
+    expect(parseMediaForm(form({ type: "tv_episode", parent_id: "11111111-1111-4111-8111-111111111111", number: "1", rating: "8.5" }))).toMatchObject({ status: "watched", rating: 8.5 });
+  });
+  it.each(["watched", "watching", "", "finished"])("忽略提交的观看状态 %s，只看评分", status => {
+    expect(parseMediaForm(form({ status })).status).toBe("want_to_watch");
+    expect(parseMediaForm(form({ status, rating: "7" })).status).toBe("watched");
   });
   it.each(["NaN", "Infinity", "-1", "10.1", "5.55"])("拒绝不合法评分 %s", rating => {
     expect(() => parseMediaForm(form({ rating }))).toThrow();

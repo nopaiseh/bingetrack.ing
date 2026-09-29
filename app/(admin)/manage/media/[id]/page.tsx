@@ -44,13 +44,14 @@ export default async function EditMediaPage({ params, searchParams }: { params: 
     : item.type === "tv_show" ? `${formatCount(structure.seasons.length)} 季 · ${formatCount(structure.totalEpisodes)} 集`
     : item.type === "tv_season" ? `第 ${item.number} 季 · ${formatCount(season?.episodeCount ?? 0)} 集`
     : [season && `第 ${season.number} 季`, `第 ${formatCount(item.number ?? 0)} 集`, item.release_date].filter(Boolean).join(" · ");
-  const header = <header className="flex flex-wrap items-end justify-between gap-x-6 gap-y-4">
-    <div className="min-w-0">
+  // 与列表页标题一致的玻璃卡片；公开页面按钮固定在右下，长标题只在左栏内换行。
+  const header = <header className="surface-panel flex flex-col gap-4 rounded-3xl p-5 sm:flex-row sm:items-end sm:justify-between sm:gap-6 sm:p-8">
+    <div className="min-w-0 flex-1">
       <nav aria-label="内容层级" className="mb-2 flex flex-wrap gap-2 text-sm text-neutral-400"><BackToList category={rootType} label={`← ${mediaTypes[rootType as keyof typeof mediaTypes]}`} className="" />{ancestor && <><span>/</span><Link href={`/manage/media/${ancestor.id}?type=tv_show`} className="break-words">{ancestor.name}</Link></>}{parent && <><span>/</span><Link href={`/manage/media/${parent.id}?type=${parent.type}`} className="break-words">{parent.name}</Link></>}</nav>
-      <h1 className="admin-heading break-words">编辑：{item.title}</h1>
+      <h1 className="admin-heading break-words">{item.title}</h1>
       {facts && item.type !== "movie" && <p className="mt-3 flex flex-wrap items-center gap-2"><span className={`rounded-full border px-3 py-1 text-xs font-semibold ${typeBadges[item.type]}`}>{mediaTypes[item.type]}</span><span className="font-mono text-sm text-neutral-400">{facts}</span></p>}
     </div>
-    {(item.type === "movie" || item.type === "tv_show") && <Link className="admin-button" href={`/${item.type === "movie" ? "movies" : "shows"}/${id}`}><span className="i-material-symbols-arrow-outward-rounded size-4.5" aria-hidden="true" />查看公开页面</Link>}
+    {(item.type === "movie" || item.type === "tv_show") && <Link className="admin-button shrink-0 self-start sm:self-end" href={`/${item.type === "movie" ? "movies" : "shows"}/${id}`}><span className="i-material-symbols-arrow-outward-rounded size-4.5" aria-hidden="true" />查看公开页面</Link>}
   </header>;
   const body = <>
     {(siblings.previous || siblings.next) && <nav aria-label={`相邻${mediaTypes[item.type as keyof typeof mediaTypes]}`} className="grid grid-cols-2 gap-3">{siblingLink(siblings.previous, "previous")}{siblingLink(siblings.next, "next")}</nav>}

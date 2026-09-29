@@ -1,13 +1,12 @@
 import Link from "next/link";
 import { requireOwner } from "@/lib/auth/server";
-import { reportGroups, reports, type ReportKind } from "@/lib/admin/reports";
+import { reportGroups, reports } from "@/lib/admin/reports";
+import { readReportCounts } from "@/lib/admin/overview";
 
 /** 报告概览：并行统计各报告数量，数量为零的报告显示为已清理。 */
 export default async function ReportsPage() {
   const { db } = await requireOwner();
-  const kinds = Object.keys(reports) as ReportKind[];
-  const results = await Promise.all(kinds.map(/* 只取数量，不读取行。 */ kind => db.from(reports[kind].view).select("id", { count: "exact", head: true })));
-  const counts = new Map(kinds.map((kind, index) => [kind, results[index].error ? null : results[index].count ?? 0]));
+  const counts = await readReportCounts(db);
   const pending = [...counts.values()].filter(count => count).length;
   const cleared = [...counts.values()].filter(count => count === 0).length;
   return <section>
