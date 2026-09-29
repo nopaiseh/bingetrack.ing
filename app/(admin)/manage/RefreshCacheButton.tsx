@@ -6,9 +6,11 @@ import { manualRevalidateCache } from "./actions";
 interface RefreshCacheButtonProps {
   className?: string;
   compact?: boolean;
+  /** 只显示图标，用于侧栏标题行与收起后的图标栏；结果经朗读区域播报。 */
+  iconOnly?: boolean;
 }
 
-export default function RefreshCacheButton({ className = "", compact = false }: RefreshCacheButtonProps) {
+export default function RefreshCacheButton({ className = "", compact = false, iconOnly = false }: RefreshCacheButtonProps) {
   const [isPending, startTransition] = useTransition();
   const [status, setStatus] = useState<"idle" | "success" | "error">("idle");
   const [errorMessage, setErrorMessage] = useState<string>("");
@@ -29,6 +31,25 @@ export default function RefreshCacheButton({ className = "", compact = false }: 
         setTimeout(() => setStatus("idle"), 4000);
       }
     });
+  }
+
+  if (iconOnly) {
+    const label = isPending ? "正在刷新缓存" : status === "success" ? "缓存已刷新" : status === "error" ? (errorMessage || "刷新失败") : "刷新公开缓存";
+    return (
+      <>
+        <button
+          type="button"
+          onClick={handleRefresh}
+          disabled={isPending}
+          title={`${label}（在 Supabase 直接修改数据后使用）`}
+          aria-label={label}
+          className={`!min-h-0 !size-10 !p-0 !rounded-xl ${status === "success" ? "!border-emerald-500/30 text-emerald-400" : status === "error" ? "!border-rose-500/30 text-rose-400" : "text-fg-secondary"} ${className}`}
+        >
+          <span className={`size-4.5 inline-block shrink-0 ${isPending ? "i-material-symbols-sync-rounded animate-spin" : status === "success" ? "i-material-symbols-check-circle-rounded" : "i-material-symbols-cached-rounded"}`} aria-hidden="true" />
+        </button>
+        <span role="status" className="sr-only">{status === "idle" ? "" : label}</span>
+      </>
+    );
   }
 
   if (compact) {

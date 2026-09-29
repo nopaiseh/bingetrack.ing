@@ -38,7 +38,7 @@ test("站长初始化、影视季集管理、公开更新、退出与非站长�
       return savedId;
     }, { timeout: 15_000 }).not.toBe("");
     await expect(page).toHaveURL(new RegExp(`/manage/media/${savedId}\\?saved=1$`));
-    await expect(page.getByRole("heading", { name: `编辑：${title}`, exact: true })).toBeVisible();
+    await expect(page.getByRole("heading", { name: title, exact: true })).toBeVisible();
     await expect(page.getByRole("button", { name: "保存资料", exact: true })).toBeEnabled();
     await expect(page.getByRole("status").filter({ hasText: "保存成功" })).toBeVisible();
     return savedId;
@@ -91,7 +91,7 @@ test("站长初始化、影视季集管理、公开更新、退出与非站长�
       await expect(page.getByRole("status").filter({ hasText: "保存成功" })).toBeVisible();
       await page.getByLabel("名称", { exact: true }).fill(`${prefix} ${kind} renamed`);
       await page.getByRole("button", { name: "保存资料", exact: true }).click();
-      await expect(page.getByRole("heading", { name: `编辑：${prefix} ${kind} renamed` })).toBeVisible();
+      await expect(page.getByRole("heading", { name: `${prefix} ${kind} renamed` })).toBeVisible();
       await page.getByText(`删除${label}`, { exact: true }).click();
       await page.getByLabel("输入完整名称以确认删除").fill("wrong name");
       await page.getByRole("button", { name: "永久删除", exact: true }).click();
@@ -102,7 +102,6 @@ test("站长初始化、影视季集管理、公开更新、退出与非站长�
     }
     await page.goto("/manage/media/new");
     await page.getByLabel("标题", { exact: true }).fill(`${prefix} movie`);
-    await page.getByLabel("观看状态").selectOption("watched");
     await page.getByLabel("评分（0–10，可留空）").fill("8.5");
     await page.getByLabel("类型标签").fill(`${prefix} genre`);
     await page.getByRole("option", { name: `新增并关联「${prefix} genre」` }).click();
@@ -127,14 +126,14 @@ test("站长初始化、影视季集管理、公开更新、退出与非站长�
     await addSeason.getByLabel(/保存后继续新增/).uncheck();
     await addSeason.getByRole("button", { name: "保存季", exact: true }).click();
     // 节目页的地址本就以 ?saved=1 结尾，必须等季的标题出现、确认已跳到新季，再从地址取季的 ID。
-    await expect(page.getByRole("heading", { name: `编辑：${prefix} season`, exact: true })).toBeVisible({ timeout: 15_000 });
+    await expect(page.getByRole("heading", { name: `${prefix} season`, exact: true })).toBeVisible({ timeout: 15_000 });
     await expect(page).not.toHaveURL(new RegExp(`/manage/media/${series}`));
     const season = new URL(page.url()).pathname.split("/").at(-1)!;
     expect(season).not.toBe(series);
     await rail.getByRole("button", { name: /新增第 1 集/ }).click();
     const addEpisode = page.getByRole("dialog", { name: "新增单集" });
     await addEpisode.getByLabel("标题", { exact: true }).fill(`${prefix} episode`);
-    await addEpisode.getByLabel("观看状态").selectOption("watched");
+    await addEpisode.getByLabel("评分（可留空）").fill("8");
     await addEpisode.getByRole("button", { name: "保存单集", exact: true }).click();
     await expect(addEpisode.getByRole("status")).toContainText(`已新增「${prefix} episode」`, { timeout: 15_000 });
     await expect(addEpisode.getByLabel("集编号", { exact: true })).toHaveValue("2");
@@ -150,7 +149,7 @@ test("站长初始化、影视季集管理、公开更新、退出与非站长�
     await expect(page.getByRole("alert").filter({ hasText: "标题不匹配" })).toBeVisible();
     await page.getByLabel("输入完整标题以确认删除").fill(`${prefix} series`);
     await page.getByRole("button", { name: "永久删除", exact: true }).click();
-    await expect(page).toHaveURL(/\/manage\?deleted=1$/);
+    await expect(page).toHaveURL(/\/manage\?type=tv_show&deleted=1$/);
     const descendants = await db.from("media_items").select("id").in("id", [series, season, episode]);
     expect(descendants.error).toBeNull();
     expect(descendants.data).toEqual([]);

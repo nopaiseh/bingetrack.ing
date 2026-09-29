@@ -202,9 +202,10 @@
 }
 
 
-/* 左侧导航与剧集结构栏等高并跟随滚动，顶部对齐；内容超出时在栏内滚动。 */
+/* 左侧导航按内容自然高度显示，不留空白；剧集结构栏取导航的实际高度（由导航测量后写入 --admin-nav-height），两栏顶部对齐、等高并跟随滚动，超出视口时在栏内滚动。 */
 @media (min-width: 1024px) {
-  .admin-side-panel { height: min(46rem, calc(100dvh - 7rem)); overflow-y: auto; }
+  .admin-side-panel { max-height: calc(100dvh - 7rem); overflow-y: auto; }
+  .admin-rail-panel { height: min(var(--admin-nav-height, 44rem), calc(100dvh - 7rem)); }
 }
 
 /* 新增季、集的虚线按钮，只出现在剧集结构栏与列表行尾。 */

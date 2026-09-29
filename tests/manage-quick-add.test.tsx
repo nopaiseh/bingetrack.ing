@@ -17,7 +17,7 @@ const structure: SeriesStructure = {
   episodes: [],
   totalEpisodes: 7,
   nextSeasonNumber: 3,
-  nextEpisode: { number: 8, releaseDate: "2025-03-07", runtime: 52, afterTitle: "Chikhai Bardo" },
+  nextEpisode: { number: 8, releaseDate: "2025-03-07", runtime: 52, afterTitle: "Chikhai Bardo", dateBasis: "interval" },
 };
 
 describe("快速新增弹窗", () => {
@@ -29,6 +29,8 @@ describe("快速新增弹窗", () => {
     expect(screen.getByLabelText("发行日期")).toHaveValue("2025-03-07");
     expect(screen.getByLabelText("时长（分钟）")).toHaveValue(52);
     expect(screen.getByText(/接在「Chikhai Bardo」之后/)).toBeInTheDocument();
+    expect(screen.getByText("日期按最近的播出间隔推算，可直接修改。")).toBeInTheDocument();
+    expect(screen.queryByRole("combobox", { name: "观看状态" })).not.toBeInTheDocument();
   });
 
   it("新增季时预填下一季编号与标题，上级为电视节目", () => {

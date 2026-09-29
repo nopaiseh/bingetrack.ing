@@ -1,3 +1,6 @@
+/** 记住侧栏收起状态的 Cookie，服务端外框据此决定首屏宽度。 */
+export const NAV_COOKIE = "admin-nav";
+
 /** 只恢复管理列表地址，拒绝存储中被修改的外部地址或详情地址。 */
 export function rememberedList(category: string, fallback: string): string {
   try {

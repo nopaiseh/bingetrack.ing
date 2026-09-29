@@ -89,11 +89,10 @@ export function parseMediaForm(form: FormData): MediaInput {
   const isDerived = type === "tv_show" || type === "tv_season";
   const release_date = isDerived ? null : string("release_date");
   if (release_date && (!/^\d{4}-\d{2}-\d{2}$/.test(release_date) || !Number.isFinite(Date.parse(release_date)) || new Date(release_date).toISOString().slice(0, 10) !== release_date)) throw new Error("发行日期无效。");
-  const status = string("status");
-  if (!isDerived && status !== "watched" && status !== "want_to_watch") throw new Error("请选择看过或没看过。");
-  const effectiveStatus: "watched" | "want_to_watch" = isDerived ? "want_to_watch" : (status as "watched" | "want_to_watch");
   const rating = isDerived ? null : numeric("rating", 10);
   if (rating !== null && Math.abs(rating * 10 - Math.round(rating * 10)) > 1e-8) throw new Error("评分最多保留一位小数。");
+  // 有评分即看过、没有评分即没看过，不再单独选择观看状态；忽略提交的 status，旧页面也不会写出不一致的记录。
+  const effectiveStatus: "watched" | "want_to_watch" = !isDerived && rating !== null ? "watched" : "want_to_watch";
   const isChild = type === "tv_season" || type === "tv_episode";
   return { id, type: type as ManagedMediaType, title, alternate_title: string("alternate_title"), summary: string("summary", 20000), cover_url, release_date, runtime: isDerived ? null : numeric("runtime", 100000), parent_id, number, status: effectiveStatus, rating,
     genres: isChild ? [] : names("genres"),

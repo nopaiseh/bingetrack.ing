@@ -58,7 +58,7 @@ export default function SeriesRail({ structure, current, onAdd }: { structure: S
     </li>;
   })}</ul> : <p className="px-2.5 py-2 text-xs text-neutral-400">这一季还没有单集。</p>;
 
-  return <aside aria-label="剧集结构" className="admin-side-panel surface-panel hidden min-w-0 flex-col gap-3 rounded-2xl p-4 lg:sticky lg:top-24 lg:flex">
+  return <aside aria-label="剧集结构" className="admin-side-panel admin-rail-panel surface-panel hidden min-w-0 flex-col gap-3 rounded-2xl p-4 lg:sticky lg:top-24 lg:flex">
     <div className="flex items-center justify-between px-1">
       <p className="text-xs tracking-wider text-fg-subtle">剧集结构</p>
       <p className="font-mono text-[11px] text-fg-subtle">{formatCount(seasons.length)} 季 · {formatCount(structure.totalEpisodes)} 集</p>

@@ -9,6 +9,7 @@ import ManagePagination from "./ManagePagination";
 import { redirect } from "next/navigation";
 import { formatRuntime } from "@/lib/format-runtime";
 import { formatCount } from "./media/series/shared";
+import Overview from "./Overview";
 
 const PAGE_SIZE = 25;
 const statuses = { watched: "看过", watching: "在看", want_to_watch: "没看过" } as const;
@@ -23,6 +24,8 @@ function isMissingRelation(error: { code?: string } | null) {
 export default async function AdminPage({ searchParams }: { searchParams: Promise<Record<string, string | undefined>> }) {
   const { db } = await requireOwner();
   const params = await searchParams;
+  // 不带类型的 /manage 是登录后的管理首页；各列表地址都带 type。
+  if (!params.type) return <Overview db={db} />;
   const q = (params.q ?? "").slice(0, 200);
   const type = params.type && Object.hasOwn(mediaTypes, params.type) ? params.type as ManagedMediaType : "movie";
   const parent = isMediaId(params.parent) ? params.parent : "";

@@ -42,12 +42,13 @@ export async function deleteMedia(_previous: ActionResult, form: FormData): Prom
   const id = String(form.get("id") ?? "");
   const title = String(form.get("confirm_title") ?? "");
   if (!isMediaId(id) || !title) return { error: "请输入要删除的完整标题。" };
-  // 删除会级联移除关联，必须在删除前查出受影响的上级与系列成员。
+  // 删除会级联移除关联，必须在删除前查出受影响的上级与系列成员，以及条目类型（删除后回到所属列表，季与单集归入电视节目列表；读取失败时按电影列表返回，不影响删除本身）。
   const affected = await affectedMediaIds(db, [id]);
+  const { data: target } = await db.from("media_items").select("type").eq("id", id).maybeSingle();
   const { error } = await db.rpc("admin_delete_media", { p_id: id, p_confirm_title: title });
   if (error) return { error: error.code === "22023" ? "标题不匹配，请输入当前条目的完整标题。" : writeError(error.code) };
   revalidateMediaItems(affected);
-  redirect("/manage?deleted=1");
+  redirect(`/manage?type=${target?.type === "movie" || !target ? "movie" : "tv_show"}&deleted=1`);
 }
 
 /** 手动使公开数据缓存即时失效，同步数据库最新状态。仅站长可触发。 */

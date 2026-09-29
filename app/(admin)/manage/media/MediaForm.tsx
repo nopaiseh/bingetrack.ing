@@ -65,6 +65,8 @@ export default function MediaForm({ item, initialType = "movie", lockType = fals
     confirmInput.current?.focus();
   }
   const isChild = type === "tv_season" || type === "tv_episode";
+  const ratingField = field("rating", item?.rating != null ? Number(item.rating).toFixed(1) : null);
+  const rated = ratingField.value.trim() !== "";
   return <div className="space-y-10">
     <UnsavedGuard dirty={dirty && !pending && !deleting} />
     <form action={action} onInput={() => setDirty(true)} className="surface-panel rounded-2xl p-5 sm:p-8">
@@ -245,24 +247,19 @@ export default function MediaForm({ item, initialType = "movie", lockType = fals
         {type === "movie" || type === "tv_episode" ? (
           <section className="surface-muted rounded-2xl border border-white/10 p-5 sm:p-6">
             <h2 className="admin-section-title mb-4 text-lg font-medium text-white">观看记录</h2>
-            <div className="grid gap-5 sm:grid-cols-2">
-              <div>
-                <div className="mb-1.5 flex items-center justify-between">
-                  <label htmlFor="field-status">观看状态</label>
-                  <span className="text-[11px] font-normal text-neutral-500">标记观看进度</span>
-                </div>
-                <select id="field-status" name="status" {...field("status", item?.status ?? "want_to_watch")}>
-                  <option value="want_to_watch">没看过</option>
-                  <option value="watched">看过</option>
-                </select>
-              </div>
+            {/* 观看状态不单独选择：填写评分即看过，留空即没看过，服务端按同一规则保存。 */}
+            <div className="grid gap-5 sm:grid-cols-2 sm:items-end">
               <div>
                 <div className="mb-1.5 flex items-center justify-between">
                   <label htmlFor="field-rating">评分（0–10，可留空）</label>
                   <span className="text-[11px] font-normal text-neutral-500">满分 10</span>
                 </div>
-                <input id="field-rating" type="number" name="rating" min="0" max="10" step="0.1" {...field("rating", item?.rating != null ? Number(item.rating).toFixed(1) : null)} placeholder="例如：8.5" />
+                <input id="field-rating" type="number" name="rating" min="0" max="10" step="0.1" aria-describedby="field-rating-status" {...ratingField} placeholder="例如：8.5" />
               </div>
+              <p id="field-rating-status" aria-live="polite" className="flex min-h-11 items-center gap-2.5 text-sm text-neutral-400">
+                <span className={`surface-muted rounded-full border px-3 py-1 text-xs ${rated ? "border-[var(--accent-border)] text-[var(--accent-light)]" : "border-white/10 text-neutral-200"}`}>{rated ? "看过" : "没看过"}</span>
+                {rated ? "已评分，保存为看过" : "填写评分即标为看过"}
+              </p>
             </div>
           </section>
         ) : (

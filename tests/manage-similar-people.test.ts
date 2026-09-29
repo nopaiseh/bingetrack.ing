@@ -1,0 +1,73 @@
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { dismissSimilarPeople, mergePeople } from "@/app/(admin)/manage/report-actions";
+import { requireOwner } from "@/lib/auth/server";
+import { redirect } from "next/navigation";
+import { revalidateAllMedia } from "@/lib/admin/revalidate-media";
+
+vi.mock("@/lib/auth/server", () => ({ requireOwner: vi.fn() }));
+vi.mock("@/lib/admin/revalidate-media", () => ({ revalidateAllMedia: vi.fn() }));
+vi.mock("next/navigation", () => ({ redirect: vi.fn() }));
+
+const keep = "22222222-2222-4222-8222-222222222222";
+const other = "11111111-1111-4111-8111-111111111111";
+const third = "33333333-3333-4333-8333-333333333333";
+const rpc = vi.fn();
+const upsert = vi.fn();
+const from = vi.fn(() => ({ upsert }));
+
+function form(entries: [string, string][]) {
+  const result = new FormData();
+  for (const [key, value] of entries) result.append(key, value);
+  return result;
+}
+
+beforeEach(() => {
+  vi.clearAllMocks();
+  rpc.mockResolvedValue({ data: 3, error: null });
+  upsert.mockResolvedValue({ error: null });
+  vi.mocked(requireOwner).mockResolvedValue({ db: { rpc, from }, user: {} } as unknown as Awaited<ReturnType<typeof requireOwner>>);
+});
+
+describe("合并疑似重复人物", () => {
+  it("把其余人物并入保留的人物，刷新公开缓存后回到报告", async () => {
+    await mergePeople({}, form([["keep", keep], ["remove", other], ["remove", keep], ["remove", other]]));
+    expect(rpc).toHaveBeenCalledWith("manage_merge_people", { p_keep: keep, p_remove: [other] });
+    expect(revalidateAllMedia).toHaveBeenCalledOnce();
+    expect(redirect).toHaveBeenCalledWith("/manage/reports/similar-people?merged=1");
+  });
+
+  it("拒绝格式不正确或没有可合并的人物", async () => {
+    expect(await mergePeople({}, form([["keep", keep], ["remove", "x"]]))).toHaveProperty("error");
+    expect(await mergePeople({}, form([["keep", keep], ["remove", keep]]))).toHaveProperty("error");
+    expect(rpc).not.toHaveBeenCalled();
+  });
+
+  it("仍是专辑艺术家时说明原因，不跳转", async () => {
+    rpc.mockResolvedValue({ data: null, error: { code: "23503" } });
+    expect((await mergePeople({}, form([["keep", keep], ["remove", other]]))).error).toContain("专辑艺术家");
+    expect(redirect).not.toHaveBeenCalled();
+  });
+
+  it("先检查站长身份", async () => {
+    vi.mocked(requireOwner).mockRejectedValue(new Error("unauthorized"));
+    await expect(mergePeople({}, form([["keep", keep], ["remove", other]]))).rejects.toThrow("unauthorized");
+  });
+});
+
+describe("标记不是同一人", () => {
+  it("记录组内每一对，较小的 ID 在前，重复标记不报错", async () => {
+    await dismissSimilarPeople({}, form([["person", keep.toUpperCase()], ["person", other], ["person", third]]));
+    expect(from).toHaveBeenCalledWith("people_distinct_pairs");
+    expect(upsert).toHaveBeenCalledWith([
+      { person_a: other, person_b: keep },
+      { person_a: keep, person_b: third },
+      { person_a: other, person_b: third },
+    ], { onConflict: "person_a,person_b", ignoreDuplicates: true });
+    expect(redirect).toHaveBeenCalledWith("/manage/reports/similar-people?dismissed=1");
+  });
+
+  it("少于两位人物时不写入", async () => {
+    expect(await dismissSimilarPeople({}, form([["person", keep]]))).toHaveProperty("error");
+    expect(upsert).not.toHaveBeenCalled();
+  });
+});
