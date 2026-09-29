@@ -126,9 +126,11 @@ test("站长初始化、影视季集管理、公开更新、退出与非站长�
     await addSeason.getByLabel("标题", { exact: true }).fill(`${prefix} season`);
     await addSeason.getByLabel(/保存后继续新增/).uncheck();
     await addSeason.getByRole("button", { name: "保存季", exact: true }).click();
-    await expect(page).toHaveURL(/\/manage\/media\/[^/?]+\?saved=1$/, { timeout: 15_000 });
+    // 节目页的地址本就以 ?saved=1 结尾，必须等季的标题出现、确认已跳到新季，再从地址取季的 ID。
+    await expect(page.getByRole("heading", { name: `编辑：${prefix} season`, exact: true })).toBeVisible({ timeout: 15_000 });
+    await expect(page).not.toHaveURL(new RegExp(`/manage/media/${series}`));
     const season = new URL(page.url()).pathname.split("/").at(-1)!;
-    await expect(page.getByRole("heading", { name: `编辑：${prefix} season`, exact: true })).toBeVisible();
+    expect(season).not.toBe(series);
     await rail.getByRole("button", { name: /新增第 1 集/ }).click();
     const addEpisode = page.getByRole("dialog", { name: "新增单集" });
     await addEpisode.getByLabel("标题", { exact: true }).fill(`${prefix} episode`);
