@@ -10,6 +10,7 @@ import { formatCount, type QuickAddKind } from "./shared";
 export default function QuickAddDialog({ kind, structure, onClose }: { kind: QuickAddKind; structure: SeriesStructure; onClose: () => void }) {
   const dialog = useRef<HTMLDialogElement>(null);
   const heading = useId();
+  const numberId = useId();
   const [keepGoing, setKeepGoing] = useState(true);
   const [lastSaved, setLastSaved] = useState<string | null>(null);
   const [state, action, pending] = useActionState(async (previous: ActionResult, form: FormData) => {
@@ -49,13 +50,15 @@ export default function QuickAddDialog({ kind, structure, onClose }: { kind: Qui
         <input type="hidden" name="parent_id" value={parentId} />
         <input type="hidden" name="after" value={keepGoing ? "continue" : "open"} />
         <div className="grid gap-4 sm:grid-cols-2">
-          <label>{episode ? "集编号" : "季编号（特别篇可填 0）"}
+          {/* 「第」「集」只作视觉提示，放在 label 之外，字段名称只含标签文字。 */}
+          <div className="grid min-w-0 gap-[.45rem]">
+            <label htmlFor={numberId}>{episode ? "集编号" : "季编号（特别篇可填 0）"}</label>
             <span className="relative flex items-center">
-              <span className="pointer-events-none absolute left-3.5 select-none text-sm text-neutral-400">第</span>
-              <input name="number" type="number" min="0" max="100000" step="1" required defaultValue={number} className="!pl-9 !pr-10 font-mono font-semibold" />
-              <span className="pointer-events-none absolute right-3.5 select-none text-sm text-neutral-400">{unit}</span>
+              <span aria-hidden="true" className="pointer-events-none absolute left-3.5 select-none text-sm text-neutral-400">第</span>
+              <input id={numberId} name="number" type="number" min="0" max="100000" step="1" required defaultValue={number} className="!pl-9 !pr-10 font-mono font-semibold" />
+              <span aria-hidden="true" className="pointer-events-none absolute right-3.5 select-none text-sm text-neutral-400">{unit}</span>
             </span>
-          </label>
+          </div>
           {episode && <label>发行日期<input name="release_date" type="date" defaultValue={next?.releaseDate ?? ""} className="font-mono" /></label>}
         </div>
         {episode && next?.releaseDate && <p className="-mt-2 text-xs text-neutral-400">日期按最近两集的播出间隔推算，可直接修改。</p>}
