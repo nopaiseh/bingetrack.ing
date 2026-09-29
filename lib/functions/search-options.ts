@@ -1,5 +1,6 @@
 import "server-only";
 import { unstable_cache } from "next/cache";
+import { MEDIA_LISTS_TAG, MEDIA_TAG } from "./media-cache-tags";
 import { getSupabasePublicServer } from "@/lib/supabase/public-server";
 
 type NamedOption = { name: string };
@@ -32,7 +33,7 @@ async function fetchSearchOptions(): Promise<SearchOptions> {
   };
 }
 
-export const fetchSearchOptionsServer = unstable_cache(fetchSearchOptions, ["search-options-v1"], {
+export const fetchSearchOptionsServer = unstable_cache(fetchSearchOptions, ["search-options-v2"], {
   revalidate: 86400,
-  tags: ["media"],
+  tags: [MEDIA_TAG, MEDIA_LISTS_TAG],
 });

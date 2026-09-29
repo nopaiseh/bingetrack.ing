@@ -1,7 +1,7 @@
 "use server";
 import { requireOwner } from "@/lib/auth/server";
 import { isReportKind, reports } from "@/lib/admin/reports";
-import { revalidatePath, revalidateTag } from "next/cache";
+import { revalidateAllMedia } from "@/lib/admin/revalidate-media";
 import { redirect } from "next/navigation";
 import type { ActionResult } from "./actions";
 
@@ -18,7 +18,6 @@ export async function deleteUnused(_previous: ActionResult, form: FormData): Pro
   if (!Number.isInteger(expected) || expected !== count) return { error: `请输入当前数量 ${count ?? 0} 以确认删除；如数量有变化，请刷新后再确认。` };
   const { data, error } = await db.rpc("manage_delete_unused", { p_kind: config.bulkDelete });
   if (error) return { error: error.code === "23503" ? "部分资料仍被其他内容引用，请刷新后重试。" : "删除失败，请重试。" };
-  revalidateTag("media", { expire: 0 });
-  revalidatePath("/", "layout");
+  revalidateAllMedia();
   redirect(`/manage/reports/${report}?deleted=${Number(data) || 0}`);
 }
