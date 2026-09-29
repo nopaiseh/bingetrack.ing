@@ -2,7 +2,7 @@
 import { requireOwner } from "@/lib/auth/server";
 import { escapeLikePattern, isReferenceType, mediaChoiceDetail, mediaChoiceFields, nameOrAliasFilter, referenceTypes, type Choice, type MediaChoiceRow } from "@/lib/admin/catalog";
 import { isMediaId } from "@/lib/functions/media-id";
-import { revalidatePath, revalidateTag } from "next/cache";
+import { affectedMediaIds, mergeAffected, revalidateAllMedia, revalidateMediaItems } from "@/lib/admin/revalidate-media";
 import { redirect } from "next/navigation";
 import type { ActionResult } from "./actions";
 
@@ -35,8 +35,8 @@ export async function saveReference(_previous: ActionResult, form: FormData): Pr
   const query = id ? db.from(config.table).update(payload).eq("id", id) : db.from(config.table).insert(payload);
   const { data, error } = await query.select("id").single();
   if (error) return { error: error.code === "23505" ? (kind === "people" ? "已有同名且别名相同的人物，请填写不同的别名以区分。" : "此名称已经存在，请选择现有资料或使用其他名称。") : "保存失败，资料可能已被删除或暂无写入权限。" };
-  revalidateTag("media", { expire: 0 });
-  revalidatePath("/", "layout");
+  // 人物、类型等资料可能被任意数量的条目引用，改名或删除时整体失效。
+  revalidateAllMedia();
   if (form.get("return_list") === "1") return { saved: true };
   redirect(`/manage/references/${kind}/${data.id}?saved=1`);
 }
@@ -51,8 +51,7 @@ export async function deleteReference(_previous: ActionResult, form: FormData): 
   const { data, error } = await db.from(referenceTypes[kind].table).delete().eq("id", id).eq("name", name).select("id");
   if (error) return { error: error.code === "23503" ? "此资料仍被其他内容引用，请先移除这些关联。" : "删除失败，请重试。" };
   if (!data?.length) return { error: "名称不匹配或资料已被删除，请刷新确认。" };
-  revalidateTag("media", { expire: 0 });
-  revalidatePath("/", "layout");
+  revalidateAllMedia();
   redirect(`/manage/references/${kind}?deleted=1`);
 }
 
@@ -65,11 +64,11 @@ export async function saveCollectionMember(_previous: ActionResult, form: FormDa
   if (!isMediaId(series) || !isMediaId(media)) return { error: "请选择有效作品与系列。" };
   const position = Number(form.get("position"));
   if (!removing && (!Number.isInteger(position) || position < 0 || position > 100000)) return { error: "请填写 0–100000 的整数顺序。" };
+  const before = await affectedMediaIds(db, [media]);
   const result = removing
     ? await db.from("media_item_series").delete().eq("series_id", series).eq("media_item_id", media).select("media_item_id")
     : await db.from("media_item_series").upsert({ series_id: series, media_item_id: media, position }, { onConflict: "media_item_id,series_id" }).select("media_item_id");
   if (result.error || !result.data?.length) return { error: "关联保存失败，请刷新后重试。" };
-  revalidateTag("media", { expire: 0 });
-  revalidatePath("/", "layout");
+  revalidateMediaItems(mergeAffected(before, await affectedMediaIds(db, [media])));
   return { saved: true };
 }
