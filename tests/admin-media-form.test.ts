@@ -45,7 +45,7 @@ describe("管理媒体输入", () => {
   it("拒绝过长的角色名", () => {
     expect(() => parseMediaForm(form({ actors: `\t张三\t${"角".repeat(201)}` }))).toThrow();
   });
-  it.each(["javascript:alert(1)", "https://image.tmdb.org.evil.test/a", "https://user@image.tmdb.org/a", "http://image.tmdb.org/a"])("拒绝不受支持的封面地址 %s", cover_url => {
+  it.each(["javascript:alert(1)", "https://image.tmdb.org.evil.test/a", "https://user@image.tmdb.org/a", "http://image.tmdb.org/a", "https://tmdb.org/a"])("拒绝不受支持的封面地址 %s", cover_url => {
     expect(() => parseMediaForm(form({ cover_url }))).toThrow();
   });
   it("接受 TMDB HTTPS 封面", () => {

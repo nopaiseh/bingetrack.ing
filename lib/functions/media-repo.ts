@@ -21,6 +21,9 @@ const MEDIA_CARD_COLUMNS = "id,type,title,sort_date,first_air_date,last_air_date
 // 榜单精选读取卡片字段及简介摘要，供首页展台和精选展示使用。
 const TOP_MEDIA_COLUMNS = "id,type,title,sort_date,first_air_date,last_air_date,release_year,rating,genres,languages,cover_url,status,summary";
 
+// v_all_media 实际输出的观看状态。
+const WATCH_STATUSES = new Set(["want_to_watch", "watching", "watched"]);
+
 /** 只将 PostgREST 表缺失或 PostgreSQL 关系缺失错误识别为聚合视图缺失。 */
 function isMissingAggregateView(error: { code?: string } | null): boolean {
   return error?.code === "PGRST205" || error?.code === "42P01";
@@ -39,7 +42,7 @@ type SeriesReleaseYearRow = {
   }> | null;
 };
 
-export type SitemapMediaEntry = {
+type SitemapMediaEntry = {
   path: string;
 };
 
@@ -697,7 +700,8 @@ async function fetchMediaList(opts: FetchMediaListOptions, includeTotal = true):
   }
   // 数据查询与计数查询使用相同筛选条件，保证分页总数对应当前结果集。
   // “即将上映”与观看状态同属状态筛选，多选时按任一满足合并；电影的 last_air_date 即上映日期，剧集为最后一集播出日期。
-  const statuses = status?.split(",") ?? [];
+  // 状态值会拼进 .or() 表达式，这里再按允许值过滤一次，不依赖调用方已经校验。
+  const statuses = status?.split(",").filter(/* 只保留视图实际使用的观看状态。 */ (value) => WATCH_STATUSES.has(value)) ?? [];
   if (upcoming) {
     const upcomingFilter = `last_air_date.gte.${new Date().toISOString().slice(0, 10)}`;
     const filter = statuses.length > 0 ? `status.in.(${statuses.join(",")}),${upcomingFilter}` : upcomingFilter;

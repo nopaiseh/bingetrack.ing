@@ -32,7 +32,7 @@ function personIds(form: FormData, key: string) {
 /** 合并疑似重复人物：其余人物的演职关联并入保留的人物后删除；数据库一次完成，失败不改动任何资料。 */
 export async function mergePeople(_previous: ActionResult, form: FormData): Promise<ActionResult> {
   const { db } = await requireOwner();
-  const keep = String(form.get("keep") ?? "");
+  const keep = String(form.get("keep") ?? "").toLowerCase();
   const remove = personIds(form, "remove")?.filter(id => id !== keep);
   if (!isMediaId(keep) || !remove?.length) return { error: "请选择要保留的人物。" };
   const { error } = await db.rpc("manage_merge_people", { p_keep: keep, p_remove: remove });

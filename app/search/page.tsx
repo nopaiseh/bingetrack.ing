@@ -8,14 +8,19 @@ import { buildMediaSearchQuery, hasOnlyKnownFilterValues } from "@/lib/api/searc
 import { reportHandledError } from "@/lib/report-error";
 import type { FetchMediaListOptions, MediaCard } from "@/lib/types";
 
-/** 只缓存无关键词、且标签筛选均为已知选项的查询，使缓存键数量有界，避免任意参数填充数据缓存。 */
+/**
+ * 只缓存第一页、无关键词、无年份范围，且类型／地区／语言各至多一个已知值的查询，对应详情页标签链接等常见入口。
+ * 其余组合（翻页、年份、多选）直接查询：页面本身按请求渲染，不缓存不会产生写入，缓存它们反而让每个组合各写一条数据缓存。
+ */
 function isCacheableSearch(params: FetchMediaListOptions, options: SearchOptions): boolean {
-  const within = (value: string | null | undefined, allowed: string[]) =>
-    !value || value.split(",").every(/* 检查每个筛选值是否属于已知选项。 */ (item) => allowed.includes(item));
+  const single = (value: string | null | undefined, allowed: string[]) => !value || (!value.includes(",") && allowed.includes(value));
   return !params.q
-    && within(params.genre, options.genres)
-    && within(params.region, options.regions)
-    && within(params.language, options.languages);
+    && !params.offset
+    && !params.startYear
+    && !params.endYear
+    && single(params.genre, options.genres)
+    && single(params.region, options.regions)
+    && single(params.language, options.languages);
 }
 
 /** 分类、状态或排序含未知值时返回 404；否则将路由参数规范化为查询字符串，校验后读取首屏结果，再传给客户端搜索组件。 */

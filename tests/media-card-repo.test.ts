@@ -191,6 +191,12 @@ test("upcoming filter is OR-combined with watch statuses", /* 验证“即将上
   expect(countQuery.ors).toEqual(dataQuery.ors);
 });
 
+test("status values outside the allowlist never reach the or() expression", /* 验证即使调用方未校验，拼入 .or() 的状态也只保留允许值，防止 PostgREST 过滤注入。 */ async () => {
+  state.results.v_all_media = { data: [], error: null, count: 0 };
+  await searchMediaServer({ status: "watched,id.neq.0),title.eq.x", upcoming: true });
+  expect(state.executed[0].ors).toEqual([expect.stringMatching(/^status\.in\.\(watched\),last_air_date\.gte\.\d{4}-\d{2}-\d{2}$/)]);
+});
+
 test("upcoming releases merge movies and next episodes with series details", /* 验证倒计时候选合并电影与单集，单集用所属剧的标题和海报并链接到季页。 */ async () => {
   state.results.v_all_media = ((request: { columns?: string; gtes: Array<{ column: string }> }) => request.gtes.length > 0
     ? { data: [{ id: "m1", type: "movie", title: "Dune", sort_date: "2026-10-09", genres: [], languages: [] }], error: null }

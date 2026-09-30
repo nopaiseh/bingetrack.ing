@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { ReactElement } from "react";
 
 vi.mock("@/lib/functions/search-options", () => ({
-  fetchSearchOptionsServer: vi.fn().mockResolvedValue({ genres: ["剧情"], regions: [], languages: [], years: [] }),
+  fetchSearchOptionsServer: vi.fn().mockResolvedValue({ genres: ["剧情", "喜剧"], regions: [], languages: [], years: [] }),
 }));
 vi.mock("@/lib/functions/cached-media", () => ({ searchCachedMedia: vi.fn() }));
 vi.mock("@/lib/functions/media-repo", () => ({ searchMediaServer: vi.fn() }));
@@ -36,6 +36,14 @@ describe("SearchPage", () => {
   it("关键词或未知筛选值绕过数据缓存", async () => {
     expect((await initialResultFor({ q: "星光" })).total).toBe(4);
     expect((await initialResultFor({ genre: "不存在的类型" })).total).toBe(4);
+    expect(searchCachedMedia).not.toHaveBeenCalled();
+  });
+
+  it("翻页、年份范围与多选组合绕过数据缓存，缓存键数量保持有界", async () => {
+    const queries: Record<string, string>[] = [{ genre: "剧情", page: "2" }, { startYear: "2020" }, { endYear: "2020" }, { genre: "剧情,喜剧" }];
+    for (const query of queries) {
+      expect((await initialResultFor(query)).total, JSON.stringify(query)).toBe(4);
+    }
     expect(searchCachedMedia).not.toHaveBeenCalled();
   });
 

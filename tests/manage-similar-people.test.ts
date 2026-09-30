@@ -39,6 +39,8 @@ describe("合并疑似重复人物", () => {
   it("拒绝格式不正确或没有可合并的人物", async () => {
     expect(await mergePeople({}, form([["keep", keep], ["remove", "x"]]))).toHaveProperty("error");
     expect(await mergePeople({}, form([["keep", keep], ["remove", keep]]))).toHaveProperty("error");
+    // 保留者与待合并者只差大小写时是同一人物，也不能进入合并。
+    expect(await mergePeople({}, form([["keep", keep.toUpperCase()], ["remove", keep]]))).toHaveProperty("error");
     expect(rpc).not.toHaveBeenCalled();
   });
 
