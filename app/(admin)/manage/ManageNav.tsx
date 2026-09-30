@@ -97,7 +97,7 @@ export default function ManageNav() {
         <optgroup label="账号"><option value="settings">账号安全</option></optgroup>
       </select></label>
       <div className="shrink-0 self-end mb-1">
-        <RefreshCacheButton compact />
+        <RefreshCacheButton />
       </div>
     </div>
     {/* surface-panel 为普通样式类，不能加 lg: 前缀，故桌面侧栏单独包一层面板。 */}
