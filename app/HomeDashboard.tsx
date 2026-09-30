@@ -250,8 +250,8 @@ export default function HomeDashboard({
         setDisplayedTopMovies([]);
         setDisplayedTopSeries([]);
         const [moviesResponse, seriesResponse] = await Promise.all([
-          fetch(`/api/top-media?type=movie&year=${encodeURIComponent(selectedYear)}&limit=10`, { signal: controller.signal }),
-          fetch(`/api/top-media?type=tv_show&year=${encodeURIComponent(selectedYear)}&limit=10`, { signal: controller.signal }),
+          fetch(`/api/top-media?type=movie&year=${encodeURIComponent(selectedYear)}`, { signal: controller.signal }),
+          fetch(`/api/top-media?type=tv_show&year=${encodeURIComponent(selectedYear)}`, { signal: controller.signal }),
         ]);
         if (!moviesResponse.ok || !seriesResponse.ok) throw new Error("Failed to load top media");
         const [movies, series] = await Promise.all([moviesResponse.json(), seriesResponse.json()]);
@@ -313,7 +313,7 @@ export default function HomeDashboard({
               <div>
                 <dt className="text-[11px] tracking-wide text-fg-secondary">完成进度</dt>
                 <dd
-                  className="mt-1 font-mono text-2xl font-normal tracking-tight text-accent-light sm:text-3xl"
+                  className="mt-1 font-mono text-2xl font-normal tracking-tight text-[var(--accent-light)] sm:text-3xl"
                 >
                   <AnimatedNumber value={runtimePercent} />%
                 </dd>

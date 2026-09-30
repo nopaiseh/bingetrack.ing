@@ -21,9 +21,6 @@ export default defineConfig({
       mono: "var(--font-geist-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
     },
     colors: {
-      accent: {
-        light: "var(--accent-light)",
-      },
       // 深色背景上的文字层级；装饰性分隔符与占位图标仍直接用 text-white/N。
       fg: {
         DEFAULT: "rgb(255 255 255 / 0.9)", // 标题与正文
