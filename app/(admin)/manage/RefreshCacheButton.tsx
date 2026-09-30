@@ -58,16 +58,16 @@ export default function RefreshCacheButton({ className = "", iconOnly = false }:
       disabled={isPending}
       title="清除并刷新 CDN 缓存（在 Supabase 直接修改数据后使用）"
       aria-label="刷新缓存"
-      className={`inline-flex items-center gap-1.5 rounded-xl border border-white/10 px-3 py-2 text-xs font-medium transition-colors hover:bg-white/10 hover:text-white disabled:opacity-50 ${
+      className={`max-w-[55%] shrink-0 !shadow-[var(--control-shadow)] ${
         status === "success"
-          ? "border-emerald-500/30 text-emerald-400 bg-emerald-500/10"
+          ? "!border-emerald-500/30 !bg-emerald-500/10 !text-emerald-400"
           : status === "error"
-          ? "border-rose-500/30 text-rose-400 bg-rose-500/10"
-          : "text-fg-secondary"
+          ? "!border-rose-500/30 !bg-rose-500/10 !text-rose-400"
+          : "!border-[var(--control-border)] hover:!border-[var(--control-border-hover)]"
       } ${className}`}
     >
       <span
-        className={`size-3.5 inline-block shrink-0 ${
+        className={`size-4 inline-block shrink-0 ${
           isPending
             ? "i-material-symbols-sync-rounded animate-spin"
             : status === "success"
@@ -76,7 +76,7 @@ export default function RefreshCacheButton({ className = "", iconOnly = false }:
         }`}
         aria-hidden="true"
       />
-      <span>{isPending ? "刷新中..." : status === "success" ? "已刷新" : status === "error" ? errorMessage : "刷新缓存"}</span>
+      <span className="truncate">{isPending ? "刷新中..." : status === "success" ? "已刷新" : status === "error" ? errorMessage : "刷新缓存"}</span>
     </button>
   );
 }
