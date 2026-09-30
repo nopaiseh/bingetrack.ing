@@ -23,10 +23,13 @@ export async function deleteUnused(_previous: ActionResult, form: FormData): Pro
   redirect(`/manage/reports/${report}?deleted=${Number(data) || 0}`);
 }
 
-/** 读取表单里的人物 ID，统一小写（与数据库 uuid 排序一致）、去重并拒绝格式不正确的值。 */
+// 一组疑似重复人物远少于此数；上限防止构造的请求让「不是同一人」写入的配对数按平方增长。
+const MAX_PEOPLE_PER_GROUP = 20;
+
+/** 读取表单里的人物 ID，统一小写（与数据库 uuid 排序一致）、去重，拒绝格式不正确或数量超出上限的值。 */
 function personIds(form: FormData, key: string) {
   const values = [...new Set(form.getAll(key).map(value => String(value).toLowerCase()))];
-  return values.every(isMediaId) ? values : null;
+  return values.length <= MAX_PEOPLE_PER_GROUP && values.every(isMediaId) ? values : null;
 }
 
 /** 合并疑似重复人物：其余人物的演职关联并入保留的人物后删除；数据库一次完成，失败不改动任何资料。 */

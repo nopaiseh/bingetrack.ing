@@ -2,6 +2,7 @@ import "server-only";
 import { unstable_cache } from "next/cache";
 import { MEDIA_LISTS_TAG, MEDIA_TAG } from "./media-cache-tags";
 import { getSupabasePublicServer } from "@/lib/supabase/public-server";
+import type { FetchMediaListOptions } from "@/lib/types";
 
 type NamedOption = { name: string };
 type ReleaseYearOption = { release_year: string | number };
@@ -31,6 +32,13 @@ async function fetchSearchOptions(): Promise<SearchOptions> {
     languages: ((languagesRes.data ?? []) as NamedOption[]).map(/* 提取语言选项名称。 */ ({ name }) => name),
     years: ((yearsRes.data ?? []) as ReleaseYearOption[]).map(/* 将发行年份统一转为字符串选项。 */ ({ release_year }) => String(release_year)),
   };
+}
+
+/** 类型、地区、语言筛选的每个值都必须是现有选项；它们会拼进 PostgREST 的数组条件，也决定数据缓存键。 */
+export function hasOnlyKnownTagFilters(params: Pick<FetchMediaListOptions, "genre" | "region" | "language">, options: SearchOptions): boolean {
+  const within = (value: string | null | undefined, allowed: string[]) =>
+    !value || value.split(",").every(/* 检查每个筛选值是否属于已知选项。 */ (item) => allowed.includes(item));
+  return within(params.genre, options.genres) && within(params.region, options.regions) && within(params.language, options.languages);
 }
 
 export const fetchSearchOptionsServer = unstable_cache(fetchSearchOptions, ["search-options-v2"], {

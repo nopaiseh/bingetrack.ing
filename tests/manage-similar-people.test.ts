@@ -72,4 +72,12 @@ describe("标记不是同一人", () => {
     expect(await dismissSimilarPeople({}, form([["person", keep]]))).toHaveProperty("error");
     expect(upsert).not.toHaveBeenCalled();
   });
+
+  it("人数超过上限时不写入，也不合并", async () => {
+    const many = Array.from({ length: 21 }, (_, index) => ["person", `00000000-0000-4000-8000-${String(index).padStart(12, "0")}`] as [string, string]);
+    expect(await dismissSimilarPeople({}, form(many))).toHaveProperty("error");
+    expect(await mergePeople({}, form([["keep", keep], ...many.map(([, id]) => ["remove", id] as [string, string])]))).toHaveProperty("error");
+    expect(upsert).not.toHaveBeenCalled();
+    expect(rpc).not.toHaveBeenCalled();
+  });
 });

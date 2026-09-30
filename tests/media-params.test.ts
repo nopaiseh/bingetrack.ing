@@ -37,10 +37,10 @@ test("rejects invalid filter values and reversed year ranges", /* 验证未知�
   );
 });
 
-test("validates top-media type, year, and limit", /* 验证榜单类型、有效年份和数量解析，以及非法年份拒绝行为。 */ () => {
+test("validates top-media type and year and ignores the requested limit", /* 验证榜单类型、有效年份解析、条数固定，以及非法年份拒绝行为。 */ () => {
   assert.deepEqual(
     parseTopMediaParams(new URLSearchParams({ type: "tv_show", year: "2024", limit: "20" })),
-    { type: "tv_show", year: "2024", limit: 20 },
+    { type: "tv_show", year: "2024", limit: 10 },
   );
   assert.throws(
     /** 传入非年份文本以验证榜单参数拒绝该值。 */

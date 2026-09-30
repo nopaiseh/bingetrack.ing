@@ -7,6 +7,7 @@ import {
 } from "@/lib/functions/cached-media";
 import { buildMediaDistributions } from "@/lib/functions/media-distributions";
 import { handlePageDataError } from "@/lib/functions/page-data";
+import { TOP_MEDIA_LIMIT } from "@/lib/api/media-params";
 import type { MediaCard, Summary, UpcomingRelease } from "@/lib/types";
 
 // 首页按 24 小时长缓存静态生成，数据变更由管理端 revalidatePath/revalidateTag 即时按需刷新。
@@ -25,8 +26,8 @@ export default async function HomePage() {
   try {
     const [fetchedSummary, fetchedTopMovies, fetchedTopSeries, fetchedDistributions, fetchedUpcoming] = await Promise.all([
       getCachedReleaseYearStats(),
-      getCachedTopMediaServer("movie", null, 10),
-      getCachedTopMediaServer("tv_show", null, 10),
+      getCachedTopMediaServer("movie", null, TOP_MEDIA_LIMIT),
+      getCachedTopMediaServer("tv_show", null, TOP_MEDIA_LIMIT),
       getCachedMediaDistributionsServer(),
       getCachedUpcomingReleasesServer(),
     ]);

@@ -90,7 +90,10 @@ export function parseMediaSearchParams(searchParams: URLSearchParams): FetchMedi
   };
 }
 
-/** 只接受电影或电视节目榜单，校验可选年份并把返回条数限制在 1 到 20。 */
+// 榜单条数固定，不接受请求参数，数据缓存的键只随类型和年份变化。
+export const TOP_MEDIA_LIMIT = 10;
+
+/** 只接受电影或电视节目榜单并校验可选年份；条数固定为 TOP_MEDIA_LIMIT。 */
 export function parseTopMediaParams(searchParams: URLSearchParams) {
   const type = searchParams.get("type");
   if (type !== "movie" && type !== "tv_show") {
@@ -98,6 +101,5 @@ export function parseTopMediaParams(searchParams: URLSearchParams) {
   }
 
   const year = parseYear(searchParams.get("year"), "year") ?? null;
-  const limit = parseBoundedInteger(searchParams.get("limit"), 10, 1, 20);
-  return { type: type as "movie" | "tv_show", year, limit };
+  return { type: type as "movie" | "tv_show", year, limit: TOP_MEDIA_LIMIT };
 }

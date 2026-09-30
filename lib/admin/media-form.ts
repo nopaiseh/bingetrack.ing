@@ -84,7 +84,8 @@ export function parseMediaForm(form: FormData): MediaInput {
   if (cover_url) {
     let url: URL;
     try { url = new URL(cover_url); } catch { throw new Error("封面地址必须是有效的 TMDB HTTPS 地址。"); }
-    if (url.protocol !== "https:" || !url.hostname.endsWith(".tmdb.org") || url.username || url.password || url.port) throw new Error("封面请使用 TMDB HTTPS 图片地址。");
+    // 与 next.config.ts 的 images.remotePatterns 一致，其他地址 next/image 不会加载。
+    if (url.protocol !== "https:" || url.hostname !== "image.tmdb.org" || !url.pathname.startsWith("/t/p/") || url.username || url.password || url.port) throw new Error("封面请使用 TMDB HTTPS 图片地址。");
   }
   const isDerived = type === "tv_show" || type === "tv_season";
   const release_date = isDerived ? null : string("release_date");
