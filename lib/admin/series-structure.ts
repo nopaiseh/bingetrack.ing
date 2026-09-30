@@ -4,10 +4,10 @@ import type { ManagedMediaType } from "./media-form";
 
 export type WatchStatus = "watched" | "watching" | "want_to_watch";
 export type StructureEpisode = { id: string; number: number; title: string; watched: boolean; releaseDate: string | null; runtime: number | null };
-export type StructureSeason = { id: string; number: number; title: string; episodeCount: number; status: WatchStatus };
+type StructureSeason = { id: string; number: number; title: string; episodeCount: number; status: WatchStatus };
 /** 推算日期的依据：interval 按最近一次换日的间隔；single 只有一个日期，按每周；
  * same_day 最近几集同一天上线（整季或整批上线），没有间隔可用；missing 没有日期；irregular 日期倒序或间隔超过一年。 */
-export type DateBasis = "interval" | "single" | "same_day" | "missing" | "irregular";
+type DateBasis = "interval" | "single" | "same_day" | "missing" | "irregular";
 /** 新增下一集的预填值：编号接续末集，日期按播出间隔推算，时长沿用末集。 */
 export type NextEpisode = { number: number; releaseDate: string | null; runtime: number | null; afterTitle: string | null; dateBasis: DateBasis };
 export type SeriesStructure = {
@@ -22,7 +22,7 @@ export type SeriesStructure = {
 };
 
 const EPISODE_CHUNK = 1000;
-const DAY = 86_400_000;
+export const DAY = 86_400_000;
 
 /** 以末个有日期的单集为准，往前找最近一个不同的日期作为间隔：同一天上线多集（整批上线）时不会得到 0 天间隔。
  * 只有一个日期时按每周推算；日期倒序或间隔超过一年时不推算。 */
@@ -47,7 +47,7 @@ function seasonStatus(episodeCount: number, watchedCount: number): WatchStatus {
 }
 
 /** PostgREST 对一对一关系可能返回对象或数组，统一取第一项。 */
-function one<T>(value: T | T[] | null | undefined): T | null {
+export function one<T>(value: T | T[] | null | undefined): T | null {
   return Array.isArray(value) ? value[0] ?? null : value ?? null;
 }
 

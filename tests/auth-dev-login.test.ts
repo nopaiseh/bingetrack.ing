@@ -106,7 +106,7 @@ describe("开发环境免密登录", () => {
     expect(res.headers.get("location")).toBe("/manage");
   });
 
-  it.each(["//evil.com", "/%5Cevil.com", "/%5C/evil.com"])("拒绝协议相对的 next 参数 %s", async (next) => {
+  it.each(["//evil.com", "/%5Cevil.com", "/%5C/evil.com", "/%09/evil.com", "/%0A/evil.com"])("拒绝协议相对的 next 参数 %s", async (next) => {
     vi.stubEnv("NODE_ENV", "development");
     vi.stubEnv("OWNER_EMAIL", "admin@example.com");
     vi.stubEnv("SUPABASE_SECRET_KEY", "test-secret");

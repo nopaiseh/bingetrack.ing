@@ -144,5 +144,14 @@ select is((select alternate_name from public.people where id='fc000000-0000-4000
 select ok(exists(select 1 from public.media_credits where person_id='fc000000-0000-4000-8000-000000000207' and role='director'), 'director credit moved to the kept person');
 reset role;
 
+-- 报告辅助函数只给登录用户执行；postgres 新建的函数不再默认授予 PUBLIC。
+select ok(not has_function_privilege('anon','public.manage_name_key(text)','EXECUTE'), 'anonymous cannot call manage_name_key');
+select ok(not has_function_privilege('anon','public.manage_name_issues(text, boolean)','EXECUTE'), 'anonymous cannot call manage_name_issues');
+select ok(has_function_privilege('authenticated','public.manage_name_key(text)','EXECUTE')
+  and has_function_privilege('authenticated','public.manage_name_issues(text, boolean)','EXECUTE'), 'signed-in users can run the report helpers');
+create function public.default_privilege_probe() returns integer language sql as 'select 1';
+select ok(not has_function_privilege('anon','public.default_privilege_probe()','EXECUTE')
+  and not has_function_privilege('authenticated','public.default_privilege_probe()','EXECUTE'), 'new functions are not executable by default');
+
 select * from finish();
 rollback;

@@ -1,13 +1,12 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { reports, type ReportKind } from "./reports";
-import { suggestNextEpisode, type NextEpisode, type StructureEpisode } from "./series-structure";
+import { DAY, one, suggestNextEpisode, type NextEpisode, type StructureEpisode } from "./series-structure";
 
-const DAY = 86_400_000;
 /** 「待录入」只看最近这些天有播出的节目。 */
 export const RECENT_DAYS = 30;
 
-export type LibraryCounts = { movie: number; tv_show: number; tv_episode: number; people: number };
+type LibraryCounts = { movie: number; tv_show: number; tv_episode: number; people: number };
 export type AiringShow = {
   id: string;
   title: string;
@@ -37,11 +36,6 @@ export async function readReportCounts(db: SupabaseClient): Promise<Map<ReportKi
   const kinds = Object.keys(reports) as ReportKind[];
   const results = await Promise.all(kinds.map(/* 只取数量，不读取行。 */ kind => db.from(reports[kind].view).select("id", { count: "exact", head: true })));
   return new Map(kinds.map((kind, index) => [kind, results[index].error ? null : results[index].count ?? 0]));
-}
-
-/** PostgREST 对一对一关系可能返回对象或数组，统一取第一项。 */
-function one<T>(value: T | T[] | null | undefined): T | null {
-  return Array.isArray(value) ? value[0] ?? null : value ?? null;
 }
 
 /** 往前看的单集数：整批上线时需越过同一天的多集，才能找到上一个播出日期。 */

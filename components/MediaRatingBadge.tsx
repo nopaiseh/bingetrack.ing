@@ -1,4 +1,4 @@
-export interface RatingTierInfo {
+interface RatingTierInfo {
   label: string;
   badgeClass: string;
   glowClass: string;

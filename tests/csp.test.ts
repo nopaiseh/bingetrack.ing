@@ -25,6 +25,12 @@ describe("buildContentSecurityPolicy", () => {
     expect(csp).not.toContain("unsafe-eval");
   });
 
+  it("禁止内联事件属性，图片只允许 TMDB 图片域名", () => {
+    const csp = buildContentSecurityPolicy({ isDevelopment: false });
+    expect(csp).toContain("script-src-attr 'none';");
+    expect(csp).toContain("img-src 'self' data: blob: https://image.tmdb.org;");
+  });
+
   it("开发模式允许 unsafe-eval", () => {
     expect(buildContentSecurityPolicy({ isDevelopment: true })).toContain("script-src 'self' 'unsafe-inline' 'unsafe-eval'");
   });

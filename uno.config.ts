@@ -1,7 +1,7 @@
 import { createRequire } from "node:module";
 import {
   defineConfig,
-  presetUno,
+  presetWind3,
   presetIcons,
   transformerVariantGroup,
 } from "unocss";
@@ -21,16 +21,6 @@ export default defineConfig({
       mono: "var(--font-geist-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
     },
     colors: {
-      accent: {
-        DEFAULT: "var(--accent)",
-        hover: "var(--accent-hover)",
-        light: "var(--accent-light)",
-        dark: "var(--accent-dark)",
-        soft: "var(--accent-soft)",
-        border: "var(--accent-border)",
-        glow: "var(--accent-glow)",
-        contrast: "var(--accent-contrast)",
-      },
       // 深色背景上的文字层级；装饰性分隔符与占位图标仍直接用 text-white/N。
       fg: {
         DEFAULT: "rgb(255 255 255 / 0.9)", // 标题与正文
@@ -42,7 +32,7 @@ export default defineConfig({
     },
   },
   presets: [
-    presetUno(),
+    presetWind3(),
     presetIcons({
       scale: 1.2,
       collections: {

@@ -1,7 +1,7 @@
 import { mediaTypes } from "./media-form";
 
 /** 职务显示顺序：同一作品兼任多职时按此顺序合并，如「导演、演员」。 */
-export const creditRoles = { director: "导演", actor: "演员", author: "作者", artist: "艺术家", composer: "作曲" } as const;
+const creditRoles = { director: "导演", actor: "演员", author: "作者", artist: "艺术家", composer: "作曲" } as const;
 
 /** 关联作品列表展示所需的媒体字段；季与单集附带所属节目，便于区分同名条目。 */
 export type RelatedMedia = {
@@ -17,8 +17,8 @@ export type RelatedMedia = {
 };
 /** 人物关联带职务与角色名；类型、地区、语言的关联没有 role。 */
 export type CreditRow = { media_item_id: string; role?: string; character_name?: string | null; media_items: RelatedMedia | null };
-export type CreditWork = { media: RelatedMedia; roles: string[]; characters: string[] };
-export type CreditGroup = { type: string; label: string; works: CreditWork[] };
+type CreditWork = { media: RelatedMedia; roles: string[]; characters: string[] };
+type CreditGroup = { type: string; label: string; works: CreditWork[] };
 
 /** 关联作品卡片需要的 media_items 列，含季与单集所属节目。 */
 export const relatedMediaColumns = "id,title,alternate_title,type,release_date,runtime,cover_url,tv_seasons!tv_seasons_id_fkey(season_number,parent:media_items!tv_seasons_series_id_fkey(title)),tv_episodes!tv_episodes_id_fkey(episode_number,parent:tv_seasons!tv_episodes_season_id_fkey(season_number,series:media_items!tv_seasons_series_id_fkey(title)))";

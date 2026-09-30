@@ -29,10 +29,6 @@ const nextConfig: NextConfig = {
         port: "",
         pathname: "/t/p/**",
       },
-      {
-        protocol: "https",
-        hostname: "**.tmdb.org",
-      },
     ],
   },
   /** 为所有路径配置安全响应头，并仅在非开发模式下发送 HSTS。 */

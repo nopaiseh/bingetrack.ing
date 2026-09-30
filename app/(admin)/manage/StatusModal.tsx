@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, useCallback } from "react";
 
-export interface StatusModalProps {
+interface StatusModalProps {
   /** 提示消息内容 */
   message: string;
   /** 弹窗标题，默认为“操作成功” */

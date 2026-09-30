@@ -81,7 +81,7 @@ function isTransientMessage(msg: string): boolean {
   return patterns.some((p) => lower.includes(p));
 }
 
-export type RetryOptions = {
+type RetryOptions = {
   maxRetries?: number;
   initialDelayMs?: number;
   maxDelayMs?: number;

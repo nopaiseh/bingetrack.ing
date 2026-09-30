@@ -1,6 +1,6 @@
 import type { ReactElement } from "react";
 
-export interface StatusBadgeConfig {
+interface StatusBadgeConfig {
   label: string;
   dotClass: string;
   pulse?: boolean;

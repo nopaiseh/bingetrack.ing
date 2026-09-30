@@ -8,7 +8,7 @@ import type { SeriesStructure, WatchStatus } from "@/lib/admin/series-structure"
 import { episodeLabel, formatCount, mediaHref, statusLabels, type CurrentItem, type QuickAddKind } from "./shared";
 
 /** 季数不多时以树形展开，超过后改用下拉选择，避免季列表把单集挤出视野。 */
-export const TREE_LIMIT = 8;
+const TREE_LIMIT = 8;
 /** 单集较多时提供跳到集号。 */
 export const JUMP_THRESHOLD = 20;
 

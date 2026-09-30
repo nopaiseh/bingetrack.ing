@@ -39,6 +39,8 @@ describe("合并疑似重复人物", () => {
   it("拒绝格式不正确或没有可合并的人物", async () => {
     expect(await mergePeople({}, form([["keep", keep], ["remove", "x"]]))).toHaveProperty("error");
     expect(await mergePeople({}, form([["keep", keep], ["remove", keep]]))).toHaveProperty("error");
+    // 保留者与待合并者只差大小写时是同一人物，也不能进入合并。
+    expect(await mergePeople({}, form([["keep", keep.toUpperCase()], ["remove", keep]]))).toHaveProperty("error");
     expect(rpc).not.toHaveBeenCalled();
   });
 
@@ -69,5 +71,13 @@ describe("标记不是同一人", () => {
   it("少于两位人物时不写入", async () => {
     expect(await dismissSimilarPeople({}, form([["person", keep]]))).toHaveProperty("error");
     expect(upsert).not.toHaveBeenCalled();
+  });
+
+  it("人数超过上限时不写入，也不合并", async () => {
+    const many = Array.from({ length: 21 }, (_, index) => ["person", `00000000-0000-4000-8000-${String(index).padStart(12, "0")}`] as [string, string]);
+    expect(await dismissSimilarPeople({}, form(many))).toHaveProperty("error");
+    expect(await mergePeople({}, form([["keep", keep], ...many.map(([, id]) => ["remove", id] as [string, string])]))).toHaveProperty("error");
+    expect(upsert).not.toHaveBeenCalled();
+    expect(rpc).not.toHaveBeenCalled();
   });
 });

@@ -41,7 +41,8 @@ export default async function Overview({ db }: { db: SupabaseClient }) {
 
     <GlobalSearch />
 
-    <div className="grid gap-6 xl:grid-cols-[minmax(0,1.55fr)_minmax(0,1fr)] xl:items-start">
+    {/* 单列也要写明 grid-cols-1：隐式列按内容最小宽度撑开，不换行的标题会把卡片顶出手机屏幕。 */}
+    <div className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1.55fr)_minmax(0,1fr)] xl:items-start">
       <section aria-labelledby="airing-title" className="surface-panel rounded-2xl p-5 pb-3">
         <div className="mb-1 flex items-baseline justify-between gap-3"><h2 id="airing-title" className="admin-section-title text-base font-medium text-white">待录入</h2><span className="text-xs text-neutral-400">最近 {RECENT_DAYS} 天有播出的节目</span></div>
         {airing.length ? <ul>{airing.map(show => {
@@ -54,7 +55,7 @@ export default async function Overview({ db }: { db: SupabaseClient }) {
               <p className="mt-0.5 font-mono text-xs text-neutral-400">最近播出 {show.lastAired}{show.lastEpisode && show.season != null ? ` · 已录入到 S${show.season}E${show.lastEpisode.number}` : ""}</p>
               <p className={`mt-0.5 font-mono text-xs ${due.overdue ? "text-[var(--accent-light)]" : "text-neutral-400"}`}>{due.text}</p>
             </div>
-            <Link href={`/manage/media/${show.id}?type=tv_show&add=${addSeason ? "season" : "episode"}`} aria-label={`为${show.title}新增第 ${addSeason ? 1 : show.next.number} ${addSeason ? "季" : "集"}`} className="admin-button admin-add shrink-0">
+            <Link href={`/manage/media/${show.id}?type=tv_show&add=${addSeason ? "season" : "episode"}`} aria-label={`为${show.title}新增第 ${addSeason ? 1 : show.next.number} ${addSeason ? "季" : "集"}`} className="admin-button admin-add shrink-0 whitespace-nowrap">
               <span className="i-material-symbols-add-rounded size-4.5" aria-hidden="true" />第 {formatCount(addSeason ? 1 : show.next.number)} {addSeason ? "季" : "集"}
             </Link>
           </li>;

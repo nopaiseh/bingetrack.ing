@@ -21,19 +21,40 @@ const checks = [
   { path: "/api/media?q=matrix&limit=1", expectedContentType: "application/json" },
 ];
 
+// 保护绕过密钥只发给本项目的正式域名和 Vercel 部署域名，DEPLOYMENT_URL 配错或跳转到外站时不会把它带出去。
+const TRUSTED_HOST = /^(?:www\.)?bingetrack\.ing$|\.vercel\.app$/;
+const MAX_REDIRECTS = 5;
+
+/** 仅对受信任的 HTTPS 地址附带保护绕过请求头。 */
+function bypassHeaders(url) {
+  return protectionBypassSecret && url.protocol === "https:" && TRUSTED_HOST.test(url.hostname)
+    ? { "x-vercel-protection-bypass": protectionBypassSecret }
+    : undefined;
+}
+
+/** 手动跟随跳转，每一跳重新判断是否附带密钥。 */
+async function fetchFollowingRedirects(start) {
+  let url = start;
+  for (let hop = 0; hop <= MAX_REDIRECTS; hop += 1) {
+    const response = await fetch(url, {
+      headers: bypassHeaders(url),
+      redirect: "manual",
+      signal: AbortSignal.timeout(15_000),
+    });
+    const location = response.headers.get("location");
+    if (response.status < 300 || response.status >= 400 || !location) return response;
+    url = new URL(location, url);
+  }
+  throw new Error(`more than ${MAX_REDIRECTS} redirects`);
+}
+
 const failures = [];
 
 for (const check of checks) {
   const url = new URL(check.path, baseUrl);
 
   try {
-    const response = await fetch(url, {
-      headers: protectionBypassSecret
-        ? { "x-vercel-protection-bypass": protectionBypassSecret }
-        : undefined,
-      redirect: "follow",
-      signal: AbortSignal.timeout(15_000),
-    });
+    const response = await fetchFollowingRedirects(url);
     const contentType = response.headers.get("content-type") ?? "";
 
     if (!response.ok) {

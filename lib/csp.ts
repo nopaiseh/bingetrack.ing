@@ -15,7 +15,7 @@ export function supabaseConnectOrigin(supabaseUrl: string | undefined, isDevelop
 
 /**
  * 生成全站 CSP。script-src 保留 'unsafe-inline'：改用 nonce 需要每个页面按请求渲染，会失去 ISR 与静态缓存，
- * 且 Next.js 的内联 RSC 数据脚本也依赖它。
+ * 且 Next.js 的内联 RSC 数据脚本也依赖它；内联事件属性则单独用 script-src-attr 禁止。
  */
 export function buildContentSecurityPolicy(options: { isDevelopment: boolean; supabaseUrl?: string; sentryOrigin?: string }): string {
   const { isDevelopment, supabaseUrl, sentryOrigin } = options;
@@ -26,8 +26,10 @@ export function buildContentSecurityPolicy(options: { isDevelopment: boolean; su
     "frame-ancestors 'none'",
     "object-src 'none'",
     `script-src 'self' 'unsafe-inline'${isDevelopment ? " 'unsafe-eval'" : ""}`,
+    // React 不输出 onclick 这类内联事件属性；禁止它们可挡住 <img onerror=…> 一类注入，不影响 ISR。
+    "script-src-attr 'none'",
     "style-src 'self' 'unsafe-inline'",
-    "img-src 'self' data: blob: https://image.tmdb.org https://*.tmdb.org",
+    "img-src 'self' data: blob: https://image.tmdb.org",
     "font-src 'self' data:",
     ["connect-src 'self'", supabaseConnectOrigin(supabaseUrl, isDevelopment), sentryOrigin].filter(Boolean).join(" "),
     "upgrade-insecure-requests",

@@ -98,7 +98,7 @@ export default function MediaRuntimeCards({
           </div>
           <div className="mb-2 flex items-baseline gap-2">
             <span
-              className="font-mono text-3xl sm:text-4xl lg:text-4xl xl:text-5xl tracking-tighter text-accent-light"
+              className="font-mono text-3xl sm:text-4xl lg:text-4xl xl:text-5xl tracking-tighter text-[var(--accent-light)]"
             >
               <AnimatedNumber value={completionPercent} />%
             </span>

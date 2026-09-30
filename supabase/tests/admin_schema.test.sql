@@ -16,6 +16,8 @@ returns jsonb language sql as $$
     'status','want_to_watch','rating',null,'genres','[]'::jsonb,'languages','[]'::jsonb,
     'regions','[]'::jsonb,'actors','[]'::jsonb,'directors','[]'::jsonb);
 $$;
+-- 新函数默认不再授予 PUBLIC 执行权，测试辅助函数同样要显式授权给切换后的角色。
+grant execute on function pg_temp.admin_payload(text, text, uuid, integer) to authenticated;
 
 select ok(not has_table_privilege('anon','public.media_items','INSERT,UPDATE,DELETE'), 'anonymous cannot write media');
 select ok(not has_table_privilege('authenticated','public.site_owner','INSERT,UPDATE,DELETE'), 'users cannot appoint themselves owner');

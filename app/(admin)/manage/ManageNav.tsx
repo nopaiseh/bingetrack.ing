@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useRef } from "react";
+import { useEffect, useId, useRef } from "react";
 import { mayLeaveEditor } from "@/lib/admin/navigation";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
@@ -34,6 +34,7 @@ export default function ManageNav() {
   const router = useRouter();
   const { collapsed, toggle } = useNavState();
   const panel = useRef<HTMLDivElement>(null);
+  const selectId = useId();
   // 把导航的实际高度写入 CSS 变量，剧集结构栏据此与导航等高；收起、展开或字体变化时随之更新。
   useEffect(() => {
     const element = panel.current;
@@ -82,8 +83,10 @@ export default function ManageNav() {
   </button>;
 
   return <aside className="min-w-0 lg:sticky lg:top-24 lg:self-start">
-    <div className="lg:hidden flex items-center justify-between gap-3">
-      <label className="flex-1">管理类别<select value={highlighted} onChange={/* 切换分类时进入该类别第一页。 */ event => {
+    <div className="lg:hidden">
+      <label htmlFor={selectId}>管理类别</label>
+      {/* 下拉与刷新按钮同处一行并拉伸到等高，标签单独在上方，不参与对齐。 */}
+      <div className="mt-[.45rem] flex gap-3"><select id={selectId} className="flex-1" value={highlighted} onChange={/* 切换分类时进入该类别第一页。 */ event => {
         if (mayLeaveEditor()) {
           const value = event.target.value;
           const targetHref = href(value);
@@ -95,10 +98,7 @@ export default function ManageNav() {
         <option value="home">{home.label}</option>
         {groups.map(/* 保持移动端与桌面的分组一致。 */ group => <optgroup key={group.label} label={group.label}>{group.items.map(/* 分类入口。 */ item => <option key={item.value} value={item.value}>{item.label}</option>)}</optgroup>)}
         <optgroup label="账号"><option value="settings">账号安全</option></optgroup>
-      </select></label>
-      <div className="shrink-0 self-end mb-1">
-        <RefreshCacheButton compact />
-      </div>
+      </select><RefreshCacheButton /></div>
     </div>
     {/* surface-panel 为普通样式类，不能加 lg: 前缀，故桌面侧栏单独包一层面板。 */}
     {collapsed ? <div ref={panel} className="admin-side-panel surface-panel hidden flex-col items-center gap-1.5 rounded-2xl px-2.5 py-3 lg:flex">
