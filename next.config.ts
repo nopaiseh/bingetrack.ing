@@ -3,6 +3,7 @@ import type { NextConfig } from "next";
 import { resolveSentryEnvironment } from "./lib/sentry-environment";
 import { sentryIngestOrigin } from "./lib/sentry-dsn";
 import { buildContentSecurityPolicy } from "./lib/csp";
+import { TMDB_IMAGE_WIDTHS } from "./lib/tmdb-image";
 
 const isDevelopment = process.env.NODE_ENV === "development";
 
@@ -17,19 +18,16 @@ const nextConfig: NextConfig = {
   env: {
     NEXT_PUBLIC_SENTRY_ENVIRONMENT: resolveSentryEnvironment(process.env),
   },
+  // 图片由 TMDB CDN 直接提供，不消耗 Vercel 的图片转换额度；srcset 只列出 TMDB 实际存在的宽度档位。
   images: {
-    deviceSizes: [640, 750, 828, 1080, 1200, 1920],
-    imageSizes: [16, 32, 48, 64, 96, 128, 256, 384, 512],
-    formats: ["image/avif", "image/webp"],
-    qualities: [25, 75],
-    remotePatterns: [
-      {
-        protocol: "https",
-        hostname: "image.tmdb.org",
-        port: "",
-        pathname: "/t/p/**",
-      },
-    ],
+    loader: "custom",
+    loaderFile: "./lib/tmdb-image-loader.ts",
+    imageSizes: TMDB_IMAGE_WIDTHS.slice(0, -1),
+    deviceSizes: TMDB_IMAGE_WIDTHS.slice(-1),
+  },
+  // 图片不再经过 Next 的优化器，sharp 及其原生库不需要打进每个函数包。
+  outputFileTracingExcludes: {
+    "/*": ["node_modules/sharp/**/*", "node_modules/@img/**/*"],
   },
   /** 为所有路径配置安全响应头，并仅在非开发模式下发送 HSTS。 */
   async headers() {

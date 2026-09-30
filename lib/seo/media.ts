@@ -2,8 +2,11 @@ import type { Metadata } from "next";
 import type { Media } from "@/lib/types";
 import type { SeasonInfo } from "@/lib/types";
 import { SITE_URL } from "@/lib/site";
+import { tmdbImageUrl } from "@/lib/tmdb-image";
 
 const DESCRIPTION_LENGTH = 160;
+// 分享卡片和结构化数据不经过 next/image，在这里固定海报尺寸，避免引用 TMDB 原图。
+const SHARE_IMAGE_SIZE = "w500";
 
 /** 修剪并截取媒体简介，缺少简介时按电影或电视节目生成默认描述。 */
 export function getMediaDescription(media: Media): string {
@@ -25,7 +28,7 @@ export function buildMediaMetadata(media: Media): Metadata {
   const description = getMediaDescription(media);
   const path = getMediaPath(media);
   const images = media.cover_url
-    ? [{ url: media.cover_url, alt: `${media.title} 海报` }]
+    ? [{ url: tmdbImageUrl(media.cover_url, SHARE_IMAGE_SIZE), alt: `${media.title} 海报` }]
     : [{ url: "/opengraph-image", alt: "bingetrack.ing 个人媒体记录平台" }];
 
   return {
@@ -59,7 +62,7 @@ export function buildMediaJsonLd(media: Media): Record<string, unknown> {
   };
 
   if (media.alternate_title) jsonLd.alternateName = media.alternate_title;
-  if (media.cover_url) jsonLd.image = media.cover_url;
+  if (media.cover_url) jsonLd.image = tmdbImageUrl(media.cover_url, SHARE_IMAGE_SIZE);
   if (media.date) jsonLd.datePublished = media.date;
   if (media.genres.length > 0) jsonLd.genre = media.genres;
   if (media.languages.length > 0) jsonLd.inLanguage = media.languages;
@@ -76,7 +79,7 @@ export function buildSeasonMetadata(series: Media, season: SeasonInfo): Metadata
   const path = `/shows/${encodeURIComponent(series.id)}/seasons/${encodeURIComponent(season.id)}`;
   const description = season.summary?.trim().slice(0, DESCRIPTION_LENGTH)
     || `查看《${series.title}》${season.title}的单集与观看记录。`;
-  const image = season.coverUrl || series.cover_url || "/opengraph-image";
+  const image = tmdbImageUrl(season.coverUrl || series.cover_url, SHARE_IMAGE_SIZE) || "/opengraph-image";
 
   return {
     title: `${series.title} · ${season.title}`,
