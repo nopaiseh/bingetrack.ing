@@ -1,0 +1,63 @@
+name: Database backup
+
+on:
+  schedule:
+    # 每周一 02:00（新加坡时间）。
+    - cron: "0 18 * * 0"
+  workflow_dispatch:
+
+concurrency:
+  group: database-backup
+  cancel-in-progress: false
+
+permissions: {}
+
+jobs:
+  backup:
+    name: Encrypted Supabase dump
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+      BACKUP_PASSPHRASE: ${{ secrets.BACKUP_PASSPHRASE }}
+
+    steps:
+      - name: Require backup secrets
+        run: |
+          if [ -z "${SUPABASE_DB_URL}" ] || [ -z "${BACKUP_PASSPHRASE}" ]; then
+            echo "::error::Set the SUPABASE_DB_URL and BACKUP_PASSPHRASE repository secrets."
+            exit 1
+          fi
+
+      - name: Set up Supabase CLI
+        uses: supabase/setup-cli@45a513f8c64c0bc8e0e3dfe572b5c95be85f6359 # v3.0.1
+        with:
+          version: 2.115.0
+
+      # 仓库是公开的，运行日志任何人都能看：导出内容只写入文件，不输出到日志。
+      - name: Dump roles, schema and data
+        run: |
+          mkdir backup
+          supabase db dump --db-url "${SUPABASE_DB_URL}" --role-only --file backup/roles.sql
+          supabase db dump --db-url "${SUPABASE_DB_URL}" --file backup/schema.sql
+          supabase db dump --db-url "${SUPABASE_DB_URL}" --data-only --use-copy --file backup/data.sql
+
+      - name: Check the dump contains the media tables
+        run: |
+          grep -Eq 'CREATE TABLE.*"?public"?\."?media_items"?' backup/schema.sql
+          grep -Eq 'COPY "?public"?\."?media_items"?' backup/data.sql
+
+      # 公开仓库的构建产物可以被任何登录 GitHub 的人下载，所以上传前必须加密。
+      - name: Encrypt the dump
+        run: |
+          tar -czf - -C backup . | gpg --batch --pinentry-mode loopback --passphrase-fd 3 \
+            --symmetric --cipher-algo AES256 --output database-backup.tar.gz.gpg 3<<<"${BACKUP_PASSPHRASE}"
+          rm -rf backup
+
+      - name: Upload the encrypted dump
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: database-backup-${{ github.run_id }}
+          path: database-backup.tar.gz.gpg
+          if-no-files-found: error
+          retention-days: 90

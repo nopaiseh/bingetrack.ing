@@ -16,6 +16,8 @@
 
 `.github/workflows/deployment-smoke.yml` 在 Vercel 报告部署成功时，对部署地址运行 `npm run smoke`；也可以手动输入地址触发。受保护的预览需要仓库密钥 `VERCEL_AUTOMATION_BYPASS_SECRET`。工作流总是从默认分支检出检查脚本，不会用被部署提交里的代码处理密钥；`scripts/smoke-deployment.mjs` 只会把这个密钥发给 `bingetrack.ing`、`www.bingetrack.ing` 和 `*.vercel.app` 的 HTTPS 地址，并且每次跳转都重新判断。
 
+`.github/workflows/database-backup.yml` 每周导出一次生产数据库，加密后保存为构建产物，见下文「数据库备份」。
+
 ## 发布应用
 
 1. 创建拉取请求，等待质量检查和 Vercel 预览构建完成。
@@ -46,6 +48,30 @@ supabase link --project-ref <项目 ref>
 supabase migration repair --status applied 20260925000000
 supabase migration list   # 本地与远端应一致
 ```
+
+## 数据库备份
+
+Supabase 免费计划没有自动备份。`.github/workflows/database-backup.yml` 每周一 02:00（新加坡时间）用 `supabase db dump` 导出角色、结构和 `public` 的数据，也可以在 Actions 页面手动触发。`auth` 等 Supabase 托管的 schema 不在导出范围内，恢复后需要重新创建站长账户。
+
+需要两个仓库密钥：
+
+- `SUPABASE_DB_URL`：生产库的 Session pooler 连接串（Supabase 控制台 → Connect）。GitHub 的运行器没有 IPv6，不能用直连地址；密码里的特殊字符要做百分号编码。
+- `BACKUP_PASSPHRASE`：加密口令。另存一份在密码管理器里，丢失后所有备份都无法解密。
+
+导出文件打包后用 GPG（AES-256）对称加密，上传为该次运行的构建产物 `database-backup-<运行编号>`，保留 90 天。仓库是公开的，构建产物可以被任何登录 GitHub 的人下载，所以不能去掉加密这一步，也不要让导出内容出现在日志里。
+
+恢复到一个空的 Supabase 项目：
+
+```sh
+gpg --decrypt database-backup.tar.gz.gpg | tar -xz
+psql --single-transaction --variable ON_ERROR_STOP=1 \
+  --file roles.sql --file schema.sql \
+  --command 'SET session_replication_role = replica' \
+  --file data.sql --dbname "<目标库连接串>"
+supabase migration repair --status applied <已包含在备份里的迁移版本>
+```
+
+工作流失败时 GitHub 会发邮件通知。偶尔下载一份解密检查，确认备份确实可用。
 
 ## 回滚
 
