@@ -10,9 +10,9 @@ import { redirect } from "next/navigation";
 import { formatRuntime } from "@/lib/format-runtime";
 import { formatCount } from "./media/series/shared";
 import Overview from "./Overview";
+import { statusLabels } from "./media/series/shared";
 
 const PAGE_SIZE = 25;
-const statuses = { watched: "看过", watching: "在看", want_to_watch: "没看过" } as const;
 const sorts = { date: "上映日期（新→旧）", title: "标题", rating: "评分（高→低）" } as const;
 
 /** 只把表、视图或新列缺失（迁移尚未应用）识别为可降级的错误，权限与网络错误照常抛出。 */
@@ -29,7 +29,7 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
   const q = (params.q ?? "").slice(0, 200);
   const type = params.type && Object.hasOwn(mediaTypes, params.type) ? params.type as ManagedMediaType : "movie";
   const parent = isMediaId(params.parent) ? params.parent : "";
-  const status = params.status && Object.hasOwn(statuses, params.status) ? params.status : "";
+  const status = params.status && Object.hasOwn(statusLabels, params.status) ? params.status : "";
   // 季没有评分，不提供按评分排序。
   const sort = params.sort && Object.hasOwn(sorts, params.sort) && !(params.sort === "rating" && type === "tv_season") ? params.sort : "date";
   const page = Math.min(100000, Math.max(1, Number.parseInt(params.page ?? "1", 10) || 1));
@@ -153,7 +153,7 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
     )}
     <form className="surface-panel mb-6 rounded-2xl p-4 sm:p-6 grid grid-cols-2 items-end gap-3 md:grid-cols-[minmax(0,1fr)_9rem_11rem_auto]">
       <label className="col-span-2 md:col-span-1">搜索标题<input name="q" defaultValue={q} maxLength={200} placeholder="输入标题或副标题" /></label>
-      <label>观看状态<select name="status" defaultValue={status}><option value="">全部</option>{Object.entries(statuses).filter(([value]) => !(value === "watching" && !aggregated)).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label>
+      <label>观看状态<select name="status" defaultValue={status}><option value="">全部</option>{Object.entries(statusLabels).filter(([value]) => !(value === "watching" && !aggregated)).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label>
       <label>排序<select name="sort" defaultValue={sort}>{Object.entries(sorts).filter(([value]) => !(value === "rating" && type === "tv_season")).map(([value, label]) => <option key={value} value={value}>{value === "date" && aggregated ? "最近播出（新→旧）" : label}</option>)}</select></label>
       <input type="hidden" name="type" value={type} />
       {parent && <input type="hidden" name="parent" value={parent} />}
@@ -179,7 +179,7 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
         itemStatus = derived?.status ?? "want_to_watch";
         rating = null;
       }
-      const statusLabel = statuses[itemStatus as keyof typeof statuses] ?? statuses.want_to_watch;
+      const statusLabel = statusLabels[itemStatus as keyof typeof statusLabels] ?? statusLabels.want_to_watch;
       const seasonList = item.seasons ?? [];
       const episodeTotal = seasonList.reduce((sum, season) => sum + (season.episodes?.[0]?.count ?? 0), 0);
       const nextSeason = Math.max(0, ...seasonList.map(season => season.season_number)) + 1;

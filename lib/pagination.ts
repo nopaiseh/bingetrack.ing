@@ -5,7 +5,7 @@ export function pageNumbers(current: number, total: number) {
   return Array.from({ length: end - start + 1 }, /* 将窗口内的索引转换为实际页码。 */ (_, index) => start + index);
 }
 
-export type PaginationItem = number | "start-gap" | "end-gap";
+type PaginationItem = number | "start-gap" | "end-gap";
 
 /** 在五页窗口两侧补上首页与末页，中间断开处以省略标记表示，便于直接跳到任意一端。 */
 export function paginationItems(current: number, total: number): PaginationItem[] {

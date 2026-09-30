@@ -8,6 +8,7 @@ import { getCachedMediaById, getCachedSeasonsBySeriesId } from "@/lib/functions/
 import { buildSeasonMetadata } from "@/lib/seo/media";
 import { formatRuntime } from "@/lib/format-runtime";
 import { BackLink } from "@/components/MediaBackLink";
+import { pageNumbers } from "@/lib/pagination";
 
 // 季详情页读取分页与筛选查询参数，按请求渲染：单集分页每次查询数据库，电视节目与季摘要使用带 "media" 标签的数据缓存。
 
@@ -86,13 +87,6 @@ function EpisodeCard({ episode }: { episode: EpisodeInfo }) {
       </div>
     </article>
   );
-}
-
-/** 生成最多五个连续页码，并在列表首尾调整窗口。 */
-function pageNumbers(current: number, total: number) {
-  const start = Math.max(1, Math.min(current - 2, total - 4));
-  const end = Math.min(total, start + 4);
-  return Array.from({ length: end - start + 1 }, /* 把分页窗口索引转换为页码。 */ (_, index) => start + index);
 }
 
 /** 校验季页面的分页和筛选输入，并行加载详情、单集与季列表，渲染统计和翻页导航。 */

@@ -1,4 +1,4 @@
-export interface RuntimeParts {
+interface RuntimeParts {
   days: number;
   hours: number;
   minutes: number;
