@@ -32,7 +32,7 @@ supabase test db
 - 业务函数都是 `security invoker`，不使用 `SECURITY DEFINER`。写入函数开头会检查 `is_site_owner()`，并撤销匿名角色的执行权限。
 - 管理视图（`v_manage_media_order`、`v_report_*`）只授权给登录用户读取。
 
-新增函数时，要显式 `revoke execute ... from public, anon`：默认权限目前没有对 `PUBLIC` 撤销函数执行权。
+`postgres` 角色新建的函数默认不授予 `PUBLIC` 执行权（`20260930000000_revoke_public_function_execute.sql`）。新增函数时要显式 `grant execute` 给需要的角色：公开页面用的给 `anon, authenticated`，管理端用的只给 `authenticated`。
 
 ## 查询约定
 
