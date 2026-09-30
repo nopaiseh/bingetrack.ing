@@ -14,7 +14,7 @@
 
 `.github/workflows/test.yml` 在每个拉取请求和 `main` 推送时运行：生产依赖审计 → ESLint → 类型检查 → Vitest → 启动本地 Supabase 并应用迁移 → 载入 `supabase/fixtures/e2e_seed.sql` → 环境检查 → 生产构建 → Playwright → pgTAP。第三方 Action 都固定到提交 SHA。
 
-`.github/workflows/deployment-smoke.yml` 在 Vercel 报告部署成功时，对部署地址运行 `npm run smoke`；也可以手动输入地址触发。受保护的预览需要仓库密钥 `VERCEL_AUTOMATION_BYPASS_SECRET`。`scripts/smoke-deployment.mjs` 只会把这个密钥发给 `bingetrack.ing`、`www.bingetrack.ing` 和 `*.vercel.app` 的 HTTPS 地址，并且每次跳转都重新判断。
+`.github/workflows/deployment-smoke.yml` 在 Vercel 报告部署成功时，对部署地址运行 `npm run smoke`；也可以手动输入地址触发。受保护的预览需要仓库密钥 `VERCEL_AUTOMATION_BYPASS_SECRET`。工作流总是从默认分支检出检查脚本，不会用被部署提交里的代码处理密钥；`scripts/smoke-deployment.mjs` 只会把这个密钥发给 `bingetrack.ing`、`www.bingetrack.ing` 和 `*.vercel.app` 的 HTTPS 地址，并且每次跳转都重新判断。
 
 ## 发布应用
 
