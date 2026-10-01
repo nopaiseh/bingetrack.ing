@@ -1,7 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, useSyncExternalStore } from "react";
-import { createPortal } from "react-dom";
+import { useEffect, useRef, useState } from "react";
 
 interface StatusModalProps {
   /** 提示消息内容 */
@@ -14,17 +13,11 @@ interface StatusModalProps {
   onClose?: () => void;
 }
 
-const subscribe = () => () => {};
-
-/** 打开原生模态 <dialog> 时，页面其余部分是 inert 的，通知要挂进最上层的模态弹窗里才能被看到和朗读。 */
-function portalHost() {
-  const modals = [...document.querySelectorAll("dialog[open]")].filter(dialog => dialog.matches(":modal"));
-  return modals.at(-1) ?? document.body;
-}
-
 /**
  * /manage 模块专用的操作反馈提示：只显示图标与一句话，没有按钮和标题。
- * - 渲染到 body（有模态 <dialog> 时挂进弹窗内）并进入浏览器顶层，避免被导航栏或弹窗盖住；固定在导航栏下方水平居中；
+ * - 原地渲染并以 popover 进入浏览器顶层，不被导航栏或原生 <dialog> 盖住；固定在导航栏下方水平居中。
+ *   不用 portal：在模态弹窗内触发时留在弹窗里，才不会因弹窗外内容 inert 而无法朗读；
+
  * - 容器不拦截指针事件，不阻碍后台表单操作；
  * - duration 后淡出并卸载，Escape 可提前关闭；
  * - role="status"（失败为 role="alert"），无障碍播报并兼容自动化测试。
@@ -34,7 +27,6 @@ export default function StatusModal({ message, tone = "success", duration = 5000
   const [isClosing, setIsClosing] = useState(false);
   const onCloseRef = useRef(onClose);
   const box = useRef<HTMLDivElement>(null);
-  const host = useSyncExternalStore<Element | null>(subscribe, portalHost, () => null);
 
   useEffect(() => { onCloseRef.current = onClose; });
 
@@ -57,17 +49,17 @@ export default function StatusModal({ message, tone = "success", duration = 5000
   // 放进浏览器顶层（popover），即使在原生 <dialog> 弹窗打开时也不会被盖住。
   useEffect(() => {
     const el = box.current;
-    if (!el || !host || !isOpen) return;
-    // 只在浏览器支持时才声明为 popover，不支持的环境退回普通固定定位。
-    if (typeof el.showPopover !== "function") return;
+    // 只在浏览器支持时才声明为 popover，不支持的环境退回普通固定定位；所在弹窗随跳转移除时同样跳过。
+    if (!el || !isOpen || !el.isConnected || typeof el.showPopover !== "function") return;
     el.setAttribute("popover", "manual");
-    el.showPopover();
-  }, [host, isOpen]);
+    // 提示只是锦上添花，顶层失败时退回固定定位，绝不能让页面崩溃。
+    try { el.showPopover(); } catch { el.removeAttribute("popover"); }
+  }, [isOpen]);
 
-  if (!isOpen || !host) return null;
+  if (!isOpen) return null;
 
   const error = tone === "error";
-  return createPortal(
+  return (
     <div
       ref={box}
       className={`pointer-events-none fixed inset-x-0 top-20 z-[70] m-0 flex h-auto w-auto justify-center overflow-visible border-0 bg-transparent p-0 px-4 transition-all duration-200 ${isClosing ? "-translate-y-2 opacity-0" : "translate-y-0 opacity-100"}`}
@@ -82,8 +74,7 @@ export default function StatusModal({ message, tone = "success", duration = 5000
         />
         <span className="break-words">{message}</span>
       </div>
-    </div>,
-    host,
+    </div>
   );
 }
 

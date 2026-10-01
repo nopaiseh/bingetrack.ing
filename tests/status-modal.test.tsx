@@ -5,7 +5,7 @@ import StatusModal from "@/app/(admin)/manage/StatusModal";
 beforeEach(() => { vi.useFakeTimers(); });
 afterEach(() => { vi.clearAllTimers(); vi.useRealTimers(); });
 
-it("渲染到 body 的简洁提示：只有消息，没有按钮与标题", () => {
+it("简洁提示：只有消息，没有按钮与标题", () => {
   render(<StatusModal message="保存成功，公开页面缓存已更新。" />);
 
   const status = screen.getByRole("status");
