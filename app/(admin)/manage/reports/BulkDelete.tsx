@@ -1,6 +1,7 @@
 "use client";
 import { useActionState } from "react";
 import { deleteUnused } from "../report-actions";
+import { ActionNotice } from "../StatusModal";
 
 /** 批量删除闲置资料；须输入当前数量确认，服务端再核对一次。 */
 export default function BulkDelete({ report, count, unit }: { report: string; count: number; unit: string }) {
@@ -14,7 +15,7 @@ export default function BulkDelete({ report, count, unit }: { report: string; co
         <label className="w-full sm:w-72">输入数量 {count} 以确认删除<input name="confirm_count" required inputMode="numeric" disabled={pending} autoComplete="off" className="font-mono" /></label>
         <button disabled={pending} className="admin-danger">{pending ? "正在删除…" : "永久删除"}</button>
       </div>
-      <p role="alert" className="text-sm text-red-300">{state.error}</p>
+      <ActionNotice state={state} />
     </form>
   </section>;
 }

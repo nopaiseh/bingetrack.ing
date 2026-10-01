@@ -11,12 +11,15 @@ export default function manifest(): MetadataRoute.Manifest {
     display: "standalone",
     background_color: THEME_COLORS.default,
     theme_color: THEME_COLORS.default,
+    // PWA 主屏图标安装后无法动态更换，固定为默认主题的粉色。monochrome 供 Android 13+ 主题图标使用，不能依赖它一定生效。
     icons: [
-      {
-        src: "/favicon.ico",
-        sizes: "any",
-        type: "image/x-icon",
-      },
+      { src: "/icons/icon-192.png", sizes: "192x192", type: "image/png", purpose: "any" },
+      { src: "/icons/icon-512.png", sizes: "512x512", type: "image/png", purpose: "any" },
+      { src: "/icons/icon-maskable-192.png", sizes: "192x192", type: "image/png", purpose: "maskable" },
+      { src: "/icons/icon-maskable-512.png", sizes: "512x512", type: "image/png", purpose: "maskable" },
+      { src: "/icons/icon-monochrome-192.png", sizes: "192x192", type: "image/png", purpose: "monochrome" },
+      { src: "/icons/icon-monochrome-512.png", sizes: "512x512", type: "image/png", purpose: "monochrome" },
+      { src: "/icons/icon.svg", sizes: "any", type: "image/svg+xml", purpose: "any" },
     ],
   };
 }

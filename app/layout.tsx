@@ -7,7 +7,7 @@ import Footer from "@/components/Footer";
 import MobileTabBar from "@/components/MobileTabBar";
 import NavigationProgressBar from "@/components/NavigationProgressBar";
 import { SITE_URL } from "@/lib/site";
-import { THEME_COLORS, THEME_INIT_SCRIPT } from "@/lib/themes";
+import { FAVICON_PNG_ID, FAVICON_SVG_ID, THEME_COLORS, THEME_INIT_SCRIPT } from "@/lib/themes";
 import "./globals.css";
 
 // 数字与品牌字标统一使用 Geist Mono，经 next/font 自托管以满足 font-src 'self' 策略。
@@ -57,6 +57,10 @@ export default function RootLayout({
       <head>
         <link rel="preconnect" href="https://image.tmdb.org" crossOrigin="anonymous" />
         <link rel="dns-prefetch" href="https://image.tmdb.org" />
+        {/* 标签页图标随主题切换，初始为默认粉色；THEME_INIT_SCRIPT 与 ThemeToggle 会按 id 改写 href。 */}
+        <link rel="icon" id={FAVICON_SVG_ID} type="image/svg+xml" href="/icons/favicon-pink.svg" suppressHydrationWarning />
+        <link rel="icon" id={FAVICON_PNG_ID} type="image/png" sizes="32x32" href="/icons/favicon-pink-32.png" suppressHydrationWarning />
+        <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
         <script
           dangerouslySetInnerHTML={{
             __html: THEME_INIT_SCRIPT,

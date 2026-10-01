@@ -20,7 +20,7 @@ export async function deleteUnused(_previous: ActionResult, form: FormData): Pro
   const { data, error } = await db.rpc("manage_delete_unused", { p_kind: config.bulkDelete });
   if (error) return { error: error.code === "23503" ? "部分资料仍被其他内容引用，请刷新后重试。" : "删除失败，请重试。" };
   revalidateAllMedia();
-  redirect(`/manage/reports/${report}?deleted=${Number(data) || 0}`);
+  redirect(`/manage/reports/${report}?deleted=${Number(data) || 0}&n=${Date.now()}`);
 }
 
 // 一组疑似重复人物远少于此数；上限防止构造的请求让「不是同一人」写入的配对数按平方增长。
@@ -47,7 +47,7 @@ export async function mergePeople(_previous: ActionResult, form: FormData): Prom
   }
   // 人物可能出现在任意数量的作品页面，合并后整体失效公开缓存。
   revalidateAllMedia();
-  redirect(`/manage/reports/similar-people?merged=${remove.length}`);
+  redirect(`/manage/reports/similar-people?merged=${remove.length}&n=${Date.now()}`);
 }
 
 /** 标记一组人物不是同一人：记录组内每一对，之后不再出现在疑似重复人物报告中。 */
@@ -58,5 +58,5 @@ export async function dismissSimilarPeople(_previous: ActionResult, form: FormDa
   const pairs = ids.flatMap((a, index) => ids.slice(index + 1).map(b => (a < b ? { person_a: a, person_b: b } : { person_a: b, person_b: a })));
   const { error } = await db.from("people_distinct_pairs").upsert(pairs, { onConflict: "person_a,person_b", ignoreDuplicates: true });
   if (error) return { error: error.code === "23503" ? "人物已不存在，请刷新后重试。" : "标记失败，请重试。" };
-  redirect("/manage/reports/similar-people?dismissed=1");
+  redirect(`/manage/reports/similar-people?dismissed=1&n=${Date.now()}`);
 }

@@ -8,7 +8,7 @@ import SimilarPeopleGroup, { type SimilarPerson } from "./SimilarPeopleGroup";
 const LIMIT = 300;
 
 /** 疑似重复人物按写法分组显示，每组可合并或标记为不是同一人。 */
-export default async function SimilarPeopleReport({ db, merged, dismissed }: { db: SupabaseClient; merged?: string; dismissed?: string }) {
+export default async function SimilarPeopleReport({ db, merged, dismissed, nonce }: { db: SupabaseClient; merged?: string; dismissed?: string; nonce?: string }) {
   const config = reports["similar-people"];
   const { data, count, error } = await db.from(config.view).select("link_id,title,detail,group_key", { count: "exact" }).order("sort_key").order("id").limit(LIMIT);
   if (error) throw new Error("无法读取报告，请确认数据库迁移已应用后重试。");
@@ -27,8 +27,8 @@ export default async function SimilarPeopleReport({ db, merged, dismissed }: { d
       <h1 className="admin-heading">{config.label}</h1>
       <p className="mt-2 text-neutral-400">共 {groups.size} 组、{count ?? 0} {config.unit} · 合并后删除重复的人物；不是同一人的标记后不再出现。</p>
     </div>
-    {merged && <StatusModal message={`已合并并删除 ${Number(merged) || 0} 位人物。`} />}
-    {dismissed && <StatusModal message="已标记为不是同一人，这组不会再出现。" />}
+    {merged && <StatusModal key={nonce} message={`已合并并删除 ${Number(merged) || 0} 位人物。`} />}
+    {dismissed && <StatusModal key={nonce} message="已标记为不是同一人，这组不会再出现。" />}
     {groups.size > 0 ? <div className="space-y-5">{[...groups].map(([key, people]) => <SimilarPeopleGroup key={key} people={people} />)}</div>
       : <div className="surface-panel rounded-2xl px-6 py-16 text-center"><span className="i-material-symbols-check-circle-outline-rounded mx-auto mb-3 block size-8 text-[var(--accent)]" aria-hidden="true" /><p className="text-neutral-400">没有疑似重复的人物。</p></div>}
     {(count ?? 0) > LIMIT && <p className="mt-6 text-sm text-neutral-400">只显示前 {LIMIT} 位人物，处理后刷新即可看到其余的。</p>}

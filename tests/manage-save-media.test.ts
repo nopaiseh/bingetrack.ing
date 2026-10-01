@@ -43,7 +43,7 @@ describe("deleteMedia", () => {
     form.set("id", saved);
     form.set("confirm_title", "标题");
     await deleteMedia({}, form);
-    expect(redirect).toHaveBeenCalledWith(`/manage?type=${list}&deleted=1`);
+    expect(redirect).toHaveBeenCalledWith(expect.stringMatching(new RegExp(`^/manage\\?type=${list}&deleted=1&n=\\d+$`)));
   });
 });
 
@@ -58,7 +58,7 @@ describe("saveMedia 快速新增", () => {
 
   it("未选择连续录入时打开新条目", async () => {
     await saveMedia({}, episodeForm({ after: "open" }));
-    expect(redirect).toHaveBeenCalledWith(`/manage/media/${saved}?saved=1`);
+    expect(redirect).toHaveBeenCalledWith(expect.stringMatching(new RegExp(`^/manage/media/${saved}\\?saved=1&n=\\d+$`)));
     expect(refresh).not.toHaveBeenCalled();
   });
 

@@ -31,7 +31,7 @@ async function readAllLinks(db: Db, kind: Exclude<ReferenceType, "collections">,
 }
 
 /** 完整读取资料和关联，查询失败不得把空结果当成真实数据。 */
-export default async function ReferenceDetail({ params, searchParams }: { params: Promise<{ kind: string; id: string }>; searchParams: Promise<{ saved?: string; page?: string }> }) {
+export default async function ReferenceDetail({ params, searchParams }: { params: Promise<{ kind: string; id: string }>; searchParams: Promise<{ saved?: string; page?: string; n?: string }> }) {
   const { db } = await requireOwner();
   const { kind, id } = await params;
   if (!isReferenceType(kind) || (id !== "new" && !isMediaId(id))) notFound();
@@ -65,7 +65,7 @@ export default async function ReferenceDetail({ params, searchParams }: { params
   }
   const memberRows = (members?.data ?? []) as unknown as { media_item_id: string; position?: number | null; media_items: RelatedMedia | null }[];
 
-  return <section><header className="mb-8"><BackToList category={kind} /><h1 className="admin-heading break-words">{item.name}</h1></header>{search.saved && <StatusModal message="保存成功，关联作品已同步更新。" />}
+  return <section><header className="mb-8"><BackToList category={kind} /><h1 className="admin-heading break-words">{item.name}</h1></header>{search.saved && <StatusModal key={search.n} message="保存成功，关联作品已同步更新。" />}
     {/* 资料表单固定在左侧，右侧浏览关联作品时仍可随时改名保存。 */}
     <div className="grid gap-8 lg:grid-cols-[20rem_minmax(0,1fr)] lg:items-start">
     <div className="lg:sticky lg:top-24"><ReferenceForm key={`${id}:${item.name}:${item.alternate_name}`} kind={kind} item={item} count={count} /></div>

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import ThemeToggle from "./ThemeToggle";
+import BrandMark from "@/components/BrandMark";
 
 /** 渲染站点页脚、品牌链接及所用平台标识。 */
 export default function Footer() {
@@ -12,7 +13,7 @@ export default function Footer() {
           
             <div className="flex flex-col sm:flex-row items-center gap-3 md:gap-4 shrink-0">
               <Link href="/" className="flex items-center gap-2.5 group cursor-pointer opacity-90 hover:opacity-100 transition-opacity duration-300">
-                <span className="i-material-symbols-terminal-rounded inline-block size-4 text-[var(--accent)] group-hover:rotate-12 transition-transform duration-300" aria-hidden="true" />
+                <BrandMark className="size-6 text-white/90 group-hover:rotate-12 transition-transform duration-300" />
                 <span className="font-mono text-xl font-light tracking-tight">
                   <span className="bg-clip-text text-transparent bg-linear-to-br from-white via-white/80 to-white/50">
                     bingetrack

@@ -38,7 +38,7 @@ export async function saveReference(_previous: ActionResult, form: FormData): Pr
   // 人物、类型等资料可能被任意数量的条目引用，改名或删除时整体失效。
   revalidateAllMedia();
   if (form.get("return_list") === "1") return { saved: true };
-  redirect(`/manage/references/${kind}/${data.id}?saved=1`);
+  redirect(`/manage/references/${kind}/${data.id}?saved=1&n=${Date.now()}`);
 }
 
 /** 删除与名称确认在同一个数据库语句中完成，级联仅移除关联。 */
@@ -52,7 +52,7 @@ export async function deleteReference(_previous: ActionResult, form: FormData): 
   if (error) return { error: error.code === "23503" ? "此资料仍被其他内容引用，请先移除这些关联。" : "删除失败，请重试。" };
   if (!data?.length) return { error: "名称不匹配或资料已被删除，请刷新确认。" };
   revalidateAllMedia();
-  redirect(`/manage/references/${kind}?deleted=1`);
+  redirect(`/manage/references/${kind}?deleted=1&n=${Date.now()}`);
 }
 
 /** 一次修改一个系列成员的顺序或关联，避免多请求重排造成部分保存。 */

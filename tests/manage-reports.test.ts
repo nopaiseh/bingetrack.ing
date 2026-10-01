@@ -62,7 +62,7 @@ describe("批量删除闲置资料", () => {
     await deleteUnused({}, form({ report: "unused-references", confirm_count: "3" }));
     expect(from).toHaveBeenCalledWith("v_report_unused_references");
     expect(rpc).toHaveBeenCalledWith("manage_delete_unused", { p_kind: "references" });
-    expect(redirect).toHaveBeenCalledWith("/manage/reports/unused-references?deleted=3");
+    expect(redirect).toHaveBeenCalledWith(expect.stringMatching(/^\/manage\/reports\/unused-references\?deleted=3&n=\d+$/));
   });
   it("删除失败时不刷新缓存", async () => {
     rpc.mockResolvedValue({ data: null, error: { code: "XX000" } });

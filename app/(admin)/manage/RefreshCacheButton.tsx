@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { manualRevalidateCache } from "./actions";
+import StatusModal from "./StatusModal";
 
 interface RefreshCacheButtonProps {
   className?: string;
@@ -13,6 +14,7 @@ export default function RefreshCacheButton({ className = "", iconOnly = false }:
   const [isPending, startTransition] = useTransition();
   const [status, setStatus] = useState<"idle" | "success" | "error">("idle");
   const [errorMessage, setErrorMessage] = useState<string>("");
+  const [notice, setNotice] = useState<{ id: number; tone: "success" | "error"; message: string } | null>(null);
 
   function handleRefresh() {
     if (isPending) return;
@@ -23,14 +25,18 @@ export default function RefreshCacheButton({ className = "", iconOnly = false }:
       const result = await manualRevalidateCache();
       if (result.saved) {
         setStatus("success");
+        setNotice({ id: Date.now(), tone: "success", message: "公开页面缓存已刷新。" });
         setTimeout(() => setStatus("idle"), 3000);
       } else {
         setStatus("error");
         setErrorMessage(result.error ?? "刷新失败");
+        setNotice({ id: Date.now(), tone: "error", message: result.error ?? "刷新缓存失败。" });
         setTimeout(() => setStatus("idle"), 4000);
       }
     });
   }
+
+  const toast = notice && <StatusModal key={notice.id} tone={notice.tone} message={notice.message} onClose={() => setNotice(null)} />;
 
   if (iconOnly) {
     const label = isPending ? "正在刷新缓存" : status === "success" ? "缓存已刷新" : status === "error" ? (errorMessage || "刷新失败") : "刷新公开缓存";
@@ -46,12 +52,13 @@ export default function RefreshCacheButton({ className = "", iconOnly = false }:
         >
           <span className={`size-4.5 inline-block shrink-0 ${isPending ? "i-material-symbols-sync-rounded animate-spin" : status === "success" ? "i-material-symbols-check-circle-rounded" : "i-material-symbols-cached-rounded"}`} aria-hidden="true" />
         </button>
-        <span role="status" className="sr-only">{status === "idle" ? "" : label}</span>
+        {toast}
       </>
     );
   }
 
   return (
+    <>
     <button
       type="button"
       onClick={handleRefresh}
@@ -78,6 +85,8 @@ export default function RefreshCacheButton({ className = "", iconOnly = false }:
       />
       <span className="truncate">{isPending ? "刷新中..." : status === "success" ? "已刷新" : status === "error" ? errorMessage : "刷新缓存"}</span>
     </button>
+    {toast}
+    </>
   );
 }
 
