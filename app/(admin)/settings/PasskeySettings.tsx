@@ -11,17 +11,19 @@ export default function PasskeySettings({ initialKeys, initialError }: { initial
   const [keys, setKeys] = useState(initialKeys);
   const [message, setMessage] = useState<{ id: number; text: string; tone: "success" | "error" }>({ id: 0, text: initialError, tone: "error" });
   const [busy, setBusy] = useState(false);
+  /** 递增 id 让相同文案的连续结果也会重新弹出通知。 */
+  const notify = (text: string, tone: "success" | "error") => setMessage(previous => ({ id: previous.id + 1, text, tone }));
   /** 执行凭证变更并刷新列表，任何失败都保留当前页面。 */
   async function run(operation: () => Promise<void>) {
     setBusy(true);
-    setMessage({ id: Date.now(), text: "", tone: "error" });
+    notify("", "error");
     try {
       await operation();
       const { data, error } = await getAuthBrowser().auth.passkey.list();
       if (error) throw error;
       setKeys(data ?? []);
-      setMessage({ id: Date.now(), text: "凭证已更新。", tone: "success" });
-    } catch { setMessage({ id: Date.now(), text: "操作未完成，请重试；如取消了设备验证，凭证不会被更改。", tone: "error" }); }
+      notify("凭证已更新。", "success");
+    } catch { notify("操作未完成，请重试；如取消了设备验证，凭证不会被更改。", "error"); }
     finally { setBusy(false); }
   }
   /** 唤起操作系统创建新凭证。 */
@@ -47,7 +49,7 @@ export default function PasskeySettings({ initialKeys, initialError }: { initial
   /** 用表单提供的名称更新凭证标签。 */
   async function rename(form: FormData) {
     const friendlyName = String(form.get("name") ?? "").trim();
-    if (!friendlyName || friendlyName.length > 120) { setMessage({ id: Date.now(), text: "凭证名称应为 1–120 个字符。", tone: "error" }); return; }
+    if (!friendlyName || friendlyName.length > 120) { notify("凭证名称应为 1–120 个字符。", "error"); return; }
     await run(async function update() {
       const { error } = await getAuthBrowser().auth.passkey.update({ passkeyId: String(form.get("id")), friendlyName });
       if (error) throw error;
