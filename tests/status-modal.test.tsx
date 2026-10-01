@@ -15,6 +15,9 @@ it("简洁提示：只有消息，没有按钮与标题", () => {
   expect(screen.queryByRole("heading")).toBeNull();
   expect(status.parentElement!.className).toContain("pointer-events-none");
   expect(status.parentElement!.className).toContain("justify-center");
+  // 覆盖浏览器 [popover] 默认的 inset: 0，避免容器被拉满整屏
+  expect(status.parentElement!.className).toContain("bottom-auto");
+  expect(status.parentElement!.className).toContain("items-start");
 });
 
 it("失败提示使用 role=alert", () => {
