@@ -16,9 +16,15 @@ interface StatusModalProps {
 
 const subscribe = () => () => {};
 
+/** 打开原生模态 <dialog> 时，页面其余部分是 inert 的，通知要挂进最上层的模态弹窗里才能被看到和朗读。 */
+function portalHost() {
+  const modals = [...document.querySelectorAll("dialog[open]")].filter(dialog => dialog.matches(":modal"));
+  return modals.at(-1) ?? document.body;
+}
+
 /**
  * /manage 模块专用的操作反馈提示：只显示图标与一句话，没有按钮和标题。
- * - 渲染到 body 并进入浏览器顶层，避免被固定导航栏或打开的原生 <dialog> 盖住；固定在导航栏下方水平居中；
+ * - 渲染到 body（有模态 <dialog> 时挂进弹窗内）并进入浏览器顶层，避免被导航栏或弹窗盖住；固定在导航栏下方水平居中；
  * - 容器不拦截指针事件，不阻碍后台表单操作；
  * - duration 后淡出并卸载，Escape 可提前关闭；
  * - role="status"（失败为 role="alert"），无障碍播报并兼容自动化测试。
@@ -28,7 +34,7 @@ export default function StatusModal({ message, tone = "success", duration = 5000
   const [isClosing, setIsClosing] = useState(false);
   const onCloseRef = useRef(onClose);
   const box = useRef<HTMLDivElement>(null);
-  const mounted = useSyncExternalStore(subscribe, () => true, () => false);
+  const host = useSyncExternalStore<Element | null>(subscribe, portalHost, () => null);
 
   useEffect(() => { onCloseRef.current = onClose; });
 
@@ -51,14 +57,14 @@ export default function StatusModal({ message, tone = "success", duration = 5000
   // 放进浏览器顶层（popover），即使在原生 <dialog> 弹窗打开时也不会被盖住。
   useEffect(() => {
     const el = box.current;
-    if (!el || !mounted || !isOpen) return;
+    if (!el || !host || !isOpen) return;
     // 只在浏览器支持时才声明为 popover，不支持的环境退回普通固定定位。
     if (typeof el.showPopover !== "function") return;
     el.setAttribute("popover", "manual");
     el.showPopover();
-  }, [mounted, isOpen]);
+  }, [host, isOpen]);
 
-  if (!isOpen || !mounted) return null;
+  if (!isOpen || !host) return null;
 
   const error = tone === "error";
   return createPortal(
@@ -77,7 +83,7 @@ export default function StatusModal({ message, tone = "success", duration = 5000
         <span className="break-words">{message}</span>
       </div>
     </div>,
-    document.body,
+    host,
   );
 }
 
