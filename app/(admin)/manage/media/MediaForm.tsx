@@ -7,6 +7,7 @@ import UnsavedGuard from "../UnsavedGuard";
 import type { ParentChoice } from "@/lib/admin/media-context";
 import { saveMedia, deleteMedia, type ActionResult } from "@/app/(admin)/manage/actions";
 import { mediaTypes, type MediaInput, type ManagedMediaType } from "@/lib/admin/media-form";
+import { ActionNotice } from "../StatusModal";
 
 const typeConfigs: Record<ManagedMediaType, { label: string; icon: string; badgeClass: string; textClass: string; borderClass: string; bgClass: string }> = {
   movie: {
@@ -349,7 +350,7 @@ export default function MediaForm({ item, initialType = "movie", lockType = fals
             </div>
           </section>
         )}
-        <div className="surface-overlay sticky bottom-4 z-20 flex flex-wrap items-center justify-between gap-3 rounded-xl p-3"><div><p className="text-sm text-neutral-300">{dirty ? "有未保存的修改" : "资料已载入"}</p><p role="alert" className="text-sm text-red-300">{state.error}</p></div><div className="flex flex-wrap items-center gap-3">{item && <button type="button" className="admin-danger" onClick={openConfirm}>删除条目</button>}<button type="submit" className="admin-primary">{pending ? "正在保存…" : "保存资料"}</button></div></div>
+        <div className="surface-overlay sticky bottom-4 z-20 flex flex-wrap items-center justify-between gap-3 rounded-xl p-3"><div><p className="text-sm text-neutral-300">{dirty ? "有未保存的修改" : "资料已载入"}</p><ActionNotice state={state} /></div><div className="flex flex-wrap items-center gap-3">{item && <button type="button" className="admin-danger" onClick={openConfirm}>删除条目</button>}<button type="submit" className="admin-primary">{pending ? "正在保存…" : "保存资料"}</button></div></div>
       </fieldset>
     </form>
     {item && <dialog ref={confirmDialog} aria-labelledby={confirmHeading} className="admin-quick-dialog" onCancel={event => { if (deleting) event.preventDefault(); }}>
@@ -359,7 +360,7 @@ export default function MediaForm({ item, initialType = "movie", lockType = fals
       <form action={deleteAction} className="space-y-4">
         <input type="hidden" name="id" value={item.id ?? ""} />
         <label>输入完整标题以确认删除<input ref={confirmInput} name="confirm_title" required autoComplete="off" disabled={pending || deleting} /></label>
-        <p role="alert" className="text-sm text-red-300">{deleteState.error}</p>
+        <ActionNotice state={deleteState} />
         <div className="flex flex-wrap justify-end gap-3"><button type="button" disabled={deleting} onClick={() => confirmDialog.current?.close()}>取消</button><button className="admin-danger" type="submit" disabled={pending || deleting}>{deleting ? "正在删除…" : "永久删除"}</button></div>
       </form>
     </dialog>}

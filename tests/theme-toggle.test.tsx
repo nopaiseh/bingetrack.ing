@@ -63,3 +63,39 @@ test("首帧脚本忽略已下线的旧主题并保留默认主题", async () =>
   new Function(THEME_INIT_SCRIPT)();
   expect(document.documentElement.getAttribute("data-theme")).toBe("lagoon");
 });
+
+function mountBrandTags() {
+  document.head.innerHTML =
+    '<meta name="theme-color" content="#13051a">' +
+    '<link id="favicon-svg" rel="icon" type="image/svg+xml" href="/icons/favicon-pink.svg">' +
+    '<link id="favicon-png" rel="icon" type="image/png" href="/icons/favicon-pink-32.png">';
+}
+
+const href = (id: string) => document.getElementById(id)?.getAttribute("href");
+
+test("切换主题时标签页图标与状态栏颜色同步更新", async () => {
+  mountBrandTags();
+  const user = userEvent.setup();
+  render(<ThemeToggle />);
+
+  await user.click(screen.getByRole("button", { name: "切换为深海霓虹主题" }));
+  expect(href("favicon-svg")).toBe("/icons/favicon-teal.svg");
+  expect(href("favicon-png")).toBe("/icons/favicon-teal-32.png");
+  expect(document.querySelector('meta[name="theme-color"]')).toHaveAttribute("content", "#02111b");
+
+  await user.click(screen.getByRole("button", { name: "切换为金色时刻主题" }));
+  expect(href("favicon-svg")).toBe("/icons/favicon-amber.svg");
+
+  await user.click(screen.getByRole("button", { name: "切换为极光玫瑰主题" }));
+  expect(href("favicon-svg")).toBe("/icons/favicon-pink.svg");
+  expect(href("favicon-png")).toBe("/icons/favicon-pink-32.png");
+});
+
+test("首帧脚本按已保存主题设置标签页图标", async () => {
+  const { THEME_INIT_SCRIPT } = await import("@/lib/themes");
+  mountBrandTags();
+  storage.set("bingetrack-theme", "golden");
+  new Function(THEME_INIT_SCRIPT)();
+  expect(href("favicon-svg")).toBe("/icons/favicon-amber.svg");
+  expect(href("favicon-png")).toBe("/icons/favicon-amber-32.png");
+});

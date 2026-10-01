@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { THEME_COLORS, THEME_STORAGE_KEY, type ThemeId } from "@/lib/themes";
+import { THEME_STORAGE_KEY, syncBrandToTheme, type ThemeId } from "@/lib/themes";
 
 const PALETTES = [
   { id: "default", name: "极光玫瑰", colorClass: "bg-[#ff4d94]", glowColor: "rgba(255,77,148,0.6)" },
@@ -31,10 +31,7 @@ export default function ThemeToggle() {
       try { localStorage.setItem(THEME_STORAGE_KEY, themeId); } catch {}
     }
 
-    const meta = document.querySelector('meta[name="theme-color"]');
-    if (meta) {
-      meta.setAttribute("content", THEME_COLORS[themeId]);
-    }
+    syncBrandToTheme(themeId);
   };
 
   return (

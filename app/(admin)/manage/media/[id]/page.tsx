@@ -15,7 +15,7 @@ import { formatCount } from "../series/shared";
 const typeBadges = { tv_show: "border-sky-500/25 bg-sky-500/10 text-sky-300", tv_season: "border-amber-500/25 bg-amber-500/10 text-amber-300", tv_episode: "border-emerald-500/25 bg-emerald-500/10 text-emerald-300" } as const;
 
 /** 载入完整编辑资料；电视节目、季与单集进入带剧集结构栏的工作台，季集只在结构栏中新增。 */
-export default async function EditMediaPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ saved?: string; add?: string }> }) {
+export default async function EditMediaPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ saved?: string; add?: string; n?: string }> }) {
   const { db } = await requireOwner();
   const { id } = await params;
   if (!isMediaId(id)) notFound();
@@ -25,7 +25,7 @@ export default async function EditMediaPage({ params, searchParams }: { params: 
   const grandparent = parent?.type === "tv_season" ? await db.from("tv_seasons").select("series_id").eq("id", parent.id).single() : null;
   if (grandparent?.error) throw new Error("无法读取电视节目资料。");
   const ancestor = grandparent?.data ? await readParent(db, grandparent.data.series_id) : undefined;
-  const { saved, add } = await searchParams;
+  const { saved, add, n } = await searchParams;
   const rootType = ancestor ? "tv_show" : parent?.type ?? item.type;
   const unit = item.type === "tv_season" ? "季" : "集";
   /** 渲染前后条目链接；没有相邻条目时保留占位，避免按钮位置跳动。 */
@@ -55,7 +55,7 @@ export default async function EditMediaPage({ params, searchParams }: { params: 
   </header>;
   const body = <>
     {(siblings.previous || siblings.next) && <nav aria-label={`相邻${mediaTypes[item.type as keyof typeof mediaTypes]}`} className="grid grid-cols-2 gap-3">{siblingLink(siblings.previous, "previous")}{siblingLink(siblings.next, "next")}</nav>}
-    {saved === "1" && <StatusModal message="保存成功，公开页面缓存已更新。" />}
+    {saved === "1" && <StatusModal key={n} message="保存成功，公开页面缓存已更新。" />}
     <MediaForm key={JSON.stringify(item)} item={item} parent={parent} impact={impact} />
   </>;
   if (!structure || item.type === "movie") return <section className="space-y-6">{header}{body}</section>;

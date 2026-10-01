@@ -5,6 +5,7 @@ import { saveMedia, type ActionResult } from "../../actions";
 import { mayLeaveEditor } from "@/lib/admin/navigation";
 import type { SeriesStructure } from "@/lib/admin/series-structure";
 import { formatCount, type QuickAddKind } from "./shared";
+import { ActionNotice } from "../../StatusModal";
 
 /** 预填日期的来源说明，推算不出时说明原因。 */
 const dateHints = {
@@ -49,7 +50,7 @@ export default function QuickAddDialog({ kind, structure, onClose }: { kind: Qui
       </div>
       <button type="button" aria-label="关闭" disabled={pending} className="!min-h-9 !px-2.5" onClick={() => dialog.current?.close()}><span className="i-material-symbols-close-rounded size-5" aria-hidden="true" /></button>
     </div>
-    {lastSaved !== null && state.saved && <p role="status" className="mb-4 flex items-center gap-2 rounded-xl border border-emerald-500/25 bg-emerald-500/10 px-3 py-2 text-sm text-emerald-200"><span className="i-material-symbols-check-circle-rounded size-4.5 shrink-0" aria-hidden="true" />已新增「{lastSaved}」，继续填写第 {formatCount(number)} {unit}。</p>}
+    {lastSaved !== null && state.saved && <ActionNotice state={state} saved={`已新增「${lastSaved}」，继续填写第 ${formatCount(number)} ${unit}。`} />}
     {/* 保存后侧栏刷新，编号随之变化；以编号为 key 重建表单，清空上一条的输入。 */}
     <form key={`${kind}:${number}`} action={action} onSubmit={event => { if (!keepGoing && !mayLeaveEditor()) event.preventDefault(); }}>
       <fieldset disabled={pending} className="space-y-4">
@@ -86,7 +87,7 @@ export default function QuickAddDialog({ kind, structure, onClose }: { kind: Qui
             <label>简介<textarea name="summary" rows={3} maxLength={20000} placeholder="输入剧情梗概…" /></label>
           </div>
         </details>
-        <p role="alert" className="text-sm text-red-300">{state.error}</p>
+        <ActionNotice state={state} />
         <div className="flex flex-wrap items-center justify-between gap-3 border-t border-white/10 pt-4">
           <label className="!flex !items-center !gap-2.5 text-sm !font-normal text-neutral-200">
             <input type="checkbox" checked={keepGoing} onChange={event => setKeepGoing(event.target.checked)} className="!size-4.5 !min-w-0 !p-0 accent-[var(--accent)]" />

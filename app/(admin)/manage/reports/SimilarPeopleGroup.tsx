@@ -2,6 +2,7 @@
 import Link from "next/link";
 import { useActionState, useId, useRef, useState } from "react";
 import { dismissSimilarPeople, mergePeople } from "../report-actions";
+import { ActionNotice } from "../StatusModal";
 
 export type SimilarPerson = { id: string; name: string; alias: string | null; works: number };
 
@@ -41,7 +42,7 @@ export default function SimilarPeopleGroup({ people }: { people: SimilarPerson[]
         <Link href={`/manage/references/people/${person.id}`} aria-label={`查看${label(person)}的资料`} className="text-sm text-neutral-300 hover:text-white">资料 →</Link>
       </div>)}
     </fieldset>
-    <p role="alert" className="text-sm text-red-300">{mergeState.error ?? dismissState.error}</p>
+    <ActionNotice state={mergeState.error ? mergeState : dismissState} />
     <div className="flex flex-wrap items-center justify-end gap-3">
       <form action={dismissAction}>
         {people.map(person => <input key={person.id} type="hidden" name="person" value={person.id} />)}
@@ -62,7 +63,7 @@ export default function SimilarPeopleGroup({ people }: { people: SimilarPerson[]
         <button type="button" disabled={merging} onClick={() => confirm.current?.close()}>取消</button>
         <button type="submit" className="admin-primary" disabled={merging}>{merging ? "正在合并…" : "确认合并"}</button>
       </form>
-      <p role="alert" className="mt-3 text-sm text-red-300">{mergeState.error}</p>
+      
     </dialog>
   </article>;
 }

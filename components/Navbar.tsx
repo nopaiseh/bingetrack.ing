@@ -5,6 +5,7 @@ import { MAX_SEARCH_QUERY_LENGTH } from "@/lib/api/search-limits";
 import { useNavbarAuth } from "@/lib/auth/use-navbar-auth";
 import { useEffect, useRef } from "react";
 import Link from "next/link";
+import BrandMark from "@/components/BrandMark";
 import { usePathname, useRouter } from "next/navigation";
 
 /** 渲染当前栏目导航与搜索表单，并处理搜索跳转；768px 以下栏目与搜索由底部标签栏承担。 */
@@ -82,7 +83,7 @@ export default function Navbar() {
             href="/"
             className="flex items-center gap-2.5 group cursor-pointer"
           >
-            <span className="i-material-symbols-terminal-rounded inline-block size-4 text-[var(--accent)] group-hover:rotate-12 transition-transform duration-300" aria-hidden="true" />
+            <BrandMark className="size-6 text-white/90 group-hover:rotate-12 transition-transform duration-300" />
             <span className="font-mono text-xl font-light tracking-tight">
               <span className="bg-clip-text text-transparent bg-linear-to-br from-white via-white/90 to-white/60">
                 bingetrack

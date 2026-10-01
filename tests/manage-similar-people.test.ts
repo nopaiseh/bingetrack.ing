@@ -33,7 +33,7 @@ describe("合并疑似重复人物", () => {
     await mergePeople({}, form([["keep", keep], ["remove", other], ["remove", keep], ["remove", other]]));
     expect(rpc).toHaveBeenCalledWith("manage_merge_people", { p_keep: keep, p_remove: [other] });
     expect(revalidateAllMedia).toHaveBeenCalledOnce();
-    expect(redirect).toHaveBeenCalledWith("/manage/reports/similar-people?merged=1");
+    expect(redirect).toHaveBeenCalledWith(expect.stringMatching(/^\/manage\/reports\/similar-people\?merged=1&n=\d+$/));
   });
 
   it("拒绝格式不正确或没有可合并的人物", async () => {
@@ -65,7 +65,7 @@ describe("标记不是同一人", () => {
       { person_a: keep, person_b: third },
       { person_a: other, person_b: third },
     ], { onConflict: "person_a,person_b", ignoreDuplicates: true });
-    expect(redirect).toHaveBeenCalledWith("/manage/reports/similar-people?dismissed=1");
+    expect(redirect).toHaveBeenCalledWith(expect.stringMatching(/^\/manage\/reports\/similar-people\?dismissed=1&n=\d+$/));
   });
 
   it("少于两位人物时不写入", async () => {

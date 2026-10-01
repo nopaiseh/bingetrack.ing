@@ -33,7 +33,7 @@ export async function saveMedia(_previous: ActionResult, form: FormData): Promis
     refresh();
     return { saved: true, id: String(data) };
   }
-  redirect(`/manage/media/${data}?saved=1`);
+  redirect(`/manage/media/${data}?saved=1&n=${Date.now()}`);
 }
 
 /** 明确确认标题后，原子删除条目、下属季集和观看记录。 */
@@ -48,7 +48,7 @@ export async function deleteMedia(_previous: ActionResult, form: FormData): Prom
   const { error } = await db.rpc("admin_delete_media", { p_id: id, p_confirm_title: title });
   if (error) return { error: error.code === "22023" ? "标题不匹配，请输入当前条目的完整标题。" : writeError(error.code) };
   revalidateMediaItems(affected);
-  redirect(`/manage?type=${target?.type === "movie" || !target ? "movie" : "tv_show"}&deleted=1`);
+  redirect(`/manage?type=${target?.type === "movie" || !target ? "movie" : "tv_show"}&deleted=1&n=${Date.now()}`);
 }
 
 /** 手动使公开数据缓存即时失效，同步数据库最新状态。仅站长可触发。 */

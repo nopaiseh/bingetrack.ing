@@ -1,212 +1,94 @@
 "use client";
 
-import { useEffect, useRef, useState, useCallback } from "react";
+import { useEffect, useRef, useState } from "react";
 
 interface StatusModalProps {
   /** 提示消息内容 */
   message: string;
-  /** 弹窗标题，默认为“操作成功” */
-  title?: string;
-  /** 自动关闭倒计时（毫秒），默认 5000ms（5秒） */
+  /** 成功或失败，决定图标与颜色，默认成功 */
+  tone?: "success" | "error";
+  /** 自动关闭时间（毫秒），默认 5000ms */
   duration?: number;
-  /** 弹窗关闭时的回调函数 */
+  /** 提示消失后的回调函数 */
   onClose?: () => void;
 }
 
 /**
- * /manage 模块专用的操作反馈弹窗。
- * - 移动端：吸底浮层抽屉（Bottom Sheet），适配单手大拇指触控并预留安全边距；
- * - 平板与桌面端：屏幕中央居中卡片（Centered Dialog），最大宽度适中，毛玻璃背景；
- * - 5 秒后平滑倒计时自动消失，支持悬停/长按暂停；
- * - 支持 Escape 键、点击“知道了”或关闭按钮即时关闭；
- * - 非阻塞式浮层：不阻碍对后台表单的持续输入与快捷操作；
- * - 消息具有 role="status"，无障碍播报并兼容自动化测试。
+ * /manage 模块专用的操作反馈提示：只显示图标与一句话，没有按钮和标题。
+ * - 原地渲染并以 popover 进入浏览器顶层，不被导航栏或原生 <dialog> 盖住；固定在导航栏下方水平居中。
+ *   不用 portal：在模态弹窗内触发时留在弹窗里，才不会因弹窗外内容 inert 而无法朗读；
+
+ * - 容器不拦截指针事件，不阻碍后台表单操作；
+ * - duration 后淡出并卸载，Escape 可提前关闭；
+ * - role="status"（失败为 role="alert"），无障碍播报并兼容自动化测试。
  */
-export default function StatusModal({
-  message,
-  title = "操作成功",
-  duration = 5000,
-  onClose,
-}: StatusModalProps) {
+export default function StatusModal({ message, tone = "success", duration = 5000, onClose }: StatusModalProps) {
   const [isOpen, setIsOpen] = useState(true);
   const [isClosing, setIsClosing] = useState(false);
-  const [remainingTime, setRemainingTime] = useState(duration);
-  const remainingTimeRef = useRef(duration);
-  const isClosingRef = useRef(false);
-  const isPausedRef = useRef(false);
-  const lastTickRef = useRef<number>(0);
-  const modalRef = useRef<HTMLDivElement>(null);
+  const onCloseRef = useRef(onClose);
+  const box = useRef<HTMLDivElement>(null);
 
-  /** 执行平滑关闭动画后彻底卸载 */
-  const handleClose = useCallback(() => {
-    if (isClosingRef.current) return;
-    isClosingRef.current = true;
-    setIsClosing(true);
-    setTimeout(() => {
-      setIsOpen(false);
-      onClose?.();
-    }, 200);
-  }, [onClose]);
+  useEffect(() => { onCloseRef.current = onClose; });
 
-  // 倒计时与暂停管理
   useEffect(() => {
-    lastTickRef.current = Date.now();
-    const interval = setInterval(() => {
-      if (isClosingRef.current) {
-        clearInterval(interval);
-        return;
-      }
-      const now = Date.now();
-      const delta = now - lastTickRef.current;
-      lastTickRef.current = now;
-
-      if (!isPausedRef.current) {
-        remainingTimeRef.current -= delta;
-        if (remainingTimeRef.current <= 0) {
-          clearInterval(interval);
-          setRemainingTime(0);
-          handleClose();
-        } else {
-          setRemainingTime(remainingTimeRef.current);
-        }
-      }
-    }, 50);
-
-    return () => clearInterval(interval);
-  }, [handleClose]);
-
-  // 监听 Escape 键快速关闭
-  useEffect(() => {
+    let removeTimer: ReturnType<typeof setTimeout> | undefined;
+    const close = () => {
+      setIsClosing(true);
+      removeTimer = setTimeout(() => { setIsOpen(false); onCloseRef.current?.(); }, 200);
+    };
+    const timer = setTimeout(close, duration);
     const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        e.preventDefault();
-        handleClose();
-      }
+      if (e.key !== "Escape") return;
+      clearTimeout(timer);
+      if (!removeTimer) close();
     };
     window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
-  }, [handleClose]);
+    return () => { clearTimeout(timer); clearTimeout(removeTimer); window.removeEventListener("keydown", onKeyDown); };
+  }, [duration]);
+
+  // 放进浏览器顶层（popover），即使在原生 <dialog> 弹窗打开时也不会被盖住。
+  useEffect(() => {
+    const el = box.current;
+    // 只在浏览器支持时才声明为 popover，不支持的环境退回普通固定定位；所在弹窗随跳转移除时同样跳过。
+    if (!el || !isOpen || !el.isConnected || typeof el.showPopover !== "function") return;
+    el.setAttribute("popover", "manual");
+    // 提示只是锦上添花，顶层失败时退回固定定位，绝不能让页面崩溃。
+    try { el.showPopover(); } catch { el.removeAttribute("popover"); }
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
-  const progressPercent = Math.max(0, Math.min(100, (remainingTime / duration) * 100));
-
+  const error = tone === "error";
   return (
     <div
-      role="dialog"
-      aria-labelledby="status-modal-title"
-      aria-describedby="status-modal-desc"
-      className={`fixed inset-0 z-50 pointer-events-none flex items-end justify-center p-4 pb-[max(1rem,env(safe-area-inset-bottom,0px))] sm:items-center sm:p-6 transition-opacity duration-200 ${
-        isClosing ? "opacity-0" : "opacity-100"
-      }`}
+      ref={box}
+      className={`pointer-events-none fixed inset-x-0 top-20 z-[70] m-0 flex h-auto w-auto justify-center overflow-visible border-0 bg-transparent p-0 px-4 transition-all duration-200 ${isClosing ? "-translate-y-2 opacity-0" : "translate-y-0 opacity-100"}`}
     >
-      {/* 柔和毛玻璃微暗背景（非阻断式） */}
       <div
-        className="fixed inset-0 bg-black/35 backdrop-blur-[1.5px] transition-opacity pointer-events-none"
-        aria-hidden="true"
-      />
-
-      {/* 弹窗内容卡片：手机端底部抽屉，平板与桌面端中心弹窗 */}
-      <div
-        ref={modalRef}
-        onMouseEnter={() => { isPausedRef.current = true; }}
-        onMouseLeave={() => {
-          lastTickRef.current = Date.now();
-          isPausedRef.current = false;
-        }}
-        onTouchStart={() => { isPausedRef.current = true; }}
-        onTouchEnd={() => {
-          lastTickRef.current = Date.now();
-          isPausedRef.current = false;
-        }}
-        className={`pointer-events-auto relative w-full max-w-md overflow-hidden rounded-2xl sm:rounded-3xl border border-white/20 bg-neutral-900/95 p-5 sm:p-6 text-neutral-100 shadow-[0_25px_60px_rgba(0,0,0,0.85)] backdrop-blur-2xl transition-all duration-200 ${
-          isClosing
-            ? "translate-y-4 sm:translate-y-0 sm:scale-95 opacity-0"
-            : "translate-y-0 sm:scale-100 opacity-100"
-        }`}
+        role={error ? "alert" : "status"}
+        className={`flex max-w-md items-center gap-2.5 rounded-full border bg-neutral-900/95 py-2.5 pl-3 pr-5 text-sm text-neutral-100 shadow-[0_12px_32px_rgba(0,0,0,0.5)] backdrop-blur-xl ${error ? "border-rose-500/40" : "border-emerald-500/40"}`}
       >
-        {/* 顶部关闭按钮 */}
-        <button
-          type="button"
-          onClick={handleClose}
-          aria-label="关闭提示"
-          className="absolute right-3.5 top-3.5 flex !h-8 !w-8 !min-h-0 !p-0 items-center justify-center !rounded-full !border-0 !bg-transparent !shadow-none text-neutral-400 transition-colors hover:!bg-white/10 hover:text-white focus-visible:outline-2 focus-visible:outline-white sm:right-4 sm:top-4"
-        >
-          <svg
-            className="size-4.5 shrink-0"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-            strokeWidth={2.2}
-            aria-hidden="true"
-          >
-            <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-          </svg>
-        </button>
-
-        <div className="flex items-start gap-4">
-          {/* 成功图标徽标 */}
-          <div
-            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-emerald-500/30 bg-emerald-500/15 text-emerald-400 shadow-[0_0_20px_rgba(52,211,153,0.25)] sm:h-12 sm:w-12"
-            aria-hidden="true"
-          >
-            <svg
-              className="h-6 w-6"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              strokeWidth={2.5}
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-            </svg>
-          </div>
-
-          {/* 标题与内容 */}
-          <div className="min-w-0 flex-1 pr-6 pt-0.5">
-            <h2 id="status-modal-title" className="text-base font-semibold text-white sm:text-lg">
-              {title}
-            </h2>
-            <div id="status-modal-desc" className="mt-1">
-              <p
-                role="status"
-                aria-live="polite"
-                className="text-sm leading-relaxed text-neutral-300 break-words"
-              >
-                {message}
-              </p>
-            </div>
-          </div>
-        </div>
-
-        {/* 操作区 */}
-        <div className="mt-5 flex items-center justify-between gap-3 sm:mt-6">
-          <span className="text-xs text-neutral-400 tabular-nums">
-            {Math.ceil(remainingTime / 1000)} 秒后自动关闭
-          </span>
-          <button
-            type="button"
-            onClick={handleClose}
-            className="admin-button admin-primary !min-h-9 !px-4 !py-1.5 text-xs font-medium sm:text-sm"
-          >
-            知道了
-          </button>
-        </div>
-
-        {/* 底部 5 秒倒计时进度条 */}
-        <div
-          className="absolute inset-x-0 bottom-0 h-1 bg-white/10"
-          role="progressbar"
-          aria-valuenow={Math.round(progressPercent)}
-          aria-valuemin={0}
-          aria-valuemax={100}
-          aria-label="自动关闭倒计时"
-        >
-          <div
-            className="h-full bg-linear-to-r from-emerald-500 to-emerald-400 transition-[width] duration-75 ease-linear"
-            style={{ width: `${progressPercent}%` }}
-          />
-        </div>
+        <span
+          className={`${error ? "i-material-symbols-error-rounded text-rose-400" : "i-material-symbols-check-circle-rounded text-emerald-400"} size-5 shrink-0`}
+          aria-hidden="true"
+        />
+        <span className="break-words">{message}</span>
       </div>
     </div>
   );
+}
+
+const noticeIds = new WeakMap<object, number>();
+let nextNoticeId = 0;
+
+/**
+ * 把 useActionState 的结果显示成通知：有 error 显示失败，saved 且给了 saved 文案则显示成功。
+ * 每个新的 state 对象都会弹出一条新通知，连续两次相同的结果也不会漏掉。
+ */
+export function ActionNotice({ state, saved }: { state: { error?: string; saved?: boolean }; saved?: string }) {
+  const message = state.error || (state.saved ? saved : undefined);
+  if (!message) return null;
+  let id = noticeIds.get(state);
+  if (id === undefined) { id = ++nextNoticeId; noticeIds.set(state, id); }
+  return <StatusModal key={id} tone={state.error ? "error" : "success"} message={message} />;
 }

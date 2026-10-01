@@ -9,7 +9,7 @@ import { escapeLikePattern, isReferenceType, nameOrAliasFilter, referenceTypes }
 const PAGE_SIZE = 25;
 
 /** 分页显示关联资料及引用数，空列表也保留新增入口。 */
-export default async function ReferenceList({ params, searchParams }: { params: Promise<{ kind: string }>; searchParams: Promise<{ q?: string; page?: string; deleted?: string }> }) {
+export default async function ReferenceList({ params, searchParams }: { params: Promise<{ kind: string }>; searchParams: Promise<{ q?: string; page?: string; deleted?: string; n?: string }> }) {
   const { db } = await requireOwner();
   const { kind } = await params;
   if (!isReferenceType(kind)) notFound();
@@ -30,7 +30,7 @@ export default async function ReferenceList({ params, searchParams }: { params: 
       <div><h1 className="admin-heading">{config.label}</h1><p className="mt-2 text-neutral-400">共 <span className="font-mono">{(count ?? 0).toLocaleString("en-US")}</span> 项资料 · 集中维护，关联作品同步更新</p></div>
       {quick ? <ReferenceQuickEdit kind={kind} /> : <Link className="admin-button admin-primary shrink-0" href={`/manage/references/${kind}/new`}>新增{config.label}</Link>}
     </div>
-    {search.deleted && <StatusModal message="资料及其关联已删除，影视作品已保留。" />}
+    {search.deleted && <StatusModal key={search.n} message="资料及其关联已删除，影视作品已保留。" />}
     <form className="surface-panel mb-6 rounded-2xl p-4 sm:p-6 grid grid-cols-[minmax(0,1fr)_auto] items-end gap-3"><label>{config.alternate ? "搜索名称或别名" : "搜索名称"}<input name="q" defaultValue={q} maxLength={200} placeholder={config.alternate ? `搜索${config.label}名称或别名` : `搜索${config.label}`} /></label><button type="submit">搜索</button></form>
     {/* 类型、地区、语言名称短，用卡片网格一屏看更多；人物与系列保留列表，显示别名。 */}
     {quick ? <ul className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">{rows.map(/* 引用计数来自嵌入聚合，不拉取全部作品。 */ row => {

@@ -134,7 +134,7 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
       <div><h1 className="admin-heading">{mediaTypes[type]}</h1><p className="mt-2 text-neutral-400">共 {count} 个条目 · 管理影视与观看记录</p></div>
       <Link href={`/manage/media/new${type ? `?type=${type}${parent ? `&parent=${parent}` : ""}` : ""}`} className="admin-button admin-primary shrink-0">新增{type ? mediaTypes[type] : "媒体"}</Link>
     </div>
-    {params.deleted === "1" && <StatusModal message="条目及其下属资料已删除。" />}
+    {params.deleted === "1" && <StatusModal key={params.n} message="条目及其下属资料已删除。" />}
     {parent && (
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-[var(--accent-border)] bg-[var(--accent-soft)]/40 px-4 py-3 text-sm">
         <div className="flex items-center gap-2 text-neutral-200">
