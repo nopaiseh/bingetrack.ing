@@ -8,6 +8,7 @@ import {
 import { buildMediaDistributions } from "@/lib/functions/media-distributions";
 import { handlePageDataError } from "@/lib/functions/page-data";
 import { TOP_MEDIA_LIMIT } from "@/lib/api/media-params";
+import { gmt8DateKey } from "@/lib/upcoming";
 import type { MediaCard, Summary, UpcomingRelease } from "@/lib/types";
 
 // 首页按 24 小时长缓存静态生成，数据变更由管理端 revalidatePath/revalidateTag 即时按需刷新。
@@ -48,7 +49,7 @@ export default async function HomePage() {
         topSeries={topSeries}
         distributions={distributions}
         upcoming={upcoming}
-        renderedOn={new Date().toISOString().slice(0, 10)}
+        renderedOn={gmt8DateKey()}
       />
     </div>
   );
