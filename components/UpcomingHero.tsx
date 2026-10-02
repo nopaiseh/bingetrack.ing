@@ -4,11 +4,11 @@ import { useRef, useState, useSyncExternalStore } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import type { UpcomingRelease } from "@/lib/types";
-import { daysUntil, localDateKey, pickUpcoming } from "@/lib/upcoming";
+import { daysUntil, gmt8DateKey, pickUpcoming } from "@/lib/upcoming";
 
 interface UpcomingHeroProps {
   items: UpcomingRelease[];
-  // 服务端渲染当天的日期，作为水合前的“今天”，水合后换成浏览者本地日期。
+  // 服务端渲染当天的 GMT+8 日期，作为水合前的“今天”；页面缓存跨过午夜时，水合后换成当前的 GMT+8 日期。
   renderedOn?: string;
 }
 
@@ -31,9 +31,9 @@ function subscribeToToday(onChange: () => void) {
   };
 }
 
-/** 读取浏览者本地的今天日期键。 */
+/** 读取 GMT+8 的今天日期键。 */
 function getToday() {
-  return localDateKey();
+  return gmt8DateKey();
 }
 
 /** 订阅系统“减少动态效果”偏好。 */

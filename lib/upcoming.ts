@@ -1,12 +1,11 @@
 import type { UpcomingRelease } from "@/lib/types";
 
 const DAY_MS = 86_400_000;
+const GMT8_OFFSET_MS = 8 * 3_600_000;
 
-/** 以浏览者本地时区生成 YYYY-MM-DD 日期键，与数据库中不带时区的上映日期直接比较。 */
-export function localDateKey(date: Date = new Date()): string {
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-  return `${date.getFullYear()}-${month}-${day}`;
+/** 以 GMT+8 生成 YYYY-MM-DD 日期键，与数据库中不带时区的上映日期直接比较；服务端与任意时区的浏览器结果一致。 */
+export function gmt8DateKey(date: Date = new Date()): string {
+  return new Date(date.getTime() + GMT8_OFFSET_MS).toISOString().slice(0, 10);
 }
 
 /** 计算两个 YYYY-MM-DD 日期相差的整天数，按 UTC 零点解析以避开夏令时偏差。 */
