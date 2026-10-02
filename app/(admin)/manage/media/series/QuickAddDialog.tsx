@@ -78,15 +78,8 @@ export default function QuickAddDialog({ kind, structure, onClose }: { kind: Qui
           <label>时长（分钟）<input name="runtime" type="number" min="0" max="100000" step="any" defaultValue={next?.runtime ?? ""} className="font-mono" /></label>
           <label>评分（可留空）<input name="rating" type="number" min="0" max="10" step="0.1" placeholder="填写即标为看过" className="font-mono" /></label>
         </div>}
-        <details className="group">
-          <summary className="flex cursor-pointer list-none items-center gap-2 py-1 text-sm text-neutral-300 hover:text-white">
-            <span className="i-material-symbols-chevron-right-rounded size-4.5 transition-transform group-open:rotate-90" aria-hidden="true" />更多字段：封面、简介
-          </summary>
-          <div className="mt-3 space-y-4">
-            <label>封面地址（TMDB）<input name="cover_url" type="url" maxLength={2000} placeholder="https://image.tmdb.org/t/p/original/…" /></label>
-            <label>简介<textarea name="summary" rows={3} maxLength={20000} placeholder="输入剧情梗概…" /></label>
-          </div>
-        </details>
+        <label>封面地址（TMDB）<input name="cover_url" type="url" maxLength={2000} placeholder="https://image.tmdb.org/t/p/original/…" /></label>
+        <label>简介<textarea name="summary" rows={3} maxLength={20000} placeholder="输入剧情梗概…" /></label>
         <ActionNotice state={state} />
         <div className="flex flex-wrap items-center justify-between gap-3 border-t border-white/10 pt-4">
           <label className="!flex !items-center !gap-2.5 text-sm !font-normal text-neutral-200">
