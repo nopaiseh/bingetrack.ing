@@ -1,7 +1,7 @@
 "use server";
 import { requireOwner } from "@/lib/auth/server";
 import { isReportKind, reports } from "@/lib/admin/reports";
-import { revalidateAllMedia } from "@/lib/admin/revalidate-media";
+import { referenceMediaIds, revalidateMediaItems } from "@/lib/admin/revalidate-media";
 import { isMediaId } from "@/lib/functions/media-id";
 import { redirect } from "next/navigation";
 import type { ActionResult } from "./actions";
@@ -19,7 +19,8 @@ export async function deleteUnused(_previous: ActionResult, form: FormData): Pro
   if (!Number.isInteger(expected) || expected !== count) return { error: `请输入当前数量 ${count ?? 0} 以确认删除；如数量有变化，请刷新后再确认。` };
   const { data, error } = await db.rpc("manage_delete_unused", { p_kind: config.bulkDelete });
   if (error) return { error: error.code === "23503" ? "部分资料仍被其他内容引用，请刷新后重试。" : "删除失败，请重试。" };
-  revalidateAllMedia();
+  // 闲置资料没有被任何作品引用，详情页不受影响；只刷新聚合数据，让筛选选项去掉已删除的项目。
+  revalidateMediaItems([]);
   redirect(`/manage/reports/${report}?deleted=${Number(data) || 0}&n=${Date.now()}`);
 }
 
@@ -38,6 +39,8 @@ export async function mergePeople(_previous: ActionResult, form: FormData): Prom
   const keep = String(form.get("keep") ?? "").toLowerCase();
   const remove = personIds(form, "remove")?.filter(id => id !== keep);
   if (!isMediaId(keep) || !remove?.length) return { error: "请选择要保留的人物。" };
+  // 合并会删除其余人物及其演职关联，须在合并前查出这些人物参与的作品。
+  const affected = await referenceMediaIds(db, "people", [keep, ...remove]);
   const { error } = await db.rpc("manage_merge_people", { p_keep: keep, p_remove: remove });
   if (error) {
     if (error.code === "23503") return { error: "其中有人物仍是专辑艺术家，请先在专辑中更换艺术家。" };
@@ -45,8 +48,7 @@ export async function mergePeople(_previous: ActionResult, form: FormData): Prom
     if (error.code === "P0002") return { error: "人物已不存在，请刷新后重试。" };
     return { error: "合并失败，请重试。" };
   }
-  // 人物可能出现在任意数量的作品页面，合并后整体失效公开缓存。
-  revalidateAllMedia();
+  revalidateMediaItems(affected);
   redirect(`/manage/reports/similar-people?merged=${remove.length}&n=${Date.now()}`);
 }
 

@@ -2,15 +2,16 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { dismissSimilarPeople, mergePeople } from "@/app/(admin)/manage/report-actions";
 import { requireOwner } from "@/lib/auth/server";
 import { redirect } from "next/navigation";
-import { revalidateAllMedia } from "@/lib/admin/revalidate-media";
+import { referenceMediaIds, revalidateMediaItems } from "@/lib/admin/revalidate-media";
 
 vi.mock("@/lib/auth/server", () => ({ requireOwner: vi.fn() }));
-vi.mock("@/lib/admin/revalidate-media", () => ({ revalidateAllMedia: vi.fn() }));
+vi.mock("@/lib/admin/revalidate-media", () => ({ referenceMediaIds: vi.fn(async () => [movie]), revalidateMediaItems: vi.fn() }));
 vi.mock("next/navigation", () => ({ redirect: vi.fn() }));
 
 const keep = "22222222-2222-4222-8222-222222222222";
 const other = "11111111-1111-4111-8111-111111111111";
 const third = "33333333-3333-4333-8333-333333333333";
+const movie = "44444444-4444-4444-8444-444444444444";
 const rpc = vi.fn();
 const upsert = vi.fn();
 const from = vi.fn(() => ({ upsert }));
@@ -29,10 +30,13 @@ beforeEach(() => {
 });
 
 describe("合并疑似重复人物", () => {
-  it("把其余人物并入保留的人物，刷新公开缓存后回到报告", async () => {
+  it("把其余人物并入保留的人物，只刷新这些人物参与的作品后回到报告", async () => {
     await mergePeople({}, form([["keep", keep], ["remove", other], ["remove", keep], ["remove", other]]));
     expect(rpc).toHaveBeenCalledWith("manage_merge_people", { p_keep: keep, p_remove: [other] });
-    expect(revalidateAllMedia).toHaveBeenCalledOnce();
+    // 被合并人物的演职关联会随合并删除，受影响作品必须在合并前查出。
+    expect(referenceMediaIds).toHaveBeenCalledWith(expect.anything(), "people", [keep, other]);
+    expect(vi.mocked(referenceMediaIds).mock.invocationCallOrder[0]).toBeLessThan(rpc.mock.invocationCallOrder[0]);
+    expect(revalidateMediaItems).toHaveBeenCalledExactlyOnceWith([movie]);
     expect(redirect).toHaveBeenCalledWith(expect.stringMatching(/^\/manage\/reports\/similar-people\?merged=1&n=\d+$/));
   });
 
