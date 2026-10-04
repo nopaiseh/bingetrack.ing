@@ -2,7 +2,7 @@
 import { requireOwner } from "@/lib/auth/server";
 import { escapeLikePattern, isReferenceType, mediaChoiceDetail, mediaChoiceFields, nameOrAliasFilter, referenceTypes, type Choice, type MediaChoiceRow } from "@/lib/admin/catalog";
 import { isMediaId } from "@/lib/functions/media-id";
-import { affectedMediaIds, mergeAffected, revalidateAllMedia, revalidateMediaItems } from "@/lib/admin/revalidate-media";
+import { affectedMediaIds, mergeAffected, referenceMediaIds, revalidateMediaItems } from "@/lib/admin/revalidate-media";
 import { redirect } from "next/navigation";
 import type { ActionResult } from "./actions";
 
@@ -35,8 +35,8 @@ export async function saveReference(_previous: ActionResult, form: FormData): Pr
   const query = id ? db.from(config.table).update(payload).eq("id", id) : db.from(config.table).insert(payload);
   const { data, error } = await query.select("id").single();
   if (error) return { error: error.code === "23505" ? (kind === "people" ? "已有同名且别名相同的人物，请填写不同的别名以区分。" : "此名称已经存在，请选择现有资料或使用其他名称。") : "保存失败，资料可能已被删除或暂无写入权限。" };
-  // 人物、类型等资料可能被任意数量的条目引用，改名或删除时整体失效。
-  revalidateAllMedia();
+  // 只失效引用这条资料的详情页；聚合数据与搜索选项随 lists 标签一起刷新，新建资料也会出现在筛选项中。
+  revalidateMediaItems(await referenceMediaIds(db, kind, [data.id]));
   if (form.get("return_list") === "1") return { saved: true };
   redirect(`/manage/references/${kind}/${data.id}?saved=1&n=${Date.now()}`);
 }
@@ -48,10 +48,12 @@ export async function deleteReference(_previous: ActionResult, form: FormData): 
   const id = String(form.get("id") ?? "");
   const name = String(form.get("confirm_name") ?? "").trim();
   if (!isReferenceType(kind) || !isMediaId(id) || !name) return { error: "请输入完整名称以确认删除。" };
+  // 级联删除会移除关联行，须在删除前找出受影响的详情页。
+  const affected = await referenceMediaIds(db, kind, [id]);
   const { data, error } = await db.from(referenceTypes[kind].table).delete().eq("id", id).eq("name", name).select("id");
   if (error) return { error: error.code === "23503" ? "此资料仍被其他内容引用，请先移除这些关联。" : "删除失败，请重试。" };
   if (!data?.length) return { error: "名称不匹配或资料已被删除，请刷新确认。" };
-  revalidateAllMedia();
+  revalidateMediaItems(affected);
   redirect(`/manage/references/${kind}?deleted=1&n=${Date.now()}`);
 }
 

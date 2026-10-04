@@ -3,14 +3,17 @@ import { saveReference, deleteReference, searchChoices, saveCollectionMember } f
 import { manualRevalidateCache } from "@/app/(admin)/manage/actions";
 import { requireOwner } from "@/lib/auth/server";
 import { revalidatePath, revalidateTag } from "next/cache";
+import { referenceMediaIds } from "@/lib/admin/revalidate-media";
 vi.mock("@/lib/auth/server", () => ({ requireOwner: vi.fn() }));
 vi.mock("next/cache", () => ({ revalidatePath: vi.fn(), revalidateTag: vi.fn() }));
 vi.mock("next/navigation", () => ({ redirect: vi.fn() }));
 vi.mock("@/lib/admin/revalidate-media", async (importOriginal) => ({
   ...await importOriginal<typeof import("@/lib/admin/revalidate-media")>(),
   affectedMediaIds: vi.fn(async (_db: unknown, ids: string[]) => ids),
+  referenceMediaIds: vi.fn(async () => [linked]),
 }));
 const id = "11111111-1111-4111-8111-111111111111";
+const linked = "22222222-2222-4222-8222-222222222222";
 const chain = { delete: vi.fn(), eq: vi.fn(), select: vi.fn(), update: vi.fn(), insert: vi.fn(), single: vi.fn(), ilike: vi.fn(), or: vi.fn(), order: vi.fn(), limit: vi.fn(), in: vi.fn(), then: vi.fn((resolve: (val: unknown) => void) => resolve({ data: [], error: null })) };
 const from = vi.fn(() => chain);
 /** 用链式替身检查动作的白名单和确认条件；真实 RLS 与级联由数据库测试验证。 */
@@ -57,6 +60,23 @@ describe("关联资料服务端操作", () => {
     chain.select.mockResolvedValue({ data: [{ id }], error: null });
     await deleteReference({}, form({ kind: "people", id, confirm_name: "  Jane  " }));
     expect(chain.eq).toHaveBeenCalledWith("name", "Jane");
+  });
+  it("删除资料只失效引用它的条目与聚合数据，不清空全站缓存", async () => {
+    chain.select.mockResolvedValue({ data: [{ id }], error: null });
+    await deleteReference({}, form({ kind: "people", id, confirm_name: "Jane" }));
+    // 关联行会被级联删除，受影响条目必须在删除语句之前查出。
+    expect(vi.mocked(referenceMediaIds).mock.invocationCallOrder[0]).toBeLessThan(chain.delete.mock.invocationCallOrder[0]);
+    expect(revalidateTag).toHaveBeenCalledWith(`media:item:${linked}`, { expire: 0 });
+    expect(revalidateTag).toHaveBeenCalledWith("media:lists", { expire: 0 });
+    expect(revalidateTag).not.toHaveBeenCalledWith("media", expect.anything());
+    expect(revalidatePath).not.toHaveBeenCalledWith("/", "layout");
+  });
+  it("保存资料只失效引用它的条目与聚合数据，不清空全站缓存", async () => {
+    chain.single.mockResolvedValue({ data: { id }, error: null });
+    await saveReference({}, form({ kind: "genres", id, name: "剧情" }));
+    expect(referenceMediaIds).toHaveBeenCalledWith(expect.anything(), "genres", [id]);
+    expect(revalidateTag).toHaveBeenCalledWith(`media:item:${linked}`, { expire: 0 });
+    expect(revalidateTag).not.toHaveBeenCalledWith("media", expect.anything());
   });
   it("系列顺序必须是范围内整数", async () => {
     expect(await saveCollectionMember({}, form({ series_id: id, media_item_id: id, position: "1.5" }))).toHaveProperty("error");

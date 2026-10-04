@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { revalidatePath, revalidateTag } from "next/cache";
-import { affectedMediaIds, mergeAffected, revalidateMediaItems } from "@/lib/admin/revalidate-media";
+import { affectedMediaIds, mergeAffected, referenceMediaIds, revalidateMediaItems } from "@/lib/admin/revalidate-media";
 vi.mock("server-only", () => ({}));
 vi.mock("next/cache", () => ({ revalidatePath: vi.fn(), revalidateTag: vi.fn() }));
 
@@ -10,13 +10,16 @@ const season = "22222222-2222-4222-8222-222222222222";
 const episode = "33333333-3333-4333-8333-333333333333";
 const sequel = "44444444-4444-4444-8444-444444444444";
 const collection = "55555555-5555-4555-8555-555555555555";
+const person = "66666666-6666-4666-8666-666666666666";
 
 type Row = Record<string, string>;
-// 一部电视节目及其季、单集，和同一作品系列中的另一部作品。
+// 一部电视节目及其季、单集，和同一作品系列中的另一部作品；人物出演单集两次。
 const tables: Record<string, Row[]> = {
   tv_seasons: [{ id: season, series_id: show }],
   tv_episodes: [{ id: episode, season_id: season }],
   media_item_series: [{ media_item_id: show, series_id: collection }, { media_item_id: sequel, series_id: collection }],
+  media_credits: [{ media_item_id: episode, person_id: person }, { media_item_id: episode, person_id: person }],
+  media_genres: [],
 };
 
 /** 只实现 from().select().in() 的内存数据库替身，可让指定表返回错误。 */
@@ -50,6 +53,15 @@ describe("按条目失效公开缓存", () => {
     revalidateMediaItems(mergeAffected([sequel], ids));
     expect(revalidateTag).toHaveBeenCalledWith("media", { expire: 0 });
     expect(revalidatePath).toHaveBeenCalledWith("/", "layout");
+  });
+  it("引用资料变更沿关联表找到条目，再扩展到所属电视节目与系列成员", async () => {
+    expect(new Set(await referenceMediaIds(fakeDb(), "people", [person]))).toEqual(new Set([episode, show, sequel]));
+  });
+  it("未被引用的资料不波及任何详情页", async () => {
+    expect(await referenceMediaIds(fakeDb(), "genres", [person])).toEqual([]);
+  });
+  it("关联表查询失败时返回 null，由调用方退回全站失效", async () => {
+    expect(await referenceMediaIds(fakeDb("media_credits"), "people", [person])).toBeNull();
   });
   it("已知条目只失效各自的标签、聚合数据与无标签目录页", () => {
     revalidateMediaItems(mergeAffected([show], [show, sequel]));

@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { deleteUnused } from "@/app/(admin)/manage/report-actions";
 import { isReportKind, reportGroups, reportRowHref, reportRowType, reportTagLabels, reports } from "@/lib/admin/reports";
 import { requireOwner } from "@/lib/auth/server";
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 import { redirect } from "next/navigation";
 vi.mock("@/lib/auth/server", () => ({ requireOwner: vi.fn() }));
 vi.mock("next/cache", () => ({ revalidatePath: vi.fn(), revalidateTag: vi.fn() }));
@@ -63,6 +63,11 @@ describe("批量删除闲置资料", () => {
     expect(from).toHaveBeenCalledWith("v_report_unused_references");
     expect(rpc).toHaveBeenCalledWith("manage_delete_unused", { p_kind: "references" });
     expect(redirect).toHaveBeenCalledWith(expect.stringMatching(/^\/manage\/reports\/unused-references\?deleted=3&n=\d+$/));
+  });
+  it("闲置资料不影响详情页，只刷新聚合数据，不清空全站缓存", async () => {
+    await deleteUnused({}, form({ report: "orphan-people", confirm_count: "3" }));
+    expect(vi.mocked(revalidateTag).mock.calls).toEqual([["media:lists", { expire: 0 }]]);
+    expect(revalidatePath).not.toHaveBeenCalledWith("/", "layout");
   });
   it("删除失败时不刷新缓存", async () => {
     rpc.mockResolvedValue({ data: null, error: { code: "XX000" } });

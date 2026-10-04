@@ -3,6 +3,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { revalidatePath, revalidateTag } from "next/cache";
 import { isMediaId } from "@/lib/functions/media-id";
 import { MEDIA_LISTS_TAG, MEDIA_TAG, mediaItemTag } from "@/lib/functions/media-cache-tags";
+import { referenceTypes, type ReferenceType } from "@/lib/admin/catalog";
 
 // 目录页与站点地图直接查询数据库、不带数据缓存标签，只能按路径失效。
 const UNTAGGED_PUBLIC_PATHS = ["/", "/movies", "/shows", "/sitemap.xml"];
@@ -46,6 +47,16 @@ export async function affectedMediaIds(db: SupabaseClient, ids: string[]): Promi
   return [...new Set([...pages, ...members])];
 }
 
+/**
+ * 找出引用指定资料（人物、系列、类型、地区、语言）的公开详情页，再按 affectedMediaIds 扩展到所属电视节目与系列成员。
+ * 删除或合并前调用，级联删除会先移除关联行。查询失败时返回 null，由调用方退回全站失效。
+ */
+export async function referenceMediaIds(db: SupabaseClient, kind: ReferenceType, ids: string[]): Promise<string[] | null> {
+  const { link, key } = referenceTypes[kind];
+  const linked = column(await db.from(link).select("media_item_id").in(key, ids), "media_item_id");
+  return linked && affectedMediaIds(db, [...new Set(linked)]);
+}
+
 /** 合并保存前后的受影响条目；任一侧未知时整体视为未知。 */
 export function mergeAffected(...groups: (string[] | null)[]): string[] | null {
   if (groups.some(/* 检查是否有查询失败的一侧。 */ (group) => group === null)) return null;
@@ -63,7 +74,7 @@ export function revalidateMediaItems(ids: string[] | null) {
   for (const path of UNTAGGED_PUBLIC_PATHS) revalidatePath(path);
 }
 
-/** 使全部公开数据与页面失效；用于影响面无法界定的写入，例如人物改名或批量清理。 */
+/** 使全部公开数据与页面失效；用于影响面无法界定的写入，例如批量清理。 */
 export function revalidateAllMedia() {
   revalidateTag(MEDIA_TAG, { expire: 0 });
   revalidatePath("/", "layout");
