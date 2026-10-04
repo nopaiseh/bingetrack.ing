@@ -39,6 +39,8 @@ select lives_ok($$insert into admin_test_ids values ('movie',public.admin_save_m
 select lives_ok($$insert into admin_test_ids values ('series',public.admin_save_media(pg_temp.admin_payload('tv_show','Admin test series')))$$,'owner creates series');
 select lives_ok($$insert into admin_test_ids values ('season',public.admin_save_media(pg_temp.admin_payload('tv_season','Admin test season',(select id from admin_test_ids where name='series'),1)))$$,'owner creates season');
 select lives_ok($$insert into admin_test_ids values ('episode',public.admin_save_media(pg_temp.admin_payload('tv_episode','Admin test episode',(select id from admin_test_ids where name='season'),1)))$$,'owner creates episode');
+select is((select count(*)::integer from public.tracking where media_item_id in (select id from admin_test_ids where name in ('series','season'))),0,'show and season keep no tracking of their own');
+select is((select count(*)::integer from public.tracking where media_item_id=(select id from admin_test_ids where name='episode')),1,'episode keeps its own tracking');
 select lives_ok($$select public.admin_save_media(pg_temp.admin_payload('movie','Admin updated movie') || jsonb_build_object('id',(select id from admin_test_ids where name='movie'),'status','watched','rating',8.5))$$,'owner updates watched state and rating');
 select is((select status::text from public.tracking where media_item_id=(select id from admin_test_ids where name='movie')),'watched','watched status persists');
 select is((select rating from public.tracking where media_item_id=(select id from admin_test_ids where name='movie')),8.5::numeric,'rating persists');
