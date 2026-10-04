@@ -93,7 +93,8 @@ export function parseMediaForm(form: FormData): MediaInput {
   const rating = isDerived ? null : numeric("rating", 10);
   if (rating !== null && Math.abs(rating * 10 - Math.round(rating * 10)) > 1e-8) throw new Error("评分最多保留一位小数。");
   // 有评分即看过、没有评分即没看过，不再单独选择观看状态；忽略提交的 status，旧页面也不会写出不一致的记录。
-  const effectiveStatus: "watched" | "want_to_watch" = !isDerived && rating !== null ? "watched" : "want_to_watch";
+  // 电视节目与季没有评分，状态恒为 want_to_watch，仅用于通过 RPC 校验，数据库不会为它们保存 tracking。
+  const effectiveStatus: "watched" | "want_to_watch" = rating !== null ? "watched" : "want_to_watch";
   const isChild = type === "tv_season" || type === "tv_episode";
   return { id, type: type as ManagedMediaType, title, alternate_title: string("alternate_title"), summary: string("summary", 20000), cover_url, release_date, runtime: isDerived ? null : numeric("runtime", 100000), parent_id, number, status: effectiveStatus, rating,
     genres: isChild ? [] : names("genres"),
