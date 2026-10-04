@@ -7,7 +7,6 @@ import { PosterRowSkeleton } from "@/components/LoadingSkeletons";
 import DashboardYearPicker from "@/components/DashboardYearPicker";
 import UpcomingHero from "@/components/UpcomingHero";
 import AnimatedNumber from "@/components/AnimatedNumber";
-import { parseRuntimeParts } from "@/lib/format-runtime";
 import type { MediaCard, MediaDistribution, MediaDistributions, Summary, UpcomingRelease } from "@/lib/types";
 
 const CategoryHeaderCards = dynamic(() => import("@/components/dashboard/CategoryHeaderCards"), {
@@ -91,28 +90,18 @@ function percent(value: number, total: number) {
   return Math.min(Math.max(Math.round((value / total) * 100), 0), 100);
 }
 
-/** 只保留最大的两个时间单位，让时长在窄卡片里也能一行放下。 */
-function compactRuntime(runtime: number) {
-  const { days, hours, minutes } = parseRuntimeParts(runtime);
-  if (days > 0) return `${days}天${hours}小时`;
-  if (hours > 0) return `${hours}小时${minutes}分钟`;
-  return `${minutes}分钟`;
-}
-
-/** 按传入标题和图标展示媒体部数，并用一行补充信息（时长或季数、集数）保持各卡片结构一致；提供 href 时作为可点击跳转卡片。 */
+/** 按传入标题和图标展示媒体部数，并用一行补充季数、集数；未传 details 时保留空行，让各看板卡片高度一致；提供 href 时作为可点击跳转卡片。 */
 function MediaStatusCard({
   title,
   icon,
   count,
   details,
-  detailsIcon,
   href,
 }: {
   title: string;
   icon: string;
   count: number;
-  details: string;
-  detailsIcon?: string;
+  details?: string;
   href?: string;
 }) {
   const content = (
@@ -132,9 +121,8 @@ function MediaStatusCard({
         </span>
         <span className="text-sm text-fg-secondary">部</span>
       </div>
-      <p className="flex items-center gap-1.5 font-mono text-xs text-fg-secondary">
-        {detailsIcon && <><span className={`${detailsIcon} size-3.5 shrink-0`} aria-hidden="true" /><span className="sr-only">时长</span></>}
-        <span>{details}</span>
+      <p className="flex items-center gap-1.5 font-mono text-xs text-fg-secondary" aria-hidden={details ? undefined : true}>
+        <span>{details || " "}</span>
       </p>
     </>
   );
@@ -393,16 +381,12 @@ export default function HomeDashboard({
                   title="已观看"
                   icon="i-material-symbols-check-circle-outline-rounded"
                   count={watchedMovies}
-                  details={compactRuntime(moviesWatchedRuntime)}
-                  detailsIcon="i-material-symbols-schedule-outline-rounded"
                   href={getStatusSearchLink("movie", "watched", selectedYear)}
                 />
                 <MediaStatusCard
                   title="想要看"
                   icon="i-material-symbols-bookmark-outline-rounded"
                   count={unwatchedMovies}
-                  details={compactRuntime(moviesUnwatchedRuntime)}
-                  detailsIcon="i-material-symbols-schedule-outline-rounded"
                   href={getStatusSearchLink("movie", "want_to_watch", selectedYear)}
                 />
               </div>

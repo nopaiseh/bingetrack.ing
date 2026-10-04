@@ -5,7 +5,6 @@ import { Media, SeasonInfo } from "@/lib/types";
 import { formatRuntime } from "@/lib/format-runtime";
 import SearchTag from "./SearchTag";
 import MediaRatingBadge from "./MediaRatingBadge";
-import ExpandableCastList from "./ExpandableCastList";
 import SeasonRow from "./SeasonRow";
 
 /** 展示并预加载详情海报；无图片时显示暂无海报占位。 */
@@ -141,7 +140,13 @@ function MediaCredits({ media }: { media: Media }) {
       </div>
       <div>
         <SectionHeading>主演</SectionHeading>
-        <ExpandableCastList casts={media.casts} characters={media.characters} initialLimit={12} />
+        <div className="flex flex-wrap gap-2.5">
+          {media.casts && media.casts.length > 0
+            ? media.casts.map(/* 将主演姓名渲染为主演分类搜索链接，有角色名时附注饰演角色。 */ (castMember, index) => (
+              <SearchTag key={castMember} label={castMember} category="cast" note={media.characters?.[index] ? `饰 ${media.characters[index]}` : undefined} />
+            ))
+            : <span className="text-sm text-fg-subtle">-</span>}
+        </div>
       </div>
     </div>
   );
