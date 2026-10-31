@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { getAuthBrowser } from "@/lib/auth/browser";
 import StatusModal from "../manage/StatusModal";
+import { createAgentLoginLink } from "./actions";
 
 type Key = { id: string; friendly_name?: string; created_at: string; last_used_at?: string };
 
@@ -11,8 +12,35 @@ export default function PasskeySettings({ initialKeys, initialError }: { initial
   const [keys, setKeys] = useState(initialKeys);
   const [message, setMessage] = useState<{ id: number; text: string; tone: "success" | "error" }>({ id: 0, text: initialError, tone: "error" });
   const [busy, setBusy] = useState(false);
+  const [agentLink, setAgentLink] = useState("");
+  const [generatingLink, setGeneratingLink] = useState(false);
   /** 递增 id 让相同文案的连续结果也会重新弹出通知。 */
   const notify = (text: string, tone: "success" | "error") => setMessage(previous => ({ id: previous.id + 1, text, tone }));
+  /** 生成用完即焚的 Agent 一次性登录链接并尝试自动复制到剪贴板。 */
+  async function generateAgentLink() {
+    setGeneratingLink(true);
+    notify("", "error");
+    try {
+      const result = await createAgentLoginLink();
+      if (result.error || !result.url) {
+        notify(result.error || "生成一次性登录链接失败。", "error");
+        return;
+      }
+      setAgentLink(result.url);
+      const copied = await navigator.clipboard?.writeText(result.url).then(() => true).catch(() => false);
+      notify(copied ? "已生成并复制一次性登录链接（仅限点击 1 次）。" : "一次性登录链接已生成，请手动复制。", "success");
+    } catch {
+      notify("生成一次性登录链接失败，请重试。", "error");
+    } finally {
+      setGeneratingLink(false);
+    }
+  }
+  /** 复制当前已生成的 Agent 一次性登录链接。 */
+  async function copyAgentLink() {
+    if (!agentLink) return;
+    const copied = await navigator.clipboard?.writeText(agentLink).then(() => true).catch(() => false);
+    notify(copied ? "一次性登录链接已复制到剪贴板。" : "无法自动复制，请直接选中输入框内容复制。", copied ? "success" : "error");
+  }
   /** 执行凭证变更并刷新列表，任何失败都保留当前页面。 */
   async function run(operation: () => Promise<void>) {
     setBusy(true);
@@ -78,5 +106,22 @@ export default function PasskeySettings({ initialKeys, initialError }: { initial
       </form>
       {keys.length < 2 && <p className="text-xs text-neutral-400">请先添加备用凭证，再移除这个凭证。</p>}
     </li>)}</ul>
+    <section className="surface-card space-y-4 rounded-2xl border border-white/10 p-5 sm:p-6">
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <div className="space-y-1">
+          <h2 className="admin-section-title text-xl font-semibold text-white">Agent 临时登录链接</h2>
+          <p className="text-sm text-neutral-400">供 Muse / Grok Bot 等无法调用本地硬件 Passkey 的云端浏览器 Agent 登录。每次生成的链接仅限点击 1 次（1 小时内有效），打开后直接进入管理台，闲置 30 分钟自动登出。</p>
+        </div>
+        <button type="button" onClick={generateAgentLink} disabled={generatingLink || busy} className="admin-primary shrink-0">
+          {generatingLink ? "生成中…" : "生成一次性登录链接"}
+        </button>
+      </div>
+      {agentLink && <div className="flex flex-wrap items-end gap-3 pt-2">
+        <label className="min-w-0 flex-1">一次性登录链接（用完即失效）
+          <input type="text" readOnly value={agentLink} onFocus={event => event.currentTarget.select()} className="font-mono text-xs" />
+        </label>
+        <button type="button" onClick={copyAgentLink}>复制链接</button>
+      </div>}
+    </section>
   </div>;
 }
