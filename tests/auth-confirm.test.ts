@@ -28,6 +28,13 @@ describe("初始化登录回跳", () => {
     expect(response.headers.get("location")).toBe("/?authError=link");
   });
 
+  it("支持固定回跳到 /manage 供 Agent 一次性链接直接进入管理台", async () => {
+    const response = await GET(new NextRequest("http://localhost:3000/auth/confirm?type=magiclink&token_hash=test&next=/manage"));
+    expect(verifyOtp).toHaveBeenCalledWith({ type: "magiclink", token_hash: "test" });
+    expect(response.status).toBe(303);
+    expect(response.headers.get("location")).toBe("/manage");
+  });
+
   it("无效类型和外部回跳参数不能改变固定目标", async () => {
     const response = await GET(new NextRequest("http://localhost:3000/auth/confirm?type=signup&token_hash=test&next=https://example.com"));
     expect(verifyOtp).not.toHaveBeenCalled();

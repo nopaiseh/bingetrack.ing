@@ -11,6 +11,8 @@
 - 退出通过 `POST /auth/logout`；`GET` 只会跳回首页，防止链接预取或跨站图片把站长登出。
 - `proxy.ts` 只为 `/manage`、`/settings`、`/auth` 刷新会话，并给这些响应加 `Cache-Control: private, no-store`。公开页面不读 Cookie，也就不会把会话写进公开缓存。
 - `/auth/dev-login` 只在 `next dev` 下可用，生产构建一律返回 404。
+- `/settings` 支持站长一键生成「Agent 临时登录链接」（需在服务端配置 `SUPABASE_SECRET_KEY`）：生成形如 `/auth/confirm?token_hash=...&type=magiclink&next=/manage` 的一次性登录链接（1 小时内有效、仅限点击 1 次），复制给 Muse / Grok Bot 等云端浏览器 Agent 打开即可直接登录进入 `/manage`。
+- `/auth/agent-login` 供远程浏览器 Agent（如 Muse / Grok Bot）在无法调用本地硬件 Passkey 时按固定口令登录：仅当服务端环境变量设置了 `AGENT_LOGIN_TOKEN`（同时配好 `OWNER_EMAIL` 与 `SUPABASE_SECRET_KEY`）时启用，未设置时一律返回 404。支持直接访问 `/auth/agent-login?token=<口令>&next=/manage`，或通过 `POST /auth/agent-login`（`Authorization: Bearer <口令>`、JSON 或表单）完成验证并签发站长 Cookie 会话。
 
 ## 首次上线步骤
 

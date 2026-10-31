@@ -46,7 +46,8 @@ npm run dev                  # http://localhost:3000
 | `NEXT_PUBLIC_SUPABASE_URL`、`NEXT_PUBLIC_SUPABASE_ANON_KEY` | 必填。公开页面和站长日常管理都只用这两项 |
 | `NEXT_PUBLIC_SITE_URL` | 规范地址、站点地图和 Passkey 使用；生产构建缺失时 `env:check` 会失败 |
 | `NEXT_PUBLIC_SENTRY_DSN`、`*SENTRY_TRACES_SAMPLE_RATE`、`SENTRY_AUTH_TOKEN` | 可选。Sentry 只在生产部署上报 |
-| `OWNER_EMAIL`、`SUPABASE_SECRET_KEY` | 只供 `npm run owner:login` 这类手动运维工具使用，网站运行不需要 |
+| `OWNER_EMAIL`、`SUPABASE_SECRET_KEY` | 供 `npm run owner:login` 手动运维工具或 `/auth/agent-login` Agent 登录接口使用 |
+| `AGENT_LOGIN_TOKEN` | 可选。配置后启用 `/auth/agent-login`，供 Muse / Grok Bot 等远程浏览器 Agent 凭口令登录；留空则返回 404 |
 | `SUPABASE_SERVICE_ROLE_KEY` | 只供本地管理 E2E 使用，绝不能指向生产库 |
 
 `NEXT_PUBLIC_*` 会打包进浏览器代码，不能放密钥。Next.js 会自动读取 `.env.local`，独立 Node 脚本要用 `node --env-file=.env.local ...` 显式加载（npm 脚本已处理）。Vercel 的 Development / Preview / Production 变量在平台上分别配置，修改后要重新部署才生效。
