@@ -3,6 +3,7 @@ import Link from "next/link";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { readAiringShows, readLibraryCounts, readReportCounts, RECENT_DAYS, type AiringShow } from "@/lib/admin/overview";
 import { reports } from "@/lib/admin/reports";
+import AddMediaMenu from "./AddMediaMenu";
 import GlobalSearch from "./GlobalSearch";
 import { formatCount } from "./media/series/shared";
 
@@ -33,10 +34,7 @@ export default async function Overview({ db }: { db: SupabaseClient }) {
         <h1 className="admin-heading">管理概览</h1>
         <p className="mt-2 font-mono text-sm text-neutral-400">电影 {formatCount(counts.movie)} · 电视节目 {formatCount(counts.tv_show)} · 单集 {formatCount(counts.tv_episode)} · 人物 {formatCount(counts.people)}</p>
       </div>
-      <div className="flex flex-wrap gap-3">
-        <Link href="/manage/media/new?type=tv_show" className="admin-button"><span className="i-material-symbols-add-rounded size-4.5" aria-hidden="true" />新增电视节目</Link>
-        <Link href="/manage/media/new?type=movie" className="admin-button admin-primary"><span className="i-material-symbols-add-rounded size-4.5" aria-hidden="true" />新增电影</Link>
-      </div>
+      <AddMediaMenu />
     </div>
 
     <GlobalSearch />
