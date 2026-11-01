@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import type { Metadata } from "next";
 import SearchClient from "./SearchClient";
 import { fetchSearchOptionsServer, hasOnlyKnownTagFilters } from "@/lib/functions/search-options";
 import { searchCachedMedia } from "@/lib/functions/cached-media";
@@ -7,16 +8,6 @@ import { ApiValidationError, parseMediaSearchParams } from "@/lib/api/media-para
 import { buildMediaSearchQuery, hasOnlyKnownFilterValues } from "@/lib/api/search-state";
 import { reportHandledError } from "@/lib/report-error";
 import type { FetchMediaListOptions, MediaCard } from "@/lib/types";
-import type { Metadata } from "next";
-
-/** 只给没有查询参数的搜索页声明规范地址。带筛选或分页的地址各自不同，不在这里归并到 /search。 */
-export async function generateMetadata({ searchParams }: {
-  searchParams: Promise<Record<string, string | string[] | undefined>>;
-}): Promise<Metadata> {
-  const query = await searchParams;
-  if (Object.keys(query).length > 0) return {};
-  return { alternates: { canonical: "/search" } };
-}
 
 /**
  * 只缓存第一页、无关键词、无年份范围，且类型／地区／语言各至多一个值的查询，对应详情页标签链接等常见入口；取值已在上游核对为现有选项。
@@ -31,6 +22,18 @@ function isCacheableSearch(params: FetchMediaListOptions): boolean {
     && single(params.genre)
     && single(params.region)
     && single(params.language);
+}
+
+/** 无参数的 /search 可索引并声明规范地址；带任意查询参数时不收录、允许跟随，且不把这些地址归并到 /search。 */
+export async function generateMetadata({ searchParams }: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}): Promise<Metadata> {
+  const query = await searchParams;
+  const indexable = Object.keys(query).length === 0;
+  return {
+    robots: { index: indexable, follow: true },
+    ...(indexable ? { alternates: { canonical: "/search" } } : {}),
+  };
 }
 
 /** 分类、状态、排序或类型／地区／语言含未知值时返回 404；否则将路由参数规范化为查询字符串，校验后读取首屏结果，再传给客户端搜索组件。 */

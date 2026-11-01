@@ -17,8 +17,13 @@ describe("listing canonicals", /* 检查四个公开目录页的规范地址，�
     expect(homeMetadata.alternates?.canonical).toBe("/");
     expect(moviesMetadata.alternates?.canonical).toBe("/movies");
     expect(showsMetadata.alternates?.canonical).toBe("/shows");
-    expect((await searchMetadata({ searchParams: Promise.resolve({}) })).alternates?.canonical).toBe("/search");
-    expect(await searchMetadata({ searchParams: Promise.resolve({ q: "测试" }) })).toEqual({});
+    expect(await searchMetadata({ searchParams: Promise.resolve({}) })).toMatchObject({
+      alternates: { canonical: "/search" },
+      robots: { index: true, follow: true },
+    });
+    expect(await searchMetadata({ searchParams: Promise.resolve({ q: "测试" }) })).toEqual({
+      robots: { index: false, follow: true },
+    });
   });
 
   it("does not set a canonical on the root layout", /* 验证根布局、管理页和设置页都不声明规范地址，避免未单独设置的子页面指向首页。 */ () => {
