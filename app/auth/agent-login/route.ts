@@ -3,22 +3,43 @@ import { NextResponse, type NextRequest } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { getAuthServer } from "@/lib/auth/server";
 
-/** 使用 SHA-256 定长摘要做常量时间比对，避免时序侧信道泄露口令内容或长度。 */
+const PRIVATE_HEADERS = {
+  "Cache-Control": "private, no-store",
+  "Referrer-Policy": "no-referrer",
+} as const;
+
+/**
+ * 使用 SHA-256 定长摘要做常量时间比对，避免时序侧信道泄露口令内容或长度。
+ * 摘要长度固定，因此不会因口令长度不同而让 timingSafeEqual 抛错。
+ */
 function verifyAgentToken(candidate: string, expected: string): boolean {
-  const candidateDigest = createHash("sha256").update(candidate).digest();
-  const expectedDigest = createHash("sha256").update(expected).digest();
+  const candidateDigest = createHash("sha256").update(candidate, "utf8").digest();
+  const expectedDigest = createHash("sha256").update(expected, "utf8").digest();
   return timingSafeEqual(candidateDigest, expectedDigest);
 }
 
-/** 从 Authorization 头或查询参数提取 Agent 登录口令。 */
-function extractTokenFromRequest(request: NextRequest): string | null {
-  const authHeader = request.headers.get("authorization");
-  if (authHeader?.toLowerCase().startsWith("bearer ")) {
-    const bearer = authHeader.slice(7).trim();
-    if (bearer) return bearer;
+/** 未配置或只有空白时视为关闭。生产环境不设置该变量，接口保持 404。 */
+function expectedAgentToken(): string | null {
+  const value = process.env.AGENT_LOGIN_TOKEN?.trim();
+  return value ? value : null;
+}
+
+/** 查询参数名大小写不敏感；只判断是否出现，不读取口令值。 */
+function hasTokenQueryParam(request: NextRequest): boolean {
+  for (const key of request.nextUrl.searchParams.keys()) {
+    if (key.toLowerCase() === "token") return true;
   }
-  const queryToken = request.nextUrl.searchParams.get("token")?.trim();
-  return queryToken || null;
+  return false;
+}
+
+/** 只接受 Authorization: Bearer。不读取查询串、JSON 或表单中的口令。 */
+function extractBearerToken(request: NextRequest): string | null {
+  const header = request.headers.get("authorization")?.trim();
+  if (!header) return null;
+  const match = /^Bearer\s+(\S.*)$/i.exec(header);
+  if (!match) return null;
+  const token = match[1].trim();
+  return token || null;
 }
 
 /** 解析并校验站内回跳地址，拒绝任何外部或协议相对路径。 */
@@ -29,28 +50,42 @@ function resolveSafeNext(next: string | null, origin: string): string {
     : "/manage";
 }
 
-/** 执行 Agent 令牌校验并签发站长会话 Cookie。 */
-async function handleAgentLogin(
-  request: NextRequest,
-  token: string | null,
-  nextParam: string | null,
-) {
-  const expectedToken = process.env.AGENT_LOGIN_TOKEN?.trim();
-  if (!expectedToken) {
-    return new NextResponse(null, { status: 404 });
-  }
+function notFound() {
+  return new NextResponse(null, { status: 404, headers: PRIVATE_HEADERS });
+}
 
-  if (!token || !verifyAgentToken(token, expectedToken)) {
-    return new NextResponse("Unauthorized", {
-      status: 401,
-      headers: {
-        "Content-Type": "text/plain; charset=utf-8",
-        "Cache-Control": "private, no-store",
-        "Referrer-Policy": "no-referrer",
-      },
-    });
-  }
+function unauthorized() {
+  return new NextResponse("Unauthorized", {
+    status: 401,
+    headers: {
+      "Content-Type": "text/plain; charset=utf-8",
+      ...PRIVATE_HEADERS,
+    },
+  });
+}
 
+function methodNotAllowed() {
+  return new NextResponse(null, {
+    status: 405,
+    headers: {
+      Allow: "POST",
+      ...PRIVATE_HEADERS,
+    },
+  });
+}
+
+function textError(message: string, status: number) {
+  return new NextResponse(message, {
+    status,
+    headers: {
+      "Content-Type": "text/plain; charset=utf-8",
+      ...PRIVATE_HEADERS,
+    },
+  });
+}
+
+/** 口令已通过校验后，用 service role 签发站长 Cookie 会话。 */
+async function issueOwnerSession(request: NextRequest) {
   const email = process.env.OWNER_EMAIL?.trim();
   const secret =
     process.env.SUPABASE_SECRET_KEY?.trim() ||
@@ -58,16 +93,7 @@ async function handleAgentLogin(
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 
   if (!email || !secret || !supabaseUrl) {
-    return new NextResponse(
-      "Agent 登录失败：请配置 OWNER_EMAIL 和 SUPABASE_SECRET_KEY",
-      {
-        status: 500,
-        headers: {
-          "Content-Type": "text/plain; charset=utf-8",
-          "Cache-Control": "private, no-store",
-        },
-      },
-    );
+    return textError("Agent 登录失败：请配置 OWNER_EMAIL 和 SUPABASE_SECRET_KEY", 500);
   }
 
   const adminDb = createClient(supabaseUrl, secret, {
@@ -80,16 +106,7 @@ async function handleAgentLogin(
   });
 
   if (error || !data.properties?.hashed_token) {
-    return new NextResponse(
-      `Agent 登录失败：${error?.message || "无法生成凭据"}`,
-      {
-        status: 500,
-        headers: {
-          "Content-Type": "text/plain; charset=utf-8",
-          "Cache-Control": "private, no-store",
-        },
-      },
-    );
+    return textError(`Agent 登录失败：${error?.message || "无法生成凭据"}`, 500);
   }
 
   const db = await getAuthServer();
@@ -99,60 +116,47 @@ async function handleAgentLogin(
   });
 
   if (verifyError) {
-    return new NextResponse(`Agent 登录验证失败：${verifyError.message}`, {
-      status: 500,
-      headers: {
-        "Content-Type": "text/plain; charset=utf-8",
-        "Cache-Control": "private, no-store",
-      },
-    });
+    return textError(`Agent 登录验证失败：${verifyError.message}`, 500);
   }
 
-  const target = resolveSafeNext(nextParam, request.nextUrl.origin);
+  const target = resolveSafeNext(request.nextUrl.searchParams.get("next"), request.nextUrl.origin);
 
   return new NextResponse(null, {
     status: 303,
     headers: {
       Location: target,
-      "Cache-Control": "private, no-store",
-      "Referrer-Policy": "no-referrer",
+      ...PRIVATE_HEADERS,
     },
   });
 }
 
 /**
- * 供远程浏览器 Agent（如 Muse / Grok Bot）直接通过链接或请求头完成站长登录。
+ * 供远程浏览器 Agent 登录的入口。
  * 未配置 AGENT_LOGIN_TOKEN 时返回 404。
+ * 口令只能放在 POST 的 Authorization: Bearer 中；GET 与 ?token= 都不登录。
  */
 export async function GET(request: NextRequest) {
-  const token = extractTokenFromRequest(request);
-  const next = request.nextUrl.searchParams.get("next");
-  return handleAgentLogin(request, token, next);
-}
-
-/** 支持通过 POST（表单、JSON 或 Authorization 头）提交口令登录，避免口令出现在 URL 中。 */
-export async function POST(request: NextRequest) {
-  let token = extractTokenFromRequest(request);
-  let next = request.nextUrl.searchParams.get("next");
-
-  const contentType = request.headers.get("content-type") ?? "";
-  if (contentType.includes("application/json")) {
-    const body = (await request.json().catch(() => null)) as
-      | { token?: unknown; next?: unknown }
-      | null;
-    if (!token && typeof body?.token === "string") token = body.token.trim();
-    if (!next && typeof body?.next === "string") next = body.next.trim();
-  } else if (
-    contentType.includes("application/x-www-form-urlencoded") ||
-    contentType.includes("multipart/form-data")
-  ) {
-    const form = await request.formData().catch(() => null);
-    const formToken = form?.get("token");
-    const formNext = form?.get("next");
-    if (!token && typeof formToken === "string") token = formToken.trim();
-    if (!next && typeof formNext === "string") next = formNext.trim();
+  // 读取本次请求的路径，避免构建期把响应冻成静态 404；不读取 token 的值。
+  const pathname = request.nextUrl.pathname;
+  if (!expectedAgentToken() || !pathname.startsWith("/auth/agent-login")) {
+    return notFound();
   }
-
-  return handleAgentLogin(request, token, next);
+  return methodNotAllowed();
 }
 
+/** 仅通过 Authorization: Bearer 提交口令。查询串中的 token 一律拒绝。 */
+export async function POST(request: NextRequest) {
+  const expected = expectedAgentToken();
+  if (!expected) return notFound();
+
+  // 查询串会进入浏览器历史、访问日志和 Referer。出现 token 时直接拒绝，
+  // 即使同时带了正确的 Bearer 也不签发会话。
+  if (hasTokenQueryParam(request)) return unauthorized();
+
+  const bearer = extractBearerToken(request);
+  // 缺失口令也走同一比对，避免用“是否执行比较”区分空口令与错误口令。
+  const matches = verifyAgentToken(bearer ?? "", expected);
+  if (!bearer || !matches) return unauthorized();
+
+  return issueOwnerSession(request);
+}
