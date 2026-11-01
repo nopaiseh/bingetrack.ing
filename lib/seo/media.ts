@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
-import type { Media } from "@/lib/types";
-import type { SeasonInfo } from "@/lib/types";
+import type { EpisodeInfo, Media, SeasonInfo } from "@/lib/types";
 import { SITE_URL } from "@/lib/site";
 import { tmdbImageUrl } from "@/lib/tmdb-image";
 
@@ -108,7 +107,7 @@ export function getMediaDescription(media: Media): string {
 }
 
 /** 按媒体类型选取详情栏目，并对媒体 ID 编码形成规范路径。 */
-function getMediaPath(media: Media): string {
+function getMediaPath(media: Pick<Media, "id" | "type">): string {
   const section = media.type === "shows" ? "shows" : "movies";
   return `/${section}/${encodeURIComponent(media.id)}`;
 }
@@ -164,12 +163,76 @@ export function buildMediaJsonLd(media: Media): Record<string, unknown> {
   return jsonLd;
 }
 
-/** 生成季页面的规范地址与分享信息，图片依次回退到电视节目海报和站点默认图片。 */
-export function buildSeasonMetadata(series: Media, season: SeasonInfo): Metadata {
-  const path = `/shows/${encodeURIComponent(series.id)}/seasons/${encodeURIComponent(season.id)}`;
-  const description = truncateMetaDescription(
+/** 季简介优先；没有简介时说明本季可以查看单集与观看记录，超长时按句读截断。 */
+function getSeasonDescription(series: Media, season: SeasonInfo): string {
+  return truncateMetaDescription(
     season.summary?.trim() || `查看《${series.title}》${season.title}的单集与观看记录。`,
   );
+}
+
+/** 电视节目详情路径。季页的上级节目固定在 /shows，与 TVSeries 结构化数据的地址一致。 */
+function getShowPath(seriesId: string): string {
+  return getMediaPath({ id: seriesId, type: "shows" });
+}
+
+/** 季详情路径，编码规则与季页规范地址相同。 */
+function getSeasonPath(seriesId: string, seasonId: string): string {
+  return `${getShowPath(seriesId)}/seasons/${encodeURIComponent(seasonId)}`;
+}
+
+/** 有海报时返回分享尺寸的绝对地址，没有海报时不写入结构化数据。 */
+function structuredImage(url: string | null | undefined): string | undefined {
+  const image = tmdbImageUrl(url, SHARE_IMAGE_SIZE);
+  return image || undefined;
+}
+
+/** 把一集整理成 TVEpisode，只在有标题、别名或上映日期时写入对应字段。 */
+function buildEpisodeJsonLd(episode: EpisodeInfo): Record<string, unknown> {
+  const jsonLd: Record<string, unknown> = {
+    "@type": "TVEpisode",
+    episodeNumber: episode.episodeNumber,
+  };
+  const name = episode.title.trim();
+  if (name) jsonLd.name = name;
+  const alternateName = episode.alternateTitle?.trim();
+  if (alternateName) jsonLd.alternateName = alternateName;
+  if (episode.releaseDate) jsonLd.datePublished = episode.releaseDate;
+  return jsonLd;
+}
+
+/**
+ * 按季生成 TVSeason 结构化数据。
+ * 单集名称和日期来自调用方传入的未筛选列表；缺标题或日期时省略对应字段。
+ */
+export function buildSeasonJsonLd(series: Media, season: SeasonInfo, episodes: EpisodeInfo[] = []): Record<string, unknown> {
+  const jsonLd: Record<string, unknown> = {
+    "@context": "https://schema.org",
+    "@type": "TVSeason",
+    name: season.title,
+    url: `${SITE_URL}${getSeasonPath(series.id, season.id)}`,
+    description: getSeasonDescription(series, season),
+    seasonNumber: season.seasonNumber,
+    partOfSeries: {
+      "@type": "TVSeries",
+      name: series.title,
+      url: `${SITE_URL}${getShowPath(series.id)}`,
+    },
+  };
+
+  const alternateName = season.alternateTitle?.trim();
+  if (alternateName) jsonLd.alternateName = alternateName;
+  const image = structuredImage(season.coverUrl || series.cover_url);
+  if (image) jsonLd.image = image;
+  if (Number.isFinite(season.episodeCount) && season.episodeCount >= 0) jsonLd.numberOfEpisodes = season.episodeCount;
+  if (episodes.length > 0) jsonLd.episode = episodes.map(/* 将一集转换为 TVEpisode，没有标题或日期时省略对应字段。 */ buildEpisodeJsonLd);
+
+  return jsonLd;
+}
+
+/** 生成季页面的规范地址与分享信息，图片依次回退到电视节目海报和站点默认图片。 */
+export function buildSeasonMetadata(series: Media, season: SeasonInfo): Metadata {
+  const path = getSeasonPath(series.id, season.id);
+  const description = getSeasonDescription(series, season);
   const image = tmdbImageUrl(season.coverUrl || series.cover_url, SHARE_IMAGE_SIZE) || "/opengraph-image";
 
   return {

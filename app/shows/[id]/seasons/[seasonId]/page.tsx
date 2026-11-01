@@ -6,8 +6,13 @@ import { BackLink } from "@/components/MediaBackLink";
 import SeasonEpisodeBrowser from "@/components/SeasonEpisodeBrowser";
 import { formatRuntime } from "@/lib/format-runtime";
 import { getCachedMediaById, getCachedSeasonEpisodes, getCachedSeasonsBySeriesId } from "@/lib/functions/cached-media";
-import { buildSeasonMetadata } from "@/lib/seo/media";
+import { buildSeasonJsonLd, buildSeasonMetadata, serializeJsonLd } from "@/lib/seo/media";
 import { SEASON_EPISODE_PAGE_SIZE } from "@/lib/season-browse";
+import type { EpisodeInfo, SeasonEpisodePage } from "@/lib/types";
+
+// 单集分页接口单次最多 100 条。结构化数据按这个上限取未筛选升序结果，页数封顶以免异常集数连续查询。
+const JSON_LD_EPISODE_PAGE_SIZE = 100;
+const JSON_LD_EPISODE_PAGE_LIMIT = 10;
 
 // 默认季页（第 1 页、全部、升序）按需静态生成，24 小时再验证；保存条目时沿用媒体标签即时失效。
 // 不读取 searchParams，否则整页会变成每次请求都动态渲染。分页和筛选留在客户端，地址仍使用原来的查询串。
@@ -32,6 +37,29 @@ export async function generateMetadata({
   return buildSeasonMetadata(series, season);
 }
 
+/**
+ * 读取未筛选、升序的全部单集，供静态页的 TVSeason 使用。
+ * 默认第一页已经包含整季时直接复用，不再额外查询。
+ */
+async function loadEpisodesForJsonLd(
+  seriesId: string,
+  seasonId: string,
+  seasonPage: SeasonEpisodePage,
+): Promise<EpisodeInfo[]> {
+  const total = seasonPage.season.episodeCount;
+  if (seasonPage.episodes.length >= total) return seasonPage.episodes;
+
+  const pageCount = Math.min(
+    JSON_LD_EPISODE_PAGE_LIMIT,
+    Math.max(1, Math.ceil(total / JSON_LD_EPISODE_PAGE_SIZE)),
+  );
+  const pages = await Promise.all(Array.from({ length: pageCount }, (_, index) =>
+    getCachedSeasonEpisodes(seriesId, seasonId, index + 1, JSON_LD_EPISODE_PAGE_SIZE, "all", "asc"),
+  ));
+  const episodes = pages.flatMap(/* 跳过缺失页，保留已取到的单集。 */ (page) => page?.episodes ?? []);
+  return episodes.length > 0 ? episodes : seasonPage.episodes;
+}
+
 /** 加载默认单集页、季摘要和相邻季，渲染海报、统计，并把筛选与翻页交给客户端。 */
 export default async function SeasonPage({
   params,
@@ -54,9 +82,16 @@ export default async function SeasonPage({
     ? Math.round((seasonData.watchedCount / seasonData.season.episodeCount) * 100)
     : 0;
   const basePath = `/shows/${id}/seasons/${seasonId}`;
+  // 结构化数据来自静态默认页的未筛选单集。客户端改分页或筛选时不会改写这段脚本。
+  const episodesForJsonLd = await loadEpisodesForJsonLd(id, seasonId, seasonData);
+  const jsonLd = buildSeasonJsonLd(series, seasonData.season, episodesForJsonLd);
 
   return (
     <div className="min-h-screen pb-16 pt-24 text-fg">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: serializeJsonLd(jsonLd) }}
+      />
       <div className="container mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <BackLink href={`/shows/${id}`} label={`返回《${series.title}》`} />
 

@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
-import type { Media } from "@/lib/types";
-import { buildMediaJsonLd, buildMediaMetadata, buildSeasonMetadata, getMediaDescription, serializeJsonLd, truncateMetaDescription } from "@/lib/seo/media";
+import type { EpisodeInfo, Media, SeasonInfo } from "@/lib/types";
+import { buildMediaJsonLd, buildMediaMetadata, buildSeasonJsonLd, buildSeasonMetadata, getMediaDescription, serializeJsonLd, truncateMetaDescription } from "@/lib/seo/media";
+import { SITE_URL } from "@/lib/site";
 
 const movie: Media = {
   id: "movie/id",
@@ -83,6 +84,92 @@ describe("media SEO", /* 组织媒体与季页面的元数据、结构化数据�
     });
   });
 
+  it("builds TVSeason structured data linked to the parent series", /* 验证季号、集数、单集名称日期，以及与电视节目详情相同的绝对地址。 */ () => {
+    const series = { ...movie, id: "series/1", type: "shows" as const, title: "测试剧集" };
+    const season: SeasonInfo = {
+      id: "season/1",
+      seasonNumber: 2,
+      title: "第二季",
+      alternateTitle: "Season Two",
+      coverUrl: "",
+      episodeCount: 2,
+      watchedEpisodeCount: 1,
+      summary: "季度简介",
+    };
+    const episodes: EpisodeInfo[] = [
+      {
+        id: "ep-1",
+        episodeNumber: 1,
+        title: "启程",
+        alternateTitle: "Departure",
+        summary: "",
+        coverUrl: "",
+        releaseDate: "2026-01-02",
+        runtime: 48,
+        status: "watched",
+        rating: 8,
+      },
+      {
+        id: "ep-2",
+        episodeNumber: 2,
+        title: "  ",
+        summary: "",
+        coverUrl: "",
+        releaseDate: null,
+        runtime: null,
+        status: null,
+        rating: null,
+      },
+    ];
+
+    const jsonLd = buildSeasonJsonLd(series, season, episodes);
+    expect(jsonLd).toMatchObject({
+      "@context": "https://schema.org",
+      "@type": "TVSeason",
+      name: "第二季",
+      alternateName: "Season Two",
+      url: `${SITE_URL}/shows/series%2F1/seasons/season%2F1`,
+      description: "季度简介",
+      seasonNumber: 2,
+      numberOfEpisodes: 2,
+      image: series.cover_url,
+      partOfSeries: {
+        "@type": "TVSeries",
+        name: series.title,
+        url: buildMediaJsonLd(series).url,
+      },
+    });
+    expect(jsonLd.episode).toEqual([
+      {
+        "@type": "TVEpisode",
+        episodeNumber: 1,
+        name: "启程",
+        alternateName: "Departure",
+        datePublished: "2026-01-02",
+      },
+      { "@type": "TVEpisode", episodeNumber: 2 },
+    ]);
+    expect(jsonLd.partOfSeries).not.toHaveProperty("@context");
+  });
+
+  it("omits season episodes and optional fields when the data is missing", /* 验证没有单集、海报和简介时不写入空字段，并使用与分享信息相同的默认描述。 */ () => {
+    const series = { ...movie, id: "series-1", type: "shows" as const, cover_url: "" };
+    const jsonLd = buildSeasonJsonLd(series, {
+      id: "season-1",
+      seasonNumber: 1,
+      title: "第一季",
+      coverUrl: "",
+      episodeCount: 0,
+      watchedEpisodeCount: 0,
+    });
+
+    expect(jsonLd.description).toBe("查看《测试电影》第一季的单集与观看记录。");
+    expect(jsonLd.numberOfEpisodes).toBe(0);
+    expect(jsonLd.episode).toBeUndefined();
+    expect(jsonLd.image).toBeUndefined();
+    expect(jsonLd.alternateName).toBeUndefined();
+  });
+
   it("cuts a long Chinese synopsis at the last nearby clause", /* 中文简介停在约 80 字内的最后一个句读，不再从半句话切断。 */ () => {
     const summary = "《跑男》讲述了一群固定成员与每期嘉宾在城市地标、商场、学校、游乐园等不同场地中展开追逐与竞技的故事。节目自2010年7月在SBS首播，每期由制作组设定一个主题和一套规则，成员们或两两组队、或各自为战，通过闯关游戏、解谜寻找线索、完成任务来争取奖励或逃避惩罚。节目最具代表性的环节是“撕名牌”：每个人背后贴着写有自己名字的名牌，一旦被对手撕下即被淘汰。";
     const expected = "《跑男》讲述了一群固定成员与每期嘉宾在城市地标、商场、学校、游乐园等不同场地中展开追逐与竞技的故事。节目自2010年7月在SBS首播，…";
@@ -144,7 +231,7 @@ describe("media SEO", /* 组织媒体与季页面的元数据、结构化数据�
     expect(summary.startsWith(description.slice(0, -1))).toBe(true);
   });
 
-  it("uses one truncated season description for meta, Open Graph, and Twitter", /* 季页面的三段描述与截断后的简介相同。 */ () => {
+  it("uses one truncated season description for meta, Open Graph, Twitter, and JSON-LD", /* 季页面的分享描述和 TVSeason 描述都使用同一段按句读截断的简介。 */ () => {
     const summary = "《跑男》讲述了一群固定成员与每期嘉宾在城市地标、商场、学校、游乐园等不同场地中展开追逐与竞技的故事。节目自2010年7月在SBS首播，每期由制作组设定一个主题和一套规则，成员们或两两组队、或各自为战，通过闯关游戏、解谜寻找线索、完成任务来争取奖励或逃避惩罚。";
     const expected = truncateMetaDescription(summary);
     const metadata = buildSeasonMetadata(
@@ -164,5 +251,17 @@ describe("media SEO", /* 组织媒体与季页面的元数据、结构化数据�
     expect(metadata.openGraph).toMatchObject({ description: expected });
     expect(metadata.twitter).toMatchObject({ description: expected });
     expect(String(metadata.description).endsWith("…")).toBe(true);
+    expect(buildSeasonJsonLd(
+      { ...movie, id: "series-1", type: "shows", title: "跑男" },
+      {
+        id: "season-1",
+        seasonNumber: 1,
+        title: "第一季",
+        coverUrl: "https://images.example.com/season.jpg",
+        episodeCount: 10,
+        watchedEpisodeCount: 8,
+        summary,
+      },
+    ).description).toBe(expected);
   });
 });
