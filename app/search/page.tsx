@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import type { Metadata } from "next";
 import SearchClient from "./SearchClient";
 import { fetchSearchOptionsServer, hasOnlyKnownTagFilters } from "@/lib/functions/search-options";
 import { searchCachedMedia } from "@/lib/functions/cached-media";
@@ -21,6 +22,14 @@ function isCacheableSearch(params: FetchMediaListOptions): boolean {
     && single(params.genre)
     && single(params.region)
     && single(params.language);
+}
+
+/** 带任意查询参数的搜索页不收录，但允许爬虫跟随结果链接；无参数的 /search 仍是可索引的检索入口。 */
+export async function generateMetadata({ searchParams }: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}): Promise<Metadata> {
+  const query = await searchParams;
+  return { robots: { index: Object.keys(query).length === 0, follow: true } };
 }
 
 /** 分类、状态、排序或类型／地区／语言含未知值时返回 404；否则将路由参数规范化为查询字符串，校验后读取首屏结果，再传给客户端搜索组件。 */

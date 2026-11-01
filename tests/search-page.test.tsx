@@ -11,7 +11,7 @@ vi.mock("@/lib/functions/media-repo", () => ({ searchMediaServer: vi.fn() }));
 vi.mock("@/lib/report-error", () => ({ reportHandledError: vi.fn() }));
 vi.mock("@/app/search/SearchClient", () => ({ default: () => null }));
 
-import SearchPage from "@/app/search/page";
+import SearchPage, { generateMetadata } from "@/app/search/page";
 import { searchCachedMedia } from "@/lib/functions/cached-media";
 import { searchMediaServer } from "@/lib/functions/media-repo";
 
@@ -55,6 +55,22 @@ describe("SearchPage", () => {
       expect((await initialResultFor(query)).total, JSON.stringify(query)).toBe(4);
     }
     expect(searchCachedMedia).not.toHaveBeenCalled();
+  });
+
+  it("无参数搜索页可索引，任意查询参数则为 noindex 且允许跟随", async () => {
+    await expect(generateMetadata({ searchParams: Promise.resolve({}) })).resolves.toEqual({ robots: { index: true, follow: true } });
+    const queries: Record<string, string | string[]>[] = [
+      { genre: "剧情" },
+      { q: "" },
+      { region: "中国", language: "汉语" },
+      { page: "2" },
+      { genre: ["剧情", "喜剧"] },
+    ];
+    for (const query of queries) {
+      await expect(generateMetadata({ searchParams: Promise.resolve(query) }), JSON.stringify(query)).resolves.toEqual({
+        robots: { index: false, follow: true },
+      });
+    }
   });
 
   it("参数无效时返回检查条件的提示，而不是加载失败", async () => {
