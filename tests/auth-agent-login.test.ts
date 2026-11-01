@@ -26,6 +26,34 @@ vi.mock("@/lib/auth/server", () => ({
 import { GET, POST } from "@/app/auth/agent-login/route";
 import { createAgentLoginLink } from "@/app/(admin)/settings/actions";
 
+const ORIGIN = "https://www.bingetrack.ing";
+const TOKEN = "agent-secret-token";
+
+function agentRequest(path: string, init?: ConstructorParameters<typeof NextRequest>[1]) {
+  return new NextRequest(new URL(path, ORIGIN), init);
+}
+
+function bearerPost(token: string, path = "/auth/agent-login") {
+  return agentRequest(path, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}` },
+  });
+}
+
+function enableOwnerConfig() {
+  vi.stubEnv("OWNER_EMAIL", "owner@example.com");
+  vi.stubEnv("SUPABASE_SECRET_KEY", "test-secret");
+  vi.stubEnv("NEXT_PUBLIC_SUPABASE_URL", "https://example.supabase.co");
+}
+
+function mockSession(hashedToken = "mock-token-456") {
+  generateLink.mockResolvedValue({
+    data: { properties: { hashed_token: hashedToken } },
+    error: null,
+  });
+  verifyOtp.mockResolvedValue({ error: null });
+}
+
 describe("Agent 专属口令登录 (/auth/agent-login)", () => {
   beforeEach(() => {
     vi.unstubAllEnvs();
@@ -37,46 +65,103 @@ describe("Agent 专属口令登录 (/auth/agent-login)", () => {
     vi.unstubAllEnvs();
   });
 
-  it("未配置 AGENT_LOGIN_TOKEN 时返回 404", async () => {
+  it("未配置 AGENT_LOGIN_TOKEN 时 GET 与 POST 都返回 404", async () => {
+    vi.stubEnv("NODE_ENV", "production");
     vi.stubEnv("AGENT_LOGIN_TOKEN", "");
-    const res = await GET(new NextRequest("https://www.bingetrack.ing/auth/agent-login?token=any"));
-    expect(res.status).toBe(404);
+
+    const getRes = await GET(agentRequest("/auth/agent-login?token=any"));
+    const postRes = await POST(bearerPost("any"));
+
+    vi.stubEnv("AGENT_LOGIN_TOKEN", "   ");
+    const blankRes = await POST(bearerPost(TOKEN));
+
+    expect(getRes.status).toBe(404);
+    expect(postRes.status).toBe(404);
+    expect(blankRes.status).toBe(404);
+    expect(generateLink).not.toHaveBeenCalled();
+    expect(verifyOtp).not.toHaveBeenCalled();
   });
 
-  it("口令缺失或错误时返回 401 且不调用 Supabase", async () => {
+  it("错误、缺失或非 Bearer 的口令返回 401 且不调用 Supabase", async () => {
     vi.stubEnv("AGENT_LOGIN_TOKEN", "correct-horse-battery-staple");
 
-    const missingRes = await GET(new NextRequest("https://www.bingetrack.ing/auth/agent-login"));
-    expect(missingRes.status).toBe(401);
+    const missingRes = await POST(agentRequest("/auth/agent-login", { method: "POST" }));
+    const wrongRes = await POST(bearerPost("wrong-token"));
+    const shortRes = await POST(bearerPost("x"));
+    const longRes = await POST(bearerPost("correct-horse-battery-staple-extra"));
+    const basicRes = await POST(
+      agentRequest("/auth/agent-login", {
+        method: "POST",
+        headers: { Authorization: "Basic YWdlbnQ6c2VjcmV0" },
+      }),
+    );
+    const jsonRes = await POST(
+      agentRequest("/auth/agent-login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token: "correct-horse-battery-staple" }),
+      }),
+    );
 
-    const wrongRes = await GET(new NextRequest("https://www.bingetrack.ing/auth/agent-login?token=wrong-token"));
+    expect(missingRes.status).toBe(401);
     expect(wrongRes.status).toBe(401);
+    expect(shortRes.status).toBe(401);
+    expect(longRes.status).toBe(401);
+    expect(basicRes.status).toBe(401);
+    expect(jsonRes.status).toBe(401);
     expect(generateLink).not.toHaveBeenCalled();
   });
 
-  it("口令正确但缺少 Supabase 站长配置时返回 500", async () => {
-    vi.stubEnv("AGENT_LOGIN_TOKEN", "agent-secret-token");
-    vi.stubEnv("OWNER_EMAIL", "");
-    const res = await GET(new NextRequest("https://www.bingetrack.ing/auth/agent-login?token=agent-secret-token"));
-    expect(res.status).toBe(500);
+  it("查询参数中的口令一律拒绝，即使同时带了正确的 Bearer", async () => {
+    vi.stubEnv("AGENT_LOGIN_TOKEN", TOKEN);
+    enableOwnerConfig();
+    mockSession();
+
+    const queryOnly = await POST(agentRequest(`/auth/agent-login?token=${TOKEN}`, { method: "POST" }));
+    const queryAndBearer = await POST(
+      agentRequest("/auth/agent-login?Token=agent-secret-token", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${TOKEN}` },
+      }),
+    );
+    const getWithQuery = await GET(
+      agentRequest(`/auth/agent-login?token=${TOKEN}`, {
+        headers: { Authorization: `Bearer ${TOKEN}` },
+      }),
+    );
+
+    expect(queryOnly.status).toBe(401);
+    expect(queryAndBearer.status).toBe(401);
+    expect(getWithQuery.status).toBe(405);
+    expect(getWithQuery.headers.get("allow")).toBe("POST");
+    expect(queryOnly.headers.get("location")).toBeNull();
+    expect(generateLink).not.toHaveBeenCalled();
   });
 
-  it("生产环境中通过查询参数口令验证后签发会话并 303 重定向到 /manage", async () => {
-    vi.stubEnv("NODE_ENV", "production");
-    vi.stubEnv("AGENT_LOGIN_TOKEN", "agent-secret-token");
-    vi.stubEnv("OWNER_EMAIL", "owner@example.com");
-    vi.stubEnv("SUPABASE_SECRET_KEY", "test-secret");
-    vi.stubEnv("NEXT_PUBLIC_SUPABASE_URL", "https://example.supabase.co");
-
-    generateLink.mockResolvedValue({
-      data: { properties: { hashed_token: "mock-token-456" } },
-      error: null,
-    });
-    verifyOtp.mockResolvedValue({ error: null });
+  it("已配置口令时 GET 返回 405，不签发会话", async () => {
+    vi.stubEnv("AGENT_LOGIN_TOKEN", TOKEN);
+    enableOwnerConfig();
+    mockSession();
 
     const res = await GET(
-      new NextRequest("https://www.bingetrack.ing/auth/agent-login?token=agent-secret-token"),
+      agentRequest("/auth/agent-login", {
+        headers: { Authorization: `Bearer ${TOKEN}` },
+      }),
     );
+
+    expect(res.status).toBe(405);
+    expect(res.headers.get("allow")).toBe("POST");
+    expect(res.headers.get("cache-control")).toBe("private, no-store");
+    expect(generateLink).not.toHaveBeenCalled();
+  });
+
+  it("Authorization Bearer 正确时签发会话并 303 到安全的 next 路径", async () => {
+    vi.stubEnv("NODE_ENV", "production");
+    vi.stubEnv("AGENT_LOGIN_TOKEN", TOKEN);
+    enableOwnerConfig();
+    mockSession();
+
+    const res = await POST(bearerPost(TOKEN));
 
     expect(generateLink).toHaveBeenCalledWith({
       type: "magiclink",
@@ -90,37 +175,26 @@ describe("Agent 专属口令登录 (/auth/agent-login)", () => {
     expect(res.headers.get("location")).toBe("/manage");
     expect(res.headers.get("cache-control")).toBe("private, no-store");
     expect(res.headers.get("referrer-policy")).toBe("no-referrer");
+
+    const settingsRes = await POST(bearerPost(TOKEN, "/auth/agent-login?next=/settings"));
+    expect(settingsRes.status).toBe(303);
+    expect(settingsRes.headers.get("location")).toBe("/settings");
+
+    const evilRes = await POST(bearerPost(TOKEN, "/auth/agent-login?next=https://evil.com"));
+    expect(evilRes.headers.get("location")).toBe("/manage");
+
+    const protocolRelative = await POST(bearerPost(TOKEN, "/auth/agent-login?next=//evil.com"));
+    expect(protocolRelative.headers.get("location")).toBe("/manage");
   });
 
-  it("支持通过 POST JSON 或 Authorization Bearer 头提交口令并跳转安全 next 路径", async () => {
-    vi.stubEnv("AGENT_LOGIN_TOKEN", "agent-secret-token");
-    vi.stubEnv("OWNER_EMAIL", "owner@example.com");
-    vi.stubEnv("SUPABASE_SECRET_KEY", "test-secret");
-    vi.stubEnv("NEXT_PUBLIC_SUPABASE_URL", "https://example.supabase.co");
+  it("口令正确但缺少 Supabase 站长配置时返回 500", async () => {
+    vi.stubEnv("AGENT_LOGIN_TOKEN", TOKEN);
+    vi.stubEnv("OWNER_EMAIL", "");
 
-    generateLink.mockResolvedValue({
-      data: { properties: { hashed_token: "mock-token-789" } },
-      error: null,
-    });
-    verifyOtp.mockResolvedValue({ error: null });
+    const res = await POST(bearerPost(TOKEN));
 
-    const postJsonRes = await POST(
-      new NextRequest("https://www.bingetrack.ing/auth/agent-login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ token: "agent-secret-token", next: "/settings" }),
-      }),
-    );
-    expect(postJsonRes.status).toBe(303);
-    expect(postJsonRes.headers.get("location")).toBe("/settings");
-
-    const bearerRes = await GET(
-      new NextRequest("https://www.bingetrack.ing/auth/agent-login?next=https://evil.com", {
-        headers: { Authorization: "Bearer agent-secret-token" },
-      }),
-    );
-    expect(bearerRes.status).toBe(303);
-    expect(bearerRes.headers.get("location")).toBe("/manage");
+    expect(res.status).toBe(500);
+    expect(generateLink).not.toHaveBeenCalled();
   });
 
   it("在 /settings 后台通过 createAgentLoginLink 生成用完即焚的一次性登录链接", async () => {
@@ -141,4 +215,3 @@ describe("Agent 专属口令登录 (/auth/agent-login)", () => {
     expect(result.url).toContain("/auth/confirm?token_hash=one-time-hash-999&type=magiclink&next=%2Fmanage");
   });
 });
-
