@@ -73,7 +73,10 @@ describe("Prerender graceful fallbacks", () => {
     const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
     try {
       const pageJsx = await HomePage();
-      const { getByTestId } = render(pageJsx);
+      const { getByTestId, container } = render(pageJsx);
+      const jsonLd = JSON.parse(container.querySelector('script[type="application/ld+json"]')?.textContent ?? "");
+      expect(jsonLd["@type"]).toBe("WebSite");
+      expect(jsonLd.potentialAction.target.urlTemplate).toContain("/search?q={search_term_string}");
       const dashboardEl = getByTestId("home-dashboard");
       const props = JSON.parse(dashboardEl.getAttribute("data-props") || "{}");
       expect(props.summary).toEqual([]);
