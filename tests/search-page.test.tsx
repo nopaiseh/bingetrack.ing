@@ -58,7 +58,10 @@ describe("SearchPage", () => {
   });
 
   it("无参数搜索页可索引，任意查询参数则为 noindex 且允许跟随", async () => {
-    await expect(generateMetadata({ searchParams: Promise.resolve({}) })).resolves.toEqual({ robots: { index: true, follow: true } });
+    await expect(generateMetadata({ searchParams: Promise.resolve({}) })).resolves.toEqual({
+      robots: { index: true, follow: true },
+      alternates: { canonical: "/search" },
+    });
     const queries: Record<string, string | string[]>[] = [
       { genre: "剧情" },
       { q: "" },

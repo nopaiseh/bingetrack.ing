@@ -10,6 +10,12 @@ import { handlePageDataError } from "@/lib/functions/page-data";
 import { TOP_MEDIA_LIMIT } from "@/lib/api/media-params";
 import { gmt8DateKey } from "@/lib/upcoming";
 import type { MediaCard, Summary, UpcomingRelease } from "@/lib/types";
+import type { Metadata } from "next";
+
+// 规范地址只写在本页。根布局的 metadata 会合并进所有子路由，未单独声明的页面会因此继承首页地址。
+export const metadata: Metadata = {
+  alternates: { canonical: "/" },
+};
 
 // 首页按 24 小时长缓存静态生成，数据变更由管理端 revalidatePath/revalidateTag 即时按需刷新。
 export const revalidate = 86400;

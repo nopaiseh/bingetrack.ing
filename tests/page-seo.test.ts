@@ -57,8 +57,9 @@ describe("page social metadata", /* 组织电影、电视节目和搜索页的�
       openGraph: { url: "/search" },
       twitter: { title: "搜索" },
     });
-    expect(moviesMetadata.alternates).toBeUndefined();
-    expect(showsMetadata.alternates).toBeUndefined();
+    expect(moviesMetadata.alternates).toEqual({ canonical: "/movies" });
+    expect(showsMetadata.alternates).toEqual({ canonical: "/shows" });
+    // 搜索的规范地址由页面按查询参数决定，布局只提供分享信息。
     expect(searchMetadata.alternates).toBeUndefined();
   });
 });

@@ -4,11 +4,14 @@ import { handlePageDataError } from '@/lib/functions/page-data';
 import type { MediaCard } from '@/lib/types';
 import { buildPageSocialMetadata } from '@/lib/seo/page';
 
-export const metadata = buildPageSocialMetadata(
-  "电影",
-  "浏览已看、想看与即将上映的电影记录。",
-  "/movies",
-);
+export const metadata = {
+  ...buildPageSocialMetadata(
+    "电影",
+    "浏览已看、想看与即将上映的电影记录。",
+    "/movies",
+  ),
+  alternates: { canonical: "/movies" },
+};
 
 // 电影目录按 24 小时长缓存，数据变更由管理端即时按需刷新。
 export const revalidate = 86400;
