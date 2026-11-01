@@ -1,7 +1,7 @@
 import "server-only";
 import { cache } from "react";
 import { unstable_cache } from "next/cache";
-import { getMediaById, getSeasonsBySeriesId, searchMediaServer, fetchTopMediaServer, fetchMediaDistributionsServer, fetchUpcomingReleasesServer } from "./media-repo";
+import { getMediaById, getSeasonEpisodes, getSeasonsBySeriesId, searchMediaServer, fetchTopMediaServer, fetchMediaDistributionsServer, fetchUpcomingReleasesServer } from "./media-repo";
 import { parseMediaSearchParams } from "@/lib/api/media-params";
 import { getSupabasePublicServer } from "@/lib/supabase/public-server";
 import { withRetry } from "./retry";
@@ -26,6 +26,22 @@ export const getCachedSeasonsBySeriesId = cache(async (seriesId: string) => {
     revalidate: 86400,
     tags: [MEDIA_TAG, mediaItemTag(seriesId)],
   })(seriesId);
+});
+
+// 单集分页与季统计长缓存 24 小时。标签挂在电视节目上：保存单集时失效列表包含所属节目，季页与筛选接口一起刷新。
+export const getCachedSeasonEpisodes = cache(async (
+  seriesId: string,
+  seasonId: string,
+  page: number,
+  pageSize: number,
+  status: "all" | "watched" | "unwatched" = "all",
+  order: "asc" | "desc" = "asc",
+) => {
+  if (!isMediaId(seriesId) || !isMediaId(seasonId)) return null;
+  return unstable_cache(getSeasonEpisodes, ["public-season-episodes-v1"], {
+    revalidate: 86400,
+    tags: [MEDIA_TAG, mediaItemTag(seriesId)],
+  })(seriesId, seasonId, page, pageSize, status, order);
 });
 
 // 以完整查询字符串区分搜索缓存，1 小时后允许重新验证，数据变更由 "media" tag 即时失效。

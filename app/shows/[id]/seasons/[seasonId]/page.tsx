@@ -1,20 +1,20 @@
 import Image from "next/image";
 import Link from "next/link";
-import { notFound, redirect } from "next/navigation";
-import { getSeasonEpisodes } from "@/lib/functions/media-repo";
-import type { EpisodeInfo } from "@/lib/types";
+import { notFound } from "next/navigation";
 import type { Metadata } from "next";
-import { getCachedMediaById, getCachedSeasonsBySeriesId } from "@/lib/functions/cached-media";
-import { buildSeasonMetadata } from "@/lib/seo/media";
-import { formatRuntime } from "@/lib/format-runtime";
 import { BackLink } from "@/components/MediaBackLink";
-import { pageNumbers } from "@/lib/pagination";
+import SeasonEpisodeBrowser from "@/components/SeasonEpisodeBrowser";
+import { formatRuntime } from "@/lib/format-runtime";
+import { getCachedMediaById, getCachedSeasonEpisodes, getCachedSeasonsBySeriesId } from "@/lib/functions/cached-media";
+import { buildSeasonMetadata } from "@/lib/seo/media";
+import { SEASON_EPISODE_PAGE_SIZE } from "@/lib/season-browse";
 
-// 季详情页读取分页与筛选查询参数，按请求渲染：单集分页每次查询数据库，电视节目与季摘要使用带 "media" 标签的数据缓存。
+// 默认季页（第 1 页、全部、升序）按需静态生成，24 小时再验证；保存条目时沿用媒体标签即时失效。
+// 不读取 searchParams，否则整页会变成每次请求都动态渲染。分页和筛选留在客户端，地址仍使用原来的查询串。
+export const revalidate = 86400;
 
-const PAGE_SIZE = 10;
-type StatusFilter = "all" | "watched" | "unwatched";
-type EpisodeOrder = "asc" | "desc";
+/** 构建时不枚举季 ID，季页由首次访问触发按需生成。 */
+export function generateStaticParams() { return []; }
 
 /** 并行读取电视节目与季摘要，找到目标季后生成元数据；缺失时返回未找到标题。 */
 export async function generateMetadata({
@@ -32,102 +32,20 @@ export async function generateMetadata({
   return buildSeasonMetadata(series, season);
 }
 
-/** 渲染单集卡片，展示单集封面、集数、标题、观看状态、上映日期和简介。 */
-function EpisodeCard({ episode }: { episode: EpisodeInfo }) {
-  const watched = episode.status === "watched";
-  const episodeRuntimeLabel = formatRuntime(episode.runtime);
-
-  return (
-    <article className="surface-card interactive-card group flex flex-col overflow-hidden rounded-2xl sm:h-64 sm:flex-row">
-      <div className="image-overlay relative aspect-video w-full shrink-0 overflow-hidden sm:aspect-auto sm:h-full sm:w-80 md:w-96">
-        {episode.coverUrl ? (
-          <Image
-            src={episode.coverUrl}
-            alt=""
-            fill
-            className="object-cover transition-transform duration-500 group-hover:scale-105"
-            sizes="(min-width: 768px) 384px, (min-width: 640px) 320px, calc(100vw - 48px)"
-          />
-        ) : (
-          <div className="flex h-full items-center justify-center text-white/20">
-            <span className="i-material-symbols-image-outline-rounded inline-block size-8" aria-hidden="true" />
-          </div>
-        )}
-        <span className="image-label absolute left-2 top-2 rounded-md border border-white/10 px-2 py-1 text-xs font-bold text-white backdrop-blur-md">
-          EP {episode.episodeNumber}
-        </span>
-      </div>
-
-      <div className="flex min-w-0 flex-1 flex-col p-4 sm:p-5">
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div className="min-w-0 flex-1">
-            <h2 className="line-clamp-2 font-bold text-fg transition-colors group-hover:text-[var(--accent-hover)]" title={episode.title}>
-              {episode.title}
-            </h2>
-          </div>
-          <span className={`inline-flex shrink-0 items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium ${
-            watched ? "border-emerald-500/30 bg-emerald-500/15 text-emerald-400" : "surface-muted border-white/10 text-fg-muted"
-          }`}>
-            {watched ? <span className="i-material-symbols-check-circle-rounded inline-block size-3" aria-hidden="true" /> : <span className="i-material-symbols-visibility-rounded inline-block size-3" aria-hidden="true" />}
-            {watched ? "已看" : "未看"}
-          </span>
-        </div>
-
-        <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-fg-muted">
-          {episode.releaseDate && <span className="flex items-center gap-1"><span className="i-material-symbols-calendar-today-rounded inline-block size-3" aria-hidden="true" />{episode.releaseDate}</span>}
-          {episodeRuntimeLabel && <span className="flex items-center gap-1"><span className="i-material-symbols-schedule-rounded inline-block size-3" aria-hidden="true" />{episodeRuntimeLabel}</span>}
-          {episode.rating !== null && <span className="flex items-center gap-1 text-amber-400"><span className="i-material-symbols-star-rounded inline-block size-3 text-amber-400" aria-hidden="true" />{episode.rating.toFixed(1)}</span>}
-        </div>
-
-        {episode.summary ? (
-          <p className="mt-3 line-clamp-4 whitespace-pre-line text-sm leading-relaxed text-fg-muted sm:line-clamp-5 md:line-clamp-6" title={episode.summary}>
-            {episode.summary}
-          </p>
-        ) : <p className="mt-3 text-sm text-fg-subtle">暂无简介。</p>}
-      </div>
-    </article>
-  );
-}
-
-/** 校验季页面的分页和筛选输入，并行加载详情、单集与季列表，渲染统计和翻页导航。 */
+/** 加载默认单集页、季摘要和相邻季，渲染海报、统计，并把筛选与翻页交给客户端。 */
 export default async function SeasonPage({
   params,
-  searchParams,
 }: {
   params: Promise<{ id: string; seasonId: string }>;
-  searchParams: Promise<{ page?: string; status?: string; order?: string }>;
 }) {
-  const [{ id, seasonId }, query] = await Promise.all([params, searchParams]);
-  const requestedPage = Number(query.page ?? "1");
-  const page = Number.isSafeInteger(requestedPage) && requestedPage > 0 ? requestedPage : 1;
-  const status: StatusFilter = query.status === "watched" || query.status === "unwatched" ? query.status : "all";
-  const order: EpisodeOrder = query.order === "desc" ? "desc" : "asc";
+  const { id, seasonId } = await params;
   const [series, seasonData, seasons] = await Promise.all([
     getCachedMediaById(id),
-    getSeasonEpisodes(id, seasonId, page, PAGE_SIZE, status, order),
+    getCachedSeasonEpisodes(id, seasonId, 1, SEASON_EPISODE_PAGE_SIZE, "all", "asc"),
     getCachedSeasonsBySeriesId(id),
   ]);
 
   if (!series || !seasonData) notFound();
-
-  const totalPages = Math.max(1, Math.ceil(seasonData.total / PAGE_SIZE));
-  /** 将当前分页条件与传入覆盖值合并为查询串，省略第一页、全部状态和升序默认值。 */
-  const queryString = (values: { page?: number; status?: StatusFilter; order?: EpisodeOrder } = {}) => {
-    const nextStatus = values.status ?? status;
-    const nextOrder = values.order ?? order;
-    const nextPage = values.page ?? page;
-    const params = new URLSearchParams();
-    if (nextPage > 1) params.set("page", String(nextPage));
-    if (nextStatus !== "all") params.set("status", nextStatus);
-    if (nextOrder !== "asc") params.set("order", nextOrder);
-    const value = params.toString();
-    return value ? `?${value}` : "";
-  };
-  /** 为当前季生成包含指定分页或筛选条件的地址。 */
-  const seasonHref = (values: { page?: number; status?: StatusFilter; order?: EpisodeOrder } = {}) =>
-    `/shows/${id}/seasons/${seasonId}${queryString(values)}`;
-
-  if (page > totalPages) redirect(seasonHref({ page: totalPages }));
 
   const currentSeasonIndex = seasons.findIndex(/* 查找当前季在季列表中的位置，供相邻季导航使用。 */ (season) => season.id === seasonId);
   const previousSeason = currentSeasonIndex > 0 ? seasons[currentSeasonIndex - 1] : null;
@@ -135,6 +53,7 @@ export default async function SeasonPage({
   const watchedPercent = seasonData.season.episodeCount > 0
     ? Math.round((seasonData.watchedCount / seasonData.season.episodeCount) * 100)
     : 0;
+  const basePath = `/shows/${id}/seasons/${seasonId}`;
 
   return (
     <div className="min-h-screen pb-16 pt-24 text-fg">
@@ -197,43 +116,13 @@ export default async function SeasonPage({
           ))}
         </section>
 
-        <div className="surface-overlay sticky top-20 z-20 mb-6 flex flex-col justify-between gap-3 rounded-2xl p-3 sm:flex-row sm:items-center">
-          <div className="flex items-center gap-2 overflow-x-auto">
-            <span className="i-material-symbols-filter-list-rounded ml-1 size-4 shrink-0 text-fg-muted inline-block" aria-hidden="true" />
-            {(["all", "watched", "unwatched"] as const).map(/* 生成观看状态筛选链接，切换状态时回到第一页。 */ (value) => (
-              <Link key={value} href={seasonHref({ page: 1, status: value })} className={`shrink-0 rounded-lg border px-4 py-1.5 text-[13px] backdrop-blur-2xl transition-all duration-300 ${status === value ? "surface-active border-[var(--accent-border)] font-bold text-[var(--accent-hover)] shadow-[0_4px_10px_var(--accent-glow-soft)] drop-shadow-[0_0_3px_var(--accent-glow-soft)]" : "surface-muted border-white/10 text-fg-secondary shadow-[0_4px_10px_rgba(0,0,0,0.2)] hover:border-white/20 hover:bg-white/10 hover:text-white hover:shadow-[0_6px_15px_rgba(0,0,0,0.3)] hover:drop-shadow-[0_0_8px_rgba(255,255,255,0.5)]"}`}>
-                {{ all: "全部", watched: "已看", unwatched: "未看" }[value]}
-              </Link>
-            ))}
-          </div>
-          <div className="flex items-center gap-2 text-sm">
-            <span className="text-fg-muted">集数</span>
-            <Link href={seasonHref({ page: 1, order: order === "asc" ? "desc" : "asc" })} className="surface-active rounded-lg border border-[var(--accent-border)] px-4 py-1.5 text-[13px] font-bold text-[var(--accent-hover)] shadow-[0_4px_10px_var(--accent-glow-soft)] backdrop-blur-2xl drop-shadow-[0_0_3px_var(--accent-glow-soft)] transition-all duration-300 hover:bg-[var(--accent-soft)]">
-              {order === "asc" ? "升序 ↑" : "降序 ↓"}
-            </Link>
-            <span className="ml-auto text-fg-muted sm:ml-2">{seasonData.total} 集</span>
-          </div>
-        </div>
-
-        {seasonData.episodes.length > 0 ? (
-          <div className="space-y-3">
-            {seasonData.episodes.map(/* 将当前页的一集数据渲染为单集卡片。 */ (episode) => <EpisodeCard key={episode.id} episode={episode} />)}
-          </div>
-        ) : (
-          <div className="surface-muted rounded-2xl border border-white/10 py-20 text-center text-fg-muted">当前筛选下暂无单集</div>
-        )}
-
-        {totalPages > 1 && (
-          <nav className="mt-10 flex flex-wrap items-center justify-center gap-2" aria-label="单集分页">
-            {page > 1 && <Link href={seasonHref({ page: page - 1 })} className="surface-control rounded-xl p-2.5 text-fg-secondary transition-all hover:text-white" aria-label="上一页"><span className="i-material-symbols-chevron-left-rounded inline-block size-4" aria-hidden="true" /></Link>}
-            {pageNumbers(page, totalPages).map(/* 生成保留当前筛选条件的页码链接，并标记当前页。 */ (pageNumber) => (
-              <Link key={pageNumber} href={seasonHref({ page: pageNumber })} aria-current={pageNumber === page ? "page" : undefined} className={`min-w-10 rounded-xl px-3 py-2 text-center text-sm transition-all ${pageNumber === page ? "filter-option-active shadow-md" : "surface-muted border border-white/10 text-fg-secondary hover:bg-white/10 hover:text-white"}`}>
-                {pageNumber}
-              </Link>
-            ))}
-            {page < totalPages && <Link href={seasonHref({ page: page + 1 })} className="surface-control rounded-xl p-2.5 text-fg-secondary transition-all hover:text-white" aria-label="下一页"><span className="i-material-symbols-chevron-right-rounded inline-block size-4" aria-hidden="true" /></Link>}
-          </nav>
-        )}
+        <SeasonEpisodeBrowser
+          basePath={basePath}
+          seriesId={id}
+          seasonId={seasonId}
+          initialEpisodes={seasonData.episodes}
+          initialTotal={seasonData.total}
+        />
       </div>
     </div>
   );
