@@ -7,6 +7,16 @@ import { ApiValidationError, parseMediaSearchParams } from "@/lib/api/media-para
 import { buildMediaSearchQuery, hasOnlyKnownFilterValues } from "@/lib/api/search-state";
 import { reportHandledError } from "@/lib/report-error";
 import type { FetchMediaListOptions, MediaCard } from "@/lib/types";
+import type { Metadata } from "next";
+
+/** 只给没有查询参数的搜索页声明规范地址。带筛选或分页的地址各自不同，不在这里归并到 /search。 */
+export async function generateMetadata({ searchParams }: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}): Promise<Metadata> {
+  const query = await searchParams;
+  if (Object.keys(query).length > 0) return {};
+  return { alternates: { canonical: "/search" } };
+}
 
 /**
  * 只缓存第一页、无关键词、无年份范围，且类型／地区／语言各至多一个值的查询，对应详情页标签链接等常见入口；取值已在上游核对为现有选项。

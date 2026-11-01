@@ -7,6 +7,7 @@ import type { Metadata } from "next";
 export const metadata: Metadata = {
   title: "电视节目",
   description: "浏览已看、在看与想看的电视节目记录。",
+  alternates: { canonical: "/shows" },
 };
 
 // 电视节目目录按 24 小时长缓存，数据变更由管理端即时按需刷新。

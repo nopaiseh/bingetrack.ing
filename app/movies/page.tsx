@@ -7,6 +7,7 @@ import type { Metadata } from "next";
 export const metadata: Metadata = {
   title: "电影",
   description: "浏览已看、想看与即将上映的电影记录。",
+  alternates: { canonical: "/movies" },
 };
 
 // 电影目录按 24 小时长缓存，数据变更由管理端即时按需刷新。
