@@ -35,7 +35,7 @@
     "react-dom": "19.3.1"
   },
   "devDependencies": {
-    "@iconify-json/material-symbols": "^1.2.96",
+    "@iconify-json/material-symbols": "^1.2.97",
     "@playwright/test": "^1.64.1",
     "@testing-library/jest-dom": "^7.0.1",
     "@testing-library/react": "^16.3.3",
