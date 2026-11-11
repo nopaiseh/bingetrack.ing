@@ -785,6 +785,55 @@ body::before {
     background: linear-gradient(90deg, var(--accent-soft), transparent 48%);
     box-shadow: inset 3px 0 0 var(--accent);
   }
+
+  /* 底部标签栏比普通玻璃面板更实，避免滚动内容从胶囊里透出来。 */
+  .mobile-tab-bar {
+    background:
+      linear-gradient(180deg, rgba(255, 255, 255, 0.18) 0%, rgba(255, 255, 255, 0.06) 100%),
+      color-mix(in srgb, var(--canvas) 94%, #000);
+    -webkit-backdrop-filter: blur(22px) saturate(150%);
+    backdrop-filter: blur(22px) saturate(150%);
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.28),
+      0 16px 36px rgba(0, 0, 0, 0.48);
+  }
+
+  .mobile-tab-scrim {
+    position: fixed;
+    z-index: 45;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    height: calc(env(safe-area-inset-bottom) + 8.75rem);
+    pointer-events: none;
+    background: linear-gradient(
+      to top,
+      color-mix(in srgb, var(--canvas) 96%, transparent) 0%,
+      color-mix(in srgb, var(--canvas) 82%, transparent) 42%,
+      color-mix(in srgb, var(--canvas) 28%, transparent) 70%,
+      transparent 100%
+    );
+  }
+
+  /* 手机筛选抽屉挂到 body 后仍要盖住页面极光，不能沿用 42% 透明度的玻璃填充。 */
+  .search-filter-sheet.surface-panel {
+    background:
+      linear-gradient(180deg, rgba(255, 255, 255, 0.14) 0%, rgba(255, 255, 255, 0.05) 100%),
+      color-mix(in srgb, var(--canvas) 96%, #000);
+    box-shadow: 0 -24px 60px rgba(0, 0, 0, 0.55);
+  }
+}
+
+/* 主内容在手机上让出底部标签栏，最后一屏内容可以滚到栏的上方。 */
+@media (max-width: 767.98px) {
+  html {
+    scroll-padding-bottom: calc(env(safe-area-inset-bottom) + 5.5rem);
+  }
+
+  #main-content {
+    padding-bottom: calc(env(safe-area-inset-bottom) + 5.5rem);
+  }
 }
 
 :where(a, button, summary, [tabindex]):focus-visible {

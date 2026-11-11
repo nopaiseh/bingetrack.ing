@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { beforeEach, afterEach, expect, test, vi } from "vitest";
 import { useSyncExternalStore } from "react";
 import SearchClient from "@/app/search/SearchClient";
@@ -233,6 +233,51 @@ test("the results heading follows the committed URL query, not unsubmitted input
     await act(() => vi.advanceTimersByTimeAsync(500));
     expect(screen.getByRole("heading", { name: /新词/ })).toBeInTheDocument();
   } finally { vi.useRealTimers(); }
+});
+
+test("无结果时给出说明、清除筛选和建议，清除按钮留在输入框内", async () => {
+  window.history.replaceState(null, "", "/search?q=zzqxjw不存在&type=movie");
+  vi.mocked(fetch).mockImplementation(async () => new Response(JSON.stringify({ rows: [], total: 0 })));
+  render(<SearchClient initialOptions={options} initialResult={resultFor(window.location.search)} />);
+
+  const input = screen.getByRole("textbox", { name: "搜索媒体" });
+  const clear = screen.getByRole("button", { name: "清除搜索" });
+  expect(input.parentElement).toContainElement(clear);
+  const empty = screen.getByRole("status");
+  expect(empty).toHaveTextContent("暂无符合条件的作品");
+  expect(empty).toHaveTextContent("试试这些");
+
+  fireEvent.click(screen.getByRole("button", { name: "清除筛选" }));
+  await waitFor(() => {
+    const params = new URLSearchParams(window.location.search);
+    expect(params.has("q")).toBe(false);
+    expect(params.has("type")).toBe(false);
+  });
+});
+
+test("无结果建议会换成对应筛选并清掉关键词", async () => {
+  window.history.replaceState(null, "", "/search?q=没有这部");
+  vi.mocked(fetch).mockImplementation(async () => new Response(JSON.stringify({ rows: [], total: 0 })));
+  render(<SearchClient initialOptions={options} initialResult={resultFor(window.location.search)} />);
+  fireEvent.click(screen.getByRole("button", { name: "影片" }));
+  await waitFor(() => {
+    const params = new URLSearchParams(window.location.search);
+    expect(params.get("type")).toBe("movie");
+    expect(params.has("q")).toBe(false);
+  });
+});
+
+test("手机筛选按钮打开对话框，完成后收起", () => {
+  window.history.replaceState(null, "", "/search");
+  render(<SearchClient initialOptions={options} initialResult={resultFor("")} />);
+  const toggle = screen.getByRole("button", { name: /^筛选( \(\d+\))?$/ });
+  expect(toggle).toHaveAttribute("aria-expanded", "false");
+  fireEvent.click(toggle);
+  const dialog = screen.getByRole("dialog", { name: /筛选/ });
+  expect(dialog).toHaveAttribute("aria-modal", "true");
+  expect(within(dialog).getByRole("button", { name: "电影" })).toBeInTheDocument();
+  fireEvent.click(screen.getByRole("button", { name: "完成" }));
+  expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
 });
 
 test("the hidden back-to-top button is removed from keyboard focus", () => {
