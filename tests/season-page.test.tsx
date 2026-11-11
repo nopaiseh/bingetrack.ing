@@ -17,10 +17,11 @@ vi.mock("@/lib/functions/cached-media", () => ({
   getCachedMediaById: vi.fn(),
   getCachedSeasonsBySeriesId: vi.fn(),
   getCachedSeasonEpisodes: vi.fn(),
+  getCachedSeasonNextEpisodeNumber: vi.fn(),
 }));
 
 import SeasonPage, { generateMetadata, generateStaticParams, revalidate } from "@/app/shows/[id]/seasons/[seasonId]/page";
-import { getCachedMediaById, getCachedSeasonEpisodes, getCachedSeasonsBySeriesId } from "@/lib/functions/cached-media";
+import { getCachedMediaById, getCachedSeasonEpisodes, getCachedSeasonNextEpisodeNumber, getCachedSeasonsBySeriesId } from "@/lib/functions/cached-media";
 import { SITE_URL } from "@/lib/site";
 
 const seriesId = "50000000-0000-4000-8000-000000000002";
@@ -70,6 +71,7 @@ function mockSeason() {
     totalRuntime: 48,
     averageRating: 8,
   });
+  vi.mocked(getCachedSeasonNextEpisodeNumber).mockResolvedValue(2);
 }
 
 describe("SeasonPage", () => {
@@ -77,6 +79,7 @@ describe("SeasonPage", () => {
     vi.mocked(getCachedMediaById).mockReset();
     vi.mocked(getCachedSeasonsBySeriesId).mockReset();
     vi.mocked(getCachedSeasonEpisodes).mockReset();
+    vi.mocked(getCachedSeasonNextEpisodeNumber).mockReset();
     mockSeason();
   });
 
@@ -89,8 +92,10 @@ describe("SeasonPage", () => {
     const { container } = render(await SeasonPage({ params: Promise.resolve({ id: seriesId, seasonId }) }));
     expect(screen.getByRole("heading", { level: 1, name: "城市信号 第一季" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { level: 2, name: "启程" })).toBeInTheDocument();
+    expect(screen.getByText("下一集")).toBeInTheDocument();
     expect(screen.getByText("1 / 2")).toBeInTheDocument();
-    expect(getCachedSeasonEpisodes).toHaveBeenCalledWith(seriesId, seasonId, 1, 10, "all", "asc");
+    expect(getCachedSeasonEpisodes).toHaveBeenCalledWith(seriesId, seasonId, 1, 20, "all", "asc");
+    expect(getCachedSeasonNextEpisodeNumber).toHaveBeenCalledWith(seriesId, seasonId);
 
     const metadata = await generateMetadata({ params: Promise.resolve({ id: seriesId, seasonId }) });
     expect(metadata.alternates?.canonical).toBe(`/shows/${seriesId}/seasons/${seasonId}`);
@@ -127,7 +132,7 @@ describe("SeasonPage", () => {
     }));
     const fullSeason = { ...season, episodeCount: episodes.length };
     vi.mocked(getCachedSeasonEpisodes).mockImplementation(async (_seriesId, _seasonId, page, pageSize) => {
-      const start = pageSize === 10 ? 0 : (page - 1) * pageSize;
+      const start = (page - 1) * pageSize;
       return {
         season: fullSeason,
         episodes: episodes.slice(start, start + pageSize),
@@ -140,7 +145,7 @@ describe("SeasonPage", () => {
 
     const { container } = render(await SeasonPage({ params: Promise.resolve({ id: seriesId, seasonId }) }));
     const episodeHeadings = screen.getAllByRole("heading", { level: 2 }).filter((heading) => heading.textContent?.startsWith("第 "));
-    expect(episodeHeadings).toHaveLength(10);
+    expect(episodeHeadings).toHaveLength(20);
     expect(screen.queryByRole("heading", { level: 2, name: "第 101 集" })).not.toBeInTheDocument();
 
     const jsonLd = JSON.parse(container.querySelector('script[type="application/ld+json"]')?.textContent ?? "");
@@ -153,7 +158,7 @@ describe("SeasonPage", () => {
       name: "第 101 集",
       datePublished: "2024-12-31",
     });
-    expect(getCachedSeasonEpisodes).toHaveBeenCalledWith(seriesId, seasonId, 1, 10, "all", "asc");
+    expect(getCachedSeasonEpisodes).toHaveBeenCalledWith(seriesId, seasonId, 1, 20, "all", "asc");
     expect(getCachedSeasonEpisodes).toHaveBeenCalledWith(seriesId, seasonId, 1, 100, "all", "asc");
     expect(getCachedSeasonEpisodes).toHaveBeenCalledWith(seriesId, seasonId, 2, 100, "all", "asc");
   });

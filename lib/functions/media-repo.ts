@@ -5,6 +5,7 @@ import { isMediaId } from "@/lib/functions/media-id";
 import { withRetry } from "@/lib/functions/retry";
 import { EpisodeInfo, MediaCard, Media, MediaDistributions, SeasonEpisodePage, SeasonInfo, UpcomingRelease, ViewAllMediaRow, FetchMediaListOptions } from "@/lib/types";
 import { reportHandledError } from "@/lib/report-error";
+import { nextUnwatchedEpisodeNumber } from "@/lib/season-browse";
 
 
 // 统一为查询失败附加操作名称和原始错误，让页面区分加载失败与查无记录。
@@ -402,13 +403,13 @@ export async function getSeasonEpisodes(
     }
 
     const result = episodePageData as SeasonEpisodePageRow;
+    // 列表改为纯文字，不再把剧照地址放进页面或接口响应。数据库函数仍会选出 cover_url，这里直接丢掉。
     const episodes: EpisodeInfo[] = (result.episodes ?? []).map(/* 将 RPC 单集行转换为展示对象，补齐空字段并转换评分数值。 */ (episode) => ({
         id: episode.id,
         episodeNumber: episode.episode_number,
         title: episode.title ?? `第 ${episode.episode_number} 集`,
         alternateTitle: episode.alternate_title ?? null,
         summary: episode.summary ?? "",
-        coverUrl: episode.cover_url ?? "",
         releaseDate: episode.release_date,
         runtime: episode.runtime,
         status: episode.status,
@@ -437,6 +438,60 @@ export async function getSeasonEpisodes(
       totalRuntime: Number(result.total_runtime),
       averageRating: result.average_rating === null ? null : Number(result.average_rating),
     };
+  });
+}
+
+type SeasonProgressRow = {
+  episode_number: number;
+  media: {
+    tracking: { status: string | null } | Array<{ status: string | null }> | null;
+  } | Array<{
+    tracking: { status: string | null } | Array<{ status: string | null }> | null;
+  }> | null;
+};
+
+const SEASON_PROGRESS_PAGE = 1000;
+const SEASON_PROGRESS_PAGE_LIMIT = 20;
+
+/**
+ * 读取一季每集的观看状态，算出「下一集」：最后一集已看之后的第一集未看。
+ * 不改数据库函数，只读集号和状态。单季超过一页时继续翻页，避免被行数上限截断。
+ */
+export async function getSeasonNextEpisodeNumber(seriesId: string, seasonId: string): Promise<number | null> {
+  if (!isMediaId(seriesId) || !isMediaId(seasonId)) return null;
+
+  return withRetry(async () => {
+    const db = getSupabasePublicServer();
+    const episodes: { episodeNumber: number; status: string | null }[] = [];
+
+    for (let page = 0; page < SEASON_PROGRESS_PAGE_LIMIT; page += 1) {
+      const offset = page * SEASON_PROGRESS_PAGE;
+      const progressColumns = "episode_number, media:media_items!tv_episodes_id_fkey(tracking(status)), season:tv_seasons!tv_episodes_season_id_fkey!inner(series_id)";
+      const { data, error } = await db
+        .from("tv_episodes")
+        .select(progressColumns)
+        .eq("season_id", seasonId)
+        .eq("season.series_id", seriesId)
+        .order("episode_number", { ascending: true })
+        .order("id", { ascending: true })
+        .range(offset, offset + SEASON_PROGRESS_PAGE - 1);
+
+      if (error) {
+        console.error(`Failed to read watch progress for season ${seasonId}:`, error);
+        throw new MediaRepositoryError("fetch season watch progress", error);
+      }
+
+      const rows = (data ?? []) as SeasonProgressRow[];
+      for (const row of rows) {
+        episodes.push({
+          episodeNumber: Number(row.episode_number),
+          status: firstRelated(firstRelated(row.media)?.tracking)?.status ?? null,
+        });
+      }
+      if (rows.length < SEASON_PROGRESS_PAGE) break;
+    }
+
+    return nextUnwatchedEpisodeNumber(episodes);
   });
 }
 

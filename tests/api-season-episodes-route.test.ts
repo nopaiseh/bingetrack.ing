@@ -1,11 +1,14 @@
 // @vitest-environment node
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-vi.mock("@/lib/functions/cached-media", () => ({ getCachedSeasonEpisodes: vi.fn() }));
+vi.mock("@/lib/functions/cached-media", () => ({
+  getCachedSeasonEpisodes: vi.fn(),
+  getCachedSeasonNextEpisodeNumber: vi.fn(),
+}));
 vi.mock("@/lib/report-error", () => ({ reportHandledError: vi.fn() }));
 
 import { GET } from "@/app/api/shows/[id]/seasons/[seasonId]/episodes/route";
-import { getCachedSeasonEpisodes } from "@/lib/functions/cached-media";
+import { getCachedSeasonEpisodes, getCachedSeasonNextEpisodeNumber } from "@/lib/functions/cached-media";
 
 const seriesId = "50000000-0000-4000-8000-000000000002";
 const seasonId = "50000000-0000-4000-8000-000000000003";
@@ -27,20 +30,22 @@ describe("GET /api/shows/[id]/seasons/[seasonId]/episodes", () => {
       totalRuntime: 40,
       averageRating: null,
     });
+    vi.mocked(getCachedSeasonNextEpisodeNumber).mockReset().mockResolvedValue(4);
   });
 
   it("按页面规则解析分页并允许 CDN 缓存", async () => {
     const response = await get("?page=2&status=watched&order=desc");
     expect(response.status).toBe(200);
     expect(response.headers.get("cache-control")).toBe("public, s-maxage=60, stale-while-revalidate=300");
-    await expect(response.json()).resolves.toEqual({ episodes: [], total: 2 });
-    expect(getCachedSeasonEpisodes).toHaveBeenCalledWith(seriesId, seasonId, 2, 10, "watched", "desc");
+    await expect(response.json()).resolves.toEqual({ episodes: [], total: 2, nextEpisodeNumber: 4 });
+    expect(getCachedSeasonEpisodes).toHaveBeenCalledWith(seriesId, seasonId, 2, 20, "watched", "desc");
+    expect(getCachedSeasonNextEpisodeNumber).toHaveBeenCalledWith(seriesId, seasonId);
   });
 
   it("未知筛选回退为默认条件，而不是拒绝请求", async () => {
     const response = await get("?status=nope&order=sideways&page=0");
     expect(response.status).toBe(200);
-    expect(getCachedSeasonEpisodes).toHaveBeenCalledWith(seriesId, seasonId, 1, 10, "all", "asc");
+    expect(getCachedSeasonEpisodes).toHaveBeenCalledWith(seriesId, seasonId, 1, 20, "all", "asc");
   });
 
   it("非法 ID 或缺失的季返回 404，且不缓存", async () => {

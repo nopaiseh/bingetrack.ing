@@ -63,7 +63,8 @@ export interface EpisodeInfo {
   title: string;
   alternateTitle?: string | null;
   summary: string;
-  coverUrl: string;
+  // 季列表不再下发剧照。保留可选字段，避免旧缓存或测试数据在类型上不兼容。
+  coverUrl?: string;
   releaseDate: string | null;
   runtime: number | null;
   status: string | null;

@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
 import {
   isDefaultSeasonBrowseQuery,
+  nextUnwatchedEpisodeNumber,
   readSeasonBrowseQuery,
+  SEASON_EPISODE_PAGE_SIZE,
   seasonBrowseHref,
   seasonBrowseSearch,
   seasonEpisodeListPath,
@@ -30,5 +32,33 @@ describe("season browse query", () => {
   it("单集接口使用与页面相同的查询串", () => {
     expect(seasonEpisodeListPath(seriesId, seasonId, { page: 3, status: "watched", order: "desc" }))
       .toBe(`/api/shows/${seriesId}/seasons/${seasonId}/episodes?page=3&status=watched&order=desc`);
+  });
+
+  it("季列表每页 20 集", () => {
+    expect(SEASON_EPISODE_PAGE_SIZE).toBe(20);
+  });
+
+  it("下一集是最后一集已看之后的第一集未看", () => {
+    expect(nextUnwatchedEpisodeNumber([])).toBeNull();
+    expect(nextUnwatchedEpisodeNumber([
+      { episodeNumber: 1, status: null },
+      { episodeNumber: 2, status: "want_to_watch" },
+    ])).toBeNull();
+    expect(nextUnwatchedEpisodeNumber([
+      { episodeNumber: 2, status: "watched" },
+      { episodeNumber: 1, status: "watched" },
+    ])).toBeNull();
+    expect(nextUnwatchedEpisodeNumber([
+      { episodeNumber: 1, status: "watched" },
+      { episodeNumber: 2, status: "watched" },
+      { episodeNumber: 3, status: null },
+    ])).toBe(3);
+    // 第 2 集漏看，但已看到第 3 集，下一集是第 4 集。
+    expect(nextUnwatchedEpisodeNumber([
+      { episodeNumber: 1, status: "watched" },
+      { episodeNumber: 2, status: "want_to_watch" },
+      { episodeNumber: 3, status: "watched" },
+      { episodeNumber: 4, status: null },
+    ])).toBe(4);
   });
 });

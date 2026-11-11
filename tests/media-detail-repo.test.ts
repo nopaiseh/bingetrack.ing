@@ -5,7 +5,7 @@ const state = vi.hoisted(() => ({
   client: vi.fn(),
 }));
 vi.mock("@/lib/supabase/public-server", () => ({ getSupabasePublicServer: state.client }));
-import { getMediaById, getSeasonsBySeriesId, getSeasonEpisodes, MediaRepositoryError } from "@/lib/functions/media-repo";
+import { getMediaById, getSeasonsBySeriesId, getSeasonEpisodes, getSeasonNextEpisodeNumber, MediaRepositoryError } from "@/lib/functions/media-repo";
 
 const id = "12345678-1234-1234-1234-123456789abc";
 beforeEach(() => {
@@ -37,6 +37,42 @@ test("valid but missing media and seasons return not-found results", async () =>
 test("valid media still loads, including uppercase UUIDs", async () => {
   state.result.data = { id, type: "movie", title: "Movie" };
   expect(await getMediaById(id.toUpperCase())).toMatchObject({ id, title: "Movie" });
+});
+
+test("next episode is the first unwatched number after the last watched one", async () => {
+  expect(await getSeasonNextEpisodeNumber("bad-id", id)).toBeNull();
+  expect(state.client).not.toHaveBeenCalled();
+
+  const rows = [
+    { episode_number: 1, media: { tracking: { status: "watched" } } },
+    { episode_number: 3, media: { tracking: [{ status: "watched" }] } },
+    { episode_number: 4, media: { tracking: null } },
+  ];
+  const builder = {
+    select: () => builder,
+    eq: () => builder,
+    order: () => builder,
+    range: () => Promise.resolve({ data: rows, error: null }),
+  };
+  state.client.mockReturnValueOnce({ from: () => builder, rpc: () => Promise.resolve(state.result) });
+  expect(await getSeasonNextEpisodeNumber(id, id)).toBe(4);
+});
+
+test("watch progress failures keep their original cause", async () => {
+  const error = { code: "42501", message: "permission denied" };
+  const builder = {
+    select: () => builder,
+    eq: () => builder,
+    order: () => builder,
+    range: () => Promise.resolve({ data: null, error }),
+  };
+  state.client.mockReturnValue({ from: () => builder, rpc: () => Promise.resolve(state.result) });
+  const log = vi.spyOn(console, "error").mockImplementation(() => {});
+  try {
+    await expect(getSeasonNextEpisodeNumber(id, id)).rejects.toMatchObject({ name: "MediaRepositoryError", cause: error });
+  } finally {
+    log.mockRestore();
+  }
 });
 
 test("real database failures retain their original cause", async () => {
