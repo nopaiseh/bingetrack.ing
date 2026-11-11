@@ -1,4 +1,4 @@
-import Link from "next/link";
+import CatalogStatGrid from "@/components/CatalogStatGrid";
 import MediaRow from "@/components/MediaRow";
 import { MediaCatalogProps } from "@/lib/types";
 
@@ -21,25 +21,7 @@ export default function MoviesCatalog({
       <div className="container relative z-1 mx-auto w-full max-w-7xl px-4 pb-12 pt-12 sm:px-6 lg:px-8">
 
         
-        <div className="mb-8 grid grid-cols-2 gap-3.5 sm:gap-4 md:mb-10 lg:grid-cols-4">
-          {statItems.map(/* 将一项电影统计渲染为可点击跳转的卡片。 */ (stat) => (
-            <Link
-              key={stat.label}
-              href={stat.href}
-              className="surface-card interactive-card group flex flex-col justify-between rounded-xl p-3.5 sm:p-4.5 transition-all duration-300 hover:scale-[1.02] cursor-pointer"
-            >
-              <div className="flex items-center justify-between mb-1.5">
-                <h2 className="font-medium uppercase text-fg-secondary text-xs tracking-widest group-hover:text-fg transition-colors">
-                  {stat.label}
-                </h2>
-                <span className="i-material-symbols-arrow-outward-rounded size-3.5 text-fg-subtle transition-all duration-200 group-hover:text-[var(--accent)] group-hover:translate-x-0.5 group-hover:-translate-y-0.5" aria-hidden="true" />
-              </div>
-              <p className="font-mono text-2xl sm:text-3xl tracking-tight text-white group-hover:text-[var(--accent-hover)] transition-colors">
-                {stat.value}
-              </p>
-            </Link>
-          ))}
-        </div>
+        <CatalogStatGrid items={statItems} />
 
         
         <div className="space-y-12">
