@@ -36,15 +36,21 @@ jobs:
       - name: Audit production dependencies
         run: npm audit --omit=dev --audit-level=high
 
-      # A healthy install finishes in well under a minute. Apt mirror DNS hangs, so cap each try.
+      # A healthy install finishes in well under a minute. Apt mirror DNS hangs, and
+      # timing it out leaves root apt-get holding the lock, so the next try must clear that.
       - name: Install Chromium
         run: |
+          set +e
           for attempt in 1 2 3; do
-            if timeout 120 npx playwright install --with-deps chromium; then
+            timeout --kill-after=15s 120s npx playwright install --with-deps chromium
+            code=$?
+            if [ "$code" -eq 0 ]; then
               exit 0
             fi
-            echo "Chromium install failed on attempt ${attempt}"
-            sleep 10
+            echo "Chromium install failed on attempt ${attempt} (exit ${code})"
+            sudo pkill -9 -f apt-get || true
+            sudo pkill -9 -f dpkg || true
+            sleep 5
           done
           exit 1
 
