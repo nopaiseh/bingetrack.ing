@@ -21,7 +21,9 @@ test("type and year filters update the URL and results", /* 验证媒体分类�
   await page.goto("/search");
   await expect(page.getByText("找到 2 部作品")).toBeVisible();
 
-  await page.getByRole("button", { name: "电视节目" }).click();
+  const filtersToggle = page.getByRole("button", { name: /^筛选(\s\(\d+\))?$/ });
+  if (await filtersToggle.isVisible()) await filtersToggle.click();
+  await page.getByRole("button", { name: "电视节目", exact: true }).click();
   await expect(page).toHaveURL(/type=tv_show/);
   await expect(page.getByText("找到 1 部作品")).toBeVisible();
   await expect(page.getByRole("link", { name: /测试剧集：城市信号/ })).toBeVisible();

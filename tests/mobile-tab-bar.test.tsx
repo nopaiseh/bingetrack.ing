@@ -12,6 +12,8 @@ test("渲染四个主要栏目并只标记首页为当前页", () => {
   render(<MobileTabBar />);
 
   const nav = screen.getByRole("navigation", { name: "底部导航" });
+  expect(nav).toHaveClass("mobile-tab-bar");
+  expect(document.querySelector(".mobile-tab-scrim")).toBeInTheDocument();
   const links = screen.getAllByRole("link");
   expect(nav).toContainElement(links[0]);
   expect(links.map((link) => link.getAttribute("href"))).toEqual(["/", "/movies", "/shows", "/search"]);

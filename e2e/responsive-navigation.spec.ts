@@ -40,7 +40,8 @@ test("search page navigation matches the current responsive breakpoint", /* 按�
 
 test("navbar search preserves non-ASCII query text", /* 验证导航栏搜索能保留非 ASCII 关键词并正确跳转。 */ async ({ page }, testInfo) => {
   test.skip(testInfo.project.name === "phone", "768px 以下顶部不含搜索框，经底部标签栏进入搜索页");
-  await page.goto("/search");
+  // 搜索页不再显示导航栏搜索框，从电影页发起。
+  await page.goto("/movies");
   const mainNav = page.getByRole("navigation", { name: "主要导航" });
   const search = mainNav.getByPlaceholder("搜索").filter({ visible: true });
   await search.fill("沙丘");
