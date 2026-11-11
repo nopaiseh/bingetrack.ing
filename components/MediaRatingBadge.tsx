@@ -129,7 +129,7 @@ export default function MediaRatingBadge({
   const tier = getRatingTier(rating);
 
   if (rating == null) {
-    const unratedPad = size === "lg" ? "px-2 py-0.5 text-xs" : size === "md" ? "px-1.5 py-0.5 text-xs" : "px-1 py-0.5 text-[10px]";
+    const unratedPad = size === "lg" ? "px-2 py-0.5 text-xs" : "px-1.5 py-0.5 text-xs";
     return (
       <span
         className={`inline-flex shrink-0 items-center rounded border border-white/10 ${unratedPad} font-medium leading-none text-fg-secondary backdrop-blur-md ${className}`}
@@ -172,7 +172,7 @@ export default function MediaRatingBadge({
         {showTier && (
           <>
             <span className="h-2.5 w-px bg-current/25" aria-hidden="true" />
-            <span className="text-[11px] font-medium tracking-tight leading-none">{tier.label}</span>
+            <span className="text-xs font-medium tracking-tight leading-none">{tier.label}</span>
           </>
         )}
       </div>
@@ -188,7 +188,7 @@ export default function MediaRatingBadge({
       <span className={`${tier.icon} size-2.5 inline-block shrink-0 ${tier.glowClass}`} aria-hidden="true" />
       <span className="font-mono text-xs font-bold leading-none tracking-tight">{scoreText}</span>
       {showTier && (
-        <span className="text-[10px] font-normal opacity-70 border-l border-current/25 pl-1 ml-0.5 leading-none tracking-tight">
+        <span className="ml-0.5 border-l border-current/25 pl-1 text-xs font-normal leading-none tracking-tight opacity-70">
           {tier.label}
         </span>
       )}
