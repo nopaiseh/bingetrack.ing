@@ -1,7 +1,7 @@
 import type { EpisodeInfo } from "@/lib/types";
 
 /** 季页单集列表每页条数；服务端默认页与筛选接口共用，避免两侧分页错位。 */
-export const SEASON_EPISODE_PAGE_SIZE = 10;
+export const SEASON_EPISODE_PAGE_SIZE = 20;
 
 export type SeasonStatusFilter = "all" | "watched" | "unwatched";
 export type SeasonEpisodeOrder = "asc" | "desc";
@@ -15,7 +15,35 @@ export type SeasonBrowseQuery = {
 export type SeasonEpisodeListResponse = {
   episodes: EpisodeInfo[];
   total: number;
+  /** 最后一集已看之后的第一集未看；没有时为 null。筛选和翻页都用同一集号标记。 */
+  nextEpisodeNumber: number | null;
 };
+
+/**
+ * 最后一集已看之后、集号最小的未看单集。
+ * 尚未开看，或已看的就是编号最大的一集时，没有「下一集」。
+ * 中间漏看的集不标成下一集，只认已看进度的最前缘。
+ */
+export function nextUnwatchedEpisodeNumber(
+  episodes: readonly { episodeNumber: number; status: string | null }[],
+): number | null {
+  let lastWatched = Number.NEGATIVE_INFINITY;
+  let hasWatched = false;
+  for (const episode of episodes) {
+    if (episode.status === "watched" && episode.episodeNumber > lastWatched) {
+      lastWatched = episode.episodeNumber;
+      hasWatched = true;
+    }
+  }
+  if (!hasWatched) return null;
+
+  let next: number | null = null;
+  for (const episode of episodes) {
+    const isAfterLastWatched = episode.episodeNumber > lastWatched && episode.status !== "watched";
+    if (isAfterLastWatched && (next === null || episode.episodeNumber < next)) next = episode.episodeNumber;
+  }
+  return next;
+}
 
 /** 判断分页、状态和排序是否都是季页的默认值。 */
 export function isDefaultSeasonBrowseQuery(query: SeasonBrowseQuery): boolean {

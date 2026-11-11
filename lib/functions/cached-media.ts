@@ -1,7 +1,8 @@
 import "server-only";
 import { cache } from "react";
 import { unstable_cache } from "next/cache";
-import { getMediaById, getSeasonEpisodes, getSeasonsBySeriesId, searchMediaServer, fetchTopMediaServer, fetchMediaDistributionsServer, fetchUpcomingReleasesServer } from "./media-repo";
+import { getMediaById, getSeasonEpisodes, getSeasonNextEpisodeNumber, getSeasonsBySeriesId, searchMediaServer, fetchTopMediaServer, fetchMediaDistributionsServer, fetchUpcomingReleasesServer } from "./media-repo";
+import { reportHandledError } from "@/lib/report-error";
 import { parseMediaSearchParams } from "@/lib/api/media-params";
 import { getSupabasePublicServer } from "@/lib/supabase/public-server";
 import { withRetry } from "./retry";
@@ -38,10 +39,24 @@ export const getCachedSeasonEpisodes = cache(async (
   order: "asc" | "desc" = "asc",
 ) => {
   if (!isMediaId(seriesId) || !isMediaId(seasonId)) return null;
-  return unstable_cache(getSeasonEpisodes, ["public-season-episodes-v1"], {
+  return unstable_cache(getSeasonEpisodes, ["public-season-episodes-v2"], {
     revalidate: 86400,
     tags: [MEDIA_TAG, mediaItemTag(seriesId)],
   })(seriesId, seasonId, page, pageSize, status, order);
+});
+
+// 下一集只跟季有关，不随分页和筛选变化。查询失败时降级为不标记，避免单集列表整页打不开。
+export const getCachedSeasonNextEpisodeNumber = cache(async (seriesId: string, seasonId: string) => {
+  if (!isMediaId(seriesId) || !isMediaId(seasonId)) return null;
+  try {
+    return await unstable_cache(getSeasonNextEpisodeNumber, ["public-season-next-episode-v1"], {
+      revalidate: 86400,
+      tags: [MEDIA_TAG, mediaItemTag(seriesId)],
+    })(seriesId, seasonId);
+  } catch (error) {
+    reportHandledError("Season next episode lookup failed:", error);
+    return null;
+  }
 });
 
 // 以完整查询字符串区分搜索缓存，1 小时后允许重新验证，数据变更由 "media" tag 即时失效。

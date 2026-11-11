@@ -5,7 +5,7 @@ import type { Metadata } from "next";
 import { BackLink } from "@/components/MediaBackLink";
 import SeasonEpisodeBrowser from "@/components/SeasonEpisodeBrowser";
 import { formatRuntime } from "@/lib/format-runtime";
-import { getCachedMediaById, getCachedSeasonEpisodes, getCachedSeasonsBySeriesId } from "@/lib/functions/cached-media";
+import { getCachedMediaById, getCachedSeasonEpisodes, getCachedSeasonNextEpisodeNumber, getCachedSeasonsBySeriesId } from "@/lib/functions/cached-media";
 import { buildSeasonJsonLd, buildSeasonMetadata, serializeJsonLd } from "@/lib/seo/media";
 import { SEASON_EPISODE_PAGE_SIZE } from "@/lib/season-browse";
 import type { EpisodeInfo, SeasonEpisodePage } from "@/lib/types";
@@ -67,10 +67,11 @@ export default async function SeasonPage({
   params: Promise<{ id: string; seasonId: string }>;
 }) {
   const { id, seasonId } = await params;
-  const [series, seasonData, seasons] = await Promise.all([
+  const [series, seasonData, seasons, nextEpisodeNumber] = await Promise.all([
     getCachedMediaById(id),
     getCachedSeasonEpisodes(id, seasonId, 1, SEASON_EPISODE_PAGE_SIZE, "all", "asc"),
     getCachedSeasonsBySeriesId(id),
+    getCachedSeasonNextEpisodeNumber(id, seasonId),
   ]);
 
   if (!series || !seasonData) notFound();
@@ -157,6 +158,7 @@ export default async function SeasonPage({
           seasonId={seasonId}
           initialEpisodes={seasonData.episodes}
           initialTotal={seasonData.total}
+          initialNextEpisodeNumber={nextEpisodeNumber}
         />
       </div>
     </div>

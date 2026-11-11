@@ -1,7 +1,6 @@
 "use client";
 
-import { Suspense, useEffect, useRef, useState } from "react";
-import Image from "next/image";
+import { Suspense, useEffect, useRef, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { formatRuntime } from "@/lib/format-runtime";
@@ -25,63 +24,98 @@ type LoadedList = {
   key: string;
   episodes: EpisodeInfo[];
   total: number;
+  nextEpisodeNumber: number | null;
   error: string | null;
 };
 
-/** 渲染单集卡片，展示封面、集数、标题、观看状态、上映日期和简介。 */
-function EpisodeCard({ episode }: { episode: EpisodeInfo }) {
-  const watched = episode.status === "watched";
-  const episodeRuntimeLabel = formatRuntime(episode.runtime);
+const ROW_GRID = "grid grid-cols-[auto_minmax(0,1fr)] items-start gap-x-3 gap-y-2.5 px-3.5 py-4 sm:grid-cols-[auto_minmax(0,1fr)_auto] sm:gap-x-5 sm:px-6 sm:py-5";
 
+/** 已看为绿色胶囊；未记录和想看都归入未看，与筛选口径一致。 */
+function StatusPill({ status }: { status: string | null }) {
+  const watched = status === "watched";
   return (
-    <article className="surface-card interactive-card group flex flex-col overflow-hidden rounded-2xl sm:h-64 sm:flex-row">
-      <div className="image-overlay relative aspect-video w-full shrink-0 overflow-hidden sm:aspect-auto sm:h-full sm:w-80 md:w-96">
-        {episode.coverUrl ? (
-          <Image
-            src={episode.coverUrl}
-            alt=""
-            fill
-            className="object-cover transition-transform duration-500 group-hover:scale-105"
-            sizes="(min-width: 768px) 384px, (min-width: 640px) 320px, calc(100vw - 48px)"
-          />
-        ) : (
-          <div className="flex h-full items-center justify-center text-white/20">
-            <span className="i-material-symbols-image-outline-rounded inline-block size-8" aria-hidden="true" />
+    <span className={`inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border px-2.5 py-1 text-xs font-medium ${
+      watched ? "border-emerald-500/30 bg-emerald-500/15 text-emerald-400" : "surface-muted border-white/10 text-fg-muted"
+    }`}>
+      {watched && <span className="i-material-symbols-check-circle-rounded inline-block size-3.5" aria-hidden="true" />}
+      {watched ? "已看" : "未看"}
+    </span>
+  );
+}
+
+/** 纯文字单集行：大号集数、别名、播出信息。有简介时用 details 展开，不依赖脚本。 */
+function EpisodeRow({ episode, isNext }: { episode: EpisodeInfo; isNext: boolean }) {
+  const watched = episode.status === "watched";
+  const runtimeLabel = formatRuntime(episode.runtime);
+  const alternateTitle = episode.alternateTitle?.trim() ?? "";
+  const summary = episode.summary.trim();
+  const showAlternate = alternateTitle.length > 0 && alternateTitle !== episode.title.trim();
+  const meta: { key: string; value: ReactNode }[] = [];
+  if (episode.releaseDate) meta.push({ key: "date", value: episode.releaseDate });
+  if (runtimeLabel) meta.push({ key: "runtime", value: runtimeLabel });
+  if (episode.rating !== null) {
+    meta.push({
+      key: "rating",
+      value: (
+        <span className="text-amber-400">
+          <span aria-hidden="true">★ </span>
+          {episode.rating.toFixed(1)}
+        </span>
+      ),
+    });
+  }
+
+  const body = (
+    <>
+      <div className={`font-mono text-[30px] font-light leading-none tracking-[-0.04em] sm:min-w-[76px] sm:pt-0.5 sm:text-right sm:text-[44px] ${watched ? "text-[var(--accent-hover)]" : "text-fg-subtle"}`}>
+        {episode.episodeNumber}
+      </div>
+      <div className="min-w-0">
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+          <h2 className={`break-words text-base font-bold leading-snug sm:text-[17px] ${watched ? "text-fg" : "text-fg-secondary"}`}>
+            {episode.title}
+          </h2>
+          {isNext && (
+            <span className="inline-flex items-center rounded-full border border-[var(--accent-border)] bg-[var(--accent-soft)] px-2 py-0.5 text-[11px] font-medium leading-none text-[var(--accent-hover)]">
+              下一集
+            </span>
+          )}
+        </div>
+        {showAlternate && <p className="mt-0.5 break-words text-[12.5px] leading-snug text-fg-subtle">{alternateTitle}</p>}
+        {meta.length > 0 && (
+          <div className="mt-2 flex flex-wrap items-center gap-x-3.5 gap-y-1 text-[12.5px] text-fg-muted">
+            {meta.map((item, index) => (
+              <span key={item.key} className="inline-flex items-center gap-3.5">
+                {index > 0 && <span aria-hidden="true" className="text-white/25">·</span>}
+                {item.value}
+              </span>
+            ))}
           </div>
         )}
-        <span className="image-label absolute left-2 top-2 rounded-md border border-white/10 px-2 py-1 text-xs font-bold text-white backdrop-blur-md">
-          EP {episode.episodeNumber}
-        </span>
+        {summary && (
+          <>
+            <p className="episode-blurb mt-2.5 text-sm leading-[1.7]">{summary}</p>
+            <span className="mt-1.5 inline-block text-[12.5px] text-[var(--accent-hover)]">
+              <span className="episode-expand-closed">展开简介 ▾</span>
+              <span className="episode-expand-open">收起 ▴</span>
+            </span>
+          </>
+        )}
       </div>
-
-      <div className="flex min-w-0 flex-1 flex-col p-4 sm:p-5">
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div className="min-w-0 flex-1">
-            <h2 className="line-clamp-2 font-bold text-fg transition-colors group-hover:text-[var(--accent-hover)]" title={episode.title}>
-              {episode.title}
-            </h2>
-          </div>
-          <span className={`inline-flex shrink-0 items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium ${
-            watched ? "border-emerald-500/30 bg-emerald-500/15 text-emerald-400" : "surface-muted border-white/10 text-fg-muted"
-          }`}>
-            {watched ? <span className="i-material-symbols-check-circle-rounded inline-block size-3" aria-hidden="true" /> : <span className="i-material-symbols-visibility-rounded inline-block size-3" aria-hidden="true" />}
-            {watched ? "已看" : "未看"}
-          </span>
-        </div>
-
-        <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-fg-muted">
-          {episode.releaseDate && <span className="flex items-center gap-1"><span className="i-material-symbols-calendar-today-rounded inline-block size-3" aria-hidden="true" />{episode.releaseDate}</span>}
-          {episodeRuntimeLabel && <span className="flex items-center gap-1"><span className="i-material-symbols-schedule-rounded inline-block size-3" aria-hidden="true" />{episodeRuntimeLabel}</span>}
-          {episode.rating !== null && <span className="flex items-center gap-1 text-amber-400"><span className="i-material-symbols-star-rounded inline-block size-3 text-amber-400" aria-hidden="true" />{episode.rating.toFixed(1)}</span>}
-        </div>
-
-        {episode.summary ? (
-          <p className="mt-3 line-clamp-4 whitespace-pre-line text-sm leading-relaxed text-fg-muted sm:line-clamp-5 md:line-clamp-6" title={episode.summary}>
-            {episode.summary}
-          </p>
-        ) : <p className="mt-3 text-sm text-fg-subtle">暂无简介。</p>}
+      <div className="col-start-2 justify-self-start sm:col-start-3 sm:row-start-1 sm:self-start">
+        <StatusPill status={episode.status} />
       </div>
-    </article>
+    </>
+  );
+
+  if (!summary) {
+    return <article className={`episode-row ${ROW_GRID}${isNext ? " episode-next" : ""}`}>{body}</article>;
+  }
+
+  return (
+    <details className={isNext ? "episode-row episode-next" : "episode-row"}>
+      <summary className={ROW_GRID}>{body}</summary>
+    </details>
   );
 }
 
@@ -104,12 +138,14 @@ export default function SeasonEpisodeBrowser({
   seasonId,
   initialEpisodes,
   initialTotal,
+  initialNextEpisodeNumber = null,
 }: {
   basePath: string;
   seriesId: string;
   seasonId: string;
   initialEpisodes: EpisodeInfo[];
   initialTotal: number;
+  initialNextEpisodeNumber?: number | null;
 }) {
   const router = useRouter();
   const [search, setSearch] = useState("");
@@ -117,6 +153,7 @@ export default function SeasonEpisodeBrowser({
     key: "",
     episodes: initialEpisodes,
     total: initialTotal,
+    nextEpisodeNumber: initialNextEpisodeNumber,
     error: null,
   });
   const redirectedHref = useRef<string | null>(null);
@@ -126,6 +163,7 @@ export default function SeasonEpisodeBrowser({
   const matchesRequest = isDefault || loaded.key === requestKey;
   const episodes = isDefault ? initialEpisodes : matchesRequest ? loaded.episodes : [];
   const total = isDefault ? initialTotal : matchesRequest ? loaded.total : 0;
+  const nextEpisodeNumber = isDefault ? initialNextEpisodeNumber : matchesRequest ? loaded.nextEpisodeNumber : null;
   const error = !isDefault && matchesRequest ? loaded.error : null;
   const pending = !matchesRequest;
   const totalPages = Math.max(1, Math.ceil(total / SEASON_EPISODE_PAGE_SIZE));
@@ -146,13 +184,20 @@ export default function SeasonEpisodeBrowser({
         const body = await response.json() as Partial<SeasonEpisodeListResponse>;
         if (controller.signal.aborted) return;
         const nextTotal = Number(body.total);
+        const nextEpisode = body.nextEpisodeNumber;
         if (!response.ok || !Array.isArray(body.episodes) || !Number.isFinite(nextTotal)) {
           throw new Error(`Unable to load episodes (${response.status})`);
         }
-        setLoaded({ key, episodes: body.episodes, total: nextTotal, error: null });
+        setLoaded({
+          key,
+          episodes: body.episodes,
+          total: nextTotal,
+          nextEpisodeNumber: typeof nextEpisode === "number" && Number.isInteger(nextEpisode) && nextEpisode >= 0 ? nextEpisode : null,
+          error: null,
+        });
       } catch (fetchError) {
         if ((fetchError as Error).name === "AbortError") return;
-        setLoaded({ key, episodes: [], total: 0, error: "单集列表暂时无法加载，请稍后重试。" });
+        setLoaded({ key, episodes: [], total: 0, nextEpisodeNumber: null, error: "单集列表暂时无法加载，请稍后重试。" });
       }
     };
     void load();
@@ -202,9 +247,15 @@ export default function SeasonEpisodeBrowser({
       ) : error ? (
         <p className="surface-muted rounded-2xl border border-white/10 py-20 text-center text-fg-muted" role="alert">{error}</p>
       ) : episodes.length > 0 ? (
-        <div className="space-y-3">
-          {episodes.map(/* 将当前页的一集数据渲染为单集卡片。 */ (episode) => <EpisodeCard key={episode.id} episode={episode} />)}
-        </div>
+        <section className="surface-card divide-y divide-white/[0.07] overflow-hidden rounded-[20px]" aria-label="单集列表">
+          {episodes.map(/* 将当前页的一集渲染为文字行，并标出整季的下一集。 */ (episode) => (
+            <EpisodeRow
+              key={episode.id}
+              episode={episode}
+              isNext={episode.status !== "watched" && episode.episodeNumber === nextEpisodeNumber}
+            />
+          ))}
+        </section>
       ) : (
         <div className="surface-muted rounded-2xl border border-white/10 py-20 text-center text-fg-muted">当前筛选下暂无单集</div>
       )}

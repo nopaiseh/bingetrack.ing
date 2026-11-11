@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getCachedSeasonEpisodes } from "@/lib/functions/cached-media";
+import { getCachedSeasonEpisodes, getCachedSeasonNextEpisodeNumber } from "@/lib/functions/cached-media";
 import { isMediaId } from "@/lib/functions/media-id";
 import { reportHandledError } from "@/lib/report-error";
 import { readSeasonBrowseQuery, SEASON_EPISODE_PAGE_SIZE, type SeasonEpisodeListResponse } from "@/lib/season-browse";
@@ -18,19 +18,26 @@ export async function GET(
     }
 
     const query = readSeasonBrowseQuery(new URL(request.url).search);
-    const page = await getCachedSeasonEpisodes(
-      id,
-      seasonId,
-      query.page,
-      SEASON_EPISODE_PAGE_SIZE,
-      query.status,
-      query.order,
-    );
+    const [page, nextEpisodeNumber] = await Promise.all([
+      getCachedSeasonEpisodes(
+        id,
+        seasonId,
+        query.page,
+        SEASON_EPISODE_PAGE_SIZE,
+        query.status,
+        query.order,
+      ),
+      getCachedSeasonNextEpisodeNumber(id, seasonId),
+    ]);
     if (!page) {
       return NextResponse.json({ error: "Season not found" }, { status: 404, headers: PRIVATE_NO_STORE });
     }
 
-    const body: SeasonEpisodeListResponse = { episodes: page.episodes, total: page.total };
+    const body: SeasonEpisodeListResponse = {
+      episodes: page.episodes,
+      total: page.total,
+      nextEpisodeNumber,
+    };
     return NextResponse.json(body, {
       headers: { "Cache-Control": "public, s-maxage=60, stale-while-revalidate=300" },
     });

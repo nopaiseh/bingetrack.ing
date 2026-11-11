@@ -735,6 +735,56 @@ body::before {
     color: var(--accent-hover);
     box-shadow: 0 4px 10px var(--accent-glow-soft);
   }
+
+  /* 单集行用原生 details 展开简介，静态 HTML 也能开合。收起时只露两行。 */
+  .episode-row > summary {
+    list-style: none;
+    cursor: pointer;
+  }
+
+  .episode-row > summary::-webkit-details-marker {
+    display: none;
+  }
+
+  .episode-row > summary:hover,
+  article.episode-row:hover {
+    background-color: rgba(255, 255, 255, 0.04);
+  }
+
+  .episode-blurb {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    overflow: hidden;
+    overflow-wrap: anywhere;
+    white-space: pre-line;
+    color: rgb(255 255 255 / 0.6);
+  }
+
+  .episode-row[open] .episode-blurb {
+    display: block;
+    -webkit-line-clamp: unset;
+    overflow: visible;
+    color: rgb(255 255 255 / 0.75);
+  }
+
+  .episode-expand-open {
+    display: none;
+  }
+
+  .episode-row[open] .episode-expand-closed {
+    display: none;
+  }
+
+  .episode-row[open] .episode-expand-open {
+    display: inline;
+  }
+
+  /* 下一集：最后一集已看之后的第一集未看。淡色渐变和左侧强调线，不抢已看集号的颜色。 */
+  .episode-next {
+    background: linear-gradient(90deg, var(--accent-soft), transparent 48%);
+    box-shadow: inset 3px 0 0 var(--accent);
+  }
 }
 
 :where(a, button, summary, [tabindex]):focus-visible {
