@@ -793,6 +793,54 @@ body::before {
     box-shadow: inset 3px 0 0 var(--accent);
   }
 
+  /* 详情和季简介：窄屏收成三行，点按 summary 展开。宽屏不限行数，行宽由 70ch 控制。 */
+  .overview-clamp > summary {
+    display: block;
+    list-style: none;
+    cursor: pointer;
+  }
+
+  .overview-clamp > summary::-webkit-details-marker {
+    display: none;
+  }
+
+  .overview-clamp-text {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 3;
+    overflow: hidden;
+  }
+
+  .overview-clamp[open] .overview-clamp-text {
+    display: block;
+    -webkit-line-clamp: unset;
+    overflow: visible;
+  }
+
+  .overview-expand-open {
+    display: none;
+  }
+
+  .overview-clamp[open] .overview-expand-closed {
+    display: none;
+  }
+
+  .overview-clamp[open] .overview-expand-open {
+    display: inline;
+  }
+
+  @media (min-width: 1024px) {
+    .overview-clamp > summary {
+      cursor: text;
+    }
+
+    .overview-clamp-text {
+      display: block;
+      -webkit-line-clamp: unset;
+      overflow: visible;
+    }
+  }
+
   /* 底部标签栏比普通玻璃面板更实，避免滚动内容从胶囊里透出来。 */
   .mobile-tab-bar {
     background:

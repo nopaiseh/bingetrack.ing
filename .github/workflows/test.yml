@@ -36,8 +36,22 @@ jobs:
       - name: Audit production dependencies
         run: npm audit --omit=dev --audit-level=high
 
+      # Apt mirrors on the runner sometimes never resolve. Try the full install once,
+      # then fall back to the browser binary so lint and unit tests can still run.
       - name: Install Chromium
-        run: npx playwright install --with-deps chromium
+        run: |
+          set +e
+          timeout --kill-after=15s 90s npx playwright install --with-deps chromium
+          code=$?
+          if [ "$code" -ne 0 ]; then
+            echo "Dependency install failed (exit ${code}); installing the browser only"
+            sudo pkill -9 -f apt-get || true
+            sudo pkill -9 -f dpkg || true
+            sleep 2
+            npx playwright install chromium
+            code=$?
+          fi
+          exit "$code"
 
       - name: Check code quality (ESLint)
         run: npm run lint
