@@ -1,18 +1,15 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useLayoutEffect, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { MediaCard } from "@/lib/types";
-import MediaRatingBadge from "./MediaRatingBadge";
+import MediaCardBody from "./MediaCardBody";
 import MediaCardStatusBadge from "./MediaCardStatusBadge";
 import { edgeFadeMask } from "@/lib/edge-fade-mask";
 
-/** 展示卡片海报、年份、评分及最多四个标签，并按参数控制图片加载优先级。 */
+/** 展示卡片海报，并按参数控制图片加载优先级。标题和标签交给共用的卡片正文。 */
 function ItemCard({ item, type, eager, highPriority, hideStatusBadge }: { item: MediaCard; type: "movies" | "shows"; eager: boolean; highPriority: boolean; hideStatusBadge?: boolean }) {
-  // 合并类型与语言标签，优先展示前三个类型并补充语言，统一控制卡片高度。
-  const tags = [...(item.genres ?? []).slice(0, 3), ...(item.languages ?? []).slice(0, 1)].slice(0, 3);
-
   return (
     <>
       <div className="image-placeholder relative flex aspect-2/3 w-full items-center justify-center overflow-hidden">
@@ -31,42 +28,12 @@ function ItemCard({ item, type, eager, highPriority, hideStatusBadge }: { item: 
         )}
         {!hideStatusBadge && <MediaCardStatusBadge status={item.status} />}
       </div>
-      
-      <div className="flex flex-col space-y-1.5 grow px-3 py-2.5 min-w-0">
-        <h3 className="font-serif-movie truncate text-sm font-bold text-white transition-colors duration-300 group-hover:text-[var(--accent-hover)]" title={item.title}>
-          {item.title}
-        </h3>
-
-        <div className="flex items-center justify-between gap-1.5 min-w-0 text-xs">
-          <span className="text-fg-secondary font-medium whitespace-nowrap shrink-0">
-            {type === "shows"
-              ? String(item.release_year || (item.date ? item.date.substring(0, 4) : "未知")).replace(/\s*-\s*/g, "–")
-              : item.date ? item.date.substring(0, 4) : "未知"}
-          </span>
-          <MediaRatingBadge
-            rating={item.rating}
-            size="sm"
-            showTier={item.rating != null}
-          />
-        </div>
-        
-        <div className="mt-1.5 flex items-center gap-1.5 w-full overflow-hidden">
-          {tags.map(/* 将一个类型或语言标签渲染为统一可截断的紧凑徽标。 */ (tag: string, i: number) => (
-            <span
-              key={`tag-${i}`}
-              title={tag} 
-              className="inline-flex items-center shrink truncate rounded-md border border-white/10 bg-white/5 px-1.5 py-0.5 text-[10px] font-medium tracking-wide text-fg-secondary backdrop-blur-md transition-all duration-300 group-hover:border-[var(--accent-border)] group-hover:bg-[var(--accent-soft)] group-hover:text-white"
-            >
-              {tag}
-            </span>
-          ))}
-        </div>
-      </div>
+      <MediaCardBody item={item} type={type} />
     </>
   );
 }
 
-/** 渲染带标题和可选查看全部链接的横向媒体列表；支持桌面端悬浮平滑翻页。没有条目时不输出内容。 */
+/** 渲染带标题和可选查看全部链接的横向媒体列表。还能滚动时始终显示翻页按钮和边缘渐隐。没有条目时不输出内容。 */
 export default function MediaRow({
   title,
   items,
@@ -86,25 +53,26 @@ export default function MediaRow({
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(false);
 
-  /** 检查当前横向滚动条位置，更新翻页按钮可见状态。 */
-  const checkScroll = () => {
+  useLayoutEffect(() => {
     const el = scrollerRef.current;
     if (!el) return;
-    const { scrollLeft, scrollWidth, clientWidth } = el;
-    setCanScrollLeft(scrollLeft > 4);
-    setCanScrollRight(scrollLeft + clientWidth < scrollWidth - 4);
-  };
 
-  useEffect(() => {
+    /** 检查当前横向滚动条位置，更新翻页按钮和边缘渐隐。 */
+    const checkScroll = () => {
+      const { scrollLeft, scrollWidth, clientWidth } = el;
+      setCanScrollLeft(scrollLeft > 4);
+      setCanScrollRight(scrollLeft + clientWidth < scrollWidth - 4);
+    };
+
     checkScroll();
-    const el = scrollerRef.current;
-    if (!el) return;
-
     el.addEventListener("scroll", checkScroll, { passive: true });
-    window.addEventListener("resize", checkScroll);
+    const observer = typeof ResizeObserver === "undefined" ? null : new ResizeObserver(checkScroll);
+    observer?.observe(el);
+    if (!observer) window.addEventListener("resize", checkScroll);
     return () => {
       el.removeEventListener("scroll", checkScroll);
-      window.removeEventListener("resize", checkScroll);
+      observer?.disconnect();
+      if (!observer) window.removeEventListener("resize", checkScroll);
     };
   }, [items]);
 
@@ -119,7 +87,7 @@ export default function MediaRow({
   if (!items || items.length === 0) return null;
 
   return (
-    <div className="group/row relative">
+    <div className="relative">
       <div className="flex justify-between items-end mb-5 pr-1 border-b border-white/10 pb-3">
         <h2 className="text-xl font-bold tracking-wide text-white">
           {title}
@@ -131,40 +99,36 @@ export default function MediaRow({
         )}
       </div>
 
-      {/* 桌面端左翻页按钮 */}
+      <div className="relative">
+      {/* 翻页按钮盖在海报中线，还能滚动时一直可见，不只在悬停时出现。 */}
       <button
         type="button"
         onClick={() => handleScroll("left")}
         aria-label={`向左滚动 ${title}`}
         disabled={!canScrollLeft}
-        className={`surface-panel absolute -left-3 top-1/2 -translate-y-1/2 z-20 hidden lg:flex size-10 items-center justify-center rounded-full text-fg-secondary shadow-lg shadow-black/40 transition-all duration-200 hover:border-white/30 hover:bg-white/15 hover:text-white hover:scale-105 active:scale-95 ${
-          canScrollLeft
-            ? "opacity-0 group-hover/row:opacity-100 pointer-events-auto"
-            : "opacity-0 pointer-events-none"
+        className={`surface-panel absolute left-0 top-[8.5rem] z-20 size-10 -translate-y-1/2 items-center justify-center rounded-full text-fg-secondary shadow-lg shadow-black/40 transition-colors duration-200 hover:border-white/30 hover:bg-white/15 hover:text-white active:scale-95 sm:top-[10rem] ${
+          canScrollLeft ? "flex" : "hidden"
         }`}
       >
-        <span className="i-material-symbols-chevron-left-rounded size-6 inline-block" aria-hidden="true" />
+        <span className="i-material-symbols-chevron-left-rounded relative z-2 inline-block size-6" aria-hidden="true" />
       </button>
 
-      {/* 桌面端右翻页按钮 */}
       <button
         type="button"
         onClick={() => handleScroll("right")}
         aria-label={`向右滚动 ${title}`}
         disabled={!canScrollRight}
-        className={`surface-panel absolute -right-3 top-1/2 -translate-y-1/2 z-20 hidden lg:flex size-10 items-center justify-center rounded-full text-fg-secondary shadow-lg shadow-black/40 transition-all duration-200 hover:border-white/30 hover:bg-white/15 hover:text-white hover:scale-105 active:scale-95 ${
-          canScrollRight
-            ? "opacity-0 group-hover/row:opacity-100 pointer-events-auto"
-            : "opacity-0 pointer-events-none"
+        className={`surface-panel absolute right-0 top-[8.5rem] z-20 size-10 -translate-y-1/2 items-center justify-center rounded-full text-fg-secondary shadow-lg shadow-black/40 transition-colors duration-200 hover:border-white/30 hover:bg-white/15 hover:text-white active:scale-95 sm:top-[10rem] ${
+          canScrollRight ? "flex" : "hidden"
         }`}
       >
-        <span className="i-material-symbols-chevron-right-rounded size-6 inline-block" aria-hidden="true" />
+        <span className="i-material-symbols-chevron-right-rounded relative z-2 inline-block size-6" aria-hidden="true" />
       </button>
 
       {/* 左右滚动边缘渐隐：遮罩只作用于列表本身，淡出后透出背后的主题底色。 */}
       <div
         ref={scrollerRef}
-        style={edgeFadeMask(canScrollLeft, canScrollRight)}
+        style={edgeFadeMask(canScrollLeft, canScrollRight, "3rem")}
         className="no-scrollbar -mb-8 flex snap-x snap-mandatory space-x-4 overflow-x-auto scroll-px-1 px-1 pb-12 pt-4 scroll-smooth"
       >
         {items.map(/* 决定卡片详情路由类型，并按索引设置首批图片的加载优先级。 */ (media: MediaCard, index: number) => {
@@ -179,6 +143,7 @@ export default function MediaRow({
             </Link>
           );
         })}
+      </div>
       </div>
     </div>
   );

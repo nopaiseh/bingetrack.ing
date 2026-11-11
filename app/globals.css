@@ -56,6 +56,8 @@ h6 {
   font-size: inherit;
   font-weight: inherit;
   margin: 0;
+  /* 平衡各行长度，避免标题把最后一个字孤零零挤到下一行。 */
+  text-wrap: balance;
 }
 
 a {
@@ -246,6 +248,9 @@ video {
   color-scheme: dark;
   accent-color: var(--accent);
   --font-serif-movie: "Songti SC", "Source Han Serif SC", "Noto Serif SC", "STSong", "SimSun", "Baskerville", "Georgia", serif;
+  /* 辅助文字下限 12px；分页、筛选和切换条的最小点击高度 40px。 */
+  --type-min: 0.75rem;
+  --hit-target: 2.5rem;
 
   /* 默认：极光玫瑰 (Aurora Rose) - 紫黑底 + 洋红、紫罗兰、橘光三束极光；主行动色用加深玫红承载白字 */
   --canvas: #13051a;
@@ -666,6 +671,7 @@ body::before {
   }
 
   .filter-option {
+    min-height: var(--hit-target);
     border: 1px solid rgba(255, 255, 255, 0.10);
     background: rgba(255, 255, 255, 0.04);
     -webkit-backdrop-filter: blur(14px);
@@ -688,6 +694,7 @@ body::before {
   }
 
   .filter-option-active {
+    min-height: var(--hit-target);
     border: 1px solid var(--accent-border-hover);
     background: var(--accent-soft);
     -webkit-backdrop-filter: blur(16px);
@@ -998,4 +1005,28 @@ select:is(.filter-option, .filter-option-active):focus-visible {
 .search-media-card * {
   -webkit-backdrop-filter: none;
   backdrop-filter: none;
+}
+
+/* 分页按钮在搜索、季列表和管理页是同一套标记。拉到 40px，避免 38px 的翻页热区。 */
+nav[aria-label$="分页"] :is(a, button, span.surface-control) {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  min-height: var(--hit-target);
+  min-width: var(--hit-target);
+}
+
+/* 季切换条用 surface-recessed 包住文字链，上一季/下一季按钮自身也是这个材质。高度对齐到 40px。 */
+a.surface-recessed,
+.surface-recessed > a {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  min-height: var(--hit-target);
+}
+
+a.surface-recessed {
+  min-width: var(--hit-target);
 }

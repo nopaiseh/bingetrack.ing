@@ -270,7 +270,7 @@ export default function HomeDashboard({
 
       <section aria-labelledby="dashboard-title" className="surface-panel dashboard-intro relative z-10 mb-2 rounded-3xl p-5 sm:p-6 lg:px-8 lg:py-6">
         <div className="relative">
-          <div className="mb-3 flex items-center gap-3 text-[11px] font-semibold uppercase tracking-[0.24em] text-[var(--accent-light)]/90">
+          <div className="mb-3 flex items-center gap-3 text-xs font-semibold uppercase tracking-[0.24em] text-[var(--accent-light)]/90">
             <span className="h-px w-8 bg-[var(--accent)]" />
             <span>{selectedYear === "All Time" ? "全时段档案" : `${selectedYear} 年度档案`}</span>
           </div>
@@ -287,19 +287,19 @@ export default function HomeDashboard({
 
             <dl className="grid grid-cols-3 gap-2 border-t border-white/10 pt-4 lg:min-w-100 lg:border-l lg:border-t-0 lg:pl-8 lg:pt-0">
               <div>
-                <dt className="text-[11px] tracking-wide text-fg-secondary">电影总计</dt>
+                <dt className="text-xs tracking-wide text-fg-secondary">电影总计</dt>
                 <dd className="mt-1 font-mono text-2xl font-normal tracking-tight text-white sm:text-3xl">
                   <AnimatedNumber value={totalMovies} />
                 </dd>
               </div>
               <div>
-                <dt className="text-[11px] tracking-wide text-fg-secondary">电视节目总计</dt>
+                <dt className="text-xs tracking-wide text-fg-secondary">电视节目总计</dt>
                 <dd className="mt-1 font-mono text-2xl font-normal tracking-tight text-white sm:text-3xl">
                   <AnimatedNumber value={totalSeries} />
                 </dd>
               </div>
               <div>
-                <dt className="text-[11px] tracking-wide text-fg-secondary">完成进度</dt>
+                <dt className="text-xs tracking-wide text-fg-secondary">完成进度</dt>
                 <dd
                   className="mt-1 font-mono text-2xl font-normal tracking-tight text-[var(--accent-light)] sm:text-3xl"
                 >

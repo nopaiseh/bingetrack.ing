@@ -12,7 +12,10 @@ function PosterSkeleton() {
         <span className="i-material-symbols-image-outline-rounded inline-block size-8 text-white/15 drop-shadow" aria-hidden="true" />
       </div>
       <div className="flex flex-col space-y-1.5 px-3 py-2.5">
-        <SkeletonBlock className="h-4 w-4/5 rounded-md" />
+        <div className="min-h-10 space-y-1.5">
+          <SkeletonBlock className="h-4 w-4/5 rounded-md" />
+          <SkeletonBlock className="h-4 w-2/5 rounded-md" />
+        </div>
         <div className="flex items-center justify-between pt-0.5">
           <SkeletonBlock className="h-2.5 w-9 rounded-md" />
           <div className="flex items-center gap-1">
@@ -20,10 +23,10 @@ function PosterSkeleton() {
             <SkeletonBlock className="h-2.5 w-6 rounded-md" />
           </div>
         </div>
-        <div className="mt-1.5 flex items-center gap-1.5 w-full overflow-hidden">
-          <SkeletonBlock className="h-4 w-11 shrink-0 rounded-md" />
-          <SkeletonBlock className="h-4 w-11 shrink-0 rounded-md" />
-          <SkeletonBlock className="h-4 w-10 shrink-0 rounded-md" />
+        <div className="mt-1.5 flex min-h-6 w-full items-center gap-1.5 overflow-hidden">
+          <SkeletonBlock className="h-5 w-11 shrink-0 rounded-md" />
+          <SkeletonBlock className="h-5 w-11 shrink-0 rounded-md" />
+          <SkeletonBlock className="h-5 w-10 shrink-0 rounded-md" />
         </div>
       </div>
     </div>
