@@ -36,23 +36,22 @@ jobs:
       - name: Audit production dependencies
         run: npm audit --omit=dev --audit-level=high
 
-      # A healthy install finishes in well under a minute. Apt mirror DNS hangs, and
-      # timing it out leaves root apt-get holding the lock, so the next try must clear that.
+      # Apt mirrors on the runner sometimes never resolve. Try the full install once,
+      # then fall back to the browser binary so lint and unit tests can still run.
       - name: Install Chromium
         run: |
           set +e
-          for attempt in 1 2 3; do
-            timeout --kill-after=15s 120s npx playwright install --with-deps chromium
-            code=$?
-            if [ "$code" -eq 0 ]; then
-              exit 0
-            fi
-            echo "Chromium install failed on attempt ${attempt} (exit ${code})"
+          timeout --kill-after=15s 90s npx playwright install --with-deps chromium
+          code=$?
+          if [ "$code" -ne 0 ]; then
+            echo "Dependency install failed (exit ${code}); installing the browser only"
             sudo pkill -9 -f apt-get || true
             sudo pkill -9 -f dpkg || true
-            sleep 5
-          done
-          exit 1
+            sleep 2
+            npx playwright install chromium
+            code=$?
+          fi
+          exit "$code"
 
       - name: Check code quality (ESLint)
         run: npm run lint
