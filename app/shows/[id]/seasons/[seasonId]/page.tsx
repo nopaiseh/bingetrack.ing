@@ -69,7 +69,7 @@ function compactRuntime(runtime: number): string {
   return `${minutes}分钟`;
 }
 
-/** 季与季之间的切换。窄屏跟在标题下方并拉通整行，宽屏靠到标题右侧。 */
+/** 季与季之间的切换。窄屏单独占一整行，宽屏靠在标题右侧。 */
 function SeasonSwitcher({
   seriesId,
   seasonId,
@@ -134,38 +134,32 @@ export default async function SeasonPage({
       <div className="container mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <BackLink href={`/shows/${id}`} label={`返回《${series.title}》`} />
 
-        <header className="surface-panel relative mb-6 overflow-hidden rounded-3xl p-5 sm:p-6 lg:p-8">
-          <div className="flex items-start gap-3.5 lg:gap-8">
-            <div className="image-overlay relative aspect-2/3 w-20 shrink-0 self-start overflow-hidden rounded-xl border border-white/15 shadow-[0_12px_35px_rgba(0,0,0,0.35)] lg:w-72 lg:rounded-2xl" data-poster>
-              {seasonData.season.coverUrl ? (
-                <Image src={seasonData.season.coverUrl} alt={`${seasonData.season.title} 海报`} fill priority className="object-cover" sizes="(max-width: 1023px) 112px, 288px" />
-              ) : (
-                <div className="flex h-full items-center justify-center text-fg-faint"><span className="i-material-symbols-image-outline-rounded inline-block size-6 lg:size-9" aria-hidden="true" /></div>
-              )}
-            </div>
-            <div className="min-w-0 flex-1">
-              <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between lg:gap-5">
-                <div className="min-w-0">
-                  <p className="mb-1.5 text-xs font-medium tracking-widest text-[var(--accent-hover)] lg:mb-2 lg:text-sm">{series.title} · 第 {seasonData.season.seasonNumber} 季</p>
-                  <h1 className="font-serif-movie break-words bg-linear-to-b from-white via-white/95 to-white/75 bg-clip-text text-2xl font-bold tracking-tight text-balance text-transparent sm:text-4xl lg:text-5xl">{seasonData.season.title}</h1>
-                  <p className="mt-1.5 text-sm text-fg-subtle lg:mt-3">
-                    {seasonData.season.releaseYearRange ? `${seasonData.season.releaseYearRange} · ` : ""}{seasonData.season.episodeCount} 集
-                  </p>
-                </div>
-                <div className="max-lg:-ml-[calc(5rem+0.875rem)] max-lg:w-[calc(100%+5rem+0.875rem)]">
-                  <SeasonSwitcher seriesId={id} seasonId={seasonId} seasons={seasons} previousSeason={previousSeason} nextSeason={nextSeason} />
-                </div>
-              </div>
-              {seasonData.season.summary ? (
-                <div className="mt-4 border-t border-white/10 pt-4 max-lg:-ml-[calc(5rem+0.875rem)] max-lg:w-[calc(100%+5rem+0.875rem)] lg:mt-6 lg:pt-5">
-                  <h2 className="text-xs font-semibold uppercase tracking-widest text-fg-muted">本季简介</h2>
-                  <div className="mt-2">
-                    <ClampedCopy text={seasonData.season.summary} />
-                  </div>
-                </div>
-              ) : null}
-            </div>
+        <header className="surface-panel relative mb-6 grid grid-cols-[5rem_minmax(0,1fr)] items-start gap-x-3.5 gap-y-3 overflow-hidden rounded-3xl p-5 sm:p-6 lg:grid-cols-[18rem_minmax(0,1fr)_auto] lg:gap-x-8 lg:p-8">
+          <div className={`image-overlay relative col-start-1 row-start-1 aspect-2/3 w-full self-start overflow-hidden rounded-xl border border-white/15 shadow-[0_12px_35px_rgba(0,0,0,0.35)] lg:rounded-2xl ${seasonData.season.summary ? "lg:row-span-2" : ""}`} data-poster>
+            {seasonData.season.coverUrl ? (
+              <Image src={seasonData.season.coverUrl} alt={`${seasonData.season.title} 海报`} fill priority className="object-cover" sizes="(max-width: 1023px) 80px, 288px" />
+            ) : (
+              <div className="flex h-full items-center justify-center text-fg-faint"><span className="i-material-symbols-image-outline-rounded inline-block size-6 lg:size-9" aria-hidden="true" /></div>
+            )}
           </div>
+          <div className="col-start-2 row-start-1 min-w-0 self-start">
+            <p className="mb-1.5 text-xs font-medium tracking-widest text-[var(--accent-hover)] lg:mb-2 lg:text-sm">{series.title} · 第 {seasonData.season.seasonNumber} 季</p>
+            <h1 className="font-serif-movie break-words bg-linear-to-b from-white via-white/95 to-white/75 bg-clip-text text-2xl font-bold tracking-tight text-balance text-transparent sm:text-4xl lg:text-5xl">{seasonData.season.title}</h1>
+            <p className="mt-1.5 text-sm text-fg-subtle lg:mt-3">
+              {seasonData.season.releaseYearRange ? `${seasonData.season.releaseYearRange} · ` : ""}{seasonData.season.episodeCount} 集
+            </p>
+          </div>
+          <div className="col-span-2 row-start-2 min-w-0 lg:col-span-1 lg:col-start-3 lg:row-start-1 lg:self-end">
+            <SeasonSwitcher seriesId={id} seasonId={seasonId} seasons={seasons} previousSeason={previousSeason} nextSeason={nextSeason} />
+          </div>
+          {seasonData.season.summary ? (
+            <div className="col-span-2 row-start-3 border-t border-white/10 pt-4 lg:col-span-2 lg:col-start-2 lg:row-start-2 lg:pt-5">
+              <h2 className="text-xs font-semibold uppercase tracking-widest text-fg-muted">本季简介</h2>
+              <div className="mt-2">
+                <ClampedCopy text={seasonData.season.summary} />
+              </div>
+            </div>
+          ) : null}
         </header>
 
         <section className="mb-6 flex items-baseline gap-x-3 overflow-x-auto text-sm whitespace-nowrap lg:grid lg:grid-cols-4 lg:gap-3 lg:overflow-visible lg:whitespace-normal" aria-label="本季统计">

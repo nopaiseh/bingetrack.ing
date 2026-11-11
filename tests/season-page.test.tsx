@@ -167,7 +167,7 @@ describe("SeasonPage", () => {
   it("窄屏把海报收在标题旁，统计收成一行，长简介可以展开", async () => {
     season.summary = "本季从摸索走到定型。".repeat(10);
     const { container } = render(await SeasonPage({ params: Promise.resolve({ id: seriesId, seasonId }) }));
-    expect(container.querySelector("[data-poster]")).toHaveClass("w-20", "lg:w-72");
+    expect(container.querySelector("header")).toHaveClass("grid-cols-[5rem_minmax(0,1fr)]", "lg:grid-cols-[18rem_minmax(0,1fr)_auto]");
     expect(screen.getByRole("heading", { level: 1, name: "城市信号 第一季" })).toHaveClass("text-2xl", "lg:text-5xl");
     expect(screen.getByRole("region", { name: "本季统计" })).toHaveClass("whitespace-nowrap", "lg:grid");
     expect(screen.getByText(/本季从摸索走到定型/)).toHaveClass("max-w-[70ch]");
