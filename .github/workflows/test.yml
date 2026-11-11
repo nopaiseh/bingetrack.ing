@@ -36,8 +36,15 @@ jobs:
       - name: Audit production dependencies
         run: npm audit --omit=dev --audit-level=high
 
+      # Ubuntu package mirrors occasionally fail DNS mid-install. Retry before the rest of the job.
       - name: Install Chromium
-        run: npx playwright install --with-deps chromium
+        run: |
+          for attempt in 1 2 3; do
+            npx playwright install --with-deps chromium && exit 0
+            echo "Chromium install failed on attempt ${attempt}"
+            sleep 20
+          done
+          exit 1
 
       - name: Check code quality (ESLint)
         run: npm run lint
