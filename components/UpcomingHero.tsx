@@ -151,7 +151,7 @@ export default function UpcomingHero({ items, renderedOn }: UpcomingHeroProps) {
 
               {/* 作品标题（艺术衬线体） */}
               <h2
-                className="font-serif-movie text-4xl sm:text-5xl lg:text-6xl font-black leading-tight tracking-tight text-white drop-shadow-[0_2px_30px_rgba(0,0,0,0.45)] line-clamp-2"
+                className="font-serif-movie line-clamp-2 text-balance text-4xl font-black leading-tight tracking-tight text-white drop-shadow-[0_2px_30px_rgba(0,0,0,0.45)] sm:text-5xl lg:text-6xl"
                 title={currentItem.title}
               >
                 {currentItem.title}

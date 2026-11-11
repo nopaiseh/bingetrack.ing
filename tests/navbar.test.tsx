@@ -5,15 +5,17 @@ import Navbar from "@/components/Navbar";
 
 const push = vi.fn();
 const auth = vi.hoisted(() => ({ signedIn: false, owner: false, busy: false, error: "", signIn: vi.fn() }));
+const navigation = vi.hoisted(() => ({ pathname: "/movies" }));
 vi.mock("@/lib/auth/use-navbar-auth", () => ({ useNavbarAuth: () => auth }));
 
 vi.mock("next/navigation", /* 模拟电影路由和可记录跳转的 Next.js 导航模块。 */ () => ({
-  usePathname: /* 固定返回电影栏目路径以测试当前导航状态。 */ () => "/movies",
+  usePathname: /* 返回当前测试设定的栏目路径。 */ () => navigation.pathname,
   useRouter: /* 返回带跳转监视函数的路由器替身。 */ () => ({ push }),
 }));
 
-beforeEach(/* 在每个导航测试前清空跳转记录。 */ () => {
+beforeEach(/* 在每个导航测试前清空跳转记录并回到电影栏目。 */ () => {
   push.mockClear();
+  navigation.pathname = "/movies";
   auth.signedIn = false;
   auth.owner = false;
   auth.signIn.mockClear();
@@ -70,6 +72,24 @@ test("focuses desktop search input when Cmd+K or / is pressed", async () => {
 
   await user.keyboard("{Meta>}k{/Meta}");
   expect(desktopInput).toHaveFocus();
+});
+
+test("搜索页不重复显示导航栏搜索框，快捷键改为聚焦页内输入", async () => {
+  navigation.pathname = "/search";
+  window.innerWidth = 1280;
+  const user = userEvent.setup();
+  const focused = vi.fn();
+  window.addEventListener("bingetrack:focus-search", focused);
+  try {
+    render(<Navbar />);
+    expect(screen.queryByPlaceholderText("搜索")).not.toBeInTheDocument();
+    expect(screen.queryByText("⌘K")).not.toBeInTheDocument();
+    await user.keyboard("{Meta>}k{/Meta}");
+    expect(push).not.toHaveBeenCalled();
+    expect(focused).toHaveBeenCalledOnce();
+  } finally {
+    window.removeEventListener("bingetrack:focus-search", focused);
+  }
 });
 
 test("navigates to /search when shortcut is triggered on mobile viewport", async () => {

@@ -34,6 +34,12 @@ export default function Navbar() {
 
       e.preventDefault();
 
+      // 搜索页已经有页内输入框，快捷键把焦点交给它，不再显示导航栏里的第二个搜索框。
+      if (pathname === "/search") {
+        window.dispatchEvent(new CustomEvent("bingetrack:focus-search"));
+        return;
+      }
+
       if (window.innerWidth < 768 || !searchInputRef.current) {
         router.push("/search");
         return;
@@ -45,7 +51,7 @@ export default function Navbar() {
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [router]);
+  }, [pathname, router]);
 
   const navItems = [
     { name: "首页", href: "/" },
@@ -53,6 +59,8 @@ export default function Navbar() {
     { name: "电视节目", href: "/shows" },
     ...(auth.owner ? [{ name: "管理", href: "/manage" }] : []),
   ];
+
+  const onSearchPage = pathname === "/search";
 
   /** 首页要求路径完全匹配，其他栏目按路径前缀判断当前状态。 */
   const isActive = (href: string) => {
@@ -116,7 +124,7 @@ export default function Navbar() {
         </div>
 
         <div className="flex items-center gap-3">
-          <form
+          {!onSearchPage && <form
             onSubmit={handleSearch}
             className="relative group hidden md:block"
           >
@@ -141,7 +149,7 @@ export default function Navbar() {
             <kbd className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 inline-flex items-center rounded border border-white/15 bg-white/5 px-1.5 py-0.5 text-[10px] font-mono text-fg-subtle group-focus-within:opacity-0 transition-opacity">
               ⌘K
             </kbd>
-          </form>
+          </form>}
 
           {/* 768px 以下由底部标签栏承担栏目与搜索入口；站长的管理入口不在标签栏中，单独保留在顶部。 */}
           {auth.owner && (

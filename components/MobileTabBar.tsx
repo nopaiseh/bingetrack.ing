@@ -18,28 +18,32 @@ export default function MobileTabBar() {
   const isActive = (href: string) => (href === "/" ? pathname === href : pathname.startsWith(href));
 
   return (
-    <nav
-      aria-label="底部导航"
-      className="surface-panel fixed inset-x-4 bottom-[calc(env(safe-area-inset-bottom)+0.75rem)] z-50 grid h-16 grid-cols-4 gap-1 rounded-full p-1.5 md:hidden"
-    >
-      {TABS.map(/* 渲染一个底部栏目入口并标记当前栏目。 */ (tab) => {
-        const active = isActive(tab.href);
-        return (
-          <Link
-            key={tab.href}
-            href={tab.href}
-            aria-current={active ? "page" : undefined}
-            className={`flex flex-col items-center justify-center gap-0.5 rounded-full text-[11px] transition-colors duration-200 ${
-              active
-                ? "bg-white/14 font-bold text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.28)]"
-                : "text-fg-secondary hover:text-white"
-            }`}
-          >
-            <span className={`${tab.icon} size-5 ${active ? "text-[var(--accent-light)]" : ""}`} aria-hidden="true" />
-            {tab.name}
-          </Link>
-        );
-      })}
-    </nav>
+    <>
+      {/* 渐变遮罩盖住标签栏上方一段内容，避免文字直接透出玻璃。 */}
+      <div aria-hidden="true" className="mobile-tab-scrim md:hidden" />
+      <nav
+        aria-label="底部导航"
+        className="mobile-tab-bar fixed inset-x-4 bottom-[calc(env(safe-area-inset-bottom)+0.75rem)] z-50 grid h-16 grid-cols-4 gap-1 rounded-full p-1.5 md:hidden"
+      >
+        {TABS.map(/* 渲染一个底部栏目入口并标记当前栏目。 */ (tab) => {
+          const active = isActive(tab.href);
+          return (
+            <Link
+              key={tab.href}
+              href={tab.href}
+              aria-current={active ? "page" : undefined}
+              className={`flex flex-col items-center justify-center gap-0.5 rounded-full text-[11px] transition-colors duration-200 ${
+                active
+                  ? "bg-white/14 font-bold text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.28)]"
+                  : "text-fg-secondary hover:text-white"
+              }`}
+            >
+              <span className={`${tab.icon} size-5 ${active ? "text-[var(--accent-light)]" : ""}`} aria-hidden="true" />
+              {tab.name}
+            </Link>
+          );
+        })}
+      </nav>
+    </>
   );
 }

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, Suspense, useCallback, useMemo, useRef } from "react";
+import { createPortal } from "react-dom";
 import { usePathname, useSearchParams } from "next/navigation";
 import type { MediaCard } from "@/lib/types";
 import { MAX_SEARCH_QUERY_LENGTH } from "@/lib/api/search-limits";
@@ -68,6 +69,70 @@ function FilterChip({ category, label, accent = false, onRemove }: { category: s
   );
 }
 
+const EMPTY_FILTERS: SearchFilters = {
+  type: [],
+  status: [],
+  genre: [],
+  region: [],
+  language: [],
+  year: [],
+  sort: ["date_desc"],
+};
+
+/** 统计偏离默认值的筛选项，供手机端「筛选 (n)」展示。排序只在离开默认日期降序时计入。 */
+function countActiveFilters(filters: SearchFilters) {
+  const listed = ["type", "status", "genre", "region", "language"].reduce(
+    (sum, key) => sum + (filters[key]?.length ?? 0),
+    0,
+  );
+  const year = filters.year?.some(Boolean) ? 1 : 0;
+  const sort = filters.sort?.[0] && filters.sort[0] !== "date_desc" ? 1 : 0;
+  return listed + year + sort;
+}
+
+/** 无结果时给出说明、清除条件和可点击的起步方向，避免只有一行灰色提示。 */
+function SearchEmptyState({
+  query,
+  canReset,
+  onReset,
+  onSuggest,
+}: {
+  query: string;
+  canReset: boolean;
+  onReset: () => void;
+  onSuggest: (partial: Partial<Pick<SearchFilters, "type" | "status">>) => void;
+}) {
+  return (
+    <div className="col-span-full flex flex-col items-center px-4 py-16 text-center sm:py-24" role="status">
+      <span className="i-material-symbols-search-off-rounded mb-5 inline-block size-14 text-[var(--accent-light)]" aria-hidden="true" />
+      <p className="text-lg font-semibold text-white">暂无符合条件的作品</p>
+      <p className="mt-2 max-w-md text-sm leading-relaxed text-fg-muted">
+        {query
+          ? `没有找到与「${query}」匹配的电影、电视节目或人物。换个关键词，或清除当前筛选后再试。`
+          : "没有作品符合当前筛选。可以放宽条件，或从下面的方向开始。"}
+      </p>
+      {canReset && (
+        <button
+          type="button"
+          onClick={onReset}
+          className="mt-6 inline-flex min-h-11 items-center gap-2 rounded-full bg-[var(--accent)] px-5 py-2.5 text-sm font-semibold text-[var(--accent-contrast)] shadow-[0_10px_28px_-12px_var(--accent-glow)] transition-transform active:scale-95"
+        >
+          <span className="i-material-symbols-filter-alt-off-rounded inline-block size-4" aria-hidden="true" />
+          清除筛选
+        </button>
+      )}
+      <div className="mt-8">
+        <p className="text-xs font-medium tracking-wide text-fg-subtle">试试这些</p>
+        <div className="mt-3 flex flex-wrap items-center justify-center gap-2">
+          <button type="button" onClick={() => onSuggest({ type: ["movie"] })} className="filter-option min-h-10 rounded-full px-4 py-1.5 text-sm">影片</button>
+          <button type="button" onClick={() => onSuggest({ type: ["tv_show"] })} className="filter-option min-h-10 rounded-full px-4 py-1.5 text-sm">剧集</button>
+          <button type="button" onClick={() => onSuggest({ status: ["upcoming"] })} className="filter-option min-h-10 rounded-full px-4 py-1.5 text-sm">即将开播</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /** 以 URL 为筛选和分页状态来源，复用服务端首屏结果，并管理搜索、防抖请求和交互界面。 */
 function SearchContent({ initialOptions, initialResult }: SearchProps) {
   const pathname = usePathname();
@@ -98,6 +163,7 @@ function SearchContent({ initialOptions, initialResult }: SearchProps) {
   );
 
   const [showAdvanced, setShowAdvanced] = useState(false);
+  const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
 
   const { genres: genreOptions, regions: regionOptions, languages: languageOptions, years: yearOptions } = initialOptions;
 
@@ -109,6 +175,8 @@ function SearchContent({ initialOptions, initialResult }: SearchProps) {
   const requestError = queryTooLong ? null : isLoading ? null : result.error;
   const [showScrollTop, setShowScrollTop] = useState(false);
   const resultsRef = useRef<HTMLElement | null>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
+  const filterPanelRef = useRef<HTMLDivElement>(null);
 
   // 写入目标页码并省略第一页参数，按需要新增或替换浏览器历史记录。
   const updatePage = useCallback((nextPage: number, replace = false) => {
@@ -151,6 +219,64 @@ function SearchContent({ initialOptions, initialResult }: SearchProps) {
     // 清除尚未触发的防抖计时器。
     return () => window.clearTimeout(timeoutId);
   }, [pathname, query, urlQuery, inputTooLong]);
+
+  // 导航栏在搜索页隐藏自己的输入框，⌘K 与 / 改为聚焦页内搜索框。
+  useEffect(() => {
+    const onFocusSearch = () => {
+      searchInputRef.current?.focus();
+      searchInputRef.current?.select();
+    };
+    window.addEventListener("bingetrack:focus-search", onFocusSearch);
+    return () => window.removeEventListener("bingetrack:focus-search", onFocusSearch);
+  }, []);
+
+  // 拉宽到平板后收起手机抽屉，避免固定层留在桌面布局上。
+  useEffect(() => {
+    if (typeof window.matchMedia !== "function") return;
+    const media = window.matchMedia("(min-width: 768px)");
+    const closeOnDesktop = () => {
+      if (media.matches) setMobileFiltersOpen(false);
+    };
+    media.addEventListener("change", closeOnDesktop);
+    return () => media.removeEventListener("change", closeOnDesktop);
+  }, []);
+
+  // 抽屉打开时锁住背景滚动，Esc 关闭，并把焦点放进面板。
+  useEffect(() => {
+    if (!mobileFiltersOpen) return;
+    const previouslyFocused = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    filterPanelRef.current?.focus();
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        setMobileFiltersOpen(false);
+        return;
+      }
+      if (event.key !== "Tab") return;
+      const panel = filterPanelRef.current;
+      if (!panel) return;
+      const focusable = [...panel.querySelectorAll<HTMLElement>("button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled])")];
+      if (focusable.length === 0) return;
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      const active = document.activeElement;
+      if (event.shiftKey && active === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && active === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
+    document.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.removeEventListener("keydown", onKeyDown);
+      document.body.style.overflow = previousOverflow;
+      previouslyFocused?.focus();
+    };
+  }, [mobileFiltersOpen]);
 
   // 监听滚动位置以控制回到顶部按钮，并在清理时移除监听器。
   useEffect(() => {
@@ -273,66 +399,52 @@ function SearchContent({ initialOptions, initialResult }: SearchProps) {
     (filters.year?.length > 0 && (filters.year[0] !== "" || filters.year[1] !== ""))
   );
 
-  return (
-    <div className="min-h-screen text-fg pt-24 pb-12 selection:bg-[var(--accent-soft)] selection:text-white font-sans relative">
-      <div className="container relative z-1 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        
-        <div className="mb-8">
-          <div className="group relative grid gap-2 sm:block">
-            <div className="relative">
-              <div className="pointer-events-none absolute inset-y-0 left-0 z-10 flex items-center pl-5">
-                <span className="i-material-symbols-search-rounded inline-block size-4 text-fg-subtle group-focus-within:text-white transition-all duration-300" aria-hidden="true" />
-              </div>
+  const activeFilterCount = countActiveFilters(filters);
+  const advancedVisible = showAdvanced || mobileFiltersOpen;
+  const canResetSearch = activeFilterCount > 0 || urlQuery.trim().length > 0;
 
-              <input
-                aria-label="搜索媒体"
-                aria-describedby={inputTooLong ? "search-query-limit" : undefined}
-                aria-invalid={inputTooLong}
-                value={query}
-                onChange={/* 将搜索输入框内容写入本地输入状态。 */ (e) => {
-                  setQuery(e.target.value);
-                }}
-                placeholder="搜索电影、电视节目、导演或演员..."
-                className="surface-control relative z-0 w-full rounded-2xl py-4 pl-12 pr-12 text-base text-white outline-none transition-all duration-300 placeholder:text-fg-subtle sm:py-5 sm:pr-40 sm:text-lg"
-              />
-              {inputTooLong && (
-                <div id="search-query-limit" role="tooltip" className="absolute left-0 top-full z-20 mt-2 rounded-lg border border-red-400/30 bg-neutral-900 px-3 py-2 text-sm text-red-200 shadow-lg">
-                  搜索词最多 {MAX_SEARCH_QUERY_LENGTH} 个字符，请缩短后再搜索。
-                </div>
-              )}
-            </div>
+  /** 清空搜索词和全部筛选，让无结果状态能回到完整目录。 */
+  const clearSearchConditions = () => {
+    setQuery("");
+    setFilters(EMPTY_FILTERS);
+    setMobileFiltersOpen(false);
+  };
 
-            <div className="z-10 flex min-h-11 items-center justify-end gap-3 sm:absolute sm:inset-y-0 sm:right-0 sm:pr-4">
-              {query && (
-                <button onClick={/* 清空搜索词，后续由防抖逻辑同步到 URL。 */ () => {
-                  setQuery("");
-                }} className="text-fg-subtle hover:text-[var(--accent-hover)] transition-all duration-300" aria-label="清除搜索">
-                  <span className="i-material-symbols-close-rounded inline-block size-5" aria-hidden="true" />
-                </button>
-              )}
-              <div className="hidden h-6 w-px bg-white/20 sm:block"></div>
-              
-              <button
-                aria-expanded={showAdvanced}
-                aria-controls="search-filters"
-                onClick={/* 切换高级筛选区域的展开状态。 */ () => setShowAdvanced(!showAdvanced)}
-                className={`relative flex min-h-11 items-center gap-2 rounded-xl px-4 py-2 text-sm font-medium transition-all duration-300 backdrop-blur-2xl ${
-                  showAdvanced
-                    ? "filter-option-active shadow-md"
-                    : "filter-option"
-                }`}
-              >
-                <span className="i-material-symbols-tune-rounded inline-block size-4" aria-hidden="true" />
-                {showAdvanced ? "收起筛选" : "高级筛选"}
-                {!showAdvanced && hasActiveAdvancedFilters && (
-                  <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-[var(--accent)] rounded-full border border-black/50"></span>
-                )}
-              </button>
-            </div>
-          </div>
+  /** 用一个起步方向替换当前关键词和筛选。 */
+  const suggestFilters = (partial: Partial<Pick<SearchFilters, "type" | "status">>) => {
+    setQuery("");
+    setFilters({ ...EMPTY_FILTERS, ...partial });
+    setMobileFiltersOpen(false);
+  };
 
-          <div className="surface-panel mt-4 rounded-2xl p-4 transition-all duration-300 sm:p-5">
-            <div className="flex flex-col">
+  const filterPanel = (
+    <div
+      id="search-filter-panel"
+      ref={filterPanelRef}
+      role={mobileFiltersOpen ? "dialog" : undefined}
+      aria-modal={mobileFiltersOpen ? true : undefined}
+      aria-labelledby={mobileFiltersOpen ? "search-filter-heading" : undefined}
+      tabIndex={mobileFiltersOpen ? -1 : undefined}
+      className={mobileFiltersOpen
+        ? "search-filter-sheet surface-panel fixed inset-x-0 bottom-0 z-[70] max-h-[min(85dvh,40rem)] overflow-y-auto rounded-t-3xl rounded-b-none p-4 pb-[calc(1.25rem+env(safe-area-inset-bottom))] outline-none"
+        : "surface-panel mt-4 rounded-2xl p-4 transition-all duration-300 sm:p-5"}
+    >
+      <div className="md:hidden">
+        <div className="mx-auto mb-3 h-1.5 w-10 rounded-full bg-white/25" aria-hidden="true" />
+        <div className="mb-2 flex items-center justify-between gap-3 border-b border-white/10 pb-3">
+          <h2 id="search-filter-heading" className="text-base font-semibold text-white">
+            筛选{activeFilterCount > 0 ? ` (${activeFilterCount})` : ""}
+          </h2>
+          <button
+            type="button"
+            onClick={() => setMobileFiltersOpen(false)}
+            className="filter-option-active min-h-10 rounded-xl px-4 py-1.5 text-sm"
+          >
+            完成
+          </button>
+        </div>
+      </div>
+      <div className="flex flex-col">
               {/* 常驻一级筛选：分类 */}
               {PRIMARY_CATEGORIES.map(/* 为每个主要分类渲染选项。 */ (category) => {
                 const activeSelections = filters[category.id] || [];
@@ -382,7 +494,7 @@ function SearchContent({ initialOptions, initialResult }: SearchProps) {
               })}
 
               {/* 常驻一级筛选：排序 */}
-              <div className={`flex flex-col items-start gap-3 py-3.5 sm:flex-row sm:gap-0 ${showAdvanced ? "border-b border-white/10" : ""}`}>
+              <div className={`flex flex-col items-start gap-3 py-3.5 sm:flex-row sm:gap-0 ${advancedVisible ? "border-b border-white/10" : ""}`}>
                 <span className="text-fg-muted text-sm font-medium w-16 shrink-0 mt-1.5 tracking-wider">
                   排序
                 </span>
@@ -415,7 +527,7 @@ function SearchContent({ initialOptions, initialResult }: SearchProps) {
               </div>
 
               {/* 折叠高级筛选区域：类型、地区、语言、年份 */}
-              {showAdvanced && (
+              {advancedVisible && (
                 <div id="search-filters" className="flex flex-col origin-top animate-in slide-in-from-top-2 fade-in">
                   {ADVANCED_CATEGORIES.map(/* 渲染高级分类选项。 */ (category) => {
                     const activeSelections = filters[category.id] || [];
@@ -532,8 +644,100 @@ function SearchContent({ initialOptions, initialResult }: SearchProps) {
                   </div>
                 </div>
               )}
+      </div>
+    </div>
+  );
+
+  return (
+    <div className="min-h-screen text-fg pt-24 pb-8 md:pb-12 selection:bg-[var(--accent-soft)] selection:text-white font-sans relative">
+      <div className="container relative z-1 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div className="mb-8">
+          <div className="group relative">
+            <div className="relative">
+              <div className="pointer-events-none absolute inset-y-0 left-0 z-10 flex items-center pl-5">
+                <span className="i-material-symbols-search-rounded inline-block size-4 text-fg-subtle group-focus-within:text-white transition-all duration-300" aria-hidden="true" />
+              </div>
+
+              <input
+                ref={searchInputRef}
+                aria-label="搜索媒体"
+                aria-describedby={inputTooLong ? "search-query-limit" : undefined}
+                aria-invalid={inputTooLong}
+                value={query}
+                onChange={/* 将搜索输入框内容写入本地输入状态。 */ (e) => {
+                  setQuery(e.target.value);
+                }}
+                placeholder="搜索电影、电视节目、导演或演员..."
+                className="surface-control relative z-0 w-full rounded-2xl py-4 pl-12 pr-12 text-base text-white outline-none transition-all duration-300 placeholder:text-fg-subtle md:py-5 md:pr-40 md:text-lg"
+              />
+              <div className="pointer-events-none absolute inset-y-0 right-0 z-10 flex items-center gap-2 pr-3 md:pr-4">
+                {query && (
+                  <button
+                    type="button"
+                    onClick={/* 清空搜索词，后续由防抖逻辑同步到 URL。 */ () => {
+                      setQuery("");
+                    }}
+                    className="pointer-events-auto text-fg-subtle hover:text-[var(--accent-hover)] transition-all duration-300"
+                    aria-label="清除搜索"
+                  >
+                    <span className="i-material-symbols-close-rounded inline-block size-5" aria-hidden="true" />
+                  </button>
+                )}
+                <div className="hidden h-6 w-px bg-white/20 md:block"></div>
+                <button
+                  type="button"
+                  aria-expanded={showAdvanced}
+                  aria-controls="search-filters"
+                  onClick={/* 切换高级筛选区域的展开状态。 */ () => setShowAdvanced(!showAdvanced)}
+                  className={`pointer-events-auto relative hidden min-h-11 items-center gap-2 rounded-xl px-4 py-2 text-sm font-medium backdrop-blur-2xl transition-all duration-300 md:flex ${
+                    showAdvanced
+                      ? "filter-option-active shadow-md"
+                      : "filter-option"
+                  }`}
+                >
+                  <span className="i-material-symbols-tune-rounded inline-block size-4" aria-hidden="true" />
+                  {showAdvanced ? "收起筛选" : "高级筛选"}
+                  {!showAdvanced && hasActiveAdvancedFilters && (
+                    <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-[var(--accent)] rounded-full border border-black/50"></span>
+                  )}
+                </button>
+              </div>
+              {inputTooLong && (
+                <div id="search-query-limit" role="tooltip" className="absolute left-0 top-full z-20 mt-2 rounded-lg border border-red-400/30 bg-neutral-900 px-3 py-2 text-sm text-red-200 shadow-lg">
+                  搜索词最多 {MAX_SEARCH_QUERY_LENGTH} 个字符，请缩短后再搜索。
+                </div>
+              )}
             </div>
+
+            <button
+              type="button"
+              aria-expanded={mobileFiltersOpen}
+              aria-controls="search-filter-panel"
+              aria-haspopup="dialog"
+              onClick={() => setMobileFiltersOpen(true)}
+              className={`mt-3 inline-flex min-h-11 items-center gap-2 rounded-xl px-4 py-2 text-sm font-medium md:hidden ${
+                activeFilterCount > 0 ? "filter-option-active" : "filter-option"
+              }`}
+            >
+              <span className="i-material-symbols-tune-rounded inline-block size-4" aria-hidden="true" />
+              筛选{activeFilterCount > 0 ? ` (${activeFilterCount})` : ""}
+            </button>
           </div>
+
+          {mobileFiltersOpen && typeof document !== "undefined"
+            ? createPortal(
+              <>
+                <button
+                  type="button"
+                  aria-label="关闭筛选"
+                  onClick={() => setMobileFiltersOpen(false)}
+                  className="fixed inset-0 z-[65] bg-black/65 backdrop-blur-sm"
+                />
+                {filterPanel}
+              </>,
+              document.body,
+            )
+            : <div className="max-md:hidden">{filterPanel}</div>}
 
           {/* 已选条件标签栏 (Active Filter Chips) */}
           {hasActiveFilters && (
@@ -636,9 +840,12 @@ function SearchContent({ initialOptions, initialResult }: SearchProps) {
                 <SearchMediaCard key={`${item.type}-${item.id}`} item={item} returnHref={returnHref} />
               ))
             ) : (
-              <div className="col-span-full py-20 text-center text-fg-subtle backdrop-blur-sm font-medium">
-                暂无符合条件的作品
-              </div>
+              <SearchEmptyState
+                query={urlQuery.trim()}
+                canReset={canResetSearch}
+                onReset={clearSearchConditions}
+                onSuggest={suggestFilters}
+              />
             )}
           </div>
           
@@ -664,7 +871,7 @@ function SearchContent({ initialOptions, initialResult }: SearchProps) {
         onClick={scrollToTop}
         aria-label="返回页面顶部"
         inert={!showScrollTop}
-        className={`surface-muted fixed bottom-22 right-4 z-50 flex size-12 items-center justify-center rounded-full border border-white/10 text-fg-secondary shadow-[0_4px_15px_rgba(0,0,0,0.3)] backdrop-blur-2xl transition-all duration-300 hover:scale-105 hover:border-[var(--accent-border-hover)] hover:bg-white/10 hover:text-[var(--accent-hover)] hover:shadow-lg hover:shadow-black/50 sm:right-8 lg:right-12 ${
+        className={`surface-muted fixed bottom-[calc(env(safe-area-inset-bottom)+6.5rem)] right-4 z-50 flex size-12 items-center justify-center rounded-full border border-white/10 text-fg-secondary shadow-[0_4px_15px_rgba(0,0,0,0.3)] backdrop-blur-2xl transition-all duration-300 hover:scale-105 hover:border-[var(--accent-border-hover)] hover:bg-white/10 hover:text-[var(--accent-hover)] hover:shadow-lg hover:shadow-black/50 sm:right-8 md:bottom-22 lg:right-12 ${
           showScrollTop ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10 pointer-events-none"
         }`}
       >
