@@ -6,21 +6,20 @@ import { formatRuntime } from "@/lib/format-runtime";
 import SearchTag from "./SearchTag";
 import MediaRatingBadge from "./MediaRatingBadge";
 import SeasonRow from "./SeasonRow";
+import ClampedCopy from "./ClampedCopy";
 
-/** 展示并预加载详情海报；无图片时显示暂无海报占位。 */
+/** 窄屏用小海报贴着标题，宽屏恢复左侧大海报。无图片时显示暂无海报占位。 */
 function MediaPoster({ media }: { media: Media }) {
   return (
-    <div className="relative w-full max-w-80 shrink-0 self-center lg:w-80 lg:self-start">
-      <div className="surface-card relative z-10 aspect-2/3 w-full overflow-hidden rounded-2xl shadow-[0_25px_60px_-15px_rgba(0,0,0,0.8)] transition-transform duration-500 hover:scale-[1.02]">
-        {media.cover_url ? (
-          <Image src={media.cover_url} alt={media.title} fill sizes="(max-width: 393px) calc(100vw - 74px), 320px" className="object-cover transition-transform duration-700 hover:scale-105" priority />
-        ) : (
-          <div className="w-full h-full flex flex-col items-center justify-center text-fg-muted gap-2">
-            <span className="i-material-symbols-image-outline-rounded inline-block size-10 drop-shadow-md" aria-hidden="true" />
-            <span className="text-sm">暂无海报</span>
-          </div>
-        )}
-      </div>
+    <div data-poster className="surface-card relative aspect-2/3 w-full overflow-hidden rounded-xl shadow-[0_12px_30px_-12px_rgba(0,0,0,0.8)] lg:rounded-2xl lg:shadow-[0_25px_60px_-15px_rgba(0,0,0,0.8)] lg:transition-transform lg:duration-500 lg:hover:scale-[1.02]">
+      {media.cover_url ? (
+        <Image src={media.cover_url} alt={media.title} fill sizes="(max-width: 1023px) 112px, 320px" className="object-cover" priority />
+      ) : (
+        <div className="flex h-full w-full flex-col items-center justify-center gap-1 text-fg-muted">
+          <span className="i-material-symbols-image-outline-rounded inline-block size-6 drop-shadow-md lg:size-10" aria-hidden="true" />
+          <span className="hidden text-sm lg:inline">暂无海报</span>
+        </div>
+      )}
     </div>
   );
 }
@@ -63,8 +62,8 @@ function StatusBadge({ status }: { status?: string }) {
 /** 将属性标签与内容排成响应式元数据行。 */
 function MetadataRow({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <div className="group -mx-3 flex flex-col items-start gap-3 rounded-xl border-b border-white/10 px-3 py-3 transition-colors last:border-0 hover:bg-white/5 sm:flex-row sm:gap-6">
-      <span className="text-base font-medium text-fg-subtle w-16 shrink-0 sm:pt-1 tracking-widest group-hover:text-fg-secondary transition-colors">
+    <div className="group -mx-3 flex items-baseline gap-3 rounded-xl border-b border-white/10 px-3 py-2 transition-colors last:border-0 hover:bg-white/5 sm:gap-6 sm:py-3">
+      <span className="w-12 shrink-0 text-sm font-medium tracking-widest text-fg-subtle transition-colors group-hover:text-fg-secondary sm:w-16 sm:pt-1 sm:text-base">
         {label}
       </span>
       <div className="flex flex-wrap gap-2.5 flex-1">
@@ -176,47 +175,40 @@ export default function MediaInformation({
         </Suspense>
 
         <div className="surface-panel rounded-3xl p-5 sm:p-6 lg:p-8">
-          <div className="flex flex-col gap-8 lg:flex-row lg:gap-12">
-            <MediaPoster media={media} />
+          <div className="grid grid-cols-[5rem_minmax(0,1fr)] items-start gap-x-3.5 gap-y-3 lg:grid-cols-[20rem_minmax(0,1fr)] lg:gap-x-12 lg:gap-y-4">
+            <div className="col-start-1 row-start-1 row-span-2 w-full self-start lg:row-span-3">
+              <MediaPoster media={media} />
+            </div>
 
-            <div className="flex flex-1 flex-col">
-            <div className="mb-4 md:mb-8">
-              <div className="mb-6 mt-4">
-                <h1 className="font-serif-movie text-balance text-3xl font-bold tracking-tight bg-linear-to-b from-white via-white/95 to-white/75 bg-clip-text text-transparent sm:text-4xl lg:text-5xl">
-                  {media.title}
-                </h1>
-              </div>
+            <div className="col-start-2 row-start-1 min-w-0 self-start">
+              <h1 className="font-serif-movie text-balance break-words bg-linear-to-b from-white via-white/95 to-white/75 bg-clip-text text-2xl font-bold tracking-tight text-transparent sm:text-4xl lg:mt-4 lg:text-5xl">
+                {media.title}
+              </h1>
+            </div>
 
-              <div className="flex flex-wrap items-center gap-4 text-sm font-medium">
-                <MediaRatingBadge rating={media.rating} size="lg" showTier />
-
-                {runtimeLabel && (
-                  <>
-                    <span className="text-white/20 hidden sm:inline">•</span>
-                    <span className="text-fg-muted">
-                      {runtimeLabel}
-                    </span>
-                  </>
-                )}
-
-                <div className="md:ml-auto md:order-last">
-                  <StatusBadge status={displayStatus ?? media.status} />
-                </div>
+            <div className="col-start-2 row-start-2 flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1.5 self-start text-sm font-medium lg:gap-4">
+              <MediaRatingBadge rating={media.rating} size="lg" showTier className="max-lg:[&>span]:hidden" />
+              {runtimeLabel ? (
+                <>
+                  <span className="hidden text-white/20 sm:inline" aria-hidden="true">•</span>
+                  <span className="text-fg-muted">{runtimeLabel}</span>
+                </>
+              ) : null}
+              <div className="md:ml-auto">
+                <StatusBadge status={displayStatus ?? media.status} />
               </div>
             </div>
 
+            <div className="col-span-2 col-start-1 row-start-4 min-w-0 lg:col-span-1 lg:col-start-2 lg:row-start-3">
               <MediaMetadata media={media} includePeople={false} releaseDateLabel={releaseDateLabel} />
             </div>
-          </div>
 
-          <div className="mt-8 border-t border-white/10 pt-6">
-            <div className="mb-8">
+            <div className="col-span-2 row-start-3 min-w-0 border-t border-white/10 pt-4 lg:row-start-4 lg:mt-4 lg:pt-6">
               <SectionHeading>剧情简介</SectionHeading>
-              <p className="text-left text-sm leading-7 tracking-wide text-fg-secondary wrap-break-word md:text-base">
-                {media.summary || "暂无简介。"}
-              </p>
+              <ClampedCopy text={media.summary || "暂无简介。"} />
             </div>
-            <div className="border-t border-white/10 pt-6">
+
+            <div className="col-span-2 row-start-5 min-w-0 border-t border-white/10 pt-6">
               <MediaCredits media={media} />
             </div>
           </div>

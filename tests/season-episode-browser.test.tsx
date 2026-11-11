@@ -1,13 +1,13 @@
 import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
-import type { ReactNode } from "react";
+import type { MouseEvent, ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { EpisodeInfo } from "@/lib/types";
 
 const navigation = vi.hoisted(() => ({ search: "", replace: vi.fn() }));
 
 vi.mock("next/link", () => ({
-  default: ({ href, children, ...props }: { href: string; children: ReactNode }) => (
-    <a href={href} {...props}>{children}</a>
+  default: ({ href, children, scroll, onClick, ...props }: { href: string; children: ReactNode; scroll?: boolean; onClick?: (event: MouseEvent) => void }) => (
+    <a href={href} data-scroll={scroll === false ? "false" : "true"} onClick={onClick} {...props}>{children}</a>
   ),
 }));
 vi.mock("next/navigation", () => ({
@@ -56,6 +56,7 @@ describe("SeasonEpisodeBrowser", () => {
     expect(screen.getByRole("link", { name: "未看" })).toHaveAttribute("href", `${basePath}?status=unwatched`);
     expect(screen.getByRole("link", { name: "升序 ↑" })).toHaveAttribute("href", `${basePath}?order=desc`);
     expect(screen.getByRole("link", { name: "2" })).toHaveAttribute("href", `${basePath}?page=2`);
+    expect(screen.getByRole("link", { name: "2" })).toHaveAttribute("data-scroll", "false");
     await waitFor(() => {
       expect(fetch).not.toHaveBeenCalled();
     });
@@ -105,8 +106,48 @@ describe("SeasonEpisodeBrowser", () => {
       expect.objectContaining({ signal: expect.any(AbortSignal) }),
     );
     await waitFor(() => {
-      expect(navigation.replace).toHaveBeenCalledWith(`${basePath}?status=unwatched`);
+      expect(navigation.replace).toHaveBeenCalledWith(`${basePath}?status=unwatched`, { scroll: false });
     });
+  });
+
+  it("翻页时停在原滚动位置，并用骨架行垫住列表高度", async () => {
+    const scrollTo = vi.fn();
+    vi.stubGlobal("scrollTo", scrollTo);
+    Object.defineProperty(window, "scrollY", { configurable: true, value: 3214 });
+    vi.mocked(fetch).mockReturnValue(new Promise(() => {}) as Promise<Response>);
+
+    const view = renderBrowser(25);
+    const list = screen.getByTestId("episode-list");
+    const anchor = screen.getByTestId("episode-list-anchor");
+    vi.spyOn(list, "getBoundingClientRect").mockReturnValue({
+      height: 1800, width: 800, top: 200, bottom: 2000, left: 0, right: 800, x: 0, y: 200, toJSON() { return {}; },
+    });
+    vi.spyOn(anchor, "getBoundingClientRect").mockReturnValue({
+      height: 0, width: 800, top: -2100, bottom: -2100, left: 0, right: 800, x: 0, y: -2100, toJSON() { return {}; },
+    });
+
+    fireEvent.click(screen.getByRole("link", { name: "2" }));
+    Object.defineProperty(window, "scrollY", { configurable: true, value: 0 });
+    navigation.search = "page=2";
+    view.rerender(
+      <SeasonEpisodeBrowser
+        basePath={basePath}
+        seriesId="50000000-0000-4000-8000-000000000002"
+        seasonId="50000000-0000-4000-8000-000000000003"
+        initialEpisodes={episodes}
+        initialTotal={25}
+        initialNextEpisodeNumber={2}
+      />,
+    );
+
+    const status = await screen.findByRole("status", { name: "正在加载单集" });
+    expect(status).toHaveAttribute("aria-busy", "true");
+    expect(within(status).getAllByTestId("episode-skeleton")).toHaveLength(2);
+    expect(list).toHaveStyle({ minHeight: "1800px" });
+    await waitFor(() => {
+      expect(scrollTo).toHaveBeenCalledWith({ top: 1034, behavior: "auto" });
+    });
+    expect(screen.queryByText("当前筛选下暂无单集")).not.toBeInTheDocument();
   });
 
   it("接口失败时保留当前地址并提示重试", async () => {

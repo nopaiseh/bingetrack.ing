@@ -80,6 +80,7 @@ describe("SeasonPage", () => {
     vi.mocked(getCachedSeasonsBySeriesId).mockReset();
     vi.mocked(getCachedSeasonEpisodes).mockReset();
     vi.mocked(getCachedSeasonNextEpisodeNumber).mockReset();
+    season.summary = "第一季简介";
     mockSeason();
   });
 
@@ -161,6 +162,16 @@ describe("SeasonPage", () => {
     expect(getCachedSeasonEpisodes).toHaveBeenCalledWith(seriesId, seasonId, 1, 20, "all", "asc");
     expect(getCachedSeasonEpisodes).toHaveBeenCalledWith(seriesId, seasonId, 1, 100, "all", "asc");
     expect(getCachedSeasonEpisodes).toHaveBeenCalledWith(seriesId, seasonId, 2, 100, "all", "asc");
+  });
+
+  it("窄屏把海报收在标题旁，统计收成一行，长简介可以展开", async () => {
+    season.summary = "本季从摸索走到定型。".repeat(10);
+    const { container } = render(await SeasonPage({ params: Promise.resolve({ id: seriesId, seasonId }) }));
+    expect(container.querySelector("[data-poster]")).toHaveClass("w-20", "lg:w-72");
+    expect(screen.getByRole("heading", { level: 1, name: "城市信号 第一季" })).toHaveClass("text-2xl", "lg:text-5xl");
+    expect(screen.getByRole("region", { name: "本季统计" })).toHaveClass("whitespace-nowrap", "lg:grid");
+    expect(screen.getByText(/本季从摸索走到定型/)).toHaveClass("max-w-[70ch]");
+    expect(screen.getByText("展开简介 ▾")).toBeInTheDocument();
   });
 
   it("季不存在时返回未找到", async () => {
