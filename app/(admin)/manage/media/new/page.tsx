@@ -4,6 +4,7 @@ import { mediaTypes, type ManagedMediaType } from "@/lib/admin/media-form";
 import { isMediaId } from "@/lib/functions/media-id";
 import { readParent } from "@/lib/admin/media-context";
 import MediaForm from "../MediaForm";
+import PageHeader from "../../../PageHeader";
 
 /** 从上级页面进入时预填类型和父条目，保存时仍在数据库验证关系。 */
 export default async function NewMediaPage({ searchParams }: { searchParams: Promise<{ type?: string; parent?: string }> }) {
@@ -20,5 +21,5 @@ export default async function NewMediaPage({ searchParams }: { searchParams: Pro
     if (error) throw new Error("无法读取编号建议。");
     nextNumber = Math.min(100000, ((data as unknown as Record<string, number>[])?.[0]?.[column] ?? 0) + 1);
   }
-  return <section><header className="mb-8"><BackToList category={type} /><h1 className="admin-heading">新增媒体</h1></header><MediaForm initialType={type} lockType={hasType} parent={parent} nextNumber={nextNumber} /></section>;
+  return <section className="admin-form-page"><PageHeader eyebrow={<BackToList category={type} className="" />} title="新增媒体" /><MediaForm initialType={type} lockType={hasType} parent={parent} nextNumber={nextNumber} /></section>;
 }

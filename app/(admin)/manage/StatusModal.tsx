@@ -15,7 +15,7 @@ interface StatusModalProps {
 
 /**
  * /manage 模块专用的操作反馈提示：只显示图标与一句话，没有按钮和标题。
- * - 原地渲染并以 popover 进入浏览器顶层，不被导航栏或原生 <dialog> 盖住；固定在导航栏下方水平居中。
+ * - 原地渲染并以 popover 进入浏览器顶层，不被侧栏或原生 <dialog> 盖住；固定在视口顶部水平居中。
  *   不用 portal：在模态弹窗内触发时留在弹窗里，才不会因弹窗外内容 inert 而无法朗读；
 
  * - 容器不拦截指针事件，不阻碍后台表单操作；
@@ -63,7 +63,7 @@ export default function StatusModal({ message, tone = "success", duration = 5000
   return (
     <div
       ref={box}
-      className={`pointer-events-none fixed inset-x-0 top-20 bottom-auto z-[70] m-0 flex h-auto w-auto items-start justify-center overflow-visible border-0 bg-transparent p-0 px-4 transition-all duration-200 ${isClosing ? "-translate-y-2 opacity-0" : "translate-y-0 opacity-100"}`}
+      className={`pointer-events-none fixed inset-x-0 top-16 bottom-auto z-[70] m-0 flex h-auto w-auto items-start justify-center overflow-visible border-0 bg-transparent p-0 px-4 transition-all duration-200 lg:top-4 ${isClosing ? "-translate-y-2 opacity-0" : "translate-y-0 opacity-100"}`}
     >
       {/* 圆角取单行高度（42px）的一半：单行是胶囊，手机上换行后变成圆角矩形，文字不贴弧边。 */}
       <div
