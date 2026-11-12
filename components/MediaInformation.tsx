@@ -1,157 +1,159 @@
 import Image from "next/image";
+import Link from "next/link";
 import { Suspense, type ReactNode } from "react";
 import MediaBackLink, { DefaultMediaBackLink } from "./MediaBackLink";
 import { Media, SeasonInfo } from "@/lib/types";
 import { formatRuntime } from "@/lib/format-runtime";
+import { heroWatermark, titleAccentIndex, titleInitial } from "@/lib/title-accent";
+import { isUpcomingDate } from "@/lib/upcoming";
 import SearchTag from "./SearchTag";
-import MediaRatingBadge from "./MediaRatingBadge";
+import { ratingTierLabel } from "./MediaRatingBadge";
+import { getStatusBadgeConfig } from "./MediaCardStatusBadge";
 import SeasonRow from "./SeasonRow";
 import ClampedCopy from "./ClampedCopy";
+import LetterTile from "./LetterTile";
 
-/** 窄屏用小海报贴着标题，宽屏恢复左侧大海报。无图片时显示暂无海报占位。 */
+/** 页头时长写成「2 小时 45 分」，和事实区的完整分钟写法分开。 */
+function heroRuntime(runtime: number | null | undefined): string | null {
+  return formatRuntime(runtime)?.replaceAll("分钟", "分") ?? null;
+}
+
+/** 元信息行里的年份。完整日期只取年；剧集的年份区间保留短横。 */
+function releaseYearLabel(media: Media, releaseDateLabel?: string): string {
+  if (releaseDateLabel && /^\d{4}/.test(releaseDateLabel) && !/^\d{4}-\d{2}-\d{2}/.test(releaseDateLabel)) {
+    return releaseDateLabel.replace(/\s*-\s*/g, "–");
+  }
+  const year = String(media.release_year || media.date || "").match(/\d{4}/)?.[0] ?? "";
+  return year;
+}
+
+/** 事实格里的上映日：有完整日期就用日期，否则用调用方传入的区间。 */
+function releaseFact(media: Media, releaseDateLabel?: string): string {
+  if (releaseDateLabel?.trim()) return releaseDateLabel.trim();
+  if (/^\d{4}-\d{2}-\d{2}/.test(media.date)) return media.date.slice(0, 10);
+  return releaseYearLabel(media, releaseDateLabel) || "—";
+}
+
+/** 海报。没有封面时用标题首字，不依赖后端的主色字段。 */
 function MediaPoster({ media }: { media: Media }) {
   return (
-    <div data-poster className="surface-card relative aspect-2/3 w-full overflow-hidden rounded-xl shadow-[0_12px_30px_-12px_rgba(0,0,0,0.8)] lg:rounded-2xl lg:shadow-[0_25px_60px_-15px_rgba(0,0,0,0.8)] lg:transition-transform lg:duration-500 lg:hover:scale-[1.02]">
+    <div data-poster className="relative aspect-2/3 w-full overflow-hidden rounded-xl shadow-[0_12px_30px_-16px_rgba(0,0,0,0.8)]">
       {media.cover_url ? (
-        <Image src={media.cover_url} alt={media.title} fill sizes="(max-width: 1023px) 112px, 320px" className="object-cover" priority />
+        <Image src={media.cover_url} alt="" fill sizes="(max-width: 639px) 84px, 184px" className="object-cover" priority={!media.backdrop_url} />
       ) : (
-        <div className="flex h-full w-full flex-col items-center justify-center gap-1 text-fg-muted">
-          <span className="i-material-symbols-image-outline-rounded inline-block size-6 drop-shadow-md lg:size-10" aria-hidden="true" />
-          <span className="hidden text-sm lg:inline">暂无海报</span>
-        </div>
+        <LetterTile title={media.title} />
       )}
     </div>
   );
 }
 
-/** 已看和在看状态分别显示对应徽标，其他状态统一显示想要看。 */
-function StatusBadge({ status }: { status?: string }) {
-  if (status === "watched") {
-    return (
-      <div className="flex cursor-default items-center gap-1.5 rounded-full border border-[color-mix(in_srgb,var(--ok)_45%,var(--border))] bg-[var(--ok-soft)] px-3 py-1.5 text-sm font-medium text-[var(--ok)]">
-        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7"/>
-        </svg>
-        已观看
-      </div>
-    );
-  }
-
-  if (status === "watching") {
-    return (
-      <div className="flex cursor-default items-center gap-1.5 rounded-full border border-[color-mix(in_srgb,var(--warn)_45%,var(--border))] bg-[var(--warn-soft)] px-3 py-1.5 text-sm font-medium text-[var(--warn)]">
-        <span className="relative flex size-2">
-          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[var(--warn)] opacity-75 duration-1000" />
-          <span className="relative inline-flex size-2 rounded-full bg-[var(--warn)]" />
-        </span>
-        正在看
-      </div>
-    );
-  }
-
+/** 当前观看状态。只展示，不提供会改数据的按钮。 */
+function StatusPill({ status }: { status?: string }) {
+  const config = getStatusBadgeConfig(status) ?? getStatusBadgeConfig("want_to_watch");
+  if (!config) return null;
+  const solid = config.label === "想看";
   return (
-    <div className="interactive-control flex cursor-pointer items-center gap-1.5 rounded-full border border-[var(--border)] bg-[var(--surface-2)] px-3 py-1.5 text-sm font-medium text-fg-secondary transition-colors hover:border-[var(--border-strong)] hover:bg-[var(--surface-3)] hover:text-fg">
-      <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
-      </svg>
-      想要看
-    </div>
-  );
-}
-
-/** 将属性标签与内容排成响应式元数据行。 */
-function MetadataRow({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <div className="group -mx-3 flex items-baseline gap-3 rounded-xl border-b border-white/10 px-3 py-2 transition-colors last:border-0 hover:bg-white/5 sm:gap-6 sm:py-3">
-      <span className="w-12 shrink-0 text-sm font-medium tracking-widest text-fg-subtle transition-colors group-hover:text-fg-secondary sm:w-16 sm:pt-1 sm:text-base">
-        {label}
-      </span>
-      <div className="flex flex-wrap gap-2.5 flex-1">
-        {children}
-      </div>
-    </div>
-  );
-}
-
-/** 为详情内容区渲染带红色标记的分区标题。 */
-function SectionHeading({ children }: { children: ReactNode }) {
-  return (
-    <div className="mb-3 flex items-center gap-2">
-      <div className="h-4 w-1 rounded-full bg-[var(--accent)] opacity-85" />
-      <h2 className="text-sm font-semibold tracking-wider text-fg">{children}</h2>
-    </div>
-  );
-}
-
-/** 展示媒体的发行信息、类型、地区、语言和系列标签，并按参数决定是否包含演职员。 */
-function MediaMetadata({ media, includePeople = true, releaseDateLabel }: { media: Media; includePeople?: boolean; releaseDateLabel?: string }) {
-  return (
-    <div className="flex flex-col">
-      {releaseDateLabel !== undefined && (
-        <MetadataRow label="上映">
-          {releaseDateLabel
-            ? <span className="surface-subtle inline-flex items-center rounded-lg border border-white/8 px-3.5 py-1.5 text-sm font-medium tracking-wide text-fg-secondary">{releaseDateLabel}</span>
-            : <span className="text-sm text-fg-subtle sm:pt-1">-</span>}
-        </MetadataRow>
+    <span
+      className={`inline-flex min-h-11 items-center justify-center gap-1.5 rounded-xl px-4 text-sm font-semibold ${
+        solid ? "button-accent" : `border ${config.borderClass} ${config.textClass} bg-[var(--surface-2)]`
+      }`}
+      aria-label={`观看状态：${config.label}`}
+    >
+      {config.label === "已看" ? (
+        <span className="i-material-symbols-check-rounded inline-block size-4" aria-hidden="true" />
+      ) : config.label === "在看" ? (
+        <span className="inline-block size-2 rounded-full bg-current" aria-hidden="true" />
+      ) : (
+        <span className="i-material-symbols-bookmark-rounded inline-block size-4" aria-hidden="true" />
       )}
-      <MetadataRow label="类型">
-        {media.genres?.length > 0 
-          ? media.genres.map(/* 将媒体类型名称渲染为类型筛选链接。 */ (g) => <SearchTag key={g} label={g} category="genre" />)
-          : <span className="text-fg-subtle text-sm sm:pt-1">-</span>}
-      </MetadataRow>
-        
-      <MetadataRow label="地区">
-        {media.regions && media.regions.length > 0 
-          ? media.regions.map(/* 将地区名称渲染为地区筛选链接。 */ (r) => <SearchTag key={r} label={r} category="region" />)
-          : <span className="text-fg-subtle text-sm sm:pt-1">-</span>}
-      </MetadataRow>
-
-      <MetadataRow label="语言">
-        {media.languages?.length > 0 
-          ? media.languages.map(/* 将语言名称渲染为语言筛选链接。 */ (l) => <SearchTag key={l} label={l} category="language" />)
-          : <span className="text-fg-subtle text-sm sm:pt-1">-</span>}
-      </MetadataRow>
-
-      {media.series && media.series.length > 0 && (
-        <MetadataRow label="系列">
-          {media.series.map(/* 将作品系列名渲染为限定系列分类的搜索链接。 */ (seriesName) => (
-            <SearchTag key={seriesName} label={seriesName} category="series" />
-          ))}
-        </MetadataRow>
-      )}
-
-      {includePeople && <MediaCredits media={media} />}
-    </div>
+      {config.label}
+    </span>
   );
 }
 
-/** 分别展示导演和主演搜索标签，缺少名单时显示占位符。 */
-function MediaCredits({ media }: { media: Media }) {
+/** 即将上映是发行状态，和已看 / 在看 / 想看分开。 */
+function UpcomingChip() {
   return (
-    <div className="flex flex-col gap-6">
-      <div>
-        <SectionHeading>导演</SectionHeading>
-        <div className="flex flex-wrap gap-2.5">
-          {media.directors && media.directors.length > 0
-            ? media.directors.map(/* 将导演姓名渲染为导演分类搜索链接。 */ (director) => <SearchTag key={director} label={director} category="director" />)
-            : <span className="text-sm text-fg-subtle">-</span>}
-        </div>
-      </div>
-      <div>
-        <SectionHeading>主演</SectionHeading>
-        <div className="flex flex-wrap gap-2.5">
-          {media.casts && media.casts.length > 0
-            ? media.casts.map(/* 将主演姓名渲染为主演分类搜索链接，有角色名时附注饰演角色。 */ (castMember, index) => (
-              <SearchTag key={castMember} label={castMember} category="cast" note={media.characters?.[index] ? `饰 ${media.characters[index]}` : undefined} />
-            ))
-            : <span className="text-sm text-fg-subtle">-</span>}
-        </div>
-      </div>
+    <span className="inline-flex items-center rounded-full border border-[var(--accent-border)] bg-[var(--accent-soft)] px-2.5 py-0.5 text-sm font-medium text-[var(--accent-hover)]">
+      即将上映
+    </span>
+  );
+}
+
+function Fact({ label, children }: { label: string; children: ReactNode }) {
+  return (
+    <div className="bg-[var(--surface-panel)] px-4 py-3.5 sm:px-5 sm:py-4">
+      <dt className="text-sm text-fg-muted">{label}</dt>
+      <dd className="mt-1 text-sm text-fg">{children}</dd>
     </div>
   );
 }
 
-/** 组合返回入口、海报、标题、状态、属性和简介，并根据传入季列表展示季度入口。 */
+function SideRow({ label, children }: { label: string; children: ReactNode }) {
+  return (
+    <div className="grid grid-cols-[3.5rem_minmax(0,1fr)] items-start gap-3">
+      <dt className="pt-2 text-sm text-fg-muted">{label}</dt>
+      <dd className="flex min-w-0 flex-wrap gap-2">{children}</dd>
+    </div>
+  );
+}
+
+/** 演员名链到人物搜索；角色只作说明，不进链接的查询词。 */
+function castHref(name: string) {
+  return `/search?${new URLSearchParams({ q: name, type: "actor" }).toString()}`;
+}
+
+function directorHref(name: string) {
+  return `/search?${new URLSearchParams({ q: name, type: "director" }).toString()}`;
+}
+
+/** 窄屏先露四位，其余用复选框展开，不用脚本；宽屏全部展示。 */
+function CastRoster({ media }: { media: Media }) {
+  const casts = media.casts ?? [];
+  if (casts.length === 0) return <p className="text-sm text-fg-muted">-</p>;
+
+  return (
+    <div className="cast-roster">
+      <ul className="grid grid-cols-1 gap-2 sm:grid-cols-2 sm:gap-3 lg:grid-cols-4">
+        {casts.map(/* 一张演员卡片：首字头像、姓名，有角色时附注饰演。 */ (name, index) => {
+          const character = media.characters?.[index];
+          return (
+            <li key={`${name}-${index}`} className="cast-card min-w-0">
+              <Link
+                href={castHref(name)}
+                aria-label={character ? `${name} 饰 ${character}` : name}
+                className="surface-panel flex min-h-11 items-center gap-3 rounded-2xl px-3 py-2.5 transition-colors hover:bg-[var(--surface-3)]"
+              >
+                <span
+                  className="letter-tile letter-tile-avatar inline-flex size-10 shrink-0 items-center justify-center rounded-full"
+                  data-accent={titleAccentIndex(name)}
+                  aria-hidden="true"
+                >
+                  <span>{titleInitial(name)}</span>
+                </span>
+                <span className="min-w-0">
+                  <span className="block truncate text-sm font-semibold text-fg">{name}</span>
+                  {character ? <span className="block truncate text-sm text-fg-muted">饰 {character}</span> : null}
+                </span>
+              </Link>
+            </li>
+          );
+        })}
+      </ul>
+      {casts.length > 4 ? (
+        <div className="cast-more-toggle mt-3 sm:mt-0">
+          <input id="cast-more" type="checkbox" className="cast-more sr-only" />
+          <label htmlFor="cast-more" className="inline-flex min-h-10 cursor-pointer items-center text-sm font-medium text-[var(--accent-hover)]">
+            <span className="cast-more-closed">查看全部 {casts.length} 位</span>
+            <span className="cast-more-open">收起</span>
+          </label>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+/** 组合页头、事实、简介、演员和季列表。没有剧照时页头改用较短的标题色渐变。 */
 export default function MediaInformation({
   media,
   seasons,
@@ -165,60 +167,159 @@ export default function MediaInformation({
   releaseDateLabel?: string;
   displayStatus?: string;
 }) {
-  const runtimeLabel = formatRuntime(media.runtime);
+  const runtimeLabel = heroRuntime(media.runtime);
+  const yearLabel = releaseYearLabel(media, releaseDateLabel);
+  const upcoming = isUpcomingDate(media.date);
+  const backdrop = media.backdrop_url?.trim() || "";
+  const accent = titleAccentIndex(media.title);
+  const watermark = heroWatermark(media.title, media.alternate_title);
+  const typeLabel = media.type === "shows" ? "电视节目" : "电影";
+  const seriesName = media.series?.[0];
+  const status = displayStatus ?? media.status;
+  const score = media.rating == null ? null : Number(media.rating).toFixed(1);
+  const tier = ratingTierLabel(media.rating);
+  const genres = media.genres?.slice(0, 2) ?? [];
 
   return (
     <>
-      <div className="container relative z-10 mx-auto max-w-7xl px-4 pb-12 pt-24 sm:px-6 lg:px-8">
-        <Suspense fallback={<DefaultMediaBackLink type={media.type === "shows" ? "shows" : "movies"} />}>
-          <MediaBackLink type={media.type === "shows" ? "shows" : "movies"} />
-        </Suspense>
+      <header
+        className={`detail-hero relative ${backdrop ? "pb-10 sm:pb-14" : "pb-6 sm:pb-8"}`}
+        data-hero={backdrop ? "backdrop" : "fallback"}
+        data-accent={accent}
+      >
+        {backdrop ? (
+          <>
+            <Image src={backdrop} alt="" fill priority sizes="100vw" className="object-cover" />
+            <div className="detail-hero-scrim" aria-hidden="true" />
+          </>
+        ) : null}
+        {watermark ? <p className="detail-hero-mark" aria-hidden="true">{watermark}</p> : null}
 
-        <div className="surface-panel rounded-3xl p-5 sm:p-6 lg:p-8">
-          <div className="grid grid-cols-[5rem_minmax(0,1fr)] items-start gap-x-3.5 gap-y-3 lg:grid-cols-[20rem_minmax(0,1fr)] lg:gap-x-12 lg:gap-y-4">
-            <div className="col-start-1 row-start-1 row-span-2 w-full self-start lg:row-span-3">
+        <div className="container relative z-10 mx-auto max-w-7xl px-4 pt-24 sm:px-6 lg:px-8">
+          <Suspense fallback={<DefaultMediaBackLink type={media.type === "shows" ? "shows" : "movies"} />}>
+            <MediaBackLink type={media.type === "shows" ? "shows" : "movies"} />
+          </Suspense>
+
+          <div className="grid grid-cols-[5.25rem_minmax(0,1fr)] items-start gap-x-3.5 gap-y-4 sm:grid-cols-[11.5rem_minmax(0,1fr)] sm:gap-x-8">
+            <div className="col-start-1 row-start-1 row-span-2 w-full">
               <MediaPoster media={media} />
             </div>
 
-            <div className="col-start-2 row-start-1 min-w-0 self-start">
-              <h1 className="font-serif-movie text-balance break-words bg-linear-to-b from-white via-white/95 to-white/75 bg-clip-text text-2xl font-bold tracking-tight text-transparent sm:text-4xl lg:mt-4 lg:text-5xl">
+            <div className="col-start-2 row-start-1 min-w-0">
+              <p className="text-sm text-fg-muted">
+                {typeLabel}
+                {seriesName ? ` · ${seriesName} 系列` : ""}
+              </p>
+              <h1 className="mt-1 text-balance break-words text-3xl font-semibold tracking-tight text-fg sm:text-5xl">
                 {media.title}
               </h1>
-            </div>
-
-            <div className="col-start-2 row-start-2 flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1.5 self-start text-sm font-medium lg:gap-4">
-              <MediaRatingBadge rating={media.rating} size="lg" showTier className="max-lg:[&>span]:hidden" />
-              {runtimeLabel ? (
-                <>
-                  <span className="hidden text-white/20 sm:inline" aria-hidden="true">•</span>
-                  <span className="text-fg-muted">{runtimeLabel}</span>
-                </>
+              {media.alternate_title && media.alternate_title !== media.title ? (
+                <p className="mt-1 text-sm text-fg-secondary sm:text-base">{media.alternate_title}</p>
               ) : null}
-              <div className="md:ml-auto">
-                <StatusBadge status={displayStatus ?? media.status} />
-              </div>
+              <p className="mt-3 flex flex-wrap items-center gap-x-2 gap-y-1.5 text-sm text-fg-secondary">
+                {yearLabel ? <span className="font-mono">{yearLabel}</span> : null}
+                {runtimeLabel ? <><span aria-hidden="true" className="text-fg-subtle">·</span><span>{runtimeLabel}</span></> : null}
+                {genres.map((genre) => (
+                  <span key={genre} className="inline-flex items-center gap-2">
+                    <span aria-hidden="true" className="text-fg-subtle">·</span>
+                    {genre}
+                  </span>
+                ))}
+                {upcoming ? <><span aria-hidden="true" className="text-fg-subtle">·</span><UpcomingChip /></> : null}
+              </p>
             </div>
 
-            <div className="col-span-2 col-start-1 row-start-4 min-w-0 lg:col-span-1 lg:col-start-2 lg:row-start-3">
-              <MediaMetadata media={media} includePeople={false} releaseDateLabel={releaseDateLabel} />
-            </div>
-
-            <div className="col-span-2 row-start-3 min-w-0 border-t border-white/10 pt-4 lg:row-start-4 lg:mt-4 lg:pt-6">
-              <SectionHeading>剧情简介</SectionHeading>
-              <ClampedCopy text={media.summary || "暂无简介。"} />
-            </div>
-
-            <div className="col-span-2 row-start-5 min-w-0 border-t border-white/10 pt-6">
-              <MediaCredits media={media} />
+            <div className="col-start-2 row-start-2 flex min-w-0 flex-wrap items-center gap-2 sm:gap-3">
+              <StatusPill status={status} />
+              <a
+                href={`https://www.themoviedb.org/search?query=${encodeURIComponent(media.title)}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex min-h-11 items-center gap-1.5 rounded-xl px-3 text-sm font-medium text-fg-secondary transition-colors hover:text-fg"
+              >
+                <span className="i-material-symbols-open-in-new-rounded inline-block size-4" aria-hidden="true" />
+                TMDB
+              </a>
             </div>
           </div>
         </div>
-      
-      {seasons && (
-        <SeasonRow seriesId={media.id} seasons={seasons} />
-      )}
-        
-        {relatedContent && <div className={seasons ? "empty:hidden" : "mt-12 empty:hidden"}>{relatedContent}</div>}
+      </header>
+
+      <div className="container relative z-10 mx-auto max-w-7xl px-4 pb-12 sm:px-6 lg:px-8">
+        <dl className="grid grid-cols-2 gap-px overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--border)] sm:grid-cols-4">
+          <Fact label="上映">
+            <span className="font-mono">{releaseFact(media, releaseDateLabel)}</span>
+          </Fact>
+          <Fact label="导演">
+            {media.directors && media.directors.length > 0 ? (
+              <span className="inline-flex flex-wrap gap-x-1">
+                {media.directors.map(/* 导演名可以搜到此人的作品，视觉上仍是一行文字。 */ (name, index) => (
+                  <span key={name}>
+                    {index > 0 ? "、" : ""}
+                    <Link href={directorHref(name)} className="underline-offset-4 hover:text-[var(--accent-hover)] hover:underline">{name}</Link>
+                  </span>
+                ))}
+              </span>
+            ) : "—"}
+          </Fact>
+          <Fact label="地区 / 语言">
+            {[...(media.regions ?? []), ...(media.languages ?? [])].join(" · ") || "—"}
+          </Fact>
+          <Fact label="我的评分">
+            {score == null ? (
+              <span className="text-fg-secondary">未评分</span>
+            ) : (
+              <span className="inline-flex items-baseline gap-2">
+                <span className="font-mono text-base">{score}</span>
+                {tier ? <span className="text-sm text-fg-muted">{tier}</span> : null}
+              </span>
+            )}
+          </Fact>
+        </dl>
+
+        <div className="mt-10 grid items-start gap-8 lg:grid-cols-[minmax(0,1fr)_18rem] lg:gap-10">
+          <section>
+            <h2 className="text-lg font-semibold text-fg">剧情简介</h2>
+            <div className="mt-3">
+              <ClampedCopy text={media.summary || "暂无简介。"} persistClamp expandLabel="展开全文 ↓" collapseLabel="收起全文 ↑" />
+            </div>
+          </section>
+
+          <aside className="surface-panel rounded-2xl p-4 sm:p-5">
+            <dl className="space-y-4">
+              {media.series && media.series.length > 0 ? (
+                <SideRow label="系列">
+                  {media.series.map((name) => <SearchTag key={name} label={name} category="series" />)}
+                </SideRow>
+              ) : null}
+              <SideRow label="类型">
+                {media.genres?.length ? media.genres.map((name) => <SearchTag key={name} label={name} category="genre" />) : <span className="pt-2 text-sm text-fg-muted">—</span>}
+              </SideRow>
+              <SideRow label="地区">
+                {media.regions?.length ? media.regions.map((name) => <SearchTag key={name} label={name} category="region" />) : <span className="pt-2 text-sm text-fg-muted">—</span>}
+              </SideRow>
+              <SideRow label="语言">
+                {media.languages?.length ? media.languages.map((name) => <SearchTag key={name} label={name} category="language" />) : <span className="pt-2 text-sm text-fg-muted">—</span>}
+              </SideRow>
+              <SideRow label="原名">
+                <span className="pt-2 text-sm text-fg">{media.alternate_title?.trim() || media.title}</span>
+              </SideRow>
+            </dl>
+          </aside>
+        </div>
+
+        <section className="mt-10" aria-label="演员">
+          <div className="mb-4 flex items-baseline gap-2">
+            <h2 className="text-lg font-semibold text-fg">演员</h2>
+            {(media.casts?.length ?? 0) > 0 ? (
+              <span className="font-mono text-sm text-fg-muted">{media.casts?.length}</span>
+            ) : null}
+          </div>
+          <CastRoster media={media} />
+        </section>
+
+        {seasons ? <SeasonRow seriesId={media.id} seasons={seasons} /> : null}
+        {relatedContent ? <div className={seasons ? "empty:hidden" : "mt-12 empty:hidden"}>{relatedContent}</div> : null}
       </div>
     </>
   );

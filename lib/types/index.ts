@@ -15,6 +15,11 @@ export interface Media {
   status?: string;
   summary?: string;
   cover_url: string;
+  /**
+   * 宽幅剧照。数据里还没有这一列，页面只在已有地址时铺进大标题页头；
+   * 缺省时用标题决定的设计令牌渐变，不向接口或数据库加字段。
+   */
+  backdrop_url?: string | null;
   casts?: string[];
   // 与 casts 按位置对应的饰演角色，未填写时为 null。
   characters?: (string | null)[];

@@ -112,6 +112,12 @@ function getRatingTier(rating: number | null | undefined): RatingTierInfo {
   };
 }
 
+/** 未评分没有档位名；其余返回神作到神烂的短标签。 */
+export function ratingTierLabel(rating: number | null | undefined): string | null {
+  if (rating == null) return null;
+  return getRatingTier(rating).label;
+}
+
 interface MediaRatingBadgeProps {
   rating: number | null | undefined;
   size?: "sm" | "md" | "lg";

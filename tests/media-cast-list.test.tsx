@@ -9,7 +9,7 @@ const media: Media = { id: "test", title: "测试作品", date: "2026-01-01", ra
 
 test("renders placeholder when casts list is empty", () => {
   render(<MediaInformation media={{ ...media, casts: [] }} seasons={null} />);
-  const castSection = screen.getByRole("heading", { name: "主演" }).parentElement!.parentElement!;
+  const castSection = screen.getByRole("heading", { name: "演员" }).parentElement!.parentElement!;
   expect(within(castSection).getByText("-")).toBeInTheDocument();
 });
 

@@ -801,15 +801,19 @@ body::before {
   }
 
   @media (min-width: 1024px) {
-    .overview-clamp > summary {
+    .overview-clamp:not(.overview-clamp-persist) > summary {
       cursor: text;
     }
 
-    .overview-clamp-text {
+    .overview-clamp:not(.overview-clamp-persist) .overview-clamp-text {
       display: block;
       -webkit-line-clamp: unset;
       overflow: visible;
     }
+  }
+
+  .overview-clamp-persist .overview-clamp-text {
+    -webkit-line-clamp: 4;
   }
 
   .mobile-tab-bar {
@@ -1065,4 +1069,131 @@ a.surface-recessed,
 
 a.surface-recessed {
   min-width: var(--hit-target);
+}
+
+/*
+ * 无海报字块与无剧照页头共用六档颜色。
+ * 色相来自 --ok / --danger / --warn / --violet / --accent，再压暗到白字能过 AA。
+ */
+:root {
+  --tile-0-from: color-mix(in srgb, var(--ok) 18%, #022c22);
+  --tile-0-to: color-mix(in srgb, var(--ok) 40%, #022c22);
+  --tile-1-from: color-mix(in srgb, var(--danger) 22%, #2a0a0e);
+  --tile-1-to: color-mix(in srgb, var(--danger) 48%, #2a0a0e);
+  --tile-2-from: color-mix(in srgb, var(--warn) 20%, #2a1604);
+  --tile-2-to: color-mix(in srgb, var(--warn) 42%, #2a1604);
+  --tile-3-from: color-mix(in srgb, #60a5fa 22%, #0b1a33);
+  --tile-3-to: color-mix(in srgb, #60a5fa 46%, #0b1a33);
+  --tile-4-from: color-mix(in srgb, var(--violet) 20%, #160a28);
+  --tile-4-to: color-mix(in srgb, var(--violet) 46%, #160a28);
+  --tile-5-from: color-mix(in srgb, var(--accent) 18%, #2a0a18);
+  --tile-5-to: color-mix(in srgb, var(--accent) 42%, #2a0a18);
+}
+
+.letter-tile {
+  container-type: inline-size;
+  background: linear-gradient(160deg, var(--tile-from, var(--tile-0-from)), var(--tile-to, var(--tile-0-to)));
+}
+
+.letter-tile span {
+  font-size: 42cqi;
+  font-weight: 600;
+  line-height: 1;
+  color: #fff;
+  text-shadow: 0 1px 0 rgb(0 0 0 / 0.18);
+}
+
+.letter-tile.letter-tile-avatar span {
+  font-size: 1rem;
+}
+
+.letter-tile[data-accent="0"] { --tile-from: var(--tile-0-from); --tile-to: var(--tile-0-to); }
+.letter-tile[data-accent="1"] { --tile-from: var(--tile-1-from); --tile-to: var(--tile-1-to); }
+.letter-tile[data-accent="2"] { --tile-from: var(--tile-2-from); --tile-to: var(--tile-2-to); }
+.letter-tile[data-accent="3"] { --tile-from: var(--tile-3-from); --tile-to: var(--tile-3-to); }
+.letter-tile[data-accent="4"] { --tile-from: var(--tile-4-from); --tile-to: var(--tile-4-to); }
+.letter-tile[data-accent="5"] { --tile-from: var(--tile-5-from); --tile-to: var(--tile-5-to); }
+
+/* 详情页头：有剧照时加高，没有时用标题对应的那一档渐变，并在画布处收住。 */
+.detail-hero {
+  position: relative;
+  overflow: hidden;
+  background: var(--canvas);
+}
+
+.detail-hero[data-hero="backdrop"] {
+  min-height: 34rem;
+}
+
+.detail-hero[data-hero="fallback"] {
+  background:
+    linear-gradient(180deg, transparent 0%, var(--canvas) 78%),
+    radial-gradient(90% 80% at 12% -10%, var(--hero-from, var(--tile-0-to)) 0%, transparent 62%),
+    var(--canvas);
+}
+
+.detail-hero[data-hero="fallback"][data-accent="0"] { --hero-from: var(--tile-0-to); --hero-ink: var(--tile-0-to); }
+.detail-hero[data-hero="fallback"][data-accent="1"] { --hero-from: var(--tile-1-to); --hero-ink: var(--tile-1-to); }
+.detail-hero[data-hero="fallback"][data-accent="2"] { --hero-from: var(--tile-2-to); --hero-ink: var(--tile-2-to); }
+.detail-hero[data-hero="fallback"][data-accent="3"] { --hero-from: var(--tile-3-to); --hero-ink: var(--tile-3-to); }
+.detail-hero[data-hero="fallback"][data-accent="4"] { --hero-from: var(--tile-4-to); --hero-ink: var(--tile-4-to); }
+.detail-hero[data-hero="fallback"][data-accent="5"] { --hero-from: var(--tile-5-to); --hero-ink: var(--tile-5-to); }
+
+.detail-hero-scrim {
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(180deg, rgb(14 10 18 / 0.12) 0%, rgb(14 10 18 / 0.38) 48%, var(--canvas) 100%),
+    linear-gradient(90deg, rgb(14 10 18 / 0.82) 0%, rgb(14 10 18 / 0.28) 46%, rgb(14 10 18 / 0.12) 100%);
+}
+
+.detail-hero-mark {
+  position: absolute;
+  top: -0.12em;
+  left: 42%;
+  z-index: 0;
+  margin: 0;
+  font-size: clamp(6.5rem, 22vw, 16rem);
+  font-weight: 800;
+  line-height: 0.8;
+  letter-spacing: -0.055em;
+  white-space: nowrap;
+  pointer-events: none;
+  user-select: none;
+  color: color-mix(in srgb, var(--hero-ink, #fff) 42%, transparent);
+}
+
+.detail-hero[data-hero="backdrop"] .detail-hero-mark {
+  color: rgb(255 255 255 / 0.08);
+}
+
+@media (max-width: 639px) {
+  .detail-hero[data-hero="backdrop"] {
+    min-height: 26rem;
+  }
+
+  .detail-hero-mark {
+    left: 18%;
+    font-size: clamp(4.5rem, 28vw, 7rem);
+  }
+}
+
+@media (max-width: 639px) {
+  .cast-roster:not(:has(.cast-more:checked)) .cast-card:nth-child(n + 5) {
+    display: none;
+  }
+
+  .cast-roster:not(:has(.cast-more:checked)) .cast-more-open {
+    display: none;
+  }
+
+  .cast-roster:has(.cast-more:checked) .cast-more-closed {
+    display: none;
+  }
+}
+
+@media (min-width: 640px) {
+  .cast-more-toggle {
+    display: none;
+  }
 }

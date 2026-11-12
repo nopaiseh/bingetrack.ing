@@ -24,12 +24,30 @@ describe("详情页窄屏布局", () => {
   it("海报缩到标题旁，简介限制在约 70ch，过长时可展开", () => {
     const { container } = render(<MediaInformation media={media} seasons={null} releaseDateLabel="2012-09-28" />);
     const poster = container.querySelector("[data-poster]");
-    expect(poster?.parentElement).toHaveClass("row-span-2", "lg:row-span-3");
+    expect(poster?.parentElement).toHaveClass("row-span-2");
+    expect(container.querySelector("[data-hero]")).toHaveAttribute("data-hero", "fallback");
     const copy = screen.getByText(/一段很长的剧情简介/);
     expect(copy).toHaveClass("max-w-[70ch]");
     expect(copy.closest("details")).toBeInTheDocument();
-    expect(screen.getByText("展开简介 ▾")).toBeInTheDocument();
-    expect(screen.getByRole("heading", { level: 1, name: "完美音调" })).toHaveClass("text-2xl", "lg:text-5xl");
+    expect(screen.getByText("展开全文 ↓")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 1, name: "完美音调" })).toHaveClass("text-3xl", "sm:text-5xl");
+  });
+
+  it("没有海报时用标题首字，有剧照地址时页头改为大图", () => {
+    const { container, rerender } = render(
+      <MediaInformation media={{ ...media, cover_url: "", title: "复仇者联盟" }} seasons={null} releaseDateLabel="2026-12-18" />,
+    );
+    expect(container.querySelector("[data-poster] .letter-tile")).toHaveTextContent("复");
+    expect(container.querySelector("[data-hero]")).toHaveAttribute("data-hero", "fallback");
+
+    rerender(
+      <MediaInformation
+        media={{ ...media, backdrop_url: "https://image.tmdb.org/t/p/w780/backdrop.jpg" }}
+        seasons={null}
+        releaseDateLabel="2026-12-18"
+      />,
+    );
+    expect(container.querySelector("[data-hero]")).toHaveAttribute("data-hero", "backdrop");
   });
 
   it("短简介不提供展开控件", () => {
