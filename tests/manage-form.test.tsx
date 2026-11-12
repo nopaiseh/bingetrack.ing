@@ -85,12 +85,14 @@ it("lockType 为真时锁定媒体类型，不展示分段切换控件", () => {
 });
 
 it("海报预览只使用 TMDB 文件名，不把输入原文当成图片地址", () => {
-  const { container } = render(<MediaForm initialType="movie" />);
+  render(<MediaForm initialType="movie" />);
   const cover = screen.getByLabelText("TMDB 海报路径");
   fireEvent.change(cover, { target: { value: "javascript:alert(1)" } });
-  expect(container.querySelector("img")).toBeNull();
+  expect(screen.queryByRole("img", { name: "封面预览" })).not.toBeInTheDocument();
+  fireEvent.change(cover, { target: { value: "https://evil.example/t/p/a.jpg" } });
+  expect(screen.queryByRole("img", { name: "封面预览" })).not.toBeInTheDocument();
   fireEvent.change(cover, { target: { value: "https://image.tmdb.org/t/p/w500/poster.jpg" } });
-  expect(container.querySelector("img")).toHaveAttribute("src", "https://image.tmdb.org/t/p/w500/poster.jpg");
+  expect(screen.getByRole("img", { name: "封面预览" })).toHaveAttribute("src", "https://image.tmdb.org/t/p/w500/poster.jpg");
   expect(cover).toHaveValue("https://image.tmdb.org/t/p/w500/poster.jpg");
 });
 

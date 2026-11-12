@@ -33,9 +33,21 @@ function normalizeCover(value: string) {
   return `https://image.tmdb.org/t/p/original/${trimmed.replace(/^\/+/, "")}`;
 }
 
-/** 预览只请求 TMDB 上的文件名。表单里的原文留给保存逻辑校验，不直接当成图片地址。 */
+/** 预览只请求 TMDB 上的文件名。其它网站的地址和 javascript: 不进图片元素。 */
 function posterPreviewSrc(value: string): string | null {
-  const file = value.trim().split(/[?#]/)[0]?.split("/").pop() ?? "";
+  const trimmed = value.trim();
+  if (!trimmed) return null;
+  if (/^[a-z][a-z0-9+.-]*:/i.test(trimmed) && !trimmed.startsWith("https://image.tmdb.org/t/p/")) return null;
+  if (trimmed.startsWith("https://image.tmdb.org/t/p/")) {
+    try {
+      const url = new URL(trimmed);
+      if (url.protocol !== "https:" || url.hostname !== "image.tmdb.org" || url.username || url.password || url.port) return null;
+      if (!url.pathname.startsWith("/t/p/")) return null;
+    } catch {
+      return null;
+    }
+  }
+  const file = trimmed.split(/[?#]/)[0]?.split("/").pop() ?? "";
   if (!/^[A-Za-z0-9._~-]{1,200}$/.test(file)) return null;
   return `https://image.tmdb.org/t/p/w500/${encodeURIComponent(file)}`;
 }
@@ -48,7 +60,7 @@ function PosterPreview({ title, src }: { title: string; src: string }) {
     <div className="edit-poster" style={showImage ? undefined : { backgroundColor: listTint(title || "片") }}>
       {showImage ? (
         // eslint-disable-next-line @next/next/no-img-element
-        <img src={preview ?? undefined} alt="" onError={() => setFailed(true)} />
+        <img src={preview ?? undefined} alt="封面预览" onError={() => setFailed(true)} />
       ) : (
         <>
           <span className="edit-poster-letter">{listInitial(title || "片")}</span>
