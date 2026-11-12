@@ -105,8 +105,12 @@ test("已有会话 Cookie 时站长看到管理和退出", async () => {
   const { unmount } = render(<Navbar />);
   await waitFor(() => expect(screen.getByRole("button", { name: "退出" })).toBeInTheDocument());
   expect(screen.queryByRole("button", { name: "登录" })).not.toBeInTheDocument();
-  const manageLinks = screen.getAllByRole("link", { name: "管理" });
-  expect(manageLinks).toHaveLength(2);
+  // 管理入口要等 is_site_owner 的 RPC 回来，退出按钮会先出现。
+  let manageLinks: HTMLElement[] = [];
+  await waitFor(() => {
+    manageLinks = screen.getAllByRole("link", { name: "管理" });
+    expect(manageLinks).toHaveLength(2);
+  });
   for (const link of manageLinks) expect(link).toHaveAttribute("href", "/manage");
   expect(getAuthBrowser).toHaveBeenCalled();
 
