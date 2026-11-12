@@ -23,10 +23,10 @@ test("站长初始化、影视季集管理、公开更新、退出与非站长�
   }
   /** 提交表单并从保存后的地址取得实际媒体 ID。 */
   async function save() {
-    const title = await page.getByLabel("标题", { exact: true }).inputValue();
+    const title = await page.getByLabel("中文标题", { exact: true }).inputValue();
     const [response] = await Promise.all([
       page.waitForResponse(/* 等待本次 Server Action 响应，不能把上次保存提示当作成功。 */ response => response.request().method() === "POST" && response.url().includes("/manage/media/"), { timeout: 15_000 }),
-      page.getByRole("button", { name: "保存资料", exact: true }).click(),
+      page.getByRole("button", { name: "保存", exact: true }).click(),
     ]);
     expect(response.ok()).toBe(true);
     // RSC 响应可能持续流式传输；用本次实际写入和页面完成状态确认保存。
@@ -39,7 +39,7 @@ test("站长初始化、影视季集管理、公开更新、退出与非站长�
     }, { timeout: 15_000 }).not.toBe("");
     await expect(page).toHaveURL(new RegExp(`/manage/media/${savedId}\\?saved=1&n=\\d+$`));
     await expect(page.getByRole("heading", { name: title, exact: true })).toBeVisible();
-    await expect(page.getByRole("button", { name: "保存资料", exact: true })).toBeEnabled();
+    await expect(page.getByRole("button", { name: "保存", exact: true })).toBeEnabled();
     await expect(page.getByRole("status").filter({ hasText: "保存成功" })).toBeVisible();
     return savedId;
   }
@@ -57,13 +57,13 @@ test("站长初始化、影视季集管理、公开更新、退出与非站长�
     // 浏览器后退也受未保存修改保护：取消时留在本页并保留输入，确认后才离开。
     await page.goto("/manage");
     await page.goto("/manage/media/new");
-    await page.getByLabel("标题", { exact: true }).fill(`${prefix} unsaved`);
+    await page.getByLabel("中文标题", { exact: true }).fill(`${prefix} unsaved`);
     const dialogs: string[] = [];
     page.once("dialog", dialog => { dialogs.push(dialog.message()); void dialog.dismiss(); });
     await page.goBack();
     await expect.poll(() => dialogs.length).toBe(1);
     await expect(page).toHaveURL(/\/manage\/media\/new$/);
-    await expect(page.getByLabel("标题", { exact: true })).toHaveValue(`${prefix} unsaved`);
+    await expect(page.getByLabel("中文标题", { exact: true })).toHaveValue(`${prefix} unsaved`);
     page.once("dialog", dialog => { dialogs.push(dialog.message()); void dialog.accept(); });
     await page.goBack();
     await expect.poll(() => dialogs.length).toBe(2);
@@ -72,7 +72,7 @@ test("站长初始化、影视季集管理、公开更新、退出与非站长�
 
     // 从侧栏离开只询问一次；守卫记录被跳转替换，之后每次后退都有可见变化，不会停在同一页。
     await page.goto("/manage/media/new");
-    await page.getByLabel("标题", { exact: true }).fill(`${prefix} leave by link`);
+    await page.getByLabel("中文标题", { exact: true }).fill(`${prefix} leave by link`);
     page.once("dialog", dialog => { dialogs.push(dialog.message()); void dialog.accept(); });
     await page.getByRole("navigation", { name: "内容管理分类" }).getByRole("link", { name: "电视节目", exact: true }).click();
     await expect(page).toHaveURL(/\/manage\?type=tv_show$/);
@@ -101,12 +101,12 @@ test("站长初始化、影视季集管理、公开更新、退出与非站长�
       await expect(page).toHaveURL(new RegExp(`/manage/references/${kind}\\?deleted=1&n=\\d+$`));
     }
     await page.goto("/manage/media/new");
-    await page.getByLabel("标题", { exact: true }).fill(`${prefix} movie`);
+    await page.getByLabel("中文标题", { exact: true }).fill(`${prefix} movie`);
     await page.getByLabel("评分（0–10，可留空）").fill("8.5");
     await page.getByLabel("类型标签").fill(`${prefix} genre`);
     await page.getByRole("option", { name: `新增并关联「${prefix} genre」` }).click();
     const movie = await save();
-    await page.getByLabel("标题", { exact: true }).fill(`${prefix} updated movie`);
+    await page.getByLabel("中文标题", { exact: true }).fill(`${prefix} updated movie`);
     await page.getByLabel("评分（0–10，可留空）").fill("0");
     await save();
     await page.goto(`/movies/${movie}`);
@@ -115,7 +115,7 @@ test("站长初始化、影视季集管理、公开更新、退出与非站长�
     expect(tracking.data).toMatchObject({ status: "watched", rating: 0 });
 
     await page.goto("/manage/media/new?type=tv_show");
-    await page.getByLabel("标题", { exact: true }).fill(`${prefix} series`);
+    await page.getByLabel("中文标题", { exact: true }).fill(`${prefix} series`);
     const series = await save();
     // 季与单集只在剧集结构栏就地新增：季保存后打开新条目，单集连续录入留在当前页。
     const rail = page.getByRole("complementary", { name: "剧集结构" });
@@ -143,7 +143,7 @@ test("站长初始化、影视季集管理、公开更新、退出与非站长�
     expect(added.error).toBeNull();
     const episode = added.data!.id;
     await page.goto(`/manage/media/${series}`);
-    await page.getByText("删除条目", { exact: true }).click();
+    await page.getByRole("button", { name: "删除这部电视节目…", exact: true }).click();
     await page.getByLabel("输入完整标题以确认删除").fill("incorrect title");
     await page.getByRole("button", { name: "永久删除", exact: true }).click();
     await expect(page.getByRole("alert").filter({ hasText: "标题不匹配" })).toBeVisible();

@@ -9,11 +9,11 @@ vi.mock("@/app/(admin)/manage/reference-actions", () => ({ saveReference: vi.fn(
 it("媒体保存失败后保留已填写资料与未保存提示", async () => {
   const user = userEvent.setup();
   render(<MediaForm />);
-  await user.type(screen.getByLabelText("标题", { exact: true }), "不能丢失的标题");
-  await user.click(screen.getByRole("button", { name: "保存资料" }));
+  await user.type(screen.getByLabelText("中文标题", { exact: true }), "不能丢失的标题");
+  await user.click(screen.getByRole("button", { name: "保存" }));
   expect(await screen.findByRole("alert")).toHaveTextContent("保存失败");
-  expect(screen.getByLabelText("标题", { exact: true })).toHaveValue("不能丢失的标题");
-  expect(screen.getByText("有未保存的修改")).toBeInTheDocument();
+  expect(screen.getByLabelText("中文标题", { exact: true })).toHaveValue("不能丢失的标题");
+  expect(screen.getByText("有未保存的更改")).toBeInTheDocument();
 });
 it("关联资料命名冲突后保留用户输入", async () => {
   const user = userEvent.setup();
@@ -56,14 +56,14 @@ it("电影和单集由评分决定观看状态，电视节目和季显示只读�
 
 it("单集不提供封面地址，电影和电视节目仍保留，已有剧照在保存时原样带回", () => {
   const { container, unmount } = render(<MediaForm initialType="movie" />);
-  const cover = screen.getByLabelText("封面地址（TMDB）");
+  const cover = screen.getByLabelText("TMDB 海报路径");
   fireEvent.change(cover, { target: { value: "https://image.tmdb.org/t/p/w500/poster.jpg" } });
   fireEvent.change(screen.getByLabelText("类型"), { target: { value: "tv_episode" } });
-  expect(screen.queryByLabelText("封面地址（TMDB）")).not.toBeInTheDocument();
+  expect(screen.queryByLabelText("TMDB 海报路径")).not.toBeInTheDocument();
   expect(screen.queryByPlaceholderText("https://image.tmdb.org/t/p/original/…")).not.toBeInTheDocument();
   expect(container.querySelector('input[name="cover_url"]')).toHaveValue("");
   fireEvent.change(screen.getByLabelText("类型"), { target: { value: "tv_show" } });
-  expect(screen.getByLabelText("封面地址（TMDB）")).toHaveValue("https://image.tmdb.org/t/p/w500/poster.jpg");
+  expect(screen.getByLabelText("TMDB 海报路径")).toHaveValue("https://image.tmdb.org/t/p/w500/poster.jpg");
   unmount();
 
   const episode = render(<MediaForm initialType="tv_episode" lockType item={{
@@ -81,24 +81,28 @@ it("lockType 为真时锁定媒体类型，不展示分段切换控件", () => {
   render(<MediaForm initialType="tv_episode" lockType={true} />);
   expect(screen.queryByRole("tablist", { name: "媒体类型快捷选择" })).not.toBeInTheDocument();
   expect(screen.getByText("媒体类型")).toBeInTheDocument();
-  expect(screen.getByText("单集")).toBeInTheDocument();
+  expect(screen.getAllByText("单集").length).toBeGreaterThan(0);
 });
 
-it("电影和电视节目展示关联资料，季和单集不展示关联资料", () => {
+it("电影和电视节目展示演职员与海报，季保留海报，单集只有文字", () => {
   const { unmount: unmount1 } = render(<MediaForm initialType="movie" />);
-  expect(screen.getByText("关联资料")).toBeInTheDocument();
+  expect(screen.getByRole("heading", { name: "演职员" })).toBeInTheDocument();
+  expect(screen.getByRole("heading", { name: "海报与图片" })).toBeInTheDocument();
   unmount1();
 
   const { unmount: unmount2 } = render(<MediaForm initialType="tv_show" />);
-  expect(screen.getByText("关联资料")).toBeInTheDocument();
+  expect(screen.getByRole("heading", { name: "演职员" })).toBeInTheDocument();
   unmount2();
 
   const { unmount: unmount3 } = render(<MediaForm initialType="tv_season" />);
-  expect(screen.queryByText("关联资料")).not.toBeInTheDocument();
+  expect(screen.queryByRole("heading", { name: "演职员" })).not.toBeInTheDocument();
+  expect(screen.getByRole("heading", { name: "海报与图片" })).toBeInTheDocument();
   unmount3();
 
   render(<MediaForm initialType="tv_episode" />);
-  expect(screen.queryByText("关联资料")).not.toBeInTheDocument();
+  expect(screen.queryByRole("heading", { name: "演职员" })).not.toBeInTheDocument();
+  expect(screen.queryByRole("heading", { name: "海报与图片" })).not.toBeInTheDocument();
+  expect(screen.getByText(/单集只填文字资料/)).toBeInTheDocument();
 });
 
 it("季和单集编号输入框拥有正确无歧义的无障碍标签", () => {
@@ -110,29 +114,37 @@ it("季和单集编号输入框拥有正确无歧义的无障碍标签", () => {
   expect(screen.getByLabelText("集编号", { exact: true })).toBeInTheDocument();
 });
 
-it("电影和单集显示发行日期和时长，电视节目和季不显示", () => {
-  const { unmount } = render(<MediaForm initialType="movie" />);
-  expect(screen.getByLabelText("发行日期")).toBeInTheDocument();
-  expect(screen.getByLabelText("时长（分钟）")).toBeInTheDocument();
+it("电影和单集显示日期和片长，电视节目和季不显示，日期按 YYYY-MM-DD 填写", () => {
+  const { unmount } = render(<MediaForm initialType="movie" item={{
+    id: "mv-1", type: "movie", title: "毁灭之日", alternate_title: null, summary: null,
+    cover_url: null, release_date: "2026-12-18", runtime: 165,
+    parent_id: null, number: null, status: "want_to_watch", rating: null,
+    genres: [], languages: [], regions: [], actors: [], directors: [],
+  }} />);
+  const date = screen.getByLabelText("上映日期");
+  expect(date).toHaveValue("2026-12-18");
+  expect(date).toHaveAttribute("placeholder", "YYYY-MM-DD");
+  expect(screen.getByLabelText("片长")).toHaveValue(165);
+
+  unmount();
+  render(<MediaForm initialType="movie" />);
+  expect(screen.getByLabelText("上映日期")).toBeInTheDocument();
+  expect(screen.getByLabelText("片长")).toBeInTheDocument();
 
   // 切换为电视节目
   fireEvent.change(screen.getByLabelText("类型"), { target: { value: "tv_show" } });
-  expect(screen.queryByLabelText("发行日期")).not.toBeInTheDocument();
-  expect(screen.queryByLabelText("时长（分钟）")).not.toBeInTheDocument();
+  expect(screen.queryByLabelText("上映日期")).not.toBeInTheDocument();
+  expect(screen.queryByLabelText("播出日期")).not.toBeInTheDocument();
+  expect(screen.queryByLabelText("片长")).not.toBeInTheDocument();
 
   // 切换为季
   fireEvent.change(screen.getByLabelText("类型"), { target: { value: "tv_season" } });
-  expect(screen.queryByLabelText("发行日期")).not.toBeInTheDocument();
-  expect(screen.queryByLabelText("时长（分钟）")).not.toBeInTheDocument();
+  expect(screen.queryByLabelText("上映日期")).not.toBeInTheDocument();
+  expect(screen.queryByLabelText("片长")).not.toBeInTheDocument();
 
   // 切换为单集
   fireEvent.change(screen.getByLabelText("类型"), { target: { value: "tv_episode" } });
-  expect(screen.getByLabelText("发行日期")).toBeInTheDocument();
-  expect(screen.getByLabelText("时长（分钟）")).toBeInTheDocument();
-  unmount();
-
-  render(<MediaForm initialType="tv_show" />);
-  expect(screen.queryByLabelText("发行日期")).not.toBeInTheDocument();
-  expect(screen.queryByLabelText("时长（分钟）")).not.toBeInTheDocument();
+  expect(screen.getByLabelText("播出日期")).toBeInTheDocument();
+  expect(screen.getByLabelText("片长")).toBeInTheDocument();
 });
 

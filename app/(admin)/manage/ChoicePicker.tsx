@@ -4,6 +4,7 @@ import { useEffect, useId, useLayoutEffect, useRef, useState, type ChangeEvent, 
 import { createPortal } from "react-dom";
 import { searchChoices } from "./reference-actions";
 import type { Choice } from "@/lib/admin/catalog";
+import { listInitial, listTint } from "./list/model";
 
 /** 下拉挂到 body：嵌套在带 backdrop-filter 的卡片内时，毛玻璃只能模糊卡片自身而显得透明。
  * 外包 admin-shell 以沿用管理区的按钮样式；定位随滚动与缩放同步，与选择器等宽。
@@ -71,6 +72,8 @@ export default function ChoicePicker({
   required = false,
   sortable = name === "actors",
   withCharacter = false,
+  rows = false,
+  inline = false,
   onSelect,
 }: {
   kind: string;
@@ -84,6 +87,10 @@ export default function ChoicePicker({
   sortable?: boolean;
   /** 在每个已选标签内提供角色名输入，隐藏字段按「姓名<Tab>角色」逐行提交。 */
   withCharacter?: boolean;
+  /** 演职员用可拖动的行，而不是标签；上移、下移按钮是键盘可以完成的同一种排序。 */
+  rows?: boolean;
+  /** 发布栏里的标签：标签名和已选项同一行，不再套一张大卡片。 */
+  inline?: boolean;
   onSelect?: (value: Choice[]) => void;
 }) {
   const [selected, setSelected] = useState(initial);
@@ -93,6 +100,7 @@ export default function ChoicePicker({
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [activeIndex, setActiveIndex] = useState(-1);
+  const [dragIndex, setDragIndex] = useState<number | null>(null);
   const root = useRef<HTMLDivElement>(null);
   const input = useRef<HTMLInputElement>(null);
   const list = useRef<HTMLDivElement>(null);
@@ -132,6 +140,15 @@ export default function ChoicePicker({
     setSelected(next);
     onSelect?.(next);
     root.current?.dispatchEvent(new Event("input", { bubbles: true }));
+  }
+
+  /** 调整已选顺序。隐藏字段按新顺序逐行提交，和拖动、上移、下移是同一条数据。 */
+  function move(from: number, to: number) {
+    if (from === to || from < 0 || to < 0 || from >= selected.length || to >= selected.length) return;
+    const next = [...selected];
+    const [item] = next.splice(from, 1);
+    next.splice(to, 0, item);
+    change(next);
   }
 
   /** 关联资料去重，单选父级保存真实 ID。选择后清理检索词并关闭下拉。 */
@@ -236,7 +253,7 @@ export default function ChoicePicker({
           ))}
         </div>
       )}
-      <p className="p-2 text-[11px] text-neutral-400 border-t border-white/5 mt-1">
+      <p className="mt-1 border-t border-white/5 p-2 text-sm text-neutral-400">
         {allowCreate ? "新名称将在保存资料时创建。" : "最多显示 20 项，可输入完整标题缩小范围。"}
       </p>
     </>
@@ -254,7 +271,7 @@ export default function ChoicePicker({
         <input type="hidden" name={name} value={selected[0]?.id ?? ""} />
         <div className="mb-1.5 flex items-center justify-between">
           <label htmlFor={selected.length > 0 ? undefined : listId}>{label}</label>
-          {required && <span className="text-[11px] font-normal text-rose-400/80">必填</span>}
+          {required && <span className="edit-required">必填</span>}
         </div>
         {selected.length > 0 ? (
           <div className="flex h-[42px] items-center justify-between gap-2 rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-sm">
@@ -292,10 +309,143 @@ export default function ChoicePicker({
     );
   }
 
+  /** 制表符和换行是隐藏字段的分隔符，不能出现在角色名里。 */
+  function setCharacter(id: string, raw: string) {
+    const character = raw.replace(/[\t\r\n]+/g, " ");
+    change(selected.map((value) => (value.id === id ? { ...value, character } : value)));
+  }
+
+  const chips = selected.length > 0 && !rows && (
+    <ul className={inline ? "flex flex-wrap gap-2" : "mb-3 flex flex-wrap gap-2"}>
+      {selected.map((item, index) => (
+        <li key={item.id} className="admin-tag-chip group/chip max-w-full">
+          {sortable && (
+            <span className="rounded bg-white/10 px-1 py-0.5 font-mono text-sm font-medium leading-none text-neutral-300">
+              #{index + 1}
+            </span>
+          )}
+          <span className="break-words font-medium">{item.name}</span>
+          {byId && item.detail && <span className="break-words text-sm text-neutral-400">({item.detail})</span>}
+          {withCharacter && (
+            <input
+              className="admin-chip-character"
+              value={item.character ?? ""}
+              maxLength={200}
+              autoComplete="off"
+              placeholder="饰演角色"
+              aria-label={`${item.name}饰演的角色`}
+              onChange={(event) => setCharacter(item.id, event.target.value)}
+            />
+          )}
+          {sortable ? (
+            <div className="ml-1 flex items-center gap-0.5 border-l border-white/15 pl-1">
+              {index > 0 && (
+                <button type="button" title={`前移${item.name}`} aria-label={`上移${item.name}`} className="inline-flex size-4.5 items-center justify-center rounded text-neutral-400 hover:bg-white/15 hover:text-white transition-colors" onClick={() => move(index, index - 1)}>
+                  <span className="i-material-symbols-chevron-left-rounded size-3.5" aria-hidden="true" />
+                </button>
+              )}
+              {index < selected.length - 1 && (
+                <button type="button" title={`后移${item.name}`} aria-label={`下移${item.name}`} className="inline-flex size-4.5 items-center justify-center rounded text-neutral-400 hover:bg-white/15 hover:text-white transition-colors" onClick={() => move(index, index + 1)}>
+                  <span className="i-material-symbols-chevron-right-rounded size-3.5" aria-hidden="true" />
+                </button>
+              )}
+              <button type="button" title={`移除关联：${item.name}`} aria-label={`移除关联：${item.name}`} className="inline-flex size-4.5 items-center justify-center rounded text-neutral-400 hover:bg-rose-500/20 hover:text-rose-300 transition-colors" onClick={() => change(selected.filter((value) => value.id !== item.id))}>
+                <span className="i-material-symbols-close-rounded size-3.5" aria-hidden="true" />
+              </button>
+            </div>
+          ) : (
+            <button type="button" title={`移除关联：${item.name}`} aria-label={`移除关联：${item.name}`} className="ml-0.5 inline-flex size-4 items-center justify-center rounded-full text-neutral-400 hover:bg-rose-500/20 hover:text-rose-300 transition-colors" onClick={() => change(selected.filter((value) => value.id !== item.id))}>
+              <span className="i-material-symbols-close-rounded size-3" aria-hidden="true" />
+            </button>
+          )}
+        </li>
+      ))}
+    </ul>
+  );
+
+  const castRows = rows && (
+    <>
+    {selected.length > 0 && (
+      <div className="edit-cast-columns" aria-hidden="true">
+        <span />
+        <span>#</span>
+        <span>{label}</span>
+        {withCharacter ? <span>饰演</span> : <span />}
+        <span />
+      </div>
+    )}
+    <ul className="edit-cast-list" aria-label={`${label}顺序`}>
+      {selected.length === 0 && <li className="edit-cast-empty">还没有{label}。在下方搜索名字即可添加。</li>}
+      {selected.map((item, index) => (
+        <li
+          key={item.id}
+          className="edit-cast-row"
+          data-dragging={dragIndex === index ? "true" : undefined}
+          onDragOver={(event) => { event.preventDefault(); if (event.dataTransfer) event.dataTransfer.dropEffect = "move"; }}
+          onDrop={(event) => {
+            event.preventDefault();
+            if (dragIndex != null) move(dragIndex, index);
+            setDragIndex(null);
+          }}
+        >
+          <button
+            type="button"
+            className="edit-icon"
+            draggable
+            aria-label={`拖动调整${item.name}的顺序`}
+            onDragStart={(event) => {
+              event.dataTransfer?.setData("text/plain", String(index));
+              if (event.dataTransfer) event.dataTransfer.effectAllowed = "move";
+              setDragIndex(index);
+            }}
+            onDragEnd={() => setDragIndex(null)}
+            onKeyDown={(event) => {
+              if (event.key === "ArrowUp") { event.preventDefault(); move(index, index - 1); }
+              if (event.key === "ArrowDown") { event.preventDefault(); move(index, index + 1); }
+            }}
+          >
+            <span className="i-material-symbols-drag-indicator size-5" aria-hidden="true" />
+          </button>
+          <span className="edit-cast-index font-mono" aria-hidden="true">{index + 1}</span>
+          <span className="edit-cast-person">
+            <span className="edit-cast-mark" style={{ backgroundColor: listTint(item.name) }} aria-hidden="true">{listInitial(item.name)}</span>
+            <span className="min-w-0">
+              <span className="block break-words font-medium">{item.name}</span>
+              {item.detail && <span className="block break-words text-sm text-fg-secondary">{item.detail}</span>}
+            </span>
+          </span>
+          {withCharacter && (
+            <input
+              className="edit-cast-character"
+              value={item.character ?? ""}
+              maxLength={200}
+              autoComplete="off"
+              placeholder="饰演"
+              aria-label={`${item.name}饰演的角色`}
+              onChange={(event) => setCharacter(item.id, event.target.value)}
+            />
+          )}
+          <span className="edit-cast-actions">
+            <button type="button" className="edit-icon" aria-label={`上移${item.name}`} disabled={index === 0} onClick={() => move(index, index - 1)}>
+              <span className="i-material-symbols-keyboard-arrow-up-rounded size-5" aria-hidden="true" />
+            </button>
+            <button type="button" className="edit-icon" aria-label={`下移${item.name}`} disabled={index === selected.length - 1} onClick={() => move(index, index + 1)}>
+              <span className="i-material-symbols-keyboard-arrow-down-rounded size-5" aria-hidden="true" />
+            </button>
+            <button type="button" className="edit-icon edit-icon-danger" aria-label={`移除关联：${item.name}`} onClick={() => change(selected.filter((value) => value.id !== item.id))}>
+              <span className="i-material-symbols-close-rounded size-5" aria-hidden="true" />
+            </button>
+          </span>
+        </li>
+      ))}
+    </ul>
+    </>
+  );
+
   return (
     <div
       ref={root}
-      className="choice-picker-card relative min-w-0"
+      className={rows ? "edit-cast relative min-w-0" : inline ? "edit-inline-field relative min-w-0" : "choice-picker-card relative min-w-0"}
       onBlur={(event) => {
         if (!event.currentTarget.contains(event.relatedTarget) && !list.current?.contains(event.relatedTarget)) setOpen(false);
       }}
@@ -312,118 +462,46 @@ export default function ChoicePicker({
           .join("\n")}
       />
 
-      {/* 卡片头部：图标 + 标题 + 数量徽章 */}
-      <div className="mb-3 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          {icon && <span className={`${icon} size-4 text-[var(--accent)] shrink-0`} aria-hidden="true" />}
-          <label htmlFor={listId} className="cursor-pointer font-medium text-sm text-fg">
-            {label}
-          </label>
-          <span
-            className={`inline-flex items-center rounded-full px-2 py-0.5 font-mono text-[11px] font-semibold transition-all ${
-              selected.length > 0
-                ? "border border-rose-500/30 bg-rose-500/15 text-rose-300"
-                : "border border-white/10 bg-white/5 text-neutral-400"
-            }`}
-          >
-            {selected.length}
-          </span>
+      {rows ? (
+        <p className="edit-hint">{selected.length} 位{label} · 拖动左侧手柄排序，或使用上移、下移按钮</p>
+      ) : inline ? (
+        <div className="edit-inline-label">
+          <label htmlFor={listId}>{label}</label>
+          {required && <span className="edit-required">必填</span>}
         </div>
-        {required && <span className="text-[11px] font-normal text-rose-400/80">必填</span>}
-      </div>
-
-      {/* 已选标签列表 */}
-      {selected.length > 0 && (
-        <ul className="mb-3 flex flex-wrap gap-2">
-          {selected.map((item, index) => (
-            <li key={item.id} className="admin-tag-chip group/chip max-w-full">
-              {sortable && (
-                <span className="rounded bg-white/10 px-1 py-0.5 font-mono text-[10px] font-medium leading-none text-neutral-300">
-                  #{index + 1}
-                </span>
-              )}
-              <span className="break-words font-medium">{item.name}</span>
-              {byId && item.detail && <span className="break-words text-xs text-neutral-400">({item.detail})</span>}
-              {withCharacter && (
-                <input
-                  className="admin-chip-character"
-                  value={item.character ?? ""}
-                  maxLength={200}
-                  autoComplete="off"
-                  placeholder="饰演角色"
-                  aria-label={`${item.name}饰演的角色`}
-                  onChange={(event) => {
-                    // 制表符和换行是隐藏字段的分隔符，不能出现在角色名里。
-                    const character = event.target.value.replace(/[\t\r\n]+/g, " ");
-                    change(selected.map((value) => (value.id === item.id ? { ...value, character } : value)));
-                  }}
-                />
-              )}
-                {sortable ? (
-                  <div className="ml-1 flex items-center gap-0.5 border-l border-white/15 pl-1">
-                    {index > 0 && (
-                      <button
-                        type="button"
-                        title={`前移${item.name}`}
-                        aria-label={`上移${item.name}`}
-                        className="inline-flex size-4.5 items-center justify-center rounded text-neutral-400 hover:bg-white/15 hover:text-white transition-colors"
-                        onClick={() => {
-                          const next = [...selected];
-                          [next[index - 1], next[index]] = [next[index], next[index - 1]];
-                          change(next);
-                        }}
-                      >
-                        <span className="i-material-symbols-chevron-left-rounded size-3.5" aria-hidden="true" />
-                      </button>
-                    )}
-                    {index < selected.length - 1 && (
-                      <button
-                        type="button"
-                        title={`后移${item.name}`}
-                        aria-label={`下移${item.name}`}
-                        className="inline-flex size-4.5 items-center justify-center rounded text-neutral-400 hover:bg-white/15 hover:text-white transition-colors"
-                        onClick={() => {
-                          const next = [...selected];
-                          [next[index + 1], next[index]] = [next[index], next[index + 1]];
-                          change(next);
-                        }}
-                      >
-                        <span className="i-material-symbols-chevron-right-rounded size-3.5" aria-hidden="true" />
-                      </button>
-                    )}
-                    <button
-                      type="button"
-                      title={`移除关联：${item.name}`}
-                      aria-label={`移除关联：${item.name}`}
-                      className="inline-flex size-4.5 items-center justify-center rounded text-neutral-400 hover:bg-rose-500/20 hover:text-rose-300 transition-colors"
-                      onClick={() => change(selected.filter((value) => value.id !== item.id))}
-                    >
-                      <span className="i-material-symbols-close-rounded size-3.5" aria-hidden="true" />
-                    </button>
-                  </div>
-                ) : (
-                  <button
-                    type="button"
-                    title={`移除关联：${item.name}`}
-                    aria-label={`移除关联：${item.name}`}
-                    className="inline-flex size-4 items-center justify-center rounded-full text-neutral-400 hover:bg-rose-500/20 hover:text-rose-300 transition-colors ml-0.5"
-                    onClick={() => change(selected.filter((value) => value.id !== item.id))}
-                  >
-                    <span className="i-material-symbols-close-rounded size-3" aria-hidden="true" />
-                  </button>
-                )}
-              </li>
-          ))}
-        </ul>
+      ) : (
+        <div className="mb-3 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            {icon && <span className={`${icon} size-4 text-[var(--accent)] shrink-0`} aria-hidden="true" />}
+            <label htmlFor={listId} className="cursor-pointer font-medium text-sm text-fg">
+              {label}
+            </label>
+            <span
+              className={`inline-flex items-center rounded-full px-2 py-0.5 font-mono text-sm font-semibold ${
+                selected.length > 0
+                  ? "border border-[var(--accent-border)] bg-[var(--accent-soft)] text-[var(--accent-hover)]"
+                  : "border border-[var(--border)] bg-[var(--surface-2)] text-fg-secondary"
+              }`}
+            >
+              {selected.length}
+            </span>
+          </div>
+          {required && <span className="edit-required">必填</span>}
+        </div>
       )}
 
-      {/* 嵌入式搜索框 */}
-      <div className="relative flex items-center">
-        <span className="i-material-symbols-search-rounded pointer-events-none absolute left-3 z-10 size-4 text-fg-subtle" aria-hidden="true" />
+      {castRows}
+      {chips}
+
+      <div className={rows || inline ? "edit-inline-search" : "relative flex items-center"}>
+        {rows ? (
+          <label htmlFor={listId} className="sr-only">{label}</label>
+        ) : null}
+        {!inline && <span className="i-material-symbols-search-rounded pointer-events-none absolute left-3 z-10 size-4 text-fg-subtle" aria-hidden="true" />}
         <input
           {...comboboxProps}
-          placeholder={`搜索${label}…`}
-          className="!pl-9 !py-2 !text-xs !bg-black/30 hover:!bg-black/40 focus:!bg-black/60 !rounded-xl"
+          placeholder={rows ? `添加${label}` : inline ? "添加…" : `搜索${label}…`}
+          className={inline ? "" : "!pl-9 !py-2 !text-sm !bg-black/30 hover:!bg-black/40 focus:!bg-black/60 !rounded-xl"}
         />
       </div>
 
