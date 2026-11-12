@@ -20,29 +20,41 @@ export type SeasonEpisodeListResponse = {
 };
 
 /**
+ * 按调用方给出的顺序找出「最后一集已看」，以及排在它后面的第一集未看。
+ * 比较函数大于 0 表示更靠后。尚未开看时返回 null；已看的就是最后一集时 next 为 null。
+ * 更早被跳过的未看集不计入下一集，只认已看进度的最前缘。
+ */
+export function nextUnwatchedAfterLastWatched<T extends { status: string | null }>(
+  episodes: readonly T[],
+  compare: (left: T, right: T) => number,
+): { lastWatched: T; next: T | null } | null {
+  let lastWatched: T | null = null;
+  for (const episode of episodes) {
+    if (episode.status === "watched" && (lastWatched === null || compare(episode, lastWatched) > 0)) {
+      lastWatched = episode;
+    }
+  }
+  if (!lastWatched) return null;
+
+  let next: T | null = null;
+  for (const episode of episodes) {
+    const isAfterLastWatched = compare(episode, lastWatched) > 0 && episode.status !== "watched";
+    if (isAfterLastWatched && (next === null || compare(episode, next) < 0)) next = episode;
+  }
+  return { lastWatched, next };
+}
+
+/**
  * 最后一集已看之后、集号最小的未看单集。
  * 尚未开看，或已看的就是编号最大的一集时，没有「下一集」。
- * 中间漏看的集不标成下一集，只认已看进度的最前缘。
  */
 export function nextUnwatchedEpisodeNumber(
   episodes: readonly { episodeNumber: number; status: string | null }[],
 ): number | null {
-  let lastWatched = Number.NEGATIVE_INFINITY;
-  let hasWatched = false;
-  for (const episode of episodes) {
-    if (episode.status === "watched" && episode.episodeNumber > lastWatched) {
-      lastWatched = episode.episodeNumber;
-      hasWatched = true;
-    }
-  }
-  if (!hasWatched) return null;
-
-  let next: number | null = null;
-  for (const episode of episodes) {
-    const isAfterLastWatched = episode.episodeNumber > lastWatched && episode.status !== "watched";
-    if (isAfterLastWatched && (next === null || episode.episodeNumber < next)) next = episode.episodeNumber;
-  }
-  return next;
+  return nextUnwatchedAfterLastWatched(
+    episodes,
+    (left, right) => left.episodeNumber - right.episodeNumber,
+  )?.next?.episodeNumber ?? null;
 }
 
 /** 判断分页、状态和排序是否都是季页的默认值。 */

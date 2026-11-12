@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   isDefaultSeasonBrowseQuery,
+  nextUnwatchedAfterLastWatched,
   nextUnwatchedEpisodeNumber,
   readSeasonBrowseQuery,
   SEASON_EPISODE_PAGE_SIZE,
@@ -54,11 +55,16 @@ describe("season browse query", () => {
       { episodeNumber: 3, status: null },
     ])).toBe(3);
     // 第 2 集漏看，但已看到第 3 集，下一集是第 4 集。
-    expect(nextUnwatchedEpisodeNumber([
+    const skipped = [
       { episodeNumber: 1, status: "watched" },
       { episodeNumber: 2, status: "want_to_watch" },
       { episodeNumber: 3, status: "watched" },
       { episodeNumber: 4, status: null },
-    ])).toBe(4);
+    ];
+    expect(nextUnwatchedEpisodeNumber(skipped)).toBe(4);
+    expect(nextUnwatchedAfterLastWatched(skipped, (left, right) => left.episodeNumber - right.episodeNumber)).toEqual({
+      lastWatched: skipped[2],
+      next: skipped[3],
+    });
   });
 });
