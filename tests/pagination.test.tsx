@@ -35,6 +35,14 @@ test("只有一页时不渲染分页", () => {
   expect(container).toBeEmptyDOMElement();
 });
 
+test("传入总数时显示当前范围和每页条数", () => {
+  render(<ManagePagination page={2} totalPages={3} total={67} pageSize={25} params={{ type: "movie" }} />);
+  expect(screen.getByText(/第 26–50 条，共 67 条/)).toBeInTheDocument();
+  expect(screen.getByText("每页 25")).toBeInTheDocument();
+  expect(screen.getByText("第 2 / 3 页")).toBeInTheDocument();
+  expect(screen.getByRole("link", { name: "第 3 页" })).toHaveAttribute("href", "/manage?type=movie&page=3");
+});
+
 test("关联资料分页使用所在列表的地址", () => {
   render(<ManagePagination page={2} totalPages={26} params={{ q: "" }} basePath="/manage/references/people" label="资料列表分页" />);
 

@@ -31,6 +31,8 @@ describe("快速新增弹窗", () => {
     expect(screen.getByText(/接在「Chikhai Bardo」之后/)).toBeInTheDocument();
     expect(screen.getByText("日期按最近的播出间隔推算，可直接修改。")).toBeInTheDocument();
     expect(screen.queryByRole("combobox", { name: "观看状态" })).not.toBeInTheDocument();
+    expect(screen.queryByLabelText(/封面/)).not.toBeInTheDocument();
+    expect(dialog.querySelector('input[name="cover_url"]')).toBeNull();
   });
 
   it("新增季时预填下一季编号与标题，上级为电视节目", () => {
@@ -38,5 +40,6 @@ describe("快速新增弹窗", () => {
     expect(screen.getByLabelText("季编号（特别篇可填 0）", { exact: true })).toHaveValue(3);
     expect(screen.getByLabelText("标题")).toHaveValue("第 3 季");
     expect(container.querySelector('input[name="parent_id"]')).toHaveValue("show");
+    expect(screen.getByLabelText("封面地址（TMDB）")).toBeInTheDocument();
   });
 });
