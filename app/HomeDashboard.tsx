@@ -5,6 +5,7 @@ import Link from "next/link";
 import dynamic from "next/dynamic";
 import { PosterRowSkeleton } from "@/components/LoadingSkeletons";
 import DashboardYearPicker from "@/components/DashboardYearPicker";
+import ContinueWatchingRail, { type ContinueWatchingCard } from "@/components/ContinueWatchingRail";
 import UpcomingHero from "@/components/UpcomingHero";
 import AnimatedNumber from "@/components/AnimatedNumber";
 import type { MediaCard, MediaDistribution, MediaDistributions, Summary, UpcomingRelease } from "@/lib/types";
@@ -154,6 +155,7 @@ export default function HomeDashboard({
   topSeries,
   distributions,
   upcoming = [],
+  continueWatching = [],
   renderedOn,
 }: {
   summary: Summary[];
@@ -161,6 +163,7 @@ export default function HomeDashboard({
   topSeries: MediaCard[];
   distributions: MediaDistributions;
   upcoming?: UpcomingRelease[];
+  continueWatching?: readonly ContinueWatchingCard[];
   renderedOn?: string;
 }) {
   const tabs = TABS;
@@ -266,6 +269,7 @@ export default function HomeDashboard({
 
   return (
     <div className="container mx-auto flex max-w-7xl flex-col gap-6 px-4 pb-12 pt-20 sm:pt-22 sm:px-6 lg:pt-24 lg:px-8">
+      <ContinueWatchingRail items={continueWatching} />
       <UpcomingHero items={upcoming} renderedOn={renderedOn} />
 
       <section aria-labelledby="dashboard-title" className="surface-panel dashboard-intro relative z-10 mb-2 rounded-3xl p-5 sm:p-6 lg:px-8 lg:py-6">

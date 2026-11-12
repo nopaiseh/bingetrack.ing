@@ -31,6 +31,7 @@ vi.mock("@/components/DashboardYearPicker", () => ({
 }));
 
 import HomeDashboard from "@/app/HomeDashboard";
+import type { ContinueWatchingCard } from "@/components/ContinueWatchingRail";
 
 describe("HomeDashboard", () => {
   afterEach(() => {
@@ -79,5 +80,37 @@ describe("HomeDashboard", () => {
       fireEvent.click(screen.getByText("year-2024"));
     });
     expect(screen.getByTestId("upcoming").dataset.ids).toBe("next-release");
+  });
+
+  it("把继续观看放在看板最上方，没有条目时不占位", () => {
+    const { rerender } = render(
+      <HomeDashboard
+        summary={[]}
+        topMovies={[]}
+        topSeries={[]}
+        distributions={buildMediaDistributions([])}
+      />,
+    );
+    expect(screen.queryByRole("heading", { name: "继续观看" })).not.toBeInTheDocument();
+
+    const item: ContinueWatchingCard = {
+      showId: "show-1",
+      title: "跑男",
+      posterPath: null,
+      href: "/shows/show-1",
+      nextEpisode: null,
+      seasonProgress: { seasonNumber: 1, watched: 1, total: 1 },
+    };
+    rerender(
+      <HomeDashboard
+        summary={[]}
+        topMovies={[]}
+        topSeries={[]}
+        distributions={buildMediaDistributions([])}
+        continueWatching={[item]}
+      />,
+    );
+    expect(screen.getByRole("heading", { name: "继续观看" })).toBeInTheDocument();
+    expect(screen.getByRole("link")).toHaveAttribute("href", "/shows/show-1");
   });
 });
