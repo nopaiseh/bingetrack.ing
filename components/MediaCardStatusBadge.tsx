@@ -1,4 +1,5 @@
 import type { ReactElement } from "react";
+import { resolveWatchStatus } from "@/components/watch-status";
 
 interface StatusBadgeConfig {
   label: string;
@@ -8,40 +9,17 @@ interface StatusBadgeConfig {
   textClass: string;
 }
 
-/** 解析观看状态值，返回对应的红绿灯视觉样式配置；未记录状态返回 null。 */
+/** 解析观看状态值，返回与全站一致的红绿灯样式；未记录状态返回 null。 */
 export function getStatusBadgeConfig(status: string | null | undefined): StatusBadgeConfig | null {
-  if (!status) return null;
-  const normalized = status.trim().toLowerCase();
-
-  if (normalized === "watched" || normalized === "已看" || normalized === "已观看") {
-    return {
-      label: "已看",
-      dotClass: "bg-[var(--ok)]",
-      borderClass: "border-[color-mix(in_srgb,var(--ok)_45%,var(--border))]",
-      textClass: "text-[var(--ok)]",
-    };
-  }
-
-  if (normalized === "watching" || normalized === "在看" || normalized === "正在看") {
-    return {
-      label: "在看",
-      dotClass: "bg-[var(--warn)]",
-      pulse: true,
-      borderClass: "border-[color-mix(in_srgb,var(--warn)_45%,var(--border))]",
-      textClass: "text-[var(--warn)]",
-    };
-  }
-
-  if (normalized === "want_to_watch" || normalized === "想看" || normalized === "想要看") {
-    return {
-      label: "想看",
-      dotClass: "bg-[var(--accent)]",
-      borderClass: "border-[var(--accent-border)]",
-      textClass: "text-[var(--accent-hover)]",
-    };
-  }
-
-  return null;
+  const config = resolveWatchStatus(status);
+  if (!config) return null;
+  return {
+    label: config.label,
+    dotClass: config.dotClass,
+    ...(config.pulse ? { pulse: true } : {}),
+    borderClass: config.borderClass,
+    textClass: config.textClass,
+  };
 }
 
 /** 渲染卡片右上角的红绿灯观看状态微光徽标（已看=绿，在看=黄，想看=红）。 */

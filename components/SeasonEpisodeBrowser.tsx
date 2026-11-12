@@ -18,6 +18,7 @@ import {
   type SeasonStatusFilter,
 } from "@/lib/season-browse";
 import type { EpisodeInfo } from "@/lib/types";
+import { WatchStatusBadge } from "@/components/watch-status";
 
 const STATUS_LABELS: Record<SeasonStatusFilter, string> = { all: "全部", watched: "已看", unwatched: "未看" };
 
@@ -76,15 +77,12 @@ function BrowseLink({
   );
 }
 
-/** 已看为绿色胶囊；未记录和想看都归入未看，与筛选口径一致。 */
+/** 已看沿用全站绿色胶囊；未记录和想看都归入未看，与筛选口径一致。 */
 function StatusPill({ status }: { status: string | null }) {
-  const watched = status === "watched";
+  if (status === "watched") return <WatchStatusBadge status="watched" className="px-2.5 py-1" />;
   return (
-    <span className={`inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border px-2.5 py-1 text-xs font-medium ${
-      watched ? "border-[color-mix(in_srgb,var(--ok)_45%,var(--border))] bg-[var(--ok-soft)] text-[var(--ok)]" : "border-[var(--border)] bg-[var(--surface-2)] text-fg-muted"
-    }`}>
-      {watched && <span className="i-material-symbols-check-circle-rounded inline-block size-3.5" aria-hidden="true" />}
-      {watched ? "已看" : "未看"}
+    <span className="inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border border-[var(--border)] bg-[var(--surface-2)] px-2.5 py-1 text-xs font-medium text-fg-muted">
+      未看
     </span>
   );
 }

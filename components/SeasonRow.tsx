@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { SeasonInfo } from "@/lib/types";
 import { seasonListLabel } from "@/lib/season-label";
+import { WatchStatusBadge } from "@/components/watch-status";
 
 /** 已看完、看过一部分、还没看，对应单集列表里的状态胶囊。 */
 function seasonWatchLabel(season: SeasonInfo): "已看" | "在看" | "未看" {
@@ -30,8 +31,6 @@ function SeasonListItem({ seriesId, season }: { seriesId: string; season: Season
   const percent = season.episodeCount > 0
     ? Math.min(100, Math.round((season.watchedEpisodeCount / season.episodeCount) * 100))
     : 0;
-  const watched = watchLabel === "已看";
-
   return (
     <Link
       href={`/shows/${seriesId}/seasons/${season.id}`}
@@ -62,12 +61,13 @@ function SeasonListItem({ seriesId, season }: { seriesId: string; season: Season
         ) : null}
       </div>
       <div className="col-start-2 justify-self-start sm:col-start-3 sm:row-start-1 sm:self-start">
-        <span className={`inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border px-2.5 py-1 text-xs font-medium ${
-          watched ? "border-[color-mix(in_srgb,var(--ok)_45%,var(--border))] bg-[var(--ok-soft)] text-[var(--ok)]" : "border-[var(--border)] bg-[var(--surface-2)] text-fg-muted"
-        }`}>
-          {watched ? <span className="i-material-symbols-check-circle-rounded inline-block size-3.5" aria-hidden="true" /> : null}
-          {watchLabel}
-        </span>
+        {watchLabel === "未看" ? (
+          <span className="inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border border-[var(--border)] bg-[var(--surface-2)] px-2.5 py-1 text-xs font-medium text-fg-muted">
+            未看
+          </span>
+        ) : (
+          <WatchStatusBadge status={watchLabel} className="px-2.5 py-1" />
+        )}
       </div>
     </Link>
   );

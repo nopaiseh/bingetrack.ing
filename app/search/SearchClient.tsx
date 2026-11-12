@@ -9,6 +9,7 @@ import type { SearchOptions } from "@/lib/functions/search-options";
 import { PAGE_SIZE, readFilters, writeFilters, readSearchPage, buildMediaSearchQuery, type SearchFilters } from "@/lib/api/search-state";
 
 import { SearchMediaCard, SearchMediaCardSkeleton } from "@/components/SearchMediaCard";
+import { WATCH_STATUSES } from "@/components/watch-status";
 import SearchLoading from "./loading";
 import { pageNumbers } from "@/lib/pagination";
 
@@ -26,9 +27,9 @@ const TYPE_OPTIONS = [
 ];
 
 const STATUS_OPTIONS = [
-  { value: "want_to_watch", label: "想看" },
-  { value: "watching", label: "在看" },
-  { value: "watched", label: "已看" },
+  { value: "want_to_watch", label: WATCH_STATUSES.want_to_watch.label },
+  { value: "watching", label: WATCH_STATUSES.watching.label },
+  { value: "watched", label: WATCH_STATUSES.watched.label },
   { value: "upcoming", label: "即将上映" },
 ];
 
@@ -105,11 +106,11 @@ function SearchEmptyState({
   return (
     <div className="col-span-full flex flex-col items-center px-4 py-16 text-center sm:py-24" role="status">
       <span className="i-material-symbols-search-off-rounded mb-5 inline-block size-14 text-[var(--accent-light)]" aria-hidden="true" />
-      <p className="text-lg font-semibold text-white">暂无符合条件的作品</p>
+      <p className="text-lg font-semibold text-white">没有匹配的结果</p>
       <p className="mt-2 max-w-md text-sm leading-relaxed text-fg-muted">
         {query
-          ? `没有找到与「${query}」匹配的电影、电视节目或人物。换个关键词，或清除当前筛选后再试。`
-          : "没有作品符合当前筛选。可以放宽条件，或从下面的方向开始。"}
+          ? `没有找到与「${query}」匹配的内容。请检查拼写，或清除筛选后再试。`
+          : "没有找到符合当前筛选的内容。请调整条件，或清除筛选后再试。"}
       </p>
       {canReset && (
         <button
@@ -432,9 +433,9 @@ function SearchContent({ initialOptions, initialResult }: SearchProps) {
       <div className="md:hidden">
         <div className="mx-auto mb-3 h-1.5 w-10 rounded-full bg-white/25" aria-hidden="true" />
         <div className="mb-2 flex items-center justify-between gap-3 border-b border-white/10 pb-3">
-          <h2 id="search-filter-heading" className="text-base font-semibold text-white">
+          <p id="search-filter-heading" className="text-base font-semibold text-white">
             筛选{activeFilterCount > 0 ? ` (${activeFilterCount})` : ""}
-          </h2>
+          </p>
           <button
             type="button"
             onClick={() => setMobileFiltersOpen(false)}
@@ -789,7 +790,7 @@ function SearchContent({ initialOptions, initialResult }: SearchProps) {
               <button
                 type="button"
                 onClick={() => setFilters({ type: [], status: [], genre: [], region: [], language: [], year: [], sort: filters.sort || ["date_desc"] })}
-                className="ml-auto inline-flex items-center gap-1 text-xs text-fg-subtle hover:text-[var(--accent-hover)] transition-colors px-2 py-1 cursor-pointer"
+                className="ml-auto inline-flex items-center gap-1 px-2 py-1 text-xs text-fg-secondary transition-colors hover:text-fg cursor-pointer"
               >
                 <span className="i-material-symbols-restart-alt-rounded size-3.5 inline-block" aria-hidden="true" />
                 清空筛选
@@ -800,7 +801,7 @@ function SearchContent({ initialOptions, initialResult }: SearchProps) {
 
         <section ref={resultsRef} className="w-full scroll-mt-24" aria-labelledby="search-results-heading">
           <div className="mb-8 flex flex-col items-start justify-between gap-3 sm:flex-row sm:items-center">
-            <h2 id="search-results-heading" className="text-2xl font-bold text-white tracking-wide">
+            <h1 id="search-results-heading" className="text-2xl font-bold text-white tracking-wide">
               {urlQuery ? (
                 <>
                   <span className="text-[var(--accent-hover)]">&quot;{urlQuery}&quot;</span> 的搜索结果
@@ -808,7 +809,7 @@ function SearchContent({ initialOptions, initialResult }: SearchProps) {
               ) : (
                 "搜索结果"
               )}
-            </h2>
+            </h1>
             <div className="flex w-full flex-wrap items-center justify-between gap-3 sm:w-auto sm:justify-end sm:gap-4">
               <span className="surface-muted min-w-32 rounded-full border border-white/10 px-4 py-1.5 text-center text-sm font-medium text-white shadow-[0_4px_10px_rgba(0,0,0,0.2)] backdrop-blur-2xl transition-all">
                 {isLoading ? "加载中..." : requestError ? "加载失败" : `找到 ${total} 部作品`}

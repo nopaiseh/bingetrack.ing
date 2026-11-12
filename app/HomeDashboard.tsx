@@ -7,6 +7,7 @@ import { PosterRowSkeleton } from "@/components/LoadingSkeletons";
 import DashboardYearPicker from "@/components/DashboardYearPicker";
 import UpcomingHero from "@/components/UpcomingHero";
 import AnimatedNumber from "@/components/AnimatedNumber";
+import { WATCH_STATUSES } from "@/components/watch-status";
 import type { MediaCard, MediaDistribution, MediaDistributions, Summary, UpcomingRelease } from "@/lib/types";
 
 const CategoryHeaderCards = dynamic(() => import("@/components/dashboard/CategoryHeaderCards"), {
@@ -94,12 +95,14 @@ function percent(value: number, total: number) {
 function MediaStatusCard({
   title,
   icon,
+  toneClass,
   count,
   details,
   href,
 }: {
   title: string;
   icon: string;
+  toneClass: string;
   count: number;
   details?: string;
   href?: string;
@@ -108,7 +111,7 @@ function MediaStatusCard({
     <>
       <div className="flex items-center justify-between text-sm font-semibold text-fg transition-colors group-hover:text-[var(--accent-hover)]">
         <div className="flex items-center gap-2.5">
-          <span className={`${icon} size-4 inline-block text-[var(--accent)] group-hover:text-[var(--accent-hover)]`} aria-hidden="true" />
+          <span className={`${icon} size-4 inline-block ${toneClass} group-hover:text-[var(--accent-hover)]`} aria-hidden="true" />
           <span>{title}</span>
         </div>
         {href && (
@@ -378,14 +381,16 @@ export default function HomeDashboard({
 
               <div className="grid grid-cols-2 gap-3 sm:gap-4">
                 <MediaStatusCard
-                  title="已观看"
+                  title={WATCH_STATUSES.watched.label}
                   icon="i-material-symbols-check-circle-outline-rounded"
+                  toneClass={WATCH_STATUSES.watched.textClass}
                   count={watchedMovies}
                   href={getStatusSearchLink("movie", "watched", selectedYear)}
                 />
                 <MediaStatusCard
-                  title="想要看"
+                  title={WATCH_STATUSES.want_to_watch.label}
                   icon="i-material-symbols-bookmark-outline-rounded"
+                  toneClass={WATCH_STATUSES.want_to_watch.textClass}
                   count={unwatchedMovies}
                   href={getStatusSearchLink("movie", "want_to_watch", selectedYear)}
                 />
@@ -419,22 +424,25 @@ export default function HomeDashboard({
 
               <div className="grid grid-cols-3 gap-2.5 sm:gap-4">
                 <MediaStatusCard
-                  title="已观看"
+                  title={WATCH_STATUSES.watched.label}
                   icon="i-material-symbols-check-circle-outline-rounded"
+                  toneClass={WATCH_STATUSES.watched.textClass}
                   count={watchedSeries}
                   details={`${currentYearData?.watched_seasons ?? 0}季 · ${watchedEpisodes}集`}
                   href={getStatusSearchLink("tv_show", "watched", selectedYear)}
                 />
                 <MediaStatusCard
-                  title="正在看"
+                  title={WATCH_STATUSES.watching.label}
                   icon="i-material-symbols-play-circle-outline-rounded"
+                  toneClass={WATCH_STATUSES.watching.textClass}
                   count={watchingSeries}
                   details={`${currentYearData?.watching_seasons ?? 0}季`}
                   href={getStatusSearchLink("tv_show", "watching", selectedYear)}
                 />
                 <MediaStatusCard
-                  title="想要看"
+                  title={WATCH_STATUSES.want_to_watch.label}
                   icon="i-material-symbols-bookmark-outline-rounded"
+                  toneClass={WATCH_STATUSES.want_to_watch.textClass}
                   count={unwatchedSeries}
                   details={`${currentYearData?.unwatched_seasons ?? 0}季 · ${unwatchedEpisodes}集`}
                   href={getStatusSearchLink("tv_show", "want_to_watch", selectedYear)}
