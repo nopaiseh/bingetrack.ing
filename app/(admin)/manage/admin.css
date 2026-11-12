@@ -436,3 +436,115 @@
   display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between;
   gap: .75rem 1rem; border-top: 1px solid var(--border); padding: .75rem 1rem;
 }
+
+/* 报告概览：待处理用警示色强调数量，已清理收起后仍用实色文字，不用透明度。 */
+.admin-report-board { display: flex; flex-direction: column; gap: 1.5rem; }
+.admin-report-kicker { margin-bottom: .75rem; font-size: .875rem; font-weight: 500; color: var(--fg-3); }
+.admin-report-empty { font-size: .875rem; line-height: 1.5; color: var(--fg-2); }
+.admin-report-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: .85rem; align-items: start; }
+.admin-report-pill {
+  display: inline-flex; align-items: center; gap: .35rem; min-height: 2rem;
+  padding: .2rem .8rem; border: 1px solid var(--border); border-radius: 9999px;
+  background: var(--surface-2); color: var(--fg-2); font-size: .875rem; line-height: 1.25;
+  white-space: nowrap;
+}
+.admin-report-pill.is-pending {
+  border-color: color-mix(in srgb, var(--warn) 55%, var(--border));
+  background: var(--warn-soft); color: var(--warn);
+}
+.admin-report-card {
+  min-width: 0; border: 1px solid color-mix(in srgb, var(--warn) 58%, var(--border));
+  border-radius: 1rem; background: color-mix(in srgb, var(--warn) 7%, var(--surface-panel));
+}
+.admin-report-card.is-error {
+  border-color: color-mix(in srgb, var(--danger) 55%, var(--border));
+  background: color-mix(in srgb, var(--danger) 7%, var(--surface-panel));
+}
+.admin-report-icon {
+  display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0;
+  width: 2.25rem; height: 2.25rem; border-radius: .7rem;
+  background: var(--warn-soft); color: var(--warn);
+}
+.admin-report-card.is-error .admin-report-icon { background: var(--danger-soft); color: var(--danger); }
+.admin-report-count { color: var(--warn); font-size: .875rem; font-weight: 600; font-variant-numeric: tabular-nums; line-height: 1.3; }
+.admin-report-count.is-error { color: var(--danger); }
+.admin-shell a.admin-report-summary {
+  display: flex; align-items: flex-start; gap: .85rem;
+  padding: 1rem 1.05rem 1.05rem; border-radius: inherit;
+  color: inherit; text-decoration: none;
+}
+.admin-shell a.admin-report-summary:hover { background: color-mix(in srgb, var(--warn) 6%, transparent); }
+.admin-shell a.admin-report-summary:focus-visible { outline: 2px solid var(--accent); outline-offset: -3px; }
+.admin-report-summary-copy { min-width: 0; flex: 1; }
+.admin-report-summary h3,
+.admin-report-head h3 { font-size: 1rem; font-weight: 600; line-height: 1.4; color: var(--fg); overflow-wrap: anywhere; }
+.admin-report-desc { margin-top: .45rem; color: var(--fg-2); font-size: .875rem; line-height: 1.5; }
+.admin-report-summary .admin-report-count { display: block; margin-top: .8rem; font-size: 1.25rem; }
+.admin-report-detail { display: none; padding: 1.05rem 1.15rem .9rem; }
+.admin-report-head { display: flex; align-items: center; gap: .85rem; }
+.admin-report-head h3 { min-width: 0; flex: 1; }
+.admin-shell .admin-report-head h3 a { color: var(--fg); text-decoration: none; border-radius: .25rem; }
+.admin-shell .admin-report-head h3 a:hover { color: var(--accent-hover); }
+.admin-shell .admin-report-head h3 a:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+.admin-report-head .admin-report-count { margin: 0; font-size: 1rem; white-space: nowrap; }
+.admin-report-rows { margin-top: .35rem; }
+.admin-shell a.admin-report-row {
+  display: grid; grid-template-columns: minmax(0, 1fr) auto; column-gap: .75rem; row-gap: .15rem;
+  align-items: baseline; min-height: 2.5rem; padding: .7rem .15rem;
+  border-top: 1px solid color-mix(in srgb, var(--warn) 28%, var(--border));
+  border-radius: .4rem; color: var(--fg); text-decoration: none;
+}
+.admin-shell a.admin-report-row:hover { background: color-mix(in srgb, var(--warn) 6%, transparent); }
+.admin-shell a.admin-report-row:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.admin-report-row-title { font-size: .875rem; font-weight: 600; line-height: 1.4; overflow-wrap: anywhere; }
+.admin-report-row-detail {
+  grid-column: 1; color: var(--fg-2); font-size: .875rem; line-height: 1.45; overflow-wrap: anywhere;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+}
+.admin-report-action { grid-column: 2; grid-row: 1; color: var(--fg-2); font-size: .875rem; white-space: nowrap; }
+.admin-shell a.admin-report-row:hover .admin-report-action { color: var(--accent-light); }
+.admin-shell a.admin-report-more {
+  display: inline-flex; align-items: center; min-height: 2.5rem; margin-top: .15rem;
+  color: var(--accent-light); font-size: .875rem; font-weight: 600; text-decoration: none;
+}
+.admin-shell a.admin-report-more:hover { color: var(--fg); }
+.admin-shell a.admin-report-more:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: .25rem; }
+@media (min-width: 768px) {
+  .admin-report-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .admin-shell a.admin-report-summary { display: none; }
+  .admin-report-detail { display: block; }
+}
+.admin-shell button.admin-report-toggle {
+  display: flex; width: 100%; align-items: center; justify-content: flex-start; gap: .75rem;
+  min-height: 3.25rem; margin: 0; padding: .8rem 1rem;
+  border: 1px solid var(--border); border-radius: 1rem;
+  background: var(--surface-2); color: var(--fg-2); box-shadow: none;
+  text-align: left; font-size: .875rem; font-weight: 500; line-height: 1.4;
+}
+.admin-shell button.admin-report-toggle:hover {
+  border-color: var(--border-strong); background: var(--surface-3); color: var(--fg); box-shadow: none;
+}
+.admin-shell button.admin-report-toggle:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+.admin-report-chevron { flex-shrink: 0; color: var(--fg-2); transition: transform 160ms ease; }
+.admin-report-toggle[aria-expanded="true"] .admin-report-chevron { transform: rotate(90deg); }
+.admin-report-toggle-copy { min-width: 0; flex: 1; }
+.admin-report-toggle-title { display: block; color: var(--fg); font-size: .875rem; font-weight: 600; }
+.admin-report-toggle-hint { display: block; margin-top: .15rem; color: var(--fg-2); font-size: .875rem; font-weight: 400; line-height: 1.45; }
+.admin-report-toggle-state { flex-shrink: 0; color: var(--fg-3); font-size: .875rem; font-weight: 500; }
+.admin-report-cleared-panel { margin-top: .75rem; }
+.admin-shell a.admin-report-cleared {
+  display: flex; align-items: flex-start; gap: .75rem; min-height: 2.5rem;
+  padding: .9rem 1rem; border: 1px solid var(--border); border-radius: .9rem;
+  background: var(--surface-2); color: var(--fg-2); text-decoration: none;
+}
+.admin-shell a.admin-report-cleared:hover { border-color: var(--border-strong); background: var(--surface-3); color: var(--fg); }
+.admin-shell a.admin-report-cleared:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+.admin-report-cleared-icon { flex-shrink: 0; margin-top: .1rem; color: var(--fg-3); }
+.admin-report-cleared-copy { min-width: 0; flex: 1; }
+.admin-report-cleared-title { display: block; color: var(--fg-2); font-size: .875rem; font-weight: 600; line-height: 1.4; overflow-wrap: anywhere; }
+.admin-shell a.admin-report-cleared:hover .admin-report-cleared-title { color: var(--fg); }
+.admin-report-cleared-desc { display: block; margin-top: .2rem; color: var(--fg-3); font-size: .875rem; line-height: 1.45; }
+.admin-report-cleared-state {
+  display: inline-flex; align-items: center; gap: .2rem; margin-left: auto;
+  color: var(--fg-3); font-size: .875rem; white-space: nowrap;
+}
