@@ -54,6 +54,29 @@ it("电影和单集由评分决定观看状态，电视节目和季显示只读�
   expect(screen.getByText(/电视节目的观看状态由下属单集自动汇总决定/)).toBeInTheDocument();
 });
 
+it("单集不提供封面地址，电影和电视节目仍保留，已有剧照在保存时原样带回", () => {
+  const { container, unmount } = render(<MediaForm initialType="movie" />);
+  const cover = screen.getByLabelText("封面地址（TMDB）");
+  fireEvent.change(cover, { target: { value: "https://image.tmdb.org/t/p/w500/poster.jpg" } });
+  fireEvent.change(screen.getByLabelText("类型"), { target: { value: "tv_episode" } });
+  expect(screen.queryByLabelText("封面地址（TMDB）")).not.toBeInTheDocument();
+  expect(screen.queryByPlaceholderText("https://image.tmdb.org/t/p/original/…")).not.toBeInTheDocument();
+  expect(container.querySelector('input[name="cover_url"]')).toHaveValue("");
+  fireEvent.change(screen.getByLabelText("类型"), { target: { value: "tv_show" } });
+  expect(screen.getByLabelText("封面地址（TMDB）")).toHaveValue("https://image.tmdb.org/t/p/w500/poster.jpg");
+  unmount();
+
+  const episode = render(<MediaForm initialType="tv_episode" lockType item={{
+    id: "ep-1", type: "tv_episode", title: "启程", alternate_title: null, summary: null,
+    cover_url: "https://image.tmdb.org/t/p/w500/still.jpg", release_date: "2024-01-01", runtime: 40,
+    parent_id: "season-1", number: 1, status: "want_to_watch", rating: null,
+    genres: [], languages: [], regions: [], actors: [], directors: [],
+  }} />);
+  expect(screen.queryByLabelText(/封面/)).not.toBeInTheDocument();
+  expect(episode.container.querySelector('input[name="cover_url"]')).toHaveAttribute("type", "hidden");
+  expect(episode.container.querySelector('input[name="cover_url"]')).toHaveValue("https://image.tmdb.org/t/p/w500/still.jpg");
+});
+
 it("lockType 为真时锁定媒体类型，不展示分段切换控件", () => {
   render(<MediaForm initialType="tv_episode" lockType={true} />);
   expect(screen.queryByRole("tablist", { name: "媒体类型快捷选择" })).not.toBeInTheDocument();

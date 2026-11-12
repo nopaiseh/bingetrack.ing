@@ -1,19 +1,19 @@
-import Image from "next/image";
 import Link from "next/link";
 import { requireOwner } from "@/lib/auth/server";
 import { mediaTypes, type ManagedMediaType } from "@/lib/admin/media-form";
 import { titleOrAliasFilter } from "@/lib/admin/catalog";
 import { isMediaId } from "@/lib/functions/media-id";
 import StatusModal from "./StatusModal";
-import ManagePagination from "./ManagePagination";
 import { redirect } from "next/navigation";
 import { formatRuntime } from "@/lib/format-runtime";
 import { formatCount } from "./media/series/shared";
 import Overview from "./Overview";
 import { statusLabels } from "./media/series/shared";
 import PageHeader, { AdminCrumb } from "../PageHeader";
+import AdminList from "./list/AdminList";
+import { ADMIN_LIST_PAGE_SIZE, mediaBulkActions, type AdminListRow } from "./list/model";
 
-const PAGE_SIZE = 25;
+const PAGE_SIZE = ADMIN_LIST_PAGE_SIZE;
 const sorts = { date: "上映日期（新→旧）", title: "标题", rating: "评分（高→低）" } as const;
 
 /** 只把表、视图或新列缺失（迁移尚未应用）识别为可降级的错误，权限与网络错误照常抛出。 */
@@ -130,6 +130,64 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
     }
   }
 
+  const columns = [
+    { key: "date", label: aggregated ? "最近播出" : "上映", className: "admin-col-date" },
+    ...(type === "movie" ? [{ key: "runtime", label: "片长", className: "admin-col-runtime" }] : []),
+    ...(type === "tv_show" ? [{ key: "structure", label: "季 / 集", className: "admin-col-structure" }] : []),
+    ...(type === "tv_season" ? [] : [{ key: "rating", label: "评分", className: "admin-col-rating" }]),
+  ];
+  const listRows: AdminListRow[] = rows.map(/* 兼容 PostgREST 根据唯一外键返回的单对象关系。 */ item => {
+    const tracking = Array.isArray(item.tracking) ? item.tracking[0] : item.tracking;
+    let itemStatus = tracking?.status ?? "want_to_watch";
+    let rating = tracking?.rating != null ? Number(tracking.rating) : null;
+    if (item.type === "tv_show") {
+      const derived = derivedStatusMap.get(item.id);
+      itemStatus = derived?.status ?? "want_to_watch";
+      rating = derived?.rating ?? null;
+    } else if (item.type === "tv_season") {
+      const derived = derivedStatusMap.get(item.id);
+      itemStatus = derived?.status ?? "want_to_watch";
+      rating = null;
+    }
+    const statusLabel = statusLabels[itemStatus as keyof typeof statusLabels] ?? statusLabels.want_to_watch;
+    const seasonList = item.seasons ?? [];
+    const episodeTotal = seasonList.reduce((sum, season) => sum + (season.episodes?.[0]?.count ?? 0), 0);
+    const nextSeason = Math.max(0, ...seasonList.map(season => season.season_number)) + 1;
+    const date = aggregated ? latestAired.get(item.id) : item.release_date;
+    const context = item.tv_seasons ? `${item.tv_seasons.parent?.title ?? "未知电视节目"} · 第 ${item.tv_seasons.season_number} 季 · ${formatCount(item.tv_seasons.episodes?.[0]?.count ?? 0)} 集`
+      : item.tv_episodes ? `${item.tv_episodes.parent?.series?.title ?? ""} · ${item.tv_episodes.parent?.media_items?.title ?? "未知季"} · 第 ${formatCount(item.tv_episodes.episode_number)} 集` : null;
+    const minutes = item.runtime == null ? null : Number(item.runtime);
+    const runtime = formatRuntime(minutes);
+    const cells = [
+      { key: "date", label: aggregated ? "最近播出" : "上映", value: date ?? "—" },
+      ...(item.type === "movie" ? [{ key: "runtime", label: "片长", value: runtime ?? "—" }] : []),
+      ...(item.type === "tv_show" ? [{ key: "structure", label: "季 / 集", value: `${formatCount(seasonList.length)} 季 · ${formatCount(episodeTotal)} 集` }] : []),
+      ...(item.type === "tv_season" ? [] : [{ key: "rating", label: "评分", value: rating != null ? rating.toFixed(1) : "—" }]),
+    ];
+    const tone: "watched" | "watching" | "want" = itemStatus === "watched" ? "watched" : itemStatus === "watching" ? "watching" : "want";
+    return {
+      id: item.id,
+      href: `/manage/media/${item.id}?type=${item.type}`,
+      title: item.title,
+      subtitle: item.alternate_title,
+      detail: (item.type === "movie"
+        ? [date, minutes ? `${Math.round(minutes)} 分钟` : null]
+        : item.type === "tv_show"
+          ? [date, `${formatCount(seasonList.length)} 季 · ${formatCount(episodeTotal)} 集`]
+          : cells.map(cell => cell.value).filter(value => value !== "—")).filter(Boolean).join(" · "),
+      meta: context,
+      imageUrl: item.cover_url,
+      cells,
+      status: { label: statusLabel, tone },
+      trailing: item.type === "tv_show"
+        ? { href: `/manage/media/${item.id}?type=tv_show&add=season`, label: `为${item.title}新增第 ${formatCount(nextSeason)} 季`, icon: "i-material-symbols-add-rounded" }
+        : item.type === "movie"
+          ? { href: `/movies/${item.id}`, label: `查看${item.title}的公开页面`, icon: "i-material-symbols-arrow-outward-rounded" }
+          : null,
+    };
+  });
+  const noun = type === "tv_episode" ? "集" : type === "tv_season" ? "季" : "部";
+
   return <section>
     <PageHeader
       eyebrow={<AdminCrumb current={mediaTypes[type]} />}
@@ -145,68 +203,44 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
           <span>当前仅显示所选条目的下属{mediaTypes[type]}</span>
         </div>
         <div className="flex items-center gap-3">
-          <Link href={`/manage/media/${parent}`} className="text-xs text-neutral-300 underline hover:text-white transition-colors">
+          <Link href={`/manage/media/${parent}`} className="text-sm text-neutral-300 underline hover:text-white transition-colors">
             返回上级条目
           </Link>
-          <Link href={`/manage?type=${type}`} className="admin-button !py-1 !px-3 text-xs">
+          <Link href={`/manage?type=${type}`} className="admin-button !min-h-10 !py-1 !px-3 text-sm">
             查看全部{mediaTypes[type]}
           </Link>
         </div>
       </div>
     )}
-    <form className="surface-panel mb-6 rounded-2xl p-4 sm:p-6 grid grid-cols-2 items-end gap-3 md:grid-cols-[minmax(0,1fr)_9rem_11rem_auto]">
-      <label className="col-span-2 md:col-span-1">搜索标题<input name="q" defaultValue={q} maxLength={200} placeholder="输入标题或副标题" /></label>
-      <label>观看状态<select name="status" defaultValue={status}><option value="">全部</option>{Object.entries(statusLabels).filter(([value]) => !(value === "watching" && !aggregated)).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label>
-      <label>排序<select name="sort" defaultValue={sort}>{Object.entries(sorts).filter(([value]) => !(value === "rating" && type === "tv_season")).map(([value, label]) => <option key={value} value={value}>{value === "date" && aggregated ? "最近播出（新→旧）" : label}</option>)}</select></label>
-      <input type="hidden" name="type" value={type} />
-      {parent && <input type="hidden" name="parent" value={parent} />}
-      <button type="submit" className="col-span-2 md:col-span-1">筛选</button>
-    </form>
-    {rows.length > 0 && <div className="surface-panel overflow-hidden rounded-2xl">
-    <div className="hidden items-center gap-4 px-6 py-3 text-xs tracking-wider text-fg-subtle sm:flex" aria-hidden="true">
-      <span className="flex-1 pl-15">标题</span>
-      {(type === "movie" || type === "tv_show") && <span className="w-36">{type === "movie" ? "片长" : "季 / 集"}</span>}
-      <span className="w-32">观看</span>
-      {(type === "movie" || type === "tv_show") && <span className="w-32 text-right">{type === "tv_show" ? "新增" : ""}</span>}
-    </div>
-    <ul className="divide-y divide-white/10 border-t border-white/10">{rows.map(/* 兼容 PostgREST 根据唯一外键返回的单对象关系。 */ item => {
-      const tracking = Array.isArray(item.tracking) ? item.tracking[0] : item.tracking;
-      let itemStatus = tracking?.status ?? "want_to_watch";
-      let rating = tracking?.rating != null ? Number(tracking.rating) : null;
-      if (item.type === "tv_show") {
-        const derived = derivedStatusMap.get(item.id);
-        itemStatus = derived?.status ?? "want_to_watch";
-        rating = derived?.rating ?? null;
-      } else if (item.type === "tv_season") {
-        const derived = derivedStatusMap.get(item.id);
-        itemStatus = derived?.status ?? "want_to_watch";
-        rating = null;
-      }
-      const statusLabel = statusLabels[itemStatus as keyof typeof statusLabels] ?? statusLabels.want_to_watch;
-      const seasonList = item.seasons ?? [];
-      const episodeTotal = seasonList.reduce((sum, season) => sum + (season.episodes?.[0]?.count ?? 0), 0);
-      const nextSeason = Math.max(0, ...seasonList.map(season => season.season_number)) + 1;
-      const date = aggregated ? latestAired.get(item.id) : item.release_date;
-      const context = item.tv_seasons ? `${item.tv_seasons.parent?.title ?? "未知电视节目"} · 第 ${item.tv_seasons.season_number} 季 · ${formatCount(item.tv_seasons.episodes?.[0]?.count ?? 0)} 集`
-        : item.tv_episodes ? `${item.tv_episodes.parent?.series?.title ?? ""} · ${item.tv_episodes.parent?.media_items?.title ?? "未知季"} · 第 ${formatCount(item.tv_episodes.episode_number)} 集` : null;
-      return <li key={item.id} className="flex flex-col gap-3 px-5 py-4 transition-colors hover:bg-white/[0.04] sm:flex-row sm:items-center sm:gap-4 sm:px-6">
-        <Link href={`/manage/media/${item.id}?type=${item.type}`} className="group flex min-w-0 flex-1 items-center gap-4">
-          {item.cover_url ? <Image src={item.cover_url} alt="" width={44} height={66} className="h-16 w-11 shrink-0 rounded-md object-cover" /> : <span className="surface-muted h-16 w-11 shrink-0 rounded-md border border-white/10" aria-hidden="true" />}
-          <span className="min-w-0">
-            <span className="block break-words font-medium text-white transition-colors group-hover:text-[var(--accent-hover)]">{item.title}</span>
-            <span className="mt-1 block text-sm text-neutral-400">{[item.alternate_title, date && `${aggregated ? "最近播出 " : ""}${date}`].filter(Boolean).join(" · ") || mediaTypes[item.type]}</span>
-            {context && <span className="mt-1 block text-xs text-neutral-400">{context}</span>}
-          </span>
-        </Link>
-        <div className="flex flex-wrap items-center gap-3 sm:flex-nowrap">
-          {item.type === "tv_show" && <span className="whitespace-nowrap font-mono text-sm text-neutral-300 sm:w-36">{formatCount(seasonList.length)} 季 · {formatCount(episodeTotal)} 集</span>}
-          {item.type === "movie" && <span className="whitespace-nowrap font-mono text-sm text-neutral-300 sm:w-36">{formatRuntime(item.runtime == null ? null : Number(item.runtime)) ?? "—"}</span>}
-          <span className="sm:w-32"><span className="surface-muted inline-block whitespace-nowrap rounded-full border border-white/10 px-3 py-1 text-xs text-neutral-300">{statusLabel}{rating != null ? ` · ${rating.toFixed(1)} 分` : ""}</span></span>
-          {item.type === "tv_show" && <span className="sm:flex sm:w-32 sm:justify-end"><Link href={`/manage/media/${item.id}?type=tv_show&add=season`} aria-label={`为${item.title}新增第 ${nextSeason} 季`} className="admin-button admin-add"><span className="i-material-symbols-add-rounded size-4.5" aria-hidden="true" />第 {formatCount(nextSeason)} 季</Link></span>}
-          {item.type === "movie" && <span className="sm:flex sm:w-32 sm:justify-end"><Link href={`/movies/${item.id}`} aria-label={`查看${item.title}的公开页面`} className="admin-button !min-h-9 !w-9 !px-0"><span className="i-material-symbols-arrow-outward-rounded size-4.5" aria-hidden="true" /></Link></span>}
-        </div>
-      </li>; })}</ul></div>}
-    {!rows.length && <p className="surface-panel rounded-2xl px-6 py-16 text-center text-neutral-400">没有符合条件的条目。</p>}
-    <ManagePagination page={page} totalPages={totalPages} params={filters} />
+    <AdminList
+      basePath="/manage"
+      preserved={{ type, ...(parent ? { parent } : {}) }}
+      defaults={{ sort: "date" }}
+      search={{ name: "q", label: "搜索标题", placeholder: "搜索标题或原名", value: q }}
+      chips={{
+        name: "status",
+        label: "观看状态",
+        value: status,
+        options: [{ value: "", label: "全部" }, ...Object.entries(statusLabels).filter(([value]) => !(value === "watching" && !aggregated)).map(([value, label]) => ({ value, label }))],
+      }}
+      selects={[{
+        name: "sort",
+        label: "排序",
+        value: sort,
+        options: Object.entries(sorts).filter(([value]) => !(value === "rating" && type === "tv_season")).map(([value, label]) => ({ value, label: value === "date" && aggregated ? "最近播出（新→旧）" : label })),
+      }]}
+      columns={columns}
+      rows={listRows}
+      page={page}
+      pageSize={PAGE_SIZE}
+      total={count}
+      totalPages={totalPages}
+      pageParams={filters}
+      empty="没有符合条件的条目。"
+      noun={noun}
+      listLabel={`${mediaTypes[type]}列表`}
+      actions={mediaBulkActions}
+      showStatus
+    />
   </section>;
 }

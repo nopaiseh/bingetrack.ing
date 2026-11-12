@@ -3,13 +3,14 @@ import { notFound, redirect } from "next/navigation";
 import { requireOwner } from "@/lib/auth/server";
 import { escapeLikePattern } from "@/lib/admin/catalog";
 import { isReportKind, reportRowHref, reportRowType, reportTagLabels, reports, type ReportRow } from "@/lib/admin/reports";
-import ManagePagination from "../../ManagePagination";
 import StatusModal from "../../StatusModal";
 import BulkDelete from "../BulkDelete";
 import SimilarPeopleReport from "../SimilarPeopleReport";
 import PageHeader from "../../../PageHeader";
+import AdminList from "../../list/AdminList";
+import { ADMIN_LIST_PAGE_SIZE, reportBulkActions } from "../../list/model";
 
-const PAGE_SIZE = 25;
+const PAGE_SIZE = ADMIN_LIST_PAGE_SIZE;
 
 type QueryError = { code?: string; message?: string };
 
@@ -65,19 +66,32 @@ export default async function ReportPage({ params, searchParams }: { params: Pro
       description={<>{q ? `找到 ${count ?? 0} ${config.unit}` : `共 ${count ?? 0} ${config.unit}`} · {config.description}</>}
     />
     {search.deleted && <StatusModal key={search.n} message={`已删除 ${Number(search.deleted) || 0} ${config.unit}。`} />}
-    <form className="surface-panel mb-6 rounded-2xl p-4 sm:p-6 grid grid-cols-[minmax(0,1fr)_auto] items-end gap-3"><label>搜索名称<input name="q" defaultValue={q} maxLength={200} placeholder="在报告中搜索名称或标题" /></label><button type="submit">搜索</button></form>
-    {rows.length > 0 && <ul className="surface-panel divide-y divide-white/10 overflow-hidden rounded-2xl">{rows.map(/* 标签优先显示问题说明，其余如演员名原样显示。 */ row => <li key={row.id}>
-      <Link href={reportRowHref(row)} className="group flex flex-col gap-3 p-5 transition-colors hover:bg-white/5 sm:flex-row sm:items-center sm:justify-between sm:px-6">
-        <div className="min-w-0">
-          <h2 className="break-words font-medium text-white transition-colors group-hover:text-[var(--accent-hover)]">{row.title}</h2>
-          <p className="mt-1 break-words text-sm text-neutral-400">{[reportRowType(row.link_type), row.detail].filter(Boolean).join(" · ")}</p>
-          {!!row.tags?.length && <ul className="mt-2 flex flex-wrap gap-1.5" aria-label="问题">{row.tags.map(/* 同一行的标签不重复。 */ tag => <li key={tag} className="surface-muted rounded-full border border-white/10 px-2.5 py-0.5 text-xs text-neutral-300">{reportTagLabels[tag] ?? tag}</li>)}</ul>}
-        </div>
-        <span className="shrink-0 text-sm text-neutral-400 transition-colors group-hover:text-white">去修改 →</span>
-      </Link>
-    </li>)}</ul>}
-    {!rows.length && <div className="surface-panel rounded-2xl px-6 py-16 text-center"><span className="i-material-symbols-check-circle-outline-rounded mx-auto mb-3 block size-8 text-[var(--accent)]" aria-hidden="true" /><p className="text-neutral-400">{q ? "没有匹配的条目，试试其他名称。" : "没有需要处理的资料。"}</p></div>}
-    <ManagePagination page={page} totalPages={totalPages} params={{ q }} basePath={`/manage/reports/${report}`} label="报告分页" />
+    <AdminList
+      basePath={`/manage/reports/${report}`}
+      preserved={{}}
+      search={{ name: "q", label: "搜索名称", placeholder: "在报告中搜索名称或标题", value: q }}
+      columns={[]}
+      rows={rows.map(/* 标签优先显示问题说明，其余如演员名原样显示。 */ row => {
+        const tags = (row.tags ?? []).map(tag => reportTagLabels[tag] ?? tag);
+        return {
+          id: row.id,
+          href: reportRowHref(row),
+          title: row.title,
+          subtitle: [reportRowType(row.link_type), row.detail].filter(Boolean).join(" · "),
+          meta: tags.length ? tags.join(" · ") : null,
+          cells: [],
+        };
+      })}
+      page={page}
+      pageSize={PAGE_SIZE}
+      total={count ?? 0}
+      totalPages={totalPages}
+      pageParams={q ? { q } : {}}
+      empty={q ? "没有匹配的条目，试试其他名称。" : "没有需要处理的资料。"}
+      noun={config.unit}
+      listLabel={`${config.label}列表`}
+      actions={reportBulkActions}
+    />
     {"bulkDelete" in config && !q && !!count && <BulkDelete report={report} count={count} unit={config.unit} />}
   </section>;
 }
