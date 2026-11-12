@@ -9,6 +9,19 @@ import { saveMedia, deleteMedia, type ActionResult } from "@/app/(admin)/manage/
 import { mediaTypes, type MediaInput, type ManagedMediaType } from "@/lib/admin/media-form";
 import { ActionNotice } from "../StatusModal";
 
+/** 预览只接受已经以 TMDB 图片前缀开头的地址，避免把输入框内容当成可执行的 URL。 */
+function previewCover(value: string): string | null {
+  if (!value.startsWith("https://image.tmdb.org/t/p/")) return null;
+  try {
+    const url = new URL(value);
+    if (url.protocol !== "https:" || url.hostname !== "image.tmdb.org" || url.username || url.password || url.port) return null;
+    if (!url.pathname.startsWith("/t/p/")) return null;
+  } catch {
+    return null;
+  }
+  return value;
+}
+
 const typeConfigs: Record<ManagedMediaType, { label: string; icon: string; badgeClass: string; textClass: string; borderClass: string; bgClass: string }> = {
   movie: {
     label: "电影",
@@ -67,7 +80,7 @@ export default function MediaForm({ item, initialType = "movie", lockType = fals
   }
   const isChild = type === "tv_season" || type === "tv_episode";
   const showCover = type !== "tv_episode";
-  const coverPreview = coverUrl.trim();
+  const coverPreview = previewCover(coverUrl.trim());
   const ratingField = field("rating", item?.rating != null ? Number(item.rating).toFixed(1) : null);
   const rated = ratingField.value.trim() !== "";
   return <div className="space-y-10">
