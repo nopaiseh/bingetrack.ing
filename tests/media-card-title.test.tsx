@@ -37,7 +37,7 @@ test("search cards use the same two-line title", () => {
   expect(title.className).not.toContain("truncate");
 });
 
-test("shared badges and filter chips stay at least 12px with a 40px chip target", () => {
+test("shared badges and filter chips stay at least 14px with a 40px chip target", () => {
   render(
     <>
       <MediaRatingBadge rating={8.2} size="sm" />

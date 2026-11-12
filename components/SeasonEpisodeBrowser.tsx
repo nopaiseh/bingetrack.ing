@@ -81,7 +81,7 @@ function StatusPill({ status }: { status: string | null }) {
   const watched = status === "watched";
   return (
     <span className={`inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border px-2.5 py-1 text-xs font-medium ${
-      watched ? "border-emerald-500/30 bg-emerald-500/15 text-emerald-400" : "surface-muted border-white/10 text-fg-muted"
+      watched ? "border-[color-mix(in_srgb,var(--ok)_45%,var(--border))] bg-[var(--ok-soft)] text-[var(--ok)]" : "border-[var(--border)] bg-[var(--surface-2)] text-fg-muted"
     }`}>
       {watched && <span className="i-material-symbols-check-circle-rounded inline-block size-3.5" aria-hidden="true" />}
       {watched ? "已看" : "未看"}

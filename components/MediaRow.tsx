@@ -24,7 +24,7 @@ function ItemCard({ item, type, eager, highPriority, hideStatusBadge }: { item: 
             loading={highPriority ? undefined : eager ? "eager" : "lazy"}
           />
         ) : (
-          <span className="i-material-symbols-image-outline-rounded inline-block size-10 text-fg-faint drop-shadow-md" aria-hidden="true" />
+          <span className="i-material-symbols-image-outline-rounded inline-block size-10 text-fg-muted" aria-hidden="true" />
         )}
         {!hideStatusBadge && <MediaCardStatusBadge status={item.status} />}
       </div>

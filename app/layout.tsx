@@ -1,6 +1,6 @@
 import { Suspense } from "react";
 import type { Metadata, Viewport } from "next";
-import { Geist_Mono } from "next/font/google";
+import { Geist, Geist_Mono } from "next/font/google";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
@@ -10,11 +10,20 @@ import { SITE_URL } from "@/lib/site";
 import { FAVICON_PNG_ID, FAVICON_SVG_ID, THEME_COLORS, THEME_INIT_SCRIPT } from "@/lib/themes";
 import "./globals.css";
 
-// 数字与品牌字标统一使用 Geist Mono，经 next/font 自托管以满足 font-src 'self' 策略。
+// 界面与数字都经 next/font 自托管，满足 font-src 'self'。
+// Noto Sans SC 的 next/font 子集不含汉字，中文走字体栈里的 Noto Sans SC / 思源黑体。
+const geist = Geist({
+  subsets: ["latin"],
+  variable: "--font-geist",
+  display: "swap",
+  fallback: ["Noto Sans SC", "Noto Sans CJK SC", "Source Han Sans SC", "Source Han Sans"],
+});
+
 const geistMono = Geist_Mono({
   subsets: ["latin"],
   variable: "--font-geist-mono",
   display: "swap",
+  fallback: ["Noto Sans Mono CJK SC"],
 });
 
 export const viewport: Viewport = {
@@ -53,7 +62,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="zh-CN" className={geistMono.variable} suppressHydrationWarning>
+    <html lang="zh-CN" className={`${geist.variable} ${geistMono.variable}`} suppressHydrationWarning>
       <head>
         <link rel="preconnect" href="https://image.tmdb.org" crossOrigin="anonymous" />
         <link rel="dns-prefetch" href="https://image.tmdb.org" />

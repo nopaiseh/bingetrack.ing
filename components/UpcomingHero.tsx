@@ -137,7 +137,7 @@ export default function UpcomingHero({ items, renderedOn }: UpcomingHeroProps) {
             <div>
               {/* 顶栏徽标 */}
               <div className="mb-4 flex flex-wrap items-center gap-3">
-                <span className="inline-flex items-center gap-1.5 rounded-full border border-[var(--accent-border)] bg-[var(--accent-soft)] px-3 py-1 text-xs font-semibold tracking-wider text-[var(--accent-light)] backdrop-blur-md">
+                <span className="inline-flex items-center gap-1.5 rounded-full border border-[var(--accent-border)] bg-[var(--accent-soft)] px-3 py-1 text-xs font-semibold tracking-wider text-[var(--accent-light)]">
                   <span className="size-1.5 rounded-full bg-[var(--accent)] animate-pulse" />
                   {labels.badge}
                 </span>

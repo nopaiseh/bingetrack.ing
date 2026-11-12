@@ -54,7 +54,7 @@ export function SearchMediaCard({ item, returnHref }: { item: MediaCard; returnH
             sizes="(max-width: 639px) 50vw, (max-width: 1023px) 33vw, (max-width: 1279px) 20vw, 16vw"
           />
         ) : (
-          <span className="i-material-symbols-image-outline-rounded inline-block size-10 text-fg-faint drop-shadow-md" aria-hidden="true" />
+          <span className="i-material-symbols-image-outline-rounded inline-block size-10 text-fg-muted" aria-hidden="true" />
         )}
         <MediaCardStatusBadge status={item.status} />
       </div>

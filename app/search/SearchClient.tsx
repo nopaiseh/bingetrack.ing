@@ -115,7 +115,7 @@ function SearchEmptyState({
         <button
           type="button"
           onClick={onReset}
-          className="mt-6 inline-flex min-h-11 items-center gap-2 rounded-full bg-[var(--accent)] px-5 py-2.5 text-sm font-semibold text-[var(--accent-contrast)] shadow-[0_10px_28px_-12px_var(--accent-glow)] transition-transform active:scale-95"
+          className="button-accent mt-6 inline-flex min-h-11 items-center gap-2 rounded-full px-5 py-2.5 text-sm font-semibold transition-transform active:scale-95"
         >
           <span className="i-material-symbols-filter-alt-off-rounded inline-block size-4" aria-hidden="true" />
           清除筛选

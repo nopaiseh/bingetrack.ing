@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { THEME_STORAGE_KEY, syncBrandToTheme, type ThemeId } from "@/lib/themes";
 
 const PALETTES = [
-  { id: "default", name: "极光玫瑰", colorClass: "bg-[#ff4d94]", glowColor: "rgba(255,77,148,0.6)" },
+  { id: "default", name: "极光玫瑰", colorClass: "bg-[#ff5c9d]", glowColor: "transparent" },
   { id: "lagoon", name: "深海霓虹", colorClass: "bg-[#2ee6d6]", glowColor: "rgba(46,230,214,0.6)" },
   { id: "golden", name: "金色时刻", colorClass: "bg-[#ffb627]", glowColor: "rgba(255,182,39,0.6)" },
 ] as const;

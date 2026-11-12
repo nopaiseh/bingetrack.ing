@@ -92,16 +92,12 @@ export default function Navbar() {
             className="flex items-center gap-2.5 group cursor-pointer"
           >
             <BrandMark className="size-6 text-white/90 group-hover:rotate-12 transition-transform duration-300" />
-            <span className="font-mono text-xl font-light tracking-tight">
-              <span className="bg-clip-text text-transparent bg-linear-to-br from-white via-white/90 to-white/60">
-                bingetrack
-              </span>
+            <span className="font-mono text-xl font-light tracking-tight text-fg">
+              bingetrack
               <span className="text-[var(--accent)] font-black -mx-0.5">
                 .
               </span>
-              <span className="bg-clip-text text-transparent bg-linear-to-br from-white/90 to-white/50">
-                ing
-              </span>
+              ing
             </span>
           </Link>
 
