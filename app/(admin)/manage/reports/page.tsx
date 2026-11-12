@@ -2,6 +2,7 @@ import Link from "next/link";
 import { requireOwner } from "@/lib/auth/server";
 import { reportGroups, reports } from "@/lib/admin/reports";
 import { readReportCounts } from "@/lib/admin/overview";
+import PageHeader, { AdminCrumb } from "../../PageHeader";
 
 /** 报告概览：并行统计各报告数量，数量为零的报告显示为已清理。 */
 export default async function ReportsPage() {
@@ -10,16 +11,15 @@ export default async function ReportsPage() {
   const pending = [...counts.values()].filter(count => count).length;
   const cleared = [...counts.values()].filter(count => count === 0).length;
   return <section>
-    <div className="surface-panel mb-8 flex flex-wrap items-center justify-between gap-4 rounded-3xl p-5 sm:p-8">
-      <div>
-        <h1 className="admin-heading">数据报告</h1>
-        <p className="mt-2 text-neutral-400">找出缺漏、闲置与可疑的资料 · 点击条目直接前往修改</p>
-      </div>
-      <p className="flex flex-wrap gap-2 text-xs">
+    <PageHeader
+      eyebrow={<AdminCrumb current="报告" />}
+      title="数据报告"
+      description="找出缺漏、闲置与可疑的资料 · 点击条目直接前往修改"
+      actions={<p className="flex flex-wrap gap-2 text-sm">
         <span className="rounded-full border border-[var(--accent-border)] bg-[var(--accent-soft)] px-3 py-1 text-[var(--accent-light)]"><span className="font-mono">{pending}</span> 份待处理</span>
-        <span className="surface-muted rounded-full border border-white/10 px-3 py-1 text-neutral-300"><span className="font-mono">{cleared}</span> 份已清理</span>
-      </p>
-    </div>
+        <span className="surface-muted rounded-full border border-[var(--border)] px-3 py-1 text-fg-secondary"><span className="font-mono">{cleared}</span> 份已清理</span>
+      </p>}
+    />
     <div className="space-y-8">{reportGroups().map(/* 与导航分组一致。 */ group => <div key={group.label}>
       <h2 className="mb-3 px-1 text-sm font-medium tracking-wider text-fg-subtle">{group.label}</h2>
       <ul className="grid gap-3 sm:grid-cols-2">{group.kinds.map(/* 每份报告一张卡片。 */ kind => {

@@ -5,6 +5,7 @@ import { SpeedInsights } from "@vercel/speed-insights/next";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import MobileTabBar from "@/components/MobileTabBar";
+import HideOnAdmin from "@/components/HideOnAdmin";
 import NavigationProgressBar from "@/components/NavigationProgressBar";
 import { SITE_URL } from "@/lib/site";
 import { FAVICON_PNG_ID, FAVICON_SVG_ID, THEME_COLORS, THEME_INIT_SCRIPT } from "@/lib/themes";
@@ -89,14 +90,20 @@ export default function RootLayout({
           跳到主要内容
         </a>
         
-        <Navbar />
+        <HideOnAdmin>
+          <Navbar />
+        </HideOnAdmin>
 
         <main id="main-content" tabIndex={-1} className="flex-1 flex flex-col relative z-1">
           {children}
         </main>
 
-        <Footer />
-        <MobileTabBar />
+        <HideOnAdmin>
+          <Footer />
+        </HideOnAdmin>
+        <HideOnAdmin>
+          <MobileTabBar />
+        </HideOnAdmin>
         <SpeedInsights />
       </body>
     </html>

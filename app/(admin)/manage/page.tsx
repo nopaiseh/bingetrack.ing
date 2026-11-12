@@ -11,6 +11,7 @@ import { formatRuntime } from "@/lib/format-runtime";
 import { formatCount } from "./media/series/shared";
 import Overview from "./Overview";
 import { statusLabels } from "./media/series/shared";
+import PageHeader, { AdminCrumb } from "../PageHeader";
 
 const PAGE_SIZE = 25;
 const sorts = { date: "上映日期（新→旧）", title: "标题", rating: "评分（高→低）" } as const;
@@ -130,10 +131,12 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
   }
 
   return <section>
-    <div className="surface-panel mb-8 rounded-3xl p-5 sm:p-8 flex flex-wrap items-center justify-between gap-4">
-      <div><h1 className="admin-heading">{mediaTypes[type]}</h1><p className="mt-2 text-neutral-400">共 {count} 个条目 · 管理影视与观看记录</p></div>
-      <Link href={`/manage/media/new${type ? `?type=${type}${parent ? `&parent=${parent}` : ""}` : ""}`} className="admin-button admin-primary shrink-0">新增{type ? mediaTypes[type] : "媒体"}</Link>
-    </div>
+    <PageHeader
+      eyebrow={<AdminCrumb current={mediaTypes[type]} />}
+      title={mediaTypes[type]}
+      description={<>共 {count} 个条目 · 管理影视与观看记录</>}
+      actions={<Link href={`/manage/media/new${type ? `?type=${type}${parent ? `&parent=${parent}` : ""}` : ""}`} className="admin-button admin-primary shrink-0">新增{type ? mediaTypes[type] : "媒体"}</Link>}
+    />
     {params.deleted === "1" && <StatusModal key={params.n} message="条目及其下属资料已删除。" />}
     {parent && (
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-[var(--accent-border)] bg-[var(--accent-soft)]/40 px-4 py-3 text-sm">

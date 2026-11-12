@@ -6,6 +6,7 @@ import { reports } from "@/lib/admin/reports";
 import AddMediaMenu from "./AddMediaMenu";
 import GlobalSearch from "./GlobalSearch";
 import { formatCount } from "./media/series/shared";
+import PageHeader, { AdminCrumb } from "../PageHeader";
 
 const REPORT_PREVIEW = 4;
 
@@ -29,13 +30,13 @@ export default async function Overview({ db }: { db: SupabaseClient }) {
   const pending = [...reportCounts].flatMap(([kind, count]) => (count ? [{ kind, count }] : [])).sort((a, b) => b.count - a.count);
 
   return <section className="space-y-6">
-    <div className="surface-panel flex flex-wrap items-center justify-between gap-4 rounded-3xl p-5 sm:p-8">
-      <div>
-        <h1 className="admin-heading">管理概览</h1>
-        <p className="mt-2 font-mono text-sm text-neutral-400">电影 {formatCount(counts.movie)} · 电视节目 {formatCount(counts.tv_show)} · 单集 {formatCount(counts.tv_episode)} · 人物 {formatCount(counts.people)}</p>
-      </div>
-      <AddMediaMenu />
-    </div>
+    <PageHeader
+      eyebrow={<AdminCrumb current="概览" />}
+      title="管理概览"
+      description={<>电影 {formatCount(counts.movie)} · 电视节目 {formatCount(counts.tv_show)} · 单集 {formatCount(counts.tv_episode)} · 人物 {formatCount(counts.people)}</>}
+      descriptionClassName="font-mono"
+      actions={<AddMediaMenu />}
+    />
 
     <GlobalSearch />
 

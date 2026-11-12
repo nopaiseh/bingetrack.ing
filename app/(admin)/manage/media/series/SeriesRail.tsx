@@ -24,7 +24,7 @@ export function centerInside(container: HTMLElement | null, element: HTMLElement
   else container.scrollLeft = element.offsetLeft - container.clientWidth / 2 + element.offsetWidth / 2;
 }
 
-/** 桌面编辑页右侧的剧集结构栏：与左侧导航同高并跟随滚动，是新增季与单集的唯一入口。 */
+/** 桌面编辑页右侧的剧集结构栏：贴在页头下并跟随滚动，是新增季与单集的唯一入口。 */
 export default function SeriesRail({ structure, current, onAdd }: { structure: SeriesStructure; current: CurrentItem; onAdd: (kind: QuickAddKind) => void }) {
   const router = useRouter();
   const scroller = useRef<HTMLDivElement>(null);
@@ -58,7 +58,7 @@ export default function SeriesRail({ structure, current, onAdd }: { structure: S
     </li>;
   })}</ul> : <p className="px-2.5 py-2 text-xs text-neutral-400">这一季还没有单集。</p>;
 
-  return <aside aria-label="剧集结构" className="admin-side-panel admin-rail-panel surface-panel hidden min-w-0 flex-col gap-3 rounded-2xl p-4 lg:sticky lg:top-24 lg:flex">
+  return <aside aria-label="剧集结构" className="admin-rail-panel surface-panel hidden min-w-0 flex-col gap-3 rounded-2xl p-4 lg:sticky lg:top-4 lg:flex">
     <div className="flex items-center justify-between px-1">
       <p className="text-xs tracking-wider text-fg-subtle">剧集结构</p>
       <p className="font-mono text-[11px] text-fg-subtle">{formatCount(seasons.length)} 季 · {formatCount(structure.totalEpisodes)} 集</p>

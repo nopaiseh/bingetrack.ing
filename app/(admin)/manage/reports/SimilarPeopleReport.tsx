@@ -3,6 +3,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { reports } from "@/lib/admin/reports";
 import StatusModal from "../StatusModal";
 import SimilarPeopleGroup, { type SimilarPerson } from "./SimilarPeopleGroup";
+import PageHeader from "../../PageHeader";
 
 /** 一次最多处理的人物数；疑似重复通常只有几组，超出时提示先处理前面的。 */
 const LIMIT = 300;
@@ -22,11 +23,11 @@ export default async function SimilarPeopleReport({ db, merged, dismissed, nonce
   for (const row of rows) groups.set(row.group_key, [...(groups.get(row.group_key) ?? []), { id: row.link_id, name: row.title, alias: row.detail === "未填别名" ? null : row.detail, works: works.get(row.link_id)?.size ?? 0 }]);
 
   return <section>
-    <Link href="/manage/reports" className="mb-2 inline-block text-sm text-neutral-400 hover:text-white transition-colors">← 全部报告</Link>
-    <div className="surface-panel mb-8 rounded-3xl p-5 sm:p-8">
-      <h1 className="admin-heading">{config.label}</h1>
-      <p className="mt-2 text-neutral-400">共 {groups.size} 组、{count ?? 0} {config.unit} · 合并后删除重复的人物；不是同一人的标记后不再出现。</p>
-    </div>
+    <PageHeader
+      eyebrow={<Link href="/manage/reports" className="hover:text-fg">← 全部报告</Link>}
+      title={config.label}
+      description={`共 ${groups.size} 组、${count ?? 0} ${config.unit} · 合并后删除重复的人物；不是同一人的标记后不再出现。`}
+    />
     {merged && <StatusModal key={nonce} message={`已合并并删除 ${Number(merged) || 0} 位人物。`} />}
     {dismissed && <StatusModal key={nonce} message="已标记为不是同一人，这组不会再出现。" />}
     {groups.size > 0 ? <div className="space-y-5">{[...groups].map(([key, people]) => <SimilarPeopleGroup key={key} people={people} />)}</div>

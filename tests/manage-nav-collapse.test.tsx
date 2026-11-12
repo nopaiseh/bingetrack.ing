@@ -41,4 +41,24 @@ describe("管理侧栏", () => {
     await userEvent.click(screen.getByRole("button", { name: "展开侧栏" }));
     expect(document.cookie).toContain("admin-nav=expanded");
   });
+
+  it("账号安全页高亮设置，概览不再是当前页", () => {
+    navigation.pathname = "/settings";
+    render(<AdminFrame initialCollapsed={false} nav={<ManageNav />}><p>内容</p></AdminFrame>);
+    expect(screen.getByRole("link", { name: "账号安全" })).toHaveAttribute("aria-current", "page");
+    const nav = screen.getByRole("navigation", { name: "内容管理分类" });
+    expect(within(nav).getByRole("link", { name: "概览" })).not.toHaveAttribute("aria-current");
+  });
+
+  it("菜单按钮展开同一套导航，而不是另一份分类", async () => {
+    render(<AdminFrame initialCollapsed={false} nav={<ManageNav />}><p>内容</p></AdminFrame>);
+    const button = screen.getByRole("button", { name: "打开管理导航" });
+    expect(button).toHaveAttribute("aria-expanded", "false");
+    expect(button).toHaveAttribute("aria-controls", "admin-nav-drawer");
+    expect(screen.getAllByRole("navigation", { name: "内容管理分类" })).toHaveLength(1);
+    await userEvent.click(button);
+    expect(button).toHaveAttribute("aria-expanded", "true");
+    expect(document.getElementById("admin-nav-drawer")).toBeInTheDocument();
+    expect(screen.getAllByRole("navigation", { name: "内容管理分类" })).toHaveLength(1);
+  });
 });

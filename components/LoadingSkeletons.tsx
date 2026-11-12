@@ -119,10 +119,11 @@ export function AdminLoadingSkeleton() {
   return (
     // 在管理外框的内容区内渲染，外框已提供边距，这里不再加容器与留白。
     <section aria-label="正在加载管理后台">
-      <div className="surface-panel mb-8 rounded-3xl p-5 sm:p-8 flex flex-wrap items-center justify-between gap-4">
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
         <div className="space-y-2">
-          <SkeletonBlock className="h-8 w-36" />
-          <SkeletonBlock className="h-4 w-52" />
+          <SkeletonBlock className="h-4 w-24" />
+          <SkeletonBlock className="h-8 w-40" />
+          <SkeletonBlock className="h-4 w-64 max-w-full" />
         </div>
         <SkeletonBlock className="h-10 w-28 rounded-xl" />
       </div>

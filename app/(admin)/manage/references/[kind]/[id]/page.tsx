@@ -10,6 +10,7 @@ import RelatedWork from "../../RelatedWork";
 import FilmographyRow from "../../FilmographyRow";
 import StatusModal from "../../../StatusModal";
 import ManagePagination from "../../../ManagePagination";
+import PageHeader from "../../../../PageHeader";
 
 const PAGE_SIZE = 25;
 const LINK_CHUNK = 1000;
@@ -59,7 +60,7 @@ export default async function ReferenceDetail({ params, searchParams }: { params
   if (!isReferenceType(kind) || (id !== "new" && !isMediaId(id))) notFound();
   const config = referenceTypes[kind];
   const search = await searchParams;
-  if (id === "new") return <section><header className="mb-8"><BackToList category={kind} /><h1 className="admin-heading">新增{config.label}</h1></header><ReferenceForm kind={kind} /></section>;
+  if (id === "new") return <section className="admin-form-page"><PageHeader eyebrow={<BackToList category={kind} className="" />} title={`新增${config.label}`} /><ReferenceForm kind={kind} /></section>;
   const page = Math.min(100000, Math.max(1, parseInt(search.page ?? "1", 10) || 1));
   const basePath = `/manage/references/${kind}/${id}`;
   const collections = kind === "collections";
@@ -94,7 +95,7 @@ export default async function ReferenceDetail({ params, searchParams }: { params
     for (const media of data as unknown as RelatedMedia[]) details.set(media.id, withAirDate(media));
   }
 
-  return <section><header className="mb-8"><BackToList category={kind} /><h1 className="admin-heading break-words">{item.name}</h1></header>{search.saved && <StatusModal key={search.n} message="保存成功，关联作品已同步更新。" />}
+  return <section><PageHeader eyebrow={<BackToList category={kind} className="" />} title={item.name} />{search.saved && <StatusModal key={search.n} message="保存成功，关联作品已同步更新。" />}
     {/* 资料表单只有两三个字段，横排放在顶部，关联作品占满整宽。 */}
     <div className="space-y-8">
     <ReferenceForm key={`${id}:${item.name}:${item.alternate_name}`} kind={kind} item={item} count={count} inline />

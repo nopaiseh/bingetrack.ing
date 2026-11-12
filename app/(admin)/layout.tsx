@@ -12,7 +12,7 @@ export const dynamic = "force-dynamic";
 export default async function AdminGroupLayout({ children }: { children: React.ReactNode }) {
   await requireOwner();
   const collapsed = (await cookies()).get(NAV_COOKIE)?.value === "collapsed";
-  return <div className="admin-shell relative mx-auto w-full max-w-7xl px-4 pb-12 pt-24 text-neutral-200 sm:px-6 lg:px-8">
-    <AdminFrame initialCollapsed={collapsed} nav={<Suspense><ManageNav /></Suspense>}>{children}</AdminFrame>
+  return <div className="admin-shell flex min-h-dvh w-full flex-1 text-fg">
+    <AdminFrame initialCollapsed={collapsed} nav={<Suspense fallback={<div className={`hidden h-dvh shrink-0 border-r border-[var(--border)] bg-[var(--surface-panel)] lg:block ${collapsed ? "w-[4.5rem]" : "w-[15.5rem]"}`} aria-hidden="true" />}><ManageNav /></Suspense>}>{children}</AdminFrame>
   </div>;
 }
