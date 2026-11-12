@@ -28,7 +28,7 @@ function MediaPoster({ media }: { media: Media }) {
 function StatusBadge({ status }: { status?: string }) {
   if (status === "watched") {
     return (
-      <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-500/10 text-emerald-300 border border-emerald-500/20 text-xs font-medium backdrop-blur-2xl cursor-default transition-colors">
+      <div className="flex cursor-default items-center gap-1.5 rounded-full border border-[color-mix(in_srgb,var(--ok)_45%,var(--border))] bg-[var(--ok-soft)] px-3 py-1.5 text-sm font-medium text-[var(--ok)]">
         <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
           <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7"/>
         </svg>
@@ -39,10 +39,10 @@ function StatusBadge({ status }: { status?: string }) {
 
   if (status === "watching") {
     return (
-      <div className="flex cursor-default items-center gap-1.5 rounded-full border border-sky-400/20 bg-sky-400/10 px-3 py-1.5 text-xs font-medium text-sky-300 backdrop-blur-2xl transition-colors">
+      <div className="flex cursor-default items-center gap-1.5 rounded-full border border-[color-mix(in_srgb,var(--warn)_45%,var(--border))] bg-[var(--warn-soft)] px-3 py-1.5 text-sm font-medium text-[var(--warn)]">
         <span className="relative flex size-2">
-          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-sky-400 opacity-75 duration-1000" />
-          <span className="relative inline-flex size-2 rounded-full bg-sky-300" />
+          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[var(--warn)] opacity-75 duration-1000" />
+          <span className="relative inline-flex size-2 rounded-full bg-[var(--warn)]" />
         </span>
         正在看
       </div>
@@ -50,7 +50,7 @@ function StatusBadge({ status }: { status?: string }) {
   }
 
   return (
-    <div className="surface-muted interactive-control flex cursor-pointer items-center gap-1.5 rounded-full border border-white/10 px-3 py-1.5 text-xs font-medium text-fg-secondary backdrop-blur-2xl transition-colors hover:border-white/20 hover:bg-white/10 hover:text-white">
+    <div className="interactive-control flex cursor-pointer items-center gap-1.5 rounded-full border border-[var(--border)] bg-[var(--surface-2)] px-3 py-1.5 text-sm font-medium text-fg-secondary transition-colors hover:border-[var(--border-strong)] hover:bg-[var(--surface-3)] hover:text-fg">
       <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
         <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
       </svg>

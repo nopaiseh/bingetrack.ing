@@ -12,9 +12,9 @@ function getRatingTier(rating: number | null | undefined): RatingTierInfo {
   if (rating == null) {
     return {
       label: "未评分",
-      badgeClass: "border-white/10 bg-white/5 text-fg-subtle",
+      badgeClass: "border-[var(--border)] bg-[var(--surface-2)] text-fg-muted",
       glowClass: "",
-      textClass: "text-fg-subtle",
+      textClass: "text-fg-muted",
       icon: "i-material-symbols-star-outline-rounded",
     };
   }
@@ -23,9 +23,9 @@ function getRatingTier(rating: number | null | undefined): RatingTierInfo {
   if (num >= 9.0) {
     return {
       label: "神作",
-      badgeClass: "border-amber-400/35 bg-amber-400/10 text-amber-300 ring-1 ring-amber-400/20 shadow-[0_1px_0_0_rgba(251,191,36,0.15)_inset]",
-      glowClass: "text-amber-300",
-      textClass: "text-amber-300 font-bold",
+      badgeClass: "border-[color-mix(in_srgb,var(--warn)_45%,var(--border))] bg-[var(--warn-soft)] text-[var(--warn)]",
+      glowClass: "text-[var(--warn)]",
+      textClass: "text-[var(--warn)] font-bold",
       icon: "i-material-symbols-stars-rounded",
       isMasterpiece: true,
     };
@@ -33,34 +33,34 @@ function getRatingTier(rating: number | null | undefined): RatingTierInfo {
   if (num >= 8.0) {
     return {
       label: "佳作",
-      badgeClass: "border-amber-300/25 bg-amber-300/5 text-amber-200/90 shadow-[0_1px_0_0_rgba(255,255,255,0.06)_inset]",
-      glowClass: "text-amber-200/90",
-      textClass: "text-amber-200/90 font-medium",
+      badgeClass: "border-[color-mix(in_srgb,var(--warn)_45%,var(--border))] bg-[var(--warn-soft)] text-[var(--warn)]",
+      glowClass: "text-[var(--warn)]",
+      textClass: "text-[var(--warn)] font-medium",
       icon: "i-material-symbols-star-rounded",
     };
   }
   if (num >= 7.0) {
     return {
       label: "良作",
-      badgeClass: "border-emerald-400/20 bg-emerald-400/5 text-emerald-300/85 shadow-[0_1px_0_0_rgba(255,255,255,0.06)_inset]",
-      glowClass: "text-emerald-300/85",
-      textClass: "text-emerald-300/85 font-medium",
+      badgeClass: "border-[color-mix(in_srgb,var(--ok)_45%,var(--border))] bg-[var(--ok-soft)] text-[var(--ok)]",
+      glowClass: "text-[var(--ok)]",
+      textClass: "text-[var(--ok)] font-medium",
       icon: "i-material-symbols-star-rounded",
     };
   }
   if (num >= 6.0) {
     return {
       label: "尚可",
-      badgeClass: "border-sky-400/20 bg-sky-400/5 text-sky-300/80 shadow-[0_1px_0_0_rgba(255,255,255,0.06)_inset]",
-      glowClass: "text-sky-300/80",
-      textClass: "text-sky-300/80 font-medium",
+      badgeClass: "border-[color-mix(in_srgb,#7dd3fc_45%,var(--border))] bg-[color-mix(in_srgb,#7dd3fc_12%,transparent)] text-[#7dd3fc]",
+      glowClass: "text-[#7dd3fc]",
+      textClass: "text-[#7dd3fc] font-medium",
       icon: "i-material-symbols-star-rounded",
     };
   }
   if (num >= 5.0) {
     return {
       label: "及格",
-      badgeClass: "border-white/10 bg-white/5 text-fg-secondary shadow-[0_1px_0_0_rgba(255,255,255,0.06)_inset]",
+      badgeClass: "border-[var(--border)] bg-[var(--surface-2)] text-fg-secondary",
       glowClass: "text-fg-secondary",
       textClass: "text-fg-secondary font-medium",
       icon: "i-material-symbols-star-half-rounded",
@@ -69,7 +69,7 @@ function getRatingTier(rating: number | null | undefined): RatingTierInfo {
   if (num >= 4.0) {
     return {
       label: "平庸",
-      badgeClass: "border-white/8 bg-white/[0.03] text-fg-muted shadow-[0_1px_0_0_rgba(255,255,255,0.04)_inset]",
+      badgeClass: "border-[var(--border)] bg-[var(--surface-2)] text-fg-muted",
       glowClass: "text-fg-muted",
       textClass: "text-fg-muted",
       icon: "i-material-symbols-star-outline-rounded",
@@ -78,36 +78,36 @@ function getRatingTier(rating: number | null | undefined): RatingTierInfo {
   if (num >= 3.0) {
     return {
       label: "较差",
-      badgeClass: "border-purple-400/15 bg-purple-400/5 text-purple-300/70 shadow-[0_1px_0_0_rgba(255,255,255,0.04)_inset]",
-      glowClass: "text-purple-300/70",
-      textClass: "text-purple-300/70",
+      badgeClass: "border-[color-mix(in_srgb,var(--violet)_45%,var(--border))] bg-[color-mix(in_srgb,var(--violet)_12%,transparent)] text-[var(--violet)]",
+      glowClass: "text-[var(--violet)]",
+      textClass: "text-[var(--violet)]",
       icon: "i-material-symbols-star-outline-rounded",
     };
   }
   if (num >= 2.0) {
     return {
       label: "烂片",
-      badgeClass: "border-rose-400/15 bg-rose-400/5 text-rose-300/70 shadow-[0_1px_0_0_rgba(255,255,255,0.04)_inset]",
-      glowClass: "text-rose-300/70",
-      textClass: "text-rose-300/70",
+      badgeClass: "border-[color-mix(in_srgb,var(--danger)_45%,var(--border))] bg-[var(--danger-soft)] text-[var(--danger)]",
+      glowClass: "text-[var(--danger)]",
+      textClass: "text-[var(--danger)]",
       icon: "i-material-symbols-thumb-down-rounded",
     };
   }
   if (num >= 1.0) {
     return {
       label: "灾难",
-      badgeClass: "border-red-500/20 bg-red-950/20 text-red-300/75 shadow-[0_1px_0_0_rgba(255,255,255,0.04)_inset]",
-      glowClass: "text-red-300/75",
-      textClass: "text-red-300/75 font-semibold",
+      badgeClass: "border-[color-mix(in_srgb,var(--danger)_45%,var(--border))] bg-[var(--danger-soft)] text-[var(--danger)]",
+      glowClass: "text-[var(--danger)]",
+      textClass: "text-[var(--danger)] font-semibold",
       icon: "i-material-symbols-warning-rounded",
     };
   }
   // 0.0 ~ 0.9
   return {
     label: "神烂",
-    badgeClass: "border-red-700/25 bg-red-950/30 text-red-400/80 ring-1 ring-red-500/15 shadow-[0_1px_0_0_rgba(255,255,255,0.04)_inset]",
-    glowClass: "text-red-400/80",
-    textClass: "text-red-400/80 font-semibold",
+    badgeClass: "border-[color-mix(in_srgb,var(--danger)_45%,var(--border))] bg-[var(--danger-soft)] text-[var(--danger)]",
+    glowClass: "text-[var(--danger)]",
+    textClass: "text-[var(--danger)] font-semibold",
     icon: "i-material-symbols-skull-rounded",
   };
 }
@@ -132,7 +132,7 @@ export default function MediaRatingBadge({
     const unratedPad = size === "lg" ? "px-2 py-0.5 text-xs" : "px-1.5 py-0.5 text-xs";
     return (
       <span
-        className={`inline-flex shrink-0 items-center rounded border border-white/10 ${unratedPad} font-medium leading-none text-fg-secondary backdrop-blur-md ${className}`}
+        className={`inline-flex shrink-0 items-center rounded border border-[var(--border)] bg-[var(--surface-2)] ${unratedPad} font-medium leading-none text-fg-secondary ${className}`}
       >
         未评分
       </span>
@@ -144,7 +144,7 @@ export default function MediaRatingBadge({
   if (size === "lg") {
     return (
       <div
-        className={`inline-flex shrink-0 items-center gap-1.5 rounded-lg border px-2.5 py-1 backdrop-blur-2xl transition-all duration-300 ${tier.badgeClass} ${className}`}
+        className={`inline-flex shrink-0 items-center gap-1.5 rounded-lg border px-2.5 py-1 transition-all duration-300 ${tier.badgeClass} ${className}`}
       >
         <div className="flex items-center gap-1">
           <span className={`${tier.icon} size-4 inline-block ${tier.glowClass}`} aria-hidden="true" />
@@ -165,7 +165,7 @@ export default function MediaRatingBadge({
   if (size === "md") {
     return (
       <div
-        className={`inline-flex shrink-0 items-center gap-1 rounded-md border px-1.5 py-0.5 text-xs backdrop-blur-xl transition-all duration-300 ${tier.badgeClass} ${className}`}
+        className={`inline-flex shrink-0 items-center gap-1 rounded-md border px-1.5 py-0.5 text-xs transition-all duration-300 ${tier.badgeClass} ${className}`}
       >
         <span className={`${tier.icon} size-3 inline-block ${tier.glowClass}`} aria-hidden="true" />
         <span className="font-mono font-bold leading-none tracking-tight">{scoreText}</span>
@@ -182,13 +182,13 @@ export default function MediaRatingBadge({
   // sm 尺寸（卡片紧凑型，深度收窄阔度）
   return (
     <div
-      className={`inline-flex shrink-0 items-center gap-1 rounded border px-1.5 py-0.5 text-xs backdrop-blur-md transition-all duration-300 ${tier.badgeClass} ${className}`}
+      className={`inline-flex shrink-0 items-center gap-1 rounded border px-1.5 py-0.5 text-xs transition-all duration-300 ${tier.badgeClass} ${className}`}
       title={`${scoreText} 分 · ${tier.label}`}
     >
       <span className={`${tier.icon} size-2.5 inline-block shrink-0 ${tier.glowClass}`} aria-hidden="true" />
       <span className="font-mono text-xs font-bold leading-none tracking-tight">{scoreText}</span>
       {showTier && (
-        <span className="ml-0.5 border-l border-current/25 pl-1 text-xs font-normal leading-none tracking-tight opacity-70">
+        <span className="ml-0.5 border-l border-current/25 pl-1 text-xs font-normal leading-none tracking-tight">
           {tier.label}
         </span>
       )}

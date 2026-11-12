@@ -39,7 +39,7 @@ export default function MediaCardBody({ item, type }: { item: MediaCard; type: "
           <span
             key={`${tag}-${index}`}
             title={tag}
-            className="inline-flex min-h-5 shrink items-center truncate rounded-md border border-white/10 bg-white/5 px-1.5 py-0.5 text-xs font-medium tracking-wide text-fg-secondary backdrop-blur-md transition-all duration-300 group-hover:border-[var(--accent-border)] group-hover:bg-[var(--accent-soft)] group-hover:text-white"
+            className="inline-flex min-h-5 shrink items-center truncate rounded-md border border-[var(--border)] bg-[var(--surface-2)] px-1.5 py-0.5 text-xs font-medium tracking-wide text-fg-secondary transition-all duration-300 group-hover:border-[var(--accent-border)] group-hover:bg-[var(--accent-soft)] group-hover:text-fg"
           >
             {tag}
           </span>

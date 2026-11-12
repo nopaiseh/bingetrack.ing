@@ -14,16 +14,12 @@ export default function Footer() {
             <div className="flex flex-col sm:flex-row items-center gap-3 md:gap-4 shrink-0">
               <Link href="/" className="flex items-center gap-2.5 group cursor-pointer opacity-90 hover:opacity-100 transition-opacity duration-300">
                 <BrandMark className="size-6 text-white/90 group-hover:rotate-12 transition-transform duration-300" />
-                <span className="font-mono text-xl font-light tracking-tight">
-                  <span className="bg-clip-text text-transparent bg-linear-to-br from-white via-white/80 to-white/50">
-                    bingetrack
-                  </span>
+                <span className="font-mono text-xl font-light tracking-tight text-fg">
+                  bingetrack
                   <span className="text-[var(--accent)] font-black -mx-0.5">
                     .
                   </span>
-                  <span className="bg-clip-text text-transparent bg-linear-to-br from-white/90 to-white/40">
-                    ing
-                  </span>
+                  ing
                 </span>
               </Link>
               <span className="hidden sm:block text-white/20">|</span>

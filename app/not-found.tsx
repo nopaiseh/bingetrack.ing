@@ -7,7 +7,7 @@ export default function NotFound() {
       
       <div className="flex flex-col items-center gap-6 animate-fade-in px-6 text-center">
         
-        <h1 className="text-7xl md:text-9xl font-black tracking-tight text-transparent bg-clip-text bg-linear-to-b from-white via-white/85 to-white/30">
+        <h1 className="text-7xl font-black tracking-tight text-fg md:text-9xl">
           404
         </h1>
 
@@ -25,7 +25,6 @@ export default function NotFound() {
       </div>
 
       
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[60vw] h-[60vw] bg-[var(--accent-soft)] blur-[120px] rounded-full pointer-events-none -z-10"></div>
     </div>
   );
 }

@@ -25,7 +25,7 @@ html,
   -webkit-text-size-adjust: 100%;
   -moz-tab-size: 4;
   tab-size: 4;
-  font-family: ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+  font-family: var(--font-sans, ui-sans-serif), system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
   font-feature-settings: normal;
   font-variation-settings: normal;
   font-variant-numeric: tabular-nums;
@@ -74,14 +74,14 @@ code,
 kbd,
 samp,
 pre {
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  font-family: var(--font-mono, ui-monospace), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   font-feature-settings: normal;
   font-variation-settings: normal;
   font-size: 1em;
 }
 
 small {
-  font-size: 80%;
+  font-size: max(0.875rem, 80%);
 }
 
 sub,
@@ -205,7 +205,7 @@ textarea {
 input::placeholder,
 textarea::placeholder {
   opacity: 1;
-  color: #9ca3af;
+  color: var(--fg-3, #a197ab);
 }
 
 button,
@@ -247,118 +247,150 @@ video {
 :root {
   color-scheme: dark;
   accent-color: var(--accent);
-  --font-serif-movie: "Songti SC", "Source Han Serif SC", "Noto Serif SC", "STSong", "SimSun", "Baskerville", "Georgia", serif;
-  /* 辅助文字下限 12px；分页、筛选和切换条的最小点击高度 40px。 */
-  --type-min: 0.75rem;
+  /* 展示标题不再用衬线，与界面共用 Geist；缺字回落到思源黑体 / Noto Sans。 */
+  --font-sans: var(--font-geist), "Noto Sans SC", "Noto Sans CJK SC", "Source Han Sans SC", "Source Han Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), "Noto Sans Mono CJK SC", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  --font-serif-movie: var(--font-sans);
+  /* 正文、说明、徽标、表头下限 14px；分页、筛选和切换条的最小点击高度 40px。 */
+  --type-min: 0.875rem;
+  --t-sm: 0.875rem;
+  --t-md: 0.9375rem;
+  --t-lg: 1.0625rem;
+  --t-xl: 1.25rem;
+  --h1: 1.75rem;
+  --h-hero: 2.5rem;
   --hit-target: 2.5rem;
 
-  /* 默认：极光玫瑰 (Aurora Rose) - 紫黑底 + 洋红、紫罗兰、橘光三束极光；主行动色用加深玫红承载白字 */
-  --canvas: #13051a;
-  --surface-panel: rgba(30, 10, 36, 0.42);
-  --surface-overlay: rgba(24, 8, 30, 0.64);
-  --surface-card: rgba(34, 12, 40, 0.34);
-  --accent: #ff4d94;
+  /* Direction A · 夜幕：纯色表面用 1px 描边分开。主按钮用 --accent-dark 承载白字。 */
+  --canvas: #0e0a12;
+  --fg: #f5f2f7;
+  --fg-2: #c9c0d1;
+  --fg-3: #a197ab;
+  --surface-panel: #16111b;
+  --surface-overlay: #1d1723;
+  --surface-card: #16111b;
+  --surface-2: #1d1723;
+  --surface-3: #262030;
+  --surface-subtle: var(--surface-2);
+  --surface-muted: var(--surface-2);
+  --surface-skeleton: var(--surface-3);
+  --surface-raised: var(--surface-3);
+  --surface-recessed: var(--canvas);
+  --card-hover-bg: var(--surface-3);
+  --border: #2c2434;
+  --border-strong: #3d3348;
+  --border-hover: var(--border-strong);
+  --accent: #ff5c9d;
   --accent-contrast: #ffffff;
-  --accent-hover: #ff79b0;
-  --accent-light: #ffa3c7;
-  --accent-dark: #e0206f;
-  --accent-soft: rgba(255, 77, 148, 0.20);
-  --accent-border: rgba(255, 77, 148, 0.45);
-  --accent-border-hover: rgba(255, 121, 176, 0.70);
-  --accent-glow: rgba(255, 77, 148, 0.55);
-  --accent-glow-strong: rgba(255, 77, 148, 0.85);
-  --accent-glow-soft: rgba(255, 77, 148, 0.28);
-  --aurora-1: rgba(255, 45, 135, 0.55);
-  --aurora-2: rgba(123, 47, 247, 0.50);
-  --aurora-3: rgba(255, 138, 61, 0.40);
-  --card-hover-bg: rgba(52, 18, 58, 0.52);
-  --surface-subtle: rgba(255, 255, 255, 0.04);
-  --surface-muted: rgba(255, 255, 255, 0.06);
-  --surface-skeleton: rgba(255, 255, 255, 0.08);
-  --surface-raised: rgba(255, 255, 255, 0.10);
-  --surface-recessed: rgba(14, 4, 18, 0.90);
-  --border-hover: rgba(255, 255, 255, 0.22);
-  --image-overlay: rgba(0, 0, 0, 0.35);
-  --image-placeholder: rgba(0, 0, 0, 0.45);
-  --image-label: rgba(0, 0, 0, 0.72);
-  --grain-opacity: 0.038;
+  --on-accent: #ffffff;
+  --accent-hover: #ff8ab8;
+  --accent-light: #ff8ab8;
+  --accent-dark: #d81b66;
+  --accent-soft: rgba(255, 92, 157, 0.14);
+  --accent-border: rgba(255, 92, 157, 0.55);
+  --accent-border-hover: #ff8ab8;
+  /* 旧光晕变量保留给已有 shadow 工具类，置空后不再发亮。 */
+  --accent-glow: transparent;
+  --accent-glow-strong: transparent;
+  --accent-glow-soft: transparent;
+  --violet: #a78bfa;
+  --ok: #4ade80;
+  --ok-soft: rgba(74, 222, 128, 0.12);
+  --warn: #fbbf24;
+  --warn-soft: rgba(251, 191, 36, 0.12);
+  --danger: #f87171;
+  --danger-bg: #b91c1c;
+  --danger-soft: rgba(248, 113, 113, 0.12);
+  --aurora-1: rgba(255, 92, 157, 0.16);
+  --aurora-2: rgba(167, 139, 250, 0.12);
+  --aurora-3: rgba(255, 92, 157, 0.05);
+  --image-overlay: rgba(0, 0, 0, 0.45);
+  --image-placeholder: var(--surface-2);
+  --image-label: rgba(14, 10, 18, 0.88);
+  --grain-opacity: 0;
+  --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.45);
+  --shadow-pop: 0 12px 32px rgba(0, 0, 0, 0.5), 0 0 0 1px var(--border-strong);
 
-  /* 毛玻璃控件（输入框、下拉、标签栏容器）：白色微透层 + 背景模糊，色相由底层主题透出。 */
-  --control-bg: rgba(255, 255, 255, 0.05);
-  --control-bg-hover: rgba(255, 255, 255, 0.08);
-  --control-bg-focus: rgba(255, 255, 255, 0.10);
-  --control-border: rgba(255, 255, 255, 0.12);
-  --control-border-hover: rgba(255, 255, 255, 0.24);
-  --control-blur: blur(16px) saturate(180%);
-  --control-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08), 0 2px 10px rgba(0, 0, 0, 0.22);
-  --select-chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='rgba(255,255,255,0.45)' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
-  --select-chevron-hover: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='rgba(255,255,255,0.85)' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
-  --select-chevron-focus: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='rgba(255,255,255,0.95)' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  /* 输入框、下拉、标签栏：实色表面，不再模糊背景。 */
+  --control-bg: var(--surface-2);
+  --control-bg-hover: var(--surface-3);
+  --control-bg-focus: var(--surface-3);
+  --control-border: var(--border);
+  --control-border-hover: var(--border-strong);
+  --control-blur: none;
+  --control-shadow: none;
+  --select-chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23a197ab' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  --select-chevron-hover: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23f5f2f7' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  --select-chevron-focus: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23ff8ab8' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
 }
 
-/* 深海霓虹 (Lagoon) - 深海蓝黑底 + 青绿、电光蓝、紫罗兰极光；强调色偏亮，主行动按钮用深色文字 */
+/* 深海霓虹：同一套实色层级，只换画布和强调色。主按钮仍用深色字压在 --accent-dark 上。 */
 [data-theme="lagoon"] {
   --canvas: #02111b;
-  --surface-panel: rgba(6, 26, 38, 0.42);
-  --surface-overlay: rgba(4, 20, 30, 0.64);
-  --surface-card: rgba(8, 30, 44, 0.34);
+  --surface-panel: #071820;
+  --surface-overlay: #0c222c;
+  --surface-card: #071820;
+  --surface-2: #0c222c;
+  --surface-3: #14303c;
+  --border: #1a3844;
+  --border-strong: #275566;
   --accent: #2ee6d6;
   --accent-contrast: #04201e;
+  --on-accent: #04201e;
   --accent-hover: #5eead4;
   --accent-light: #99f6e4;
   --accent-dark: #14b8a6;
-  --accent-soft: rgba(46, 230, 214, 0.18);
-  --accent-border: rgba(46, 230, 214, 0.45);
-  --accent-border-hover: rgba(94, 234, 212, 0.70);
-  --accent-glow: rgba(46, 230, 214, 0.50);
-  --accent-glow-strong: rgba(46, 230, 214, 0.80);
-  --accent-glow-soft: rgba(46, 230, 214, 0.25);
-  --aurora-1: rgba(0, 217, 192, 0.45);
-  --aurora-2: rgba(47, 107, 255, 0.50);
-  --aurora-3: rgba(139, 92, 246, 0.40);
-  --card-hover-bg: rgba(12, 44, 60, 0.52);
-  --surface-recessed: rgba(2, 10, 16, 0.90);
+  --accent-soft: rgba(46, 230, 214, 0.16);
+  --accent-border: rgba(46, 230, 214, 0.5);
+  --accent-border-hover: #5eead4;
+  --aurora-1: rgba(46, 230, 214, 0.14);
+  --aurora-2: rgba(47, 107, 255, 0.10);
+  --aurora-3: rgba(139, 92, 246, 0.08);
+  --image-placeholder: #0c222c;
+  --image-label: rgba(2, 17, 27, 0.88);
 }
 
-/* 金色时刻 (Golden Hour) - 暖棕黑底 + 琥珀、珊瑚与一抹紫罗兰；强调色偏亮，主行动按钮用深色文字 */
+/* 金色时刻：暖棕实色表面。主按钮用深色字。 */
 [data-theme="golden"] {
   --canvas: #160a05;
-  --surface-panel: rgba(34, 18, 8, 0.42);
-  --surface-overlay: rgba(28, 14, 6, 0.64);
-  --surface-card: rgba(38, 20, 10, 0.34);
+  --surface-panel: #1e120c;
+  --surface-overlay: #271810;
+  --surface-card: #1e120c;
+  --surface-2: #271810;
+  --surface-3: #332014;
+  --border: #3a281c;
+  --border-strong: #54402e;
   --accent: #ffb627;
   --accent-contrast: #1a0e02;
+  --on-accent: #1a0e02;
   --accent-hover: #ffc95a;
   --accent-light: #fde68a;
   --accent-dark: #f59e0b;
-  --accent-soft: rgba(255, 182, 39, 0.18);
-  --accent-border: rgba(255, 182, 39, 0.45);
-  --accent-border-hover: rgba(255, 201, 90, 0.70);
-  --accent-glow: rgba(255, 182, 39, 0.50);
-  --accent-glow-strong: rgba(255, 182, 39, 0.80);
-  --accent-glow-soft: rgba(255, 182, 39, 0.25);
-  --aurora-1: rgba(255, 154, 31, 0.50);
-  --aurora-2: rgba(255, 78, 80, 0.45);
-  --aurora-3: rgba(124, 58, 237, 0.35);
-  --card-hover-bg: rgba(56, 30, 14, 0.52);
-  --surface-recessed: rgba(16, 8, 3, 0.90);
+  --accent-soft: rgba(255, 182, 39, 0.16);
+  --accent-border: rgba(255, 182, 39, 0.5);
+  --accent-border-hover: #ffc95a;
+  --aurora-1: rgba(255, 182, 39, 0.14);
+  --aurora-2: rgba(255, 120, 70, 0.10);
+  --aurora-3: rgba(167, 139, 250, 0.06);
+  --image-placeholder: #271810;
+  --image-label: rgba(22, 10, 5, 0.88);
 }
 
-/* 全局输入控件：与 .surface-control 共用同一套毛玻璃配方，保持输入框、下拉与标签栏的明度一致。 */
+/* 全局输入控件：与 .surface-control 同一套实色表面。 */
 @layer base {
   :where(input:not([type="hidden"]):not([type="checkbox"]):not([type="radio"]):not([class*="bg-transparent"]), select:not(.filter-option), textarea) {
     background-color: var(--control-bg);
-    -webkit-backdrop-filter: var(--control-blur);
-    backdrop-filter: var(--control-blur);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
     border: 1px solid var(--control-border);
     border-radius: 0.75rem;
-    color: #f5f5f5;
+    color: var(--fg);
     box-shadow: var(--control-shadow);
     transition: border-color 200ms, background-color 200ms, box-shadow 200ms;
   }
 
   :where(input:not([type="hidden"]):not([type="checkbox"]):not([type="radio"]):not([class*="bg-transparent"]), select:not(.filter-option), textarea)::placeholder {
-    color: rgba(255, 255, 255, 0.55);
+    color: var(--fg-3);
   }
 
   :where(input:not([type="hidden"]):not([type="checkbox"]):not([type="radio"]):not([class*="bg-transparent"]), select:not(.filter-option), textarea):hover {
@@ -367,10 +399,10 @@ video {
   }
 
   :where(input:not([type="hidden"]):not([type="checkbox"]):not([type="radio"]):not([class*="bg-transparent"]), select:not(.filter-option), textarea):focus {
-    border-color: var(--accent-border-hover);
+    border-color: var(--accent);
     background-color: var(--control-bg-focus);
     outline: none;
-    box-shadow: var(--control-shadow), 0 0 0 3px var(--accent-glow-soft);
+    box-shadow: 0 0 0 2px var(--canvas), 0 0 0 4px var(--accent);
   }
 
   select:not(.filter-option) {
@@ -395,28 +427,33 @@ video {
 
   /* 原生下拉列表无法模糊背景，使用不透明画布色保证可读。 */
   select:not(.filter-option) option {
-    background-color: var(--canvas);
-    color: #f5f5f5;
+    background-color: var(--surface-panel);
+    color: var(--fg);
   }
 }
 
-/* 全站极光底：三束主题色光晕固定铺在视口，让没有海报的页面（搜索、列表、管理）里的玻璃层同样有色彩可透。 */
+/* 薄雾固定在视口上，并淡入同一块画布色。长页滚动时色带不会在某一屏高度截断。 */
+html {
+  background-color: var(--canvas);
+  min-height: 100%;
+}
+
 body::before {
   content: "";
   position: fixed;
   inset: 0;
+  height: 100vh;
+  height: 100dvh;
   background:
-    radial-gradient(ellipse 60vmax 42vmax at 8% -6%, var(--aurora-1) 0%, transparent 70%),
-    radial-gradient(ellipse 48vmax 44vmax at 104% 46%, var(--aurora-2) 0%, transparent 70%),
-    radial-gradient(ellipse 52vmax 38vmax at -4% 108%, var(--aurora-3) 0%, transparent 70%);
+    radial-gradient(ellipse 90vmax 56vmax at 0% -8%, var(--aurora-1), var(--canvas) 64%),
+    radial-gradient(ellipse 70vmax 48vmax at 100% 0%, var(--aurora-2), var(--canvas) 60%),
+    radial-gradient(ellipse 80vmax 42vmax at 50% 115%, var(--aurora-3), var(--canvas) 62%);
   pointer-events: none;
   z-index: 0;
-  opacity: 0.75;
-  transition: opacity 500ms;
 }
 
 @layer components {
-  /* 顶部滚动渐进式羽化遮罩：内容向上滚动穿过导航栏时，自然模糊并消融在深色画布中 */
+  /* 导航后方的纯色遮罩，不再模糊底下的内容。 */
   .navbar-scroll-blur-mask {
     position: absolute;
     top: 0;
@@ -425,18 +462,14 @@ body::before {
     height: 5.5rem;
     pointer-events: none;
     z-index: -1;
-    -webkit-backdrop-filter: blur(16px);
-    backdrop-filter: blur(16px);
-    -webkit-mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 1) 0%, rgba(0, 0, 0, 0.85) 30%, rgba(0, 0, 0, 0) 100%);
-    mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 1) 0%, rgba(0, 0, 0, 0.85) 30%, rgba(0, 0, 0, 0) 100%);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
     background: linear-gradient(
       to bottom,
-      color-mix(in srgb, var(--canvas) 92%, transparent) 0%,
-      color-mix(in srgb, var(--canvas) 75%, transparent) 35%,
-      color-mix(in srgb, var(--canvas) 25%, transparent) 70%,
+      var(--canvas) 0%,
+      color-mix(in srgb, var(--canvas) 88%, transparent) 55%,
       transparent 100%
     );
-    transition: background 500ms;
   }
 
   @media (min-width: 640px) {
@@ -458,89 +491,39 @@ body::before {
     background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='filmGrainFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23filmGrainFilter)'/%3E%3C/svg%3E");
   }
 
-  /* 玻璃材质三层级：chrome（导航、浮层、HUD）> card（看板分区）> inline（卡内格子，无模糊）。
-     填充以低透明白色为主、主题底色为辅，让页面氛围光真正透过来；不要在玻璃内部再嵌套 backdrop-filter。 */
-  .surface-panel {
+  /* 实色表面：面板、浮层、卡片只用填充、1px 描边和很轻的投影。 */
+  .surface-panel,
+  .surface-overlay,
+  .surface-card {
     position: relative;
-    background:
-      linear-gradient(180deg, rgba(255, 255, 255, 0.11) 0%, rgba(255, 255, 255, 0.035) 100%),
-      var(--surface-panel);
-    -webkit-backdrop-filter: blur(30px) saturate(165%);
-    backdrop-filter: blur(30px) saturate(165%);
-    border: 1px solid rgba(255, 255, 255, 0.06);
-    box-shadow:
-      inset 0 1px 0 0 rgba(255, 255, 255, 0.22),
-      0 22px 50px -22px rgba(0, 0, 0, 0.75);
+    background: var(--surface-panel);
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow-1);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
   }
 
   .surface-overlay {
-    position: relative;
-    background:
-      linear-gradient(180deg, rgba(255, 255, 255, 0.12) 0%, rgba(255, 255, 255, 0.04) 100%),
-      var(--surface-overlay);
-    -webkit-backdrop-filter: blur(32px) saturate(170%);
-    backdrop-filter: blur(32px) saturate(170%);
-    border: 1px solid rgba(255, 255, 255, 0.07);
-    box-shadow:
-      inset 0 1px 0 0 rgba(255, 255, 255, 0.26),
-      0 28px 68px -18px rgba(0, 0, 0, 0.80);
+    background: var(--surface-overlay);
+    border-color: var(--border-strong);
+    box-shadow: var(--shadow-pop);
   }
 
   .surface-card {
-    position: relative;
-    background:
-      linear-gradient(180deg, rgba(255, 255, 255, 0.085) 0%, rgba(255, 255, 255, 0.025) 100%),
-      var(--surface-card);
-    -webkit-backdrop-filter: blur(22px) saturate(150%);
-    backdrop-filter: blur(22px) saturate(150%);
-    border: 1px solid rgba(255, 255, 255, 0.05);
-    box-shadow:
-      inset 0 1px 0 0 rgba(255, 255, 255, 0.16),
-      0 26px 50px -26px rgba(0, 0, 0, 0.70);
+    background: var(--surface-card);
   }
 
-  /* 高光描边：左上角接住光、向右下渐隐，模拟真实玻璃边缘的镜面反射。 */
-  .surface-panel::before,
-  .surface-overlay::before,
-  .surface-card::before {
-    content: "";
-    position: absolute;
-    inset: 0;
-    z-index: 1;
-    border-radius: inherit;
-    padding: 1px;
-    background: linear-gradient(140deg, rgba(255, 255, 255, 0.5) 0%, rgba(255, 255, 255, 0.1) 28%, transparent 55%, rgba(255, 255, 255, 0.14) 100%);
-    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
-    -webkit-mask-composite: xor;
-    mask-composite: exclude;
-    pointer-events: none;
-  }
-
-  .surface-card::before {
-    opacity: 0.7;
-  }
-
-  /* 手机宽度下首屏看板紧贴导航栏，导航栏 30px 的背景模糊半径会采样到它的玻璃上沿，
-     Chrome 会在导航栏内渲染出一条硬边。它的背后只有本就柔和的主题极光，去掉自身模糊视觉上无差别。 */
-  @media (max-width: 767.98px) {
-    .surface-panel.dashboard-intro {
-      -webkit-backdrop-filter: none;
-      backdrop-filter: none;
-    }
-  }
-
-  /* 卡内分组：只做分组不做材质，避免玻璃套玻璃。 */
   .surface-inline {
-    background: rgba(255, 255, 255, 0.04);
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: var(--surface-2);
+    border: 1px solid var(--border);
   }
 
   .surface-control {
     background: var(--control-bg);
-    -webkit-backdrop-filter: var(--control-blur);
-    backdrop-filter: var(--control-blur);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
     border: 1px solid var(--control-border);
-    box-shadow: var(--control-shadow);
+    box-shadow: none;
     transition: border-color 200ms, background-color 200ms, box-shadow 200ms;
   }
 
@@ -551,9 +534,9 @@ body::before {
 
   .surface-control:focus-within,
   .surface-control:focus {
-    border-color: var(--accent-border-hover);
+    border-color: var(--accent);
     background: var(--control-bg-focus);
-    box-shadow: var(--control-shadow), 0 0 0 3px var(--accent-glow-soft);
+    box-shadow: 0 0 0 2px var(--canvas), 0 0 0 4px var(--accent);
   }
 
   .surface-muted {
@@ -582,7 +565,7 @@ body::before {
     padding: .5rem .75rem;
     text-align: left;
     font-size: .875rem;
-    color: rgba(255, 255, 255, 0.78);
+    color: var(--fg-2);
     transition: background-color 150ms, border-color 150ms, color 150ms;
   }
   .dropdown-option + .dropdown-option { margin-top: .25rem; }
@@ -632,32 +615,20 @@ body::before {
   }
 
   .interactive-card:hover {
-    border-color: rgba(255, 255, 255, 0.20);
-    background:
-      linear-gradient(135deg, rgba(255, 255, 255, 0.09) 0%, rgba(255, 255, 255, 0.02) 40%, transparent 100%),
-      var(--card-hover-bg);
-    box-shadow:
-      inset 0 1px 1px 0 rgba(255, 255, 255, 0.28),
-      inset 0 -1px 1px 0 rgba(0, 0, 0, 0.35),
-      0 18px 40px -10px rgba(0, 0, 0, 0.75);
+    border-color: var(--border-strong);
+    background: var(--card-hover-bg);
+    box-shadow: var(--shadow-1);
   }
 
   .interactive-media-card {
     transition: transform 300ms cubic-bezier(0.16, 1, 0.3, 1), border-color 300ms, background-color 300ms, box-shadow 300ms;
   }
 
-  /* 悬停时平滑抬升卡片，呈现深层物理投影与克制微高光。 */
   .interactive-media-card:hover {
     transform: translateY(-0.375rem);
-    border-color: var(--accent-border-hover);
-    background:
-      linear-gradient(135deg, rgba(255, 255, 255, 0.12) 0%, rgba(255, 255, 255, 0.02) 40%, transparent 100%),
-      var(--card-hover-bg);
-    box-shadow:
-      inset 0 1px 1px 0 rgba(255, 255, 255, 0.32),
-      inset 0 -1px 1px 0 rgba(0, 0, 0, 0.40),
-      0 20px 36px -10px rgba(0, 0, 0, 0.75),
-      0 0 24px -4px var(--accent-glow-soft);
+    border-color: var(--accent-border);
+    background: var(--card-hover-bg);
+    box-shadow: var(--shadow-pop);
   }
 
   .interactive-control {
@@ -672,21 +643,21 @@ body::before {
 
   .filter-option {
     min-height: var(--hit-target);
-    border: 1px solid rgba(255, 255, 255, 0.10);
-    background: rgba(255, 255, 255, 0.04);
-    -webkit-backdrop-filter: blur(14px);
-    backdrop-filter: blur(14px);
-    color: rgba(255, 255, 255, 0.65);
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.20), inset 0 1px 0 rgba(255, 255, 255, 0.04);
+    border: 1px solid var(--border);
+    background: var(--surface-2);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    color: var(--fg-2);
+    box-shadow: none;
     color-scheme: dark;
     transition: transform 180ms cubic-bezier(0.16, 1, 0.3, 1), border-color 180ms, background-color 180ms, color 180ms, box-shadow 180ms;
   }
 
   .filter-option:hover {
-    border-color: rgba(255, 255, 255, 0.22);
-    background: rgba(255, 255, 255, 0.08);
-    color: rgba(255, 255, 255, 0.95);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.30), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+    border-color: var(--border-strong);
+    background: var(--surface-3);
+    color: var(--fg);
+    box-shadow: none;
   }
 
   .filter-option:active {
@@ -695,13 +666,13 @@ body::before {
 
   .filter-option-active {
     min-height: var(--hit-target);
-    border: 1px solid var(--accent-border-hover);
+    border: 1px solid var(--accent-border);
     background: var(--accent-soft);
-    -webkit-backdrop-filter: blur(16px);
-    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
     color: var(--accent-hover);
     font-weight: 700;
-    box-shadow: 0 4px 15px var(--accent-glow-soft), inset 0 1px 0 var(--accent-border);
+    box-shadow: none;
     transition: transform 180ms cubic-bezier(0.16, 1, 0.3, 1), border-color 180ms, background-color 180ms, color 180ms, box-shadow 180ms;
   }
 
@@ -709,7 +680,7 @@ body::before {
     border-color: var(--accent-hover);
     background: var(--accent-soft);
     color: var(--accent-light);
-    box-shadow: 0 6px 20px var(--accent-glow), inset 0 1px 0 var(--accent-border-hover);
+    box-shadow: none;
   }
 
   .filter-option-active:active {
@@ -717,13 +688,13 @@ body::before {
   }
 
   .progress-track {
-    background: rgba(0, 0, 0, 0.3);
-    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.5), 0 1px 0 rgba(255, 255, 255, 0.06);
+    background: var(--surface-3);
+    box-shadow: none;
   }
 
   .progress-fill {
-    background: linear-gradient(90deg, var(--accent-dark), var(--accent-light));
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.4), 0 0 14px var(--accent-glow-soft);
+    background: var(--accent);
+    box-shadow: none;
   }
 
   .dashboard-deferred {
@@ -740,7 +711,7 @@ body::before {
   .group:hover .stat-icon {
     background: var(--accent-soft);
     color: var(--accent-hover);
-    box-shadow: 0 4px 10px var(--accent-glow-soft);
+    box-shadow: none;
   }
 
   /* 单集行用原生 details 展开简介，静态 HTML 也能开合。收起时只露两行。 */
@@ -765,14 +736,14 @@ body::before {
     overflow: hidden;
     overflow-wrap: anywhere;
     white-space: pre-line;
-    color: rgb(255 255 255 / 0.6);
+    color: var(--fg-3);
   }
 
   .episode-row[open] .episode-blurb {
     display: block;
     -webkit-line-clamp: unset;
     overflow: visible;
-    color: rgb(255 255 255 / 0.75);
+    color: var(--fg-2);
   }
 
   .episode-expand-open {
@@ -841,17 +812,12 @@ body::before {
     }
   }
 
-  /* 底部标签栏比普通玻璃面板更实，避免滚动内容从胶囊里透出来。 */
   .mobile-tab-bar {
-    background:
-      linear-gradient(180deg, rgba(255, 255, 255, 0.18) 0%, rgba(255, 255, 255, 0.06) 100%),
-      color-mix(in srgb, var(--canvas) 94%, #000);
-    -webkit-backdrop-filter: blur(22px) saturate(150%);
-    backdrop-filter: blur(22px) saturate(150%);
-    border: 1px solid rgba(255, 255, 255, 0.16);
-    box-shadow:
-      inset 0 1px 0 rgba(255, 255, 255, 0.28),
-      0 16px 36px rgba(0, 0, 0, 0.48);
+    background: var(--surface-panel);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    border: 1px solid var(--border-strong);
+    box-shadow: var(--shadow-pop);
   }
 
   .mobile-tab-scrim {
@@ -871,12 +837,9 @@ body::before {
     );
   }
 
-  /* 手机筛选抽屉挂到 body 后仍要盖住页面极光，不能沿用 42% 透明度的玻璃填充。 */
   .search-filter-sheet.surface-panel {
-    background:
-      linear-gradient(180deg, rgba(255, 255, 255, 0.14) 0%, rgba(255, 255, 255, 0.05) 100%),
-      color-mix(in srgb, var(--canvas) 96%, #000);
-    box-shadow: 0 -24px 60px rgba(0, 0, 0, 0.55);
+    background: var(--surface-panel);
+    box-shadow: var(--shadow-pop);
   }
 }
 
@@ -937,17 +900,16 @@ select:is(.filter-option, .filter-option-active):focus-visible {
   animation-fill-mode: forwards;
 }
 
-/* 主行动按钮：用较深的强调色承载文字，保证各主题下的对比度。 */
+/* 主行动按钮：默认主题白字落在 #d81b66 上（约 5.0:1）。悬停只加描边，不再提亮以免掉到 4.5:1 以下。 */
 .button-accent {
   background: var(--accent-dark);
   color: var(--accent-contrast);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.32), 0 12px 28px -10px var(--accent-glow);
-  transition: filter 200ms, transform 200ms, box-shadow 200ms;
+  box-shadow: var(--shadow-1);
+  transition: box-shadow 200ms, transform 200ms;
 }
 
 .button-accent:hover {
-  filter: brightness(1.1);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.4), 0 16px 34px -10px var(--accent-glow-strong);
+  box-shadow: inset 0 0 0 1px var(--accent-hover), var(--shadow-1);
 }
 
 /* 不支持背景模糊或用户要求降低透明度时，玻璃退化为稳定的不透明面板，保证文字可读。 */
@@ -1045,7 +1007,33 @@ select:is(.filter-option, .filter-option-active):focus-visible {
 }
 
 .font-serif-movie {
-  font-family: var(--font-serif-movie);
+  font-family: var(--font-sans);
+  font-weight: 700;
+}
+
+/* 说明、徽标、表头和任意小字号工具类不低于 14px。写在 UnoCSS 工具类之后。 */
+:is(
+  .text-xs,
+  .text-\[10px\],
+  .text-\[11px\],
+  .text-\[12px\],
+  .text-\[12\.5px\],
+  .text-\[13px\]
+) {
+  font-size: var(--type-min);
+}
+
+.text-neutral-500 {
+  color: var(--fg-3);
+}
+
+.text-rose-400\/80 {
+  color: var(--danger);
+}
+
+[class*="backdrop-blur"] {
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
 }
 
 /* 搜索网格包含大量卡片；避免卡片与徽标的嵌套背景模糊产生额外合成层。 */

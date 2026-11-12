@@ -66,7 +66,7 @@ test("首帧脚本忽略已下线的旧主题并保留默认主题", async () =>
 
 function mountBrandTags() {
   document.head.innerHTML =
-    '<meta name="theme-color" content="#13051a">' +
+    '<meta name="theme-color" content="#0e0a12">' +
     '<link id="favicon-svg" rel="icon" type="image/svg+xml" href="/icons/favicon-pink.svg">' +
     '<link id="favicon-png" rel="icon" type="image/png" href="/icons/favicon-pink-32.png">';
 }

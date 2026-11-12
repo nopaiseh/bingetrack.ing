@@ -18,16 +18,21 @@ export default defineConfig({
   },
   theme: {
     fontFamily: {
-      mono: "var(--font-geist-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
+      sans: 'var(--font-geist), "Noto Sans SC", "Noto Sans CJK SC", "Source Han Sans SC", "Source Han Sans", ui-sans-serif, system-ui, sans-serif',
+      mono: 'var(--font-geist-mono), "Noto Sans Mono CJK SC", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
+    },
+    fontSize: {
+      // 正文下限 14px。说明、徽标、表头沿用 text-xs，不能再是 12px。
+      xs: ["0.875rem", "1.25rem"],
     },
     colors: {
-      // 深色背景上的文字层级；装饰性分隔符与占位图标仍直接用 text-white/N。
+      // 实色文字，不跟背景透明度复合。fg-3 在 surface 上约 6.3:1。
       fg: {
-        DEFAULT: "rgb(255 255 255 / 0.9)", // 标题与正文
-        secondary: "rgb(255 255 255 / 0.75)", // 次要文字与可点击控件
-        muted: "rgb(255 255 255 / 0.6)", // 辅助说明
-        subtle: "rgb(255 255 255 / 0.5)", // 元信息与弱提示；再低于 0.5 时小字达不到 WCAG AA 4.5:1
-        faint: "rgb(255 255 255 / 0.3)", // 仅用于装饰性占位图标；对比度约 2.6:1，不可用于文字
+        DEFAULT: "#f5f2f7",
+        secondary: "#c9c0d1",
+        muted: "#a197ab",
+        subtle: "#a197ab",
+        faint: "rgb(255 255 255 / 0.3)", // 仅装饰性占位图标，不可用于文字
       },
     },
   },

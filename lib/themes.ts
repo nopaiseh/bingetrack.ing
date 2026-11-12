@@ -1,6 +1,6 @@
 // 各主题的画布底色，与 globals.css 中的 --canvas 保持一致；浏览器状态栏颜色和 PWA 清单共用。
 export const THEME_COLORS = {
-  default: "#13051a",
+  default: "#0e0a12",
   lagoon: "#02111b",
   golden: "#160a05",
 } as const;
