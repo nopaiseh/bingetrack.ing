@@ -84,6 +84,16 @@ it("lockType 为真时锁定媒体类型，不展示分段切换控件", () => {
   expect(screen.getAllByText("单集").length).toBeGreaterThan(0);
 });
 
+it("海报预览只使用 TMDB 文件名，不把输入原文当成图片地址", () => {
+  const { container } = render(<MediaForm initialType="movie" />);
+  const cover = screen.getByLabelText("TMDB 海报路径");
+  fireEvent.change(cover, { target: { value: "javascript:alert(1)" } });
+  expect(container.querySelector("img")).toBeNull();
+  fireEvent.change(cover, { target: { value: "https://image.tmdb.org/t/p/w500/poster.jpg" } });
+  expect(container.querySelector("img")).toHaveAttribute("src", "https://image.tmdb.org/t/p/w500/poster.jpg");
+  expect(cover).toHaveValue("https://image.tmdb.org/t/p/w500/poster.jpg");
+});
+
 it("电影和电视节目展示演职员与海报，季保留海报，单集只有文字", () => {
   const { unmount: unmount1 } = render(<MediaForm initialType="movie" />);
   expect(screen.getByRole("heading", { name: "演职员" })).toBeInTheDocument();

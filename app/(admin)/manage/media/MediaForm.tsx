@@ -33,15 +33,22 @@ function normalizeCover(value: string) {
   return `https://image.tmdb.org/t/p/original/${trimmed.replace(/^\/+/, "")}`;
 }
 
+/** 预览只请求 TMDB 上的文件名。表单里的原文留给保存逻辑校验，不直接当成图片地址。 */
+function posterPreviewSrc(value: string): string | null {
+  const file = value.trim().split(/[?#]/)[0]?.split("/").pop() ?? "";
+  if (!/^[A-Za-z0-9._~-]{1,200}$/.test(file)) return null;
+  return `https://image.tmdb.org/t/p/w500/${encodeURIComponent(file)}`;
+}
+
 function PosterPreview({ title, src }: { title: string; src: string }) {
   const [failed, setFailed] = useState(false);
-  const preview = normalizeCover(src);
+  const preview = posterPreviewSrc(src);
   const showImage = Boolean(preview) && !failed;
   return (
     <div className="edit-poster" style={showImage ? undefined : { backgroundColor: listTint(title || "片") }}>
       {showImage ? (
         // eslint-disable-next-line @next/next/no-img-element
-        <img src={preview} alt="" onError={() => setFailed(true)} />
+        <img src={preview ?? undefined} alt="" onError={() => setFailed(true)} />
       ) : (
         <>
           <span className="edit-poster-letter">{listInitial(title || "片")}</span>
@@ -168,7 +175,7 @@ export default function MediaForm({
               {parent ? (
                 <Link href={`/manage/media/${parent.id}?type=${parent.type}`}>← {parent.name}</Link>
               ) : (
-                <Link href={`/manage?type=${type === "tv_season" || type === "tv_episode" ? "tv_show" : type}`}>← {mediaTypes[type === "tv_season" || type === "tv_episode" ? "tv_show" : type]}</Link>
+                <Link href={type === "movie" ? "/manage?type=movie" : "/manage?type=tv_show"}>← {type === "movie" ? "电影" : "电视节目"}</Link>
               )}
             </div>
             <div className="edit-title-row">
