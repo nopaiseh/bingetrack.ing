@@ -85,22 +85,27 @@ export function HomeLoadingSkeleton() {
   );
 }
 
-/** 为媒体详情的海报、标题、属性和底部内容展示加载骨架。 */
+/** 为媒体详情的大标题页头、事实格和简介展示加载骨架。 */
 export function DetailLoadingSkeleton() {
   return (
-    <section className="container mx-auto max-w-7xl px-4 pb-12 pt-24 sm:px-6 lg:px-8" aria-label="正在加载媒体详情">
-      <div className="flex flex-col gap-12 lg:flex-row lg:gap-20">
-        <div className="w-full shrink-0 space-y-6 lg:w-72">
-          <SkeletonBlock className="h-10 w-28" />
+    <section aria-label="正在加载媒体详情">
+      <div className="border-b border-[var(--border)]">
+        <div className="container mx-auto grid max-w-7xl grid-cols-[5.25rem_minmax(0,1fr)] gap-4 px-4 pb-8 pt-24 sm:grid-cols-[11.5rem_minmax(0,1fr)] sm:px-6 lg:px-8">
           <SkeletonBlock className="aspect-2/3 w-full" />
-        </div>
-        <div className="flex-1 space-y-6 pt-8">
-          <SkeletonBlock className="h-12 w-3/4" />
-          <SkeletonBlock className="h-8 w-52" />
-          {Array.from({ length: 5 }, /* 为一行详情属性生成全宽占位块。 */ (_, index) => <SkeletonBlock key={index} className="h-12 w-full" />)}
+          <div className="space-y-3 pt-2">
+            <SkeletonBlock className="h-4 w-28" />
+            <SkeletonBlock className="h-12 w-3/4 max-w-xl" />
+            <SkeletonBlock className="h-4 w-48" />
+            <SkeletonBlock className="h-11 w-28 rounded-xl" />
+          </div>
         </div>
       </div>
-      <SkeletonBlock className="mt-12 h-48 w-full" />
+      <div className="container mx-auto max-w-7xl space-y-6 px-4 py-8 sm:px-6 lg:px-8">
+        <div className="grid grid-cols-2 gap-px sm:grid-cols-4">
+          {Array.from({ length: 4 }, (_, index) => <SkeletonBlock key={index} className="h-16" />)}
+        </div>
+        <SkeletonBlock className="h-40 w-full" />
+      </div>
     </section>
   );
 }

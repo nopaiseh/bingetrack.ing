@@ -8,6 +8,12 @@ export function gmt8DateKey(date: Date = new Date()): string {
   return new Date(date.getTime() + GMT8_OFFSET_MS).toISOString().slice(0, 10);
 }
 
+/** 上映日期是今天或更晚时视为即将上映。只认 YYYY-MM-DD，年份或区间不当成未来日期。 */
+export function isUpcomingDate(date: string | null | undefined, today = gmt8DateKey()): boolean {
+  if (!date || !/^\d{4}-\d{2}-\d{2}/.test(date)) return false;
+  return date.slice(0, 10) >= today;
+}
+
 /** 计算两个 YYYY-MM-DD 日期相差的整天数，按 UTC 零点解析以避开夏令时偏差。 */
 export function daysUntil(releaseDate: string, today: string): number {
   return Math.round((Date.parse(`${releaseDate}T00:00:00Z`) - Date.parse(`${today}T00:00:00Z`)) / DAY_MS);

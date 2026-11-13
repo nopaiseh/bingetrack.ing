@@ -9,7 +9,7 @@ const media: Media = { id: "test", title: "测试作品", date: "2026-01-01", ra
 
 test("renders placeholder when casts list is empty", () => {
   render(<MediaInformation media={{ ...media, casts: [] }} seasons={null} />);
-  const castSection = screen.getByRole("heading", { name: "主演" }).parentElement!.parentElement!;
+  const castSection = screen.getByRole("heading", { name: "演员" }).parentElement!.parentElement!;
   expect(within(castSection).getByText("-")).toBeInTheDocument();
 });
 
@@ -22,7 +22,7 @@ test("renders every cast member without a toggle button", () => {
 
 test("shows the character beside each actor while the link searches only the actor", () => {
   render(<MediaInformation media={{ ...media, casts: ["演员1", "演员2"], characters: ["角色甲", null] }} seasons={null} />);
-  const link = screen.getByRole("link", { name: "演员1 饰 角色甲" });
+  const link = screen.getByRole("link", { name: /演员1饰\s*角色甲/ });
   expect(link).toHaveAttribute("href", "/search?q=%E6%BC%94%E5%91%981&type=actor");
   expect(screen.getByRole("link", { name: "演员2" })).toBeInTheDocument();
 });

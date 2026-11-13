@@ -26,9 +26,12 @@ export function getStatusBadgeConfig(status: string | null | undefined): StatusB
 export default function MediaCardStatusBadge({
   status,
   className = "",
+  placement = "overlay",
 }: {
   status?: string | null;
   className?: string;
+  /** overlay 盖在海报角上；inline 跟在年份后面，给搜索海报网格用。 */
+  placement?: "overlay" | "inline";
 }): ReactElement | null {
   const config = getStatusBadgeConfig(status);
   if (!config) return null;
@@ -36,7 +39,9 @@ export default function MediaCardStatusBadge({
   return (
     <div
       data-testid="media-card-status-badge"
-      className={`pointer-events-none absolute top-2 right-2 z-10 inline-flex items-center gap-1.5 rounded-full border bg-[var(--canvas)] px-2 py-1 text-xs font-medium transition-opacity duration-300 ${config.borderClass} ${config.textClass} ${className}`}
+      className={`pointer-events-none inline-flex items-center gap-1.5 rounded-full border px-2 py-1 text-xs font-medium ${
+        placement === "overlay" ? "absolute top-2 right-2 z-10 bg-[var(--canvas)] transition-opacity duration-300" : "bg-transparent"
+      } ${config.borderClass} ${config.textClass} ${className}`}
       aria-label={`观看状态：${config.label}`}
       title={config.label}
     >

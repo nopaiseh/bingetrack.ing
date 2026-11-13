@@ -142,7 +142,6 @@ export default function MediaForm({
     confirmDialog.current?.showModal();
     confirmInput.current?.focus();
   }
-
   function discard() {
     field.reset();
     setCoverUrl(item?.cover_url ?? "");
@@ -160,7 +159,7 @@ export default function MediaForm({
     ? Number(ratingField.value)
     : null;
 
-  return <div>
+  return <div>;
     <UnsavedGuard dirty={dirty && !pending && !deleting} />
     <form
       ref={formRef}
