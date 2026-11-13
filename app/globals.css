@@ -847,14 +847,10 @@ body::before {
   }
 }
 
-/* 主内容在手机上让出底部标签栏，最后一屏内容可以滚到栏的上方。 */
+/* 锚点与键盘焦点在手机上滚到标签栏上方；页脚的 pb-28 负责给固定标签栏让位。 */
 @media (max-width: 767.98px) {
   html {
     scroll-padding-bottom: calc(env(safe-area-inset-bottom) + 5.5rem);
-  }
-
-  #main-content {
-    padding-bottom: calc(env(safe-area-inset-bottom) + 5.5rem);
   }
 }
 

@@ -230,7 +230,7 @@ export default function MediaInformation({
         </div>
       </header>
 
-      <div className="container relative z-10 mx-auto max-w-7xl px-4 pb-12 sm:px-6 lg:px-8">
+      <div className="container relative z-10 mx-auto max-w-7xl px-4 pb-8 sm:px-6 md:pb-12 lg:px-8">
         <dl className="grid grid-cols-2 gap-px overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--border)] sm:grid-cols-4">
           <Fact label="上映">
             <span className="font-mono">{releaseFact(media, releaseDateLabel)}</span>

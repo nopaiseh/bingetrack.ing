@@ -126,7 +126,7 @@ export default async function SeasonPage({
   const jsonLd = buildSeasonJsonLd(series, seasonData.season, episodesForJsonLd);
 
   return (
-    <div className="min-h-screen pb-16 pt-24 text-fg">
+    <div className="pb-8 pt-24 md:pb-16 text-fg">
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: serializeJsonLd(jsonLd) }}
