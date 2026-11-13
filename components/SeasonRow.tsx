@@ -82,7 +82,7 @@ export default function SeasonRow({
   seasons: SeasonInfo[];
 }) {
   return (
-    <div className="mb-12 mt-12">
+    <div className="mt-12 md:mb-12">
       <div className="mb-5 flex items-center gap-2 border-b border-white/10 pb-3">
         <h2 className="text-xl font-bold tracking-wide text-white">季度列表</h2>
         {seasons.length > 0 ? (

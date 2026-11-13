@@ -271,7 +271,7 @@ export default function HomeDashboard({
   const isTopMediaLoading = topMediaLoading && selectedYear !== "All Time";
 
   return (
-    <div className="container mx-auto flex max-w-7xl flex-col gap-6 px-4 pb-12 pt-20 sm:pt-22 sm:px-6 lg:pt-24 lg:px-8">
+    <div className="container mx-auto flex max-w-7xl flex-col gap-6 px-4 pb-8 pt-20 sm:pt-22 sm:px-6 md:pb-12 lg:pt-24 lg:px-8">
       <ContinueWatchingRail items={continueWatching} />
       <UpcomingHero items={upcoming} renderedOn={renderedOn} />
 

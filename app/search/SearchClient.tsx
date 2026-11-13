@@ -607,7 +607,7 @@ function SearchContent({ initialOptions, initialResult }: SearchProps) {
   const rangeLabel = resultRange(page, isLoading || requestError ? 0 : total);
 
   return (
-    <div className="min-h-screen text-fg pt-24 pb-8 md:pb-12 selection:bg-[var(--accent-soft)] selection:text-white font-sans relative">
+    <div className="text-fg pt-24 pb-8 md:pb-12 selection:bg-[var(--accent-soft)] selection:text-white font-sans relative">
       <div className="container relative z-1 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <section ref={resultsRef} className="w-full scroll-mt-24" aria-labelledby="search-results-heading">
           <h1 id="search-results-heading" className="text-balance text-3xl font-semibold tracking-tight text-fg sm:text-4xl">

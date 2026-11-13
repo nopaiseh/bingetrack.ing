@@ -19,7 +19,7 @@ export default function ShowsCatalog({
 
   return (
     <div className="relative text-fg pt-14 min-h-[60vh]">
-      <div className="container relative z-1 mx-auto w-full max-w-7xl px-4 pb-12 pt-12 sm:px-6 lg:px-8">
+      <div className="container relative z-1 mx-auto w-full max-w-7xl px-4 pb-8 pt-12 sm:px-6 md:pb-12 lg:px-8">
         <h1 className="sr-only">电视节目</h1>
         <CatalogStatGrid items={statItems} />
 
