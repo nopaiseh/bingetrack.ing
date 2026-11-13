@@ -436,7 +436,6 @@
   display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between;
   gap: .75rem 1rem; border-top: 1px solid var(--border); padding: .75rem 1rem;
 }
-
 /* 报告概览：待处理用警示色强调数量，已清理收起后仍用实色文字，不用透明度。 */
 .admin-report-board { display: flex; flex-direction: column; gap: 1.5rem; }
 .admin-report-kicker { margin-bottom: .75rem; font-size: .875rem; font-weight: 500; color: var(--fg-3); }

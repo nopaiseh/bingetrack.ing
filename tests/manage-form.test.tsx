@@ -54,6 +54,14 @@ it("电影和单集由评分决定观看状态，电视节目和季显示只读�
   expect(screen.getByText(/电视节目的观看状态由下属单集自动汇总决定/)).toBeInTheDocument();
 });
 
+it("电影仍可填写封面地址，但不会把输入内容渲染成图片", () => {
+  render(<MediaForm initialType="movie" />);
+  const cover = screen.getByLabelText("封面地址（TMDB）");
+  fireEvent.change(cover, { target: { value: "https://image.tmdb.org/t/p/w500/a.jpg" } });
+  expect(cover).toHaveValue("https://image.tmdb.org/t/p/w500/a.jpg");
+  expect(screen.queryByRole("img", { name: "封面预览" })).not.toBeInTheDocument();
+});
+
 it("单集不提供封面地址，电影和电视节目仍保留，已有剧照在保存时原样带回", () => {
   const { container, unmount } = render(<MediaForm initialType="movie" />);
   const cover = screen.getByLabelText("封面地址（TMDB）");

@@ -4,6 +4,7 @@ import { SearchMediaCardSkeleton } from "@/components/SearchMediaCard";
 export default function SearchLoading() {
   return (
     <div className="container mx-auto w-full max-w-7xl px-4 pb-8 pt-24 sm:px-6 md:pb-12 lg:px-8" aria-busy="true" aria-label="正在加载搜索结果">
+      <h1 className="sr-only">搜索结果</h1>
       <div className="shimmer-wave mb-6 h-14 rounded-2xl" />
       <div className="shimmer-wave mb-8 h-11 w-28 rounded-xl md:hidden" />
       <div className="shimmer-wave mb-8 hidden h-48 rounded-2xl md:block" />

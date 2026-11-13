@@ -5,6 +5,8 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useId, useRef, useState } from "react";
 import ManagePagination from "../ManagePagination";
+import { deleteMovies, deletePeople, deleteTvShows, setMovieStatus, setTvShowStatus } from "../list-actions";
+import type { BulkCounts } from "@/lib/admin/list-params";
 import {
   adminListHref,
   listInitial,
@@ -40,7 +42,10 @@ type AdminListProps = {
   /** 「已选 3 部」里的量词。 */
   noun: string;
   listLabel: string;
+  /** 没有对应接口时渲染为禁用，并提示 Coming soon。 */
   actions: AdminBulkAction[];
+  /** 电影、电视节目、人物走已合并的批量接口。已看与想看只提供给影视。 */
+  wired?: "movie" | "tv_show" | "people";
   showStatus?: boolean;
 };
 
@@ -53,9 +58,14 @@ function StatusChip({ status }: { status: AdminListStatus }) {
   );
 }
 
+function allowedCover(src: string) {
+  return src.startsWith("https://image.tmdb.org/t/p/") ? src : null;
+}
+
 function ListThumb({ src, title }: { src?: string | null; title: string }) {
   const [failed, setFailed] = useState(false);
-  if (!src || failed) {
+  const cover = src ? allowedCover(src) : null;
+  if (!cover || failed) {
     return (
       <span className="admin-list-mark" style={{ backgroundColor: listTint(title) }} aria-hidden="true">
         {listInitial(title)}
@@ -64,7 +74,7 @@ function ListThumb({ src, title }: { src?: string | null; title: string }) {
   }
   return (
     <Image
-      src={src}
+      src={cover}
       alt=""
       width={36}
       height={36}
@@ -106,6 +116,7 @@ export default function AdminList({
   noun,
   listLabel,
   actions,
+  wired,
   showStatus = false,
 }: AdminListProps) {
   const router = useRouter();
@@ -120,6 +131,8 @@ export default function AdminList({
   const [seenKey, setSeenKey] = useState(incomingKey);
   const [pendingSearch, setPendingSearch] = useState(false);
   const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [pendingAction, setPendingAction] = useState<string | null>(null);
+  const [notice, setNotice] = useState<{ tone: "ok" | "error"; text: string } | null>(null);
   const rowKey = rows.map((row) => row.id).join("\n");
   const [seenRows, setSeenRows] = useState(rowKey);
 
@@ -186,6 +199,24 @@ export default function AdminList({
     setSelected((current) => (current.size === rows.length ? new Set() : new Set(rows.map((row) => row.id))));
   }
 
+  async function runWired(actionId: string) {
+    if (!wired || pendingAction) return;
+    const ids = [...selected];
+    if (ids.length === 0) return;
+    if (actionId === "delete" && !window.confirm(deleteConfirm(wired, ids.length, noun))) return;
+    setPendingAction(actionId);
+    setNotice(null);
+    try {
+      const result = await runBulk(wired, actionId, ids);
+      setNotice({ tone: result.failed > 0 && result.succeeded === 0 ? "error" : "ok", text: bulkNotice(actionId, result, noun) });
+      if (result.succeeded > 0) router.refresh();
+    } catch (error) {
+      setNotice({ tone: "error", text: error instanceof Error ? error.message : "操作失败，请重试。" });
+    } finally {
+      setPendingAction(null);
+    }
+  }
+
   const columnClass = new Map(columns.map((column) => [column.key, column.className ?? ""]));
   const hasTrailing = rows.some((row) => row.trailing);
 
@@ -249,15 +280,29 @@ export default function AdminList({
         <p className="text-sm text-fg-secondary">输入即筛选，无需点「应用」</p>
       </div>
 
+      {notice ? <p role={notice.tone === "error" ? "alert" : "status"} className={`mb-3 text-sm ${notice.tone === "error" ? "text-[var(--danger)]" : "text-fg-secondary"}`}>{notice.text}</p> : null}
+
       {selected.size > 0 ? (
         <div className="admin-bulk-bar" role="region" aria-label="批量操作">
           <p className="text-sm font-medium text-fg" aria-live="polite">
             已选 <span className="font-mono">{selected.size}</span> {noun}
           </p>
           <div className="flex flex-wrap items-center gap-2">
-            {actions.map((action) => <ComingSoon key={action.id} action={action} />)}
+            {(wired ? liveActions(wired) : actions).map((action) => wired ? (
+              <button
+                key={action.id}
+                type="button"
+                className={action.destructive ? "admin-danger" : ""}
+                aria-label={action.id === "watched" ? "标为已看" : action.id === "want" ? "标为想看" : undefined}
+                disabled={pendingAction !== null}
+                onClick={() => void runWired(action.id)}
+              >
+                <span className={`${action.icon} size-5`} aria-hidden="true" />
+                {pendingAction === action.id ? "正在处理…" : action.label}
+              </button>
+            ) : <ComingSoon key={action.id} action={action} />)}
           </div>
-          <button type="button" className="ml-auto" onClick={() => setSelected(new Set())}>取消选择</button>
+          <button type="button" className="ml-auto" onClick={() => setSelected(new Set())} disabled={pendingAction !== null}>取消选择</button>
         </div>
       ) : null}
 
@@ -345,6 +390,41 @@ export default function AdminList({
       </div>
     </div>
   );
+}
+
+function liveActions(kind: "movie" | "tv_show" | "people"): AdminBulkAction[] {
+  const remove: AdminBulkAction = { id: "delete", label: "删除", icon: "i-material-symbols-delete-outline-rounded", destructive: true };
+  if (kind === "people") return [remove];
+  return [
+    { id: "watched", label: "已看", icon: "i-material-symbols-check-circle-outline-rounded" },
+    { id: "want", label: "想看", icon: "i-material-symbols-bookmark-outline-rounded" },
+    remove,
+  ];
+}
+
+function deleteConfirm(kind: "movie" | "tv_show" | "people", count: number, noun: string) {
+  if (kind === "tv_show") return `确定删除所选 ${count} ${noun}电视节目？下属季、集和观看记录会一并删除。此操作无法撤销。`;
+  if (kind === "people") return `确定删除所选 ${count} ${noun}人物？演职关联会删除，影视作品会保留。此操作无法撤销。`;
+  return `确定删除所选 ${count} ${noun}电影？观看记录和关联会一并删除。此操作无法撤销。`;
+}
+
+function bulkNotice(actionId: string, result: BulkCounts, noun: string) {
+  const verb = actionId === "delete" ? "删除" : actionId === "want" ? "标为想看" : "标为已看";
+  if (result.succeeded > 0 && result.failed === 0) return `已${verb} ${result.succeeded} ${noun}。`;
+  if (result.succeeded === 0) return `未能${verb}。${result.failed} ${noun}失败。`;
+  return `已${verb} ${result.succeeded} ${noun}，${result.failed} ${noun}失败。`;
+}
+
+async function runBulk(kind: "movie" | "tv_show" | "people", actionId: string, ids: string[]) {
+  if (kind === "people") return deletePeople(ids);
+  if (kind === "tv_show") {
+    if (actionId === "watched") return setTvShowStatus(ids, "watched");
+    if (actionId === "want") return setTvShowStatus(ids, "want_to_watch");
+    return deleteTvShows(ids);
+  }
+  if (actionId === "watched") return setMovieStatus(ids, "watched");
+  if (actionId === "want") return setMovieStatus(ids, "want_to_watch");
+  return deleteMovies(ids);
 }
 
 function sameLocation(target: URL, current: URL, pathname: string) {

@@ -67,7 +67,6 @@ export default function MediaForm({ item, initialType = "movie", lockType = fals
   }
   const isChild = type === "tv_season" || type === "tv_episode";
   const showCover = type !== "tv_episode";
-  const coverPreview = coverUrl.trim();
   const ratingField = field("rating", item?.rating != null ? Number(item.rating).toFixed(1) : null);
   const rated = ratingField.value.trim() !== "";
   return <div className="space-y-10">
@@ -187,18 +186,6 @@ export default function MediaForm({ item, initialType = "movie", lockType = fals
                   placeholder="https://image.tmdb.org/t/p/original/…"
                 />
               </div>
-              {coverPreview && (
-                <div className="relative h-11 w-8 shrink-0 overflow-hidden rounded-md border border-white/15 bg-black/40 shadow-sm" title="海报预览">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={coverPreview}
-                    alt="封面预览"
-                    className="h-full w-full object-cover"
-                    onError={e => { (e.currentTarget as HTMLElement).style.display = "none"; }}
-                    onLoad={e => { (e.currentTarget as HTMLElement).style.display = "block"; }}
-                  />
-                </div>
-              )}
             </div>
           </div> : null}
           {isChild && <>

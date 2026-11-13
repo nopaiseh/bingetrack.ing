@@ -6,17 +6,20 @@ import { requireOwner } from "@/lib/auth/server";
 import { escapeLikePattern, isReferenceType, nameOrAliasFilter, referenceTypes } from "@/lib/admin/catalog";
 import PageHeader, { AdminCrumb } from "../../../PageHeader";
 import AdminList from "../../list/AdminList";
+import { PagedPeopleList } from "../../list/wired";
 import { ADMIN_LIST_PAGE_SIZE, referenceBulkActions } from "../../list/model";
 
 const PAGE_SIZE = ADMIN_LIST_PAGE_SIZE;
 
 /** 分页显示关联资料及引用数，空列表也保留新增入口。 */
-export default async function ReferenceList({ params, searchParams }: { params: Promise<{ kind: string }>; searchParams: Promise<{ q?: string; page?: string; deleted?: string; n?: string }> }) {
+export default async function ReferenceList({ params, searchParams }: { params: Promise<{ kind: string }>; searchParams: Promise<{ q?: string; page?: string; pageSize?: string; sort?: string; deleted?: string; n?: string }> }) {
   const { db } = await requireOwner();
   const { kind } = await params;
   if (!isReferenceType(kind)) notFound();
-  const config = referenceTypes[kind];
   const search = await searchParams;
+  const referenceKind = kind;
+  if (referenceKind === "people") return <PagedPeopleList search={search} />;
+  const config = referenceTypes[kind];
   const q = (search.q ?? "").slice(0, 200);
   const page = Math.min(100000, Math.max(1, parseInt(search.page ?? "1", 10) || 1));
   const query = db.from(config.table).select(`id,name,${config.alternate ? "alternate_name," : ""}${config.link}(count)`, { count: "exact" });
@@ -47,7 +50,7 @@ export default async function ReferenceList({ params, searchParams }: { params: 
           id: row.id,
           href: `/manage/references/${kind}/${row.id}`,
           title: row.name,
-          subtitle: row.alternate_name || (kind === "people" ? "未填别名" : null),
+          subtitle: row.alternate_name || null,
           detail: countLabel,
           cells: [{ key: "count", label: "关联", value: countLabel }],
         };
