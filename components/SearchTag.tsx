@@ -40,7 +40,7 @@ export default function SearchTag({
   return (
     <Link
       href={getSearchHref(label, category)}
-      className="surface-subtle inline-flex min-h-10 items-center rounded-lg border border-white/10 px-3.5 py-1.5 text-sm font-medium tracking-wide text-fg-secondary transition-all duration-300 hover:border-white/20 hover:bg-white/10 hover:text-white"
+      className="inline-flex min-h-10 items-center rounded-full border border-[var(--border)] bg-[var(--surface-2)] px-3.5 py-1.5 text-sm font-medium text-fg-secondary transition-colors hover:border-[var(--border-strong)] hover:bg-[var(--surface-3)] hover:text-fg"
     >
       {label}
       {note && <>{" "}<span className="ml-1.5 font-normal text-fg-subtle">{note}</span></>}

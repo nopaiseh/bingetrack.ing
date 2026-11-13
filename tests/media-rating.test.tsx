@@ -36,7 +36,7 @@ test.each([
       <MediaRow title="电影" items={[item]} type="movies" />
     </>
   );
-  expect(screen.getAllByText(expectedTier)).toHaveLength(3);
+  expect(screen.getAllByText(expectedTier)).toHaveLength(2);
   expect(screen.getAllByText(Number(rating).toFixed(1))).toHaveLength(3);
 });
 

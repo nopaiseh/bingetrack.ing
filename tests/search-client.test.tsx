@@ -116,10 +116,11 @@ test("filter selection and sort direction are accessible", /* 验证切换后读
   fireEvent.click(movie);
   expect(movie).toHaveAttribute("aria-pressed", "true");
   fireEvent.click(screen.getByRole("button", { name: "日期，降序" }));
-  fireEvent.click(screen.getByRole("button", { name: "高级筛选" }));
+  fireEvent.click(screen.getByRole("button", { name: "筛选" }));
   expect(screen.getByRole("button", { name: "收起筛选" })).toHaveAttribute("aria-expanded", "true");
+  expect(screen.getByRole("combobox", { name: "开始年份" })).toBeInTheDocument();
   fireEvent.click(screen.getByRole("button", { name: "收起筛选" }));
-  expect(screen.getByRole("button", { name: "高级筛选" })).toHaveAttribute("aria-expanded", "false");
+  expect(screen.getByRole("button", { name: "筛选" })).toHaveAttribute("aria-expanded", "false");
   await screen.findByText("找到 0 部作品");
 });
 
@@ -238,15 +239,17 @@ test("the results heading follows the committed URL query, not unsubmitted input
 test("无结果时给出说明、清除筛选和建议，清除按钮留在输入框内", async () => {
   window.history.replaceState(null, "", "/search?q=zzqxjw不存在&type=movie");
   vi.mocked(fetch).mockImplementation(async () => new Response(JSON.stringify({ rows: [], total: 0 })));
-  render(<SearchClient initialOptions={options} initialResult={resultFor(window.location.search)} />);
+  render(<SearchClient initialOptions={options} initialResult={{ ...resultFor(window.location.search), total: 0 }} />);
 
   const input = screen.getByRole("textbox", { name: "搜索媒体" });
   const clear = screen.getByRole("button", { name: "清除搜索" });
   expect(input.parentElement).toContainElement(clear);
   const empty = screen.getByRole("status");
-  expect(empty).toHaveTextContent("没有匹配的结果");
-  expect(empty).toHaveTextContent("请检查拼写，或清除筛选后再试");
+  expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("没有找到");
+  expect(empty).toHaveTextContent("没有匹配的作品");
+  expect(empty).toHaveTextContent("电影、电视节目");
   expect(empty).toHaveTextContent("试试这些");
+  expect(screen.getByRole("button", { name: "清除筛选" })).toHaveClass("button-accent");
 
   fireEvent.click(screen.getByRole("button", { name: "清除筛选" }));
   await waitFor(() => {
@@ -259,8 +262,8 @@ test("无结果时给出说明、清除筛选和建议，清除按钮留在输�
 test("无结果建议会换成对应筛选并清掉关键词", async () => {
   window.history.replaceState(null, "", "/search?q=没有这部");
   vi.mocked(fetch).mockImplementation(async () => new Response(JSON.stringify({ rows: [], total: 0 })));
-  render(<SearchClient initialOptions={options} initialResult={resultFor(window.location.search)} />);
-  fireEvent.click(screen.getByRole("button", { name: "影片" }));
+  render(<SearchClient initialOptions={options} initialResult={{ ...resultFor(window.location.search), total: 0 }} />);
+  fireEvent.click(within(screen.getByRole("status")).getByRole("button", { name: "电影" }));
   await waitFor(() => {
     const params = new URLSearchParams(window.location.search);
     expect(params.get("type")).toBe("movie");
@@ -268,17 +271,18 @@ test("无结果建议会换成对应筛选并清掉关键词", async () => {
   });
 });
 
-test("手机筛选按钮打开对话框，完成后收起", () => {
+test("筛选按钮展开类型和年份，收起后高级条件离开页面", () => {
   window.history.replaceState(null, "", "/search");
   render(<SearchClient initialOptions={options} initialResult={resultFor("")} />);
-  const toggle = screen.getByRole("button", { name: /^筛选( \(\d+\))?$/ });
+  const toggle = screen.getByRole("button", { name: "筛选" });
   expect(toggle).toHaveAttribute("aria-expanded", "false");
+  expect(screen.getByRole("button", { name: "电影" })).toBeInTheDocument();
+  expect(screen.queryByRole("combobox", { name: "开始年份" })).not.toBeInTheDocument();
   fireEvent.click(toggle);
-  const dialog = screen.getByRole("dialog", { name: /筛选/ });
-  expect(dialog).toHaveAttribute("aria-modal", "true");
-  expect(within(dialog).getByRole("button", { name: "电影" })).toBeInTheDocument();
-  fireEvent.click(screen.getByRole("button", { name: "完成" }));
-  expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "收起筛选" })).toHaveAttribute("aria-expanded", "true");
+  expect(screen.getByRole("combobox", { name: "开始年份" })).toBeInTheDocument();
+  fireEvent.click(screen.getByRole("button", { name: "收起筛选" }));
+  expect(screen.queryByRole("combobox", { name: "开始年份" })).not.toBeInTheDocument();
 });
 
 test("the hidden back-to-top button is removed from keyboard focus", () => {
