@@ -572,6 +572,7 @@
   .edit-main, .edit-rail { display: flex; flex-direction: column; gap: 1rem; min-width: 0; }
   .edit-rail { position: sticky; top: 1rem; }
   .edit-basic, .edit-poster-card, .edit-cast-card, .edit-publish, .edit-record, .edit-danger { order: 0; }
+}
 
 /* 报告概览：待处理用警示色强调数量，已清理收起后仍用实色文字，不用透明度。 */
 .admin-report-board { display: flex; flex-direction: column; gap: 1.5rem; }
