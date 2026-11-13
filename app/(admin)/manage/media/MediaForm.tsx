@@ -48,7 +48,7 @@ const typeConfigs: Record<ManagedMediaType, { label: string; icon: string; badge
 export default function MediaForm({ item, initialType = "movie", lockType = false, parent, nextNumber, impact }: { item?: MediaInput; initialType?: ManagedMediaType; lockType?: boolean; parent?: ParentChoice; nextNumber?: number; impact?: { seasons: number; episodes: number } }) {
   const field = useDraftFields();
   const [type, setType] = useState<ManagedMediaType>(item?.type ?? initialType);
-  const [coverPreview, setCoverPreview] = useState(item?.cover_url ?? "");
+  const [coverUrl, setCoverUrl] = useState(item?.cover_url ?? "");
   const [dirty, setDirty] = useState(false);
   const [state, action, pending] = useActionState(async (previous: ActionResult, form: FormData) => {
     setDirty(false);
@@ -66,6 +66,7 @@ export default function MediaForm({ item, initialType = "movie", lockType = fals
     confirmInput.current?.focus();
   }
   const isChild = type === "tv_season" || type === "tv_episode";
+  const showCover = type !== "tv_episode";
   const ratingField = field("rating", item?.rating != null ? Number(item.rating).toFixed(1) : null);
   const rated = ratingField.value.trim() !== "";
   return <div className="space-y-10">
@@ -74,6 +75,7 @@ export default function MediaForm({ item, initialType = "movie", lockType = fals
       <fieldset disabled={pending || deleting} className="space-y-7">
         <legend className="sr-only">媒体资料</legend>
         <input type="hidden" name="id" value={item?.id ?? ""} />
+        {type === "tv_episode" ? <input type="hidden" name="cover_url" value={item?.type === "tv_episode" ? (item.cover_url ?? "") : ""} /> : null}
 
         {/* 顶部影视类型标识（编辑时或锁定模式下为只读发光胶囊，新建未锁定时为现代分段单选控件） */}
         {(item || lockType) ? (
@@ -167,7 +169,7 @@ export default function MediaForm({ item, initialType = "movie", lockType = fals
               </div>
             </>
           )}
-          <div className="sm:col-span-2">
+          {showCover ? <div className="sm:col-span-2">
             <div className="mb-1.5 flex items-center justify-between">
               <label htmlFor="field-cover-url">封面地址（TMDB）</label>
               <span className="text-[11px] font-normal text-neutral-500">仅支持 TMDB 图片地址</span>
@@ -178,26 +180,14 @@ export default function MediaForm({ item, initialType = "movie", lockType = fals
                   id="field-cover-url"
                   type="url"
                   name="cover_url"
-                  defaultValue={item?.cover_url ?? ""}
-                  onChange={e => { setCoverPreview(e.target.value.trim()); setDirty(true); }}
+                  value={coverUrl}
+                  onChange={e => { setCoverUrl(e.target.value); setDirty(true); }}
                   maxLength={2000}
                   placeholder="https://image.tmdb.org/t/p/original/…"
                 />
               </div>
-              {coverPreview && (
-                <div className="relative h-11 w-8 shrink-0 overflow-hidden rounded-md border border-white/15 bg-black/40 shadow-sm" title="海报预览">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={coverPreview}
-                    alt="封面预览"
-                    className="h-full w-full object-cover"
-                    onError={e => { (e.currentTarget as HTMLElement).style.display = "none"; }}
-                    onLoad={e => { (e.currentTarget as HTMLElement).style.display = "block"; }}
-                  />
-                </div>
-              )}
             </div>
-          </div>
+          </div> : null}
           {isChild && <>
             <ChoicePicker
               key={type}

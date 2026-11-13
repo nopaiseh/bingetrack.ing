@@ -78,7 +78,7 @@ export default function QuickAddDialog({ kind, structure, onClose }: { kind: Qui
           <label>时长（分钟）<input name="runtime" type="number" min="0" max="100000" step="any" defaultValue={next?.runtime ?? ""} className="font-mono" /></label>
           <label>评分（可留空）<input name="rating" type="number" min="0" max="10" step="0.1" placeholder="填写即标为看过" className="font-mono" /></label>
         </div>}
-        <label>封面地址（TMDB）<input name="cover_url" type="url" maxLength={2000} placeholder="https://image.tmdb.org/t/p/original/…" /></label>
+        {!episode && <label>封面地址（TMDB）<input name="cover_url" type="url" maxLength={2000} placeholder="https://image.tmdb.org/t/p/original/…" /></label>}
         <label>简介<textarea name="summary" rows={3} maxLength={20000} placeholder="输入剧情梗概…" /></label>
         <ActionNotice state={state} />
         <div className="flex flex-wrap items-center justify-between gap-3 border-t border-white/10 pt-4">
