@@ -244,7 +244,8 @@ test("无结果时给出说明、清除筛选和建议，清除按钮留在输�
   const clear = screen.getByRole("button", { name: "清除搜索" });
   expect(input.parentElement).toContainElement(clear);
   const empty = screen.getByRole("status");
-  expect(empty).toHaveTextContent("暂无符合条件的作品");
+  expect(empty).toHaveTextContent("没有匹配的结果");
+  expect(empty).toHaveTextContent("请检查拼写，或清除筛选后再试");
   expect(empty).toHaveTextContent("试试这些");
 
   fireEvent.click(screen.getByRole("button", { name: "清除筛选" }));
