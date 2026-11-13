@@ -1,4 +1,6 @@
 import HomeDashboard from "@/app/HomeDashboard";
+import type { ContinueWatchingCard } from "@/components/ContinueWatchingRail";
+import { getContinueWatching, type ContinueWatchingItem } from "@/lib/continue-watching";
 import {
   getCachedReleaseYearStats,
   getCachedTopMediaServer,
@@ -24,29 +26,54 @@ export const revalidate = 86400;
 
 const EMPTY_DISTRIBUTIONS = buildMediaDistributions([]);
 
-/** 并行读取年度统计、电影和电视节目榜单、分布数据及即将上映候选，组成首页看板的初始数据；仅构建期失败时降级为空看板，运行期失败保留旧页面。 */
+/**
+ * 丢掉 lastWatchedAt。该字段目前是上映日，不是观看时间，不能交给界面。
+ */
+function continueWatchingCards(items: readonly ContinueWatchingItem[]): ContinueWatchingCard[] {
+  return items.map((item) => ({
+    showId: item.showId,
+    title: item.title,
+    posterPath: item.posterPath,
+    href: item.href,
+    nextEpisode: item.nextEpisode,
+    seasonProgress: item.seasonProgress,
+  }));
+}
+
+/** 并行读取年度统计、榜单、分布、即将上映和继续观看；仅构建期失败时降级为空数据，运行期失败保留旧页面。 */
 export default async function HomePage() {
   let summary: Summary[] = [];
   let topMovies: MediaCard[] = [];
   let topSeries: MediaCard[] = [];
   let distributions = EMPTY_DISTRIBUTIONS;
   let upcoming: UpcomingRelease[] = [];
+  let continueWatching: ContinueWatchingCard[] = [];
 
-  try {
-    const [fetchedSummary, fetchedTopMovies, fetchedTopSeries, fetchedDistributions, fetchedUpcoming] = await Promise.all([
-      getCachedReleaseYearStats(),
-      getCachedTopMediaServer("movie", null, TOP_MEDIA_LIMIT),
-      getCachedTopMediaServer("tv_show", null, TOP_MEDIA_LIMIT),
-      getCachedMediaDistributionsServer(),
-      getCachedUpcomingReleasesServer(),
-    ]);
+  const dashboardResult = Promise.all([
+    getCachedReleaseYearStats(),
+    getCachedTopMediaServer("movie", null, TOP_MEDIA_LIMIT),
+    getCachedTopMediaServer("tv_show", null, TOP_MEDIA_LIMIT),
+    getCachedMediaDistributionsServer(),
+    getCachedUpcomingReleasesServer(),
+  ]);
+  const continueResult = getContinueWatching();
+  const [dashboard, watching] = await Promise.allSettled([dashboardResult, continueResult]);
+
+  if (dashboard.status === "fulfilled") {
+    const [fetchedSummary, fetchedTopMovies, fetchedTopSeries, fetchedDistributions, fetchedUpcoming] = dashboard.value;
     summary = fetchedSummary;
     topMovies = fetchedTopMovies ?? [];
     topSeries = fetchedTopSeries ?? [];
     distributions = fetchedDistributions;
     upcoming = fetchedUpcoming;
-  } catch (error) {
-    handlePageDataError("home dashboard", error);
+  } else {
+    handlePageDataError("home dashboard", dashboard.reason);
+  }
+
+  if (watching.status === "fulfilled") {
+    continueWatching = continueWatchingCards(watching.value);
+  } else {
+    handlePageDataError("continue watching", watching.reason);
   }
 
   return (
@@ -61,6 +88,7 @@ export default async function HomePage() {
         topSeries={topSeries}
         distributions={distributions}
         upcoming={upcoming}
+        continueWatching={continueWatching}
         renderedOn={gmt8DateKey()}
       />
     </div>
