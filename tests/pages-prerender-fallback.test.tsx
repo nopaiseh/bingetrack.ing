@@ -83,6 +83,7 @@ describe("Prerender graceful fallbacks", () => {
       expect(props.topMovies).toEqual([]);
       expect(props.topSeries).toEqual([]);
       expect(props.upcoming).toEqual([]);
+      expect(props.upcomingFirst).toBe(false);
       expect(props.distributions).toBeDefined();
     } finally {
       errorSpy.mockRestore();

@@ -113,4 +113,49 @@ describe("HomeDashboard", () => {
     expect(screen.getByRole("heading", { name: "继续观看" })).toBeInTheDocument();
     expect(screen.getByRole("link")).toHaveAttribute("href", "/shows/show-1");
   });
+
+  it("upcomingFirst 只传到看板上，不调换继续观看和即将上映的顺序", () => {
+    const item: ContinueWatchingCard = {
+      showId: "show-1",
+      title: "跑男",
+      posterPath: null,
+      href: "/shows/show-1",
+      nextEpisode: null,
+      seasonProgress: { seasonNumber: 1, watched: 1, total: 1 },
+    };
+    const { container, rerender } = render(
+      <HomeDashboard
+        summary={[]}
+        topMovies={[]}
+        topSeries={[]}
+        distributions={buildMediaDistributions([])}
+        upcoming={[{ id: "next-release" } as never]}
+        continueWatching={[item]}
+        upcomingFirst
+      />,
+    );
+    const root = container.firstElementChild as HTMLElement;
+    const order = () => {
+      const heading = screen.getByRole("heading", { name: "继续观看" });
+      const upcoming = screen.getByTestId("upcoming");
+      expect(heading.compareDocumentPosition(upcoming) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    };
+
+    expect(root.dataset.upcomingFirst).toBe("true");
+    order();
+
+    rerender(
+      <HomeDashboard
+        summary={[]}
+        topMovies={[]}
+        topSeries={[]}
+        distributions={buildMediaDistributions([])}
+        upcoming={[{ id: "next-release" } as never]}
+        continueWatching={[item]}
+        upcomingFirst={false}
+      />,
+    );
+    expect(root.dataset.upcomingFirst).toBe("false");
+    order();
+  });
 });
