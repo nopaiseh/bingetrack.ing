@@ -260,6 +260,9 @@ video {
   --h1: 1.75rem;
   --h-hero: 2.5rem;
   --hit-target: 2.5rem;
+  /* 搜索框与旁边的筛选按钮共用。3.625rem = 58px：text-base 行高 1.5rem + 上下 py-4 + 1px 边框。圆角 1rem 与 rounded-2xl 相同。 */
+  --search-control-height: 3.625rem;
+  --search-control-radius: 1rem;
 
   /* Direction A · 夜幕：纯色表面用 1px 描边分开。主按钮用 --accent-dark 承载白字。 */
   --canvas: #0e0a12;
@@ -374,6 +377,14 @@ video {
   --aurora-3: rgba(167, 139, 250, 0.06);
   --image-placeholder: #271810;
   --image-label: rgba(22, 10, 5, 0.88);
+}
+
+/* 搜索框和筛选按钮只在这里定高度与圆角。不放入 layer，避免被未分层的工具类盖掉后又分叉。最小高度不低于 44px。 */
+.search-bar-control {
+  box-sizing: border-box;
+  height: var(--search-control-height);
+  min-height: max(2.75rem, var(--search-control-height));
+  border-radius: var(--search-control-radius);
 }
 
 /* 全局输入控件：与 .surface-control 同一套实色表面。 */

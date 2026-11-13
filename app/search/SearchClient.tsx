@@ -618,7 +618,7 @@ function SearchContent({ initialOptions, initialResult }: SearchProps) {
           </p>
 
         <div className="mb-8 mt-6">
-          <div className="group relative flex items-start gap-2">
+          <div className="group relative flex items-stretch gap-2">
             <div className="relative min-w-0 flex-1">
               <div className="pointer-events-none absolute inset-y-0 left-0 z-10 flex items-center pl-5">
                 <span className="i-material-symbols-search-rounded inline-block size-4 text-fg-subtle transition-all duration-300 group-focus-within:text-white" aria-hidden="true" />
@@ -634,7 +634,7 @@ function SearchContent({ initialOptions, initialResult }: SearchProps) {
                   setQuery(e.target.value);
                 }}
                 placeholder="搜索电影、电视节目、导演或演员..."
-                className="surface-control relative z-0 w-full rounded-2xl border border-[var(--accent-border)] py-4 pl-12 pr-12 text-base text-white outline-none transition-all duration-300 placeholder:text-fg-subtle"
+                className="search-bar-control surface-control relative z-0 w-full border border-[var(--accent-border)] py-4 pl-12 pr-12 text-base text-white outline-none transition-all duration-300 placeholder:text-fg-subtle"
               />
               <div className="pointer-events-none absolute inset-y-0 right-0 z-10 flex items-center pr-3">
                 {query && (
@@ -661,7 +661,7 @@ function SearchContent({ initialOptions, initialResult }: SearchProps) {
               aria-expanded={showAdvanced}
               aria-controls="search-filters"
               onClick={/* 展开类型、地区、语言和年份。分类、状态和排序始终可见。 */ () => setShowAdvanced(!showAdvanced)}
-              className={`inline-flex min-h-11 shrink-0 items-center gap-2 rounded-xl px-4 py-2 text-sm font-medium ${
+              className={`search-bar-control inline-flex shrink-0 items-center gap-2 px-4 py-2 text-sm font-medium ${
                 showAdvanced || hasActiveAdvancedFilters ? "filter-option-active" : "filter-option"
               }`}
             >
