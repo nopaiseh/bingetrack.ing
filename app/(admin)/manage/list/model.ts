@@ -57,11 +57,10 @@ export function listInitial(title: string) {
   return char ? char.toLocaleUpperCase("zh-CN") : "·";
 }
 
-/** 电影、节目、季、集都还没有「只改状态 / 只加标签 / 批量删除」的客户端接口。 */
+/** 季、单集、系列、类型、地区、语言和报告还没有批量接口。 */
 export const mediaBulkActions: AdminBulkAction[] = [
-  { id: "watched", label: "标为已看", icon: "i-material-symbols-check-circle-outline-rounded" },
-  { id: "collection", label: "加入系列", icon: "i-material-symbols-collections-bookmark-outline-rounded" },
-  { id: "tag", label: "加标签", icon: "i-material-symbols-sell-outline-rounded" },
+  { id: "watched", label: "已看", icon: "i-material-symbols-check-circle-outline-rounded" },
+  { id: "want", label: "想看", icon: "i-material-symbols-bookmark-outline-rounded" },
   { id: "delete", label: "删除", icon: "i-material-symbols-delete-outline-rounded", destructive: true },
 ];
 

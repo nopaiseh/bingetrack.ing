@@ -1,11 +1,15 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import type { ReactNode } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import AdminList from "@/app/(admin)/manage/list/AdminList";
 import { ADMIN_LIST_PAGE_SIZE, LIST_TINTS, adminListHref, listInitial, listTint, mediaBulkActions } from "@/app/(admin)/manage/list/model";
 import type { AdminListRow } from "@/app/(admin)/manage/list/model";
 
-const navigation = vi.hoisted(() => ({ push: vi.fn(), pathname: "/manage" }));
+const navigation = vi.hoisted(() => ({ push: vi.fn(), refresh: vi.fn(), pathname: "/manage" }));
+const bulk = vi.hoisted(() => ({
+  setMovieStatus: vi.fn(async () => ({ succeeded: 1, failed: 0 })),
+  deleteMovies: vi.fn(async () => ({ succeeded: 1, failed: 0 })),
+}));
 
 vi.mock("next/link", () => ({
   default: ({ href, children, ...props }: { href: string; children: ReactNode }) => <a href={href} {...props}>{children}</a>,
@@ -14,8 +18,18 @@ vi.mock("next/image", () => ({
   default: ({ alt }: { alt: string }) => <span role="img" aria-label={alt} />,
 }));
 vi.mock("next/navigation", () => ({
-  useRouter: () => ({ push: navigation.push }),
+  useRouter: () => ({ push: navigation.push, refresh: navigation.refresh }),
   usePathname: () => navigation.pathname,
+}));
+vi.mock("@/app/(admin)/manage/list-actions", () => ({
+  setMovieStatus: bulk.setMovieStatus,
+  setTvShowStatus: vi.fn(),
+  deleteMovies: bulk.deleteMovies,
+  deleteTvShows: vi.fn(),
+  deletePeople: vi.fn(),
+  listMovies: vi.fn(),
+  listTvShows: vi.fn(),
+  listPeople: vi.fn(),
 }));
 
 const rows: AdminListRow[] = [
@@ -148,16 +162,54 @@ describe("管理列表", () => {
     fireEvent.click(screen.getByRole("checkbox", { name: "选择 复仇者联盟" }));
     const bar = screen.getByRole("region", { name: "批量操作" });
     expect(bar).toHaveTextContent("已选 1 部");
-    expect(screen.getByRole("button", { name: "标为已看" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "已看" })).toBeDisabled();
     expect(screen.getByRole("button", { name: "删除" })).toBeDisabled();
-    expect(screen.getAllByRole("tooltip").map((tip) => tip.textContent)).toEqual(["Coming soon", "Coming soon", "Coming soon", "Coming soon"]);
+    expect(screen.getAllByRole("tooltip").map((tip) => tip.textContent)).toEqual(["Coming soon", "Coming soon", "Coming soon"]);
 
     fireEvent.click(screen.getByRole("checkbox", { name: "全选本页" }));
     expect(bar).toHaveTextContent("已选 2 部");
     fireEvent.click(screen.getByRole("button", { name: "取消选择" }));
     expect(screen.queryByRole("region", { name: "批量操作" })).not.toBeInTheDocument();
   });
+
+  it("电影批量操作调用已看、想看和删除，删除前要确认", async () => {
+    bulk.setMovieStatus.mockClear();
+    bulk.deleteMovies.mockClear();
+    navigation.refresh.mockClear();
+    render(<AdminList {...listProps()} wired="movie" actions={[]} />);
+    fireEvent.click(screen.getByRole("checkbox", { name: "选择 复仇者联盟" }));
+    fireEvent.click(screen.getByRole("button", { name: "标为已看" }));
+    await waitFor(() => expect(bulk.setMovieStatus).toHaveBeenCalledWith(["avengers"], "watched"));
+    expect(navigation.refresh).toHaveBeenCalled();
+
+    const confirm = vi.spyOn(window, "confirm").mockReturnValue(false);
+    fireEvent.click(screen.getByRole("button", { name: "删除" }));
+    expect(bulk.deleteMovies).not.toHaveBeenCalled();
+    confirm.mockReturnValue(true);
+    fireEvent.click(screen.getByRole("button", { name: "删除" }));
+    await waitFor(() => expect(bulk.deleteMovies).toHaveBeenCalledWith(["avengers"]));
+    confirm.mockRestore();
+  });
 });
+
+function listProps() {
+  return {
+    basePath: "/manage",
+    preserved: { type: "movie" },
+    defaults: { sort: "date" },
+    search: { name: "q", label: "搜索标题", placeholder: "搜索标题或原名", value: "" },
+    columns: [],
+    rows,
+    page: 1,
+    pageSize: 25,
+    total: 2,
+    totalPages: 1,
+    pageParams: { type: "movie" },
+    empty: "没有符合条件的条目。",
+    noun: "部",
+    listLabel: "电影列表",
+  };
+}
 
 function listElement(search: string) {
   return (

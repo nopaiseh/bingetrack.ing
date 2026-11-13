@@ -11,6 +11,7 @@ import Overview from "./Overview";
 import { statusLabels } from "./media/series/shared";
 import PageHeader, { AdminCrumb } from "../PageHeader";
 import AdminList from "./list/AdminList";
+import { PagedMediaList } from "./list/wired";
 import { ADMIN_LIST_PAGE_SIZE, mediaBulkActions, type AdminListRow } from "./list/model";
 
 const PAGE_SIZE = ADMIN_LIST_PAGE_SIZE;
@@ -29,6 +30,8 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
   if (!params.type) return <Overview db={db} />;
   const q = (params.q ?? "").slice(0, 200);
   const type = params.type && Object.hasOwn(mediaTypes, params.type) ? params.type as ManagedMediaType : "movie";
+  const apiType = type;
+  if (apiType === "movie" || apiType === "tv_show") return <PagedMediaList type={apiType} search={params} />;
   const parent = isMediaId(params.parent) ? params.parent : "";
   const status = params.status && Object.hasOwn(statusLabels, params.status) ? params.status : "";
   // 季没有评分，不提供按评分排序。

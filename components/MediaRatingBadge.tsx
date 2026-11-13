@@ -188,7 +188,7 @@ export default function MediaRatingBadge({
       <span className={`${tier.icon} size-2.5 inline-block shrink-0 ${tier.glowClass}`} aria-hidden="true" />
       <span className="font-mono text-xs font-bold leading-none tracking-tight">{scoreText}</span>
       {showTier && (
-        <span className="ml-0.5 border-l border-current/25 pl-1 text-xs font-normal leading-none tracking-tight">
+        <span className="ml-0.5 border-l border-current/25 pl-1 text-xs font-normal leading-none tracking-tight text-fg-muted">
           {tier.label}
         </span>
       )}

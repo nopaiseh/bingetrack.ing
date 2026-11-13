@@ -900,12 +900,16 @@ select:is(.filter-option, .filter-option-active):focus-visible {
   animation-fill-mode: forwards;
 }
 
-/* 主行动按钮：默认主题白字落在 #d81b66 上（约 5.0:1）。悬停只加描边，不再提亮以免掉到 4.5:1 以下。 */
+/* 主行动按钮。默认主题白字压在 #d81b66 上只有约 4.9:1，混入画布后到 6:1 以上。深海和金色仍用深色字压在原来的 --accent-dark 上。悬停只加描边。 */
 .button-accent {
   background: var(--accent-dark);
-  color: var(--accent-contrast);
+  color: var(--on-accent);
   box-shadow: var(--shadow-1);
   transition: box-shadow 200ms, transform 200ms;
+}
+
+:root:not([data-theme]) .button-accent {
+  background: color-mix(in srgb, var(--accent-dark) 85%, var(--canvas));
 }
 
 .button-accent:hover {
