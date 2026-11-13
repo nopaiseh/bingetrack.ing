@@ -88,6 +88,19 @@ describe("管理关联选择器", () => {
     await waitFor(() => expect(screen.queryByRole("alert")).not.toBeInTheDocument());
     expect(screen.getByRole("option", { name: "Doe, Jane" })).toBeInTheDocument();
   });
+  it("演职员行用拖动或上移下移调整顺序，提交格式不变", () => {
+    const { container } = render(<ChoicePicker rows withCharacter kind="people" name="actors" label="演员" initial={[{ id: "a", name: "张三", character: "主角" }, { id: "b", name: "李四", character: "配角" }]} />);
+    const hidden = () => container.querySelector('input[name="actors"]');
+    expect(hidden()).toHaveValue("a\t张三\t主角\nb\t李四\t配角");
+    const handle = screen.getByRole("button", { name: "拖动调整李四的顺序" });
+    const target = screen.getByRole("button", { name: "拖动调整张三的顺序" }).closest("li");
+    fireEvent.dragStart(handle);
+    fireEvent.drop(target!);
+    expect(hidden()).toHaveValue("b\t李四\t配角\na\t张三\t主角");
+    fireEvent.click(screen.getByRole("button", { name: "下移李四" }));
+    expect(hidden()).toHaveValue("a\t张三\t主角\nb\t李四\t配角");
+    expect(screen.getByRole("button", { name: "上移张三" })).toBeDisabled();
+  });
   it("单选模式下展示紧凑卡片，点击更换可重新搜索", async () => {
     const user = userEvent.setup();
     const { container } = render(

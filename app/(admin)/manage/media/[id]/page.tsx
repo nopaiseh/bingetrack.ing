@@ -12,8 +12,6 @@ import StatusModal from "../../StatusModal";
 import SeriesWorkspace from "../series/SeriesWorkspace";
 import { formatCount } from "../series/shared";
 
-const typeBadges = { tv_show: "border-sky-500/25 bg-sky-500/10 text-sky-300", tv_season: "border-amber-500/25 bg-amber-500/10 text-amber-300", tv_episode: "border-emerald-500/25 bg-emerald-500/10 text-emerald-300" } as const;
-
 /** 载入完整编辑资料；电视节目、季与单集进入带剧集结构栏的工作台，季集只在结构栏中新增。 */
 export default async function EditMediaPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ saved?: string; add?: string; n?: string }> }) {
   const { db } = await requireOwner();
@@ -44,20 +42,27 @@ export default async function EditMediaPage({ params, searchParams }: { params: 
     : item.type === "tv_show" ? `${formatCount(structure.seasons.length)} 季 · ${formatCount(structure.totalEpisodes)} 集`
     : item.type === "tv_season" ? `第 ${item.number} 季 · ${formatCount(season?.episodeCount ?? 0)} 集`
     : [season && `第 ${season.number} 季`, `第 ${formatCount(item.number ?? 0)} 集`, item.release_date].filter(Boolean).join(" · ");
-  // 紧凑页头：返回路径和标题在左，公开页面在右。长标题只在左栏内换行。
-  const header = <header className="flex flex-wrap items-end justify-between gap-x-4 gap-y-3">
-    <div className="min-w-0 flex-1">
-      <nav aria-label="内容层级" className="mb-1 flex flex-wrap items-center gap-2 text-sm text-fg-secondary"><BackToList category={rootType} label={`← ${mediaTypes[rootType as keyof typeof mediaTypes]}`} className="" />{ancestor && <><span aria-hidden="true">/</span><Link href={`/manage/media/${ancestor.id}?type=tv_show`} className="break-words hover:text-fg">{ancestor.name}</Link></>}{parent && <><span aria-hidden="true">/</span><Link href={`/manage/media/${parent.id}?type=${parent.type}`} className="break-words hover:text-fg">{parent.name}</Link></>}</nav>
-      <h1 className="admin-heading break-words">{item.title}</h1>
-      {facts && item.type !== "movie" && <p className="mt-2 flex flex-wrap items-center gap-2"><span className={`rounded-full border px-3 py-1 text-sm font-semibold ${typeBadges[item.type]}`}>{mediaTypes[item.type]}</span><span className="font-mono text-sm text-fg-secondary">{facts}</span></p>}
-    </div>
-    {(item.type === "movie" || item.type === "tv_show") && <Link className="admin-button shrink-0" href={`/${item.type === "movie" ? "movies" : "shows"}/${id}`}><span className="i-material-symbols-arrow-outward-rounded size-4.5" aria-hidden="true" />查看公开页面</Link>}
-  </header>;
+  const publicLink = item.type === "movie" ? { href: `/movies/${id}`, label: "公开页面" }
+    : item.type === "tv_show" ? { href: `/shows/${id}`, label: "公开页面" }
+    : item.type === "tv_season" && parent ? { href: `/shows/${parent.id}/seasons/${id}`, label: "公开季页面" }
+    : item.type === "tv_episode" && parent && ancestor ? { href: `/shows/${ancestor.id}/seasons/${parent.id}`, label: "公开季页面" }
+    : null;
+  const header = <nav aria-label="面包屑">
+    <ol className="flex flex-wrap items-center gap-1.5 text-sm text-fg-secondary">
+      <li>内容</li>
+      <li aria-hidden="true">/</li>
+      <li><BackToList category={rootType} label={mediaTypes[rootType as keyof typeof mediaTypes]} className="" /></li>
+      {ancestor && <><li aria-hidden="true">/</li><li><Link href={`/manage/media/${ancestor.id}?type=tv_show`} className="break-words hover:text-fg">{ancestor.name}</Link></li></>}
+      {parent && <><li aria-hidden="true">/</li><li><Link href={`/manage/media/${parent.id}?type=${parent.type}`} className="break-words hover:text-fg">{parent.name}</Link></li></>}
+      <li aria-hidden="true">/</li>
+      <li>编辑{mediaTypes[item.type]}</li>
+    </ol>
+  </nav>;
   const body = <>
     {(siblings.previous || siblings.next) && <nav aria-label={`相邻${mediaTypes[item.type as keyof typeof mediaTypes]}`} className="grid grid-cols-2 gap-3">{siblingLink(siblings.previous, "previous")}{siblingLink(siblings.next, "next")}</nav>}
     {saved === "1" && <StatusModal key={n} message="保存成功，公开页面缓存已更新。" />}
-    <MediaForm key={JSON.stringify(item)} item={item} parent={parent} impact={impact} />
+    <MediaForm key={JSON.stringify(item)} item={item} parent={parent} ancestorName={ancestor?.name} impact={impact} publicHref={publicLink?.href} publicLabel={publicLink?.label} meta={item.type === "movie" ? null : facts} />
   </>;
-  if (!structure || item.type === "movie") return <section className="admin-form-page space-y-6">{header}{body}</section>;
-  return <div className="admin-form-page"><SeriesWorkspace structure={structure} current={{ type: item.type, id }} header={header} initialAdd={add === "season" || add === "episode" ? add : undefined}>{body}</SeriesWorkspace></div>;
+  if (!structure || item.type === "movie") return <section className="admin-edit-page space-y-6">{header}{body}</section>;
+  return <div className="admin-edit-page"><SeriesWorkspace structure={structure} current={{ type: item.type, id }} header={header} initialAdd={add === "season" || add === "episode" ? add : undefined}>{body}</SeriesWorkspace></div>;
 }
