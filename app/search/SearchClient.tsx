@@ -8,6 +8,7 @@ import type { SearchOptions } from "@/lib/functions/search-options";
 import { PAGE_SIZE, readFilters, writeFilters, readSearchPage, buildMediaSearchQuery, type SearchFilters } from "@/lib/api/search-state";
 
 import { SearchMediaCard, SearchMediaCardSkeleton } from "@/components/SearchMediaCard";
+import { WATCH_STATUSES } from "@/components/watch-status";
 import SearchLoading from "./loading";
 import { pageNumbers } from "@/lib/pagination";
 
@@ -25,9 +26,9 @@ const TYPE_OPTIONS = [
 ];
 
 const STATUS_OPTIONS = [
-  { value: "want_to_watch", label: "想看" },
-  { value: "watching", label: "在看" },
-  { value: "watched", label: "已看" },
+  { value: "want_to_watch", label: WATCH_STATUSES.want_to_watch.label },
+  { value: "watching", label: WATCH_STATUSES.watching.label },
+  { value: "watched", label: WATCH_STATUSES.watched.label },
   { value: "upcoming", label: "即将上映" },
 ];
 
@@ -721,7 +722,7 @@ function SearchContent({ initialOptions, initialResult }: SearchProps) {
               <button
                 type="button"
                 onClick={() => setFilters({ type: [], status: [], genre: [], region: [], language: [], year: [], sort: filters.sort || ["date_desc"] })}
-                className="ml-auto inline-flex items-center gap-1 text-xs text-fg-subtle hover:text-[var(--accent-hover)] transition-colors px-2 py-1 cursor-pointer"
+                className="ml-auto inline-flex items-center gap-1 px-2 py-1 text-xs text-fg-secondary transition-colors hover:text-fg cursor-pointer"
               >
                 <span className="i-material-symbols-restart-alt-rounded size-3.5 inline-block" aria-hidden="true" />
                 清空筛选

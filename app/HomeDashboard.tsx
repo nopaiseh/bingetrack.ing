@@ -5,8 +5,10 @@ import Link from "next/link";
 import dynamic from "next/dynamic";
 import { PosterRowSkeleton } from "@/components/LoadingSkeletons";
 import DashboardYearPicker from "@/components/DashboardYearPicker";
+import ContinueWatchingRail, { type ContinueWatchingCard } from "@/components/ContinueWatchingRail";
 import UpcomingHero from "@/components/UpcomingHero";
 import AnimatedNumber from "@/components/AnimatedNumber";
+import { WATCH_STATUSES } from "@/components/watch-status";
 import type { MediaCard, MediaDistribution, MediaDistributions, Summary, UpcomingRelease } from "@/lib/types";
 
 const CategoryHeaderCards = dynamic(() => import("@/components/dashboard/CategoryHeaderCards"), {
@@ -94,12 +96,14 @@ function percent(value: number, total: number) {
 function MediaStatusCard({
   title,
   icon,
+  toneClass,
   count,
   details,
   href,
 }: {
   title: string;
   icon: string;
+  toneClass: string;
   count: number;
   details?: string;
   href?: string;
@@ -108,7 +112,7 @@ function MediaStatusCard({
     <>
       <div className="flex items-center justify-between text-sm font-semibold text-fg transition-colors group-hover:text-[var(--accent-hover)]">
         <div className="flex items-center gap-2.5">
-          <span className={`${icon} size-4 inline-block text-[var(--accent)] group-hover:text-[var(--accent-hover)]`} aria-hidden="true" />
+          <span className={`${icon} size-4 inline-block ${toneClass} group-hover:text-[var(--accent-hover)]`} aria-hidden="true" />
           <span>{title}</span>
         </div>
         {href && (
@@ -154,6 +158,7 @@ export default function HomeDashboard({
   topSeries,
   distributions,
   upcoming = [],
+  continueWatching = [],
   renderedOn,
 }: {
   summary: Summary[];
@@ -161,6 +166,7 @@ export default function HomeDashboard({
   topSeries: MediaCard[];
   distributions: MediaDistributions;
   upcoming?: UpcomingRelease[];
+  continueWatching?: readonly ContinueWatchingCard[];
   renderedOn?: string;
 }) {
   const tabs = TABS;
@@ -266,6 +272,7 @@ export default function HomeDashboard({
 
   return (
     <div className="container mx-auto flex max-w-7xl flex-col gap-6 px-4 pb-12 pt-20 sm:pt-22 sm:px-6 lg:pt-24 lg:px-8">
+      <ContinueWatchingRail items={continueWatching} />
       <UpcomingHero items={upcoming} renderedOn={renderedOn} />
 
       <section aria-labelledby="dashboard-title" className="surface-panel dashboard-intro relative z-10 mb-2 rounded-3xl p-5 sm:p-6 lg:px-8 lg:py-6">
@@ -378,14 +385,16 @@ export default function HomeDashboard({
 
               <div className="grid grid-cols-2 gap-3 sm:gap-4">
                 <MediaStatusCard
-                  title="已观看"
+                  title={WATCH_STATUSES.watched.label}
                   icon="i-material-symbols-check-circle-outline-rounded"
+                  toneClass={WATCH_STATUSES.watched.textClass}
                   count={watchedMovies}
                   href={getStatusSearchLink("movie", "watched", selectedYear)}
                 />
                 <MediaStatusCard
-                  title="想要看"
+                  title={WATCH_STATUSES.want_to_watch.label}
                   icon="i-material-symbols-bookmark-outline-rounded"
+                  toneClass={WATCH_STATUSES.want_to_watch.textClass}
                   count={unwatchedMovies}
                   href={getStatusSearchLink("movie", "want_to_watch", selectedYear)}
                 />
@@ -419,22 +428,25 @@ export default function HomeDashboard({
 
               <div className="grid grid-cols-3 gap-2.5 sm:gap-4">
                 <MediaStatusCard
-                  title="已观看"
+                  title={WATCH_STATUSES.watched.label}
                   icon="i-material-symbols-check-circle-outline-rounded"
+                  toneClass={WATCH_STATUSES.watched.textClass}
                   count={watchedSeries}
                   details={`${currentYearData?.watched_seasons ?? 0}季 · ${watchedEpisodes}集`}
                   href={getStatusSearchLink("tv_show", "watched", selectedYear)}
                 />
                 <MediaStatusCard
-                  title="正在看"
+                  title={WATCH_STATUSES.watching.label}
                   icon="i-material-symbols-play-circle-outline-rounded"
+                  toneClass={WATCH_STATUSES.watching.textClass}
                   count={watchingSeries}
                   details={`${currentYearData?.watching_seasons ?? 0}季`}
                   href={getStatusSearchLink("tv_show", "watching", selectedYear)}
                 />
                 <MediaStatusCard
-                  title="想要看"
+                  title={WATCH_STATUSES.want_to_watch.label}
                   icon="i-material-symbols-bookmark-outline-rounded"
+                  toneClass={WATCH_STATUSES.want_to_watch.textClass}
                   count={unwatchedSeries}
                   details={`${currentYearData?.unwatched_seasons ?? 0}季 · ${unwatchedEpisodes}集`}
                   href={getStatusSearchLink("tv_show", "want_to_watch", selectedYear)}

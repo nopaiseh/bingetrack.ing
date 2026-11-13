@@ -4,14 +4,14 @@ import { Suspense, type ReactNode } from "react";
 import MediaBackLink, { DefaultMediaBackLink } from "./MediaBackLink";
 import { Media, SeasonInfo } from "@/lib/types";
 import { formatRuntime } from "@/lib/format-runtime";
-import { heroWatermark, titleAccentIndex, titleInitial } from "@/lib/title-accent";
+import { heroWatermark, titleAccentIndex } from "@/lib/title-accent";
 import { isUpcomingDate } from "@/lib/upcoming";
 import SearchTag from "./SearchTag";
 import { ratingTierLabel } from "./MediaRatingBadge";
-import { getStatusBadgeConfig } from "./MediaCardStatusBadge";
 import SeasonRow from "./SeasonRow";
 import ClampedCopy from "./ClampedCopy";
 import LetterTile from "./LetterTile";
+import { resolveWatchStatus, WATCH_STATUSES } from "./watch-status";
 
 /** 页头时长写成「2 小时 45 分」，和事实区的完整分钟写法分开。 */
 function heroRuntime(runtime: number | null | undefined): string | null {
@@ -47,25 +47,17 @@ function MediaPoster({ media }: { media: Media }) {
   );
 }
 
-/** 当前观看状态。只展示，不提供会改数据的按钮。 */
+/** 当前观看状态。文案来自全站状态表，只展示，不提供会改数据的按钮。 */
 function StatusPill({ status }: { status?: string }) {
-  const config = getStatusBadgeConfig(status) ?? getStatusBadgeConfig("want_to_watch");
-  if (!config) return null;
-  const solid = config.label === "想看";
+  const config = resolveWatchStatus(status) ?? WATCH_STATUSES.want_to_watch;
+  const solid = config.id === "want_to_watch";
   return (
     <span
       className={`inline-flex min-h-11 items-center justify-center gap-1.5 rounded-xl px-4 text-sm font-semibold ${
-        solid ? "button-accent" : `border ${config.borderClass} ${config.textClass} bg-[var(--surface-2)]`
+        solid ? "button-accent" : `border ${config.borderClass} ${config.surfaceClass} ${config.textClass}`
       }`}
-      aria-label={`观看状态：${config.label}`}
     >
-      {config.label === "已看" ? (
-        <span className="i-material-symbols-check-rounded inline-block size-4" aria-hidden="true" />
-      ) : config.label === "在看" ? (
-        <span className="inline-block size-2 rounded-full bg-current" aria-hidden="true" />
-      ) : (
-        <span className="i-material-symbols-bookmark-rounded inline-block size-4" aria-hidden="true" />
-      )}
+      <span className={`${config.icon} inline-block size-4`} aria-hidden="true" />
       {config.label}
     </span>
   );
@@ -121,18 +113,11 @@ function CastRoster({ media }: { media: Media }) {
             <li key={`${name}-${index}`} className="cast-card min-w-0">
               <Link
                 href={castHref(name)}
-                aria-label={character ? `${name} 饰 ${character}` : name}
                 className="surface-panel flex min-h-11 items-center gap-3 rounded-2xl px-3 py-2.5 transition-colors hover:bg-[var(--surface-3)]"
               >
-                <span
-                  className="letter-tile letter-tile-avatar inline-flex size-10 shrink-0 items-center justify-center rounded-full"
-                  data-accent={titleAccentIndex(name)}
-                  aria-hidden="true"
-                >
-                  <span>{titleInitial(name)}</span>
-                </span>
+                <LetterTile title={name} avatar />
                 <span className="min-w-0">
-                  <span className="block truncate text-sm font-semibold text-fg">{name}</span>
+                  <span className="block truncate text-sm font-semibold text-fg">{character ? `${name} ` : name}</span>
                   {character ? <span className="block truncate text-sm text-fg-muted">饰 {character}</span> : null}
                 </span>
               </Link>
