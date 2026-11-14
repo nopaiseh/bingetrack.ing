@@ -44,6 +44,52 @@ describe("开发环境免密登录", () => {
     vi.stubEnv("OWNER_EMAIL", "");
     const res = await GET(new NextRequest("http://localhost:3000/auth/dev-login"));
     expect(res.status).toBe(500);
+    expect(await res.text()).toBe("开发登录失败：请在 .env.local 中配置 OWNER_EMAIL 和 SUPABASE_SECRET_KEY");
+    expect(generateLink).not.toHaveBeenCalled();
+  });
+
+  it("只有 SUPABASE_SERVICE_ROLE_KEY 时仍能签发会话", async () => {
+    vi.stubEnv("NODE_ENV", "development");
+    vi.stubEnv("OWNER_EMAIL", "admin@example.com");
+    vi.stubEnv("SUPABASE_SECRET_KEY", "   ");
+    vi.stubEnv("SUPABASE_SERVICE_ROLE_KEY", "local-service-role");
+    vi.stubEnv("NEXT_PUBLIC_SUPABASE_URL", "http://localhost:54321");
+    generateLink.mockResolvedValue({
+      data: { properties: { hashed_token: "role-token" } },
+      error: null,
+    });
+    verifyOtp.mockResolvedValue({ error: null });
+
+    const res = await GET(new NextRequest("http://localhost:3000/auth/dev-login"));
+
+    expect(res.status).toBe(303);
+    expect(generateLink).toHaveBeenCalledWith({ type: "magiclink", email: "admin@example.com" });
+    expect(verifyOtp).toHaveBeenCalledWith({ token_hash: "role-token", type: "magiclink" });
+  });
+
+  it("生成或验证失败时保留原来的错误前缀", async () => {
+    vi.stubEnv("NODE_ENV", "development");
+    vi.stubEnv("OWNER_EMAIL", "admin@example.com");
+    vi.stubEnv("SUPABASE_SECRET_KEY", "test-secret");
+    vi.stubEnv("NEXT_PUBLIC_SUPABASE_URL", "http://localhost:54321");
+    generateLink.mockResolvedValueOnce({
+      data: { properties: null },
+      error: { message: "user missing" },
+    });
+
+    const linkRes = await GET(new NextRequest("http://localhost:3000/auth/dev-login"));
+    expect(linkRes.status).toBe(500);
+    expect(await linkRes.text()).toBe("开发登录失败：user missing");
+
+    generateLink.mockResolvedValueOnce({
+      data: { properties: { hashed_token: "mock-token-123" } },
+      error: null,
+    });
+    verifyOtp.mockResolvedValueOnce({ error: { message: "otp expired" } });
+
+    const verifyRes = await GET(new NextRequest("http://localhost:3000/auth/dev-login"));
+    expect(verifyRes.status).toBe(500);
+    expect(await verifyRes.text()).toBe("开发登录验证失败：otp expired");
   });
 
   it("开发环境中正常生成 token 并完成登录重定向到 /manage", async () => {
