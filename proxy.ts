@@ -3,15 +3,20 @@ import { NextResponse, type NextRequest } from "next/server";
 import { isMediaId } from "@/lib/functions/media-id";
 
 const DETAIL_PATH = /^\/(?:movies|shows)\/([^/]+)/;
+const SEASON_PATH = /^\/shows\/[^/]+\/seasons\/([^/]+)/;
 
-/** 详情路由的 loading 会让页面先以 200 开始流式输出，notFound() 无法再改状态码，非法 ID 会被当成正常页面写入 ISR 缓存；因此在渲染前直接返回 404。 */
+/** 详情页和季页的 loading 会先以 200 开始流式输出，notFound() 无法再改状态码，非法 ID 会被当成正常页面写入 ISR 缓存；因此在渲染前直接返回 404。 */
 function rejectMalformedDetail(request: NextRequest): NextResponse | null {
-  const id = request.nextUrl.pathname.match(DETAIL_PATH)?.[1];
-  if (id === undefined || isMediaId(id)) return null;
-  return new NextResponse("Not Found", { status: 404, headers: { "Content-Type": "text/plain; charset=utf-8" } });
+  const { pathname } = request.nextUrl;
+  const id = pathname.match(DETAIL_PATH)?.[1];
+  const seasonId = pathname.match(SEASON_PATH)?.[1];
+  if ((id !== undefined && !isMediaId(id)) || (seasonId !== undefined && !isMediaId(seasonId))) {
+    return new NextResponse("Not Found", { status: 404, headers: { "Content-Type": "text/plain; charset=utf-8" } });
+  }
+  return null;
 }
 
-/** 拒绝非法详情 ID；只为认证及管理路径刷新会话，公开页面保持原有 CDN 缓存行为。 */
+/** 拒绝非法节目或季 ID；只为认证及管理路径刷新会话，公开页面保持原有 CDN 缓存行为。 */
 export async function proxy(request: NextRequest) {
   const rejected = rejectMalformedDetail(request);
   if (rejected) return rejected;
@@ -38,7 +43,7 @@ export async function proxy(request: NextRequest) {
   return response;
 }
 
-// 详情路由只匹配不是 UUID 的 ID，合法详情页不经过 proxy，继续直接命中 ISR 缓存；matcher 须为静态字面量，不能引用常量。
+// 详情路由只匹配不是 UUID 的节目或季 ID。合法详情页不经过 proxy，继续直接命中 ISR 缓存；matcher 须为静态字面量，不能引用常量。
 export const config = {
   matcher: [
     "/manage/:path*",
@@ -46,5 +51,6 @@ export const config = {
     "/auth/:path*",
     "/movies/:id((?![0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}(?:/|$))[^/]+)/:rest*",
     "/shows/:id((?![0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}(?:/|$))[^/]+)/:rest*",
+    "/shows/:id([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})/seasons/:seasonId((?![0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}(?:/|$))[^/]+)/:rest*",
   ],
 };

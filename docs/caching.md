@@ -14,7 +14,7 @@
 | `/` | 静态 + ISR，`revalidate = 3600` | `upcomingFirst` 按新加坡日历日计算。24 小时会让顺序在午夜后陈旧一整天，故缩短到 1 小时；页面本身不带缓存标签，管理写入仍按路径刷新 |
 | `/movies`、`/shows`、`/sitemap.xml` | 静态 + ISR，`revalidate = 86400` | 页面本身不带缓存标签，由管理写入按路径刷新 |
 | `/movies/[id]`、`/shows/[id]` | 按需 ISR，`generateStaticParams` 返回空数组 | 首次访问时生成，之后缓存 24 小时 |
-| `/shows/[id]/seasons/[seasonId]` | 动态 | 读取分页／筛选参数，每次请求渲染；电视节目与季摘要走数据缓存 |
+| `/shows/[id]/seasons/[seasonId]` | 按需 ISR，`generateStaticParams` 返回空数组 | 默认季页（第 1 页、全部、升序）首次访问时生成，之后缓存 24 小时。页面不读取分页或筛选参数；节目详情、季摘要、单集分页和下一集走数据缓存 |
 | `/search` | 动态 | 首屏结果只对部分条件走数据缓存（见下） |
 | `/api/media` | 动态 | `s-maxage=30, stale-while-revalidate=120`，只有 CDN 缓存，不写数据缓存 |
 | `/api/top-media` | 动态 | `s-maxage=60`，底层数据走数据缓存；条数固定为 10，缓存键只随类型和年份变化 |
@@ -31,6 +31,8 @@
 | --- | --- | --- | --- |
 | 条目详情 | `public-media-detail-v3` + ID | 24 小时 | `media`、`media:item:<id>` |
 | 电视节目的季摘要 | `public-media-seasons-v3` + ID | 24 小时 | `media`、`media:item:<id>` |
+| 单集分页与季统计 | `public-season-episodes-v2` + 节目 ID／季 ID／页码／每页条数／状态／排序 | 24 小时 | `media`、`media:item:<节目 ID>` |
+| 下一集 | `public-season-next-episode-v1` + 节目 ID／季 ID | 24 小时 | `media`、`media:item:<节目 ID>` |
 | 搜索首屏 | `public-media-search-v3` + 查询串 | 1 小时 | `media`、`media:lists` |
 | 榜单 | `public-media-top-v3` + 类型／年份／条数（固定 10） | 24 小时 | `media`、`media:lists` |
 | 即将上映、分布统计、年度统计 | `public-media-*-v2` | 24 小时 | `media`、`media:lists` |
@@ -64,7 +66,7 @@
 - **把动态页面改成静态或 ISR**：每个不同的地址都会写入缓存，要先确认地址数量有上限。
 - **把用户可以任意构造的参数放进缓存 key**：必须先把取值收敛到有限集合，参照搜索首屏的做法。
 - **扩大失效范围**：新写入操作能确定受影响条目时，用 `revalidateMediaItems`，不要默认用全站失效。
-- **修改 `proxy.ts` 的 matcher**：合法的 UUID 详情页不能经过 proxy，否则会失去 ISR；非 UUID 的详情路径必须在渲染前返回 404。
+- **修改 `proxy.ts` 的 matcher**：合法的 UUID 详情页（含季页）不能经过 proxy，否则会失去 ISR；非 UUID 的节目 ID 或季 ID 必须在渲染前返回 404。
 - **删除详情页的 `loading.tsx`**：会改变流式渲染和状态码的行为，需要重新评估未找到页面的缓存方式。
 
 另外，每次生产部署后，ISR 页面会在首次访问时重新生成。多个改动尽量合进一次发布。
