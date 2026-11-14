@@ -20,6 +20,7 @@ test("站长初始化、影视季集管理、公开更新、退出与非站长�
     const { data, error } = await db.auth.admin.generateLink({ type: "magiclink", email });
     expect(error).toBeNull();
     await page.goto(`/auth/confirm?${new URLSearchParams({ type: "magiclink", token_hash: data.properties!.hashed_token })}`);
+    await page.getByRole("button", { name: "Continue / 继续登录" }).click();
   }
   /** 提交表单并从保存后的地址取得实际媒体 ID。 */
   async function save() {

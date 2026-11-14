@@ -18,6 +18,19 @@ test("无效初始化链接回到首页导航栏", async ({ page, baseURL }) => 
   await expect(page.getByRole("alert").filter({ hasText: "登录链接无效或已过期" })).toBeVisible();
 });
 
+/** GET 只展示确认按钮；无效凭证要等点击继续后才回到首页。 */
+test("一次性链接需要点击继续才会验证", async ({ page }) => {
+  const response = await page.goto("/auth/confirm?type=magiclink&token_hash=not-a-real-token&next=https://example.com");
+  expect(response?.headers()["cache-control"] ?? "").toContain("no-store");
+  expect(response?.headers()["x-robots-tag"] ?? "").toContain("noindex");
+  expect(response?.headers()["set-cookie"] ?? "").not.toMatch(/auth-token/i);
+  await expect(page.getByRole("button", { name: "Continue / 继续登录" })).toBeVisible();
+  expect(page.url()).not.toContain("example.com");
+  await page.getByRole("button", { name: "Continue / 继续登录" }).click();
+  await expect(page).toHaveURL(/\/\?authError=link$/);
+  await expect(page.getByRole("alert").filter({ hasText: "登录链接无效或已过期" })).toBeVisible();
+});
+
 /** 设置采用独立路由，匿名访问仍由服务端拒绝。 */
 test("设置页拒绝匿名访问", async ({ page }) => {
   await page.goto("/settings");

@@ -110,7 +110,7 @@ export default function PasskeySettings({ initialKeys, initialError }: { initial
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div className="space-y-1">
           <h2 className="admin-section-title text-xl font-semibold text-white">Agent 临时登录链接</h2>
-          <p className="text-sm text-neutral-400">供 Muse / Grok Bot 等无法调用本地硬件 Passkey 的云端浏览器 Agent 登录。每次生成的链接仅限点击 1 次（1 小时内有效），打开后直接进入管理台，闲置 30 分钟自动登出。</p>
+          <p className="text-sm text-neutral-400">供 Muse / Grok Bot 等无法调用本地硬件 Passkey 的云端浏览器 Agent 登录。每次生成的链接只能验证 1 次（1 小时内有效）。打开后要点击「Continue / 继续登录」才会进入管理台，闲置 30 分钟自动登出。</p>
         </div>
         <button type="button" onClick={generateAgentLink} disabled={generatingLink || busy} className="admin-primary shrink-0">
           {generatingLink ? "生成中…" : "生成一次性登录链接"}

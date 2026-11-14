@@ -11,10 +11,27 @@ function rejectMalformedDetail(request: NextRequest): NextResponse | null {
   return new NextResponse("Not Found", { status: 404, headers: { "Content-Type": "text/plain; charset=utf-8" } });
 }
 
+/**
+ * 确认页是 page，验证是 /auth/confirm/verify 的 POST。
+ * 浏览器仍提交到 /auth/confirm；在刷新会话之前改写，避免跨站提交先碰到 getClaims。
+ */
+function rewriteConfirmPost(request: NextRequest): NextResponse | null {
+  if (request.method !== "POST" || request.nextUrl.pathname !== "/auth/confirm") return null;
+  const url = request.nextUrl.clone();
+  url.pathname = "/auth/confirm/verify";
+  const response = NextResponse.rewrite(url);
+  response.headers.set("Cache-Control", "private, no-store");
+  response.headers.set("X-Robots-Tag", "noindex");
+  return response;
+}
+
 /** 拒绝非法详情 ID；只为认证及管理路径刷新会话，公开页面保持原有 CDN 缓存行为。 */
 export async function proxy(request: NextRequest) {
   const rejected = rejectMalformedDetail(request);
   if (rejected) return rejected;
+
+  const confirmPost = rewriteConfirmPost(request);
+  if (confirmPost) return confirmPost;
 
   let response = NextResponse.next({ request });
   const db = createServerClient(
@@ -35,6 +52,7 @@ export async function proxy(request: NextRequest) {
   );
   await db.auth.getClaims();
   response.headers.set("Cache-Control", "private, no-store");
+  if (request.nextUrl.pathname === "/auth/confirm") response.headers.set("X-Robots-Tag", "noindex");
   return response;
 }
 
