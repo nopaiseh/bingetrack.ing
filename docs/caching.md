@@ -55,7 +55,7 @@
 | 修改或删除人物、类型、地区、语言、系列；报告批量删除；合并人物；「刷新缓存」按钮 | `revalidateAllMedia`：`media` 标签 + `revalidatePath("/", "layout")`，全站失效 |
 | 标记「不是同一人」 | 不影响公开数据，不失效 |
 
-电影和单集的观看写入都走上面第一行，不另建标签。保存条目时评分决定已看或想看（`manage_save_media` 写 `tracking`），批量操作直接改 `tracking.status`，删除会级联去掉观看记录。成功之后 `revalidateMediaItems` 调用 `revalidateTag("media:lists", { expire: 0 })`。继续看挂着这个标签，同时首页路径被 `revalidatePath("/")` 刷新，下一次访问不会继续用旧的 HTML，也不会从 24 小时数据缓存里读回旧进度。没有写进数据库的失败请求不失效。查询受影响条目失败时退回 `revalidateAllMedia`，失效 `media` 标签，继续看同样过期。手动「刷新缓存」也走 `media` 标签。
+电影和单集的观看写入都走上面第一行，不另建标签。保存条目时评分决定已看或想看（`manage_save_media` 写 `tracking`），批量操作直接改 `tracking.status`，删除会级联去掉观看记录。成功之后 `revalidateMediaItems` 调用 `revalidateTag("media:lists", { expire: 0 })`。继续看挂着这个标签，同时首页路径被 `revalidatePath("/")` 刷新，下一次访问不会继续用旧的 HTML，也不会从 24 小时数据缓存里读回旧进度。没有写进数据库的失败请求不失效。查询受影响条目失败时退回 `revalidateAllMedia`，失效 `media` 标签，继续看同样过期。手动「刷新缓存」也走 `media` 标签。绕过网站、直接在 Supabase 里改数据（例如用 SQL 或运维脚本改 `tracking`）不会触发失效，继续看最长会显示旧进度 24 小时；这种情况下请在管理台点现有的「刷新缓存」。
 
 受影响条目要在保存**前后**各查一次（`affectedMediaIds`），才能覆盖移出系列或更换上级的情况。查询失败时退回全站失效。
 
