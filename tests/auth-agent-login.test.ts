@@ -194,7 +194,43 @@ describe("Agent 专属口令登录 (/auth/agent-login)", () => {
     const res = await POST(bearerPost(TOKEN));
 
     expect(res.status).toBe(500);
+    expect(await res.text()).toBe("Agent 登录失败：请配置 OWNER_EMAIL 和 SUPABASE_SECRET_KEY");
     expect(generateLink).not.toHaveBeenCalled();
+  });
+
+  it("只有 SUPABASE_SERVICE_ROLE_KEY 时仍能签发会话", async () => {
+    vi.stubEnv("AGENT_LOGIN_TOKEN", TOKEN);
+    vi.stubEnv("OWNER_EMAIL", "owner@example.com");
+    vi.stubEnv("SUPABASE_SECRET_KEY", "");
+    vi.stubEnv("SUPABASE_SERVICE_ROLE_KEY", "local-service-role");
+    vi.stubEnv("NEXT_PUBLIC_SUPABASE_URL", "https://example.supabase.co");
+    mockSession("role-token");
+
+    const res = await POST(bearerPost(TOKEN));
+
+    expect(res.status).toBe(303);
+    expect(generateLink).toHaveBeenCalledWith({ type: "magiclink", email: "owner@example.com" });
+    expect(verifyOtp).toHaveBeenCalledWith({ token_hash: "role-token", type: "magiclink" });
+  });
+
+  it("生成或验证失败时保留原来的错误前缀", async () => {
+    vi.stubEnv("AGENT_LOGIN_TOKEN", TOKEN);
+    enableOwnerConfig();
+    generateLink.mockResolvedValueOnce({
+      data: { properties: null },
+      error: { message: "user missing" },
+    });
+
+    const linkRes = await POST(bearerPost(TOKEN));
+    expect(linkRes.status).toBe(500);
+    expect(await linkRes.text()).toBe("Agent 登录失败：user missing");
+
+    mockSession();
+    verifyOtp.mockResolvedValueOnce({ error: { message: "otp expired" } });
+
+    const verifyRes = await POST(bearerPost(TOKEN));
+    expect(verifyRes.status).toBe(500);
+    expect(await verifyRes.text()).toBe("Agent 登录验证失败：otp expired");
   });
 
   it("在 /settings 后台通过 createAgentLoginLink 生成用完即焚的一次性登录链接", async () => {
@@ -213,5 +249,27 @@ describe("Agent 专属口令登录 (/auth/agent-login)", () => {
     });
     expect(result.error).toBeUndefined();
     expect(result.url).toContain("/auth/confirm?token_hash=one-time-hash-999&type=magiclink&next=%2Fmanage");
+  });
+
+  it("createAgentLoginLink 在缺少密钥或生成失败时返回原来的错误", async () => {
+    vi.stubEnv("SUPABASE_SECRET_KEY", "");
+    vi.stubEnv("SUPABASE_SERVICE_ROLE_KEY", "");
+    vi.stubEnv("NEXT_PUBLIC_SUPABASE_URL", "https://example.supabase.co");
+
+    const missing = await createAgentLoginLink();
+    expect(missing).toEqual({ error: "请先在服务端环境变量中配置 SUPABASE_SECRET_KEY。" });
+    expect(generateLink).not.toHaveBeenCalled();
+
+    vi.stubEnv("SUPABASE_SERVICE_ROLE_KEY", "local-service-role");
+    generateLink.mockResolvedValue({
+      data: { properties: null },
+      error: { message: "user missing" },
+    });
+    const failed = await createAgentLoginLink();
+    expect(failed).toEqual({ error: "生成一次性登录链接失败，请检查 SUPABASE_SECRET_KEY 配置。" });
+
+    generateLink.mockRejectedValue(new Error("network"));
+    const thrown = await createAgentLoginLink();
+    expect(thrown).toEqual({ error: "生成一次性登录链接失败，请稍后重试。" });
   });
 });

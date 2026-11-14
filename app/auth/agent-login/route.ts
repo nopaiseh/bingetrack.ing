@@ -1,7 +1,6 @@
 import { createHash, timingSafeEqual } from "node:crypto";
 import { NextResponse, type NextRequest } from "next/server";
-import { createClient } from "@supabase/supabase-js";
-import { getAuthServer } from "@/lib/auth/server";
+import { createAdminSession } from "@/lib/auth/admin-session";
 
 const PRIVATE_HEADERS = {
   "Cache-Control": "private, no-store",
@@ -86,37 +85,16 @@ function textError(message: string, status: number) {
 
 /** 口令已通过校验后，用 service role 签发站长 Cookie 会话。 */
 async function issueOwnerSession(request: NextRequest) {
-  const email = process.env.OWNER_EMAIL?.trim();
-  const secret =
-    process.env.SUPABASE_SECRET_KEY?.trim() ||
-    process.env.SUPABASE_SERVICE_ROLE_KEY?.trim();
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const session = await createAdminSession(process.env.OWNER_EMAIL);
 
-  if (!email || !secret || !supabaseUrl) {
-    return textError("Agent 登录失败：请配置 OWNER_EMAIL 和 SUPABASE_SECRET_KEY", 500);
-  }
-
-  const adminDb = createClient(supabaseUrl, secret, {
-    auth: { persistSession: false, autoRefreshToken: false },
-  });
-
-  const { data, error } = await adminDb.auth.admin.generateLink({
-    type: "magiclink",
-    email,
-  });
-
-  if (error || !data.properties?.hashed_token) {
-    return textError(`Agent 登录失败：${error?.message || "无法生成凭据"}`, 500);
-  }
-
-  const db = await getAuthServer();
-  const { error: verifyError } = await db.auth.verifyOtp({
-    token_hash: data.properties.hashed_token,
-    type: "magiclink",
-  });
-
-  if (verifyError) {
-    return textError(`Agent 登录验证失败：${verifyError.message}`, 500);
+  if (!session.ok) {
+    const message =
+      session.reason === "verify_failed"
+        ? `Agent 登录验证失败：${session.message}`
+        : session.reason === "generate_failed"
+          ? `Agent 登录失败：${session.message}`
+          : "Agent 登录失败：请配置 OWNER_EMAIL 和 SUPABASE_SECRET_KEY";
+    return textError(message, 500);
   }
 
   const target = resolveSafeNext(request.nextUrl.searchParams.get("next"), request.nextUrl.origin);
