@@ -254,6 +254,7 @@ function groupShows(shows: readonly ShowRow[], episodes: readonly EpisodeProgres
  * 首页「继续看」。
  * 只含 v_all_media 状态为 watching 的电视节目，按进度前缘的上映时间从新到旧，最多 8 条。
  * 访客和站长走同一个公开读取客户端；tracking 与媒体表对 anon、authenticated 都开放 SELECT。
+ * 首页用 unstable_cache 包住这个函数。这里不能读 cookies()、headers() 或当前用户，否则缓存会在运行时失败。
  * 没有在看的节目时返回空数组。查询失败抛出 MediaRepositoryError。
  */
 export async function getContinueWatching(): Promise<ContinueWatchingItem[]> {

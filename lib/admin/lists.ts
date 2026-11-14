@@ -265,6 +265,7 @@ async function episodeIdsByShow(db: SupabaseClient, showIds: string[]) {
 /**
  * 更新电影的观看状态。只写 tracking.status，保留已有评分（defaultToNull: false）。
  * 没有记录的电影会插入一行，评分留空。这可能让「观看记录矛盾」报告出现新行，批量操作不改评分。
+ * 写入成功后 revalidateMediaItems 会 revalidateTag("media:lists")，首页继续看和其他聚合缓存马上失效。
  */
 export async function bulkSetMovieStatus(db: SupabaseClient, ids: unknown, status: unknown): Promise<BulkCounts> {
   const targets = parseBulkIds(ids);
@@ -281,6 +282,7 @@ export async function bulkSetMovieStatus(db: SupabaseClient, ids: unknown, statu
  * 更新电视节目的观看状态。节目自己没有 tracking 行，状态由全部单集决定，
  * 所以一次写入这些单集的 tracking.status，不改评分。没有单集时无法标成已看，该节目计为失败；
  * 标成想看则已经是汇总结果，计为成功。人物没有观看状态，这里不接受人物。
+ * 真正写入单集后同样走 revalidateMediaItems，失效 media:lists，首页继续看不会停在旧进度。
  */
 export async function bulkSetTvShowStatus(db: SupabaseClient, ids: unknown, status: unknown): Promise<BulkCounts> {
   const targets = parseBulkIds(ids);
