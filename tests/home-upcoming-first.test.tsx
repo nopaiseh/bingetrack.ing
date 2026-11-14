@@ -3,15 +3,12 @@ import { render } from "@testing-library/react";
 
 const getUpcoming = vi.hoisted(() => vi.fn(async () => [] as { releaseDate: string }[]));
 
-vi.mock("@/lib/continue-watching", () => ({
-  getContinueWatching: vi.fn(async () => []),
-}));
-
 vi.mock("@/lib/functions/cached-media", () => ({
   getCachedReleaseYearStats: vi.fn(async () => []),
   getCachedTopMediaServer: vi.fn(async () => []),
   getCachedMediaDistributionsServer: vi.fn(async () => ({ movies: {}, shows: {} })),
   getCachedUpcomingReleasesServer: getUpcoming,
+  getCachedContinueWatching: vi.fn(async () => []),
 }));
 
 vi.mock("@/app/HomeDashboard", () => ({

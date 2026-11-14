@@ -36,9 +36,12 @@
 | 搜索首屏 | `public-media-search-v3` + 查询串 | 1 小时 | `media`、`media:lists` |
 | 榜单 | `public-media-top-v3` + 类型／年份／条数（固定 10） | 24 小时 | `media`、`media:lists` |
 | 即将上映、分布统计、年度统计 | `public-media-*-v2` | 24 小时 | `media`、`media:lists` |
+| 首页继续看 | `public-media-continue-watching-v1` | 24 小时 | `media`、`media:lists` |
 | 搜索筛选选项 | `search-options-v2` | 24 小时 | `media`、`media:lists` |
 
 非法 ID 在进入数据缓存前就返回，不会写入缓存条目。
+
+首页继续看没有查询参数，全站共用一条缓存，返回形状仍是 `ContinueWatchingItem`。读取函数是 `getContinueWatching`，只用公开 Supabase 客户端，不读 `cookies()`、`headers()` 或当前用户：观看记录对访客和站长是同一份公开数据，不是按人分开的。缓存回调因此可以放进 `unstable_cache`。
 
 类型、地区、语言筛选必须是现有选项：`/search` 遇到未知值返回未找到页面，`/api/media` 返回 400。
 
@@ -48,9 +51,11 @@
 
 | 操作 | 失效范围 |
 | --- | --- |
-| 保存、删除影视条目，修改系列成员 | `revalidateMediaItems`：条目本身、所属电视节目、同系列的其他作品各自的 `media:item:<id>`，加上 `media:lists`，再按路径刷新 `/`、`/movies`、`/shows`、`/sitemap.xml` |
+| 保存、删除影视条目（含级联删掉的观看记录），批量修改电影或电视节目观看状态，修改系列成员 | `revalidateMediaItems`：条目本身、所属电视节目、同系列的其他作品各自的 `media:item:<id>`，加上 `media:lists`，再按路径刷新 `/`、`/movies`、`/shows`、`/sitemap.xml` |
 | 修改或删除人物、类型、地区、语言、系列；报告批量删除；合并人物；「刷新缓存」按钮 | `revalidateAllMedia`：`media` 标签 + `revalidatePath("/", "layout")`，全站失效 |
 | 标记「不是同一人」 | 不影响公开数据，不失效 |
+
+电影和单集的观看写入都走上面第一行，不另建标签。保存条目时评分决定已看或想看（`manage_save_media` 写 `tracking`），批量操作直接改 `tracking.status`，删除会级联去掉观看记录。成功之后 `revalidateMediaItems` 调用 `revalidateTag("media:lists", { expire: 0 })`。继续看挂着这个标签，同时首页路径被 `revalidatePath("/")` 刷新，下一次访问不会继续用旧的 HTML，也不会从 24 小时数据缓存里读回旧进度。没有写进数据库的失败请求不失效。查询受影响条目失败时退回 `revalidateAllMedia`，失效 `media` 标签，继续看同样过期。手动「刷新缓存」也走 `media` 标签。绕过网站、直接在 Supabase 里改数据（例如用 SQL 或运维脚本改 `tracking`）不会触发失效，继续看最长会显示旧进度 24 小时；这种情况下请在管理台点现有的「刷新缓存」。
 
 受影响条目要在保存**前后**各查一次（`affectedMediaIds`），才能覆盖移出系列或更换上级的情况。查询失败时退回全站失效。
 

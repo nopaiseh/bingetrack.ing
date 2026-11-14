@@ -1,7 +1,8 @@
 import HomeDashboard from "@/app/HomeDashboard";
 import type { ContinueWatchingCard } from "@/components/ContinueWatchingRail";
-import { getContinueWatching, type ContinueWatchingItem } from "@/lib/continue-watching";
+import type { ContinueWatchingItem } from "@/lib/continue-watching";
 import {
+  getCachedContinueWatching,
   getCachedReleaseYearStats,
   getCachedTopMediaServer,
   getCachedMediaDistributionsServer,
@@ -24,7 +25,8 @@ export const metadata: Metadata = {
 // 首页仍是静态 ISR。upcomingFirst 按新加坡日历日计算，24 小时会让区块顺序在午夜后陈旧一整天，
 // 因此页面重新验证缩短到 1 小时（3600 必须是字面量，Next.js 才能静态分析）。
 // 过期后的第一次请求仍可能拿到旧页面（stale-while-revalidate），下一次即为新的一天。
-// 榜单、分布和即将上映候选池仍走 24 小时数据缓存；管理端 revalidatePath("/") 会立即刷新。
+// 榜单、分布、即将上映候选池和继续看仍走 24 小时数据缓存。
+// 管理端 revalidatePath("/") 会立即刷新页面；继续看挂 media 与 media:lists，观看写入失效 media:lists。
 export const revalidate = 3600;
 
 const EMPTY_DISTRIBUTIONS = buildMediaDistributions([]);
@@ -59,7 +61,7 @@ export default async function HomePage() {
     getCachedMediaDistributionsServer(),
     getCachedUpcomingReleasesServer(),
   ]);
-  const continueResult = getContinueWatching();
+  const continueResult = getCachedContinueWatching();
   const [dashboard, watching] = await Promise.allSettled([dashboardResult, continueResult]);
 
   if (dashboard.status === "fulfilled") {

@@ -7,6 +7,7 @@ import { parseMediaSearchParams } from "@/lib/api/media-params";
 import { getSupabasePublicServer } from "@/lib/supabase/public-server";
 import { withRetry } from "./retry";
 import { isMediaId } from "./media-id";
+import { getContinueWatching } from "@/lib/continue-watching";
 import { MEDIA_LISTS_TAG, MEDIA_TAG, mediaItemTag } from "./media-cache-tags";
 import type { Summary } from "@/lib/types";
 
@@ -86,6 +87,15 @@ export const getCachedUpcomingReleasesServer = cache(unstable_cache(
 export const getCachedMediaDistributionsServer = cache(unstable_cache(
   fetchMediaDistributionsServer,
   ["public-media-distributions-v2"],
+  { revalidate: 86400, tags: [MEDIA_TAG, MEDIA_LISTS_TAG] },
+));
+
+// 首页「继续看」长缓存 24 小时，全站一条。返回值就是 ContinueWatchingItem[]，形状不在这里改。
+// getContinueWatching 只用公开读取客户端，缓存回调里不能读 cookies()、headers() 或当前用户。
+// 观看写入走 revalidateMediaItems，失效 media:lists；全站刷新失效 media。两条标签都能让这份列表马上过期。
+export const getCachedContinueWatching = cache(unstable_cache(
+  getContinueWatching,
+  ["public-media-continue-watching-v1"],
   { revalidate: 86400, tags: [MEDIA_TAG, MEDIA_LISTS_TAG] },
 ));
 
