@@ -8,7 +8,7 @@
 
 1. GitHub 保护 `main`：只能通过拉取请求合并，并要求 `Application quality checks` 工作流的 `Lint, types, build, unit, browser & database tests` 检查通过；不允许绕过必要检查。
 2. Vercel 生产发布等待必要检查通过。如果账户不支持这个门槛，保留自动预览，手动提升已验证的部署。
-3. Development、Preview、Production 分别配置环境变量。网站运行不需要 Supabase 运维密钥；预览和测试环境不得持有生产 service-role 密钥。
+3. Development、Preview、Production 分别配置环境变量。公开页面和 `/auth/confirm` 只用 `NEXT_PUBLIC_SUPABASE_URL` 与 `NEXT_PUBLIC_SUPABASE_ANON_KEY`。服务端生成一次性登录链接时读取 `SUPABASE_SECRET_KEY`，未设置则使用 `SUPABASE_SERVICE_ROLE_KEY`。生产环境配置的是 `SUPABASE_SERVICE_ROLE_KEY`，不设置 `SUPABASE_SECRET_KEY` 或 `AGENT_LOGIN_TOKEN`。预览和测试环境不得持有生产的 `SUPABASE_SERVICE_ROLE_KEY`。
 
 ## CI
 

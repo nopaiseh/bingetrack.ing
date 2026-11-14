@@ -82,4 +82,20 @@ describe("详情路由的非法 ID", () => {
     expect(response.headers.get("x-middleware-next")).toBe("1");
     expect(response.headers.get("Cache-Control")).toBe("private, no-store");
   });
+
+  it("确认页禁止缓存并标记 noindex，且不写入会话 Cookie", async () => {
+    const response = await proxy(new NextRequest("https://www.bingetrack.ing/auth/confirm?type=magiclink&token_hash=test"));
+    expect(response.headers.get("x-middleware-next")).toBe("1");
+    expect(response.headers.get("cache-control")).toContain("no-store");
+    expect(response.headers.get("x-robots-tag")).toContain("noindex");
+    expect(response.headers.get("set-cookie")).toBeNull();
+  });
+
+  it("POST /auth/confirm 改写到验证路由", async () => {
+    const response = await proxy(new NextRequest("https://www.bingetrack.ing/auth/confirm", { method: "POST" }));
+    expect(response.headers.get("x-middleware-rewrite")).toContain("/auth/confirm/verify");
+    expect(response.headers.get("x-middleware-next")).toBeNull();
+    expect(response.headers.get("cache-control")).toContain("no-store");
+    expect(response.headers.get("set-cookie")).toBeNull();
+  });
 });

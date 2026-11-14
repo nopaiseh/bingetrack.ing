@@ -1,18 +1,18 @@
 # 单人管理与 Passkey
 
-网站只有一个管理员（站长）。公开页面匿名读取；`/manage`、`/settings` 和每个写入用的 Server Action 都会先向 Supabase Auth 验证用户，再调用 `is_site_owner()` 核对是否为站长（`lib/auth/server.ts` 的 `requireOwner`）。数据库的 RLS 使用同一张 `site_owner` 表：这张表只有一个槽位，普通用户不能写入。网站运行时不需要 service role 或 secret key。
+网站只有一个管理员（站长）。公开页面匿名读取；`/manage`、`/settings` 和每个写入用的 Server Action 都会先向 Supabase Auth 验证用户，再调用 `is_site_owner()` 核对是否为站长（`lib/auth/server.ts` 的 `requireOwner`）。数据库的 RLS 使用同一张 `site_owner` 表：这张表只有一个槽位，普通用户不能写入。公开页面、Passkey 会话和 `/auth/confirm` 只用 `NEXT_PUBLIC_SUPABASE_URL` 与 `NEXT_PUBLIC_SUPABASE_ANON_KEY`。服务端生成一次性登录链接时（设置页的 Agent 链接、`/auth/agent-login`、仅开发环境的 `/auth/dev-login`）读取 `SUPABASE_SECRET_KEY`，没有则使用 `SUPABASE_SERVICE_ROLE_KEY`。生产环境配置的是 `SUPABASE_SERVICE_ROLE_KEY`，不设置 `SUPABASE_SECRET_KEY` 或 `AGENT_LOGIN_TOKEN`。`AGENT_LOGIN_TOKEN` 留空时 `/auth/agent-login` 返回 404。
 
 ## 认证方式
 
 - 登录只用 Passkey（Supabase 原生 Passkey，目前是 Experimental）。没有公开注册、邮箱登录表单或找回密码接口。
-- 首次绑定和凭证全部丢失后的恢复，都由站长在本地用运维工具生成一次性登录链接，经 `/auth/confirm` 登录后进入 `/settings` 绑定 Passkey。
+- 首次绑定和凭证全部丢失后的恢复，都由站长在本地用运维工具生成一次性登录链接。打开 `/auth/confirm` 只会看到确认页；点击「Continue / 继续登录」后才会验证凭证并进入 `/settings` 绑定 Passkey。直接 GET（聊天预览、预取）不会消耗链接，也不会写入登录 Cookie。
 - `/settings` 管理凭证：添加、重命名、移除，显示每个凭证的最后使用日期。界面不允许移除最后一个凭证，移除前要重新做一次 Passkey 验证。注意这只是界面保护，Supabase 的凭证 API 本身仍由该用户会话授权，服务端没有数量约束。
 - 登录状态在浏览器端维护：30 分钟无操作自动登出，多个标签页共享活动时间（`lib/auth/idle.ts`）。
 - 退出通过 `POST /auth/logout`；`GET` 只会跳回首页，防止链接预取或跨站图片把站长登出。
 - `proxy.ts` 只为 `/manage`、`/settings`、`/auth` 刷新会话，并给这些响应加 `Cache-Control: private, no-store`。公开页面不读 Cookie，也就不会把会话写进公开缓存。
 - `/auth/dev-login` 只在 `next dev` 下可用，生产构建一律返回 404。
-- `/settings` 支持站长一键生成「Agent 临时登录链接」（需在服务端配置 `SUPABASE_SECRET_KEY`）：生成形如 `/auth/confirm?token_hash=...&type=magiclink&next=/manage` 的一次性登录链接（1 小时内有效、仅限点击 1 次），复制给 Muse / Grok Bot 等云端浏览器 Agent 打开即可直接登录进入 `/manage`。
-- `/auth/agent-login` 供远程浏览器 Agent（如 Muse / Grok Bot）在无法调用本地硬件 Passkey 时按固定口令登录。仅当服务端环境变量设置了 `AGENT_LOGIN_TOKEN`（同时配好 `OWNER_EMAIL` 与 `SUPABASE_SECRET_KEY`）时启用；未设置时 GET 与 POST 一律返回 404，生产环境保持关闭。口令只能放在 `POST /auth/agent-login` 的 `Authorization: Bearer <口令>` 里。`?next=/manage` 可以指定站内回跳，但查询串、JSON 和表单中的 `token` 一律返回 401，已启用时的 GET 返回 405。口令用 SHA-256 摘要做常量时间比较。通过后签发站长 Cookie 会话并 303 跳转。不要把口令放进 URL，否则会进入浏览器历史、访问日志和 Referer。
+- `/settings` 支持站长一键生成「Agent 临时登录链接」。生成时服务端读取 `SUPABASE_SECRET_KEY`，未设置则使用 `SUPABASE_SERVICE_ROLE_KEY`。链接形如 `/auth/confirm?token_hash=...&type=magiclink&next=/manage`，1 小时内有效，只能验证 1 次。Agent 打开后要点击「Continue / 继续登录」才会登录并进入 `/manage`。
+- `/auth/agent-login` 供远程浏览器 Agent（如 Muse / Grok Bot）在无法调用本地硬件 Passkey 时按固定口令登录。仅当服务端环境变量设置了 `AGENT_LOGIN_TOKEN`（同时配好 `OWNER_EMAIL`，以及 `SUPABASE_SECRET_KEY` 或 `SUPABASE_SERVICE_ROLE_KEY`）时启用；未设置口令时 GET 与 POST 一律返回 404。生产环境不设置 `AGENT_LOGIN_TOKEN`，接口保持关闭。口令只能放在 `POST /auth/agent-login` 的 `Authorization: Bearer <口令>` 里。`?next=/manage` 可以指定站内回跳，但查询串、JSON 和表单中的 `token` 一律返回 401，已启用时的 GET 返回 405。口令用 SHA-256 摘要做常量时间比较。通过后签发站长 Cookie 会话并 303 跳转。不要把口令放进 URL，否则会进入浏览器历史、访问日志和 Referer。
 
 ## 首次上线步骤
 
@@ -23,7 +23,7 @@
    - Site URL 设为正式域名。
    - RP ID 绑定之后不要再改，否则已有凭证全部失效。Vercel 的随机预览域名不能使用生产 Passkey。
 3. 用下面的运维工具创建站长账号并生成初始化链接。工具不发邮件，站长邮箱只写在本地被忽略的配置里。
-4. 站长亲自打开链接，在 `/settings` 用 Touch ID / Face ID / 密码管理器完成绑定。建议绑定两个独立的凭证，退出后分别验证能否登录。
+4. 站长亲自打开链接并点击「Continue / 继续登录」，在 `/settings` 用 Touch ID / Face ID / 密码管理器完成绑定。建议绑定两个独立的凭证，退出后分别验证能否登录。
 5. 验证：匿名访客能正常浏览；站长能增删改；其他账号不能直接写表或调用 RPC；退出与会话刷新正常。真实设备上的验证必须由站长本人完成，自动化测试不能代替。
 
 Supabase SDK 或 API 升级后，要重新验证 Passkey 的注册、登录、重命名和移除流程。
@@ -40,6 +40,8 @@ SUPABASE_SECRET_KEY=仅用于本地运维的 Supabase secret key
 ```
 
 不要把密钥发到聊天里，也不要放进任何 `NEXT_PUBLIC_` 变量。
+
+上面的 `SUPABASE_SECRET_KEY` 只给本机 `npm run owner:login` 使用，这个脚本不会读取 `SUPABASE_SERVICE_ROLE_KEY`。已经部署的网站在生成一次性链接时如果没有 `SUPABASE_SECRET_KEY`，会改用 `SUPABASE_SERVICE_ROLE_KEY`。生产环境配置的是 `SUPABASE_SERVICE_ROLE_KEY`，不设置 `SUPABASE_SECRET_KEY` 和 `AGENT_LOGIN_TOKEN`。
 
 首次初始化（创建账号并指定站长）：
 
