@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
+import { ClearConfirmParams } from "@/app/auth/confirm/ClearConfirmParams";
 import { readConfirmQuery } from "@/lib/auth/confirm-link";
 
 export const dynamic = "force-dynamic";
@@ -28,6 +29,7 @@ export default async function ConfirmPage({ searchParams }: {
         <p className="mx-auto mt-3 max-w-md text-sm leading-6 text-fg-muted">
           继续后才会验证这封一次性登录链接。
         </p>
+        <ClearConfirmParams />
         <form method="post" action="/auth/confirm" autoComplete="off" className="mt-8">
           <input type="hidden" name="token_hash" value={parsed.tokenHash} />
           <input type="hidden" name="type" value={parsed.type} />

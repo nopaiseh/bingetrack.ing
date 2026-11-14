@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 
 const { verifyOtp, cookieSet } = vi.hoisted(() => ({
   verifyOtp: vi.fn(),
@@ -84,5 +84,20 @@ describe("确认页", () => {
 
   it("确认页 noindex", () => {
     expect(metadata.robots).toEqual({ index: false, follow: false });
+  });
+
+  it("加载后从地址栏移除 token_hash 和 type，表单仍保留原值", async () => {
+    window.history.replaceState(null, "", "/auth/confirm?token_hash=test&type=magiclink&next=%2Fmanage");
+    await renderConfirm({ type: "magiclink", token_hash: "test", next: "/manage" });
+    await waitFor(() => {
+      expect(window.location.search).not.toContain("token_hash");
+      expect(window.location.search).not.toContain("type=");
+    });
+    expect(window.location.pathname).toBe("/auth/confirm");
+    expect(window.location.search).toBe("?next=%2Fmanage");
+    expect(document.querySelector("input[name='token_hash']")).toHaveValue("test");
+    expect(document.querySelector("input[name='type']")).toHaveValue("magiclink");
+    expect(verifyOtp).not.toHaveBeenCalled();
+    window.history.replaceState(null, "", "/");
   });
 });
