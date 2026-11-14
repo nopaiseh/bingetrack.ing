@@ -260,7 +260,7 @@ video {
   --h1: 1.75rem;
   --h-hero: 2.5rem;
   --hit-target: 2.5rem;
-  /* 搜索框与旁边的筛选按钮共用。3.625rem = 58px：text-base 行高 1.5rem + 上下 py-4 + 1px 边框。圆角 1rem 与 rounded-2xl 相同。 */
+  /* 搜索框与旁边的筛选按钮共用的最小高度。3.625rem = 58px：text-base 行高 1.5rem + 上下 py-4 + 1px 边框。圆角 1rem 与 rounded-2xl 相同。 */
   --search-control-height: 3.625rem;
   --search-control-radius: 1rem;
 
@@ -379,12 +379,21 @@ video {
   --image-label: rgba(22, 10, 5, 0.88);
 }
 
-/* 搜索框和筛选按钮只在这里定高度与圆角。不放入 layer，避免被未分层的工具类盖掉后又分叉。最小高度不低于 44px。 */
+/* 搜索框和筛选按钮只在这里定最小高度与圆角。字号变大时控件随内容长高，同一行的 items-stretch 让两者保持等高。不放入 layer，避免被未分层的工具类盖掉后又分叉。 */
 .search-bar-control {
   box-sizing: border-box;
-  height: var(--search-control-height);
-  min-height: max(2.75rem, var(--search-control-height));
+  min-height: var(--search-control-height);
   border-radius: var(--search-control-radius);
+}
+
+/* 根字号放大后，图标留白和筛选按钮会把输入区挤没。放不下时整行换行；输入框至少保留 14rem（普通字号下仍和按钮同一行，放大到 200% 的窄屏则换到下一行）。 */
+.flex:has(> .search-bar-control) {
+  flex-wrap: wrap;
+}
+
+.flex:has(> .search-bar-control) > :has(> .search-bar-control) {
+  flex-basis: 14rem;
+  min-width: min(100%, 14rem);
 }
 
 /* 全局输入控件：与 .surface-control 同一套实色表面。 */
