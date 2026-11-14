@@ -82,19 +82,23 @@ export function scrubSentryBreadcrumb<T extends Breadcrumb>(breadcrumb: T): T {
   return breadcrumb;
 }
 
+/** span.data 与根 span contexts.trace.data 共用同一套属性清理。 */
+function scrubSpanData(data: { [key: string]: unknown }): void {
+  for (const key of Object.keys(data)) {
+    const value = data[key];
+    if (typeof value === "string") {
+      data[key] = scrubSensitiveUrl(value);
+    } else if (Array.isArray(value) && value.every((item): item is string | null | undefined => item == null || typeof item === "string")) {
+      data[key] = value.map((item) => (typeof item === "string" ? scrubSensitiveUrl(item) : item));
+    }
+  }
+}
+
 function scrubSpan(span: NonNullable<Event["spans"]>[number]): void {
   if (typeof span.description === "string") span.description = scrubSensitiveUrl(span.description);
   const named = span as { name?: unknown };
   if (typeof named.name === "string") named.name = scrubSensitiveUrl(named.name);
-  if (!span.data) return;
-  for (const key of Object.keys(span.data)) {
-    const value = span.data[key];
-    if (typeof value === "string") {
-      span.data[key] = scrubSensitiveUrl(value);
-    } else if (Array.isArray(value) && value.every((item): item is string | null | undefined => item == null || typeof item === "string")) {
-      span.data[key] = value.map((item) => (typeof item === "string" ? scrubSensitiveUrl(item) : item));
-    }
-  }
+  if (span.data) scrubSpanData(span.data);
 }
 
 /** 错误事件和性能事务共用：请求 URL、事务名、面包屑和 span 里的凭证都去掉。 */
@@ -116,5 +120,6 @@ export function scrubSentryEvent<T extends Event>(event: T): T {
   if (event.spans) {
     for (const span of event.spans) scrubSpan(span);
   }
+  if (event.contexts?.trace?.data) scrubSpanData(event.contexts.trace.data);
   return event;
 }

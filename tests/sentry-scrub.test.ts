@@ -89,6 +89,26 @@ describe("scrubSentryEvent", () => {
     expect(tuples.request?.query_string).toEqual([["next", "/manage"]]);
   });
 
+  it("清理事务根 span contexts.trace.data 里的 url.full 和 http.query", () => {
+    const event: Event = {
+      type: "transaction",
+      contexts: {
+        trace: {
+          span_id: "root",
+          trace_id: "trace",
+          data: {
+            "url.full": `https://www.bingetrack.ing/auth/confirm?token_hash=${SECRET}&type=magiclink`,
+            "http.query": `token_hash=${SECRET}&type=magiclink`,
+          },
+        },
+      },
+    };
+    scrubSentryEvent(event);
+    expect(event.contexts?.trace?.data?.["url.full"]).toBe("https://www.bingetrack.ing/auth/confirm?type=magiclink");
+    expect(event.contexts?.trace?.data?.["http.query"]).toBe("type=magiclink");
+    expect(JSON.stringify(event)).not.toContain(SECRET);
+  });
+
   it("面包屑可以单独清理", () => {
     const breadcrumb = scrubSentryBreadcrumb({
       category: "navigation",
