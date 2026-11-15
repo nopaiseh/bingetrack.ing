@@ -1,11 +1,10 @@
 "use client";
 
-import { useState, useEffect, useMemo, useSyncExternalStore } from "react";
+import { useState, useEffect, useSyncExternalStore } from "react";
 import ContinueWatchingRail, { type ContinueWatchingCard } from "@/components/ContinueWatchingRail";
 import UpcomingHero from "@/components/UpcomingHero";
 import DashboardIntro from "@/components/dashboard/DashboardIntro";
 import DashboardPanels from "@/components/dashboard/DashboardPanels";
-import HomeStatStrip from "@/components/dashboard/HomeStatStrip";
 import { deriveDashboardStats } from "@/components/dashboard/dashboard-stats";
 import {
   TABS,
@@ -56,11 +55,6 @@ export default function HomeDashboard({
   const [topMediaLoading, setTopMediaLoading] = useState(false);
 
   const stats = deriveDashboardStats(summary, selectedYear, distributions);
-  // 四格统计固定用全时段行（release_year 为 "All Time"），不跟年份选择器走。
-  const allTimeStats = useMemo(
-    () => deriveDashboardStats(summary, "All Time", distributions),
-    [summary, distributions],
-  );
 
   useEffect(
     /* 选择具体年份时启动榜单请求，离开该年份或卸载组件时取消请求。 */ () => {
@@ -115,7 +109,6 @@ export default function HomeDashboard({
     <div className="container mx-auto flex max-w-7xl flex-col gap-4 px-4 pb-8 pt-20 sm:gap-5 sm:px-6 sm:pt-22 md:pb-12 lg:px-8 lg:pt-24">
       {upcomingHero}
       {continueWatchingRail}
-      <HomeStatStrip stats={allTimeStats} />
 
       <DashboardIntro
         selectedYear={selectedYear}
