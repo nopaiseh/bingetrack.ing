@@ -1,22 +1,26 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { formatRuntime } from "@/lib/format-runtime";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import {
   ADMIN_LIST_DEFAULT_PAGE_SIZE,
   ADMIN_LIST_MAX_PAGE,
   ADMIN_LIST_MAX_PAGE_SIZE,
   ADMIN_LIST_MAX_QUERY_LENGTH,
+  type ChildListItem,
   type MediaListItem,
 } from "@/lib/admin/list-params";
+import { listAdminChildren } from "@/lib/admin/lists";
 import { mediaTypes } from "@/lib/admin/media-form";
 import { listMovies, listPeople, listTvShows } from "../list-actions";
 import { formatCount, statusLabels } from "../media/series/shared";
 import PageHeader, { AdminCrumb } from "../../PageHeader";
 import StatusModal from "../StatusModal";
 import AdminList from "./AdminList";
-import type { AdminListRow } from "./model";
+import { mediaBulkActions, type AdminListRow } from "./model";
 
 const pageSizes = [25, 50, 100].map((size) => ({ value: String(size), label: String(size) }));
+const childSortLabels = { date: "上映日期（新→旧）", title: "标题", rating: "评分（高→低）" } as const;
 
 function readPage(value: string | undefined) {
   const page = Number.parseInt(value ?? "1", 10);
@@ -34,7 +38,7 @@ function pageParams(values: Record<string, string | undefined>) {
   return Object.fromEntries(Object.entries(values).flatMap(([key, value]) => (value ? [[key, value]] : [])));
 }
 
-/** 电影和电视节目走分页接口。季与单集仍用原列表，因为接口不接受这两种类型。 */
+/** 电影和电视节目走分页接口。季与单集由 PagedChildList 读取。 */
 export async function PagedMediaList({ type, search }: { type: "movie" | "tv_show"; search: Record<string, string | undefined> }) {
   const q = (search.q ?? "").trim().slice(0, ADMIN_LIST_MAX_QUERY_LENGTH);
   const sort = search.sort === "title" || search.sort === "rating" ? search.sort : "date";
@@ -168,4 +172,97 @@ export async function PagedPeopleList({ search }: { search: { q?: string; page?:
       wired="people"
     />
   </section>;
+}
+
+/** 季与单集走 listAdminChildren。参数白名单在 list-params，页面只负责展示。 */
+export async function PagedChildList({ db, type, search }: { db: SupabaseClient; type: "tv_season" | "tv_episode"; search: Record<string, string | undefined> }) {
+  const season = type === "tv_season";
+  const result = await listAdminChildren(db, type, search.parent, { q: search.q, sort: search.sort, status: search.status, page: search.page });
+  const totalPages = Math.max(1, Math.ceil(result.total / result.pageSize));
+  const filters = { q: result.q, type, parent: result.parent, status: result.status, sort: result.sort };
+  if (result.page > totalPages) redirect(`/manage?${new URLSearchParams({ ...filters, page: String(totalPages) })}`);
+  return <section>
+    <PageHeader
+      eyebrow={<AdminCrumb current={mediaTypes[type]} />}
+      title={mediaTypes[type]}
+      description={<>共 {result.total} 个条目 · 管理影视与观看记录</>}
+      actions={<Link href={`/manage/media/new?type=${type}${result.parent ? `&parent=${result.parent}` : ""}`} className="admin-button admin-primary shrink-0">新增{mediaTypes[type]}</Link>}
+    />
+    {search.deleted === "1" && <StatusModal key={search.n} message="条目及其下属资料已删除。" />}
+    {result.parent && (
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-[var(--accent-border)] bg-[var(--accent-soft)]/40 px-4 py-3 text-sm">
+        <div className="flex items-center gap-2 text-neutral-200">
+          <span className="i-material-symbols-filter-alt-rounded size-4.5 text-[var(--accent)] shrink-0" aria-hidden="true" />
+          <span>当前仅显示所选条目的下属{mediaTypes[type]}</span>
+        </div>
+        <div className="flex items-center gap-3">
+          <Link href={`/manage/media/${result.parent}`} className="text-sm text-neutral-300 underline hover:text-white transition-colors">
+            返回上级条目
+          </Link>
+          <Link href={`/manage?type=${type}`} className="admin-button !min-h-10 !py-1 !px-3 text-sm">
+            查看全部{mediaTypes[type]}
+          </Link>
+        </div>
+      </div>
+    )}
+    <AdminList
+      basePath="/manage"
+      preserved={{ type, ...(result.parent ? { parent: result.parent } : {}) }}
+      defaults={{ sort: "date" }}
+      search={{ name: "q", label: "搜索标题", placeholder: "搜索标题或原名", value: result.q }}
+      chips={{
+        name: "status",
+        label: "观看状态",
+        value: result.status,
+        options: [{ value: "", label: "全部" }, ...Object.entries(statusLabels).filter(([value]) => !(value === "watching" && !season)).map(([value, label]) => ({ value, label }))],
+      }}
+      selects={[{
+        name: "sort",
+        label: "排序",
+        value: result.sort,
+        options: Object.entries(childSortLabels).filter(([value]) => !(value === "rating" && season)).map(([value, label]) => ({ value, label: value === "date" && season ? "最近播出（新→旧）" : label })),
+      }]}
+      columns={[
+        { key: "date", label: season ? "最近播出" : "上映", className: "admin-col-date" },
+        ...(season ? [] : [{ key: "rating", label: "评分", className: "admin-col-rating" }]),
+      ]}
+      rows={result.items.map(childRow)}
+      page={result.page}
+      pageSize={result.pageSize}
+      total={result.total}
+      totalPages={totalPages}
+      pageParams={filters}
+      empty="没有符合条件的条目。"
+      noun={season ? "季" : "集"}
+      listLabel={`${mediaTypes[type]}列表`}
+      actions={mediaBulkActions}
+      showStatus
+    />
+  </section>;
+}
+
+function childRow(item: ChildListItem): AdminListRow {
+  const season = item.type === "tv_season";
+  const cells = [
+    { key: "date", label: season ? "最近播出" : "上映", value: item.display_date ?? "—" },
+    ...(season ? [] : [{ key: "rating", label: "评分", value: item.rating != null ? item.rating.toFixed(1) : "—" }]),
+  ];
+  const tone = item.status === "watched" ? "watched" : item.status === "watching" ? "watching" : "want";
+  const context = item.season
+    ? `${item.season.seriesTitle ?? "未知电视节目"} · 第 ${item.season.seasonNumber} 季 · ${formatCount(item.season.episodeCount)} 集`
+    : item.episode
+      ? `${item.episode.seriesTitle ?? ""} · ${item.episode.seasonTitle ?? "未知季"} · 第 ${formatCount(item.episode.episodeNumber)} 集`
+      : null;
+  return {
+    id: item.id,
+    href: `/manage/media/${item.id}?type=${item.type}`,
+    title: item.title,
+    subtitle: item.alternate_title,
+    detail: cells.map((cell) => cell.value).filter((value) => value !== "—").filter(Boolean).join(" · "),
+    meta: context,
+    imageUrl: item.cover_url,
+    cells,
+    status: { label: statusLabels[item.status], tone },
+    trailing: null,
+  };
 }

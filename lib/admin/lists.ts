@@ -3,13 +3,22 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { nameOrAliasFilter, titleOrAliasFilter } from "@/lib/admin/catalog";
 import { affectedMediaIds, referenceMediaIds, revalidateMediaItems } from "@/lib/admin/revalidate-media";
 import {
+  type AdminChildListInput,
+  type AdminChildListType,
   type AdminListInput,
   type AdminListPage,
   type AdminMediaListType,
   type BulkCounts,
+  type ChildEpisodeContext,
+  type ChildListItem,
+  type ChildSeasonContext,
+  type ChildSortKey,
   type MediaListItem,
   type MediaSortKey,
+  type ParsedAdminChildQuery,
   type PersonListItem,
+  parseAdminChildListType,
+  parseAdminChildQuery,
   parseAdminMediaListType,
   parseAdminMediaQuery,
   parseAdminPeopleQuery,
@@ -18,6 +27,8 @@ import {
 } from "@/lib/admin/list-params";
 
 const LIST_READ_ERROR = "无法读取管理列表，请重试。";
+/** 季与单集列表沿用管理页原文，避免去掉回退后用户看到的失败提示发生变化。 */
+const CHILD_LIST_READ_ERROR = "无法读取管理列表，请稍后重试。";
 const DELETE_ERROR = "删除失败，请重试。";
 const STATUS_ERROR = "状态更新失败，请重试。";
 const PERMISSION_ERROR = "没有写入权限，请检查站长账号配置。";
@@ -156,6 +167,130 @@ export async function listAdminMedia(db: SupabaseClient, type: AdminMediaListTyp
     page: query.page,
     pageSize: query.pageSize,
   };
+}
+
+/** 与原先管理页详情查询一致：去掉仅用于回退路径的 !inner 后的字段。 */
+const CHILD_DETAIL_COLUMNS = "id,title,alternate_title,type,cover_url,release_date,runtime,tracking(status,rating),tv_seasons!tv_seasons_id_fkey(series_id,season_number,parent:media_items!tv_seasons_series_id_fkey(title),episodes:tv_episodes!tv_episodes_season_id_fkey(count)),tv_episodes!tv_episodes_id_fkey(season_id,episode_number,parent:tv_seasons!tv_episodes_season_id_fkey(media_items!tv_seasons_id_fkey(title),series:media_items!tv_seasons_series_id_fkey(title))),seasons:tv_seasons!tv_seasons_series_id_fkey(season_number,episodes:tv_episodes!tv_episodes_season_id_fkey(count))";
+
+export type AdminChildListResult = AdminListPage<ChildListItem> & Pick<ParsedAdminChildQuery, "q" | "sort" | "status" | "parent">;
+
+type ChildOrderRow = {
+  id: string;
+  status: string | null;
+  rating: number | string | null;
+  sort_date: string | null;
+};
+
+type TrackingEmbed = { status?: string | null; rating?: number | string | null };
+
+type ChildDetailRow = {
+  id: string;
+  title: string | null;
+  alternate_title: string | null;
+  type: string | null;
+  cover_url: string | null;
+  release_date: string | null;
+  tracking: TrackingEmbed | TrackingEmbed[] | null;
+  tv_seasons: {
+    season_number?: number | string | null;
+    parent?: { title?: string | null } | null;
+    episodes?: { count?: number | string | null }[] | null;
+  } | null;
+  tv_episodes: {
+    episode_number?: number | string | null;
+    parent?: {
+      media_items?: { title?: string | null } | null;
+      series?: { title?: string | null } | null;
+    } | null;
+  } | null;
+};
+
+/** 主排序之后仍按播出日期、季号或集号、标题和 ID 固定次序，避免同值记录翻页时跳动。 */
+function orderChildren<Query extends { order: (column: string, options?: OrderOptions) => Query }>(query: Query, sort: ChildSortKey) {
+  const primary = sort === "title"
+    ? query.order("title")
+    : sort === "rating"
+      ? query.order("rating", { ascending: false, nullsFirst: false })
+      : query;
+  return primary
+    .order("sort_date", { ascending: false, nullsFirst: false })
+    .order("item_number", { ascending: false, nullsFirst: false })
+    .order("title")
+    .order("id");
+}
+
+function seasonContext(embed: NonNullable<ChildDetailRow["tv_seasons"]>): ChildSeasonContext {
+  return {
+    seriesTitle: embed.parent?.title ?? null,
+    seasonNumber: Number(embed.season_number),
+    episodeCount: Number(embed.episodes?.[0]?.count ?? 0),
+  };
+}
+
+function episodeContext(embed: NonNullable<ChildDetailRow["tv_episodes"]>): ChildEpisodeContext {
+  return {
+    seriesTitle: embed.parent?.series?.title ?? null,
+    seasonTitle: embed.parent?.media_items?.title ?? null,
+    episodeNumber: Number(embed.episode_number),
+  };
+}
+
+function childPage(query: ParsedAdminChildQuery, items: ChildListItem[], total: number): AdminChildListResult {
+  return {
+    items,
+    total,
+    page: query.page,
+    pageSize: query.pageSize,
+    q: query.q,
+    sort: query.sort,
+    status: query.status,
+    parent: query.parent,
+  };
+}
+
+/**
+ * 分页读取某一季列表或单集列表。筛选、排序和精确计数都在 v_manage_media_order 上完成，
+ * 再用这一页的 ID 补标题、封面和所属节目。查询失败直接抛出与原管理页相同的错误，不再退回逐条计算。
+ * 调用方必须已经通过 requireOwner()。
+ */
+export async function listAdminChildren(db: SupabaseClient, type: unknown, parent: unknown, input?: AdminChildListInput | null): Promise<AdminChildListResult> {
+  const mediaType: AdminChildListType = parseAdminChildListType(type);
+  const query = parseAdminChildQuery(mediaType, parent, input);
+  const start = (query.page - 1) * query.pageSize;
+  let request = db.from("v_manage_media_order").select("id, status, rating, sort_date", { count: "exact" }).eq("type", mediaType);
+  if (query.q) request = request.or(titleOrAliasFilter(query.q));
+  if (query.parent) request = request.eq("parent_id", query.parent);
+  if (query.status) request = request.eq("status", query.status);
+  const ordered = await orderChildren(request, query.sort).range(start, start + query.pageSize - 1);
+  if (ordered.error) throw new Error(CHILD_LIST_READ_ERROR);
+  const orderedRows = (ordered.data ?? []) as ChildOrderRow[];
+  const total = ordered.count ?? 0;
+  const ids = orderedRows.map((row) => row.id);
+  if (ids.length === 0) return childPage(query, [], total);
+  const details = readRows<ChildDetailRow>(await db.from("media_items").select(CHILD_DETAIL_COLUMNS).in("id", ids), CHILD_LIST_READ_ERROR);
+  const orderById = new Map(orderedRows.map((row) => [row.id, row]));
+  const position = new Map(ids.map((id, index) => [id, index]));
+  const items = [...details]
+    .sort((left, right) => (position.get(left.id) ?? 0) - (position.get(right.id) ?? 0))
+    .map((detail) => {
+      const order = orderById.get(detail.id);
+      const rowType: AdminChildListType = detail.type === "tv_season" || detail.type === "tv_episode" ? detail.type : mediaType;
+      const tracking = Array.isArray(detail.tracking) ? detail.tracking[0] : detail.tracking;
+      const season = rowType === "tv_season";
+      return {
+        id: detail.id,
+        type: rowType,
+        title: detail.title ?? "",
+        alternate_title: detail.alternate_title,
+        cover_url: detail.cover_url,
+        display_date: season ? (order?.sort_date || null) : detail.release_date,
+        status: watchStatus(season ? order?.status : tracking?.status),
+        rating: season || tracking?.rating == null ? null : Number(tracking.rating),
+        season: detail.tv_seasons ? seasonContext(detail.tv_seasons) : null,
+        episode: !detail.tv_seasons && detail.tv_episodes ? episodeContext(detail.tv_episodes) : null,
+      };
+    });
+  return childPage(query, items, total);
 }
 
 function deletedIds(rows: { id: string }[]) {

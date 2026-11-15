@@ -36,6 +36,22 @@ export type MediaSortKey = keyof typeof mediaSorts;
 export const adminMediaListTypes = ["movie", "tv_show"] as const;
 export type AdminMediaListType = (typeof adminMediaListTypes)[number];
 
+/** 管理页里仍按上级条目浏览的两种类型。电影和电视节目走 parseAdminMediaQuery。 */
+export const adminChildListTypes = ["tv_season", "tv_episode"] as const;
+export type AdminChildListType = (typeof adminChildListTypes)[number];
+
+/** 季与单集的排序。季没有评分，parseAdminChildQuery 会把 rating 改回 date。 */
+export const childSorts = {
+  date: "desc",
+  title: "asc",
+  rating: "desc",
+} as const satisfies Record<string, SortDirection>;
+export type ChildSortKey = keyof typeof childSorts;
+
+/** 与管理列表状态筛选一致。空字符串表示不筛选。 */
+export const childStatuses = ["watched", "watching", "want_to_watch"] as const;
+export type ChildStatus = (typeof childStatuses)[number];
+
 /** 可以写入 tracking 的状态。watching 只由单集汇总产生，不能直接保存。 */
 export const bulkStatuses = ["watched", "want_to_watch"] as const;
 export type BulkStatus = (typeof bulkStatuses)[number];
@@ -47,6 +63,11 @@ export type AdminListInput = {
   q?: string | null;
   sort?: string | null;
   direction?: string | null;
+};
+
+/** 季与单集列表。status 为空表示不按观看状态筛选；parent 由 parseAdminChildQuery 单独校验。 */
+export type AdminChildListInput = AdminListInput & {
+  status?: string | null;
 };
 
 export type ParsedAdminListQuery<SortKey extends string> = {
@@ -74,6 +95,43 @@ export type PersonListItem = {
   name: string;
   alternate_name: string | null;
   credit_count: number;
+};
+
+export type ParsedAdminChildQuery = {
+  page: number;
+  pageSize: number;
+  /** 只截断到 200 字，不去掉首尾空白，搜索框仍显示地址栏里的原文。 */
+  q: string;
+  sort: ChildSortKey;
+  status: ChildStatus | "";
+  parent: string;
+};
+
+export type ChildSeasonContext = {
+  seriesTitle: string | null;
+  seasonNumber: number;
+  episodeCount: number;
+};
+
+export type ChildEpisodeContext = {
+  seriesTitle: string | null;
+  seasonTitle: string | null;
+  episodeNumber: number;
+};
+
+export type ChildListItem = {
+  id: string;
+  type: AdminChildListType;
+  title: string;
+  alternate_title: string | null;
+  cover_url: string | null;
+  /** 季为最近播出日期；单集为自身上映日期。 */
+  display_date: string | null;
+  status: "watched" | "watching" | "want_to_watch";
+  /** 季不评分，恒为 null。 */
+  rating: number | null;
+  season: ChildSeasonContext | null;
+  episode: ChildEpisodeContext | null;
 };
 
 export type MediaListItem = {
@@ -154,6 +212,39 @@ export function parseAdminMediaQuery(input?: AdminListInput | null) {
 export function parseAdminMediaListType(value: unknown): AdminMediaListType {
   if (value === "movie" || value === "tv_show") return value;
   throw new AdminInputError("只支持电影和电视节目。");
+}
+
+/** 只接受季或单集。电影和电视节目使用 listAdminMedia。 */
+export function parseAdminChildListType(value: unknown): AdminChildListType {
+  if (value === "tv_season" || value === "tv_episode") return value;
+  throw new AdminInputError("只支持季和单集。");
+}
+
+/** 与管理页原逻辑一致：非法页码回落到 1，超过上限时截断，不拒绝整页。 */
+function parseChildPage(value: unknown): number {
+  const raw = typeof value === "number" ? String(value) : typeof value === "string" ? value : "1";
+  const parsed = Number.parseInt(raw || "1", 10);
+  return Math.min(ADMIN_LIST_MAX_PAGE, Math.max(1, parsed || 1));
+}
+
+const childStatusSet: ReadonlySet<string> = new Set(childStatuses);
+
+/**
+ * 季与单集的排序、状态、搜索词和上级条目。非法值回落到默认，不把用户输入拼进查询。
+ * 季没有评分，sort=rating 视为 date。搜索词只截断，保留首尾空白。
+ */
+export function parseAdminChildQuery(type: AdminChildListType, parent: unknown, input?: AdminChildListInput | null): ParsedAdminChildQuery {
+  const source = input ?? {};
+  const sort = typeof source.sort === "string" && Object.hasOwn(childSorts, source.sort) ? source.sort as ChildSortKey : "date";
+  const status = typeof source.status === "string" && childStatusSet.has(source.status) ? source.status as ChildStatus : "";
+  return {
+    page: parseChildPage(source.page),
+    pageSize: ADMIN_LIST_DEFAULT_PAGE_SIZE,
+    q: typeof source.q === "string" ? source.q.slice(0, ADMIN_LIST_MAX_QUERY_LENGTH) : "",
+    sort: sort === "rating" && type === "tv_season" ? "date" : sort,
+    status,
+    parent: isMediaId(parent) ? parent : "",
+  };
 }
 
 /**
