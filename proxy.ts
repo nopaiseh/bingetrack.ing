@@ -37,6 +37,26 @@ function rewriteConfirmPost(request: NextRequest): NextResponse | null {
   return response;
 }
 
+function headerHasToken(value: string | null, token: string) {
+  if (!value) return false;
+  return value.split(/[,;]/).some((part) => part.trim().toLowerCase() === token);
+}
+
+/**
+ * Next 的预取和浏览器的 Speculation Rules。这些头可以伪造，所以预取只能被拒绝，不能因此放行页面。
+ * `rsc` 单独出现不算预取：正式的客户端导航也会带它。
+ */
+function isPrefetchRequest(request: NextRequest) {
+  const headers = request.headers;
+  if (headers.has("next-router-prefetch") || headers.has("next-router-segment-prefetch")) return true;
+  return headerHasToken(headers.get("purpose"), "prefetch") || headerHasToken(headers.get("sec-purpose"), "prefetch");
+}
+
+/** 预取没有有效活动 Cookie 时直接结束。不渲染页面，也不登出、不改 Cookie。 */
+function rejectPrefetch() {
+  return new NextResponse(null, { status: 204, headers: { "Cache-Control": "private, no-store" } });
+}
+
 /**
  * 清除 Supabase 会话和活动 Cookie，再回到首页。
  * 这里只把活动 Cookie 设为过期，不写入新的时间戳；令牌刷新产生的 Set-Cookie 也不会被带到这次重定向上。
@@ -86,7 +106,11 @@ export async function proxy(request: NextRequest) {
   const userId = claims?.data?.claims?.sub;
   if (typeof userId === "string" && userId && !skipsIdleEnforcement(request.method, request.nextUrl.pathname)) {
     const verdict = verifyActivityCookie(request.cookies.get(ACTIVITY_COOKIE)?.value, userId, Date.now());
-    if (!verdict.ok) return expireIdleSession(request, db);
+    if (!verdict.ok) {
+      // 预取发生在 Passkey 写下活动 Cookie 之前。若在这里登出，会把刚写上的会话 Cookie 清掉。
+      if (isPrefetchRequest(request)) return rejectPrefetch();
+      return expireIdleSession(request, db);
+    }
   }
   response.headers.set("Cache-Control", "private, no-store");
   if (request.nextUrl.pathname === "/auth/confirm") response.headers.set("X-Robots-Tag", "noindex");
