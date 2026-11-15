@@ -1,5 +1,12 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import {
+  ACTIVITY_COOKIE,
+  clearedActivityCookieOptions,
+  skipsIdleEnforcement,
+  verifyActivityCookie,
+} from "@/lib/auth/activity-cookie";
+import { isSupabaseAuthSessionCookie } from "@/lib/auth/session-cookie";
 import { isMediaId } from "@/lib/functions/media-id";
 
 const DETAIL_PATH = /^\/(?:movies|shows)\/([^/]+)/;
@@ -30,7 +37,30 @@ function rewriteConfirmPost(request: NextRequest): NextResponse | null {
   return response;
 }
 
-/** 拒绝非法节目或季 ID；只为认证及管理路径刷新会话，公开页面保持原有 CDN 缓存行为。 */
+/**
+ * 清除 Supabase 会话和活动 Cookie，再回到首页。
+ * 这里只把活动 Cookie 设为过期，不写入新的时间戳；令牌刷新产生的 Set-Cookie 也不会被带到这次重定向上。
+ */
+async function expireIdleSession(
+  request: NextRequest,
+  db: { auth: { signOut: (options: { scope: "local" }) => Promise<unknown> } },
+) {
+  try {
+    await db.auth.signOut({ scope: "local" });
+  } catch {
+    // 网络失败时仍清掉浏览器里的会话 Cookie。
+  }
+  const redirect = NextResponse.redirect(new URL("/", request.url), 303);
+  for (const cookie of request.cookies.getAll()) {
+    if (!isSupabaseAuthSessionCookie(cookie.name)) continue;
+    redirect.cookies.set(cookie.name, "", { path: "/", maxAge: 0, httpOnly: true, sameSite: "lax", secure: true });
+  }
+  redirect.cookies.set(ACTIVITY_COOKIE, "", clearedActivityCookieOptions());
+  redirect.headers.set("Cache-Control", "private, no-store");
+  return redirect;
+}
+
+/** 拒绝非法节目或季 ID；只为认证及管理路径刷新会话，并在这些路径上核对空闲期限。公开页面保持原有 CDN 缓存行为。 */
 export async function proxy(request: NextRequest) {
   const rejected = rejectMalformedDetail(request);
   if (rejected) return rejected;
@@ -43,15 +73,21 @@ export async function proxy(request: NextRequest) {
     cookies: {
       /** 把请求 Cookie 提供给 Supabase。 */
       getAll: () => request.cookies.getAll(),
-      /** 将刷新后的 Cookie 同时写入下游请求与浏览器响应。 */
+      /** 将刷新后的 Cookie 同时写入下游请求与浏览器响应。活动 Cookie 不在这里写。 */
       setAll(values) {
-        for (const { name, value } of values) request.cookies.set(name, value);
+        const forwarded = values.filter((cookie) => cookie.name !== ACTIVITY_COOKIE);
+        for (const { name, value } of forwarded) request.cookies.set(name, value);
         response = NextResponse.next({ request });
-        for (const { name, value, options } of values) response.cookies.set(name, value, options);
+        for (const { name, value, options } of forwarded) response.cookies.set(name, value, options);
       },
     },
   });
-  await db.auth.getClaims();
+  const claims = await db.auth.getClaims();
+  const userId = claims?.data?.claims?.sub;
+  if (typeof userId === "string" && userId && !skipsIdleEnforcement(request.method, request.nextUrl.pathname)) {
+    const verdict = verifyActivityCookie(request.cookies.get(ACTIVITY_COOKIE)?.value, userId, Date.now());
+    if (!verdict.ok) return expireIdleSession(request, db);
+  }
   response.headers.set("Cache-Control", "private, no-store");
   if (request.nextUrl.pathname === "/auth/confirm") response.headers.set("X-Robots-Tag", "noindex");
   return response;

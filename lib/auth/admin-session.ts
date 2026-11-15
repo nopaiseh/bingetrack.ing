@@ -1,5 +1,6 @@
 import "server-only";
 import { createClient } from "@supabase/supabase-js";
+import { writeActivityCookie } from "@/lib/auth/activity-store";
 import { getAuthServer } from "@/lib/auth/server";
 
 /** 运维密钥或 NEXT_PUBLIC_SUPABASE_URL 缺失。 */
@@ -70,10 +71,12 @@ export async function createAdminSession(email: string | undefined): Promise<Adm
   if (!link.ok) return link;
 
   const db = await getAuthServer();
-  const { error } = await db.auth.verifyOtp({
+  const { data, error } = await db.auth.verifyOtp({
     token_hash: link.hashedToken,
     type: "magiclink",
   });
   if (error) return { ok: false, reason: "verify_failed", message: error.message };
+  const userId = data?.user?.id ?? data?.session?.user?.id;
+  if (userId) await writeActivityCookie(userId);
   return { ok: true };
 }

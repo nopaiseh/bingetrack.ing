@@ -1,10 +1,12 @@
 import { NextResponse } from "next/server";
+import { clearActivityCookie } from "@/lib/auth/activity-store";
 import { getAuthServer } from "@/lib/auth/server";
 
 /** 仅接受 POST 请求清理浏览器会话，避免 GET 链接预抓取或跨站图片触发登出。 */
 export async function POST() {
   const db = await getAuthServer();
   const { error } = await db.auth.signOut({ scope: "local" });
+  await clearActivityCookie();
   if (error) {
     const { cookies } = await import("next/headers");
     const jar = await cookies();

@@ -30,6 +30,7 @@ vi.mock("next/headers", () => ({
   }),
 }));
 
+import { ACTIVITY_COOKIE, readActivitySecret, verifyActivityCookie } from "@/lib/auth/activity-cookie";
 import { isSameOrigin } from "@/lib/auth/confirm-link";
 import { POST } from "@/app/auth/confirm/verify/route";
 
@@ -99,6 +100,31 @@ describe("一次性登录确认", () => {
     );
     expect(externalNext.headers.get("location")).toBe("/settings");
     expect(externalNext.headers.get("location")).not.toContain("example.com");
+  });
+
+  it("验证成功时写下绑定该用户的活动 Cookie，失败时不写", async () => {
+    vi.stubEnv("SUPABASE_SECRET_KEY", "confirm-secret");
+    verifyOtp.mockResolvedValueOnce({
+      data: { user: { id: "user-1" }, session: null },
+      error: null,
+    });
+
+    const response = await postConfirm({ type: "magiclink", token_hash: "test" }, "http://localhost:3000");
+
+    expect(response.status).toBe(303);
+    expect(response.headers.get("location")).toBe("/settings");
+    expect(cookieSet).toHaveBeenCalledWith(
+      ACTIVITY_COOKIE,
+      expect.any(String),
+      expect.objectContaining({ httpOnly: true, secure: true, sameSite: "lax" }),
+    );
+    const value = cookieSet.mock.calls.map((call) => call[1]).find((item) => item !== "session");
+    expect(verifyActivityCookie(String(value), "user-1", Date.now(), readActivitySecret()).ok).toBe(true);
+
+    cookieSet.mockClear();
+    verifyOtp.mockResolvedValueOnce({ data: { user: null, session: null }, error: new Error("expired") });
+    await postConfirm({ type: "magiclink", token_hash: "expired" }, "http://localhost:3000");
+    expect(cookieSet).not.toHaveBeenCalled();
   });
 
   it("跨站 Origin 被拒绝，且不验证、不写 Cookie", async () => {

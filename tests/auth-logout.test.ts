@@ -4,6 +4,7 @@ const { signOut } = vi.hoisted(() => ({ signOut: vi.fn() }));
 const jar = vi.hoisted(() => ({
   getAll: vi.fn<() => Array<{ name: string; value: string }>>(() => []),
   delete: vi.fn(),
+  set: vi.fn(),
 }));
 
 vi.mock("@/lib/auth/server", () => ({
@@ -14,6 +15,7 @@ vi.mock("next/headers", () => ({
   cookies: async () => jar,
 }));
 
+import { ACTIVITY_COOKIE } from "@/lib/auth/activity-cookie";
 import { GET, POST } from "@/app/auth/logout/route";
 
 describe("安全登出流程与 Logout CSRF 防护", () => {
@@ -22,6 +24,7 @@ describe("安全登出流程与 Logout CSRF 防护", () => {
     signOut.mockResolvedValue({ error: null });
     jar.getAll.mockReset().mockReturnValue([]);
     jar.delete.mockReset();
+    jar.set.mockReset();
   });
 
   it("POST 请求执行正常会话清理并安全重定向至首页", async () => {
@@ -30,6 +33,11 @@ describe("安全登出流程与 Logout CSRF 防护", () => {
     expect(response.status).toBe(303);
     expect(response.headers.get("location")).toBe("/");
     expect(response.headers.get("cache-control")).toBe("private, no-store");
+    expect(jar.set).toHaveBeenCalledWith(
+      ACTIVITY_COOKIE,
+      "",
+      expect.objectContaining({ httpOnly: true, secure: true, sameSite: "lax", path: "/", maxAge: 0 }),
+    );
   });
 
   it("POST 请求网络故障时仍清除本地 Cookie", async () => {
@@ -50,6 +58,7 @@ describe("安全登出流程与 Logout CSRF 防护", () => {
     const response = await GET();
     expect(signOut).not.toHaveBeenCalled();
     expect(jar.delete).not.toHaveBeenCalled();
+    expect(jar.set).not.toHaveBeenCalled();
     expect(response.status).toBe(303);
     expect(response.headers.get("location")).toBe("/");
     expect(response.headers.get("cache-control")).toBe("private, no-store");

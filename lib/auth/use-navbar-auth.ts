@@ -2,7 +2,8 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { resetIdleSession, watchIdleSession } from "./idle";
+import { resetIdleSession, signalIdleLogout } from "./idle";
+import { SIGNED_IN_EVENT, logoutEverywhere } from "./use-idle-session";
 import { hasSupabaseAuthCookie } from "./session-cookie";
 
 /**
@@ -16,7 +17,7 @@ function loadAuthBrowser() {
 type AuthBrowser = Awaited<ReturnType<typeof loadAuthBrowser>>;
 type AppRouter = ReturnType<typeof useRouter>;
 
-/** 订阅会话、校验站长身份，并在空闲超时后登出。返回停止函数。 */
+/** 订阅会话并校验站长身份。空闲登出由根布局的 IdleSession 负责，管理区不挂导航栏时也会运行。 */
 function attachNavbarSession(
   db: AuthBrowser,
   router: AppRouter,
@@ -26,8 +27,6 @@ function attachNavbarSession(
 ) {
   let disposed = false;
   let revision = 0;
-  let currentUser: string | undefined;
-  let stopIdle: (() => void) | undefined;
   const {
     data: { subscription },
   } = db.auth.onAuthStateChange((_event, session) => {
@@ -36,23 +35,6 @@ function attachNavbarSession(
     if (id && authenticating.current) resetIdleSession(id);
     setSignedIn(Boolean(id));
     setOwner(false);
-    if (id !== currentUser) {
-      stopIdle?.();
-      currentUser = id;
-      if (id)
-        stopIdle = watchIdleSession(
-          id,
-          () => {
-            // 通过 POST 接口清理会话，再完整导航回首页以清除管理页内存与路由缓存；接口不可达时退回本地清理，保证仍会登出。
-            void fetch("/auth/logout", { method: "POST" })
-              .catch(() => db.auth.signOut({ scope: "local" }))
-              .finally(() => {
-                window.location.replace("/");
-              });
-          },
-          Date.parse(session.user.last_sign_in_at ?? ""),
-        );
-    }
     if (id) {
       // 离开 Auth 回调后才调用 RPC，避免会话锁重入。
       window.setTimeout(() => {
@@ -69,11 +51,10 @@ function attachNavbarSession(
   return () => {
     disposed = true;
     subscription.unsubscribe();
-    stopIdle?.();
   };
 }
 
-/** 在全站导航同步会话、校验管理入口，并监听真实操作的空闲时间。 */
+/** 在全站导航同步会话并校验管理入口。空闲计时不在这里。 */
 export function useNavbarAuth() {
   const router = useRouter();
   const authenticating = useRef(false);
@@ -140,7 +121,26 @@ export function useNavbarAuth() {
         );
         return;
       }
-      if (data.user) resetIdleSession(data.user.id);
+      if (data.user) {
+        resetIdleSession(data.user.id);
+        // 先写下服务端活动 Cookie，再进入管理区，避免 proxy 把刚登录的会话当成缺失活动而登出。
+        const activity = await fetch("/auth/activity", {
+          method: "POST",
+          credentials: "same-origin",
+          cache: "no-store",
+        });
+        if (activity.status === 401) {
+          signalIdleLogout(data.user.id);
+          logoutEverywhere();
+          return;
+        }
+        if (!activity.ok) {
+          setError("登录已完成，但空闲保护未能启动，请重试。");
+          return;
+        }
+        // 软导航不会重挂根布局。已经挂上的 IdleSession 靠这个信号才开始计时。
+        window.dispatchEvent(new Event(SIGNED_IN_EVENT));
+      }
       router.replace("/manage");
       router.refresh();
     } catch {
