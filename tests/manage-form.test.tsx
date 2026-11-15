@@ -61,13 +61,22 @@ it("电影和单集由评分决定观看状态，电视节目和季显示只读�
   expect(screen.getByText(/电视节目的观看状态由下属单集自动汇总决定/)).toBeInTheDocument();
 });
 
-it("单集不提供封面地址，电影和电视节目仍保留，已有剧照在保存时原样带回", () => {
+it("季和单集不提供封面地址，电影和电视节目仍保留，已有地址在保存时原样带回", () => {
   const { container, unmount } = render(<MediaForm initialType="movie" />);
   const cover = screen.getByLabelText("TMDB 海报路径");
   fireEvent.change(cover, { target: { value: "https://image.tmdb.org/t/p/w500/poster.jpg" } });
+  fireEvent.change(screen.getByLabelText("类型"), { target: { value: "tv_season" } });
+  expect(screen.queryByLabelText("TMDB 海报路径")).not.toBeInTheDocument();
+  expect(screen.queryByPlaceholderText("https://image.tmdb.org/t/p/original/…")).not.toBeInTheDocument();
+  expect(screen.queryByRole("img", { name: "封面预览" })).not.toBeInTheDocument();
+  expect(container.querySelector('input[name="cover_url"]')).toHaveAttribute("type", "hidden");
+  expect(container.querySelector('input[name="cover_url"]')).toHaveValue("");
+  fireEvent.change(screen.getByLabelText("类型"), { target: { value: "movie" } });
+  expect(screen.getByLabelText("TMDB 海报路径")).toHaveValue("https://image.tmdb.org/t/p/w500/poster.jpg");
   fireEvent.change(screen.getByLabelText("类型"), { target: { value: "tv_episode" } });
   expect(screen.queryByLabelText("TMDB 海报路径")).not.toBeInTheDocument();
   expect(screen.queryByPlaceholderText("https://image.tmdb.org/t/p/original/…")).not.toBeInTheDocument();
+  expect(screen.queryByRole("img", { name: "封面预览" })).not.toBeInTheDocument();
   expect(container.querySelector('input[name="cover_url"]')).toHaveValue("");
   fireEvent.change(screen.getByLabelText("类型"), { target: { value: "tv_show" } });
   expect(screen.getByLabelText("TMDB 海报路径")).toHaveValue("https://image.tmdb.org/t/p/w500/poster.jpg");
@@ -103,6 +112,40 @@ it("单集不提供封面地址，电影和电视节目仍保留，已有剧照�
   expect(episode.container.querySelector('input[name="cover_url"]')).toHaveValue(
     "https://image.tmdb.org/t/p/w500/still.jpg",
   );
+  episode.unmount();
+
+  const season = render(
+    <MediaForm
+      initialType="tv_season"
+      lockType
+      item={{
+        id: "season-1",
+        type: "tv_season",
+        title: "第一季",
+        alternate_title: null,
+        summary: null,
+        cover_url: "https://image.tmdb.org/t/p/w500/season.jpg",
+        release_date: null,
+        runtime: null,
+        parent_id: "show-1",
+        number: 1,
+        status: "want_to_watch",
+        rating: null,
+        genres: [],
+        languages: [],
+        regions: [],
+        actors: [],
+        directors: [],
+      }}
+    />,
+  );
+  expect(screen.queryByLabelText("TMDB 海报路径")).not.toBeInTheDocument();
+  expect(screen.queryByRole("img", { name: "封面预览" })).not.toBeInTheDocument();
+  expect(screen.queryByText("无海报")).not.toBeInTheDocument();
+  expect(season.container.querySelector('input[name="cover_url"]')).toHaveAttribute("type", "hidden");
+  expect(season.container.querySelector('input[name="cover_url"]')).toHaveValue(
+    "https://image.tmdb.org/t/p/w500/season.jpg",
+  );
 });
 
 it("lockType 为真时锁定媒体类型，不展示分段切换控件", () => {
@@ -127,25 +170,47 @@ it("海报预览只使用 TMDB 文件名，不把输入原文当成图片地址"
   expect(cover).toHaveValue("https://image.tmdb.org/t/p/w500/poster.jpg");
 });
 
-it("电影和电视节目展示演职员与海报，季保留海报，单集只有文字", () => {
-  const { unmount: unmount1 } = render(<MediaForm initialType="movie" />);
+/** 字面量分号会变成文本节点，出现在管理页顶部。 */
+function hasStraySemicolon(container: HTMLElement) {
+  const walker = document.createTreeWalker(container, NodeFilter.SHOW_TEXT);
+  let node = walker.nextNode();
+  while (node) {
+    if (node.textContent?.trim() === ";") return true;
+    node = walker.nextNode();
+  }
+  return false;
+}
+
+it("电影和电视节目展示演职员与海报，季和单集不展示海报，页面没有多余分号", () => {
+  const { container: movie, unmount: unmount1 } = render(<MediaForm initialType="movie" />);
   expect(screen.getByRole("heading", { name: "演职员" })).toBeInTheDocument();
   expect(screen.getByRole("heading", { name: "海报与图片" })).toBeInTheDocument();
+  expect(screen.getByLabelText("TMDB 海报路径")).toBeInTheDocument();
+  expect(hasStraySemicolon(movie)).toBe(false);
   unmount1();
 
-  const { unmount: unmount2 } = render(<MediaForm initialType="tv_show" />);
+  const { container: show, unmount: unmount2 } = render(<MediaForm initialType="tv_show" />);
   expect(screen.getByRole("heading", { name: "演职员" })).toBeInTheDocument();
+  expect(screen.getByRole("heading", { name: "海报与图片" })).toBeInTheDocument();
+  expect(screen.getByLabelText("TMDB 海报路径")).toBeInTheDocument();
+  expect(hasStraySemicolon(show)).toBe(false);
   unmount2();
 
-  const { unmount: unmount3 } = render(<MediaForm initialType="tv_season" />);
-  expect(screen.queryByRole("heading", { name: "演职员" })).not.toBeInTheDocument();
-  expect(screen.getByRole("heading", { name: "海报与图片" })).toBeInTheDocument();
-  unmount3();
-
-  render(<MediaForm initialType="tv_episode" />);
+  const { container: season, unmount: unmount3 } = render(<MediaForm initialType="tv_season" />);
   expect(screen.queryByRole("heading", { name: "演职员" })).not.toBeInTheDocument();
   expect(screen.queryByRole("heading", { name: "海报与图片" })).not.toBeInTheDocument();
+  expect(screen.queryByLabelText("TMDB 海报路径")).not.toBeInTheDocument();
+  expect(screen.queryByRole("img", { name: "封面预览" })).not.toBeInTheDocument();
+  expect(hasStraySemicolon(season)).toBe(false);
+  unmount3();
+
+  const { container: episode } = render(<MediaForm initialType="tv_episode" />);
+  expect(screen.queryByRole("heading", { name: "演职员" })).not.toBeInTheDocument();
+  expect(screen.queryByRole("heading", { name: "海报与图片" })).not.toBeInTheDocument();
+  expect(screen.queryByLabelText("TMDB 海报路径")).not.toBeInTheDocument();
+  expect(screen.queryByRole("img", { name: "封面预览" })).not.toBeInTheDocument();
   expect(screen.getByText(/单集只填文字资料/)).toBeInTheDocument();
+  expect(hasStraySemicolon(episode)).toBe(false);
 });
 
 it("季和单集编号输入框拥有正确无歧义的无障碍标签", () => {
