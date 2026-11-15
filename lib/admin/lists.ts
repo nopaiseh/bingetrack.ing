@@ -74,9 +74,15 @@ function watchStatus(value: string | null | undefined): MediaListItem["status"] 
 type OrderOptions = { ascending: boolean; nullsFirst?: boolean };
 
 /** 主排序之后用标题和 ID 固定次序，避免同值记录在翻页时跳动。空值一律排在最后。 */
-function orderMedia<Query extends { order: (column: string, options?: OrderOptions) => Query }>(query: Query, sort: MediaSortKey, ascending: boolean) {
+function orderMedia<Query extends { order: (column: string, options?: OrderOptions) => Query }>(
+  query: Query,
+  sort: MediaSortKey,
+  ascending: boolean,
+) {
   const ordered = query.order(mediaSortColumns[sort], { ascending, nullsFirst: false });
-  return sort === "title" ? ordered.order("id", { ascending: true }) : ordered.order("title", { ascending: true }).order("id", { ascending: true });
+  return sort === "title"
+    ? ordered.order("id", { ascending: true })
+    : ordered.order("title", { ascending: true }).order("id", { ascending: true });
 }
 
 type PersonRow = {
@@ -90,15 +96,21 @@ type PersonRow = {
  * 分页读取人物。搜索走姓名、别名的 ILIKE（已有 GIN trigram 索引），计数为精确总数。
  * 调用方必须已经通过 requireOwner()；本函数不再重复检查身份。
  */
-export async function listAdminPeople(db: SupabaseClient, input?: AdminListInput | null): Promise<AdminListPage<PersonListItem>> {
+export async function listAdminPeople(
+  db: SupabaseClient,
+  input?: AdminListInput | null,
+): Promise<AdminListPage<PersonListItem>> {
   const query = parseAdminPeopleQuery(input);
   const start = (query.page - 1) * query.pageSize;
   let request = db.from("people").select("id,name,alternate_name,media_credits(count)", { count: "exact" });
   if (query.q) request = request.or(nameOrAliasFilter(query.q));
-  const page = readPage<PersonRow>(await request
-    .order(query.sort, { ascending: query.direction === "asc", nullsFirst: false })
-    .order("id", { ascending: true })
-    .range(start, start + query.pageSize - 1), LIST_READ_ERROR);
+  const page = readPage<PersonRow>(
+    await request
+      .order(query.sort, { ascending: query.direction === "asc", nullsFirst: false })
+      .order("id", { ascending: true })
+      .range(start, start + query.pageSize - 1),
+    LIST_READ_ERROR,
+  );
   return {
     items: page.rows.map((row) => ({
       id: row.id,
@@ -134,15 +146,36 @@ type DetailRow = {
  * 再用一页 ID 补封面、片长和季集数量。排序视图的日期、状态、评分是计算列，不能另建索引。
  * 调用方必须已经通过 requireOwner()。
  */
-export async function listAdminMedia(db: SupabaseClient, type: AdminMediaListType, input?: AdminListInput | null): Promise<AdminListPage<MediaListItem>> {
+export async function listAdminMedia(
+  db: SupabaseClient,
+  type: AdminMediaListType,
+  input?: AdminListInput | null,
+): Promise<AdminListPage<MediaListItem>> {
   const mediaType = parseAdminMediaListType(type);
   const query = parseAdminMediaQuery(input);
   const start = (query.page - 1) * query.pageSize;
-  let request = db.from("v_manage_media_order").select("id,title,alternate_title,status,rating,sort_date", { count: "exact" }).eq("type", mediaType);
+  let request = db
+    .from("v_manage_media_order")
+    .select("id,title,alternate_title,status,rating,sort_date", { count: "exact" })
+    .eq("type", mediaType);
   if (query.q) request = request.or(titleOrAliasFilter(query.q));
-  const page = readPage<OrderRow>(await orderMedia(request, query.sort, query.direction === "asc").range(start, start + query.pageSize - 1), LIST_READ_ERROR);
+  const page = readPage<OrderRow>(
+    await orderMedia(request, query.sort, query.direction === "asc").range(start, start + query.pageSize - 1),
+    LIST_READ_ERROR,
+  );
   const ids = page.rows.map((row) => row.id);
-  const details = ids.length === 0 ? [] : readRows<DetailRow>(await db.from("media_items").select("id,cover_url,release_date,runtime,seasons:tv_seasons!tv_seasons_series_id_fkey(episodes:tv_episodes!tv_episodes_season_id_fkey(count))").in("id", ids), LIST_READ_ERROR);
+  const details =
+    ids.length === 0
+      ? []
+      : readRows<DetailRow>(
+          await db
+            .from("media_items")
+            .select(
+              "id,cover_url,release_date,runtime,seasons:tv_seasons!tv_seasons_series_id_fkey(episodes:tv_episodes!tv_episodes_season_id_fkey(count))",
+            )
+            .in("id", ids),
+          LIST_READ_ERROR,
+        );
   const detailById = new Map(details.map((row) => [row.id, row]));
   return {
     items: page.rows.map((row) => {
@@ -180,7 +213,8 @@ const CHILD_DETAIL_COLUMNS = [
   "tv_episodes!tv_episodes_id_fkey(episode_number,parent:tv_seasons!tv_episodes_season_id_fkey(media_items!tv_seasons_id_fkey(title),series:media_items!tv_seasons_series_id_fkey(title)))",
 ].join(",");
 
-export type AdminChildListResult = AdminListPage<ChildListItem> & Pick<ParsedAdminChildQuery, "q" | "sort" | "status" | "parent">;
+export type AdminChildListResult = AdminListPage<ChildListItem> &
+  Pick<ParsedAdminChildQuery, "q" | "sort" | "status" | "parent">;
 
 type ChildOrderRow = {
   id: string;
@@ -214,12 +248,16 @@ type ChildDetailRow = {
 };
 
 /** 主排序之后仍按播出日期、季号或集号、标题和 ID 固定次序，避免同值记录翻页时跳动。 */
-function orderChildren<Query extends { order: (column: string, options?: OrderOptions) => Query }>(query: Query, sort: ChildSortKey) {
-  const primary = sort === "title"
-    ? query.order("title")
-    : sort === "rating"
-      ? query.order("rating", { ascending: false, nullsFirst: false })
-      : query;
+function orderChildren<Query extends { order: (column: string, options?: OrderOptions) => Query }>(
+  query: Query,
+  sort: ChildSortKey,
+) {
+  const primary =
+    sort === "title"
+      ? query.order("title")
+      : sort === "rating"
+        ? query.order("rating", { ascending: false, nullsFirst: false })
+        : query;
   return primary
     .order("sort_date", { ascending: false, nullsFirst: false })
     .order("item_number", { ascending: false, nullsFirst: false })
@@ -261,11 +299,19 @@ function childPage(query: ParsedAdminChildQuery, items: ChildListItem[], total: 
  * 再用这一页的 ID 补标题、封面和所属节目。查询失败直接抛出与原管理页相同的错误，不再退回逐条计算。
  * 调用方必须已经通过 requireOwner()。
  */
-export async function listAdminChildren(db: SupabaseClient, type: unknown, parent: unknown, input?: AdminChildListInput | null): Promise<AdminChildListResult> {
+export async function listAdminChildren(
+  db: SupabaseClient,
+  type: unknown,
+  parent: unknown,
+  input?: AdminChildListInput | null,
+): Promise<AdminChildListResult> {
   const mediaType: AdminChildListType = parseAdminChildListType(type);
   const query = parseAdminChildQuery(mediaType, parent, input);
   const start = (query.page - 1) * query.pageSize;
-  let request = db.from("v_manage_media_order").select("id, status, rating, sort_date", { count: "exact" }).eq("type", mediaType);
+  let request = db
+    .from("v_manage_media_order")
+    .select("id, status, rating, sort_date", { count: "exact" })
+    .eq("type", mediaType);
   if (query.q) request = request.or(titleOrAliasFilter(query.q));
   if (query.parent) request = request.eq("parent_id", query.parent);
   if (query.status) request = request.eq("status", query.status);
@@ -275,14 +321,18 @@ export async function listAdminChildren(db: SupabaseClient, type: unknown, paren
   const total = ordered.count ?? 0;
   const ids = orderedRows.map((row) => row.id);
   if (ids.length === 0) return childPage(query, [], total);
-  const details = readRows<ChildDetailRow>(await db.from("media_items").select(CHILD_DETAIL_COLUMNS).in("id", ids), CHILD_LIST_READ_ERROR);
+  const details = readRows<ChildDetailRow>(
+    await db.from("media_items").select(CHILD_DETAIL_COLUMNS).in("id", ids),
+    CHILD_LIST_READ_ERROR,
+  );
   const orderById = new Map(orderedRows.map((row) => [row.id, row]));
   const position = new Map(ids.map((id, index) => [id, index]));
   const items = [...details]
     .sort((left, right) => (position.get(left.id) ?? 0) - (position.get(right.id) ?? 0))
     .map((detail) => {
       const order = orderById.get(detail.id);
-      const rowType: AdminChildListType = detail.type === "tv_season" || detail.type === "tv_episode" ? detail.type : mediaType;
+      const rowType: AdminChildListType =
+        detail.type === "tv_season" || detail.type === "tv_episode" ? detail.type : mediaType;
       const tracking = Array.isArray(detail.tracking) ? detail.tracking[0] : detail.tracking;
       const season = rowType === "tv_season";
       return {
@@ -291,7 +341,7 @@ export async function listAdminChildren(db: SupabaseClient, type: unknown, paren
         title: detail.title ?? "",
         alternate_title: detail.alternate_title,
         cover_url: detail.cover_url,
-        display_date: season ? (order?.sort_date || null) : detail.release_date,
+        display_date: season ? order?.sort_date || null : detail.release_date,
         status: watchStatus(season ? order?.status : tracking?.status),
         rating: season || tracking?.rating == null ? null : Number(tracking.rating),
         season: detail.tv_seasons ? seasonContext(detail.tv_seasons) : null,
@@ -325,8 +375,11 @@ function rowsIn<Row extends { id: string }>(rows: Row[], allowed: string[]) {
  */
 export async function bulkDeletePeople(db: SupabaseClient, ids: unknown): Promise<BulkCounts> {
   const targets = parseBulkIds(ids);
-  const blockedRows = readRows<{ artist_id: string | null }>(await db.from("music_albums").select("artist_id").in("artist_id", targets), DELETE_ERROR);
-  const blocked = new Set(blockedRows.flatMap((row) => row.artist_id ? [row.artist_id.toLowerCase()] : []));
+  const blockedRows = readRows<{ artist_id: string | null }>(
+    await db.from("music_albums").select("artist_id").in("artist_id", targets),
+    DELETE_ERROR,
+  );
+  const blocked = new Set(blockedRows.flatMap((row) => (row.artist_id ? [row.artist_id.toLowerCase()] : [])));
   const deletable = targets.filter((id) => !blocked.has(id));
   if (deletable.length === 0) return { succeeded: 0, failed: targets.length };
   // 级联会先删掉演职关联，受影响的详情页必须在删除前查出。
@@ -360,9 +413,18 @@ export async function bulkDeleteMovies(db: SupabaseClient, ids: unknown): Promis
  */
 export async function bulkDeleteTvShows(db: SupabaseClient, ids: unknown): Promise<BulkCounts> {
   const targets = parseBulkIds(ids);
-  const shows = rowsIn(readRows<{ id: string; title: string }>(await db.from("media_items").select("id,title").in("id", targets).eq("type", "tv_show"), DELETE_ERROR), targets);
+  const shows = rowsIn(
+    readRows<{ id: string; title: string }>(
+      await db.from("media_items").select("id,title").in("id", targets).eq("type", "tv_show"),
+      DELETE_ERROR,
+    ),
+    targets,
+  );
   if (shows.length === 0) return { succeeded: 0, failed: targets.length };
-  const affected = await affectedMediaIds(db, shows.map((show) => show.id));
+  const affected = await affectedMediaIds(
+    db,
+    shows.map((show) => show.id),
+  );
   let succeeded = 0;
   for (const show of shows) {
     const { error } = await db.rpc("admin_delete_media", { p_id: show.id, p_confirm_title: show.title });
@@ -387,11 +449,15 @@ async function episodeIdsByShow(db: SupabaseClient, showIds: string[]) {
   const grouped = new Map<string, Set<string>>();
   for (let page = 0; page < MAX_EPISODE_PAGES; page += 1) {
     const start = page * EPISODE_PAGE;
-    const rows = readRows<EpisodeRow>(await db.from("tv_episodes")
-      .select("id, tv_seasons!tv_episodes_season_id_fkey!inner(series_id)")
-      .in("tv_seasons.series_id", showIds)
-      .order("id", { ascending: true })
-      .range(start, start + EPISODE_PAGE - 1), STATUS_ERROR);
+    const rows = readRows<EpisodeRow>(
+      await db
+        .from("tv_episodes")
+        .select("id, tv_seasons!tv_episodes_season_id_fkey!inner(series_id)")
+        .in("tv_seasons.series_id", showIds)
+        .order("id", { ascending: true })
+        .range(start, start + EPISODE_PAGE - 1),
+      STATUS_ERROR,
+    );
     for (const row of rows) {
       const season = Array.isArray(row.tv_seasons) ? row.tv_seasons[0] : row.tv_seasons;
       if (!season?.series_id) continue;
@@ -413,9 +479,21 @@ async function episodeIdsByShow(db: SupabaseClient, showIds: string[]) {
 export async function bulkSetMovieStatus(db: SupabaseClient, ids: unknown, status: unknown): Promise<BulkCounts> {
   const targets = parseBulkIds(ids);
   const nextStatus = parseBulkStatus(status);
-  const movieIds = rowsIn(readRows<{ id: string }>(await db.from("media_items").select("id").in("id", targets).eq("type", "movie"), STATUS_ERROR), targets).map((row) => row.id);
+  const movieIds = rowsIn(
+    readRows<{ id: string }>(
+      await db.from("media_items").select("id").in("id", targets).eq("type", "movie"),
+      STATUS_ERROR,
+    ),
+    targets,
+  ).map((row) => row.id);
   if (movieIds.length === 0) return { succeeded: 0, failed: targets.length };
-  const { error } = await db.from("tracking").upsert(movieIds.map((media_item_id) => ({ media_item_id, status: nextStatus })), { onConflict: "media_item_id", defaultToNull: false }).select("media_item_id");
+  const { error } = await db
+    .from("tracking")
+    .upsert(
+      movieIds.map((media_item_id) => ({ media_item_id, status: nextStatus })),
+      { onConflict: "media_item_id", defaultToNull: false },
+    )
+    .select("media_item_id");
   assertWrite(error, STATUS_ERROR);
   revalidateMediaItems(await affectedMediaIds(db, movieIds));
   return { succeeded: movieIds.length, failed: targets.length - movieIds.length };
@@ -430,7 +508,13 @@ export async function bulkSetMovieStatus(db: SupabaseClient, ids: unknown, statu
 export async function bulkSetTvShowStatus(db: SupabaseClient, ids: unknown, status: unknown): Promise<BulkCounts> {
   const targets = parseBulkIds(ids);
   const nextStatus = parseBulkStatus(status);
-  const showIds = rowsIn(readRows<{ id: string }>(await db.from("media_items").select("id").in("id", targets).eq("type", "tv_show"), STATUS_ERROR), targets).map((row) => row.id);
+  const showIds = rowsIn(
+    readRows<{ id: string }>(
+      await db.from("media_items").select("id").in("id", targets).eq("type", "tv_show"),
+      STATUS_ERROR,
+    ),
+    targets,
+  ).map((row) => row.id);
   if (showIds.length === 0) return { succeeded: 0, failed: targets.length };
   const episodes = await episodeIdsByShow(db, showIds);
   const writable: string[] = [];
@@ -449,7 +533,13 @@ export async function bulkSetTvShowStatus(db: SupabaseClient, ids: unknown, stat
   }
   const uniqueEpisodes = [...new Set(episodeIds)];
   if (uniqueEpisodes.length === 0) return { succeeded, failed };
-  const { error } = await db.from("tracking").upsert(uniqueEpisodes.map((media_item_id) => ({ media_item_id, status: nextStatus })), { onConflict: "media_item_id", defaultToNull: false }).select("media_item_id");
+  const { error } = await db
+    .from("tracking")
+    .upsert(
+      uniqueEpisodes.map((media_item_id) => ({ media_item_id, status: nextStatus })),
+      { onConflict: "media_item_id", defaultToNull: false },
+    )
+    .select("media_item_id");
   assertWrite(error, STATUS_ERROR);
   revalidateMediaItems(await affectedMediaIds(db, [...writable, ...uniqueEpisodes]));
   return { succeeded: succeeded + writable.length, failed };

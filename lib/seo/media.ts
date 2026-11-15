@@ -20,25 +20,29 @@ interface DescriptionUnit {
 
 /** 判断码位是否为全角或中日韩字符，这些字符在摘要里按两个拉丁字符计宽。 */
 function isWideCodePoint(code: number): boolean {
-  return (code >= 0x1100 && code <= 0x115F)
-    || (code >= 0x2329 && code <= 0x232A)
-    || (code >= 0x2E80 && code <= 0x303E)
-    || (code >= 0x3041 && code <= 0x33FF)
-    || (code >= 0x3400 && code <= 0x4DBF)
-    || (code >= 0x4E00 && code <= 0xA4CF)
-    || (code >= 0xA960 && code <= 0xA97F)
-    || (code >= 0xAC00 && code <= 0xD7A3)
-    || (code >= 0xF900 && code <= 0xFAFF)
-    || (code >= 0xFE10 && code <= 0xFE19)
-    || (code >= 0xFE30 && code <= 0xFE6F)
-    || (code >= 0xFF01 && code <= 0xFF60)
-    || (code >= 0xFFE0 && code <= 0xFFE6)
-    || (code >= 0x20000 && code <= 0x3FFFD);
+  return (
+    (code >= 0x1100 && code <= 0x115f) ||
+    (code >= 0x2329 && code <= 0x232a) ||
+    (code >= 0x2e80 && code <= 0x303e) ||
+    (code >= 0x3041 && code <= 0x33ff) ||
+    (code >= 0x3400 && code <= 0x4dbf) ||
+    (code >= 0x4e00 && code <= 0xa4cf) ||
+    (code >= 0xa960 && code <= 0xa97f) ||
+    (code >= 0xac00 && code <= 0xd7a3) ||
+    (code >= 0xf900 && code <= 0xfaff) ||
+    (code >= 0xfe10 && code <= 0xfe19) ||
+    (code >= 0xfe30 && code <= 0xfe6f) ||
+    (code >= 0xff01 && code <= 0xff60) ||
+    (code >= 0xffe0 && code <= 0xffe6) ||
+    (code >= 0x20000 && code <= 0x3fffd)
+  );
 }
 
 /** 全角字符占比达到阈值时按中文简介处理，句读可以回退得更远。 */
 function isCjkHeavy(units: DescriptionUnit[]): boolean {
-  const visible = units.filter(/* 空白不参与占比，避免换行把中文简介误判成拉丁文本。 */ (unit) => !/\s/.test(unit.char));
+  const visible = units.filter(
+    /* 空白不参与占比，避免换行把中文简介误判成拉丁文本。 */ (unit) => !/\s/.test(unit.char),
+  );
   if (visible.length === 0) return false;
   const wide = visible.filter(/* 只统计显示宽度为 2 的字符。 */ (unit) => unit.width === 2).length;
   return wide / visible.length >= CJK_HEAVY_RATIO;
@@ -76,10 +80,12 @@ export function truncateMetaDescription(input: string): string {
   const text = input.trim().replace(/\s+/g, " ");
   if (!text) return "";
 
-  const units = [...text].map(/* 逐个码位记录字符和显示宽度，避免把增补汉字拆成代理项。 */ (char) => ({
-    char,
-    width: isWideCodePoint(char.codePointAt(0) ?? 0) ? 2 : 1,
-  }));
+  const units = [...text].map(
+    /* 逐个码位记录字符和显示宽度，避免把增补汉字拆成代理项。 */ (char) => ({
+      char,
+      width: isWideCodePoint(char.codePointAt(0) ?? 0) ? 2 : 1,
+    }),
+  );
 
   let used = 0;
   let end = units.length;
@@ -93,15 +99,20 @@ export function truncateMetaDescription(input: string): string {
   }
   if (end === units.length) return text;
 
-  const kept = units.slice(0, findDescriptionCut(units, end)).map(/* 拼回截断点之前的字符。 */ (unit) => unit.char).join("").trimEnd();
+  const kept = units
+    .slice(0, findDescriptionCut(units, end))
+    .map(/* 拼回截断点之前的字符。 */ (unit) => unit.char)
+    .join("")
+    .trimEnd();
   return `${kept}…`;
 }
 
 /** 修剪并按显示宽度截取媒体简介，缺少简介时按电影或电视节目生成默认描述。 */
 export function getMediaDescription(media: Media): string {
-  const fallback = media.type === "shows"
-    ? `查看《${media.title}》的季度、单集与观看记录。`
-    : `查看《${media.title}》的观看记录与详细信息。`;
+  const fallback =
+    media.type === "shows"
+      ? `查看《${media.title}》的季度、单集与观看记录。`
+      : `查看《${media.title}》的观看记录与详细信息。`;
   const summary = media.summary?.trim();
   return truncateMetaDescription(summary || fallback);
 }
@@ -155,9 +166,18 @@ export function buildMediaJsonLd(media: Media): Record<string, unknown> {
   if (media.date) jsonLd.datePublished = media.date;
   if (media.genres.length > 0) jsonLd.genre = media.genres;
   if (media.languages.length > 0) jsonLd.inLanguage = media.languages;
-  if (media.regions?.length) jsonLd.countryOfOrigin = media.regions.map(/* 将地区名称包装为结构化数据中的 Country 对象。 */ (name) => ({ "@type": "Country", name }));
-  if (media.directors?.length) jsonLd.director = media.directors.map(/* 将导演姓名包装为结构化数据中的 Person 对象。 */ (name) => ({ "@type": "Person", name }));
-  if (media.casts?.length) jsonLd.actor = media.casts.map(/* 将演员姓名包装为结构化数据中的 Person 对象。 */ (name) => ({ "@type": "Person", name }));
+  if (media.regions?.length)
+    jsonLd.countryOfOrigin = media.regions.map(
+      /* 将地区名称包装为结构化数据中的 Country 对象。 */ (name) => ({ "@type": "Country", name }),
+    );
+  if (media.directors?.length)
+    jsonLd.director = media.directors.map(
+      /* 将导演姓名包装为结构化数据中的 Person 对象。 */ (name) => ({ "@type": "Person", name }),
+    );
+  if (media.casts?.length)
+    jsonLd.actor = media.casts.map(
+      /* 将演员姓名包装为结构化数据中的 Person 对象。 */ (name) => ({ "@type": "Person", name }),
+    );
   if (media.runtime && media.runtime > 0) jsonLd.duration = `PT${media.runtime}M`;
 
   return jsonLd;
@@ -165,9 +185,7 @@ export function buildMediaJsonLd(media: Media): Record<string, unknown> {
 
 /** 季简介优先；没有简介时说明本季可以查看单集与观看记录，超长时按句读截断。 */
 function getSeasonDescription(series: Media, season: SeasonInfo): string {
-  return truncateMetaDescription(
-    season.summary?.trim() || `查看《${series.title}》${season.title}的单集与观看记录。`,
-  );
+  return truncateMetaDescription(season.summary?.trim() || `查看《${series.title}》${season.title}的单集与观看记录。`);
 }
 
 /** 电视节目详情路径。季页的上级节目固定在 /shows，与 TVSeries 结构化数据的地址一致。 */
@@ -204,7 +222,11 @@ function buildEpisodeJsonLd(episode: EpisodeInfo): Record<string, unknown> {
  * 按季生成 TVSeason 结构化数据。
  * 单集名称和日期来自调用方传入的未筛选列表；缺标题或日期时省略对应字段。
  */
-export function buildSeasonJsonLd(series: Media, season: SeasonInfo, episodes: EpisodeInfo[] = []): Record<string, unknown> {
+export function buildSeasonJsonLd(
+  series: Media,
+  season: SeasonInfo,
+  episodes: EpisodeInfo[] = [],
+): Record<string, unknown> {
   const jsonLd: Record<string, unknown> = {
     "@context": "https://schema.org",
     "@type": "TVSeason",
@@ -224,7 +246,8 @@ export function buildSeasonJsonLd(series: Media, season: SeasonInfo, episodes: E
   const image = structuredImage(season.coverUrl || series.cover_url);
   if (image) jsonLd.image = image;
   if (Number.isFinite(season.episodeCount) && season.episodeCount >= 0) jsonLd.numberOfEpisodes = season.episodeCount;
-  if (episodes.length > 0) jsonLd.episode = episodes.map(/* 将一集转换为 TVEpisode，没有标题或日期时省略对应字段。 */ buildEpisodeJsonLd);
+  if (episodes.length > 0)
+    jsonLd.episode = episodes.map(/* 将一集转换为 TVEpisode，没有标题或日期时省略对应字段。 */ buildEpisodeJsonLd);
 
   return jsonLd;
 }

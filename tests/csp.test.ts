@@ -20,7 +20,11 @@ describe("supabaseConnectOrigin", () => {
 
 describe("buildContentSecurityPolicy", () => {
   it("connect-src 只包含自身、Supabase 与 Sentry 源", () => {
-    const csp = buildContentSecurityPolicy({ isDevelopment: false, supabaseUrl: "https://abc.supabase.co", sentryOrigin: "https://o1.ingest.sentry.io" });
+    const csp = buildContentSecurityPolicy({
+      isDevelopment: false,
+      supabaseUrl: "https://abc.supabase.co",
+      sentryOrigin: "https://o1.ingest.sentry.io",
+    });
     expect(csp).toContain("connect-src 'self' https://abc.supabase.co https://o1.ingest.sentry.io;");
     expect(csp).not.toContain("unsafe-eval");
   });
@@ -32,6 +36,8 @@ describe("buildContentSecurityPolicy", () => {
   });
 
   it("开发模式允许 unsafe-eval", () => {
-    expect(buildContentSecurityPolicy({ isDevelopment: true })).toContain("script-src 'self' 'unsafe-inline' 'unsafe-eval'");
+    expect(buildContentSecurityPolicy({ isDevelopment: true })).toContain(
+      "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
+    );
   });
 });

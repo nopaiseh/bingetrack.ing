@@ -3,9 +3,21 @@ import { expect, test, vi } from "vitest";
 import MediaInformation from "@/components/MediaInformation";
 import type { Media } from "@/lib/types";
 
-vi.mock("next/navigation", /* 详情返回入口使用无筛选的测试地址。 */ () => ({ useSearchParams: () => new URLSearchParams() }));
+vi.mock(
+  "next/navigation",
+  /* 详情返回入口使用无筛选的测试地址。 */ () => ({ useSearchParams: () => new URLSearchParams() }),
+);
 
-const media: Media = { id: "test", title: "测试作品", date: "2026-01-01", rating: 0, genres: [], languages: [], cover_url: "", type: "movies" };
+const media: Media = {
+  id: "test",
+  title: "测试作品",
+  date: "2026-01-01",
+  rating: 0,
+  genres: [],
+  languages: [],
+  cover_url: "",
+  type: "movies",
+};
 
 test("renders placeholder when casts list is empty", () => {
   render(<MediaInformation media={{ ...media, casts: [] }} seasons={null} />);
@@ -21,7 +33,9 @@ test("renders every cast member without a toggle button", () => {
 });
 
 test("shows the character beside each actor while the link searches only the actor", () => {
-  render(<MediaInformation media={{ ...media, casts: ["演员1", "演员2"], characters: ["角色甲", null] }} seasons={null} />);
+  render(
+    <MediaInformation media={{ ...media, casts: ["演员1", "演员2"], characters: ["角色甲", null] }} seasons={null} />,
+  );
   const link = screen.getByRole("link", { name: /演员1饰\s*角色甲/ });
   expect(link).toHaveAttribute("href", "/search?q=%E6%BC%94%E5%91%981&type=actor");
   expect(screen.getByRole("link", { name: "演员2" })).toBeInTheDocument();

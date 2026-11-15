@@ -65,7 +65,14 @@ describe("UnsavedGuard browser back", () => {
   it("点击站内链接只询问一次，取消时链接自身的处理不会执行", () => {
     const confirm = vi.spyOn(window, "confirm").mockReturnValue(false);
     const onClick = vi.fn();
-    const view = render(<><UnsavedGuard dirty /><a href="/manage" onClick={onClick}>列表</a></>);
+    const view = render(
+      <>
+        <UnsavedGuard dirty />
+        <a href="/manage" onClick={onClick}>
+          列表
+        </a>
+      </>,
+    );
     view.getByText("列表").click();
     expect(confirm).toHaveBeenCalledTimes(1);
     expect(onClick).not.toHaveBeenCalled();

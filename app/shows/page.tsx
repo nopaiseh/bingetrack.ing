@@ -5,11 +5,7 @@ import type { MediaCard } from "@/lib/types";
 import { buildPageSocialMetadata } from "@/lib/seo/page";
 
 export const metadata = {
-  ...buildPageSocialMetadata(
-    "电视节目",
-    "浏览已看、在看与想看的电视节目记录。",
-    "/shows",
-  ),
+  ...buildPageSocialMetadata("电视节目", "浏览已看、在看与想看的电视节目记录。", "/shows"),
   alternates: { canonical: "/shows" },
 };
 
@@ -46,12 +42,5 @@ export default async function SeriesPage() {
     handlePageDataError("series page", error);
   }
 
-  return (
-    <ShowsCatalog
-      watched={watchedRes}
-      want={wantRes}
-      watching={watchingRes}
-      stats={stats}
-    />
-  );
+  return <ShowsCatalog watched={watchedRes} want={wantRes} watching={watchingRes} stats={stats} />;
 }

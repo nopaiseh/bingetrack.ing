@@ -16,12 +16,7 @@ const STATUSES = new Set(["want_to_watch", "watching", "watched"]);
 const SORTS = new Set(["date_asc", "date_desc", "rating_asc", "rating_desc"]);
 
 // 拒绝非安全整数，并把合法数值限制在允许范围，约束分页请求大小。
-function parseBoundedInteger(
-  value: string | null,
-  fallback: number,
-  min: number,
-  max: number,
-) {
+function parseBoundedInteger(value: string | null, fallback: number, min: number, max: number) {
   if (value === null) return fallback;
   const parsed = Number(value);
   if (!Number.isSafeInteger(parsed)) throw new ApiValidationError(`Invalid integer: ${value}`);
@@ -29,14 +24,13 @@ function parseBoundedInteger(
 }
 
 /** 拆分并修剪逗号分隔列表，限制长度和项数，并在提供白名单时校验每项。 */
-function parseList(
-  value: string | null,
-  name: string,
-  allowed?: Set<string>,
-): string | undefined {
+function parseList(value: string | null, name: string, allowed?: Set<string>): string | undefined {
   if (!value) return undefined;
   if (value.length > 200) throw new ApiValidationError(`${name} is too long`);
-  const values = value.split(",").map(/* 去除列表项两端的空白。 */ (item) => item.trim()).filter(Boolean);
+  const values = value
+    .split(",")
+    .map(/* 去除列表项两端的空白。 */ (item) => item.trim())
+    .filter(Boolean);
   if (values.length > 20) throw new ApiValidationError(`Too many ${name} values`);
   if (allowed && values.some(/* 检查是否存在不属于白名单的值。 */ (item) => !allowed.has(item))) {
     throw new ApiValidationError(`Invalid ${name}`);

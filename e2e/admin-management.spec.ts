@@ -7,7 +7,10 @@ test("站长初始化、影视季集管理、公开更新、退出与非站长�
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const secret = process.env.SUPABASE_SERVICE_ROLE_KEY;
   const isLocal = url && ["localhost", "127.0.0.1"].includes(new URL(url).hostname);
-  test.skip(info.project.name !== "admin" || !isLocal || !secret, "完整写入测试只运行于配置了运维密钥的本地 Supabase 管理项目。");
+  test.skip(
+    info.project.name !== "admin" || !isLocal || !secret,
+    "完整写入测试只运行于配置了运维密钥的本地 Supabase 管理项目。",
+  );
   test.setTimeout(120_000);
   const db = createClient(url!, secret!, { auth: { persistSession: false, autoRefreshToken: false } });
   const prefix = `Admin E2E ${randomUUID()}`;
@@ -19,25 +22,36 @@ test("站长初始化、影视季集管理、公开更新、退出与非站长�
   async function initialize(email: string) {
     const { data, error } = await db.auth.admin.generateLink({ type: "magiclink", email });
     expect(error).toBeNull();
-    await page.goto(`/auth/confirm?${new URLSearchParams({ type: "magiclink", token_hash: data.properties!.hashed_token })}`);
+    await page.goto(
+      `/auth/confirm?${new URLSearchParams({ type: "magiclink", token_hash: data.properties!.hashed_token })}`,
+    );
     await page.getByRole("button", { name: "Continue / 继续登录" }).click();
   }
   /** 提交表单并从保存后的地址取得实际媒体 ID。 */
   async function save() {
     const title = await page.getByLabel("中文标题", { exact: true }).inputValue();
     const [response] = await Promise.all([
-      page.waitForResponse(/* 等待本次 Server Action 响应，不能把上次保存提示当作成功。 */ response => response.request().method() === "POST" && response.url().includes("/manage/media/"), { timeout: 15_000 }),
+      page.waitForResponse(
+        /* 等待本次 Server Action 响应，不能把上次保存提示当作成功。 */ (response) =>
+          response.request().method() === "POST" && response.url().includes("/manage/media/"),
+        { timeout: 15_000 },
+      ),
       page.getByRole("button", { name: "保存", exact: true }).click(),
     ]);
     expect(response.ok()).toBe(true);
     // RSC 响应可能持续流式传输；用本次实际写入和页面完成状态确认保存。
     let savedId = "";
-    await expect.poll(async () => {
-      const { data, error } = await db.from("media_items").select("id").eq("title", title).single();
-      expect(error).toBeNull();
-      savedId = data?.id ?? "";
-      return savedId;
-    }, { timeout: 15_000 }).not.toBe("");
+    await expect
+      .poll(
+        async () => {
+          const { data, error } = await db.from("media_items").select("id").eq("title", title).single();
+          expect(error).toBeNull();
+          savedId = data?.id ?? "";
+          return savedId;
+        },
+        { timeout: 15_000 },
+      )
+      .not.toBe("");
     await expect(page).toHaveURL(new RegExp(`/manage/media/${savedId}\\?saved=1&n=\\d+$`));
     await expect(page.getByRole("heading", { name: title, exact: true })).toBeVisible();
     await expect(page.getByRole("button", { name: "保存", exact: true })).toBeEnabled();
@@ -60,12 +74,18 @@ test("站长初始化、影视季集管理、公开更新、退出与非站长�
     await page.goto("/manage/media/new");
     await page.getByLabel("中文标题", { exact: true }).fill(`${prefix} unsaved`);
     const dialogs: string[] = [];
-    page.once("dialog", dialog => { dialogs.push(dialog.message()); void dialog.dismiss(); });
+    page.once("dialog", (dialog) => {
+      dialogs.push(dialog.message());
+      void dialog.dismiss();
+    });
     await page.goBack();
     await expect.poll(() => dialogs.length).toBe(1);
     await expect(page).toHaveURL(/\/manage\/media\/new$/);
     await expect(page.getByLabel("中文标题", { exact: true })).toHaveValue(`${prefix} unsaved`);
-    page.once("dialog", dialog => { dialogs.push(dialog.message()); void dialog.accept(); });
+    page.once("dialog", (dialog) => {
+      dialogs.push(dialog.message());
+      void dialog.accept();
+    });
     await page.goBack();
     await expect.poll(() => dialogs.length).toBe(2);
     await expect(page).toHaveURL(/\/manage$/);
@@ -74,8 +94,14 @@ test("站长初始化、影视季集管理、公开更新、退出与非站长�
     // 从侧栏离开只询问一次；守卫记录被跳转替换，之后每次后退都有可见变化，不会停在同一页。
     await page.goto("/manage/media/new");
     await page.getByLabel("中文标题", { exact: true }).fill(`${prefix} leave by link`);
-    page.once("dialog", dialog => { dialogs.push(dialog.message()); void dialog.accept(); });
-    await page.getByRole("navigation", { name: "内容管理分类" }).getByRole("link", { name: "电视节目", exact: true }).click();
+    page.once("dialog", (dialog) => {
+      dialogs.push(dialog.message());
+      void dialog.accept();
+    });
+    await page
+      .getByRole("navigation", { name: "内容管理分类" })
+      .getByRole("link", { name: "电视节目", exact: true })
+      .click();
     await expect(page).toHaveURL(/\/manage\?type=tv_show$/);
     expect(dialogs).toHaveLength(3);
     await page.goBack();
@@ -85,7 +111,12 @@ test("站长初始化、影视季集管理、公开更新、退出与非站长�
     expect(dialogs).toHaveLength(3);
 
     // 八类导航与关联资料可独立创建、修改和删除。
-    for (const [kind, label] of [["people", "人物"], ["collections", "系列"], ["genres", "类型"], ["regions", "地区"]]) {
+    for (const [kind, label] of [
+      ["people", "人物"],
+      ["collections", "系列"],
+      ["genres", "类型"],
+      ["regions", "地区"],
+    ]) {
       await page.goto(`/manage/references/${kind}/new`);
       await page.getByLabel("名称", { exact: true }).fill(`${prefix} ${kind}`);
       await page.getByRole("button", { name: "保存资料", exact: true }).click();

@@ -9,7 +9,9 @@ export function supabaseConnectOrigin(supabaseUrl: string | undefined, isDevelop
     const url = new URL(supabaseUrl ?? "");
     if (url.protocol === "https:") return url.origin;
     if (isDevelopment && LOOPBACK_HOSTS.includes(url.hostname)) return url.origin;
-  } catch { /* 使用下方回退值。 */ }
+  } catch {
+    /* 使用下方回退值。 */
+  }
   return "https://*.supabase.co";
 }
 
@@ -17,7 +19,11 @@ export function supabaseConnectOrigin(supabaseUrl: string | undefined, isDevelop
  * 生成全站 CSP。script-src 保留 'unsafe-inline'：改用 nonce 需要每个页面按请求渲染，会失去 ISR 与静态缓存，
  * 且 Next.js 的内联 RSC 数据脚本也依赖它；内联事件属性则单独用 script-src-attr 禁止。
  */
-export function buildContentSecurityPolicy(options: { isDevelopment: boolean; supabaseUrl?: string; sentryOrigin?: string }): string {
+export function buildContentSecurityPolicy(options: {
+  isDevelopment: boolean;
+  supabaseUrl?: string;
+  sentryOrigin?: string;
+}): string {
   const { isDevelopment, supabaseUrl, sentryOrigin } = options;
   return [
     "default-src 'self'",

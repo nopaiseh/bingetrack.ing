@@ -35,7 +35,11 @@ describe("详情页窄屏布局", () => {
 
   it("没有海报时用标题首字，有剧照地址时页头改为大图", () => {
     const { container, rerender } = render(
-      <MediaInformation media={{ ...media, cover_url: "", title: "复仇者联盟" }} seasons={null} releaseDateLabel="2026-12-18" />,
+      <MediaInformation
+        media={{ ...media, cover_url: "", title: "复仇者联盟" }}
+        seasons={null}
+        releaseDateLabel="2026-12-18"
+      />,
     );
     expect(container.querySelector("[data-poster] .letter-tile")).toHaveAttribute("data-initial", "复");
     expect(container.querySelector("[data-hero]")).toHaveAttribute("data-hero", "fallback");

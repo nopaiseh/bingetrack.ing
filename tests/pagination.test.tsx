@@ -31,7 +31,9 @@ test("管理分页保留筛选条件并可直接跳到任意显示的页码", ()
 });
 
 test("只有一页时不渲染分页", () => {
-  const { container } = render(<ManagePagination page={1} totalPages={1} params={{ q: "", type: "movie", parent: "" }} />);
+  const { container } = render(
+    <ManagePagination page={1} totalPages={1} params={{ q: "", type: "movie", parent: "" }} />,
+  );
   expect(container).toBeEmptyDOMElement();
 });
 
@@ -44,8 +46,19 @@ test("传入总数时显示当前范围和每页条数", () => {
 });
 
 test("关联资料分页使用所在列表的地址", () => {
-  render(<ManagePagination page={2} totalPages={26} params={{ q: "" }} basePath="/manage/references/people" label="资料列表分页" />);
+  render(
+    <ManagePagination
+      page={2}
+      totalPages={26}
+      params={{ q: "" }}
+      basePath="/manage/references/people"
+      label="资料列表分页"
+    />,
+  );
 
   expect(screen.getByRole("navigation", { name: "资料列表分页" })).toBeInTheDocument();
-  expect(screen.getByRole("link", { name: "第 26 页" })).toHaveAttribute("href", "/manage/references/people?q=&page=26");
+  expect(screen.getByRole("link", { name: "第 26 页" })).toHaveAttribute(
+    "href",
+    "/manage/references/people?q=&page=26",
+  );
 });

@@ -24,42 +24,50 @@ export default function DashboardYearPicker({
   const options = useMemo(
     /** 把年份转成字符串并按输入文本筛选，复用未变化的筛选结果。 */
     () =>
-      years.map(String).filter(/* 忽略大小写判断年份文本或展示文案是否包含输入词。 */ (year) => {
-        const q = query.toLowerCase();
-        return year.toLowerCase().includes(q) || formatYearLabel(year).toLowerCase().includes(q);
-      }),
+      years.map(String).filter(
+        /* 忽略大小写判断年份文本或展示文案是否包含输入词。 */ (year) => {
+          const q = query.toLowerCase();
+          return year.toLowerCase().includes(q) || formatYearLabel(year).toLowerCase().includes(q);
+        },
+      ),
     [query, years],
   );
 
-  useEffect(/* 注册点击外部关闭的监听，并在卸载时清理。 */ () => {
-    /** 点击选择框外部时关闭列表，清空查询和键盘定位状态。 */
-    function handleClickOutside(event: MouseEvent) {
-      const target = event.target as Node;
-      if (pickerRef.current && !pickerRef.current.contains(target) && !listRef.current?.contains(target)) {
-        setIsOpen(false);
-        setQuery("");
-        setActiveIndex(-1);
+  useEffect(
+    /* 注册点击外部关闭的监听，并在卸载时清理。 */ () => {
+      /** 点击选择框外部时关闭列表，清空查询和键盘定位状态。 */
+      function handleClickOutside(event: MouseEvent) {
+        const target = event.target as Node;
+        if (pickerRef.current && !pickerRef.current.contains(target) && !listRef.current?.contains(target)) {
+          setIsOpen(false);
+          setQuery("");
+          setActiveIndex(-1);
+        }
       }
-    }
-    document.addEventListener("mousedown", handleClickOutside);
-    return /* 移除年份选择框的外部点击监听。 */ () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
+      document.addEventListener("mousedown", handleClickOutside);
+      return /* 移除年份选择框的外部点击监听。 */ () => document.removeEventListener("mousedown", handleClickOutside);
+    },
+    [],
+  );
 
-  useLayoutEffect(/* 展开时把列表定位到触发器下方，并随滚动与缩放同步。 */ () => {
-    if (!isOpen) return;
-    /** 读取触发器位置，换算为视口右对齐的固定定位坐标。 */
-    function updatePosition() {
-      const rect = pickerRef.current?.getBoundingClientRect();
-      if (rect) setListPosition({ top: rect.bottom + 8, right: window.innerWidth - rect.right });
-    }
-    updatePosition();
-    window.addEventListener("resize", updatePosition);
-    window.addEventListener("scroll", updatePosition, true);
-    return /* 收起列表时移除定位监听。 */ () => {
-      window.removeEventListener("resize", updatePosition);
-      window.removeEventListener("scroll", updatePosition, true);
-    };
-  }, [isOpen]);
+  useLayoutEffect(
+    /* 展开时把列表定位到触发器下方，并随滚动与缩放同步。 */ () => {
+      if (!isOpen) return;
+      /** 读取触发器位置，换算为视口右对齐的固定定位坐标。 */
+      function updatePosition() {
+        const rect = pickerRef.current?.getBoundingClientRect();
+        if (rect) setListPosition({ top: rect.bottom + 8, right: window.innerWidth - rect.right });
+      }
+      updatePosition();
+      window.addEventListener("resize", updatePosition);
+      window.addEventListener("scroll", updatePosition, true);
+      return /* 收起列表时移除定位监听。 */ () => {
+        window.removeEventListener("resize", updatePosition);
+        window.removeEventListener("scroll", updatePosition, true);
+      };
+    },
+    [isOpen],
+  );
 
   /** 通知父组件选择年份，并关闭列表、清空输入和定位状态。 */
   function selectYear(year: string) {
@@ -75,34 +83,43 @@ export default function DashboardYearPicker({
         className="surface-control group flex w-35 cursor-pointer items-center gap-2 rounded-full py-2.75 pl-4 pr-3.5"
         onClick={/* 点击年份选择区域时展开候选列表。 */ () => setIsOpen(true)}
       >
-        <span className="i-material-symbols-calendar-today-rounded inline-block size-4 text-[var(--accent)] transition-colors group-hover:text-[var(--accent-hover)]" aria-hidden="true" />
+        <span
+          className="i-material-symbols-calendar-today-rounded inline-block size-4 text-[var(--accent)] transition-colors group-hover:text-[var(--accent-hover)]"
+          aria-hidden="true"
+        />
         <input
           type="text"
           value={isOpen ? query : formatYearLabel(selectedYear)}
-          onChange={/* 更新年份查询，展开列表并将键盘定位重置到首项。 */ (event) => {
-            setQuery(event.target.value);
-            setIsOpen(true);
-            setActiveIndex(0);
-          }}
-          onFocus={/* 输入框获得焦点时展开年份列表。 */ () => setIsOpen(true)}
-          onKeyDown={/* 用上下键定位年份、回车确认；Escape 关闭列表、清空查询并移开焦点。 */ (event) => {
-            if (event.key === "ArrowDown") {
-              event.preventDefault();
+          onChange={
+            /* 更新年份查询，展开列表并将键盘定位重置到首项。 */ (event) => {
+              setQuery(event.target.value);
               setIsOpen(true);
-              setActiveIndex(/* 向下移动一项，最多停在最后一个候选年份。 */ (index) => Math.min(index + 1, options.length - 1));
-            } else if (event.key === "ArrowUp") {
-              event.preventDefault();
-              setActiveIndex(/* 向上移动一项，最少停在首个候选年份。 */ (index) => Math.max(index - 1, 0));
-            } else if (event.key === "Enter" && activeIndex >= 0 && options[activeIndex]) {
-              event.preventDefault();
-              selectYear(options[activeIndex]);
-            } else if (event.key === "Escape") {
-              setIsOpen(false);
-              setQuery("");
-              setActiveIndex(-1);
-              event.currentTarget.blur();
+              setActiveIndex(0);
             }
-          }}
+          }
+          onFocus={/* 输入框获得焦点时展开年份列表。 */ () => setIsOpen(true)}
+          onKeyDown={
+            /* 用上下键定位年份、回车确认；Escape 关闭列表、清空查询并移开焦点。 */ (event) => {
+              if (event.key === "ArrowDown") {
+                event.preventDefault();
+                setIsOpen(true);
+                setActiveIndex(
+                  /* 向下移动一项，最多停在最后一个候选年份。 */ (index) => Math.min(index + 1, options.length - 1),
+                );
+              } else if (event.key === "ArrowUp") {
+                event.preventDefault();
+                setActiveIndex(/* 向上移动一项，最少停在首个候选年份。 */ (index) => Math.max(index - 1, 0));
+              } else if (event.key === "Enter" && activeIndex >= 0 && options[activeIndex]) {
+                event.preventDefault();
+                selectYear(options[activeIndex]);
+              } else if (event.key === "Escape") {
+                setIsOpen(false);
+                setQuery("");
+                setActiveIndex(-1);
+                event.currentTarget.blur();
+              }
+            }
+          }
           placeholder={formatYearLabel(selectedYear)}
           role="combobox"
           aria-label="筛选年份"
@@ -112,39 +129,53 @@ export default function DashboardYearPicker({
           aria-activedescendant={activeIndex >= 0 ? `dashboard-year-option-${activeIndex}` : undefined}
           className="w-full cursor-pointer bg-transparent text-sm text-white outline-none placeholder:text-fg-subtle"
         />
-        <span className={`i-material-symbols-expand-more-rounded inline-block size-3 text-fg-subtle transition-transform duration-300 ${isOpen ? "rotate-180 text-white" : "group-hover:text-white"}`} aria-hidden="true" />
+        <span
+          className={`i-material-symbols-expand-more-rounded inline-block size-3 text-fg-subtle transition-transform duration-300 ${isOpen ? "rotate-180 text-white" : "group-hover:text-white"}`}
+          aria-hidden="true"
+        />
       </label>
 
       {/* 列表挂到 body：嵌套在带 backdrop-filter 的面板内时，毛玻璃只能模糊面板自身而透出下方海报。 */}
-      {isOpen && listPosition && createPortal(
-        <div
-          ref={listRef}
-          className="surface-overlay fixed z-50 w-36 overflow-hidden rounded-2xl"
-          style={{ top: listPosition.top, right: listPosition.right }}
-        >
-          <div id="dashboard-year-options" role="listbox" aria-label="年份" className="custom-scrollbar flex max-h-64 flex-col overflow-y-auto p-1">
-            {options.length > 0 ? options.map(/* 将候选年份渲染为支持选中态和键盘定位的选项按钮。 */ (year, index) => (
-              <button
-                id={`dashboard-year-option-${index}`}
-                key={year}
-                type="button"
-                role="option"
-                aria-selected={selectedYear === year}
-                onMouseEnter={/* 将鼠标指向的年份设为当前活动选项。 */ () => setActiveIndex(index)}
-                onClick={/* 确认点击的年份并关闭选择列表。 */ () => selectYear(year)}
-                data-active={activeIndex === index}
-                data-current={selectedYear === year}
-                className="dropdown-option"
-              >
-                {formatYearLabel(year)}
-              </button>
-            )) : (
-              <div className="px-5 py-4 text-center text-sm text-fg-subtle">无结果</div>
-            )}
-          </div>
-        </div>,
-        document.body,
-      )}
+      {isOpen &&
+        listPosition &&
+        createPortal(
+          <div
+            ref={listRef}
+            className="surface-overlay fixed z-50 w-36 overflow-hidden rounded-2xl"
+            style={{ top: listPosition.top, right: listPosition.right }}
+          >
+            <div
+              id="dashboard-year-options"
+              role="listbox"
+              aria-label="年份"
+              className="custom-scrollbar flex max-h-64 flex-col overflow-y-auto p-1"
+            >
+              {options.length > 0 ? (
+                options.map(
+                  /* 将候选年份渲染为支持选中态和键盘定位的选项按钮。 */ (year, index) => (
+                    <button
+                      id={`dashboard-year-option-${index}`}
+                      key={year}
+                      type="button"
+                      role="option"
+                      aria-selected={selectedYear === year}
+                      onMouseEnter={/* 将鼠标指向的年份设为当前活动选项。 */ () => setActiveIndex(index)}
+                      onClick={/* 确认点击的年份并关闭选择列表。 */ () => selectYear(year)}
+                      data-active={activeIndex === index}
+                      data-current={selectedYear === year}
+                      className="dropdown-option"
+                    >
+                      {formatYearLabel(year)}
+                    </button>
+                  ),
+                )
+              ) : (
+                <div className="px-5 py-4 text-center text-sm text-fg-subtle">无结果</div>
+              )}
+            </div>
+          </div>,
+          document.body,
+        )}
     </div>
   );
 }

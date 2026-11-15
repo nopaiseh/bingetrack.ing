@@ -8,8 +8,30 @@ import SearchTag from "@/components/SearchTag";
 import type { MediaCard } from "@/lib/types";
 
 const series: MediaCard[] = [
-  { id: "it", title: "体能之巅：百人大挑战 意大利", date: "2026-01-01", release_year: "2026", rating: 8.3, genres: ["竞技", "综艺"], languages: ["意大利语"], cover_url: "", type: "shows", status: "watched" },
-  { id: "mx", title: "体能之巅：百人大挑战 墨西哥", date: "2026-01-01", release_year: "2026", rating: 8.2, genres: ["竞技"], languages: ["西班牙语"], cover_url: "", type: "shows", status: "watched" },
+  {
+    id: "it",
+    title: "体能之巅：百人大挑战 意大利",
+    date: "2026-01-01",
+    release_year: "2026",
+    rating: 8.3,
+    genres: ["竞技", "综艺"],
+    languages: ["意大利语"],
+    cover_url: "",
+    type: "shows",
+    status: "watched",
+  },
+  {
+    id: "mx",
+    title: "体能之巅：百人大挑战 墨西哥",
+    date: "2026-01-01",
+    release_year: "2026",
+    rating: 8.2,
+    genres: ["竞技"],
+    languages: ["西班牙语"],
+    cover_url: "",
+    type: "shows",
+    status: "watched",
+  },
 ];
 
 test("series cards keep two lines of title instead of a single truncated line", () => {

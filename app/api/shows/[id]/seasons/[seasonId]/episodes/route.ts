@@ -7,10 +7,7 @@ import { readSeasonBrowseQuery, SEASON_EPISODE_PAGE_SIZE, type SeasonEpisodeList
 const PRIVATE_NO_STORE = { "Cache-Control": "private, no-store" };
 
 /** 按与季页相同的分页规则返回单集列表。默认季页不再读取查询串，筛选和翻页改由这里提供可缓存的数据。 */
-export async function GET(
-  request: Request,
-  { params }: { params: Promise<{ id: string; seasonId: string }> },
-) {
+export async function GET(request: Request, { params }: { params: Promise<{ id: string; seasonId: string }> }) {
   try {
     const { id, seasonId } = await params;
     if (!isMediaId(id) || !isMediaId(seasonId)) {
@@ -19,14 +16,7 @@ export async function GET(
 
     const query = readSeasonBrowseQuery(new URL(request.url).search);
     const [page, nextEpisodeNumber] = await Promise.all([
-      getCachedSeasonEpisodes(
-        id,
-        seasonId,
-        query.page,
-        SEASON_EPISODE_PAGE_SIZE,
-        query.status,
-        query.order,
-      ),
+      getCachedSeasonEpisodes(id, seasonId, query.page, SEASON_EPISODE_PAGE_SIZE, query.status, query.order),
       getCachedSeasonNextEpisodeNumber(id, seasonId),
     ]);
     if (!page) {

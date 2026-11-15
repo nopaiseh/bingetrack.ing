@@ -9,9 +9,12 @@ import { referenceTypes, type ReferenceType } from "@/lib/admin/catalog";
 const UNTAGGED_PUBLIC_PATHS = ["/", "/movies", "/shows", "/sitemap.xml"];
 
 /** 从查询结果中取出非空 ID 列；任一查询失败时返回 null。 */
-function column<K extends string>(result: { data: Record<K, string | null>[] | null; error: unknown }, key: K): string[] | null {
+function column<K extends string>(
+  result: { data: Record<K, string | null>[] | null; error: unknown },
+  key: K,
+): string[] | null {
   if (result.error) return null;
-  return (result.data ?? []).flatMap(/* 保留非空 ID。 */ (row) => row[key] ? [row[key] as string] : []);
+  return (result.data ?? []).flatMap(/* 保留非空 ID。 */ (row) => (row[key] ? [row[key] as string] : []));
 }
 
 /**
@@ -30,18 +33,29 @@ export async function affectedMediaIds(db: SupabaseClient, ids: string[]): Promi
   const seasonShows = column(seasonRows, "series_id");
   if (!episodeSeasons || !seasonShows) return null;
 
-  const episodeShows = episodeSeasons.length > 0
-    ? column(await db.from("tv_seasons").select("series_id").in("id", episodeSeasons), "series_id")
-    : [];
+  const episodeShows =
+    episodeSeasons.length > 0
+      ? column(await db.from("tv_seasons").select("series_id").in("id", episodeSeasons), "series_id")
+      : [];
   if (!episodeShows) return null;
 
   const pages = [...new Set([...targets, ...seasonShows, ...episodeShows])];
-  const collections = column(await db.from("media_item_series").select("series_id").in("media_item_id", pages), "series_id");
+  const collections = column(
+    await db.from("media_item_series").select("series_id").in("media_item_id", pages),
+    "series_id",
+  );
   if (!collections) return null;
 
-  const members = collections.length > 0
-    ? column(await db.from("media_item_series").select("media_item_id").in("series_id", [...new Set(collections)]), "media_item_id")
-    : [];
+  const members =
+    collections.length > 0
+      ? column(
+          await db
+            .from("media_item_series")
+            .select("media_item_id")
+            .in("series_id", [...new Set(collections)]),
+          "media_item_id",
+        )
+      : [];
   if (!members) return null;
 
   return [...new Set([...pages, ...members])];
@@ -51,7 +65,11 @@ export async function affectedMediaIds(db: SupabaseClient, ids: string[]): Promi
  * 找出引用指定资料（人物、系列、类型、地区、语言）的公开详情页，再按 affectedMediaIds 扩展到所属电视节目与系列成员。
  * 删除或合并前调用，级联删除会先移除关联行。查询失败时返回 null，由调用方退回全站失效。
  */
-export async function referenceMediaIds(db: SupabaseClient, kind: ReferenceType, ids: string[]): Promise<string[] | null> {
+export async function referenceMediaIds(
+  db: SupabaseClient,
+  kind: ReferenceType,
+  ids: string[],
+): Promise<string[] | null> {
   const { link, key } = referenceTypes[kind];
   const linked = column(await db.from(link).select("media_item_id").in(key, ids), "media_item_id");
   return linked && affectedMediaIds(db, [...new Set(linked)]);

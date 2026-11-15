@@ -54,13 +54,18 @@ function fakeDb(handle: (query: Query) => Result) {
     }
     return builder;
   });
-  const rpc = vi.fn(async (): Promise<{ data: string | null; error: { code?: string } | null }> => ({ data: movieA, error: null }));
+  const rpc = vi.fn(async (): Promise<{ data: string | null; error: { code?: string } | null }> => ({
+    data: movieA,
+    error: null,
+  }));
   return { db: { from, rpc } as unknown as SupabaseClient, rpc };
 }
 
 function useDb(handle: (query: Query) => Result) {
   const built = fakeDb(handle);
-  vi.mocked(requireOwner).mockResolvedValue({ db: built.db, user: {} } as unknown as Awaited<ReturnType<typeof requireOwner>>);
+  vi.mocked(requireOwner).mockResolvedValue({ db: built.db, user: {} } as unknown as Awaited<
+    ReturnType<typeof requireOwner>
+  >);
   return built;
 }
 
@@ -104,7 +109,9 @@ describe("继续看数据缓存", () => {
 
 describe("观看写入失效继续看缓存", () => {
   it("批量把电影标成已看时失效 media:lists", async () => {
-    useDb((query) => query.table === "media_items" ? { data: [{ id: movieA }] } : { data: [{ media_item_id: movieA }] });
+    useDb((query) =>
+      query.table === "media_items" ? { data: [{ id: movieA }] } : { data: [{ media_item_id: movieA }] },
+    );
     await setMovieStatus([movieA], "watched");
     expect(revalidateTag).toHaveBeenCalledWith("media:lists", { expire: 0 });
   });
@@ -148,7 +155,9 @@ describe("观看写入失效继续看缓存", () => {
   });
 
   it("观看状态没有写进数据库时不失效", async () => {
-    useDb((query) => query.table === "tracking" ? { data: null, error: { code: "XX000" } } : { data: [{ id: movieA }] });
+    useDb((query) =>
+      query.table === "tracking" ? { data: null, error: { code: "XX000" } } : { data: [{ id: movieA }] },
+    );
     await expect(setMovieStatus([movieA], "watched")).rejects.toThrow("状态更新失败");
     expect(revalidateTag).not.toHaveBeenCalled();
 

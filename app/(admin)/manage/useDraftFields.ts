@@ -7,7 +7,7 @@ export function useDraftFields() {
     value: values[name] ?? String(initial ?? ""),
     onChange(event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) {
       const value = event.target.value;
-      setValues(previous => ({ ...previous, [name]: value }));
+      setValues((previous) => ({ ...previous, [name]: value }));
     },
   });
   return Object.assign(field, { reset: () => setValues({}) });

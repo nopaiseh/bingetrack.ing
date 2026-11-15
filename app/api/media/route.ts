@@ -9,7 +9,10 @@ export async function GET(request: Request) {
   try {
     const params = parseMediaSearchParams(new URL(request.url).searchParams);
     // 只在带类型／地区／语言筛选时读取选项（数据缓存），未知值与搜索页一样视为无效条件。
-    if ((params.genre || params.region || params.language) && !hasOnlyKnownTagFilters(params, await fetchSearchOptionsServer())) {
+    if (
+      (params.genre || params.region || params.language) &&
+      !hasOnlyKnownTagFilters(params, await fetchSearchOptionsServer())
+    ) {
       throw new ApiValidationError("Unknown genre, region or language");
     }
     const results = await searchMediaServer(params);

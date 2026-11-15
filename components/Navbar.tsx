@@ -64,7 +64,7 @@ export default function Navbar() {
 
   /** 首页要求路径完全匹配，其他栏目按路径前缀判断当前状态。 */
   const isActive = (href: string) => {
-    return (href === "/") ? pathname === href : pathname.startsWith(href);
+    return href === "/" ? pathname === href : pathname.startsWith(href);
   };
 
   /** 阻止表单默认提交，修剪搜索词，再导航到带编码关键词的搜索页。 */
@@ -86,93 +86,108 @@ export default function Navbar() {
       <div aria-hidden="true" className="navbar-scroll-blur-mask" />
       <div className="container mx-auto max-w-7xl px-4 pt-2.5 sm:px-6 sm:pt-4 lg:px-8">
         <div className="surface-panel pointer-events-auto flex h-14 w-full items-center justify-between px-4 sm:px-6 rounded-2xl">
-        <div className="flex items-center gap-6">
-          <Link
-            href="/"
-            className="flex items-center gap-2.5 group cursor-pointer"
-          >
-            <BrandMark className="size-6 text-white/90 group-hover:rotate-12 transition-transform duration-300" />
-            <span className="font-mono text-xl font-light tracking-tight text-fg">
-              bingetrack
-              <span className="text-[var(--accent)] font-black -mx-0.5">
-                .
+          <div className="flex items-center gap-6">
+            <Link href="/" className="flex items-center gap-2.5 group cursor-pointer">
+              <BrandMark className="size-6 text-white/90 group-hover:rotate-12 transition-transform duration-300" />
+              <span className="font-mono text-xl font-light tracking-tight text-fg">
+                bingetrack
+                <span className="text-[var(--accent)] font-black -mx-0.5">.</span>
+                ing
               </span>
-              ing
-            </span>
-          </Link>
+            </Link>
 
-          <div className="hidden md:flex items-center gap-1.5 text-sm font-medium">
-            {navItems.map(/* 为桌面导航生成栏目链接并标记当前栏目。 */ (item) => (
+            <div className="hidden md:flex items-center gap-1.5 text-sm font-medium">
+              {navItems.map(
+                /* 为桌面导航生成栏目链接并标记当前栏目。 */ (item) => (
+                  <Link
+                    key={item.name}
+                    href={item.href}
+                    aria-current={isActive(item.href) ? "page" : undefined}
+                    className={`rounded-lg px-3 py-1.5 transition-all duration-200 ${
+                      isActive(item.href)
+                        ? "surface-active text-[var(--accent)] font-semibold shadow-xs"
+                        : "text-fg-muted hover:text-white hover:bg-white/5"
+                    }`}
+                  >
+                    {item.name}
+                  </Link>
+                ),
+              )}
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3">
+            {!onSearchPage && (
+              <form onSubmit={handleSearch} className="relative group hidden md:block">
+                <button
+                  type="submit"
+                  aria-label="搜索"
+                  className="absolute inset-y-0 left-0 flex items-center pl-3.5 cursor-pointer z-10"
+                >
+                  <span
+                    className="i-material-symbols-search-rounded inline-block size-4 text-fg-subtle group-focus-within:text-white transition-colors duration-300"
+                    aria-hidden="true"
+                  />
+                </button>
+                <input
+                  ref={searchInputRef}
+                  name="q"
+                  type="text"
+                  placeholder="搜索"
+                  maxLength={MAX_SEARCH_QUERY_LENGTH}
+                  title={`搜索词最多 ${MAX_SEARCH_QUERY_LENGTH} 个字符`}
+                  className="surface-control text-white text-sm rounded-full
+              block w-44 lg:focus:w-56 pl-10 pr-9 py-1.5 transition-all duration-500 ease-out
+              placeholder-white/50 outline-none"
+                />
+                <kbd className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 inline-flex items-center rounded border border-white/15 bg-white/5 px-1.5 py-0.5 text-[10px] font-mono text-fg-subtle group-focus-within:opacity-0 transition-opacity">
+                  ⌘K
+                </kbd>
+              </form>
+            )}
+
+            {/* 768px 以下由底部标签栏承担栏目与搜索入口；站长的管理入口不在标签栏中，单独保留在顶部。 */}
+            {auth.owner && (
               <Link
-                key={item.name}
-                href={item.href}
-                aria-current={isActive(item.href) ? "page" : undefined}
-                className={`rounded-lg px-3 py-1.5 transition-all duration-200 ${
-                  isActive(item.href)
-                    ? "surface-active text-[var(--accent)] font-semibold shadow-xs" 
-                    : "text-fg-muted hover:text-white hover:bg-white/5" 
-                }`}
+                href="/manage"
+                aria-label="管理"
+                aria-current={isActive("/manage") ? "page" : undefined}
+                className="surface-control flex size-9 shrink-0 cursor-pointer items-center justify-center rounded-full text-fg-secondary outline-none transition-all duration-200 hover:text-white active:scale-95 md:hidden"
               >
-                {item.name}
+                <span className="i-material-symbols-settings-rounded inline-block size-4.5" aria-hidden="true" />
               </Link>
-            ))}
+            )}
+
+            {auth.signedIn ? (
+              <form action="/auth/logout" method="POST">
+                <button
+                  type="submit"
+                  className="surface-control shrink-0 cursor-pointer rounded-full px-3.5 py-1.5 text-sm font-medium text-fg transition-all duration-200 hover:text-white active:scale-95"
+                >
+                  退出
+                </button>
+              </form>
+            ) : (
+              <button
+                type="button"
+                disabled={auth.busy}
+                onClick={() => void auth.signIn()}
+                className="surface-control shrink-0 cursor-pointer rounded-full px-3.5 py-1.5 text-sm font-medium text-fg transition-all duration-200 hover:text-white active:scale-95 disabled:cursor-not-allowed disabled:opacity-60 disabled:active:scale-100"
+              >
+                {auth.busy ? "验证中…" : "登录"}
+              </button>
+            )}
           </div>
         </div>
 
-        <div className="flex items-center gap-3">
-          {!onSearchPage && <form
-            onSubmit={handleSearch}
-            className="relative group hidden md:block"
+        {auth.error && (
+          <p
+            role="alert"
+            className="pointer-events-auto mt-2 w-full rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-300 backdrop-blur-xl"
           >
-            <button
-              type="submit"
-              aria-label="搜索"
-              className="absolute inset-y-0 left-0 flex items-center pl-3.5 cursor-pointer z-10"
-            >
-              <span className="i-material-symbols-search-rounded inline-block size-4 text-fg-subtle group-focus-within:text-white transition-colors duration-300" aria-hidden="true" />
-            </button>
-            <input
-              ref={searchInputRef}
-              name="q"
-              type="text"
-              placeholder="搜索"
-              maxLength={MAX_SEARCH_QUERY_LENGTH}
-              title={`搜索词最多 ${MAX_SEARCH_QUERY_LENGTH} 个字符`}
-              className="surface-control text-white text-sm rounded-full
-              block w-44 lg:focus:w-56 pl-10 pr-9 py-1.5 transition-all duration-500 ease-out
-              placeholder-white/50 outline-none"
-            />
-            <kbd className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 inline-flex items-center rounded border border-white/15 bg-white/5 px-1.5 py-0.5 text-[10px] font-mono text-fg-subtle group-focus-within:opacity-0 transition-opacity">
-              ⌘K
-            </kbd>
-          </form>}
-
-          {/* 768px 以下由底部标签栏承担栏目与搜索入口；站长的管理入口不在标签栏中，单独保留在顶部。 */}
-          {auth.owner && (
-            <Link
-              href="/manage"
-              aria-label="管理"
-              aria-current={isActive("/manage") ? "page" : undefined}
-              className="surface-control flex size-9 shrink-0 cursor-pointer items-center justify-center rounded-full text-fg-secondary outline-none transition-all duration-200 hover:text-white active:scale-95 md:hidden"
-            >
-              <span className="i-material-symbols-settings-rounded inline-block size-4.5" aria-hidden="true" />
-            </Link>
-          )}
-
-          {auth.signedIn ? (
-            <form action="/auth/logout" method="POST">
-              <button type="submit" className="surface-control shrink-0 cursor-pointer rounded-full px-3.5 py-1.5 text-sm font-medium text-fg transition-all duration-200 hover:text-white active:scale-95">退出</button>
-            </form>
-          ) : (
-            <button type="button" disabled={auth.busy} onClick={() => void auth.signIn()} className="surface-control shrink-0 cursor-pointer rounded-full px-3.5 py-1.5 text-sm font-medium text-fg transition-all duration-200 hover:text-white active:scale-95 disabled:cursor-not-allowed disabled:opacity-60 disabled:active:scale-100">
-              {auth.busy ? "验证中…" : "登录"}
-            </button>
-          )}
-
-        </div>
-      </div>
-
-      {auth.error && <p role="alert" className="pointer-events-auto mt-2 w-full rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-300 backdrop-blur-xl">{auth.error}</p>}
+            {auth.error}
+          </p>
+        )}
       </div>
     </nav>
   );

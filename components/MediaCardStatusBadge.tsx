@@ -40,7 +40,9 @@ export default function MediaCardStatusBadge({
     <div
       data-testid="media-card-status-badge"
       className={`pointer-events-none inline-flex items-center gap-1.5 rounded-full border px-2 py-1 text-xs font-medium ${
-        placement === "overlay" ? "absolute top-2 right-2 z-10 bg-[var(--canvas)] transition-opacity duration-300" : "bg-transparent"
+        placement === "overlay"
+          ? "absolute top-2 right-2 z-10 bg-[var(--canvas)] transition-opacity duration-300"
+          : "bg-transparent"
       } ${config.borderClass} ${config.textClass} ${className}`}
       aria-label={`观看状态：${config.label}`}
       title={config.label}
@@ -57,4 +59,3 @@ export default function MediaCardStatusBadge({
     </div>
   );
 }
-

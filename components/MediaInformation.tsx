@@ -37,9 +37,19 @@ function releaseFact(media: Media, releaseDateLabel?: string): string {
 /** 海报。没有封面时用标题首字，不依赖后端的主色字段。 */
 function MediaPoster({ media }: { media: Media }) {
   return (
-    <div data-poster className="relative aspect-2/3 w-full overflow-hidden rounded-xl shadow-[0_12px_30px_-16px_rgba(0,0,0,0.8)]">
+    <div
+      data-poster
+      className="relative aspect-2/3 w-full overflow-hidden rounded-xl shadow-[0_12px_30px_-16px_rgba(0,0,0,0.8)]"
+    >
       {media.cover_url ? (
-        <Image src={media.cover_url} alt="" fill sizes="(max-width: 639px) 84px, 184px" className="object-cover" priority={!media.backdrop_url} />
+        <Image
+          src={media.cover_url}
+          alt=""
+          fill
+          sizes="(max-width: 639px) 84px, 184px"
+          className="object-cover"
+          priority={!media.backdrop_url}
+        />
       ) : (
         <LetterTile title={media.title} />
       )}
@@ -107,28 +117,35 @@ function CastRoster({ media }: { media: Media }) {
   return (
     <div className="cast-roster">
       <ul className="grid grid-cols-1 gap-2 sm:grid-cols-2 sm:gap-3 lg:grid-cols-4">
-        {casts.map(/* 一张演员卡片：首字头像、姓名，有角色时附注饰演。 */ (name, index) => {
-          const character = media.characters?.[index];
-          return (
-            <li key={`${name}-${index}`} className="cast-card min-w-0">
-              <Link
-                href={castHref(name)}
-                className="surface-panel flex min-h-11 items-center gap-3 rounded-2xl px-3 py-2.5 transition-colors hover:bg-[var(--surface-3)]"
-              >
-                <LetterTile title={name} avatar />
-                <span className="min-w-0">
-                  <span className="block truncate text-sm font-semibold text-fg">{character ? `${name} ` : name}</span>
-                  {character ? <span className="block truncate text-sm text-fg-muted">饰 {character}</span> : null}
-                </span>
-              </Link>
-            </li>
-          );
-        })}
+        {casts.map(
+          /* 一张演员卡片：首字头像、姓名，有角色时附注饰演。 */ (name, index) => {
+            const character = media.characters?.[index];
+            return (
+              <li key={`${name}-${index}`} className="cast-card min-w-0">
+                <Link
+                  href={castHref(name)}
+                  className="surface-panel flex min-h-11 items-center gap-3 rounded-2xl px-3 py-2.5 transition-colors hover:bg-[var(--surface-3)]"
+                >
+                  <LetterTile title={name} avatar />
+                  <span className="min-w-0">
+                    <span className="block truncate text-sm font-semibold text-fg">
+                      {character ? `${name} ` : name}
+                    </span>
+                    {character ? <span className="block truncate text-sm text-fg-muted">饰 {character}</span> : null}
+                  </span>
+                </Link>
+              </li>
+            );
+          },
+        )}
       </ul>
       {casts.length > 4 ? (
         <div className="cast-more-toggle mt-3 sm:mt-0">
           <input id="cast-more" type="checkbox" className="cast-more sr-only" />
-          <label htmlFor="cast-more" className="inline-flex min-h-10 cursor-pointer items-center text-sm font-medium text-[var(--accent-hover)]">
+          <label
+            htmlFor="cast-more"
+            className="inline-flex min-h-10 cursor-pointer items-center text-sm font-medium text-[var(--accent-hover)]"
+          >
             <span className="cast-more-closed">查看全部 {casts.length} 位</span>
             <span className="cast-more-open">收起</span>
           </label>
@@ -178,7 +195,11 @@ export default function MediaInformation({
             <div className="detail-hero-scrim" aria-hidden="true" />
           </>
         ) : null}
-        {watermark ? <p className="detail-hero-mark" aria-hidden="true">{watermark}</p> : null}
+        {watermark ? (
+          <p className="detail-hero-mark" aria-hidden="true">
+            {watermark}
+          </p>
+        ) : null}
 
         <div className="container relative z-10 mx-auto max-w-7xl px-4 pt-24 sm:px-6 lg:px-8">
           <Suspense fallback={<DefaultMediaBackLink type={media.type === "shows" ? "shows" : "movies"} />}>
@@ -203,14 +224,30 @@ export default function MediaInformation({
               ) : null}
               <p className="mt-3 flex flex-wrap items-center gap-x-2 gap-y-1.5 text-sm text-fg-secondary">
                 {yearLabel ? <span className="font-mono">{yearLabel}</span> : null}
-                {runtimeLabel ? <><span aria-hidden="true" className="text-fg-subtle">·</span><span>{runtimeLabel}</span></> : null}
+                {runtimeLabel ? (
+                  <>
+                    <span aria-hidden="true" className="text-fg-subtle">
+                      ·
+                    </span>
+                    <span>{runtimeLabel}</span>
+                  </>
+                ) : null}
                 {genres.map((genre) => (
                   <span key={genre} className="inline-flex items-center gap-2">
-                    <span aria-hidden="true" className="text-fg-subtle">·</span>
+                    <span aria-hidden="true" className="text-fg-subtle">
+                      ·
+                    </span>
                     {genre}
                   </span>
                 ))}
-                {upcoming ? <><span aria-hidden="true" className="text-fg-subtle">·</span><UpcomingChip /></> : null}
+                {upcoming ? (
+                  <>
+                    <span aria-hidden="true" className="text-fg-subtle">
+                      ·
+                    </span>
+                    <UpcomingChip />
+                  </>
+                ) : null}
               </p>
             </div>
 
@@ -238,18 +275,25 @@ export default function MediaInformation({
           <Fact label="导演">
             {media.directors && media.directors.length > 0 ? (
               <span className="inline-flex flex-wrap gap-x-1">
-                {media.directors.map(/* 导演名可以搜到此人的作品，视觉上仍是一行文字。 */ (name, index) => (
-                  <span key={name}>
-                    {index > 0 ? "、" : ""}
-                    <Link href={directorHref(name)} className="underline-offset-4 hover:text-[var(--accent-hover)] hover:underline">{name}</Link>
-                  </span>
-                ))}
+                {media.directors.map(
+                  /* 导演名可以搜到此人的作品，视觉上仍是一行文字。 */ (name, index) => (
+                    <span key={name}>
+                      {index > 0 ? "、" : ""}
+                      <Link
+                        href={directorHref(name)}
+                        className="underline-offset-4 hover:text-[var(--accent-hover)] hover:underline"
+                      >
+                        {name}
+                      </Link>
+                    </span>
+                  ),
+                )}
               </span>
-            ) : "—"}
+            ) : (
+              "—"
+            )}
           </Fact>
-          <Fact label="地区 / 语言">
-            {[...(media.regions ?? []), ...(media.languages ?? [])].join(" · ") || "—"}
-          </Fact>
+          <Fact label="地区 / 语言">{[...(media.regions ?? []), ...(media.languages ?? [])].join(" · ") || "—"}</Fact>
           <Fact label="我的评分">
             {score == null ? (
               <span className="text-fg-secondary">未评分</span>
@@ -266,7 +310,12 @@ export default function MediaInformation({
           <section>
             <h2 className="text-lg font-semibold text-fg">剧情简介</h2>
             <div className="mt-3">
-              <ClampedCopy text={media.summary || "暂无简介。"} persistClamp expandLabel="展开全文 ↓" collapseLabel="收起全文 ↑" />
+              <ClampedCopy
+                text={media.summary || "暂无简介。"}
+                persistClamp
+                expandLabel="展开全文 ↓"
+                collapseLabel="收起全文 ↑"
+              />
             </div>
           </section>
 
@@ -274,17 +323,31 @@ export default function MediaInformation({
             <dl className="space-y-4">
               {media.series && media.series.length > 0 ? (
                 <SideRow label="系列">
-                  {media.series.map((name) => <SearchTag key={name} label={name} category="series" />)}
+                  {media.series.map((name) => (
+                    <SearchTag key={name} label={name} category="series" />
+                  ))}
                 </SideRow>
               ) : null}
               <SideRow label="类型">
-                {media.genres?.length ? media.genres.map((name) => <SearchTag key={name} label={name} category="genre" />) : <span className="pt-2 text-sm text-fg-muted">—</span>}
+                {media.genres?.length ? (
+                  media.genres.map((name) => <SearchTag key={name} label={name} category="genre" />)
+                ) : (
+                  <span className="pt-2 text-sm text-fg-muted">—</span>
+                )}
               </SideRow>
               <SideRow label="地区">
-                {media.regions?.length ? media.regions.map((name) => <SearchTag key={name} label={name} category="region" />) : <span className="pt-2 text-sm text-fg-muted">—</span>}
+                {media.regions?.length ? (
+                  media.regions.map((name) => <SearchTag key={name} label={name} category="region" />)
+                ) : (
+                  <span className="pt-2 text-sm text-fg-muted">—</span>
+                )}
               </SideRow>
               <SideRow label="语言">
-                {media.languages?.length ? media.languages.map((name) => <SearchTag key={name} label={name} category="language" />) : <span className="pt-2 text-sm text-fg-muted">—</span>}
+                {media.languages?.length ? (
+                  media.languages.map((name) => <SearchTag key={name} label={name} category="language" />)
+                ) : (
+                  <span className="pt-2 text-sm text-fg-muted">—</span>
+                )}
               </SideRow>
               <SideRow label="原名">
                 <span className="pt-2 text-sm text-fg">{media.alternate_title?.trim() || media.title}</span>
@@ -304,7 +367,9 @@ export default function MediaInformation({
         </section>
 
         {seasons ? <SeasonRow seriesId={media.id} seasons={seasons} /> : null}
-        {relatedContent ? <div className={seasons ? "empty:hidden" : "mt-12 empty:hidden"}>{relatedContent}</div> : null}
+        {relatedContent ? (
+          <div className={seasons ? "empty:hidden" : "mt-12 empty:hidden"}>{relatedContent}</div>
+        ) : null}
       </div>
     </>
   );

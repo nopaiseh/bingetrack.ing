@@ -13,6 +13,7 @@ export function tmdbImageUrl(url: string | null | undefined, size: TmdbImageSize
 
 /** 选出不小于所需宽度的最小档位，超过最大档位时使用最大档位。 */
 export function tmdbImageSizeForWidth(width: number): TmdbImageSize {
-  const match = TMDB_IMAGE_WIDTHS.find(candidate => candidate >= width) ?? TMDB_IMAGE_WIDTHS[TMDB_IMAGE_WIDTHS.length - 1];
+  const match =
+    TMDB_IMAGE_WIDTHS.find((candidate) => candidate >= width) ?? TMDB_IMAGE_WIDTHS[TMDB_IMAGE_WIDTHS.length - 1];
   return `w${match}`;
 }

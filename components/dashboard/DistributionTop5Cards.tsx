@@ -15,9 +15,14 @@ function DistributionCard({ title, icon, items }: { title: string; icon: string;
       <div className="flex flex-col gap-3">
         {items.map((item) => (
           <div key={item.name} className="flex items-center gap-3">
-            <span className="w-20 truncate text-sm text-fg-secondary" title={item.name}>{item.name}</span>
+            <span className="w-20 truncate text-sm text-fg-secondary" title={item.name}>
+              {item.name}
+            </span>
             <div className="progress-track h-1.5 flex-1 overflow-hidden rounded-full">
-              <div className="progress-fill h-full rounded-full transition-all duration-500" style={{ width: `${item.percent}%` }} />
+              <div
+                className="progress-fill h-full rounded-full transition-all duration-500"
+                style={{ width: `${item.percent}%` }}
+              />
             </div>
             <span className="text-xs text-fg-muted w-8 text-right font-mono">{item.percent}%</span>
           </div>
@@ -32,10 +37,21 @@ function DistributionCard({ title, icon, items }: { title: string; icon: string;
 export default function DistributionTop5Cards({ distribution }: { distribution: MediaDistribution }) {
   return (
     <div className="grid grid-cols-1 items-stretch gap-4 md:grid-cols-2 md:gap-6 lg:grid-cols-3">
-      <DistributionCard title="影视产地分布 Top 5" icon="i-material-symbols-public-rounded" items={distribution.regions} />
-      <DistributionCard title="主要语言 Top 5" icon="i-material-symbols-translate-rounded" items={distribution.languages} />
-      <DistributionCard title="主要类型 Top 5" icon="i-material-symbols-more-horiz-rounded" items={distribution.genres} />
+      <DistributionCard
+        title="影视产地分布 Top 5"
+        icon="i-material-symbols-public-rounded"
+        items={distribution.regions}
+      />
+      <DistributionCard
+        title="主要语言 Top 5"
+        icon="i-material-symbols-translate-rounded"
+        items={distribution.languages}
+      />
+      <DistributionCard
+        title="主要类型 Top 5"
+        icon="i-material-symbols-more-horiz-rounded"
+        items={distribution.genres}
+      />
     </div>
   );
 }
-

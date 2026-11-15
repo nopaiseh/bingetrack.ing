@@ -44,9 +44,7 @@ function extractBearerToken(request: NextRequest): string | null {
 /** 解析并校验站内回跳地址，拒绝任何外部或协议相对路径。 */
 function resolveSafeNext(next: string | null, origin: string): string {
   const resolved = next?.startsWith("/") ? new URL(next, origin) : null;
-  return resolved?.origin === origin
-    ? `${resolved.pathname}${resolved.search}${resolved.hash}`
-    : "/manage";
+  return resolved?.origin === origin ? `${resolved.pathname}${resolved.search}${resolved.hash}` : "/manage";
 }
 
 function notFound() {

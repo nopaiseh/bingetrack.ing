@@ -1,7 +1,16 @@
 import "server-only";
 import { cache } from "react";
 import { unstable_cache } from "next/cache";
-import { getMediaById, getSeasonEpisodes, getSeasonNextEpisodeNumber, getSeasonsBySeriesId, searchMediaServer, fetchTopMediaServer, fetchMediaDistributionsServer, fetchUpcomingReleasesServer } from "./media-repo";
+import {
+  getMediaById,
+  getSeasonEpisodes,
+  getSeasonNextEpisodeNumber,
+  getSeasonsBySeriesId,
+  searchMediaServer,
+  fetchTopMediaServer,
+  fetchMediaDistributionsServer,
+  fetchUpcomingReleasesServer,
+} from "./media-repo";
 import { reportHandledError } from "@/lib/report-error";
 import { parseMediaSearchParams } from "@/lib/api/media-params";
 import { getSupabasePublicServer } from "@/lib/supabase/public-server";
@@ -31,20 +40,22 @@ export const getCachedSeasonsBySeriesId = cache(async (seriesId: string) => {
 });
 
 // 单集分页与季统计长缓存 24 小时。标签挂在电视节目上：保存单集时失效列表包含所属节目，季页与筛选接口一起刷新。
-export const getCachedSeasonEpisodes = cache(async (
-  seriesId: string,
-  seasonId: string,
-  page: number,
-  pageSize: number,
-  status: "all" | "watched" | "unwatched" = "all",
-  order: "asc" | "desc" = "asc",
-) => {
-  if (!isMediaId(seriesId) || !isMediaId(seasonId)) return null;
-  return unstable_cache(getSeasonEpisodes, ["public-season-episodes-v2"], {
-    revalidate: 86400,
-    tags: [MEDIA_TAG, mediaItemTag(seriesId)],
-  })(seriesId, seasonId, page, pageSize, status, order);
-});
+export const getCachedSeasonEpisodes = cache(
+  async (
+    seriesId: string,
+    seasonId: string,
+    page: number,
+    pageSize: number,
+    status: "all" | "watched" | "unwatched" = "all",
+    order: "asc" | "desc" = "asc",
+  ) => {
+    if (!isMediaId(seriesId) || !isMediaId(seasonId)) return null;
+    return unstable_cache(getSeasonEpisodes, ["public-season-episodes-v2"], {
+      revalidate: 86400,
+      tags: [MEDIA_TAG, mediaItemTag(seriesId)],
+    })(seriesId, seasonId, page, pageSize, status, order);
+  },
+);
 
 // 下一集只跟季有关，不随分页和筛选变化。查询失败时降级为不标记，避免单集列表整页打不开。
 export const getCachedSeasonNextEpisodeNumber = cache(async (seriesId: string, seasonId: string) => {
@@ -69,50 +80,58 @@ export const searchCachedMedia = unstable_cache(
 );
 
 // 榜单数据按类型、年份与数量长缓存 24 小时。
-export const getCachedTopMediaServer = cache(unstable_cache(
-  fetchTopMediaServer,
-  ["public-media-top-v3"],
-  { revalidate: 86400, tags: [MEDIA_TAG, MEDIA_LISTS_TAG] },
-));
+export const getCachedTopMediaServer = cache(
+  unstable_cache(fetchTopMediaServer, ["public-media-top-v3"], {
+    revalidate: 86400,
+    tags: [MEDIA_TAG, MEDIA_LISTS_TAG],
+  }),
+);
 
 // 即将上映候选池长缓存 24 小时；候选池留有余量，缓存滞后时由浏览器按当天过滤。
 // upcomingFirst 不使用缓存里的“今天”，而是在首页重新生成时按新加坡日历现算。下限取 UTC 昨天，24 小时内仍覆盖新加坡的今天。
-export const getCachedUpcomingReleasesServer = cache(unstable_cache(
-  fetchUpcomingReleasesServer,
-  ["public-media-upcoming-v2"],
-  { revalidate: 86400, tags: [MEDIA_TAG, MEDIA_LISTS_TAG] },
-));
+export const getCachedUpcomingReleasesServer = cache(
+  unstable_cache(fetchUpcomingReleasesServer, ["public-media-upcoming-v2"], {
+    revalidate: 86400,
+    tags: [MEDIA_TAG, MEDIA_LISTS_TAG],
+  }),
+);
 
 // 全时段分布统计长缓存 24 小时。
-export const getCachedMediaDistributionsServer = cache(unstable_cache(
-  fetchMediaDistributionsServer,
-  ["public-media-distributions-v2"],
-  { revalidate: 86400, tags: [MEDIA_TAG, MEDIA_LISTS_TAG] },
-));
+export const getCachedMediaDistributionsServer = cache(
+  unstable_cache(fetchMediaDistributionsServer, ["public-media-distributions-v2"], {
+    revalidate: 86400,
+    tags: [MEDIA_TAG, MEDIA_LISTS_TAG],
+  }),
+);
 
 // 首页「继续看」长缓存 24 小时，全站一条。返回值就是 ContinueWatchingItem[]，形状不在这里改。
 // getContinueWatching 只用公开读取客户端，缓存回调里不能读 cookies()、headers() 或当前用户。
 // 观看写入走 revalidateMediaItems，失效 media:lists；全站刷新失效 media。两条标签都能让这份列表马上过期。
-export const getCachedContinueWatching = cache(unstable_cache(
-  getContinueWatching,
-  ["public-media-continue-watching-v1"],
-  { revalidate: 86400, tags: [MEDIA_TAG, MEDIA_LISTS_TAG] },
-));
+export const getCachedContinueWatching = cache(
+  unstable_cache(getContinueWatching, ["public-media-continue-watching-v1"], {
+    revalidate: 86400,
+    tags: [MEDIA_TAG, MEDIA_LISTS_TAG],
+  }),
+);
 
 // 年度统计聚合结果长缓存 24 小时。
-export const getCachedReleaseYearStats = cache(unstable_cache(
-  async () => {
-    return withRetry(async () => {
-      const db = getSupabasePublicServer();
-      const { data, error } = await db.from("release_year_stats").select("*").order("release_year", { ascending: false });
-      if (error) {
-        console.error("Failed to fetch release year stats:", error);
-        throw new Error("Failed to fetch dashboard summary", { cause: error });
-      }
-      return (data as Summary[] | null) ?? [];
-    });
-  },
-  ["public-media-release-year-stats-v2"],
-  { revalidate: 86400, tags: [MEDIA_TAG, MEDIA_LISTS_TAG] },
-));
-
+export const getCachedReleaseYearStats = cache(
+  unstable_cache(
+    async () => {
+      return withRetry(async () => {
+        const db = getSupabasePublicServer();
+        const { data, error } = await db
+          .from("release_year_stats")
+          .select("*")
+          .order("release_year", { ascending: false });
+        if (error) {
+          console.error("Failed to fetch release year stats:", error);
+          throw new Error("Failed to fetch dashboard summary", { cause: error });
+        }
+        return (data as Summary[] | null) ?? [];
+      });
+    },
+    ["public-media-release-year-stats-v2"],
+    { revalidate: 86400, tags: [MEDIA_TAG, MEDIA_LISTS_TAG] },
+  ),
+);

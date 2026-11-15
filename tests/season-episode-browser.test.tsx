@@ -6,8 +6,21 @@ import type { EpisodeInfo } from "@/lib/types";
 const navigation = vi.hoisted(() => ({ search: "", replace: vi.fn() }));
 
 vi.mock("next/link", () => ({
-  default: ({ href, children, scroll, onClick, ...props }: { href: string; children: ReactNode; scroll?: boolean; onClick?: (event: MouseEvent) => void }) => (
-    <a href={href} data-scroll={scroll === false ? "false" : "true"} onClick={onClick} {...props}>{children}</a>
+  default: ({
+    href,
+    children,
+    scroll,
+    onClick,
+    ...props
+  }: {
+    href: string;
+    children: ReactNode;
+    scroll?: boolean;
+    onClick?: (event: MouseEvent) => void;
+  }) => (
+    <a href={href} data-scroll={scroll === false ? "false" : "true"} onClick={onClick} {...props}>
+      {children}
+    </a>
   ),
 }));
 vi.mock("next/navigation", () => ({
@@ -19,8 +32,28 @@ import SeasonEpisodeBrowser from "@/components/SeasonEpisodeBrowser";
 
 const basePath = "/shows/series/seasons/season";
 const episodes: EpisodeInfo[] = [
-  { id: "ep-1", episodeNumber: 1, title: "启程", alternateTitle: "Departure", summary: "出发去看城市。\n第二行还在。\n第三行默认收起。", releaseDate: null, runtime: 24, status: "watched", rating: 8 },
-  { id: "ep-2", episodeNumber: 2, title: "回声", alternateTitle: "回声", summary: "", releaseDate: "2024-02-01", runtime: null, status: "want_to_watch", rating: null },
+  {
+    id: "ep-1",
+    episodeNumber: 1,
+    title: "启程",
+    alternateTitle: "Departure",
+    summary: "出发去看城市。\n第二行还在。\n第三行默认收起。",
+    releaseDate: null,
+    runtime: 24,
+    status: "watched",
+    rating: 8,
+  },
+  {
+    id: "ep-2",
+    episodeNumber: 2,
+    title: "回声",
+    alternateTitle: "回声",
+    summary: "",
+    releaseDate: "2024-02-01",
+    runtime: null,
+    status: "want_to_watch",
+    rating: null,
+  },
 ];
 
 /** 用固定首屏单集渲染季页浏览器。 */
@@ -91,10 +124,16 @@ describe("SeasonEpisodeBrowser", () => {
 
   it("打开带筛选的地址后请求对应列表，并替换超出末页的页码", async () => {
     navigation.search = "status=unwatched&page=9";
-    vi.mocked(fetch).mockImplementation(async () => new Response(JSON.stringify({
-      episodes: [episodes[1]],
-      total: 1,
-    }), { status: 200, headers: { "Content-Type": "application/json" } }));
+    vi.mocked(fetch).mockImplementation(
+      async () =>
+        new Response(
+          JSON.stringify({
+            episodes: [episodes[1]],
+            total: 1,
+          }),
+          { status: 200, headers: { "Content-Type": "application/json" } },
+        ),
+    );
 
     renderBrowser();
     await waitFor(() => {
@@ -120,10 +159,30 @@ describe("SeasonEpisodeBrowser", () => {
     const list = screen.getByTestId("episode-list");
     const anchor = screen.getByTestId("episode-list-anchor");
     vi.spyOn(list, "getBoundingClientRect").mockReturnValue({
-      height: 1800, width: 800, top: 200, bottom: 2000, left: 0, right: 800, x: 0, y: 200, toJSON() { return {}; },
+      height: 1800,
+      width: 800,
+      top: 200,
+      bottom: 2000,
+      left: 0,
+      right: 800,
+      x: 0,
+      y: 200,
+      toJSON() {
+        return {};
+      },
     });
     vi.spyOn(anchor, "getBoundingClientRect").mockReturnValue({
-      height: 0, width: 800, top: -2100, bottom: -2100, left: 0, right: 800, x: 0, y: -2100, toJSON() { return {}; },
+      height: 0,
+      width: 800,
+      top: -2100,
+      bottom: -2100,
+      left: 0,
+      right: 800,
+      x: 0,
+      y: -2100,
+      toJSON() {
+        return {};
+      },
     });
 
     fireEvent.click(screen.getByRole("link", { name: "2" }));

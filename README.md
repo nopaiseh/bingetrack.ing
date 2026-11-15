@@ -41,15 +41,15 @@ npm run dev                  # http://localhost:3000
 
 模板和逐项说明在 `.env.example`；本机实际值只放在已被 Git 忽略的 `.env.local`。
 
-| 变量 | 用途 |
-| --- | --- |
-| `NEXT_PUBLIC_SUPABASE_URL`、`NEXT_PUBLIC_SUPABASE_ANON_KEY` | 必填。公开页面、Passkey 会话和 `/auth/confirm` 都只用这两项 |
-| `NEXT_PUBLIC_SITE_URL` | 规范地址、站点地图和 Passkey 使用；生产构建缺失时 `env:check` 会失败 |
-| `NEXT_PUBLIC_SENTRY_DSN`、`*SENTRY_TRACES_SAMPLE_RATE`、`SENTRY_AUTH_TOKEN` | 可选。Sentry 只在生产部署上报 |
-| `OWNER_EMAIL` | 本地 `npm run owner:login`、开发登录和 `/auth/agent-login` 用来指定站长邮箱。设置页生成链接时，已登录用户没有邮箱才会读它 |
-| `SUPABASE_SECRET_KEY` | 本地 `npm run owner:login` 必填（该脚本不读 `SUPABASE_SERVICE_ROLE_KEY`）。服务端生成一次性链接时优先读它 |
-| `SUPABASE_SERVICE_ROLE_KEY` | `SUPABASE_SECRET_KEY` 未设置时，服务端用它调用 Admin API（设置页生成链接、`/auth/agent-login`、开发登录）。生产环境配置的是这个名字。本地管理 E2E 也会读取，绝不能把生产密钥拿去跑测试 |
-| `AGENT_LOGIN_TOKEN` | 可选。配置后允许 `POST /auth/agent-login`，口令放在 `Authorization: Bearer`；留空则返回 404。生产环境不设置。不要把口令放在 URL 里 |
+| 变量                                                                        | 用途                                                                                                                                                                                   |
+| --------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `NEXT_PUBLIC_SUPABASE_URL`、`NEXT_PUBLIC_SUPABASE_ANON_KEY`                 | 必填。公开页面、Passkey 会话和 `/auth/confirm` 都只用这两项                                                                                                                            |
+| `NEXT_PUBLIC_SITE_URL`                                                      | 规范地址、站点地图和 Passkey 使用；生产构建缺失时 `env:check` 会失败                                                                                                                   |
+| `NEXT_PUBLIC_SENTRY_DSN`、`*SENTRY_TRACES_SAMPLE_RATE`、`SENTRY_AUTH_TOKEN` | 可选。Sentry 只在生产部署上报                                                                                                                                                          |
+| `OWNER_EMAIL`                                                               | 本地 `npm run owner:login`、开发登录和 `/auth/agent-login` 用来指定站长邮箱。设置页生成链接时，已登录用户没有邮箱才会读它                                                              |
+| `SUPABASE_SECRET_KEY`                                                       | 本地 `npm run owner:login` 必填（该脚本不读 `SUPABASE_SERVICE_ROLE_KEY`）。服务端生成一次性链接时优先读它                                                                              |
+| `SUPABASE_SERVICE_ROLE_KEY`                                                 | `SUPABASE_SECRET_KEY` 未设置时，服务端用它调用 Admin API（设置页生成链接、`/auth/agent-login`、开发登录）。生产环境配置的是这个名字。本地管理 E2E 也会读取，绝不能把生产密钥拿去跑测试 |
+| `AGENT_LOGIN_TOKEN`                                                         | 可选。配置后允许 `POST /auth/agent-login`，口令放在 `Authorization: Bearer`；留空则返回 404。生产环境不设置。不要把口令放在 URL 里                                                     |
 
 `NEXT_PUBLIC_*` 会打包进浏览器代码，不能放密钥。Next.js 会自动读取 `.env.local`，独立 Node 脚本要用 `node --env-file=.env.local ...` 显式加载（npm 脚本已处理）。Vercel 的 Development / Preview / Production 变量在平台上分别配置，修改后要重新部署才生效。
 
@@ -83,17 +83,17 @@ docs/                   运维与设计说明
 
 ## 命令
 
-| 命令 | 用途 |
-| --- | --- |
-| `npm run lint` / `npx tsc --noEmit` | ESLint / 类型检查 |
-| `npm test` / `npm run test:coverage` | 单元与组件测试 / 覆盖率 |
-| `npm run build` / `npm start` | 生产构建 / 本地运行生产版本 |
-| `npm run test:e2e` | 浏览器测试，需要本地 Supabase 和测试数据 |
-| `supabase test db` | 数据库 pgTAP 测试 |
-| `DEPLOYMENT_URL=<地址> npm run smoke` | 检查已部署站点的页面、API 与安全响应头 |
-| `npm run perf:lighthouse -- <地址>` | Lighthouse 实验室测量，报告写入被忽略的 `.lighthouse/` |
-| `npm run analyze` | 构建产物分析 |
-| `npm run owner:login` | 站长初始化或恢复登录，见 [单人管理](docs/single-owner-admin.md) |
+| 命令                                  | 用途                                                            |
+| ------------------------------------- | --------------------------------------------------------------- |
+| `npm run lint` / `npx tsc --noEmit`   | ESLint / 类型检查                                               |
+| `npm test` / `npm run test:coverage`  | 单元与组件测试 / 覆盖率                                         |
+| `npm run build` / `npm start`         | 生产构建 / 本地运行生产版本                                     |
+| `npm run test:e2e`                    | 浏览器测试，需要本地 Supabase 和测试数据                        |
+| `supabase test db`                    | 数据库 pgTAP 测试                                               |
+| `DEPLOYMENT_URL=<地址> npm run smoke` | 检查已部署站点的页面、API 与安全响应头                          |
+| `npm run perf:lighthouse -- <地址>`   | Lighthouse 实验室测量，报告写入被忽略的 `.lighthouse/`          |
+| `npm run analyze`                     | 构建产物分析                                                    |
+| `npm run owner:login`                 | 站长初始化或恢复登录，见 [单人管理](docs/single-owner-admin.md) |
 
 首次跑浏览器测试前执行 `npx playwright install chromium`。Playwright 不会自动读取 `.env.local`，管理流程测试请用 `node --env-file=.env.local node_modules/@playwright/test/cli.js test`。管理测试会写数据库，只能对本地 Supabase 运行。
 

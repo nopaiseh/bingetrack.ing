@@ -1,5 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { saveReference, deleteReference, searchChoices, saveCollectionMember } from "@/app/(admin)/manage/reference-actions";
+import {
+  saveReference,
+  deleteReference,
+  searchChoices,
+  saveCollectionMember,
+} from "@/app/(admin)/manage/reference-actions";
 import { manualRevalidateCache } from "@/app/(admin)/manage/actions";
 import { requireOwner } from "@/lib/auth/server";
 import { revalidatePath, revalidateTag } from "next/cache";
@@ -8,28 +13,52 @@ vi.mock("@/lib/auth/server", () => ({ requireOwner: vi.fn() }));
 vi.mock("next/cache", () => ({ revalidatePath: vi.fn(), revalidateTag: vi.fn() }));
 vi.mock("next/navigation", () => ({ redirect: vi.fn() }));
 vi.mock("@/lib/admin/revalidate-media", async (importOriginal) => ({
-  ...await importOriginal<typeof import("@/lib/admin/revalidate-media")>(),
+  ...(await importOriginal<typeof import("@/lib/admin/revalidate-media")>()),
   affectedMediaIds: vi.fn(async (_db: unknown, ids: string[]) => ids),
   referenceMediaIds: vi.fn(async () => [linked]),
 }));
 const id = "11111111-1111-4111-8111-111111111111";
 const linked = "22222222-2222-4222-8222-222222222222";
-const chain = { delete: vi.fn(), eq: vi.fn(), select: vi.fn(), update: vi.fn(), insert: vi.fn(), single: vi.fn(), ilike: vi.fn(), or: vi.fn(), order: vi.fn(), limit: vi.fn(), in: vi.fn(), then: vi.fn((resolve: (val: unknown) => void) => resolve({ data: [], error: null })) };
+const chain = {
+  delete: vi.fn(),
+  eq: vi.fn(),
+  select: vi.fn(),
+  update: vi.fn(),
+  insert: vi.fn(),
+  single: vi.fn(),
+  ilike: vi.fn(),
+  or: vi.fn(),
+  order: vi.fn(),
+  limit: vi.fn(),
+  in: vi.fn(),
+  then: vi.fn((resolve: (val: unknown) => void) => resolve({ data: [], error: null })),
+};
 const from = vi.fn(() => chain);
 /** 用链式替身检查动作的白名单和确认条件；真实 RLS 与级联由数据库测试验证。 */
 beforeEach(() => {
   vi.clearAllMocks();
-  vi.mocked(requireOwner).mockResolvedValue({ db: { from }, user: {} } as unknown as Awaited<ReturnType<typeof requireOwner>>);
+  vi.mocked(requireOwner).mockResolvedValue({ db: { from }, user: {} } as unknown as Awaited<
+    ReturnType<typeof requireOwner>
+  >);
   for (const [key, method] of Object.entries(chain)) {
     if (key !== "then") method.mockReturnValue(chain);
   }
   chain.then.mockImplementation((resolve: (val: unknown) => void) => resolve({ data: [], error: null }));
 });
-function form(values: Record<string, string>) { const result = new FormData(); for (const [key, value] of Object.entries(values)) result.set(key, value); return result; }
+function form(values: Record<string, string>) {
+  const result = new FormData();
+  for (const [key, value] of Object.entries(values)) result.set(key, value);
+  return result;
+}
 describe("关联资料服务端操作", () => {
   it("每个入口先检查站长身份", async () => {
     vi.mocked(requireOwner).mockRejectedValue(new Error("unauthorized"));
-    for (const request of [() => saveReference({}, new FormData()), () => deleteReference({}, new FormData()), () => searchChoices("people", ""), () => saveCollectionMember({}, new FormData())]) {
+    for (const request of [
+      () => saveReference({}, new FormData()),
+      () => deleteReference({}, new FormData()),
+      () => searchChoices("people", ""),
+      () => saveCollectionMember({}, new FormData()),
+    ]) {
       await expect(request()).rejects.toThrow("unauthorized");
     }
     expect(from).not.toHaveBeenCalled();
@@ -65,7 +94,9 @@ describe("关联资料服务端操作", () => {
     chain.select.mockResolvedValue({ data: [{ id }], error: null });
     await deleteReference({}, form({ kind: "people", id, confirm_name: "Jane" }));
     // 关联行会被级联删除，受影响条目必须在删除语句之前查出。
-    expect(vi.mocked(referenceMediaIds).mock.invocationCallOrder[0]).toBeLessThan(chain.delete.mock.invocationCallOrder[0]);
+    expect(vi.mocked(referenceMediaIds).mock.invocationCallOrder[0]).toBeLessThan(
+      chain.delete.mock.invocationCallOrder[0],
+    );
     expect(revalidateTag).toHaveBeenCalledWith(`media:item:${linked}`, { expire: 0 });
     expect(revalidateTag).toHaveBeenCalledWith("media:lists", { expire: 0 });
     expect(revalidateTag).not.toHaveBeenCalledWith("media", expect.anything());
@@ -79,7 +110,9 @@ describe("关联资料服务端操作", () => {
     expect(revalidateTag).not.toHaveBeenCalledWith("media", expect.anything());
   });
   it("系列顺序必须是范围内整数", async () => {
-    expect(await saveCollectionMember({}, form({ series_id: id, media_item_id: id, position: "1.5" }))).toHaveProperty("error");
+    expect(await saveCollectionMember({}, form({ series_id: id, media_item_id: id, position: "1.5" }))).toHaveProperty(
+      "error",
+    );
     expect(from).not.toHaveBeenCalled();
   });
   it("移除系列成员时无需验证顺序数值", async () => {
@@ -100,9 +133,11 @@ describe("关联资料服务端操作", () => {
   it("searchChoices 容忍缺失的上级电视节目资料而不崩溃", async () => {
     chain.then.mockImplementation((resolve: (val: unknown) => void) =>
       resolve({
-        data: [{ id, title: "第 1 季", type: "tv_season", cover_url: null, season: { season_number: 1, parent: null } }],
+        data: [
+          { id, title: "第 1 季", type: "tv_season", cover_url: null, season: { season_number: 1, parent: null } },
+        ],
         error: null,
-      })
+      }),
     );
     const result = await searchChoices("tv_season", "query");
     expect(result.choices[0].detail).toBe("未知电视节目 · 第 1 季");
@@ -113,7 +148,9 @@ describe("关联资料服务端操作", () => {
   });
   it("searchChoices 对人物同时按名称和别名搜索", async () => {
     await searchChoices("people", " 50%_off\\ ");
-    expect(chain.or).toHaveBeenCalledWith('name.ilike."%50\\\\%\\\\_off\\\\\\\\%",alternate_name.ilike."%50\\\\%\\\\_off\\\\\\\\%"');
+    expect(chain.or).toHaveBeenCalledWith(
+      'name.ilike."%50\\\\%\\\\_off\\\\\\\\%",alternate_name.ilike."%50\\\\%\\\\_off\\\\\\\\%"',
+    );
     expect(chain.ilike).not.toHaveBeenCalled();
   });
   it("支持对 languages（语言）进行新增与保存", async () => {

@@ -4,9 +4,10 @@ import { buildMediaDistributions } from "@/lib/functions/media-distributions";
 import type { Summary } from "@/lib/types";
 
 vi.mock("next/dynamic", () => ({
-  default: () => function DynamicStub(props: { title?: string }) {
-    return <div data-testid="dynamic" data-title={props.title ?? ""} />;
-  },
+  default: () =>
+    function DynamicStub(props: { title?: string }) {
+      return <div data-testid="dynamic" data-title={props.title ?? ""} />;
+    },
 }));
 
 vi.mock("@/components/LoadingSkeletons", () => ({
@@ -40,9 +41,15 @@ describe("HomeDashboard", () => {
 
   it("年份榜单请求未完成时切回全时段，不会停留在加载骨架", async () => {
     // 请求一直挂起，只在取消时拒绝，模拟用户在响应前切回全时段。
-    vi.stubGlobal("fetch", vi.fn((_url: string, init?: RequestInit) => new Promise((_resolve, reject) => {
-      init?.signal?.addEventListener("abort", () => reject(new DOMException("Aborted", "AbortError")));
-    })));
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(
+        (_url: string, init?: RequestInit) =>
+          new Promise((_resolve, reject) => {
+            init?.signal?.addEventListener("abort", () => reject(new DOMException("Aborted", "AbortError")));
+          }),
+      ),
+    );
 
     render(
       <HomeDashboard
@@ -66,7 +73,10 @@ describe("HomeDashboard", () => {
   });
 
   it("倒计时展台不随年份切换而变化", async () => {
-    vi.stubGlobal("fetch", vi.fn(async () => new Response("[]")));
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => new Response("[]")),
+    );
     render(
       <HomeDashboard
         summary={[{ release_year: "2024" } as unknown as Summary]}
@@ -84,12 +94,7 @@ describe("HomeDashboard", () => {
 
   it("把继续观看放在看板最上方，没有条目时不占位", () => {
     const { rerender } = render(
-      <HomeDashboard
-        summary={[]}
-        topMovies={[]}
-        topSeries={[]}
-        distributions={buildMediaDistributions([])}
-      />,
+      <HomeDashboard summary={[]} topMovies={[]} topSeries={[]} distributions={buildMediaDistributions([])} />,
     );
     expect(screen.queryByRole("heading", { name: "继续观看" })).not.toBeInTheDocument();
 

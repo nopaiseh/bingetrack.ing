@@ -57,17 +57,27 @@ export default function UnsavedGuard({ dirty }: { dirty: boolean }) {
 
   useEffect(() => {
     if (!dirty) return;
-    function beforeUnload(event: BeforeUnloadEvent) { event.preventDefault(); }
+    function beforeUnload(event: BeforeUnloadEvent) {
+      event.preventDefault();
+    }
     function beforeLink(event: MouseEvent) {
       if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
       const target = event.target as Node | null;
-      const anchor = target instanceof Element ? target.closest<HTMLAnchorElement>("a[href]") : target?.parentElement?.closest<HTMLAnchorElement>("a[href]");
+      const anchor =
+        target instanceof Element
+          ? target.closest<HTMLAnchorElement>("a[href]")
+          : target?.parentElement?.closest<HTMLAnchorElement>("a[href]");
       if (!anchor) return;
       const href = anchor.getAttribute("href") ?? "";
       if (anchor.target === "_blank" || !href || href.startsWith("#") || anchor.hasAttribute("download")) return;
-      if (!event.defaultPrevented && !window.confirm(LEAVE_MESSAGE)) { event.preventDefault(); event.stopPropagation(); }
+      if (!event.defaultPrevented && !window.confirm(LEAVE_MESSAGE)) {
+        event.preventDefault();
+        event.stopPropagation();
+      }
     }
-    function beforeLeave(event: Event) { if (!window.confirm(LEAVE_MESSAGE)) event.preventDefault(); }
+    function beforeLeave(event: Event) {
+      if (!window.confirm(LEAVE_MESSAGE)) event.preventDefault();
+    }
     /** 后退先回到下方的同地址记录；取消时重新压入以保持拦截，确认时再后退一步真正离开。
      * 已确认过就同时撤下 beforeunload，否则后退到站外或整页加载的记录时浏览器会再问一次。 */
     function beforeHistoryBack() {

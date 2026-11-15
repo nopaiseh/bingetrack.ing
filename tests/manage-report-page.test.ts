@@ -25,14 +25,17 @@ function fakeDb(respond: (query: BuiltQuery) => QueryResult) {
     const query: BuiltQuery = { table, select: [], ilike: null, range: null };
     queries.push(query);
     const builder: Record<string, unknown> = {
-      then: (onfulfilled: (value: QueryResult) => unknown, onrejected?: (reason: unknown) => unknown) => Promise.resolve(respond(query)).then(onfulfilled, onrejected),
+      then: (onfulfilled: (value: QueryResult) => unknown, onrejected?: (reason: unknown) => unknown) =>
+        Promise.resolve(respond(query)).then(onfulfilled, onrejected),
     };
-    const chain = (name: string) => (...args: unknown[]) => {
-      if (name === "select") query.select = args;
-      if (name === "ilike") query.ilike = args;
-      if (name === "range") query.range = args;
-      return builder;
-    };
+    const chain =
+      (name: string) =>
+      (...args: unknown[]) => {
+        if (name === "select") query.select = args;
+        if (name === "ilike") query.ilike = args;
+        if (name === "range") query.range = args;
+        return builder;
+      };
     for (const name of ["select", "ilike", "order", "range"]) builder[name] = chain(name);
     return builder;
   });
@@ -60,15 +63,22 @@ describe("报告分页越界", () => {
   });
 
   it("页码超出结果集时跳到最后一页，并保留搜索词", async () => {
-    const { db, queries } = fakeDb(query => query.range
-      ? { data: null, count: null, error: { code: "PGRST103", message: "Requested range not satisfiable" }, status: 416 }
-      : { count: 40, error: null, status: 200 });
+    const { db, queries } = fakeDb((query) =>
+      query.range
+        ? {
+            data: null,
+            count: null,
+            error: { code: "PGRST103", message: "Requested range not satisfiable" },
+            status: 416,
+          }
+        : { count: 40, error: null, status: 200 },
+    );
     const url = await redirectedTo(() => load({ q: "a_b%", page: "4" }, db));
     const target = new URL(url, "https://example.test");
     expect(target.pathname).toBe("/manage/reports/missing-alias");
     expect(target.searchParams.get("q")).toBe("a_b%");
     expect(target.searchParams.get("page")).toBe("2");
-    expect(queries.map(query => query.table)).toEqual(["v_report_missing_alias", "v_report_missing_alias"]);
+    expect(queries.map((query) => query.table)).toEqual(["v_report_missing_alias", "v_report_missing_alias"]);
     expect(queries[0].range).toEqual([75, 99]);
     expect(queries[1].range).toBeNull();
     expect(queries[1].select[1]).toMatchObject({ count: "exact", head: true });
@@ -76,20 +86,29 @@ describe("报告分页越界", () => {
   });
 
   it("没有条目时回到第 1 页，并保留空的搜索参数", async () => {
-    const { db } = fakeDb(query => query.range
-      ? { error: { message: "Requested range not satisfiable" }, status: 416 }
-      : { count: 0, error: null, status: 200 });
+    const { db } = fakeDb((query) =>
+      query.range
+        ? { error: { message: "Requested range not satisfiable" }, status: 416 }
+        : { count: 0, error: null, status: 200 },
+    );
     expect(await redirectedTo(() => load({ q: "", page: "2" }, db))).toBe("/manage/reports/missing-alias?q=&page=1");
   });
 
   it("其他数据库错误仍抛出固定说明，并把 code 与 message 放在 cause 中", async () => {
-    const { db, queries } = fakeDb(() => ({ data: null, count: null, error: { code: "42703", message: "column does not exist" }, status: 400 }));
+    const { db, queries } = fakeDb(() => ({
+      data: null,
+      count: null,
+      error: { code: "42703", message: "column does not exist" },
+      status: 400,
+    }));
     await expect(load({ q: "", page: "1" }, db)).rejects.toMatchObject({
       message: "无法读取报告，请确认数据库迁移已应用后重试。",
       cause: { code: "42703", message: "column does not exist" },
     });
-    await expect(load({ q: "", page: "1" }, db)).rejects.toSatisfy((error: Error) => !error.message.includes("42703") && !error.message.includes("column"));
+    await expect(load({ q: "", page: "1" }, db)).rejects.toSatisfy(
+      (error: Error) => !error.message.includes("42703") && !error.message.includes("column"),
+    );
     expect(queries).toHaveLength(2);
-    expect(queries.every(query => query.range)).toBe(true);
+    expect(queries.every((query) => query.range)).toBe(true);
   });
 });

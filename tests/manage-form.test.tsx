@@ -3,8 +3,15 @@ import userEvent from "@testing-library/user-event";
 import { expect, it, vi } from "vitest";
 import MediaForm from "@/app/(admin)/manage/media/MediaForm";
 import ReferenceForm from "@/app/(admin)/manage/references/ReferenceForm";
-vi.mock("@/app/(admin)/manage/actions", () => ({ saveMedia: vi.fn(async () => ({ error: "保存失败，请重试。" })), deleteMedia: vi.fn() }));
-vi.mock("@/app/(admin)/manage/reference-actions", () => ({ saveReference: vi.fn(async () => ({ error: "名称已经存在。" })), deleteReference: vi.fn(), searchChoices: vi.fn() }));
+vi.mock("@/app/(admin)/manage/actions", () => ({
+  saveMedia: vi.fn(async () => ({ error: "保存失败，请重试。" })),
+  deleteMedia: vi.fn(),
+}));
+vi.mock("@/app/(admin)/manage/reference-actions", () => ({
+  saveReference: vi.fn(async () => ({ error: "名称已经存在。" })),
+  deleteReference: vi.fn(),
+  searchChoices: vi.fn(),
+}));
 
 it("媒体保存失败后保留已填写资料与未保存提示", async () => {
   const user = userEvent.setup();
@@ -66,15 +73,36 @@ it("单集不提供封面地址，电影和电视节目仍保留，已有剧照�
   expect(screen.getByLabelText("TMDB 海报路径")).toHaveValue("https://image.tmdb.org/t/p/w500/poster.jpg");
   unmount();
 
-  const episode = render(<MediaForm initialType="tv_episode" lockType item={{
-    id: "ep-1", type: "tv_episode", title: "启程", alternate_title: null, summary: null,
-    cover_url: "https://image.tmdb.org/t/p/w500/still.jpg", release_date: "2024-01-01", runtime: 40,
-    parent_id: "season-1", number: 1, status: "want_to_watch", rating: null,
-    genres: [], languages: [], regions: [], actors: [], directors: [],
-  }} />);
+  const episode = render(
+    <MediaForm
+      initialType="tv_episode"
+      lockType
+      item={{
+        id: "ep-1",
+        type: "tv_episode",
+        title: "启程",
+        alternate_title: null,
+        summary: null,
+        cover_url: "https://image.tmdb.org/t/p/w500/still.jpg",
+        release_date: "2024-01-01",
+        runtime: 40,
+        parent_id: "season-1",
+        number: 1,
+        status: "want_to_watch",
+        rating: null,
+        genres: [],
+        languages: [],
+        regions: [],
+        actors: [],
+        directors: [],
+      }}
+    />,
+  );
   expect(screen.queryByLabelText(/封面/)).not.toBeInTheDocument();
   expect(episode.container.querySelector('input[name="cover_url"]')).toHaveAttribute("type", "hidden");
-  expect(episode.container.querySelector('input[name="cover_url"]')).toHaveValue("https://image.tmdb.org/t/p/w500/still.jpg");
+  expect(episode.container.querySelector('input[name="cover_url"]')).toHaveValue(
+    "https://image.tmdb.org/t/p/w500/still.jpg",
+  );
 });
 
 it("lockType 为真时锁定媒体类型，不展示分段切换控件", () => {
@@ -92,7 +120,10 @@ it("海报预览只使用 TMDB 文件名，不把输入原文当成图片地址"
   fireEvent.change(cover, { target: { value: "https://evil.example/t/p/a.jpg" } });
   expect(screen.queryByRole("img", { name: "封面预览" })).not.toBeInTheDocument();
   fireEvent.change(cover, { target: { value: "https://image.tmdb.org/t/p/w500/poster.jpg" } });
-  expect(screen.getByRole("img", { name: "封面预览" })).toHaveAttribute("src", "https://image.tmdb.org/t/p/w500/poster.jpg");
+  expect(screen.getByRole("img", { name: "封面预览" })).toHaveAttribute(
+    "src",
+    "https://image.tmdb.org/t/p/w500/poster.jpg",
+  );
   expect(cover).toHaveValue("https://image.tmdb.org/t/p/w500/poster.jpg");
 });
 
@@ -127,12 +158,30 @@ it("季和单集编号输入框拥有正确无歧义的无障碍标签", () => {
 });
 
 it("电影和单集显示日期和片长，电视节目和季不显示，日期按 YYYY-MM-DD 填写", () => {
-  const { unmount } = render(<MediaForm initialType="movie" item={{
-    id: "mv-1", type: "movie", title: "毁灭之日", alternate_title: null, summary: null,
-    cover_url: null, release_date: "2026-12-18", runtime: 165,
-    parent_id: null, number: null, status: "want_to_watch", rating: null,
-    genres: [], languages: [], regions: [], actors: [], directors: [],
-  }} />);
+  const { unmount } = render(
+    <MediaForm
+      initialType="movie"
+      item={{
+        id: "mv-1",
+        type: "movie",
+        title: "毁灭之日",
+        alternate_title: null,
+        summary: null,
+        cover_url: null,
+        release_date: "2026-12-18",
+        runtime: 165,
+        parent_id: null,
+        number: null,
+        status: "want_to_watch",
+        rating: null,
+        genres: [],
+        languages: [],
+        regions: [],
+        actors: [],
+        directors: [],
+      }}
+    />,
+  );
   const date = screen.getByLabelText("上映日期");
   expect(date).toHaveValue("2026-12-18");
   expect(date).toHaveAttribute("placeholder", "YYYY-MM-DD");
@@ -159,4 +208,3 @@ it("电影和单集显示日期和片长，电视节目和季不显示，日期�
   expect(screen.getByLabelText("播出日期")).toBeInTheDocument();
   expect(screen.getByLabelText("片长")).toBeInTheDocument();
 });
-

@@ -28,7 +28,9 @@ function attachNavbarSession(
   let revision = 0;
   let currentUser: string | undefined;
   let stopIdle: (() => void) | undefined;
-  const { data: { subscription } } = db.auth.onAuthStateChange((_event, session) => {
+  const {
+    data: { subscription },
+  } = db.auth.onAuthStateChange((_event, session) => {
     const version = ++revision;
     const id = session?.user.id;
     if (id && authenticating.current) resetIdleSession(id);
@@ -37,14 +39,19 @@ function attachNavbarSession(
     if (id !== currentUser) {
       stopIdle?.();
       currentUser = id;
-      if (id) stopIdle = watchIdleSession(id, () => {
-        // 通过 POST 接口清理会话，再完整导航回首页以清除管理页内存与路由缓存；接口不可达时退回本地清理，保证仍会登出。
-        void fetch("/auth/logout", { method: "POST" })
-          .catch(() => db.auth.signOut({ scope: "local" }))
-          .finally(() => {
-            window.location.replace("/");
-          });
-      }, Date.parse(session.user.last_sign_in_at ?? ""));
+      if (id)
+        stopIdle = watchIdleSession(
+          id,
+          () => {
+            // 通过 POST 接口清理会话，再完整导航回首页以清除管理页内存与路由缓存；接口不可达时退回本地清理，保证仍会登出。
+            void fetch("/auth/logout", { method: "POST" })
+              .catch(() => db.auth.signOut({ scope: "local" }))
+              .finally(() => {
+                window.location.replace("/");
+              });
+          },
+          Date.parse(session.user.last_sign_in_at ?? ""),
+        );
     }
     if (id) {
       // 离开 Auth 回调后才调用 RPC，避免会话锁重入。
@@ -89,16 +96,20 @@ export function useNavbarAuth() {
       };
     };
     const queryError = new URLSearchParams(window.location.search).get("authError");
-    if (queryError) queueMicrotask(() => {
-      if (!cancelled) setError(queryError === "access" ? "此账号没有管理权限。" : "登录链接无效或已过期，请重新获取。");
-    });
+    if (queryError)
+      queueMicrotask(() => {
+        if (!cancelled)
+          setError(queryError === "access" ? "此账号没有管理权限。" : "登录链接无效或已过期，请重新获取。");
+      });
     // 匿名访客没有可读的会话 Cookie（@supabase/ssr 默认 httpOnly: false），不下载 supabase-js。
     if (hasSupabaseAuthCookie(document.cookie)) {
-      void loadAuthBrowser().then((db) => {
-        if (!cancelled) ensureSession.current(db);
-      }).catch(() => {
-        // 分块加载失败时保持未登录导航；再次点击登录会重试。
-      });
+      void loadAuthBrowser()
+        .then((db) => {
+          if (!cancelled) ensureSession.current(db);
+        })
+        .catch(() => {
+          // 分块加载失败时保持未登录导航；再次点击登录会重试。
+        });
     }
     return () => {
       cancelled = true;
@@ -122,14 +133,22 @@ export function useNavbarAuth() {
       ensureSession.current(db);
       const { data, error } = await db.auth.signInWithPasskey();
       if (error) {
-        setError(error.code === "passkey_disabled" ? "Passkey 登录尚未启用，请先完成站点配置。" : "未完成 Passkey 验证，请重试或使用已绑定凭证的设备。");
+        setError(
+          error.code === "passkey_disabled"
+            ? "Passkey 登录尚未启用，请先完成站点配置。"
+            : "未完成 Passkey 验证，请重试或使用已绑定凭证的设备。",
+        );
         return;
       }
       if (data.user) resetIdleSession(data.user.id);
       router.replace("/manage");
       router.refresh();
-    } catch { setError("无法连接登录服务，请检查网络和浏览器是否支持 Passkey。"); }
-    finally { authenticating.current = false; setBusy(false); }
+    } catch {
+      setError("无法连接登录服务，请检查网络和浏览器是否支持 Passkey。");
+    } finally {
+      authenticating.current = false;
+      setBusy(false);
+    }
   }
 
   return { signedIn, owner, busy, error, signIn };

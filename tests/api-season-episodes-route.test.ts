@@ -22,14 +22,23 @@ function get(query = "", id = seriesId, season = seasonId) {
 
 describe("GET /api/shows/[id]/seasons/[seasonId]/episodes", () => {
   beforeEach(() => {
-    vi.mocked(getCachedSeasonEpisodes).mockReset().mockResolvedValue({
-      season: { id: seasonId, seasonNumber: 1, title: "第一季", coverUrl: "", episodeCount: 2, watchedEpisodeCount: 1 },
-      episodes: [],
-      total: 2,
-      watchedCount: 1,
-      totalRuntime: 40,
-      averageRating: null,
-    });
+    vi.mocked(getCachedSeasonEpisodes)
+      .mockReset()
+      .mockResolvedValue({
+        season: {
+          id: seasonId,
+          seasonNumber: 1,
+          title: "第一季",
+          coverUrl: "",
+          episodeCount: 2,
+          watchedEpisodeCount: 1,
+        },
+        episodes: [],
+        total: 2,
+        watchedCount: 1,
+        totalRuntime: 40,
+        averageRating: null,
+      });
     vi.mocked(getCachedSeasonNextEpisodeNumber).mockReset().mockResolvedValue(4);
   });
 

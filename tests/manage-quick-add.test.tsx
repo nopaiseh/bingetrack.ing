@@ -7,7 +7,9 @@ vi.mock("@/app/(admin)/manage/actions", () => ({ saveMedia: vi.fn() }));
 
 beforeAll(() => {
   // jsdom 未实现模态对话框，只需把它标记为打开。
-  HTMLDialogElement.prototype.showModal ??= function (this: HTMLDialogElement) { this.open = true; };
+  HTMLDialogElement.prototype.showModal ??= function (this: HTMLDialogElement) {
+    this.open = true;
+  };
 });
 
 const structure: SeriesStructure = {
@@ -17,7 +19,13 @@ const structure: SeriesStructure = {
   episodes: [],
   totalEpisodes: 7,
   nextSeasonNumber: 3,
-  nextEpisode: { number: 8, releaseDate: "2025-03-07", runtime: 52, afterTitle: "Chikhai Bardo", dateBasis: "interval" },
+  nextEpisode: {
+    number: 8,
+    releaseDate: "2025-03-07",
+    runtime: 52,
+    afterTitle: "Chikhai Bardo",
+    dateBasis: "interval",
+  },
 };
 
 describe("快速新增弹窗", () => {

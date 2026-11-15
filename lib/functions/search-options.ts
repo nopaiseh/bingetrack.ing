@@ -21,7 +21,11 @@ async function fetchSearchOptions(): Promise<SearchOptions> {
     db.from("genres").select("name").order("name", { ascending: true }),
     db.from("regions").select("name").order("name", { ascending: true }),
     db.from("languages").select("name").order("name", { ascending: true }),
-    db.from("release_year_stats").select("release_year").neq("release_year", "All Time").order("release_year", { ascending: false }),
+    db
+      .from("release_year_stats")
+      .select("release_year")
+      .neq("release_year", "All Time")
+      .order("release_year", { ascending: false }),
   ]);
   const error = genresRes.error ?? regionsRes.error ?? languagesRes.error ?? yearsRes.error;
   if (error) throw error;
@@ -30,15 +34,24 @@ async function fetchSearchOptions(): Promise<SearchOptions> {
     genres: ((genresRes.data ?? []) as NamedOption[]).map(/* 提取类型选项名称。 */ ({ name }) => name),
     regions: ((regionsRes.data ?? []) as NamedOption[]).map(/* 提取地区选项名称。 */ ({ name }) => name),
     languages: ((languagesRes.data ?? []) as NamedOption[]).map(/* 提取语言选项名称。 */ ({ name }) => name),
-    years: ((yearsRes.data ?? []) as ReleaseYearOption[]).map(/* 将发行年份统一转为字符串选项。 */ ({ release_year }) => String(release_year)),
+    years: ((yearsRes.data ?? []) as ReleaseYearOption[]).map(
+      /* 将发行年份统一转为字符串选项。 */ ({ release_year }) => String(release_year),
+    ),
   };
 }
 
 /** 类型、地区、语言筛选的每个值都必须是现有选项；它们会拼进 PostgREST 的数组条件，也决定数据缓存键。 */
-export function hasOnlyKnownTagFilters(params: Pick<FetchMediaListOptions, "genre" | "region" | "language">, options: SearchOptions): boolean {
+export function hasOnlyKnownTagFilters(
+  params: Pick<FetchMediaListOptions, "genre" | "region" | "language">,
+  options: SearchOptions,
+): boolean {
   const within = (value: string | null | undefined, allowed: string[]) =>
     !value || value.split(",").every(/* 检查每个筛选值是否属于已知选项。 */ (item) => allowed.includes(item));
-  return within(params.genre, options.genres) && within(params.region, options.regions) && within(params.language, options.languages);
+  return (
+    within(params.genre, options.genres) &&
+    within(params.region, options.regions) &&
+    within(params.language, options.languages)
+  );
 }
 
 export const fetchSearchOptionsServer = unstable_cache(fetchSearchOptions, ["search-options-v2"], {

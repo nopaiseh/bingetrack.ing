@@ -36,11 +36,13 @@ import { POST } from "@/app/auth/confirm/verify/route";
 function postConfirm(fields: Record<string, string>, origin?: string) {
   const headers = new Headers({ "content-type": "application/x-www-form-urlencoded" });
   if (origin !== undefined) headers.set("origin", origin);
-  return POST(new NextRequest("http://localhost:3000/auth/confirm", {
-    method: "POST",
-    headers,
-    body: new URLSearchParams(fields).toString(),
-  }));
+  return POST(
+    new NextRequest("http://localhost:3000/auth/confirm", {
+      method: "POST",
+      headers,
+      body: new URLSearchParams(fields).toString(),
+    }),
+  );
 }
 
 describe("一次性登录确认", () => {
@@ -56,8 +58,9 @@ describe("一次性登录确认", () => {
     expect(verifyOtp).toHaveBeenCalledWith({ type, token_hash: "test" });
     expect(cookieSet).toHaveBeenCalledWith("sb-test-auth-token", "session");
     expect(response.status).toBe(303);
-    expect(new URL(response.headers.get("location")!, "http://127.0.0.1:3000").href)
-      .toBe("http://127.0.0.1:3000/settings");
+    expect(new URL(response.headers.get("location")!, "http://127.0.0.1:3000").href).toBe(
+      "http://127.0.0.1:3000/settings",
+    );
     expect(response.headers.get("cache-control")).toBe("private, no-store");
   });
 
@@ -72,25 +75,37 @@ describe("一次性登录确认", () => {
   });
 
   it("支持固定回跳到 /manage 供 Agent 一次性链接直接进入管理台", async () => {
-    const response = await postConfirm({ type: "magiclink", token_hash: "test", next: "/manage" }, "http://localhost:3000");
+    const response = await postConfirm(
+      { type: "magiclink", token_hash: "test", next: "/manage" },
+      "http://localhost:3000",
+    );
     expect(verifyOtp).toHaveBeenCalledWith({ type: "magiclink", token_hash: "test" });
     expect(response.status).toBe(303);
     expect(response.headers.get("location")).toBe("/manage");
   });
 
   it("无效类型和外部回跳参数不能改变固定目标", async () => {
-    const invalidType = await postConfirm({ type: "signup", token_hash: "test", next: "https://example.com" }, "http://localhost:3000");
+    const invalidType = await postConfirm(
+      { type: "signup", token_hash: "test", next: "https://example.com" },
+      "http://localhost:3000",
+    );
     expect(verifyOtp).not.toHaveBeenCalled();
     expect(cookieSet).not.toHaveBeenCalled();
     expect(invalidType.headers.get("location")).toBe("/?authError=link");
 
-    const externalNext = await postConfirm({ type: "magiclink", token_hash: "test", next: "https://example.com" }, "http://localhost:3000");
+    const externalNext = await postConfirm(
+      { type: "magiclink", token_hash: "test", next: "https://example.com" },
+      "http://localhost:3000",
+    );
     expect(externalNext.headers.get("location")).toBe("/settings");
     expect(externalNext.headers.get("location")).not.toContain("example.com");
   });
 
   it("跨站 Origin 被拒绝，且不验证、不写 Cookie", async () => {
-    const response = await postConfirm({ type: "magiclink", token_hash: "test", next: "/manage" }, "https://evil.example");
+    const response = await postConfirm(
+      { type: "magiclink", token_hash: "test", next: "/manage" },
+      "https://evil.example",
+    );
     expect(response.status).toBe(403);
     expect(verifyOtp).not.toHaveBeenCalled();
     expect(cookieSet).not.toHaveBeenCalled();
@@ -116,13 +131,18 @@ describe("一次性登录确认", () => {
   it("规范站点地址与反向代理的内部 origin 不一致时仍接受同一站点", () => {
     vi.stubEnv("NEXT_PUBLIC_SITE_URL", "https://www.bingetrack.ing");
     const request = {
-      headers: { get: (name: string) => (name === "origin" ? "https://www.bingetrack.ing" : name === "host" ? "internal.local" : null) },
+      headers: {
+        get: (name: string) =>
+          name === "origin" ? "https://www.bingetrack.ing" : name === "host" ? "internal.local" : null,
+      },
       nextUrl: { origin: "http://internal.local", protocol: "http:" },
     };
     expect(isSameOrigin(request)).toBe(true);
-    expect(isSameOrigin({
-      ...request,
-      headers: { get: (name: string) => (name === "origin" ? "https://evil.example" : null) },
-    })).toBe(false);
+    expect(
+      isSameOrigin({
+        ...request,
+        headers: { get: (name: string) => (name === "origin" ? "https://evil.example" : null) },
+      }),
+    ).toBe(false);
   });
 });

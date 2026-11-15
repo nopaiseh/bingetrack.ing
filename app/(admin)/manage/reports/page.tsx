@@ -6,7 +6,10 @@ import { partitionReports, previewCopy, REPORT_PREVIEW_LIMIT, reportCardBase, ty
 import ReportsBoard from "./ReportsBoard";
 
 /** 只取每份待处理报告的前几行，供概览卡片展示；读失败时卡片仍显示数量。 */
-async function readPreviews(db: Awaited<ReturnType<typeof requireOwner>>["db"], kind: ReportKind): Promise<ReportPreview[]> {
+async function readPreviews(
+  db: Awaited<ReturnType<typeof requireOwner>>["db"],
+  kind: ReportKind,
+): Promise<ReportPreview[]> {
   try {
     const { data, error } = await db
       .from(reports[kind].view)
@@ -16,7 +19,7 @@ async function readPreviews(db: Awaited<ReturnType<typeof requireOwner>>["db"], 
       .order("id")
       .limit(REPORT_PREVIEW_LIMIT);
     if (error || !data) return [];
-    return (data as ReportRow[]).map(row => ({ id: row.id, href: reportRowHref(row), ...previewCopy(kind, row) }));
+    return (data as ReportRow[]).map((row) => ({ id: row.id, href: reportRowHref(row), ...previewCopy(kind, row) }));
   } catch {
     return [];
   }
@@ -27,21 +30,31 @@ export default async function ReportsPage() {
   const { db } = await requireOwner();
   const counts = await readReportCounts(db);
   const { pending, cleared } = partitionReports(counts);
-  const pendingCards = await Promise.all(pending.map(async kind => {
-    const count = counts.get(kind) ?? null;
-    return { ...reportCardBase(kind), count, previews: count ? await readPreviews(db, kind) : [] };
-  }));
-  const clearedCards = cleared.map(kind => ({ ...reportCardBase(kind), count: 0, previews: [] }));
-  return <section>
-    <PageHeader
-      eyebrow={<AdminCrumb current="报告" />}
-      title="数据报告"
-      description="挑出缺漏、闲置与可疑的资料。未处理的在前，已清理的单独收起或弱化。"
-      actions={<>
-        <span className="admin-report-pill is-pending"><span className="font-mono">{pending.length}</span> 份待处理</span>
-        <span className="admin-report-pill"><span className="font-mono">{cleared.length}</span> 份已清理</span>
-      </>}
-    />
-    <ReportsBoard pending={pendingCards} cleared={clearedCards} />
-  </section>;
+  const pendingCards = await Promise.all(
+    pending.map(async (kind) => {
+      const count = counts.get(kind) ?? null;
+      return { ...reportCardBase(kind), count, previews: count ? await readPreviews(db, kind) : [] };
+    }),
+  );
+  const clearedCards = cleared.map((kind) => ({ ...reportCardBase(kind), count: 0, previews: [] }));
+  return (
+    <section>
+      <PageHeader
+        eyebrow={<AdminCrumb current="报告" />}
+        title="数据报告"
+        description="挑出缺漏、闲置与可疑的资料。未处理的在前，已清理的单独收起或弱化。"
+        actions={
+          <>
+            <span className="admin-report-pill is-pending">
+              <span className="font-mono">{pending.length}</span> 份待处理
+            </span>
+            <span className="admin-report-pill">
+              <span className="font-mono">{cleared.length}</span> 份已清理
+            </span>
+          </>
+        }
+      />
+      <ReportsBoard pending={pendingCards} cleared={clearedCards} />
+    </section>
+  );
 }

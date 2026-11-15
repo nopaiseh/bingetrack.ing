@@ -1,7 +1,12 @@
 import { describe, expect, it } from "vitest";
 import { groupCredits, type CreditRow } from "@/lib/admin/credits";
 
-const media = (id: string, type: string, release_date: string | null, title = id) => ({ id, title, type, release_date });
+const media = (id: string, type: string, release_date: string | null, title = id) => ({
+  id,
+  title,
+  type,
+  release_date,
+});
 
 describe("groupCredits", () => {
   it("merges roles for the same work, director first", () => {
@@ -24,8 +29,11 @@ describe("groupCredits", () => {
       { media_item_id: "new", role: "actor", media_items: media("new", "movie", "2024-01-01") },
     ];
     const groups = groupCredits(rows);
-    expect(groups.map(g => [g.type, g.label])).toEqual([["movie", "电影"], ["tv_show", "电视节目"]]);
-    expect(groups[0].works.map(w => w.media.id)).toEqual(["new", "old", "tbd"]);
+    expect(groups.map((g) => [g.type, g.label])).toEqual([
+      ["movie", "电影"],
+      ["tv_show", "电视节目"],
+    ]);
+    expect(groups[0].works.map((w) => w.media.id)).toEqual(["new", "old", "tbd"]);
   });
 
   it("skips rows whose media could not be read", () => {

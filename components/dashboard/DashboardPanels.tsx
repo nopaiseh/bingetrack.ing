@@ -30,18 +30,22 @@ export default function DashboardPanels({
   return (
     <div className="w-full">
       {topMediaError && selectedYear !== "All Time" && (
-        <div role="alert" className="mb-6 rounded-xl border border-red-400/30 bg-red-500/10 px-4 py-3 text-sm text-red-200">
+        <div
+          role="alert"
+          className="mb-6 rounded-xl border border-red-400/30 bg-red-500/10 px-4 py-3 text-sm text-red-200"
+        >
           {topMediaError}
         </div>
       )}
       {isTopMediaLoading && (
-        <div role="status" className="surface-muted mb-6 rounded-xl border border-white/10 px-4 py-3 text-sm text-fg-muted">
+        <div
+          role="status"
+          className="surface-muted mb-6 rounded-xl border border-white/10 px-4 py-3 text-sm text-fg-muted"
+        >
           正在加载 {selectedYear} 年度精选…
         </div>
       )}
-      {activeTab === "总览" && (
-        <OverviewBoards stats={stats} selectedYear={selectedYear} />
-      )}
+      {activeTab === "总览" && <OverviewBoards stats={stats} selectedYear={selectedYear} />}
       {activeTab === "电影" && (
         <DashboardCategoryPanel
           stats={stats}

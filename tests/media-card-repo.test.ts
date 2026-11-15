@@ -1,105 +1,164 @@
 import { beforeEach, expect, test, vi } from "vitest";
 
-const state = vi.hoisted(/* 在模块模拟提升阶段创建共享查询记录和模拟结果容器。 */ () => ({
-  executed: [] as Array<{
-    table: string;
-    args?: Record<string, unknown>;
-    columns?: string;
-    head?: boolean;
-    orders?: Array<{ column: string; ascending?: boolean; nullsFirst?: boolean }>;
-    gtes?: Array<{ column: string; value: unknown }>;
-    ltes?: Array<{ column: string; value: unknown }>;
-    ors?: string[];
-  }>,
-  results: {} as Record<string, { data: unknown; error: null | { code: string }; count?: number }>,
-}));
-vi.mock("@/lib/supabase/public-server", /* 提供可记录查询的 Supabase 模块替身。 */ () => ({
-  getSupabasePublicServer: /* 返回带链式查询接口的公开服务端客户端替身。 */ () => ({
-    /** 为指定表创建查询记录，并返回可等待的链式接口。 */
-    from(table: string, rpcArgs?: Record<string, unknown>, rpcOptions?: { head?: boolean }) {
-      const request: {
-        table: string;
-        args?: Record<string, unknown>;
-        columns?: string;
-        head?: boolean;
-        orders: Array<{ column: string; ascending?: boolean; nullsFirst?: boolean }>;
-        gtes: Array<{ column: string; value: unknown }>;
-        ltes: Array<{ column: string; value: unknown }>;
-        ors: string[];
-      } = { table, args: rpcArgs, head: rpcOptions?.head, orders: [], gtes: [], ltes: [], ors: [] };
-      const chain = {
-        /** 记录所选字段及是否仅查询计数，并返回链对象继续调用。 */
-        select(columns: string, options?: { head?: boolean }) { request.columns = columns; request.head = options?.head ?? request.head; return chain; },
-        eq: /* 忽略等值筛选并返回同一模拟查询链。 */ () => chain, in: /* 忽略集合筛选并返回同一模拟查询链。 */ () => chain,
-        order: /* 记录排序参数并返回同一模拟查询链。 */ (column: string, opts?: { ascending?: boolean; nullsFirst?: boolean }) => {
-          request.orders.push({ column, ascending: opts?.ascending, nullsFirst: opts?.nullsFirst });
-          return chain;
-        },
-        gte: /* 记录下限筛选并返回同一模拟查询链。 */ (column: string, value: unknown) => {
-          request.gtes.push({ column, value });
-          return chain;
-        },
-        lte: /* 记录上限筛选并返回同一模拟查询链。 */ (column: string, value: unknown) => {
-          request.ltes.push({ column, value });
-          return chain;
-        },
-        overlaps: () => chain, range: /* 忽略分页范围并返回同一模拟查询链。 */ () => chain, limit: /* 忽略条数限制并返回同一模拟查询链。 */ () => chain,
-        or: /* 记录“任一满足”筛选并返回同一模拟查询链。 */ (filter: string) => {
-          request.ors.push(filter);
-          return chain;
-        },
-        /** 等待查询时保存请求记录，再把预设表结果交给后续 Promise 回调。 */
-        then(resolve: (value: unknown) => unknown) {
-          state.executed.push(request);
-          const raw = state.results[table];
-          const result = typeof raw === "function" ? (raw as (req: typeof request) => unknown)(request) : raw;
-          return Promise.resolve(result ?? { data: [], error: null, count: 0 }).then(resolve);
-        },
-      };
-      return chain;
-    },
-    /** RPC 与表查询共用可链式调用的记录接口，结果按 `rpc:<函数名>` 取得。 */
-    rpc(fn: string, args?: Record<string, unknown>, options?: { head?: boolean }) {
-      return this.from(`rpc:${fn}`, args, options);
-    },
+const state = vi.hoisted(
+  /* 在模块模拟提升阶段创建共享查询记录和模拟结果容器。 */ () => ({
+    executed: [] as Array<{
+      table: string;
+      args?: Record<string, unknown>;
+      columns?: string;
+      head?: boolean;
+      orders?: Array<{ column: string; ascending?: boolean; nullsFirst?: boolean }>;
+      gtes?: Array<{ column: string; value: unknown }>;
+      ltes?: Array<{ column: string; value: unknown }>;
+      ors?: string[];
+    }>,
+    results: {} as Record<string, { data: unknown; error: null | { code: string }; count?: number }>,
   }),
-}));
-import { fetchMediaCardsServer, searchMediaServer, getSeasonsBySeriesId, fetchStatsServer, fetchUpcomingReleasesServer, MediaRepositoryError } from "@/lib/functions/media-repo";
+);
+vi.mock(
+  "@/lib/supabase/public-server",
+  /* 提供可记录查询的 Supabase 模块替身。 */ () => ({
+    getSupabasePublicServer: /* 返回带链式查询接口的公开服务端客户端替身。 */ () => ({
+      /** 为指定表创建查询记录，并返回可等待的链式接口。 */
+      from(table: string, rpcArgs?: Record<string, unknown>, rpcOptions?: { head?: boolean }) {
+        const request: {
+          table: string;
+          args?: Record<string, unknown>;
+          columns?: string;
+          head?: boolean;
+          orders: Array<{ column: string; ascending?: boolean; nullsFirst?: boolean }>;
+          gtes: Array<{ column: string; value: unknown }>;
+          ltes: Array<{ column: string; value: unknown }>;
+          ors: string[];
+        } = { table, args: rpcArgs, head: rpcOptions?.head, orders: [], gtes: [], ltes: [], ors: [] };
+        const chain = {
+          /** 记录所选字段及是否仅查询计数，并返回链对象继续调用。 */
+          select(columns: string, options?: { head?: boolean }) {
+            request.columns = columns;
+            request.head = options?.head ?? request.head;
+            return chain;
+          },
+          eq: /* 忽略等值筛选并返回同一模拟查询链。 */ () => chain,
+          in: /* 忽略集合筛选并返回同一模拟查询链。 */ () => chain,
+          order: /* 记录排序参数并返回同一模拟查询链。 */ (
+            column: string,
+            opts?: { ascending?: boolean; nullsFirst?: boolean },
+          ) => {
+            request.orders.push({ column, ascending: opts?.ascending, nullsFirst: opts?.nullsFirst });
+            return chain;
+          },
+          gte: /* 记录下限筛选并返回同一模拟查询链。 */ (column: string, value: unknown) => {
+            request.gtes.push({ column, value });
+            return chain;
+          },
+          lte: /* 记录上限筛选并返回同一模拟查询链。 */ (column: string, value: unknown) => {
+            request.ltes.push({ column, value });
+            return chain;
+          },
+          overlaps: () => chain,
+          range: /* 忽略分页范围并返回同一模拟查询链。 */ () => chain,
+          limit: /* 忽略条数限制并返回同一模拟查询链。 */ () => chain,
+          or: /* 记录“任一满足”筛选并返回同一模拟查询链。 */ (filter: string) => {
+            request.ors.push(filter);
+            return chain;
+          },
+          /** 等待查询时保存请求记录，再把预设表结果交给后续 Promise 回调。 */
+          then(resolve: (value: unknown) => unknown) {
+            state.executed.push(request);
+            const raw = state.results[table];
+            const result = typeof raw === "function" ? (raw as (req: typeof request) => unknown)(request) : raw;
+            return Promise.resolve(result ?? { data: [], error: null, count: 0 }).then(resolve);
+          },
+        };
+        return chain;
+      },
+      /** RPC 与表查询共用可链式调用的记录接口，结果按 `rpc:<函数名>` 取得。 */
+      rpc(fn: string, args?: Record<string, unknown>, options?: { head?: boolean }) {
+        return this.from(`rpc:${fn}`, args, options);
+      },
+    }),
+  }),
+);
+import {
+  fetchMediaCardsServer,
+  searchMediaServer,
+  getSeasonsBySeriesId,
+  fetchStatsServer,
+  fetchUpcomingReleasesServer,
+  MediaRepositoryError,
+} from "@/lib/functions/media-repo";
 
-beforeEach(/* 在每个测试前清空执行记录和模拟表结果。 */ () => { state.executed = []; state.results = {}; });
+beforeEach(
+  /* 在每个测试前清空执行记录和模拟表结果。 */ () => {
+    state.executed = [];
+    state.results = {};
+  },
+);
 
-test("catalog requests omit exact counts and detail columns", /* 验证目录卡片查询不请求精确总数，也不读取详情专用字段。 */ async () => {
-  state.results.v_all_media = { data: [{ id: "m", type: "movie", title: "Movie" }], error: null, count: 50 };
-  const rows = await fetchMediaCardsServer({ type: "movie", limit: 10 });
-  expect(rows).toHaveLength(1);
-  expect(state.executed).toHaveLength(1);
-  expect(state.executed[0].head).not.toBe(true);
-  expect(state.executed[0].columns).not.toMatch(/summary|casts|directors|runtime|\*/);
-});
+test(
+  "catalog requests omit exact counts and detail columns",
+  /* 验证目录卡片查询不请求精确总数，也不读取详情专用字段。 */ async () => {
+    state.results.v_all_media = { data: [{ id: "m", type: "movie", title: "Movie" }], error: null, count: 50 };
+    const rows = await fetchMediaCardsServer({ type: "movie", limit: 10 });
+    expect(rows).toHaveLength(1);
+    expect(state.executed).toHaveLength(1);
+    expect(state.executed[0].head).not.toBe(true);
+    expect(state.executed[0].columns).not.toMatch(/summary|casts|directors|runtime|\*/);
+  },
+);
 
-test("search retains exact pagination totals", /* 验证搜索仍执行计数请求，并保留精确分页总数。 */ async () => {
-  state.results.v_all_media = { data: [{ id: "m", type: "movie" }], error: null, count: 50 };
-  expect((await searchMediaServer()).total).toBe(50);
-  expect(state.executed.filter(/* 选出仅请求计数头的查询记录。 */ (query) => query.head)).toHaveLength(1);
-});
+test(
+  "search retains exact pagination totals",
+  /* 验证搜索仍执行计数请求，并保留精确分页总数。 */ async () => {
+    state.results.v_all_media = { data: [{ id: "m", type: "movie" }], error: null, count: 50 };
+    expect((await searchMediaServer()).total).toBe(50);
+    expect(state.executed.filter(/* 选出仅请求计数头的查询记录。 */ (query) => query.head)).toHaveLength(1);
+  },
+);
 
-test("series card years use aggregates without transferring episodes", /* 验证电视节目卡片从聚合视图读取年份范围，不传输逐集数据。 */ async () => {
-  state.results.v_all_media = { data: [{ id: "s", type: "tv_show", release_year: "2020 - Present" }], error: null };
-  state.results.v_media_series_years = { data: [{ series_id: "s", first_year: 2020, last_year: 2027 }], error: null };
-  expect((await fetchMediaCardsServer())[0].release_year).toBe("2020 - 2027");
-  expect(state.executed.map(/* 提取查询表名以断言实际访问的数据源。 */ (query) => query.table)).toEqual(["v_all_media", "v_media_series_years"]);
-});
+test(
+  "series card years use aggregates without transferring episodes",
+  /* 验证电视节目卡片从聚合视图读取年份范围，不传输逐集数据。 */ async () => {
+    state.results.v_all_media = { data: [{ id: "s", type: "tv_show", release_year: "2020 - Present" }], error: null };
+    state.results.v_media_series_years = { data: [{ series_id: "s", first_year: 2020, last_year: 2027 }], error: null };
+    expect((await fetchMediaCardsServer())[0].release_year).toBe("2020 - 2027");
+    expect(state.executed.map(/* 提取查询表名以断言实际访问的数据源。 */ (query) => query.table)).toEqual([
+      "v_all_media",
+      "v_media_series_years",
+    ]);
+  },
+);
 
-test("season aggregates preserve empty seasons and single-year display", /* 验证季摘要保留空季，并将同年范围显示为单个年份。 */ async () => {
-  state.results.v_media_season_summaries = { data: [
-    { id: "empty", season_number: 1, episode_count: 0, watched_episode_count: 0, first_year: null, last_year: null },
-    { id: "full", season_number: 2, episode_count: 12, watched_episode_count: 8, first_year: 2026, last_year: 2026 },
-  ], error: null };
-  const rows = await getSeasonsBySeriesId("12345678-1234-1234-1234-123456789abc");
-  expect(rows[0]).toMatchObject({ title: "第 1 季", episodeCount: 0, releaseYearRange: undefined });
-  expect(rows[1]).toMatchObject({ episodeCount: 12, watchedEpisodeCount: 8, releaseYearRange: "2026" });
-  expect(state.executed).toHaveLength(1);
-});
+test(
+  "season aggregates preserve empty seasons and single-year display",
+  /* 验证季摘要保留空季，并将同年范围显示为单个年份。 */ async () => {
+    state.results.v_media_season_summaries = {
+      data: [
+        {
+          id: "empty",
+          season_number: 1,
+          episode_count: 0,
+          watched_episode_count: 0,
+          first_year: null,
+          last_year: null,
+        },
+        {
+          id: "full",
+          season_number: 2,
+          episode_count: 12,
+          watched_episode_count: 8,
+          first_year: 2026,
+          last_year: 2026,
+        },
+      ],
+      error: null,
+    };
+    const rows = await getSeasonsBySeriesId("12345678-1234-1234-1234-123456789abc");
+    expect(rows[0]).toMatchObject({ title: "第 1 季", episodeCount: 0, releaseYearRange: undefined });
+    expect(rows[1]).toMatchObject({ episodeCount: 12, watchedEpisodeCount: 8, releaseYearRange: "2026" });
+    expect(state.executed).toHaveLength(1);
+  },
+);
 
 test("aggregate view errors throw MediaRepositoryError and do not scan episodes", async () => {
   const id = "12345678-1234-1234-1234-123456789abc";
@@ -125,21 +184,26 @@ test("aggregate view errors throw MediaRepositoryError and do not scan episodes"
   expect(state.executed.map((query) => query.table)).toEqual(["v_all_media", "v_media_series_years"]);
 });
 
-test("fetchStatsServer converts string counts to numbers including upcoming", /* 验证统计函数正确转换各种计数为数字（包括 upcoming）。 */ async () => {
-  state.results["rpc:get_media_stats"] = {
-    data: [{ total: "10", watched: "5", watching: "2", want: "3", upcoming: "1" }],
-    error: null,
-  };
-  const stats = await fetchStatsServer("tv_show");
-  expect(stats).toEqual({
-    total: 10,
-    watched: 5,
-    watching: 2,
-    want: 3,
-    upcoming: 1,
-  });
-  expect(state.executed.map(/* 提取查询表名以确认执行了 RPC。 */ (query) => query.table)).toEqual(["rpc:get_media_stats"]);
-});
+test(
+  "fetchStatsServer converts string counts to numbers including upcoming",
+  /* 验证统计函数正确转换各种计数为数字（包括 upcoming）。 */ async () => {
+    state.results["rpc:get_media_stats"] = {
+      data: [{ total: "10", watched: "5", watching: "2", want: "3", upcoming: "1" }],
+      error: null,
+    };
+    const stats = await fetchStatsServer("tv_show");
+    expect(stats).toEqual({
+      total: 10,
+      watched: 5,
+      watching: 2,
+      want: 3,
+      upcoming: 1,
+    });
+    expect(state.executed.map(/* 提取查询表名以确认执行了 RPC。 */ (query) => query.table)).toEqual([
+      "rpc:get_media_stats",
+    ]);
+  },
+);
 
 test("fetchMediaCardsServer retries on transient gateway timeout and succeeds on retry", async () => {
   let attempt = 0;
@@ -177,13 +241,17 @@ test("fetchMediaCardsServer applies decoupled year interval filter on last_air_d
   expect(query?.ltes).toEqual([{ column: "first_air_date", value: "2015-12-31" }]);
 });
 
-
 test("keyword search matches inside the database function without ID round-trips", async () => {
   state.results["rpc:search_media"] = { data: [{ id: "m", type: "movie", title: "Movie" }], error: null, count: 250 };
   const result = await searchMediaServer({ q: "  星光 ", type: "movie", creditRole: "actor", limit: 30 });
   expect(result.total).toBe(250);
   expect(state.executed.map((query) => query.table)).toEqual(["rpc:search_media", "rpc:search_media"]);
-  expect(state.executed[0].args).toEqual({ p_query: "星光", p_types: ["movie"], p_series_only: false, p_credit_roles: ["actor"] });
+  expect(state.executed[0].args).toEqual({
+    p_query: "星光",
+    p_types: ["movie"],
+    p_series_only: false,
+    p_credit_roles: ["actor"],
+  });
   expect(state.executed.filter((query) => query.head)).toHaveLength(1);
 });
 
@@ -199,33 +267,76 @@ test("series-only browsing uses the database function; plain catalogs keep the v
   expect(state.executed.every((query) => query.table === "v_all_media")).toBe(true);
 });
 
-test("upcoming filter is OR-combined with watch statuses", /* 验证“即将上映”与观看状态同选时按任一满足合并，数据与计数查询一致。 */ async () => {
-  state.results.v_all_media = { data: [], error: null, count: 0 };
-  await searchMediaServer({ status: "want_to_watch", upcoming: true });
-  const [dataQuery, countQuery] = state.executed;
-  expect(dataQuery.ors).toEqual([expect.stringMatching(/^status\.in\.\(want_to_watch\),last_air_date\.gte\.\d{4}-\d{2}-\d{2}$/)]);
-  expect(countQuery.ors).toEqual(dataQuery.ors);
-});
+test(
+  "upcoming filter is OR-combined with watch statuses",
+  /* 验证“即将上映”与观看状态同选时按任一满足合并，数据与计数查询一致。 */ async () => {
+    state.results.v_all_media = { data: [], error: null, count: 0 };
+    await searchMediaServer({ status: "want_to_watch", upcoming: true });
+    const [dataQuery, countQuery] = state.executed;
+    expect(dataQuery.ors).toEqual([
+      expect.stringMatching(/^status\.in\.\(want_to_watch\),last_air_date\.gte\.\d{4}-\d{2}-\d{2}$/),
+    ]);
+    expect(countQuery.ors).toEqual(dataQuery.ors);
+  },
+);
 
-test("status values outside the allowlist never reach the or() expression", /* 验证即使调用方未校验，拼入 .or() 的状态也只保留允许值，防止 PostgREST 过滤注入。 */ async () => {
-  state.results.v_all_media = { data: [], error: null, count: 0 };
-  await searchMediaServer({ status: "watched,id.neq.0),title.eq.x", upcoming: true });
-  expect(state.executed[0].ors).toEqual([expect.stringMatching(/^status\.in\.\(watched\),last_air_date\.gte\.\d{4}-\d{2}-\d{2}$/)]);
-});
+test(
+  "status values outside the allowlist never reach the or() expression",
+  /* 验证即使调用方未校验，拼入 .or() 的状态也只保留允许值，防止 PostgREST 过滤注入。 */ async () => {
+    state.results.v_all_media = { data: [], error: null, count: 0 };
+    await searchMediaServer({ status: "watched,id.neq.0),title.eq.x", upcoming: true });
+    expect(state.executed[0].ors).toEqual([
+      expect.stringMatching(/^status\.in\.\(watched\),last_air_date\.gte\.\d{4}-\d{2}-\d{2}$/),
+    ]);
+  },
+);
 
-test("upcoming releases merge movies and next episodes with series details", /* 验证倒计时候选合并电影与单集，单集用所属剧的标题和海报并链接到季页。 */ async () => {
-  state.results.v_all_media = ((request: { columns?: string; gtes: Array<{ column: string }> }) => request.gtes.length > 0
-    ? { data: [{ id: "m1", type: "movie", title: "Dune", sort_date: "2026-10-09", genres: [], languages: [] }], error: null }
-    : { data: [{ id: "s1", type: "tv_show", title: "Severance", cover_url: "https://example.com/s.jpg", summary: "Office.", genres: [], languages: [] }], error: null }) as never;
-  state.results.media_items = { data: [
-    { id: "e1", title: "Echo", release_date: "2026-09-28", tv_episodes: { season_id: "season-3", episode_number: 5, tv_seasons: { season_number: 3, series_id: "s1" } } },
-  ], error: null };
+test(
+  "upcoming releases merge movies and next episodes with series details",
+  /* 验证倒计时候选合并电影与单集，单集用所属剧的标题和海报并链接到季页。 */ async () => {
+    state.results.v_all_media = ((request: { columns?: string; gtes: Array<{ column: string }> }) =>
+      request.gtes.length > 0
+        ? {
+            data: [{ id: "m1", type: "movie", title: "Dune", sort_date: "2026-10-09", genres: [], languages: [] }],
+            error: null,
+          }
+        : {
+            data: [
+              {
+                id: "s1",
+                type: "tv_show",
+                title: "Severance",
+                cover_url: "https://example.com/s.jpg",
+                summary: "Office.",
+                genres: [],
+                languages: [],
+              },
+            ],
+            error: null,
+          }) as never;
+    state.results.media_items = {
+      data: [
+        {
+          id: "e1",
+          title: "Echo",
+          release_date: "2026-09-28",
+          tv_episodes: { season_id: "season-3", episode_number: 5, tv_seasons: { season_number: 3, series_id: "s1" } },
+        },
+      ],
+      error: null,
+    };
 
-  const releases = await fetchUpcomingReleasesServer();
-  expect(releases.map((item) => item.id)).toEqual(["e1", "m1"]);
-  expect(releases[0]).toMatchObject({
-    kind: "episode", groupId: "s1", title: "Severance", subtitle: "第 3 季 · 第 5 集 · Echo",
-    href: "/shows/s1/seasons/season-3", cover_url: "https://example.com/s.jpg", summary: "Office.",
-  });
-  expect(releases[1]).toMatchObject({ kind: "movie", href: "/movies/m1", releaseDate: "2026-10-09" });
-});
+    const releases = await fetchUpcomingReleasesServer();
+    expect(releases.map((item) => item.id)).toEqual(["e1", "m1"]);
+    expect(releases[0]).toMatchObject({
+      kind: "episode",
+      groupId: "s1",
+      title: "Severance",
+      subtitle: "第 3 季 · 第 5 集 · Echo",
+      href: "/shows/s1/seasons/season-3",
+      cover_url: "https://example.com/s.jpg",
+      summary: "Office.",
+    });
+    expect(releases[1]).toMatchObject({ kind: "movie", href: "/movies/m1", releaseDate: "2026-10-09" });
+  },
+);

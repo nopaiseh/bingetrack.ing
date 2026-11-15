@@ -12,7 +12,9 @@ import { buildMediaJsonLd, buildMediaMetadata, serializeJsonLd } from "@/lib/seo
 export const revalidate = 86400;
 
 /** 构建时不枚举详情 ID，让动态详情路由在访问时按需生成。 */
-export function generateStaticParams() { return []; }
+export function generateStaticParams() {
+  return [];
+}
 
 /** 用缓存的电影详情生成页面与分享元数据；无记录时返回未找到标题。 */
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
@@ -24,29 +26,31 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
 
 /** 并行读取各作品系列的相关条目，按系列分组展示横向卡片列表。 */
 async function RelatedMovies({ seriesNames, currentId }: { seriesNames: string[]; currentId: string }) {
-  const relatedGroups = await Promise.all(seriesNames.map(/* 读取该作品系列中除当前作品外的条目，并保留系列名作为分组标题。 */ async (seriesName) => ({
-    seriesName,
-    items: await getRelatedBySeries(seriesName, currentId),
-  })));
+  const relatedGroups = await Promise.all(
+    seriesNames.map(
+      /* 读取该作品系列中除当前作品外的条目，并保留系列名作为分组标题。 */ async (seriesName) => ({
+        seriesName,
+        items: await getRelatedBySeries(seriesName, currentId),
+      }),
+    ),
+  );
   // 系列里没有其他条目时不渲染任何节点，外层留白容器随之隐藏。
   const groups = relatedGroups.filter(/* 只保留有其他条目的系列分组。 */ ({ items }) => items.length > 0);
   if (groups.length === 0) return null;
 
   return (
     <div className="space-y-12">
-      {groups.map(/* 为一个作品系列渲染相关媒体横向列表。 */ ({ seriesName, items }) => (
-        <MediaRow key={seriesName} title={`《${seriesName}》系列`} items={items} />
-      ))}
+      {groups.map(
+        /* 为一个作品系列渲染相关媒体横向列表。 */ ({ seriesName, items }) => (
+          <MediaRow key={seriesName} title={`《${seriesName}》系列`} items={items} />
+        ),
+      )}
     </div>
   );
 }
 
 /** 读取电影详情，缺失或类型不符时进入 404；输出详情、结构化数据及异步相关作品区。 */
-export default async function MovieDetailPage({
-  params,
-}: {
-  params: Promise<{ id: string }>;
-}) {
+export default async function MovieDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const movie = await getCachedMediaById(id);
   if (!movie) notFound();
@@ -56,19 +60,18 @@ export default async function MovieDetailPage({
 
   return (
     <div className="relative text-fg selection:bg-[var(--accent-soft)] selection:text-white font-sans">
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: serializeJsonLd(jsonLd) }}
-      />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: serializeJsonLd(jsonLd) }} />
       <MediaInformation
         media={movie}
         seasons={null}
         releaseDateLabel={movie.date}
-        relatedContent={movie.series && movie.series.length > 0 ? (
-          <Suspense fallback={<RelatedMediaLoadingSkeleton />}>
-            <RelatedMovies seriesNames={movie.series} currentId={movie.id} />
-          </Suspense>
-        ) : null}
+        relatedContent={
+          movie.series && movie.series.length > 0 ? (
+            <Suspense fallback={<RelatedMediaLoadingSkeleton />}>
+              <RelatedMovies seriesNames={movie.series} currentId={movie.id} />
+            </Suspense>
+          ) : null
+        }
       />
     </div>
   );

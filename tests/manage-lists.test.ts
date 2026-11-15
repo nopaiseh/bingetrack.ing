@@ -109,13 +109,26 @@ describe("管理列表参数", () => {
 
 describe("人物与影视列表查询", () => {
   it("人物按姓名搜索、精确计数并按白名单排序", async () => {
-    const { db, queries } = fakeDb((query) => query.table === "people" ? {
-      data: [{ id: personA, name: "周星驰", alternate_name: "星爷", media_credits: [{ count: 4 }] }],
-      count: 773,
-    } : {});
-    const page = await listAdminPeople(db, { page: 2, pageSize: 10, q: "100%", sort: "alternate_name", direction: "desc" });
+    const { db, queries } = fakeDb((query) =>
+      query.table === "people"
+        ? {
+            data: [{ id: personA, name: "周星驰", alternate_name: "星爷", media_credits: [{ count: 4 }] }],
+            count: 773,
+          }
+        : {},
+    );
+    const page = await listAdminPeople(db, {
+      page: 2,
+      pageSize: 10,
+      q: "100%",
+      sort: "alternate_name",
+      direction: "desc",
+    });
     const people = queries[0];
-    expect(people.calls[0]).toEqual({ method: "select", args: ["id,name,alternate_name,media_credits(count)", { count: "exact" }] });
+    expect(people.calls[0]).toEqual({
+      method: "select",
+      args: ["id,name,alternate_name,media_credits(count)", { count: "exact" }],
+    });
     expect(calls(people, "or")[0].args).toEqual([nameOrAliasFilter("100%")]);
     expect(calls(people, "order").map((call) => call.args)).toEqual([
       ["alternate_name", { ascending: false, nullsFirst: false }],
@@ -141,13 +154,28 @@ describe("人物与影视列表查询", () => {
 
   it("电影按排序视图分页，再按原顺序补封面和季集数", async () => {
     const { db, queries } = fakeDb((query) => {
-      if (query.table === "v_manage_media_order") return {
-        data: [
-          { id: movieB, title: "后", alternate_title: null, status: "watched", rating: "8.5", sort_date: "2024-02-02" },
-          { id: movieA, title: "先", alternate_title: "Earlier", status: null, rating: null, sort_date: "2020-01-01" },
-        ],
-        count: 40,
-      };
+      if (query.table === "v_manage_media_order")
+        return {
+          data: [
+            {
+              id: movieB,
+              title: "后",
+              alternate_title: null,
+              status: "watched",
+              rating: "8.5",
+              sort_date: "2024-02-02",
+            },
+            {
+              id: movieA,
+              title: "先",
+              alternate_title: "Earlier",
+              status: null,
+              rating: null,
+              sort_date: "2020-01-01",
+            },
+          ],
+          count: 40,
+        };
       return {
         data: [
           { id: movieA, cover_url: "https://image.tmdb.org/a", release_date: "2020-01-01", runtime: "90", seasons: [] },
@@ -164,8 +192,20 @@ describe("人物与影视列表查询", () => {
     expect(calls(ordered, "range")[0].args).toEqual([0, 24]);
     expect(page.total).toBe(40);
     expect(page.items.map((item) => item.id)).toEqual([movieB, movieA]);
-    expect(page.items[0]).toMatchObject({ status: "watched", rating: 8.5, runtime: 100, season_count: 0, episode_count: 0 });
-    expect(page.items[1]).toMatchObject({ status: "want_to_watch", rating: null, runtime: 90, alternate_title: "Earlier", cover_url: "https://image.tmdb.org/a" });
+    expect(page.items[0]).toMatchObject({
+      status: "watched",
+      rating: 8.5,
+      runtime: 100,
+      season_count: 0,
+      episode_count: 0,
+    });
+    expect(page.items[1]).toMatchObject({
+      status: "want_to_watch",
+      rating: null,
+      runtime: 90,
+      alternate_title: "Earlier",
+      cover_url: "https://image.tmdb.org/a",
+    });
     expect(queries[1].table).toBe("media_items");
   });
 
@@ -178,20 +218,40 @@ describe("人物与影视列表查询", () => {
   });
 
   it("季集数量来自嵌入计数", async () => {
-    const { db } = fakeDb((query) => query.table === "v_manage_media_order" ? {
-      data: [{ id: showA, title: "节目", alternate_title: null, status: "watching", rating: 7, sort_date: "2024-05-01" }],
-      count: 1,
-    } : {
-      data: [{
-        id: showA,
-        cover_url: null,
-        release_date: null,
-        runtime: null,
-        seasons: [{ episodes: [{ count: 3 }] }, { episodes: [{ count: 2 }] }],
-      }],
-    });
+    const { db } = fakeDb((query) =>
+      query.table === "v_manage_media_order"
+        ? {
+            data: [
+              {
+                id: showA,
+                title: "节目",
+                alternate_title: null,
+                status: "watching",
+                rating: 7,
+                sort_date: "2024-05-01",
+              },
+            ],
+            count: 1,
+          }
+        : {
+            data: [
+              {
+                id: showA,
+                cover_url: null,
+                release_date: null,
+                runtime: null,
+                seasons: [{ episodes: [{ count: 3 }] }, { episodes: [{ count: 2 }] }],
+              },
+            ],
+          },
+    );
     const page = await listAdminMedia(db, "tv_show", { sort: "title" });
-    expect(page.items[0]).toMatchObject({ season_count: 2, episode_count: 5, status: "watching", sort_date: "2024-05-01" });
+    expect(page.items[0]).toMatchObject({
+      season_count: 2,
+      episode_count: 5,
+      status: "watching",
+      sort_date: "2024-05-01",
+    });
   });
 
   it("非法排序不会查询数据库", async () => {
@@ -209,13 +269,20 @@ describe("季与单集列表", () => {
 
   it("默认日期倒序和空筛选，页码夹在 1 到上限，搜索词只截断", () => {
     expect(parseAdminChildQuery("tv_episode", undefined, {})).toEqual({
-      page: 1, pageSize: 25, q: "", sort: "date", status: "", parent: "",
+      page: 1,
+      pageSize: 25,
+      q: "",
+      sort: "date",
+      status: "",
+      parent: "",
     });
     expect(parseAdminChildQuery("tv_episode", "  ", { page: "0" }).page).toBe(1);
     expect(parseAdminChildQuery("tv_episode", null, { page: "-4" }).page).toBe(1);
     expect(parseAdminChildQuery("tv_episode", null, { page: "12abc" }).page).toBe(12);
     expect(parseAdminChildQuery("tv_episode", null, { page: "nope" }).page).toBe(1);
-    expect(parseAdminChildQuery("tv_season", null, { page: String(ADMIN_LIST_MAX_PAGE + 1) }).page).toBe(ADMIN_LIST_MAX_PAGE);
+    expect(parseAdminChildQuery("tv_season", null, { page: String(ADMIN_LIST_MAX_PAGE + 1) }).page).toBe(
+      ADMIN_LIST_MAX_PAGE,
+    );
     expect(parseAdminChildQuery("tv_episode", null, { q: `  ${"x".repeat(250)}` }).q).toHaveLength(200);
     expect(parseAdminChildQuery("tv_episode", null, { q: "  星  " }).q).toBe("  星  ");
     expect(parseAdminChildQuery("tv_episode", null, { pageSize: "100" }).pageSize).toBe(25);
@@ -223,16 +290,26 @@ describe("季与单集列表", () => {
 
   it("排序、状态和上级只接受白名单，季不能按评分排序，单集不接受在看", () => {
     expect(parseAdminChildQuery("tv_episode", showA, { sort: "rating", status: "watching" })).toMatchObject({
-      sort: "rating", status: "", parent: showA,
+      sort: "rating",
+      status: "",
+      parent: showA,
     });
     expect(parseAdminChildQuery("tv_episode", showA, { status: "watched" }).status).toBe("watched");
     expect(parseAdminChildQuery("tv_episode", showA, { status: "want_to_watch" }).status).toBe("want_to_watch");
     expect(parseAdminChildQuery("tv_season", showA, { status: "watching" }).status).toBe("watching");
-    expect(parseAdminChildQuery("tv_season", showA.toUpperCase(), { sort: "rating", status: "watched" })).toMatchObject({
-      sort: "date", status: "watched", parent: showA.toUpperCase(),
-    });
-    expect(parseAdminChildQuery("tv_episode", "not-a-uuid", { sort: "item_number", status: "watched,id.neq.0" })).toMatchObject({
-      sort: "date", status: "", parent: "",
+    expect(parseAdminChildQuery("tv_season", showA.toUpperCase(), { sort: "rating", status: "watched" })).toMatchObject(
+      {
+        sort: "date",
+        status: "watched",
+        parent: showA.toUpperCase(),
+      },
+    );
+    expect(
+      parseAdminChildQuery("tv_episode", "not-a-uuid", { sort: "item_number", status: "watched,id.neq.0" }),
+    ).toMatchObject({
+      sort: "date",
+      status: "",
+      parent: "",
     });
     expect(parseAdminChildQuery("tv_season", showA, { sort: "title", status: "want_to_watch" }).sort).toBe("title");
     expect(parseAdminChildListType("tv_episode")).toBe("tv_episode");
@@ -242,13 +319,14 @@ describe("季与单集列表", () => {
 
   it("季按排序视图分页，状态和日期取视图，不使用条目自身的观看记录", async () => {
     const { db, queries } = fakeDb((query) => {
-      if (query.table === "v_manage_media_order") return {
-        data: [
-          { id: seasonB, status: "watching", rating: 9, sort_date: "2025-03-01" },
-          { id: seasonId, status: null, rating: null, sort_date: "2024-01-01" },
-        ],
-        count: 30,
-      };
+      if (query.table === "v_manage_media_order")
+        return {
+          data: [
+            { id: seasonB, status: "watching", rating: 9, sort_date: "2025-03-01" },
+            { id: seasonId, status: null, rating: null, sort_date: "2024-01-01" },
+          ],
+          count: 30,
+        };
       return {
         data: [
           {
@@ -276,11 +354,20 @@ describe("季与单集列表", () => {
         ],
       };
     });
-    const page = await listAdminChildren(db, "tv_season", showA, { q: "100%", status: "watching", sort: "title", page: "2" });
+    const page = await listAdminChildren(db, "tv_season", showA, {
+      q: "100%",
+      status: "watching",
+      sort: "title",
+      page: "2",
+    });
     const ordered = queries[0];
     expect(ordered.table).toBe("v_manage_media_order");
     expect(calls(ordered, "select")[0].args).toEqual(["id, status, rating, sort_date", { count: "exact" }]);
-    expect(calls(ordered, "eq").map((call) => call.args)).toEqual([["type", "tv_season"], ["parent_id", showA], ["status", "watching"]]);
+    expect(calls(ordered, "eq").map((call) => call.args)).toEqual([
+      ["type", "tv_season"],
+      ["parent_id", showA],
+      ["status", "watching"],
+    ]);
     expect(calls(ordered, "or")[0].args).toEqual([titleOrAliasFilter("100%")]);
     expect(calls(ordered, "order").map((call) => call.args)).toEqual([
       ["title"],
@@ -314,30 +401,54 @@ describe("季与单集列表", () => {
       season: { seriesTitle: null, seasonNumber: 2, episodeCount: 3 },
       episode: null,
     });
-    expect(page.items[1]).toMatchObject({ status: "want_to_watch", rating: null, display_date: "2024-01-01", season: { seriesTitle: "人生切割术", episodeCount: 9 } });
+    expect(page.items[1]).toMatchObject({
+      status: "want_to_watch",
+      rating: null,
+      display_date: "2024-01-01",
+      season: { seriesTitle: "人生切割术", episodeCount: 9 },
+    });
     expect(page.sort).toBe("title");
   });
 
   it("单集的状态和评分来自 tracking，日期来自上映日，评分排序写在最前", async () => {
-    const { db, queries } = fakeDb((query) => query.table === "v_manage_media_order" ? {
-      data: [{ id: episodeId, status: "want_to_watch", rating: 1, sort_date: "2024-06-01" }],
-      count: 1,
-    } : {
-      data: [{
-        id: episodeId,
-        title: "启程",
-        alternate_title: null,
-        type: "tv_episode",
-        cover_url: null,
-        release_date: "2024-06-02",
-        tracking: [{ status: "watched", rating: "8.5" }],
-        tv_seasons: null,
-        tv_episodes: { episode_number: 8, parent: { media_items: { title: "第 1 季" }, series: { title: "人生切割术" } } },
-      }],
-    });
+    const { db, queries } = fakeDb((query) =>
+      query.table === "v_manage_media_order"
+        ? {
+            data: [{ id: episodeId, status: "want_to_watch", rating: 1, sort_date: "2024-06-01" }],
+            count: 1,
+          }
+        : {
+            data: [
+              {
+                id: episodeId,
+                title: "启程",
+                alternate_title: null,
+                type: "tv_episode",
+                cover_url: null,
+                release_date: "2024-06-02",
+                tracking: [{ status: "watched", rating: "8.5" }],
+                tv_seasons: null,
+                tv_episodes: {
+                  episode_number: 8,
+                  parent: { media_items: { title: "第 1 季" }, series: { title: "人生切割术" } },
+                },
+              },
+            ],
+          },
+    );
     const page = await listAdminChildren(db, "tv_episode", seasonId, { sort: "rating", status: "watched" });
-    expect(calls(queries[0], "order").map((call) => call.args[0])).toEqual(["rating", "sort_date", "item_number", "title", "id"]);
-    expect(calls(queries[0], "eq").map((call) => call.args)).toEqual([["type", "tv_episode"], ["parent_id", seasonId], ["status", "watched"]]);
+    expect(calls(queries[0], "order").map((call) => call.args[0])).toEqual([
+      "rating",
+      "sort_date",
+      "item_number",
+      "title",
+      "id",
+    ]);
+    expect(calls(queries[0], "eq").map((call) => call.args)).toEqual([
+      ["type", "tv_episode"],
+      ["parent_id", seasonId],
+      ["status", "watched"],
+    ]);
     expect(page.items[0]).toMatchObject({
       status: "watched",
       rating: 8.5,
@@ -349,7 +460,11 @@ describe("季与单集列表", () => {
 
   it("空白页不再读取详情，非法排序和状态不会进入查询", async () => {
     const { db, queries, from } = fakeDb(() => ({ data: [], count: 0 }));
-    const page = await listAdminChildren(db, "tv_episode", "not-a-uuid", { q: "   ", sort: "release_date", status: "dropped" });
+    const page = await listAdminChildren(db, "tv_episode", "not-a-uuid", {
+      q: "   ",
+      sort: "release_date",
+      status: "dropped",
+    });
     expect(page).toMatchObject({ items: [], total: 0, page: 1, pageSize: 25, sort: "date", status: "", parent: "" });
     expect(queries).toHaveLength(1);
     expect(calls(queries[0], "or")).toHaveLength(1);
@@ -363,7 +478,10 @@ describe("季与单集列表", () => {
     const episodes = fakeDb(() => ({ data: [], count: 0 }));
     const episodePage = await listAdminChildren(episodes.db, "tv_episode", seasonId, { status: "watching" });
     expect(episodePage.status).toBe("");
-    expect(calls(episodes.queries[0], "eq").map((call) => call.args)).toEqual([["type", "tv_episode"], ["parent_id", seasonId]]);
+    expect(calls(episodes.queries[0], "eq").map((call) => call.args)).toEqual([
+      ["type", "tv_episode"],
+      ["parent_id", seasonId],
+    ]);
 
     const seasons = fakeDb(() => ({ data: [], count: 0 }));
     const seasonPage = await listAdminChildren(seasons.db, "tv_season", showA, { status: "watching" });
@@ -376,13 +494,21 @@ describe("季与单集列表", () => {
   });
 
   it("视图或详情查询失败时抛出原来的提示，且不退回逐条查询", async () => {
-    const missing = fakeDb(() => ({ data: null, error: { code: "PGRST205", message: "Could not find the table" }, count: null }));
-    await expect(listAdminChildren(missing.db, "tv_season", showA, {})).rejects.toSatisfy((error: Error) => error.message === readError && !error.message.includes("PGRST205"));
+    const missing = fakeDb(() => ({
+      data: null,
+      error: { code: "PGRST205", message: "Could not find the table" },
+      count: null,
+    }));
+    await expect(listAdminChildren(missing.db, "tv_season", showA, {})).rejects.toSatisfy(
+      (error: Error) => error.message === readError && !error.message.includes("PGRST205"),
+    );
     expect(missing.queries.map((query) => query.table)).toEqual(["v_manage_media_order"]);
 
-    const denied = fakeDb((query) => query.table === "media_items"
-      ? { data: null, error: { code: "42501", message: "permission denied" } }
-      : { data: [{ id: seasonId, status: "watched", rating: null, sort_date: "2024-01-01" }], count: 1 });
+    const denied = fakeDb((query) =>
+      query.table === "media_items"
+        ? { data: null, error: { code: "42501", message: "permission denied" } }
+        : { data: [{ id: seasonId, status: "watched", rating: null, sort_date: "2024-01-01" }], count: 1 },
+    );
     await expect(listAdminChildren(denied.db, "tv_season", null, {})).rejects.toThrow(readError);
     expect(denied.queries.map((query) => query.table)).toEqual(["v_manage_media_order", "media_items"]);
     expect(denied.queries.some((query) => query.table === "tv_seasons" || query.table === "tv_episodes")).toBe(false);
@@ -416,7 +542,9 @@ describe("批量删除与状态", () => {
     expect(blocked.queries).toHaveLength(1);
     expect(revalidateMediaItems).not.toHaveBeenCalled();
 
-    const rejected = fakeDb((query) => query.table === "people" ? { data: null, error: { code: "23503" } } : { data: [] });
+    const rejected = fakeDb((query) =>
+      query.table === "people" ? { data: null, error: { code: "23503" } } : { data: [] },
+    );
     expect(await bulkDeletePeople(rejected.db, [personA])).toEqual({ succeeded: 0, failed: 1 });
     expect(revalidateMediaItems).not.toHaveBeenCalled();
   });
@@ -439,9 +567,12 @@ describe("批量删除与状态", () => {
   });
 
   it("电视节目逐个调用 admin_delete_media，不用一条 DELETE 留下孤立的季集行", async () => {
-    const { db, queries, rpc } = fakeDb((query) => query.table === "media_items" ? { data: [{ id: showA, title: "人生切割术" }] } : {});
+    const { db, queries, rpc } = fakeDb((query) =>
+      query.table === "media_items" ? { data: [{ id: showA, title: "人生切割术" }] } : {},
+    );
     rpc.mockImplementation(async (fn, args) => {
-      const error: { code?: string } | null = fn === "admin_delete_media" && args.p_id === showA ? null : { code: "P0002" };
+      const error: { code?: string } | null =
+        fn === "admin_delete_media" && args.p_id === showA ? null : { code: "P0002" };
       return { data: null, error };
     });
     const result = await bulkDeleteTvShows(db, [showA, showB]);
@@ -453,9 +584,15 @@ describe("批量删除与状态", () => {
   });
 
   it("单个节目删除失败不影响其余节目的计数", async () => {
-    const { db, rpc } = fakeDb(() => ({ data: [{ id: showA, title: "甲" }, { id: showB, title: "乙" }] }));
+    const { db, rpc } = fakeDb(() => ({
+      data: [
+        { id: showA, title: "甲" },
+        { id: showB, title: "乙" },
+      ],
+    }));
     rpc.mockImplementation(async (fn, args) => {
-      const error: { code?: string } | null = fn === "admin_delete_media" && args.p_id === showB ? { code: "22023" } : null;
+      const error: { code?: string } | null =
+        fn === "admin_delete_media" && args.p_id === showB ? { code: "22023" } : null;
       return { data: null, error };
     });
     expect(await bulkDeleteTvShows(db, [showA, showB])).toEqual({ succeeded: 1, failed: 1 });
@@ -463,7 +600,9 @@ describe("批量删除与状态", () => {
   });
 
   it("电影状态只更新确认过的电影，且不带评分字段", async () => {
-    const { db, queries } = fakeDb((query) => query.table === "media_items" ? { data: [{ id: movieA }] } : { data: [{ media_item_id: movieA }] });
+    const { db, queries } = fakeDb((query) =>
+      query.table === "media_items" ? { data: [{ id: movieA }] } : { data: [{ media_item_id: movieA }] },
+    );
     const result = await bulkSetMovieStatus(db, [movieA, showA], "watched");
     const upsert = calls(queries[1], "upsert")[0].args;
     expect(queries[1].table).toBe("tracking");
@@ -482,7 +621,7 @@ describe("批量删除与状态", () => {
     expect(await bulkSetTvShowStatus(watched.db, [showA], "watched")).toEqual({ succeeded: 0, failed: 1 });
     expect(watched.queries.some((query) => query.table === "tracking")).toBe(false);
 
-    const want = fakeDb((query) => query.table === "media_items" ? { data: [{ id: showA }] } : { data: [] });
+    const want = fakeDb((query) => (query.table === "media_items" ? { data: [{ id: showA }] } : { data: [] }));
     expect(await bulkSetTvShowStatus(want.db, [showA], "want_to_watch")).toEqual({ succeeded: 1, failed: 0 });
     expect(want.queries.some((query) => query.table === "tracking")).toBe(false);
     expect(revalidateMediaItems).not.toHaveBeenCalled();
@@ -493,7 +632,8 @@ describe("批量删除与状态", () => {
       if (query.table === "media_items") return { data: [{ id: showA }] };
       if (query.table === "tv_episodes") {
         const start = calls(query, "range")[0]?.args[0];
-        if (start === 0) return { data: Array.from({ length: 1000 }, () => ({ id: episodeA, tv_seasons: { series_id: showA } })) };
+        if (start === 0)
+          return { data: Array.from({ length: 1000 }, () => ({ id: episodeA, tv_seasons: { series_id: showA } })) };
         return { data: [{ id: episodeA, tv_seasons: [{ series_id: showA }] }] };
       }
       return { data: [] };

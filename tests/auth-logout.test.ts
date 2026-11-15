@@ -1,7 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const { signOut } = vi.hoisted(() => ({ signOut: vi.fn() }));
-const jar = vi.hoisted(() => ({ getAll: vi.fn<() => Array<{ name: string; value: string }>>(() => []), delete: vi.fn() }));
+const jar = vi.hoisted(() => ({
+  getAll: vi.fn<() => Array<{ name: string; value: string }>>(() => []),
+  delete: vi.fn(),
+}));
 
 vi.mock("@/lib/auth/server", () => ({
   getAuthServer: async () => ({ auth: { signOut } }),

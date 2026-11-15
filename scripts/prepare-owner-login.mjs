@@ -8,10 +8,13 @@ const secret = process.env.SUPABASE_SECRET_KEY?.trim();
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL;
 if (!email || !secret || !supabaseUrl || !siteUrl) {
-  throw new Error("请在忽略提交的 .env.local 中配置 OWNER_EMAIL、SUPABASE_SECRET_KEY、NEXT_PUBLIC_SUPABASE_URL 和 NEXT_PUBLIC_SITE_URL。");
+  throw new Error(
+    "请在忽略提交的 .env.local 中配置 OWNER_EMAIL、SUPABASE_SECRET_KEY、NEXT_PUBLIC_SUPABASE_URL 和 NEXT_PUBLIC_SITE_URL。",
+  );
 }
 const origin = new URL(siteUrl).origin;
-if (!origin.startsWith("https://") && !["localhost", "127.0.0.1"].includes(new URL(origin).hostname)) throw new Error("站点必须使用 HTTPS。");
+if (!origin.startsWith("https://") && !["localhost", "127.0.0.1"].includes(new URL(origin).hostname))
+  throw new Error("站点必须使用 HTTPS。");
 const db = createClient(supabaseUrl, secret, { auth: { persistSession: false, autoRefreshToken: false } });
 
 /** 分页定位指定账号，避免在账号已存在时生成另一个身份。 */
@@ -19,7 +22,9 @@ async function findUser() {
   for (let page = 1; ; page += 1) {
     const { data, error } = await db.auth.admin.listUsers({ page, perPage: 100 });
     if (error) throw new Error("无法读取 Auth 用户，请检查运维密钥和项目地址。");
-    const user = data.users.find(/* 按邮箱精确匹配指定账号。 */ user => user.email?.toLowerCase() === email.toLowerCase());
+    const user = data.users.find(
+      /* 按邮箱精确匹配指定账号。 */ (user) => user.email?.toLowerCase() === email.toLowerCase(),
+    );
     if (user) return user;
     if (data.users.length < 100) return null;
   }
@@ -28,7 +33,8 @@ async function findUser() {
 const owner = await db.from("site_owner").select("user_id").eq("singleton", true).maybeSingle();
 if (owner.error) throw new Error("请先确认数据库已包含站长结构，参阅 supabase/README.md。");
 let user = await findUser();
-if (owner.data && owner.data.user_id !== user?.id) throw new Error("数据库已配置其他站长；工具不会创建额外账号或替换现有站长。");
+if (owner.data && owner.data.user_id !== user?.id)
+  throw new Error("数据库已配置其他站长；工具不会创建额外账号或替换现有站长。");
 if (!user) {
   if (!process.argv.includes("--create")) throw new Error("账号不存在。首次创建请显式加 --create。");
   const { data, error } = await db.auth.admin.createUser({ email, email_confirm: true });

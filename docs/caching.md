@@ -9,15 +9,15 @@
 
 ## 公开路由
 
-| 路由 | 渲染方式 | 说明 |
-| --- | --- | --- |
-| `/` | 静态 + ISR，`revalidate = 3600` | `upcomingFirst` 按新加坡日历日计算。24 小时会让顺序在午夜后陈旧一整天，故缩短到 1 小时；页面本身不带缓存标签，管理写入仍按路径刷新 |
-| `/movies`、`/shows`、`/sitemap.xml` | 静态 + ISR，`revalidate = 86400` | 页面本身不带缓存标签，由管理写入按路径刷新 |
-| `/movies/[id]`、`/shows/[id]` | 按需 ISR，`generateStaticParams` 返回空数组 | 首次访问时生成，之后缓存 24 小时 |
-| `/shows/[id]/seasons/[seasonId]` | 按需 ISR，`generateStaticParams` 返回空数组 | 默认季页（第 1 页、全部、升序）首次访问时生成，之后缓存 24 小时。页面不读取分页或筛选参数；节目详情、季摘要、单集分页和下一集走数据缓存 |
-| `/search` | 动态 | 首屏结果只对部分条件走数据缓存（见下） |
-| `/api/media` | 动态 | `s-maxage=30, stale-while-revalidate=120`，只有 CDN 缓存，不写数据缓存 |
-| `/api/top-media` | 动态 | `s-maxage=60`，底层数据走数据缓存；条数固定为 10，缓存键只随类型和年份变化 |
+| 路由                                | 渲染方式                                    | 说明                                                                                                                                    |
+| ----------------------------------- | ------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| `/`                                 | 静态 + ISR，`revalidate = 3600`             | `upcomingFirst` 按新加坡日历日计算。24 小时会让顺序在午夜后陈旧一整天，故缩短到 1 小时；页面本身不带缓存标签，管理写入仍按路径刷新      |
+| `/movies`、`/shows`、`/sitemap.xml` | 静态 + ISR，`revalidate = 86400`            | 页面本身不带缓存标签，由管理写入按路径刷新                                                                                              |
+| `/movies/[id]`、`/shows/[id]`       | 按需 ISR，`generateStaticParams` 返回空数组 | 首次访问时生成，之后缓存 24 小时                                                                                                        |
+| `/shows/[id]/seasons/[seasonId]`    | 按需 ISR，`generateStaticParams` 返回空数组 | 默认季页（第 1 页、全部、升序）首次访问时生成，之后缓存 24 小时。页面不读取分页或筛选参数；节目详情、季摘要、单集分页和下一集走数据缓存 |
+| `/search`                           | 动态                                        | 首屏结果只对部分条件走数据缓存（见下）                                                                                                  |
+| `/api/media`                        | 动态                                        | `s-maxage=30, stale-while-revalidate=120`，只有 CDN 缓存，不写数据缓存                                                                  |
+| `/api/top-media`                    | 动态                                        | `s-maxage=60`，底层数据走数据缓存；条数固定为 10，缓存键只随类型和年份变化                                                              |
 
 `npm run build` 输出的路由表标出了每条路由是 ○（静态）、●（SSG）还是 ƒ（动态），以及 revalidate 时间。改动公开页面后应对比前后的路由表，确认没有意外变化。
 
@@ -27,17 +27,17 @@
 
 定义在 `lib/functions/cached-media.ts` 和 `lib/functions/search-options.ts`：
 
-| 数据 | key | 有效期 | 标签 |
-| --- | --- | --- | --- |
-| 条目详情 | `public-media-detail-v3` + ID | 24 小时 | `media`、`media:item:<id>` |
-| 电视节目的季摘要 | `public-media-seasons-v3` + ID | 24 小时 | `media`、`media:item:<id>` |
-| 单集分页与季统计 | `public-season-episodes-v2` + 节目 ID／季 ID／页码／每页条数／状态／排序 | 24 小时 | `media`、`media:item:<节目 ID>` |
-| 下一集 | `public-season-next-episode-v1` + 节目 ID／季 ID | 24 小时 | `media`、`media:item:<节目 ID>` |
-| 搜索首屏 | `public-media-search-v3` + 查询串 | 1 小时 | `media`、`media:lists` |
-| 榜单 | `public-media-top-v3` + 类型／年份／条数（固定 10） | 24 小时 | `media`、`media:lists` |
-| 即将上映、分布统计、年度统计 | `public-media-*-v2` | 24 小时 | `media`、`media:lists` |
-| 首页继续看 | `public-media-continue-watching-v1` | 24 小时 | `media`、`media:lists` |
-| 搜索筛选选项 | `search-options-v2` | 24 小时 | `media`、`media:lists` |
+| 数据                         | key                                                                      | 有效期  | 标签                            |
+| ---------------------------- | ------------------------------------------------------------------------ | ------- | ------------------------------- |
+| 条目详情                     | `public-media-detail-v3` + ID                                            | 24 小时 | `media`、`media:item:<id>`      |
+| 电视节目的季摘要             | `public-media-seasons-v3` + ID                                           | 24 小时 | `media`、`media:item:<id>`      |
+| 单集分页与季统计             | `public-season-episodes-v2` + 节目 ID／季 ID／页码／每页条数／状态／排序 | 24 小时 | `media`、`media:item:<节目 ID>` |
+| 下一集                       | `public-season-next-episode-v1` + 节目 ID／季 ID                         | 24 小时 | `media`、`media:item:<节目 ID>` |
+| 搜索首屏                     | `public-media-search-v3` + 查询串                                        | 1 小时  | `media`、`media:lists`          |
+| 榜单                         | `public-media-top-v3` + 类型／年份／条数（固定 10）                      | 24 小时 | `media`、`media:lists`          |
+| 即将上映、分布统计、年度统计 | `public-media-*-v2`                                                      | 24 小时 | `media`、`media:lists`          |
+| 首页继续看                   | `public-media-continue-watching-v1`                                      | 24 小时 | `media`、`media:lists`          |
+| 搜索筛选选项                 | `search-options-v2`                                                      | 24 小时 | `media`、`media:lists`          |
 
 非法 ID 在进入数据缓存前就返回，不会写入缓存条目。
 
@@ -49,11 +49,11 @@
 
 ## 写入后的失效
 
-| 操作 | 失效范围 |
-| --- | --- |
+| 操作                                                                                     | 失效范围                                                                                                                                                            |
+| ---------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | 保存、删除影视条目（含级联删掉的观看记录），批量修改电影或电视节目观看状态，修改系列成员 | `revalidateMediaItems`：条目本身、所属电视节目、同系列的其他作品各自的 `media:item:<id>`，加上 `media:lists`，再按路径刷新 `/`、`/movies`、`/shows`、`/sitemap.xml` |
-| 修改或删除人物、类型、地区、语言、系列；报告批量删除；合并人物；「刷新缓存」按钮 | `revalidateAllMedia`：`media` 标签 + `revalidatePath("/", "layout")`，全站失效 |
-| 标记「不是同一人」 | 不影响公开数据，不失效 |
+| 修改或删除人物、类型、地区、语言、系列；报告批量删除；合并人物；「刷新缓存」按钮         | `revalidateAllMedia`：`media` 标签 + `revalidatePath("/", "layout")`，全站失效                                                                                      |
+| 标记「不是同一人」                                                                       | 不影响公开数据，不失效                                                                                                                                              |
 
 电影和单集的观看写入都走上面第一行，不另建标签。保存条目时评分决定已看或想看（`manage_save_media` 写 `tracking`），批量操作直接改 `tracking.status`，删除会级联去掉观看记录。成功之后 `revalidateMediaItems` 调用 `revalidateTag("media:lists", { expire: 0 })`。继续看挂着这个标签，同时首页路径被 `revalidatePath("/")` 刷新，下一次访问不会继续用旧的 HTML，也不会从 24 小时数据缓存里读回旧进度。没有写进数据库的失败请求不失效。查询受影响条目失败时退回 `revalidateAllMedia`，失效 `media` 标签，继续看同样过期。手动「刷新缓存」也走 `media` 标签。绕过网站、直接在 Supabase 里改数据（例如用 SQL 或运维脚本改 `tracking`）不会触发失效，继续看最长会显示旧进度 24 小时；这种情况下请在管理台点现有的「刷新缓存」。
 

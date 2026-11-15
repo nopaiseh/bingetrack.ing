@@ -55,10 +55,14 @@ export function countActiveFilters(filters: SearchFilters) {
 /** 当前排序在结果上方的一句说明。 */
 export function sortCaption(sort: string) {
   switch (sort) {
-    case "date_asc": return "按上映日期，旧到新";
-    case "rating_desc": return "按评分，从高到低";
-    case "rating_asc": return "按评分，从低到高";
-    default: return "按上映日期，新到旧";
+    case "date_asc":
+      return "按上映日期，旧到新";
+    case "rating_desc":
+      return "按评分，从高到低";
+    case "rating_asc":
+      return "按评分，从低到高";
+    default:
+      return "按上映日期，新到旧";
   }
 }
 

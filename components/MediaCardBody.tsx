@@ -28,22 +28,22 @@ export default function MediaCardBody({ item, type }: { item: MediaCard; type: "
       </h3>
 
       <div className="flex min-w-0 items-center justify-between gap-1.5 text-xs">
-        <span className="shrink-0 whitespace-nowrap font-medium text-fg-secondary">
-          {mediaCardYear(item, type)}
-        </span>
+        <span className="shrink-0 whitespace-nowrap font-medium text-fg-secondary">{mediaCardYear(item, type)}</span>
         <MediaRatingBadge rating={item.rating} size="sm" showTier={item.rating != null} />
       </div>
 
       <div className="mt-1.5 flex min-h-6 w-full items-center gap-1.5 overflow-hidden">
-        {tags.map(/* 类型和语言用同一套 12px 徽标，过长时在卡片内截断。 */ (tag, index) => (
-          <span
-            key={`${tag}-${index}`}
-            title={tag}
-            className="inline-flex min-h-5 shrink items-center truncate rounded-md border border-[var(--border)] bg-[var(--surface-2)] px-1.5 py-0.5 text-xs font-medium tracking-wide text-fg-secondary transition-all duration-300 group-hover:border-[var(--accent-border)] group-hover:bg-[var(--accent-soft)] group-hover:text-fg"
-          >
-            {tag}
-          </span>
-        ))}
+        {tags.map(
+          /* 类型和语言用同一套 12px 徽标，过长时在卡片内截断。 */ (tag, index) => (
+            <span
+              key={`${tag}-${index}`}
+              title={tag}
+              className="inline-flex min-h-5 shrink items-center truncate rounded-md border border-[var(--border)] bg-[var(--surface-2)] px-1.5 py-0.5 text-xs font-medium tracking-wide text-fg-secondary transition-all duration-300 group-hover:border-[var(--accent-border)] group-hover:bg-[var(--accent-soft)] group-hover:text-fg"
+            >
+              {tag}
+            </span>
+          ),
+        )}
       </div>
     </div>
   );

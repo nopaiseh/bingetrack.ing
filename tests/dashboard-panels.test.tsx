@@ -32,30 +32,41 @@ describe("OverviewBoards", () => {
     expect(screen.getByText("电视节目看板")).toBeInTheDocument();
     expect(screen.getByText("0 / 0 部 · 0%")).toBeInTheDocument();
     expect(screen.getByText("0 / 0 集 · 0%")).toBeInTheDocument();
-    expect(screen.getAllByRole("link").some((link) => link.getAttribute("href") === "/search?type=movie&status=watched")).toBe(true);
+    expect(
+      screen.getAllByRole("link").some((link) => link.getAttribute("href") === "/search?type=movie&status=watched"),
+    ).toBe(true);
   });
 
   it("shows movie totals and season details from the stats object", () => {
-    const summary = [{
-      release_year: "2024",
-      watched_movies: 4,
-      unwatched_movies: 6,
-      watched_series: 2,
-      watching_series: 1,
-      unwatched_series: 3,
-      watched_series_episodes: 12,
-      unwatched_episodes: 30,
-      total_series_episodes: 42,
-      watched_seasons: 3,
-      watching_seasons: 1,
-      unwatched_seasons: 4,
-    } as Summary];
+    const summary = [
+      {
+        release_year: "2024",
+        watched_movies: 4,
+        unwatched_movies: 6,
+        watched_series: 2,
+        watching_series: 1,
+        unwatched_series: 3,
+        watched_series_episodes: 12,
+        unwatched_episodes: 30,
+        total_series_episodes: 42,
+        watched_seasons: 3,
+        watching_seasons: 1,
+        unwatched_seasons: 4,
+      } as Summary,
+    ];
     render(<OverviewBoards stats={statsFor(summary, "2024")} selectedYear="2024" />);
     expect(screen.getByText("4 / 10 部 · 40%")).toBeInTheDocument();
     expect(screen.getByText("12 / 42 集 · 29%")).toBeInTheDocument();
     expect(screen.getByText("3季 · 12集")).toBeInTheDocument();
     expect(screen.getByText("1季")).toBeInTheDocument();
-    expect(screen.getAllByRole("link").some((link) => link.getAttribute("href") === "/search?type=tv_show&status=want_to_watch&startYear=2024&endYear=2024")).toBe(true);
+    expect(
+      screen
+        .getAllByRole("link")
+        .some(
+          (link) =>
+            link.getAttribute("href") === "/search?type=tv_show&status=want_to_watch&startYear=2024&endYear=2024",
+        ),
+    ).toBe(true);
   });
 });
 

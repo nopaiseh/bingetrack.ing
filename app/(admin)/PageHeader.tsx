@@ -20,7 +20,9 @@ export default function PageHeader({
       <div className="min-w-0">
         {eyebrow ? <div className="mb-1 text-sm text-fg-secondary">{eyebrow}</div> : null}
         <h1 className="admin-heading break-words">{title}</h1>
-        {description ? <p className={`mt-1 max-w-3xl text-sm leading-6 text-fg-secondary ${descriptionClassName}`}>{description}</p> : null}
+        {description ? (
+          <p className={`mt-1 max-w-3xl text-sm leading-6 text-fg-secondary ${descriptionClassName}`}>{description}</p>
+        ) : null}
       </div>
       {actions ? <div className="flex shrink-0 flex-wrap items-center gap-2">{actions}</div> : null}
     </header>

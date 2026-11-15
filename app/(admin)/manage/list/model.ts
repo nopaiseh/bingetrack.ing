@@ -41,7 +41,16 @@ export type AdminBulkAction = {
 };
 
 /** 深色底上的白字，对比度均高于 4.5:1。同一标题始终落在同一色块。 */
-export const LIST_TINTS = ["#14532d", "#7f1d1d", "#78350f", "#1e3a8a", "#134e4a", "#312e81", "#7c2d12", "#4a044e"] as const;
+export const LIST_TINTS = [
+  "#14532d",
+  "#7f1d1d",
+  "#78350f",
+  "#1e3a8a",
+  "#134e4a",
+  "#312e81",
+  "#7c2d12",
+  "#4a044e",
+] as const;
 
 export function listTint(title: string) {
   let hash = 2166136261;
@@ -75,7 +84,11 @@ export const reportBulkActions: AdminBulkAction[] = [
 ];
 
 /** 生成可分享的列表地址。空值和默认值不写入，页码由分页组件单独追加。 */
-export function adminListHref(basePath: string, params: Record<string, string | undefined>, defaults: Record<string, string> = {}) {
+export function adminListHref(
+  basePath: string,
+  params: Record<string, string | undefined>,
+  defaults: Record<string, string> = {},
+) {
   const search = new URLSearchParams();
   for (const [key, value] of Object.entries(params)) {
     if (!value || value === defaults[key]) continue;

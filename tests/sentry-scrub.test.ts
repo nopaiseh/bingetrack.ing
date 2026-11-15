@@ -6,14 +6,18 @@ const SECRET = "one-time-secret";
 
 describe("scrubSensitiveUrl", () => {
   it("去掉 URL 里的 token_hash、token 和 code，保留其他参数和 hash", () => {
-    expect(scrubSensitiveUrl(
-      `https://www.bingetrack.ing/auth/confirm?token_hash=${SECRET}&type=magiclink&next=%2Fmanage&code=${SECRET}&token=${SECRET}#done`,
-    )).toBe("https://www.bingetrack.ing/auth/confirm?type=magiclink&next=%2Fmanage#done");
+    expect(
+      scrubSensitiveUrl(
+        `https://www.bingetrack.ing/auth/confirm?token_hash=${SECRET}&type=magiclink&next=%2Fmanage&code=${SECRET}&token=${SECRET}#done`,
+      ),
+    ).toBe("https://www.bingetrack.ing/auth/confirm?type=magiclink&next=%2Fmanage#done");
   });
 
   it("相对路径只剩敏感参数时不再留下问号", () => {
     expect(scrubSensitiveUrl(`/auth/confirm?token_hash=${SECRET}`)).toBe("/auth/confirm");
-    expect(scrubSensitiveUrl(`GET /auth/confirm?type=magiclink&token_hash=${SECRET}`)).toBe("GET /auth/confirm?type=magiclink");
+    expect(scrubSensitiveUrl(`GET /auth/confirm?type=magiclink&token_hash=${SECRET}`)).toBe(
+      "GET /auth/confirm?type=magiclink",
+    );
   });
 
   it("单独的查询串按参数删除，不把普通句子改掉", () => {
@@ -38,7 +42,13 @@ describe("scrubSentryEvent", () => {
       transaction: `GET /auth/confirm?token_hash=${SECRET}&type=magiclink`,
       breadcrumbs: [
         { category: "navigation", data: { from: "/movies", to: `/auth/confirm?token_hash=${SECRET}&type=invite` } },
-        { category: "fetch", data: { url: `https://www.bingetrack.ing/auth/confirm?code=${SECRET}`, "url.query": `code=${SECRET}&next=%2Fmanage` } },
+        {
+          category: "fetch",
+          data: {
+            url: `https://www.bingetrack.ing/auth/confirm?code=${SECRET}`,
+            "url.query": `code=${SECRET}&next=%2Fmanage`,
+          },
+        },
       ],
       spans: [
         {
@@ -83,7 +93,12 @@ describe("scrubSentryEvent", () => {
     expect(event.request?.query_string).toEqual({ type: "magiclink" });
 
     const tuples: Event = {
-      request: { query_string: [["token", SECRET], ["next", "/manage"]] },
+      request: {
+        query_string: [
+          ["token", SECRET],
+          ["next", "/manage"],
+        ],
+      },
     };
     scrubSentryEvent(tuples);
     expect(tuples.request?.query_string).toEqual([["next", "/manage"]]);

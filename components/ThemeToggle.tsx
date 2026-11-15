@@ -25,10 +25,14 @@ export default function ThemeToggle() {
     setCurrentTheme(themeId);
     if (themeId === "default") {
       document.documentElement.removeAttribute("data-theme");
-      try { localStorage.removeItem(THEME_STORAGE_KEY); } catch {}
+      try {
+        localStorage.removeItem(THEME_STORAGE_KEY);
+      } catch {}
     } else {
       document.documentElement.setAttribute("data-theme", themeId);
-      try { localStorage.setItem(THEME_STORAGE_KEY, themeId); } catch {}
+      try {
+        localStorage.setItem(THEME_STORAGE_KEY, themeId);
+      } catch {}
     }
 
     syncBrandToTheme(themeId);
@@ -60,9 +64,11 @@ export default function ThemeToggle() {
                     ? "scale-110 ring-2 ring-white/80 ring-offset-1 ring-offset-black/60 shadow-[0_0_8px_var(--un-glow)]"
                     : "opacity-60 hover:opacity-100"
                 }`}
-                style={{
-                  "--un-glow": palette.glowColor,
-                } as React.CSSProperties}
+                style={
+                  {
+                    "--un-glow": palette.glowColor,
+                  } as React.CSSProperties
+                }
               />
             </button>
           );

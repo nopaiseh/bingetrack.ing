@@ -55,16 +55,13 @@ const nextConfig: NextConfig = {
 };
 
 export default withSentryConfig(nextConfig, {
-
   org: "nopaiseh",
 
   project: "bingetracking",
 
   silent: !process.env.CI,
 
-
   widenClientFileUpload: true,
-
 
   webpack: {
     automaticVercelMonitors: true,

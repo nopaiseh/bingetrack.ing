@@ -99,7 +99,8 @@ test("切换缩略图后显示电影倒计时天数", async () => {
 function finishProgress() {
   const bar = screen.getByTestId("upcoming-progress");
   fireEvent.animationEnd(bar);
-  if (screen.queryByTestId("upcoming-progress") === bar) fireEvent(bar, new Event("webkitAnimationEnd", { bubbles: true }));
+  if (screen.queryByTestId("upcoming-progress") === bar)
+    fireEvent(bar, new Event("webkitAnimationEnd", { bubbles: true }));
 }
 
 test("进度条走完后自动切到下一条，末尾回到第一条", () => {

@@ -100,7 +100,10 @@ function scrollBehavior(): ScrollBehavior {
 /** 无海报，或图片加载失败时，用主题色浅底加题名首字。 */
 function PosterFallback({ title }: { title: string }) {
   return (
-    <div className="image-placeholder relative flex aspect-2/3 w-full items-center justify-center overflow-hidden" data-poster-fallback="">
+    <div
+      className="image-placeholder relative flex aspect-2/3 w-full items-center justify-center overflow-hidden"
+      data-poster-fallback=""
+    >
       <span aria-hidden="true" className="absolute inset-0 bg-[var(--accent-soft)]" />
       <span aria-hidden="true" className="relative z-2 text-6xl font-semibold leading-none text-fg">
         {continueWatchingInitial(title)}
@@ -147,7 +150,10 @@ function ContinueWatchingCardLink({ item, eager }: { item: ContinueWatchingCard;
     >
       <ContinueWatchingPoster item={item} eager={eager} />
       <div className="flex min-w-0 grow flex-col gap-1.5 px-3 py-3">
-        <h3 className="line-clamp-2 min-h-10 text-sm font-semibold leading-5 text-fg transition-colors duration-300 group-hover:text-[var(--accent-hover)]" title={title}>
+        <h3
+          className="line-clamp-2 min-h-10 text-sm font-semibold leading-5 text-fg transition-colors duration-300 group-hover:text-[var(--accent-hover)]"
+          title={title}
+        >
           {title}
         </h3>
         <p className="line-clamp-2 min-h-10 text-sm leading-5 text-fg-secondary" title={episodeLine}>
@@ -234,7 +240,8 @@ export default function ContinueWatchingRail({ items }: { items: readonly Contin
     scrollByCard(event.key === "ArrowLeft" ? "left" : "right");
   };
 
-  const buttonClass = "surface-panel absolute z-20 size-10 -translate-y-1/2 items-center justify-center rounded-full text-fg-secondary shadow-lg shadow-black/40 transition-colors duration-200 hover:border-white/30 hover:bg-white/15 hover:text-white active:scale-95";
+  const buttonClass =
+    "surface-panel absolute z-20 size-10 -translate-y-1/2 items-center justify-center rounded-full text-fg-secondary shadow-lg shadow-black/40 transition-colors duration-200 hover:border-white/30 hover:bg-white/15 hover:text-white active:scale-95";
 
   return (
     <section aria-labelledby="continue-watching-heading" className="min-w-0">
@@ -251,7 +258,10 @@ export default function ContinueWatchingRail({ items }: { items: readonly Contin
           aria-controls="continue-watching-scroller"
           className={`${buttonClass} left-0 top-[9.75rem] ${canScrollLeft ? "hidden md:flex" : "hidden"}`}
         >
-          <span className="i-material-symbols-chevron-left-rounded relative z-2 inline-block size-6" aria-hidden="true" />
+          <span
+            className="i-material-symbols-chevron-left-rounded relative z-2 inline-block size-6"
+            aria-hidden="true"
+          />
         </button>
         <button
           type="button"
@@ -260,7 +270,10 @@ export default function ContinueWatchingRail({ items }: { items: readonly Contin
           aria-controls="continue-watching-scroller"
           className={`${buttonClass} right-0 top-[9.75rem] ${canScrollRight ? "hidden md:flex" : "hidden"}`}
         >
-          <span className="i-material-symbols-chevron-right-rounded relative z-2 inline-block size-6" aria-hidden="true" />
+          <span
+            className="i-material-symbols-chevron-right-rounded relative z-2 inline-block size-6"
+            aria-hidden="true"
+          />
         </button>
         <div
           id="continue-watching-scroller"

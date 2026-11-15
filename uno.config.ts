@@ -1,10 +1,5 @@
 import { createRequire } from "node:module";
-import {
-  defineConfig,
-  presetWind3,
-  presetIcons,
-  transformerVariantGroup,
-} from "unocss";
+import { defineConfig, presetWind3, presetIcons, transformerVariantGroup } from "unocss";
 
 const require = createRequire(import.meta.url);
 
@@ -49,28 +44,29 @@ export default defineConfig({
       },
     }),
   ],
-  transformers: [
-    transformerVariantGroup(),
-  ],
+  transformers: [transformerVariantGroup()],
   rules: [
     ["animate-fade-in", { animation: "fadeIn 0.5s ease-out forwards" }],
-    [/^bg-linear-to-([trbl]+)$/, ([, dir]) => {
-      const dirMap: Record<string, string> = {
-        t: "top",
-        b: "bottom",
-        l: "left",
-        r: "right",
-        tr: "top right",
-        tl: "top left",
-        br: "bottom right",
-        bl: "bottom left",
-      };
-      return {
-        "--un-gradient-shape": `to ${dirMap[dir] || dir}`,
-        "--un-gradient": "var(--un-gradient-shape), var(--un-gradient-stops)",
-        "background-image": "linear-gradient(var(--un-gradient))",
-      };
-    }],
+    [
+      /^bg-linear-to-([trbl]+)$/,
+      ([, dir]) => {
+        const dirMap: Record<string, string> = {
+          t: "top",
+          b: "bottom",
+          l: "left",
+          r: "right",
+          tr: "top right",
+          tl: "top left",
+          br: "bottom right",
+          bl: "bottom left",
+        };
+        return {
+          "--un-gradient-shape": `to ${dirMap[dir] || dir}`,
+          "--un-gradient": "var(--un-gradient-shape), var(--un-gradient-stops)",
+          "background-image": "linear-gradient(var(--un-gradient))",
+        };
+      },
+    ],
   ],
   preflights: [
     {

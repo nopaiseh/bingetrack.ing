@@ -8,11 +8,26 @@ vi.mock("next/navigation", () => ({ useRouter: () => ({ push: vi.fn() }) }));
 
 /** 生成指定季数的结构，最后一季展开并含指定集数。 */
 function structure(seasonCount: number, episodeCount: number): SeriesStructure {
-  const seasons = Array.from({ length: seasonCount }, (_, index) => ({ id: `s${index + 1}`, number: index + 1, title: `第 ${index + 1} 季`, episodeCount: index === seasonCount - 1 ? episodeCount : 10, status: "watched" as const }));
-  const episodes = Array.from({ length: episodeCount }, (_, index) => ({ id: `e${index + 1}`, number: index + 1, title: `第 ${index + 1} 集`, watched: index < 2, releaseDate: null, runtime: null }));
+  const seasons = Array.from({ length: seasonCount }, (_, index) => ({
+    id: `s${index + 1}`,
+    number: index + 1,
+    title: `第 ${index + 1} 季`,
+    episodeCount: index === seasonCount - 1 ? episodeCount : 10,
+    status: "watched" as const,
+  }));
+  const episodes = Array.from({ length: episodeCount }, (_, index) => ({
+    id: `e${index + 1}`,
+    number: index + 1,
+    title: `第 ${index + 1} 集`,
+    watched: index < 2,
+    releaseDate: null,
+    runtime: null,
+  }));
   return {
     show: { id: "show", title: "人生切割术", alternateTitle: null, coverUrl: null, status: "watching", rating: 9.1 },
-    seasons, expandedSeasonId: seasons.at(-1)?.id ?? null, episodes,
+    seasons,
+    expandedSeasonId: seasons.at(-1)?.id ?? null,
+    episodes,
     totalEpisodes: seasons.reduce((sum, season) => sum + season.episodeCount, 0),
     nextSeasonNumber: seasonCount + 1,
     nextEpisode: { number: episodeCount + 1, releaseDate: null, runtime: null, afterTitle: null, dateBasis: "missing" },

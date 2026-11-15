@@ -9,7 +9,10 @@ function PosterSkeleton() {
     <div className="surface-card flex w-40 flex-none shrink-0 flex-col overflow-hidden rounded-xl sm:w-48">
       <div className="relative flex aspect-2/3 w-full items-center justify-center overflow-hidden bg-white/4">
         <SkeletonBlock className="absolute inset-0 rounded-none bg-transparent" />
-        <span className="i-material-symbols-image-outline-rounded inline-block size-8 text-white/15 drop-shadow" aria-hidden="true" />
+        <span
+          className="i-material-symbols-image-outline-rounded inline-block size-8 text-white/15 drop-shadow"
+          aria-hidden="true"
+        />
       </div>
       <div className="flex flex-col space-y-1.5 px-3 py-2.5">
         <div className="min-h-10 space-y-1.5">
@@ -19,7 +22,10 @@ function PosterSkeleton() {
         <div className="flex items-center justify-between pt-0.5">
           <SkeletonBlock className="h-2.5 w-9 rounded-md" />
           <div className="flex items-center gap-1">
-            <span className="i-material-symbols-star-rounded inline-block size-3 text-amber-400/20" aria-hidden="true" />
+            <span
+              className="i-material-symbols-star-rounded inline-block size-3 text-amber-400/20"
+              aria-hidden="true"
+            />
             <SkeletonBlock className="h-2.5 w-6 rounded-md" />
           </div>
         </div>
@@ -42,7 +48,12 @@ export function PosterRowSkeleton() {
         <SkeletonBlock className="h-4 w-16" />
       </div>
       <div className="flex gap-4">
-        {Array.from({ length: 6 }, /* 为横向列表生成一张带索引键的海报骨架。 */ (_, index) => <PosterSkeleton key={index} />)}
+        {Array.from(
+          { length: 6 },
+          /* 为横向列表生成一张带索引键的海报骨架。 */ (_, index) => (
+            <PosterSkeleton key={index} />
+          ),
+        )}
       </div>
     </section>
   );
@@ -53,12 +64,15 @@ export function CatalogLoadingSkeleton() {
   return (
     <section className="container mx-auto max-w-7xl px-4 pb-12 pt-26 sm:px-6 lg:px-8" aria-label="正在加载媒体目录">
       <div className="mb-10 grid grid-cols-2 gap-4 md:mb-12 lg:mb-16 lg:grid-cols-4">
-        {Array.from({ length: 4 }, /* 为一项目录统计渲染标签和数字占位。 */ (_, index) => (
-          <div key={index} className="surface-card space-y-3 rounded-2xl p-4 sm:p-5 lg:p-6">
-            <SkeletonBlock className="h-3 w-24" />
-            <SkeletonBlock className="h-9 w-16" />
-          </div>
-        ))}
+        {Array.from(
+          { length: 4 },
+          /* 为一项目录统计渲染标签和数字占位。 */ (_, index) => (
+            <div key={index} className="surface-card space-y-3 rounded-2xl p-4 sm:p-5 lg:p-6">
+              <SkeletonBlock className="h-3 w-24" />
+              <SkeletonBlock className="h-9 w-16" />
+            </div>
+          ),
+        )}
       </div>
       <div className="space-y-12">
         <PosterRowSkeleton />
@@ -71,10 +85,18 @@ export function CatalogLoadingSkeleton() {
 /** 为首页标题、统计、图表和媒体列表展示加载骨架。 */
 export function HomeLoadingSkeleton() {
   return (
-    <section className="container mx-auto flex max-w-7xl flex-col gap-6 px-4 pb-12 pt-20 sm:pt-22 sm:px-6 lg:pt-24 lg:px-8" aria-label="正在加载首页">
+    <section
+      className="container mx-auto flex max-w-7xl flex-col gap-6 px-4 pb-12 pt-20 sm:pt-22 sm:px-6 lg:pt-24 lg:px-8"
+      aria-label="正在加载首页"
+    >
       <SkeletonBlock className="h-14 w-72 max-w-full" />
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {Array.from({ length: 3 }, /* 为首页统计区域生成一个占位块。 */ (_, index) => <SkeletonBlock key={index} className="h-40" />)}
+        {Array.from(
+          { length: 3 },
+          /* 为首页统计区域生成一个占位块。 */ (_, index) => (
+            <SkeletonBlock key={index} className="h-40" />
+          ),
+        )}
       </div>
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
         <SkeletonBlock className="h-72" />
@@ -102,7 +124,9 @@ export function DetailLoadingSkeleton() {
       </div>
       <div className="container mx-auto max-w-7xl space-y-6 px-4 py-8 sm:px-6 lg:px-8">
         <div className="grid grid-cols-2 gap-px sm:grid-cols-4">
-          {Array.from({ length: 4 }, (_, index) => <SkeletonBlock key={index} className="h-16" />)}
+          {Array.from({ length: 4 }, (_, index) => (
+            <SkeletonBlock key={index} className="h-16" />
+          ))}
         </div>
         <SkeletonBlock className="h-40 w-full" />
       </div>
@@ -172,7 +196,9 @@ export function SeasonDetailLoadingSkeleton() {
           </div>
         </div>
         <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-          {Array.from({ length: 4 }, (_, index) => <SkeletonBlock key={index} className="h-24" />)}
+          {Array.from({ length: 4 }, (_, index) => (
+            <SkeletonBlock key={index} className="h-24" />
+          ))}
         </div>
         <SkeletonBlock className="h-16 w-full" />
         <div className="space-y-3">

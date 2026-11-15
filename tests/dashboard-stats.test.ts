@@ -37,27 +37,29 @@ describe("deriveDashboardStats", () => {
   });
 
   it("sums movies without the watching count and falls back when episode totals are missing", () => {
-    const summary = [{
-      release_year: 2024,
-      watched_movies: 4,
-      unwatched_movies: 6,
-      movie_avg_rating: 8.2,
-      movies_watched_runtime: 100,
-      movies_unwatched_runtime: 50,
-      total_movies_runtime: 150,
-      watched_series: 1,
-      watching_series: 1,
-      unwatched_series: 0,
-      watched_series_episodes: 4,
-      unwatched_episodes: 6,
-      series_avg_rating: 0,
-      series_watched_runtime: 0,
-      series_unwatched_runtime: 0,
-      total_series_runtime: 0,
-      total_watched_runtime: 0,
-      total_runtime: 0,
-      watched_seasons: 2,
-    } as Summary];
+    const summary = [
+      {
+        release_year: 2024,
+        watched_movies: 4,
+        unwatched_movies: 6,
+        movie_avg_rating: 8.2,
+        movies_watched_runtime: 100,
+        movies_unwatched_runtime: 50,
+        total_movies_runtime: 150,
+        watched_series: 1,
+        watching_series: 1,
+        unwatched_series: 0,
+        watched_series_episodes: 4,
+        unwatched_episodes: 6,
+        series_avg_rating: 0,
+        series_watched_runtime: 0,
+        series_unwatched_runtime: 0,
+        total_series_runtime: 0,
+        total_watched_runtime: 0,
+        total_runtime: 0,
+        watched_seasons: 2,
+      } as Summary,
+    ];
     const distributions: MediaDistributions = {
       movies: { "2024": { regions: [{ name: "美国", count: 2, percent: 100 }], languages: [], genres: [] } },
       shows: {},

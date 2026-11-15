@@ -32,7 +32,9 @@ export default function ClampedCopy({
     <details className={persistClamp ? "overview-clamp overview-clamp-persist" : "overview-clamp"}>
       <summary>
         <span className={`overview-clamp-text ${body}`}>{text}</span>
-        <span className={`overview-toggle mt-1.5 inline-block text-sm text-[var(--accent-hover)] ${persistClamp ? "" : "lg:hidden"}`}>
+        <span
+          className={`overview-toggle mt-1.5 inline-block text-sm text-[var(--accent-hover)] ${persistClamp ? "" : "lg:hidden"}`}
+        >
           <span className="overview-expand-closed">{expandLabel}</span>
           <span className="overview-expand-open">{collapseLabel}</span>
         </span>

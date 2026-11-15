@@ -62,10 +62,16 @@ test("NavigationProgressBar starts on internal link click and finishes on route 
   const { unmount, rerender } = render(
     <div>
       <NavigationProgressBar />
-      <a href="/movies" id="nav-link">电影</a>
-      <a href="#anchor" id="hash-link">锚点</a>
-      <a href="https://example.com" id="external-link">外部</a>
-    </div>
+      <a href="/movies" id="nav-link">
+        电影
+      </a>
+      <a href="#anchor" id="hash-link">
+        锚点
+      </a>
+      <a href="https://example.com" id="external-link">
+        外部
+      </a>
+    </div>,
   );
 
   // 进度条在捕获阶段处理点击；冒泡阶段再取消默认跳转（与 next/link 一致），避免 jsdom 报告无法导航到其他文档。
@@ -100,8 +106,10 @@ test("NavigationProgressBar starts on internal link click and finishes on route 
   rerender(
     <div>
       <NavigationProgressBar />
-      <a href="/movies" id="nav-link">电影</a>
-    </div>
+      <a href="/movies" id="nav-link">
+        电影
+      </a>
+    </div>,
   );
 
   await act(async () => {
@@ -111,4 +119,3 @@ test("NavigationProgressBar starts on internal link click and finishes on route 
   expect(progressbar).toHaveAttribute("aria-valuenow", "100");
   unmount();
 });
-

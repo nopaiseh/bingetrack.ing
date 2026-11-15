@@ -73,14 +73,7 @@ function ListThumb({ src, title }: { src?: string | null; title: string }) {
     );
   }
   return (
-    <Image
-      src={cover}
-      alt=""
-      width={36}
-      height={36}
-      className="admin-list-thumb"
-      onError={() => setFailed(true)}
-    />
+    <Image src={cover} alt="" width={36} height={36} className="admin-list-thumb" onError={() => setFailed(true)} />
   );
 }
 
@@ -92,7 +85,9 @@ function ComingSoon({ action }: { action: AdminBulkAction }) {
         <span className={`${action.icon} size-5`} aria-hidden="true" />
         {action.label}
       </button>
-      <span id={tipId} role="tooltip" className="admin-soon-tip">Coming soon</span>
+      <span id={tipId} role="tooltip" className="admin-soon-tip">
+        Coming soon
+      </span>
     </span>
   );
 }
@@ -156,9 +151,12 @@ export default function AdminList({
     box.indeterminate = selected.size > 0 && selected.size < rows.length;
   }, [selected, rows.length]);
 
-  useEffect(() => () => {
-    if (timer.current != null) window.clearTimeout(timer.current);
-  }, []);
+  useEffect(
+    () => () => {
+      if (timer.current != null) window.clearTimeout(timer.current);
+    },
+    [],
+  );
 
   function push(next: Record<string, string>) {
     const href = adminListHref(basePath, { ...preserved, ...next }, defaults);
@@ -208,7 +206,10 @@ export default function AdminList({
     setNotice(null);
     try {
       const result = await runBulk(wired, actionId, ids);
-      setNotice({ tone: result.failed > 0 && result.succeeded === 0 ? "error" : "ok", text: bulkNotice(actionId, result, noun) });
+      setNotice({
+        tone: result.failed > 0 && result.succeeded === 0 ? "error" : "ok",
+        text: bulkNotice(actionId, result, noun),
+      });
       if (result.succeeded > 0) router.refresh();
     } catch (error) {
       setNotice({ tone: "error", text: error instanceof Error ? error.message : "操作失败，请重试。" });
@@ -225,7 +226,9 @@ export default function AdminList({
       <div className="admin-list-filters">
         <div className="admin-list-filter-row">
           <div className="admin-list-search">
-            <label htmlFor={`${selectAllId}-q`} className="sr-only">{search.label}</label>
+            <label htmlFor={`${selectAllId}-q`} className="sr-only">
+              {search.label}
+            </label>
             <span className="i-material-symbols-search-rounded admin-list-search-icon" aria-hidden="true" />
             <input
               id={`${selectAllId}-q`}
@@ -271,7 +274,9 @@ export default function AdminList({
                 onChange={(event) => commit({ [select.name]: event.target.value })}
               >
                 {select.options.map((option) => (
-                  <option key={option.value} value={option.value}>{option.label}</option>
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
                 ))}
               </select>
             </div>
@@ -280,7 +285,14 @@ export default function AdminList({
         <p className="text-sm text-fg-secondary">输入即筛选，无需点「应用」</p>
       </div>
 
-      {notice ? <p role={notice.tone === "error" ? "alert" : "status"} className={`mb-3 text-sm ${notice.tone === "error" ? "text-[var(--danger)]" : "text-fg-secondary"}`}>{notice.text}</p> : null}
+      {notice ? (
+        <p
+          role={notice.tone === "error" ? "alert" : "status"}
+          className={`mb-3 text-sm ${notice.tone === "error" ? "text-[var(--danger)]" : "text-fg-secondary"}`}
+        >
+          {notice.text}
+        </p>
+      ) : null}
 
       {selected.size > 0 ? (
         <div className="admin-bulk-bar" role="region" aria-label="批量操作">
@@ -288,21 +300,32 @@ export default function AdminList({
             已选 <span className="font-mono">{selected.size}</span> {noun}
           </p>
           <div className="flex flex-wrap items-center gap-2">
-            {(wired ? liveActions(wired) : actions).map((action) => wired ? (
-              <button
-                key={action.id}
-                type="button"
-                className={action.destructive ? "admin-danger" : ""}
-                aria-label={action.id === "watched" ? "标为已看" : action.id === "want" ? "标为想看" : undefined}
-                disabled={pendingAction !== null}
-                onClick={() => void runWired(action.id)}
-              >
-                <span className={`${action.icon} size-5`} aria-hidden="true" />
-                {pendingAction === action.id ? "正在处理…" : action.label}
-              </button>
-            ) : <ComingSoon key={action.id} action={action} />)}
+            {(wired ? liveActions(wired) : actions).map((action) =>
+              wired ? (
+                <button
+                  key={action.id}
+                  type="button"
+                  className={action.destructive ? "admin-danger" : ""}
+                  aria-label={action.id === "watched" ? "标为已看" : action.id === "want" ? "标为想看" : undefined}
+                  disabled={pendingAction !== null}
+                  onClick={() => void runWired(action.id)}
+                >
+                  <span className={`${action.icon} size-5`} aria-hidden="true" />
+                  {pendingAction === action.id ? "正在处理…" : action.label}
+                </button>
+              ) : (
+                <ComingSoon key={action.id} action={action} />
+              ),
+            )}
           </div>
-          <button type="button" className="ml-auto" onClick={() => setSelected(new Set())} disabled={pendingAction !== null}>取消选择</button>
+          <button
+            type="button"
+            className="ml-auto"
+            onClick={() => setSelected(new Set())}
+            disabled={pendingAction !== null}
+          >
+            取消选择
+          </button>
         </div>
       ) : null}
 
@@ -324,7 +347,9 @@ export default function AdminList({
                 <span className="admin-list-thumb-spacer" />
                 <span className="min-w-0 flex-1">标题</span>
                 {columns.map((column) => (
-                  <span key={column.key} className={column.className}>{column.label}</span>
+                  <span key={column.key} className={column.className}>
+                    {column.label}
+                  </span>
                 ))}
                 {showStatus ? <span className="admin-list-status-col">状态</span> : null}
               </div>
@@ -347,24 +372,43 @@ export default function AdminList({
                       <ListThumb src={row.imageUrl} title={row.title} />
                       <span className="min-w-0 flex-1">
                         <span className="block break-words font-medium text-fg">{row.title}</span>
-                        {row.subtitle ? <span className="mt-0.5 block break-words text-sm text-fg-secondary">{row.subtitle}</span> : null}
-                        {row.detail ? <span className="mt-0.5 block break-words text-sm text-fg-secondary sm:hidden">{row.detail}</span> : null}
-                        {row.meta ? <span className="mt-0.5 block break-words text-sm text-fg-secondary">{row.meta}</span> : null}
+                        {row.subtitle ? (
+                          <span className="mt-0.5 block break-words text-sm text-fg-secondary">{row.subtitle}</span>
+                        ) : null}
+                        {row.detail ? (
+                          <span className="mt-0.5 block break-words text-sm text-fg-secondary sm:hidden">
+                            {row.detail}
+                          </span>
+                        ) : null}
+                        {row.meta ? (
+                          <span className="mt-0.5 block break-words text-sm text-fg-secondary">{row.meta}</span>
+                        ) : null}
                       </span>
                       {row.cells.length > 0 ? (
                         <span className="admin-list-cells">
                           {row.cells.map((cell) => (
-                            <span key={cell.key} className={`text-sm text-fg-secondary ${columnClass.get(cell.key) ?? ""}`}>
+                            <span
+                              key={cell.key}
+                              className={`text-sm text-fg-secondary ${columnClass.get(cell.key) ?? ""}`}
+                            >
                               <span className="sr-only">{cell.label} </span>
                               {cell.value}
                             </span>
                           ))}
                         </span>
                       ) : null}
-                      {row.status ? <span className="admin-list-status-col"><StatusChip status={row.status} /></span> : null}
+                      {row.status ? (
+                        <span className="admin-list-status-col">
+                          <StatusChip status={row.status} />
+                        </span>
+                      ) : null}
                     </Link>
                     {row.trailing ? (
-                      <Link href={row.trailing.href} aria-label={row.trailing.label} className="admin-button admin-list-trailing !min-h-10 !w-10 !px-0">
+                      <Link
+                        href={row.trailing.href}
+                        aria-label={row.trailing.label}
+                        className="admin-button admin-list-trailing !min-h-10 !w-10 !px-0"
+                      >
                         <span className={`${row.trailing.icon} size-5`} aria-hidden="true" />
                       </Link>
                     ) : null}
@@ -393,7 +437,12 @@ export default function AdminList({
 }
 
 function liveActions(kind: "movie" | "tv_show" | "people"): AdminBulkAction[] {
-  const remove: AdminBulkAction = { id: "delete", label: "删除", icon: "i-material-symbols-delete-outline-rounded", destructive: true };
+  const remove: AdminBulkAction = {
+    id: "delete",
+    label: "删除",
+    icon: "i-material-symbols-delete-outline-rounded",
+    destructive: true,
+  };
   if (kind === "people") return [remove];
   return [
     { id: "watched", label: "已看", icon: "i-material-symbols-check-circle-outline-rounded" },
@@ -403,7 +452,8 @@ function liveActions(kind: "movie" | "tv_show" | "people"): AdminBulkAction[] {
 }
 
 function deleteConfirm(kind: "movie" | "tv_show" | "people", count: number, noun: string) {
-  if (kind === "tv_show") return `确定删除所选 ${count} ${noun}电视节目？下属季、集和观看记录会一并删除。此操作无法撤销。`;
+  if (kind === "tv_show")
+    return `确定删除所选 ${count} ${noun}电视节目？下属季、集和观看记录会一并删除。此操作无法撤销。`;
   if (kind === "people") return `确定删除所选 ${count} ${noun}人物？演职关联会删除，影视作品会保留。此操作无法撤销。`;
   return `确定删除所选 ${count} ${noun}电影？观看记录和关联会一并删除。此操作无法撤销。`;
 }

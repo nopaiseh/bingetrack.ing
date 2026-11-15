@@ -191,7 +191,8 @@ function parseQuery<Key extends string>(
 
   let sort = defaultSort;
   if (source.sort !== undefined && source.sort !== null && source.sort !== "") {
-    if (typeof source.sort !== "string" || !Object.hasOwn(sorts, source.sort)) throw new AdminInputError("不支持的排序字段。");
+    if (typeof source.sort !== "string" || !Object.hasOwn(sorts, source.sort))
+      throw new AdminInputError("不支持的排序字段。");
     sort = source.sort as Key;
   }
 
@@ -239,16 +240,21 @@ const episodeStatusSet: ReadonlySet<string> = new Set(episodeStatuses);
 function parseChildStatus(type: AdminChildListType, value: unknown): ChildStatus | "" {
   if (typeof value !== "string") return "";
   const allowed = type === "tv_episode" ? episodeStatusSet : childStatusSet;
-  return allowed.has(value) ? value as ChildStatus : "";
+  return allowed.has(value) ? (value as ChildStatus) : "";
 }
 
 /**
  * 季与单集的排序、状态、搜索词和上级条目。非法值回落到默认，不把用户输入拼进查询。
  * 季没有评分，sort=rating 视为 date。单集不接受 watching。搜索词只截断，保留首尾空白。
  */
-export function parseAdminChildQuery(type: AdminChildListType, parent: unknown, input?: AdminChildListInput | null): ParsedAdminChildQuery {
+export function parseAdminChildQuery(
+  type: AdminChildListType,
+  parent: unknown,
+  input?: AdminChildListInput | null,
+): ParsedAdminChildQuery {
   const source = input ?? {};
-  const sort = typeof source.sort === "string" && Object.hasOwn(childSorts, source.sort) ? source.sort as ChildSortKey : "date";
+  const sort =
+    typeof source.sort === "string" && Object.hasOwn(childSorts, source.sort) ? (source.sort as ChildSortKey) : "date";
   const status = parseChildStatus(type, source.status);
   return {
     page: parseChildPage(source.page),
@@ -282,5 +288,7 @@ export function parseBulkIds(ids: unknown): string[] {
 /** 拒绝 watching：数据库枚举只有 watched 与 want_to_watch。 */
 export function parseBulkStatus(status: unknown): BulkStatus {
   if (status === "watched" || status === "want_to_watch") return status;
-  throw new AdminInputError("观看状态只能是已看（watched）或想看（want_to_watch）。在看（watching）由单集汇总，不能直接写入。");
+  throw new AdminInputError(
+    "观看状态只能是已看（watched）或想看（want_to_watch）。在看（watching）由单集汇总，不能直接写入。",
+  );
 }

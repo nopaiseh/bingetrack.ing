@@ -45,7 +45,10 @@ afterEach(() => {
 test("公开导航源码不静态引入 supabase 浏览器客户端", () => {
   const hook = readFileSync(join(process.cwd(), "lib/auth/use-navbar-auth.ts"), "utf8");
   const navbar = readFileSync(join(process.cwd(), "components/Navbar.tsx"), "utf8");
-  const imports = hook.split("\n").filter((line) => /^\s*import\s/.test(line)).join("\n");
+  const imports = hook
+    .split("\n")
+    .filter((line) => /^\s*import\s/.test(line))
+    .join("\n");
   expect(imports).not.toMatch(/browser|@supabase\//);
   expect(navbar).not.toMatch(/@supabase\/|lib\/auth\/browser/);
   expect(hook).toMatch(/import\(\s*["']\.\/browser["']\s*\)/);
@@ -93,7 +96,9 @@ test("已有会话 Cookie 时站长看到管理和退出", async () => {
   setCookie("sb-example-auth-token.0");
   getAuthBrowser.mockReturnValue({
     auth: {
-      onAuthStateChange: (callback: (event: string, session: { user: { id: string; last_sign_in_at: string } } | null) => void) => {
+      onAuthStateChange: (
+        callback: (event: string, session: { user: { id: string; last_sign_in_at: string } } | null) => void,
+      ) => {
         callback("INITIAL_SESSION", { user: { id: "owner-1", last_sign_in_at: new Date().toISOString() } });
         return { data: { subscription: { unsubscribe } } };
       },

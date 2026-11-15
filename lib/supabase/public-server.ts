@@ -1,5 +1,5 @@
 import "server-only";
-import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 
 let supabasePublicServerClient: SupabaseClient | null = null;
 
@@ -7,7 +7,7 @@ let supabasePublicServerClient: SupabaseClient | null = null;
 function getSupabaseServerUrl() {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   if (!supabaseUrl) {
-    throw new Error('NEXT_PUBLIC_SUPABASE_URL must be defined for server Supabase access.');
+    throw new Error("NEXT_PUBLIC_SUPABASE_URL must be defined for server Supabase access.");
   }
   return supabaseUrl;
 }

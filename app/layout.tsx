@@ -57,19 +57,28 @@ export const metadata: Metadata = {
 };
 
 /** 设置中文文档、全局导航、页脚和主要内容容器，并挂载性能统计与路由流转组件。 */
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="zh-CN" className={`${geist.variable} ${geistMono.variable}`} suppressHydrationWarning>
       <head>
         <link rel="preconnect" href="https://image.tmdb.org" crossOrigin="anonymous" />
         <link rel="dns-prefetch" href="https://image.tmdb.org" />
         {/* 标签页图标随主题切换，初始为默认粉色；THEME_INIT_SCRIPT 与 ThemeToggle 会按 id 改写 href。 */}
-        <link rel="icon" id={FAVICON_SVG_ID} type="image/svg+xml" href="/icons/favicon-pink.svg" suppressHydrationWarning />
-        <link rel="icon" id={FAVICON_PNG_ID} type="image/png" sizes="32x32" href="/icons/favicon-pink-32.png" suppressHydrationWarning />
+        <link
+          rel="icon"
+          id={FAVICON_SVG_ID}
+          type="image/svg+xml"
+          href="/icons/favicon-pink.svg"
+          suppressHydrationWarning
+        />
+        <link
+          rel="icon"
+          id={FAVICON_PNG_ID}
+          type="image/png"
+          sizes="32x32"
+          href="/icons/favicon-pink-32.png"
+          suppressHydrationWarning
+        />
         <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
         <script
           dangerouslySetInnerHTML={{
@@ -89,7 +98,7 @@ export default function RootLayout({
         >
           跳到主要内容
         </a>
-        
+
         <HideOnAdmin>
           <Navbar />
         </HideOnAdmin>
@@ -109,4 +118,3 @@ export default function RootLayout({
     </html>
   );
 }
-

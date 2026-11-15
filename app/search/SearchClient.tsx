@@ -5,7 +5,14 @@ import { usePathname, useSearchParams } from "next/navigation";
 import type { MediaCard } from "@/lib/types";
 import { MAX_SEARCH_QUERY_LENGTH } from "@/lib/api/search-limits";
 import type { SearchOptions } from "@/lib/functions/search-options";
-import { PAGE_SIZE, readFilters, writeFilters, readSearchPage, buildMediaSearchQuery, type SearchFilters } from "@/lib/api/search-state";
+import {
+  PAGE_SIZE,
+  readFilters,
+  writeFilters,
+  readSearchPage,
+  buildMediaSearchQuery,
+  type SearchFilters,
+} from "@/lib/api/search-state";
 import ActiveFilterBar from "@/components/search/ActiveFilterBar";
 import SearchBar from "@/components/search/SearchBar";
 import SearchFilterPanel from "@/components/search/SearchFilterPanel";
@@ -50,7 +57,12 @@ function SearchContent({ initialOptions, initialResult }: SearchProps) {
 
   const [showAdvanced, setShowAdvanced] = useState(false);
 
-  const { genres: genreOptions, regions: regionOptions, languages: languageOptions, years: yearOptions } = initialOptions;
+  const {
+    genres: genreOptions,
+    regions: regionOptions,
+    languages: languageOptions,
+    years: yearOptions,
+  } = initialOptions;
 
   const [result, setResult] = useState(initialResult);
   const { rows: mediaItems, total } = result;
@@ -64,26 +76,30 @@ function SearchContent({ initialOptions, initialResult }: SearchProps) {
   const filterPanelRef = useRef<HTMLDivElement>(null);
 
   // 写入目标页码并省略第一页参数，按需要新增或替换浏览器历史记录。
-  const updatePage = useCallback((nextPage: number, replace = false) => {
-    const params = new URLSearchParams(searchParams.toString());
-    if (nextPage > 1) params.set("page", String(nextPage));
-    else params.delete("page");
-    const href = params.size > 0 ? `${pathname}?${params.toString()}` : pathname;
-    if (replace) window.history.replaceState(null, "", href);
-    else window.history.pushState(null, "", href);
-  }, [pathname, searchParams]);
+  const updatePage = useCallback(
+    (nextPage: number, replace = false) => {
+      const params = new URLSearchParams(searchParams.toString());
+      if (nextPage > 1) params.set("page", String(nextPage));
+      else params.delete("page");
+      const href = params.size > 0 ? `${pathname}?${params.toString()}` : pathname;
+      if (replace) window.history.replaceState(null, "", href);
+      else window.history.pushState(null, "", href);
+    },
+    [pathname, searchParams],
+  );
 
   // 根据新筛选状态重写 URL，并删除页码以从第一页重新搜索。
-  const setFilters = useCallback((
-    update: SearchFilters | ((previous: SearchFilters) => SearchFilters),
-  ) => {
-    const nextFilters = typeof update === "function" ? update(filters) : update;
-    const params = new URLSearchParams(searchParams.toString());
-    writeFilters(params, nextFilters);
-    params.delete("page");
-    const href = params.size > 0 ? `${pathname}?${params.toString()}` : pathname;
-    window.history.replaceState(null, "", href);
-  }, [filters, pathname, searchParams]);
+  const setFilters = useCallback(
+    (update: SearchFilters | ((previous: SearchFilters) => SearchFilters)) => {
+      const nextFilters = typeof update === "function" ? update(filters) : update;
+      const params = new URLSearchParams(searchParams.toString());
+      writeFilters(params, nextFilters);
+      params.delete("page");
+      const href = params.size > 0 ? `${pathname}?${params.toString()}` : pathname;
+      window.history.replaceState(null, "", href);
+    },
+    [filters, pathname, searchParams],
+  );
 
   // 输入词与 URL 不一致时安排 300 毫秒防抖更新；恢复历史 URL 时不重置页码。
   useEffect(() => {
@@ -141,7 +157,8 @@ function SearchContent({ initialOptions, initialResult }: SearchProps) {
       try {
         const res = await fetch(`/api/media?${apiQuery}`, { signal: controller.signal });
         if (res.status === 400) {
-          if (!controller.signal.aborted) setResult({ rows: [], total: 0, key: apiQuery, error: "搜索条件无效，请检查搜索词和筛选条件。" });
+          if (!controller.signal.aborted)
+            setResult({ rows: [], total: 0, key: apiQuery, error: "搜索条件无效，请检查搜索词和筛选条件。" });
           return;
         }
         if (!res.ok) throw new Error(`MediaCard request failed with status ${res.status}`);
@@ -162,9 +179,12 @@ function SearchContent({ initialOptions, initialResult }: SearchProps) {
 
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
-  useEffect(/* 成功加载后若当前页超出末页，将 URL 替换为最后一个有效页码。 */ () => {
-    if (!isLoading && !requestError && page > totalPages) updatePage(totalPages, true);
-  }, [isLoading, requestError, page, totalPages, updatePage]);
+  useEffect(
+    /* 成功加载后若当前页超出末页，将 URL 替换为最后一个有效页码。 */ () => {
+      if (!isLoading && !requestError && page > totalPages) updatePage(totalPages, true);
+    },
+    [isLoading, requestError, page, totalPages, updatePage],
+  );
 
   /** 切换结果页，并平滑滚动到搜索结果区域。 */
   const goToPage = (nextPage: number) => {
@@ -172,17 +192,19 @@ function SearchContent({ initialOptions, initialResult }: SearchProps) {
     resultsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
   };
 
-  const hasActiveFilters = Object.entries(filters).some(/* 判断是否存在非排序筛选；年份只在至少一个端点有值时算启用。 */ ([key, arr]) => {
-    if (key === "sort") return false;
-    if (key === "year") return arr.length > 0 && (arr[0] !== "" || arr[1] !== "");
-    return arr.length > 0;
-  });
+  const hasActiveFilters = Object.entries(filters).some(
+    /* 判断是否存在非排序筛选；年份只在至少一个端点有值时算启用。 */ ([key, arr]) => {
+      if (key === "sort") return false;
+      if (key === "year") return arr.length > 0 && (arr[0] !== "" || arr[1] !== "");
+      return arr.length > 0;
+    },
+  );
 
   const hasActiveAdvancedFilters = Boolean(
     (filters.genre?.length ?? 0) > 0 ||
     (filters.region?.length ?? 0) > 0 ||
     (filters.language?.length ?? 0) > 0 ||
-    (filters.year?.length > 0 && (filters.year[0] !== "" || filters.year[1] !== ""))
+    (filters.year?.length > 0 && (filters.year[0] !== "" || filters.year[1] !== "")),
   );
 
   const activeFilterCount = countActiveFilters(filters);
@@ -207,7 +229,10 @@ function SearchContent({ initialOptions, initialResult }: SearchProps) {
     <div className="text-fg pt-24 pb-8 md:pb-12 selection:bg-[var(--accent-soft)] selection:text-white font-sans relative">
       <div className="container relative z-1 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <section ref={resultsRef} className="w-full scroll-mt-24" aria-labelledby="search-results-heading">
-          <h1 id="search-results-heading" className="text-balance text-3xl font-semibold tracking-tight text-fg sm:text-4xl">
+          <h1
+            id="search-results-heading"
+            className="text-balance text-3xl font-semibold tracking-tight text-fg sm:text-4xl"
+          >
             {heading}
           </h1>
           <p className="mt-2 text-sm text-fg-muted">

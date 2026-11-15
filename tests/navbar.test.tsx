@@ -8,39 +8,50 @@ const auth = vi.hoisted(() => ({ signedIn: false, owner: false, busy: false, err
 const navigation = vi.hoisted(() => ({ pathname: "/movies" }));
 vi.mock("@/lib/auth/use-navbar-auth", () => ({ useNavbarAuth: () => auth }));
 
-vi.mock("next/navigation", /* 模拟电影路由和可记录跳转的 Next.js 导航模块。 */ () => ({
-  usePathname: /* 返回当前测试设定的栏目路径。 */ () => navigation.pathname,
-  useRouter: /* 返回带跳转监视函数的路由器替身。 */ () => ({ push }),
-}));
+vi.mock(
+  "next/navigation",
+  /* 模拟电影路由和可记录跳转的 Next.js 导航模块。 */ () => ({
+    usePathname: /* 返回当前测试设定的栏目路径。 */ () => navigation.pathname,
+    useRouter: /* 返回带跳转监视函数的路由器替身。 */ () => ({ push }),
+  }),
+);
 
-beforeEach(/* 在每个导航测试前清空跳转记录并回到电影栏目。 */ () => {
-  push.mockClear();
-  navigation.pathname = "/movies";
-  auth.signedIn = false;
-  auth.owner = false;
-  auth.signIn.mockClear();
-});
+beforeEach(
+  /* 在每个导航测试前清空跳转记录并回到电影栏目。 */ () => {
+    push.mockClear();
+    navigation.pathname = "/movies";
+    auth.signedIn = false;
+    auth.owner = false;
+    auth.signIn.mockClear();
+  },
+);
 
-test("marks the current section without a collapsible menu", /* 验证当前栏目标记，且顶部不再提供折叠菜单。 */ () => {
-  render(<Navbar />);
+test(
+  "marks the current section without a collapsible menu",
+  /* 验证当前栏目标记，且顶部不再提供折叠菜单。 */ () => {
+    render(<Navbar />);
 
-  const movieLink = screen.getByRole("link", { name: "电影" });
-  expect(movieLink).toHaveClass("text-[var(--accent)]");
-  expect(movieLink).toHaveAttribute("aria-current", "page");
-  expect(screen.queryByRole("button", { name: "打开导航菜单" })).not.toBeInTheDocument();
-  expect(document.querySelector("#mobile-navigation")).toBeNull();
-});
+    const movieLink = screen.getByRole("link", { name: "电影" });
+    expect(movieLink).toHaveClass("text-[var(--accent)]");
+    expect(movieLink).toHaveAttribute("aria-current", "page");
+    expect(screen.queryByRole("button", { name: "打开导航菜单" })).not.toBeInTheDocument();
+    expect(document.querySelector("#mobile-navigation")).toBeNull();
+  },
+);
 
-test("submits trimmed desktop search text to the search route", /* 验证桌面搜索修剪输入空白并跳转到正确编码的搜索地址。 */ async () => {
-  const user = userEvent.setup();
-  render(<Navbar />);
+test(
+  "submits trimmed desktop search text to the search route",
+  /* 验证桌面搜索修剪输入空白并跳转到正确编码的搜索地址。 */ async () => {
+    const user = userEvent.setup();
+    render(<Navbar />);
 
-  const searchInputs = screen.getAllByPlaceholderText("搜索");
-  await user.type(searchInputs[0], "  沙丘  ");
-  await user.click(screen.getAllByRole("button", { name: "搜索" })[0]);
+    const searchInputs = screen.getAllByPlaceholderText("搜索");
+    await user.type(searchInputs[0], "  沙丘  ");
+    await user.click(screen.getAllByRole("button", { name: "搜索" })[0]);
 
-  expect(push).toHaveBeenCalledWith("/search?q=%E6%B2%99%E4%B8%98");
-});
+    expect(push).toHaveBeenCalledWith("/search?q=%E6%B2%99%E4%B8%98");
+  },
+);
 
 test("手机端顶部不再重复搜索入口，由底部标签栏承担", () => {
   render(<Navbar />);
@@ -100,8 +111,6 @@ test("navigates to /search when shortcut is triggered on mobile viewport", async
   await user.keyboard("{Meta>}k{/Meta}");
   expect(push).toHaveBeenCalledWith("/search");
 });
-
-
 
 test("导航栏直接登录，站长登录后展示管理和退出，不展示设置", async () => {
   const user = userEvent.setup();

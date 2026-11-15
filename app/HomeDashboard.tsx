@@ -6,7 +6,14 @@ import UpcomingHero from "@/components/UpcomingHero";
 import DashboardIntro from "@/components/dashboard/DashboardIntro";
 import DashboardPanels from "@/components/dashboard/DashboardPanels";
 import { deriveDashboardStats } from "@/components/dashboard/dashboard-stats";
-import { TABS, TAB_IDS, getServerUrlSnapshot, getUrlSnapshot, subscribeToUrl, writeDashboardParams } from "@/components/dashboard/dashboard-url";
+import {
+  TABS,
+  TAB_IDS,
+  getServerUrlSnapshot,
+  getUrlSnapshot,
+  subscribeToUrl,
+  writeDashboardParams,
+} from "@/components/dashboard/dashboard-url";
 import type { MediaCard, MediaDistributions, Summary, UpcomingRelease } from "@/lib/types";
 
 /** 根据年份和总览、电影、电视节目标签组织统计、分布及榜单；年份变化时加载对应榜单。 */
@@ -37,7 +44,8 @@ export default function HomeDashboard({
   const searchParams = new URLSearchParams(useSyncExternalStore(subscribeToUrl, getUrlSnapshot, getServerUrlSnapshot));
   const activeTab = tabs.find((tab) => tabIds[tab] === searchParams.get("view")) ?? "总览";
   const yearParam = searchParams.get("year");
-  const selectedYear = yearParam && summary.some((item) => String(item.release_year) === yearParam) ? yearParam : "All Time";
+  const selectedYear =
+    yearParam && summary.some((item) => String(item.release_year) === yearParam) ? yearParam : "All Time";
 
   /** 切换看板标签并同步到 URL。 */
   const setActiveTab = (tab: string) => writeDashboardParams(tabIds[tab], selectedYear);
@@ -51,42 +59,47 @@ export default function HomeDashboard({
 
   const stats = deriveDashboardStats(summary, selectedYear, distributions);
 
-  useEffect(/* 选择具体年份时启动榜单请求，离开该年份或卸载组件时取消请求。 */ () => {
-    if (selectedYear === "All Time") {
-      return;
-    }
-
-    const controller = new AbortController();
-    /** 并行加载该年的电影和电视节目榜单，更新加载状态与结果，并显示非取消类错误。 */
-    const loadTopMedia = async () => {
-      try {
-        setTopMediaError(null);
-        setTopMediaLoading(true);
-        setDisplayedTopMovies([]);
-        setDisplayedTopSeries([]);
-        const [moviesResponse, seriesResponse] = await Promise.all([
-          fetch(`/api/top-media?type=movie&year=${encodeURIComponent(selectedYear)}`, { signal: controller.signal }),
-          fetch(`/api/top-media?type=tv_show&year=${encodeURIComponent(selectedYear)}`, { signal: controller.signal }),
-        ]);
-        if (!moviesResponse.ok || !seriesResponse.ok) throw new Error("Failed to load top media");
-        const [movies, series] = await Promise.all([moviesResponse.json(), seriesResponse.json()]);
-        setDisplayedTopMovies(movies);
-        setDisplayedTopSeries(series);
-      } catch (error) {
-        if ((error as Error).name !== "AbortError") {
-          console.error(error);
-          setTopMediaError("年度精选暂时无法加载，请稍后重试。");
-        }
-      } finally {
-        if (!controller.signal.aborted) {
-          setTopMediaLoading(false);
-        }
+  useEffect(
+    /* 选择具体年份时启动榜单请求，离开该年份或卸载组件时取消请求。 */ () => {
+      if (selectedYear === "All Time") {
+        return;
       }
-    };
 
-    void loadTopMedia();
-    return /* 取消当前年份尚未完成的榜单请求。 */ () => controller.abort();
-  }, [selectedYear]);
+      const controller = new AbortController();
+      /** 并行加载该年的电影和电视节目榜单，更新加载状态与结果，并显示非取消类错误。 */
+      const loadTopMedia = async () => {
+        try {
+          setTopMediaError(null);
+          setTopMediaLoading(true);
+          setDisplayedTopMovies([]);
+          setDisplayedTopSeries([]);
+          const [moviesResponse, seriesResponse] = await Promise.all([
+            fetch(`/api/top-media?type=movie&year=${encodeURIComponent(selectedYear)}`, { signal: controller.signal }),
+            fetch(`/api/top-media?type=tv_show&year=${encodeURIComponent(selectedYear)}`, {
+              signal: controller.signal,
+            }),
+          ]);
+          if (!moviesResponse.ok || !seriesResponse.ok) throw new Error("Failed to load top media");
+          const [movies, series] = await Promise.all([moviesResponse.json(), seriesResponse.json()]);
+          setDisplayedTopMovies(movies);
+          setDisplayedTopSeries(series);
+        } catch (error) {
+          if ((error as Error).name !== "AbortError") {
+            console.error(error);
+            setTopMediaError("年度精选暂时无法加载，请稍后重试。");
+          }
+        } finally {
+          if (!controller.signal.aborted) {
+            setTopMediaLoading(false);
+          }
+        }
+      };
+
+      void loadTopMedia();
+      return /* 取消当前年份尚未完成的榜单请求。 */ () => controller.abort();
+    },
+    [selectedYear],
+  );
 
   // 请求中途切回全时段时，被取消的请求不会复位加载状态，因此只在选定年份时采用该状态。
   const isTopMediaLoading = topMediaLoading && selectedYear !== "All Time";

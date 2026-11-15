@@ -3,19 +3,100 @@ import { referenceTypes } from "./catalog";
 
 /** 报告与数据库视图的固定映射，服务端不能接受任意视图名。bulkDelete 为批量删除时传给 manage_delete_unused 的类别。 */
 export const reports = {
-  "missing-alias": { group: "人物与演员表", label: "未填别名的人物", view: "v_report_missing_alias", icon: "i-material-symbols-badge-outline-rounded", description: "尚未填写别名的人物，参与作品多的排在前面。", unit: "位人物" },
-  "missing-character": { group: "人物与演员表", label: "未填角色名", view: "v_report_missing_character", icon: "i-material-symbols-theater-comedy-outline-rounded", description: "演员表中尚未填写饰演角色的作品，标签为未填写的演员。", unit: "部作品" },
-  "suspicious-names": { group: "人物与演员表", label: "疑似名字错误", view: "v_report_suspicious_names", icon: "i-material-symbols-spellcheck-rounded", description: "按写法规则找出可疑的人物名与角色名，仅供参考，请逐一确认。", unit: "项" },
-  "similar-people": { group: "人物与演员表", label: "疑似重复人物", view: "v_report_similar_people", icon: "i-material-symbols-group-work-outline-rounded", description: "忽略大小写、全角半角、空格与标点后名字相同的人物；同名但别名各异的不列出。可合并为一人，或标记为不是同一人。", unit: "位人物" },
-  "orphan-people": { group: "人物与演员表", label: "未关联作品的人物", view: "v_report_orphan_people", icon: "i-material-symbols-person-off-outline-rounded", description: "没有参与任何作品、也不是专辑艺术家的人物。", unit: "位人物", bulkDelete: "people" },
-  "credit-order": { group: "人物与演员表", label: "演职员顺序异常", view: "v_report_credit_order", icon: "i-material-symbols-format-list-numbered-rounded", description: "演员或导演顺序重复、断号或为空。打开作品重新保存即可按当前顺序修正。", unit: "部作品" },
-  "incomplete-media": { group: "作品资料", label: "资料不完整", view: "v_report_incomplete_media", icon: "i-material-symbols-edit-note-rounded", description: "电影、电视节目缺少的字段；单集只检查播出日期。", unit: "个条目" },
-  "tv-structure": { group: "作品资料", label: "季集结构", view: "v_report_tv_structure", icon: "i-material-symbols-account-tree-outline-rounded", description: "没有季的电视节目、没有单集的季，以及季号、集号断号（编号 0 的特别篇不计；集号可接续上一季）。", unit: "个条目" },
-  "tracking-conflicts": { group: "作品资料", label: "观看记录矛盾", view: "v_report_tracking_conflicts", icon: "i-material-symbols-rule-rounded", description: "想看却已有评分的电影和单集，以及已看但未评分的电影。", unit: "个条目" },
-  "unused-references": { group: "关联资料", label: "闲置关联资料", view: "v_report_unused_references", icon: "i-material-symbols-label-off-outline-rounded", description: "没有被任何作品使用的类型、地区、语言与系列。", unit: "项资料", bulkDelete: "references" },
+  "missing-alias": {
+    group: "人物与演员表",
+    label: "未填别名的人物",
+    view: "v_report_missing_alias",
+    icon: "i-material-symbols-badge-outline-rounded",
+    description: "尚未填写别名的人物，参与作品多的排在前面。",
+    unit: "位人物",
+  },
+  "missing-character": {
+    group: "人物与演员表",
+    label: "未填角色名",
+    view: "v_report_missing_character",
+    icon: "i-material-symbols-theater-comedy-outline-rounded",
+    description: "演员表中尚未填写饰演角色的作品，标签为未填写的演员。",
+    unit: "部作品",
+  },
+  "suspicious-names": {
+    group: "人物与演员表",
+    label: "疑似名字错误",
+    view: "v_report_suspicious_names",
+    icon: "i-material-symbols-spellcheck-rounded",
+    description: "按写法规则找出可疑的人物名与角色名，仅供参考，请逐一确认。",
+    unit: "项",
+  },
+  "similar-people": {
+    group: "人物与演员表",
+    label: "疑似重复人物",
+    view: "v_report_similar_people",
+    icon: "i-material-symbols-group-work-outline-rounded",
+    description:
+      "忽略大小写、全角半角、空格与标点后名字相同的人物；同名但别名各异的不列出。可合并为一人，或标记为不是同一人。",
+    unit: "位人物",
+  },
+  "orphan-people": {
+    group: "人物与演员表",
+    label: "未关联作品的人物",
+    view: "v_report_orphan_people",
+    icon: "i-material-symbols-person-off-outline-rounded",
+    description: "没有参与任何作品、也不是专辑艺术家的人物。",
+    unit: "位人物",
+    bulkDelete: "people",
+  },
+  "credit-order": {
+    group: "人物与演员表",
+    label: "演职员顺序异常",
+    view: "v_report_credit_order",
+    icon: "i-material-symbols-format-list-numbered-rounded",
+    description: "演员或导演顺序重复、断号或为空。打开作品重新保存即可按当前顺序修正。",
+    unit: "部作品",
+  },
+  "incomplete-media": {
+    group: "作品资料",
+    label: "资料不完整",
+    view: "v_report_incomplete_media",
+    icon: "i-material-symbols-edit-note-rounded",
+    description: "电影、电视节目缺少的字段；单集只检查播出日期。",
+    unit: "个条目",
+  },
+  "tv-structure": {
+    group: "作品资料",
+    label: "季集结构",
+    view: "v_report_tv_structure",
+    icon: "i-material-symbols-account-tree-outline-rounded",
+    description: "没有季的电视节目、没有单集的季，以及季号、集号断号（编号 0 的特别篇不计；集号可接续上一季）。",
+    unit: "个条目",
+  },
+  "tracking-conflicts": {
+    group: "作品资料",
+    label: "观看记录矛盾",
+    view: "v_report_tracking_conflicts",
+    icon: "i-material-symbols-rule-rounded",
+    description: "想看却已有评分的电影和单集，以及已看但未评分的电影。",
+    unit: "个条目",
+  },
+  "unused-references": {
+    group: "关联资料",
+    label: "闲置关联资料",
+    view: "v_report_unused_references",
+    icon: "i-material-symbols-label-off-outline-rounded",
+    description: "没有被任何作品使用的类型、地区、语言与系列。",
+    unit: "项资料",
+    bulkDelete: "references",
+  },
 } as const;
 export type ReportKind = keyof typeof reports;
-export type ReportRow = { id: string; link_type: string; link_id: string; title: string; detail: string | null; tags: string[] | null; weight: number };
+export type ReportRow = {
+  id: string;
+  link_type: string;
+  link_id: string;
+  title: string;
+  detail: string | null;
+  tags: string[] | null;
+  weight: number;
+};
 
 /** 只允许已定义的报告。 */
 export function isReportKind(value: string): value is ReportKind {
@@ -25,7 +106,8 @@ export function isReportKind(value: string): value is ReportKind {
 /** 按分组排列报告，概览页与导航共用顺序。 */
 export function reportGroups() {
   const groups = new Map<string, ReportKind[]>();
-  for (const kind of Object.keys(reports) as ReportKind[]) groups.set(reports[kind].group, [...(groups.get(reports[kind].group) ?? []), kind]);
+  for (const kind of Object.keys(reports) as ReportKind[])
+    groups.set(reports[kind].group, [...(groups.get(reports[kind].group) ?? []), kind]);
   return [...groups].map(([label, kinds]) => ({ label, kinds }));
 }
 

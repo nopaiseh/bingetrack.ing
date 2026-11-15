@@ -1,13 +1,7 @@
 "use client";
 
 /** 滚动超过阈值后出现的回到顶部按钮。隐藏时用 inert 退出 Tab 顺序。 */
-export default function SearchScrollTop({
-  visible,
-  onClick,
-}: {
-  visible: boolean;
-  onClick: () => void;
-}) {
+export default function SearchScrollTop({ visible, onClick }: { visible: boolean; onClick: () => void }) {
   return (
     <button
       onClick={onClick}
