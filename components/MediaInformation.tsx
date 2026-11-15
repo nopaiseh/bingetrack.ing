@@ -3,20 +3,12 @@ import Link from "next/link";
 import { Suspense, type ReactNode } from "react";
 import MediaBackLink, { DefaultMediaBackLink } from "./MediaBackLink";
 import { Media, SeasonInfo } from "@/lib/types";
-import { formatRuntime } from "@/lib/format-runtime";
-import { heroWatermark, titleAccentIndex } from "@/lib/title-accent";
-import { isUpcomingDate } from "@/lib/upcoming";
 import SearchTag from "./SearchTag";
 import { ratingTierLabel } from "./MediaRatingBadge";
 import SeasonRow from "./SeasonRow";
 import ClampedCopy from "./ClampedCopy";
 import LetterTile from "./LetterTile";
 import { resolveWatchStatus, WATCH_STATUSES } from "./watch-status";
-
-/** 页头时长写成「2 小时 45 分」，和事实区的完整分钟写法分开。 */
-function heroRuntime(runtime: number | null | undefined): string | null {
-  return formatRuntime(runtime)?.replaceAll("分钟", "分") ?? null;
-}
 
 /** 元信息行里的年份。完整日期只取年；剧集的年份区间保留短横。 */
 function releaseYearLabel(media: Media, releaseDateLabel?: string): string {
@@ -46,39 +38,14 @@ function MediaPoster({ media }: { media: Media }) {
           src={media.cover_url}
           alt=""
           fill
-          sizes="(max-width: 639px) 84px, 184px"
+          sizes="(max-width: 639px) 64px, 96px"
           className="object-cover"
-          priority={!media.backdrop_url}
+          priority
         />
       ) : (
         <LetterTile title={media.title} />
       )}
     </div>
-  );
-}
-
-/** 当前观看状态。文案来自全站状态表，只展示，不提供会改数据的按钮。 */
-function StatusPill({ status }: { status?: string }) {
-  const config = resolveWatchStatus(status) ?? WATCH_STATUSES.want_to_watch;
-  const solid = config.id === "want_to_watch";
-  return (
-    <span
-      className={`inline-flex min-h-11 items-center justify-center gap-1.5 rounded-xl px-4 text-sm font-semibold ${
-        solid ? "button-accent" : `border ${config.borderClass} ${config.surfaceClass} ${config.textClass}`
-      }`}
-    >
-      <span className={`${config.icon} inline-block size-4`} aria-hidden="true" />
-      {config.label}
-    </span>
-  );
-}
-
-/** 即将上映是发行状态，和已看 / 在看 / 想看分开。 */
-function UpcomingChip() {
-  return (
-    <span className="inline-flex items-center rounded-full border border-[var(--accent-border)] bg-[var(--accent-soft)] px-2.5 py-0.5 text-sm font-medium text-[var(--accent-hover)]">
-      即将上映
-    </span>
   );
 }
 
@@ -155,7 +122,7 @@ function CastRoster({ media }: { media: Media }) {
   );
 }
 
-/** 组合页头、事实、简介、演员和季列表。没有剧照时页头改用较短的标题色渐变。 */
+/** 组合页头、事实、简介、演员和季列表。页头与搜索页同一套标题，左侧是小海报或首字块。 */
 export default function MediaInformation({
   media,
   seasons,
@@ -169,105 +136,48 @@ export default function MediaInformation({
   releaseDateLabel?: string;
   displayStatus?: string;
 }) {
-  const runtimeLabel = heroRuntime(media.runtime);
   const yearLabel = releaseYearLabel(media, releaseDateLabel);
-  const upcoming = isUpcomingDate(media.date);
-  const backdrop = media.backdrop_url?.trim() || "";
-  const accent = titleAccentIndex(media.title);
-  const watermark = heroWatermark(media.title, media.alternate_title);
   const typeLabel = media.type === "shows" ? "电视节目" : "电影";
-  const seriesName = media.series?.[0];
   const status = displayStatus ?? media.status;
+  const statusConfig = resolveWatchStatus(status) ?? WATCH_STATUSES.want_to_watch;
   const score = media.rating == null ? null : Number(media.rating).toFixed(1);
   const tier = ratingTierLabel(media.rating);
-  const genres = media.genres?.slice(0, 2) ?? [];
+  const alternate = media.alternate_title && media.alternate_title !== media.title ? media.alternate_title : null;
 
   return (
     <>
-      <header
-        className={`detail-hero relative ${backdrop ? "pb-10 sm:pb-14" : "pb-6 sm:pb-8"}`}
-        data-hero={backdrop ? "backdrop" : "fallback"}
-        data-accent={accent}
-      >
-        {backdrop ? (
-          <>
-            <Image src={backdrop} alt="" fill priority sizes="100vw" className="object-cover" />
-            <div className="detail-hero-scrim" aria-hidden="true" />
-          </>
-        ) : null}
-        {watermark ? (
-          <p className="detail-hero-mark" aria-hidden="true">
-            {watermark}
-          </p>
-        ) : null}
+      <header className="container mx-auto max-w-7xl px-4 pb-8 pt-24 sm:px-6 lg:px-8">
+        <Suspense fallback={<DefaultMediaBackLink type={media.type === "shows" ? "shows" : "movies"} />}>
+          <MediaBackLink type={media.type === "shows" ? "shows" : "movies"} />
+        </Suspense>
 
-        <div className="container relative z-10 mx-auto max-w-7xl px-4 pt-24 sm:px-6 lg:px-8">
-          <Suspense fallback={<DefaultMediaBackLink type={media.type === "shows" ? "shows" : "movies"} />}>
-            <MediaBackLink type={media.type === "shows" ? "shows" : "movies"} />
-          </Suspense>
-
-          <div className="grid grid-cols-[5.25rem_minmax(0,1fr)] items-start gap-x-3.5 gap-y-4 sm:grid-cols-[11.5rem_minmax(0,1fr)] sm:gap-x-8">
-            <div className="col-start-1 row-start-1 row-span-2 w-full">
-              <MediaPoster media={media} />
-            </div>
-
-            <div className="col-start-2 row-start-1 min-w-0">
-              <p className="text-sm text-fg-muted">
-                {typeLabel}
-                {seriesName ? ` · ${seriesName} 系列` : ""}
-              </p>
-              <h1 className="mt-1 text-balance break-words text-3xl font-semibold tracking-tight text-fg sm:text-5xl">
-                {media.title}
-              </h1>
-              {media.alternate_title && media.alternate_title !== media.title ? (
-                <p className="mt-1 text-sm text-fg-secondary sm:text-base">{media.alternate_title}</p>
+        <div className="flex items-start gap-4 sm:gap-5">
+          <div className="w-16 shrink-0 sm:w-24">
+            <MediaPoster media={media} />
+          </div>
+          <div className="min-w-0 flex-1">
+            <h1 className="text-balance break-words text-3xl font-semibold tracking-tight text-fg sm:text-4xl">
+              {media.title}
+            </h1>
+            {alternate ? <p className="mt-1 text-sm text-fg-secondary">{alternate}</p> : null}
+            <p className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-fg-muted">
+              {yearLabel ? <span className="font-mono text-fg-secondary">{yearLabel}</span> : null}
+              {yearLabel ? (
+                <span aria-hidden="true" className="text-fg-subtle">
+                  ·
+                </span>
               ) : null}
-              <p className="mt-3 flex flex-wrap items-center gap-x-2 gap-y-1.5 text-sm text-fg-secondary">
-                {yearLabel ? <span className="font-mono">{yearLabel}</span> : null}
-                {runtimeLabel ? (
-                  <>
-                    <span aria-hidden="true" className="text-fg-subtle">
-                      ·
-                    </span>
-                    <span>{runtimeLabel}</span>
-                  </>
-                ) : null}
-                {genres.map((genre) => (
-                  <span key={genre} className="inline-flex items-center gap-2">
-                    <span aria-hidden="true" className="text-fg-subtle">
-                      ·
-                    </span>
-                    {genre}
-                  </span>
-                ))}
-                {upcoming ? (
-                  <>
-                    <span aria-hidden="true" className="text-fg-subtle">
-                      ·
-                    </span>
-                    <UpcomingChip />
-                  </>
-                ) : null}
-              </p>
-            </div>
-
-            <div className="col-start-2 row-start-2 flex min-w-0 flex-wrap items-center gap-2 sm:gap-3">
-              <StatusPill status={status} />
-              <a
-                href={`https://www.themoviedb.org/search?query=${encodeURIComponent(media.title)}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex min-h-11 items-center gap-1.5 rounded-xl px-3 text-sm font-medium text-fg-secondary transition-colors hover:text-fg"
-              >
-                <span className="i-material-symbols-open-in-new-rounded inline-block size-4" aria-hidden="true" />
-                TMDB
-              </a>
-            </div>
+              <span>{typeLabel}</span>
+              <span aria-hidden="true" className="text-fg-subtle">
+                ·
+              </span>
+              <span className={`font-medium ${statusConfig.textClass}`}>{statusConfig.label}</span>
+            </p>
           </div>
         </div>
       </header>
 
-      <div className="container relative z-10 mx-auto max-w-7xl px-4 pb-8 sm:px-6 md:pb-12 lg:px-8">
+      <div className="container mx-auto max-w-7xl px-4 pb-8 sm:px-6 md:pb-12 lg:px-8">
         <dl className="grid grid-cols-2 gap-px overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--border)] sm:grid-cols-4">
           <Fact label="上映">
             <span className="font-mono">{releaseFact(media, releaseDateLabel)}</span>

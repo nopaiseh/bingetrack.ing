@@ -107,18 +107,17 @@ export function HomeLoadingSkeleton() {
   );
 }
 
-/** 为媒体详情的大标题页头、事实格和简介展示加载骨架。 */
+/** 为媒体详情的标题、事实格和简介展示加载骨架。 */
 export function DetailLoadingSkeleton() {
   return (
     <section aria-label="正在加载媒体详情">
-      <div className="border-b border-[var(--border)]">
-        <div className="container mx-auto grid max-w-7xl grid-cols-[5.25rem_minmax(0,1fr)] gap-4 px-4 pb-8 pt-24 sm:grid-cols-[11.5rem_minmax(0,1fr)] sm:px-6 lg:px-8">
-          <SkeletonBlock className="aspect-2/3 w-full" />
-          <div className="space-y-3 pt-2">
-            <SkeletonBlock className="h-4 w-28" />
-            <SkeletonBlock className="h-12 w-3/4 max-w-xl" />
-            <SkeletonBlock className="h-4 w-48" />
-            <SkeletonBlock className="h-11 w-28 rounded-xl" />
+      <div className="container mx-auto max-w-7xl px-4 pb-8 pt-24 sm:px-6 lg:px-8">
+        <SkeletonBlock className="mb-6 h-10 w-36 rounded-xl" />
+        <div className="flex items-start gap-4 sm:gap-5">
+          <SkeletonBlock className="aspect-2/3 w-16 shrink-0 sm:w-24" />
+          <div className="min-w-0 flex-1 space-y-3 pt-1">
+            <SkeletonBlock className="h-9 w-3/4 max-w-xl" />
+            <SkeletonBlock className="h-4 w-40" />
           </div>
         </div>
       </div>

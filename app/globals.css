@@ -263,7 +263,6 @@
   --t-lg: 1.0625rem;
   --t-xl: 1.25rem;
   --h1: 1.75rem;
-  --h-hero: 2.5rem;
   --hit-target: 2.5rem;
   /* 搜索框与旁边的筛选按钮共用的最小高度。3.625rem = 58px：text-base 行高 1.5rem + 上下 py-4 + 1px 边框。圆角 1rem 与 rounded-2xl 相同。 */
   --search-control-height: 3.625rem;
@@ -1159,7 +1158,7 @@ a.surface-recessed {
 }
 
 /*
- * 无海报字块与无剧照页头共用六档颜色。
+ * 无海报字块的六档颜色。
  * 色相来自 --ok / --danger / --warn / --violet / --accent，再压暗到白字能过 AA。
  */
 :root {
@@ -1218,87 +1217,6 @@ a.surface-recessed {
 .letter-tile[data-accent="5"] {
   --tile-from: var(--tile-5-from);
   --tile-to: var(--tile-5-to);
-}
-
-/* 详情页头：有剧照时加高，没有时用标题对应的那一档渐变，并在画布处收住。 */
-.detail-hero {
-  position: relative;
-  overflow: hidden;
-  background: var(--canvas);
-}
-
-.detail-hero[data-hero="backdrop"] {
-  min-height: 34rem;
-}
-
-.detail-hero[data-hero="fallback"] {
-  background:
-    linear-gradient(180deg, transparent 0%, var(--canvas) 78%),
-    radial-gradient(90% 80% at 12% -10%, var(--hero-from, var(--tile-0-to)) 0%, transparent 62%), var(--canvas);
-}
-
-.detail-hero[data-hero="fallback"][data-accent="0"] {
-  --hero-from: var(--tile-0-to);
-  --hero-ink: var(--tile-0-to);
-}
-.detail-hero[data-hero="fallback"][data-accent="1"] {
-  --hero-from: var(--tile-1-to);
-  --hero-ink: var(--tile-1-to);
-}
-.detail-hero[data-hero="fallback"][data-accent="2"] {
-  --hero-from: var(--tile-2-to);
-  --hero-ink: var(--tile-2-to);
-}
-.detail-hero[data-hero="fallback"][data-accent="3"] {
-  --hero-from: var(--tile-3-to);
-  --hero-ink: var(--tile-3-to);
-}
-.detail-hero[data-hero="fallback"][data-accent="4"] {
-  --hero-from: var(--tile-4-to);
-  --hero-ink: var(--tile-4-to);
-}
-.detail-hero[data-hero="fallback"][data-accent="5"] {
-  --hero-from: var(--tile-5-to);
-  --hero-ink: var(--tile-5-to);
-}
-
-.detail-hero-scrim {
-  position: absolute;
-  inset: 0;
-  background:
-    linear-gradient(180deg, rgb(14 10 18 / 0.12) 0%, rgb(14 10 18 / 0.38) 48%, var(--canvas) 100%),
-    linear-gradient(90deg, rgb(14 10 18 / 0.82) 0%, rgb(14 10 18 / 0.28) 46%, rgb(14 10 18 / 0.12) 100%);
-}
-
-.detail-hero-mark {
-  position: absolute;
-  top: -0.12em;
-  left: 42%;
-  z-index: 0;
-  margin: 0;
-  font-size: clamp(6.5rem, 22vw, 16rem);
-  font-weight: 800;
-  line-height: 0.8;
-  letter-spacing: -0.055em;
-  white-space: nowrap;
-  pointer-events: none;
-  user-select: none;
-  color: color-mix(in srgb, var(--hero-ink, #fff) 42%, transparent);
-}
-
-.detail-hero[data-hero="backdrop"] .detail-hero-mark {
-  color: rgb(255 255 255 / 0.08);
-}
-
-@media (max-width: 639px) {
-  .detail-hero[data-hero="backdrop"] {
-    min-height: 26rem;
-  }
-
-  .detail-hero-mark {
-    left: 18%;
-    font-size: clamp(4.5rem, 28vw, 7rem);
-  }
 }
 
 @media (max-width: 639px) {
