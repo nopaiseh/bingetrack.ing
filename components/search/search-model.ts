@@ -26,15 +26,15 @@ export const SORT_OPTIONS = [
   { id: "rating", label: "评分" },
 ];
 
-export const EMPTY_FILTERS: SearchFilters = {
-  type: [],
-  status: [],
-  genre: [],
-  region: [],
-  language: [],
-  year: [],
-  sort: ["date_desc"],
-};
+export const EMPTY_FILTERS = Object.freeze({
+  type: Object.freeze([] as const),
+  status: Object.freeze([] as const),
+  genre: Object.freeze([] as const),
+  region: Object.freeze([] as const),
+  language: Object.freeze([] as const),
+  year: Object.freeze([] as const),
+  sort: Object.freeze(["date_desc"] as const),
+} as const);
 
 /** 按规范值查找选项文案，未知值原样显示。 */
 export function optionLabel(options: { value: string; label: string }[], value: string) {
