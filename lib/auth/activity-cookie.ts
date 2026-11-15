@@ -74,23 +74,63 @@ export function signActivityCookie(userId: string, at: number, secret: BinaryLik
   return `${payload}.${signPayload(payload, secret)}`;
 }
 
+const AMR_METHOD = /^[a-z0-9/_-]{1,40}$/i;
+
+/**
+ * 把 amr 里的一个时间戳换成毫秒。
+ * GoTrue 的 Passkey 登录写成 `{ method: "passkey", timestamp: <unix 秒> }`。
+ * 数字字符串按同样的秒处理。已经是毫秒的大整数（≥ 1e12）不再乘 1000。
+ * ISO 时间字符串也认。没有可解析的 timestamp 时返回 null。不读取 iat 或 exp。
+ */
+function amrTimestampMs(raw: unknown) {
+  if (typeof raw === "number" && Number.isFinite(raw)) {
+    if (raw < 0) return null;
+    return raw >= 1e12 ? raw : raw * 1000;
+  }
+  if (typeof raw !== "string") return null;
+  const text = raw.trim();
+  if (!text) return null;
+  const numeric = Number(text);
+  if (Number.isFinite(numeric)) {
+    if (numeric < 0) return null;
+    return numeric >= 1e12 ? numeric : numeric * 1000;
+  }
+  const parsed = Date.parse(text);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
 /**
  * 从已验证的访问令牌 amr 里取本次会话的认证时间（毫秒）。
- * 字符串形式的 amr 没有时间戳。未来时间视为不可信。不读取 iat。
+ * 只有方法名、没有可解析 timestamp 的条目不算认证时间。未来时间视为不可信。不读取 iat。
  */
 export function readSessionAuthenticatedAt(amr: unknown, now = Date.now()) {
   if (!Array.isArray(amr)) return null;
   let latest = -1;
   for (const entry of amr) {
     if (!entry || typeof entry !== "object" || !("timestamp" in entry)) continue;
-    const seconds = Number((entry as { timestamp: unknown }).timestamp);
-    if (!Number.isFinite(seconds)) continue;
-    latest = Math.max(latest, seconds);
+    const at = amrTimestampMs((entry as { timestamp: unknown }).timestamp);
+    if (at === null) continue;
+    latest = Math.max(latest, at);
   }
   if (latest < 0) return null;
-  const at = latest * 1000;
-  if (at > now + FUTURE_SKEW_MS) return null;
-  return at;
+  if (latest > now + FUTURE_SKEW_MS) return null;
+  return latest;
+}
+
+/** 日志用的 amr 形状：只有方法名和有没有时间戳。不含时间、用户、邮箱或令牌。 */
+export function describeActivityAmr(amr: unknown) {
+  if (!Array.isArray(amr)) return amr == null ? "missing" : typeof amr;
+  if (amr.length === 0) return "empty";
+  return amr
+    .map((entry) => {
+      if (typeof entry === "string") return `string:${AMR_METHOD.test(entry) ? entry : "other"}`;
+      if (!entry || typeof entry !== "object") return "other";
+      const methodRaw = "method" in entry && typeof entry.method === "string" ? entry.method : "";
+      const method = AMR_METHOD.test(methodRaw) ? methodRaw : "object";
+      const hasTimestamp = "timestamp" in entry && amrTimestampMs((entry as { timestamp: unknown }).timestamp) !== null;
+      return `${method}:${hasTimestamp ? "ts" : "no-ts"}`;
+    })
+    .join(",");
 }
 
 /**

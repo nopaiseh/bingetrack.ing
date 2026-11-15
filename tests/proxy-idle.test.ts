@@ -96,6 +96,13 @@ describe("proxy 空闲期限", () => {
     expect(setCookies(unsigned)).not.toContain("bt-activity=v1.");
   });
 
+  it("登录后立刻打开 /manage，活动 Cookie 刚写下时放行", async () => {
+    const response = await proxy(manageRequest(signed(Date.now())));
+    expect(response.status).toBe(200);
+    expect(response.headers.get("location")).toBeNull();
+    expect(ctx.signOut).not.toHaveBeenCalled();
+  });
+
   it("令牌刷新不会写成活动，新鲜的 Cookie 可以继续访问", async () => {
     const response = await proxy(manageRequest(signed(Date.now())));
     expect(response.status).toBe(200);

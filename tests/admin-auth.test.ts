@@ -82,9 +82,14 @@ describe("服务端站长权限", () => {
     expect(rpc).not.toHaveBeenCalled();
   });
   it("过期的活动 Cookie 不能进入管理区", async () => {
-    getUser.mockResolvedValue({ data: { user: { id: "owner" } }, error: null });
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    getUser.mockResolvedValue({ data: { user: { id: "owner", email: "owner@example.com" } }, error: null });
     activityCookie.value = signActivityCookie("owner", Date.now() - 31 * 60 * 1000, readActivitySecret()!);
     await expect(requireOwner()).rejects.toThrow("REDIRECT:/");
+    expect(warn).toHaveBeenCalledWith("[requireOwner] idle_expired");
+    expect(warn.mock.calls.flat().join(" ")).not.toContain("owner@example.com");
+    expect(warn.mock.calls.flat().join(" ")).not.toContain(activityCookie.value);
+    warn.mockRestore();
     expect(signOut).toHaveBeenCalledWith({ scope: "local" });
     expect(cookieSet).toHaveBeenCalledWith(ACTIVITY_COOKIE, "", expect.objectContaining({ maxAge: 0 }));
     expect(rpc).not.toHaveBeenCalled();

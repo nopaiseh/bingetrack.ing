@@ -6,6 +6,7 @@ import {
   ACTIVITY_COOKIE,
   ACTIVITY_COOKIE_HKDF_INFO,
   activityCookieOptions,
+  describeActivityAmr,
   readActivitySecret,
   readBackfillAuthenticatedAt,
   readSessionAuthenticatedAt,
@@ -82,9 +83,23 @@ describe("活动 Cookie 签名", () => {
       ),
     ).toBe(recent * 1000);
     expect(readSessionAuthenticatedAt(["webauthn"], now)).toBeNull();
+    expect(readSessionAuthenticatedAt([{ method: "passkey" }], now)).toBeNull();
     expect(
       readSessionAuthenticatedAt([{ method: "webauthn", timestamp: Math.floor(now / 1000) + 120 }], now),
     ).toBeNull();
+    const passkeySeconds = Math.floor((now - 5_000) / 1000);
+    expect(readSessionAuthenticatedAt([{ method: "passkey", timestamp: String(passkeySeconds) }], now)).toBe(
+      passkeySeconds * 1000,
+    );
+    expect(readSessionAuthenticatedAt([{ method: "passkey", timestamp: now - 5_000 }], now)).toBe(now - 5_000);
+    expect(
+      readSessionAuthenticatedAt([{ method: "passkey", timestamp: new Date(now - 5_000).toISOString() }], now),
+    ).toBe(now - 5_000);
+    expect(describeActivityAmr([{ method: "passkey", timestamp: passkeySeconds }])).toBe("passkey:ts");
+    expect(describeActivityAmr([{ method: "passkey" }])).toBe("passkey:no-ts");
+    expect(describeActivityAmr(["passkey"])).toBe("string:passkey");
+    expect(describeActivityAmr(undefined)).toBe("missing");
+    expect(describeActivityAmr([{ method: "user@example.com", timestamp: passkeySeconds }])).toBe("object:ts");
     expect(withinFreshSignIn(recent * 1000, now)).toBe(true);
     expect(withinFreshSignIn(now - 3 * 60 * 1000, now)).toBe(false);
     expect(withinFreshSignIn(null, now)).toBe(false);

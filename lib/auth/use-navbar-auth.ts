@@ -3,7 +3,8 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { resetIdleSession, signalIdleLogout } from "./idle";
-import { SIGNED_IN_EVENT, logoutEverywhere } from "./use-idle-session";
+import { replaceDocument } from "./location";
+import { SIGNED_IN_EVENT } from "./use-idle-session";
 import { hasSupabaseAuthCookie } from "./session-cookie";
 
 /**
@@ -54,6 +55,44 @@ function attachNavbarSession(
   };
 }
 
+const ACTIVITY_FAILURE = "登录已完成，但空闲保护未能启动，请重试。";
+
+function authErrorMessage(code: string) {
+  if (code === "access") return "此账号没有管理权限。";
+  if (code === "activity") return ACTIVITY_FAILURE;
+  return "登录链接无效或已过期，请重新获取。";
+}
+
+async function refreshStoredSession(db: AuthBrowser) {
+  try {
+    return await db.auth.refreshSession();
+  } catch {
+    return { error: new Error("refresh") };
+  }
+}
+
+function postActivity() {
+  return fetch("/auth/activity", {
+    method: "POST",
+    credentials: "same-origin",
+    cache: "no-store",
+  });
+}
+
+/**
+ * Passkey 验证返回后，第一枚访问令牌可能还没有带时间戳的 amr（声明还没读到，或 Cookie 还没被这次请求带上）。
+ * 先刷新一次会话，让 Auth 按已提交的 passkey 声明重签令牌，再上报活动。
+ * 第一次仍是 401 时再刷新并重试一次。已经超时的会话刷新也不会更新 amr 时间，服务端仍会拒绝。
+ */
+async function postPasskeyActivity(db: AuthBrowser) {
+  await refreshStoredSession(db);
+  const first = await postActivity();
+  if (first.status !== 401) return first;
+  const refreshed = await refreshStoredSession(db);
+  if (refreshed.error) return first;
+  return postActivity();
+}
+
 /** 在全站导航同步会话并校验管理入口。空闲计时不在这里。 */
 export function useNavbarAuth() {
   const router = useRouter();
@@ -79,8 +118,7 @@ export function useNavbarAuth() {
     const queryError = new URLSearchParams(window.location.search).get("authError");
     if (queryError)
       queueMicrotask(() => {
-        if (!cancelled)
-          setError(queryError === "access" ? "此账号没有管理权限。" : "登录链接无效或已过期，请重新获取。");
+        if (!cancelled) setError(authErrorMessage(queryError));
       });
     // 匿名访客没有可读的会话 Cookie（@supabase/ssr 默认 httpOnly: false），不下载 supabase-js。
     if (hasSupabaseAuthCookie(document.cookie)) {
@@ -123,19 +161,18 @@ export function useNavbarAuth() {
       }
       if (data.user) {
         resetIdleSession(data.user.id);
-        // 先写下服务端活动 Cookie，再进入管理区，避免 proxy 把刚登录的会话当成缺失活动而登出。
-        const activity = await fetch("/auth/activity", {
-          method: "POST",
-          credentials: "same-origin",
-          cache: "no-store",
-        });
-        if (activity.status === 401) {
-          signalIdleLogout(data.user.id);
-          logoutEverywhere();
-          return;
-        }
+        // 先刷新令牌并写下服务端活动 Cookie，再进入管理区，避免 proxy 把刚登录的会话当成缺失活动而登出。
+        const activity = await postPasskeyActivity(db);
         if (!activity.ok) {
-          setError("登录已完成，但空闲保护未能启动，请重试。");
+          setError(ACTIVITY_FAILURE);
+          if (activity.status === 401) {
+            signalIdleLogout(data.user.id);
+            void fetch("/auth/logout", { method: "POST", credentials: "same-origin", cache: "no-store" }).finally(
+              () => {
+                replaceDocument("/?authError=activity");
+              },
+            );
+          }
           return;
         }
         // 软导航不会重挂根布局。已经挂上的 IdleSession 靠这个信号才开始计时。
