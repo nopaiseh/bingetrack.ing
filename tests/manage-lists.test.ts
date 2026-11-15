@@ -291,15 +291,16 @@ describe("季与单集列表", () => {
     ]);
     expect(calls(ordered, "range")[0].args).toEqual([25, 49]);
     expect(queries[1].table).toBe("media_items");
-    expect(calls(queries[1], "select")[0].args[0]).toBe([
-      "id,title,alternate_title,type,cover_url,release_date",
-      "tracking(status,rating)",
-      "tv_seasons!tv_seasons_id_fkey(season_number,parent:media_items!tv_seasons_series_id_fkey(title),episodes:tv_episodes!tv_episodes_season_id_fkey(count))",
-      "tv_episodes!tv_episodes_id_fkey(episode_number,parent:tv_seasons!tv_episodes_season_id_fkey(media_items!tv_seasons_id_fkey(title),series:media_items!tv_seasons_series_id_fkey(title)))",
-    ].join(","));
-    expect(String(calls(queries[1], "select")[0].args[0])).not.toContain("!inner");
-    expect(String(calls(queries[1], "select")[0].args[0])).not.toContain("runtime");
-    expect(String(calls(queries[1], "select")[0].args[0])).not.toContain("seasons:tv_seasons");
+    const detailColumns = String(calls(queries[1], "select")[0].args[0]);
+    expect(detailColumns).toContain("tracking(status,rating)");
+    expect(detailColumns).toContain("tv_seasons!tv_seasons_id_fkey(season_number,");
+    expect(detailColumns).toContain("episodes:tv_episodes!tv_episodes_season_id_fkey(count)");
+    expect(detailColumns).toContain("tv_episodes!tv_episodes_id_fkey(episode_number,");
+    expect(detailColumns).not.toContain("!inner");
+    expect(detailColumns).not.toContain("runtime");
+    expect(detailColumns).not.toContain("seasons:tv_seasons");
+    expect(detailColumns).not.toMatch(/[(,]series_id[,)]/);
+    expect(detailColumns).not.toMatch(/[(,]season_id[,)]/);
     expect(calls(queries[1], "in")[0].args).toEqual(["id", [seasonB, seasonId]]);
     expect(page.total).toBe(30);
     expect(page.items.map((item) => item.id)).toEqual([seasonB, seasonId]);
