@@ -21,19 +21,76 @@ const media: Media = {
 };
 
 describe("详情页窄屏布局", () => {
-  it("海报缩到标题旁，简介限制在约 70ch，过长时可展开", () => {
-    const { container } = render(<MediaInformation media={media} seasons={null} releaseDateLabel="2012-09-28" />);
+  it("标题旁是小海报，字号与搜索页一致，元信息在下一行，没有 TMDB 链接", () => {
+    const { container } = render(
+      <MediaInformation media={{ ...media, status: "watched" }} seasons={null} releaseDateLabel="2012-09-28" />,
+    );
     const poster = container.querySelector("[data-poster]");
-    expect(poster?.parentElement).toHaveClass("row-span-2");
-    expect(container.querySelector("[data-hero]")).toHaveAttribute("data-hero", "fallback");
+    expect(poster?.parentElement).toHaveClass("w-16", "sm:w-24");
+    expect(poster?.querySelector("img")).toHaveAttribute("src", expect.stringContaining("poster.jpg"));
+    expect(container.querySelector("[data-hero]")).not.toBeInTheDocument();
     const copy = screen.getByText(/一段很长的剧情简介/);
     expect(copy).toHaveClass("max-w-[70ch]");
     expect(copy.closest("details")).toBeInTheDocument();
     expect(screen.getByText("展开全文 ↓")).toBeInTheDocument();
-    expect(screen.getByRole("heading", { level: 1, name: "完美音调" })).toHaveClass("text-3xl", "sm:text-5xl");
+    const title = screen.getByRole("heading", { level: 1, name: "完美音调" });
+    expect(title).toHaveClass("text-3xl", "sm:text-4xl");
+    expect(title).not.toHaveClass("sm:text-5xl");
+    expect(screen.getByText("2012")).toBeInTheDocument();
+    expect(screen.getByText("电影")).toBeInTheDocument();
+    expect(screen.getByText("1 小时 52 分")).toBeInTheDocument();
+    expect(screen.getByText("已看")).toBeInTheDocument();
+    expect(screen.queryByText("即将上映")).not.toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "TMDB" })).not.toBeInTheDocument();
   });
 
-  it("没有海报时用标题首字，有剧照地址时页头改为大图", () => {
+  it("没有片长时元信息行省略片长", () => {
+    render(
+      <MediaInformation
+        media={{ ...media, runtime: null, status: "watched" }}
+        seasons={null}
+        releaseDateLabel="2012-09-28"
+      />,
+    );
+    expect(screen.queryByText(/小时|分钟/)).not.toBeInTheDocument();
+    expect(screen.getByText("已看")).toBeInTheDocument();
+  });
+
+  it("上映日在未来时显示即将上映，在过去时不显示", () => {
+    const { rerender } = render(
+      <MediaInformation
+        media={{ ...media, date: "2099-01-01", status: "want_to_watch" }}
+        seasons={null}
+        releaseDateLabel="2099-01-01"
+      />,
+    );
+    expect(screen.getByLabelText("即将上映")).toBeInTheDocument();
+    expect(screen.queryByText("想看")).not.toBeInTheDocument();
+
+    rerender(
+      <MediaInformation
+        media={{ ...media, date: "2012-09-28", status: "want_to_watch" }}
+        seasons={null}
+        releaseDateLabel="2012-09-28"
+      />,
+    );
+    expect(screen.queryByLabelText("即将上映")).not.toBeInTheDocument();
+    expect(screen.getByText("想看")).toBeInTheDocument();
+  });
+
+  it("已看的未来日期仍显示已看，不显示即将上映", () => {
+    render(
+      <MediaInformation
+        media={{ ...media, date: "2099-06-01", status: "watched" }}
+        seasons={null}
+        releaseDateLabel="2099-06-01"
+      />,
+    );
+    expect(screen.queryByLabelText("即将上映")).not.toBeInTheDocument();
+    expect(screen.getByText("已看")).toBeInTheDocument();
+  });
+
+  it("没有海报时用标题首字，剧照地址不再铺成页头", () => {
     const { container, rerender } = render(
       <MediaInformation
         media={{ ...media, cover_url: "", title: "复仇者联盟" }}
@@ -42,7 +99,7 @@ describe("详情页窄屏布局", () => {
       />,
     );
     expect(container.querySelector("[data-poster] .letter-tile")).toHaveAttribute("data-initial", "复");
-    expect(container.querySelector("[data-hero]")).toHaveAttribute("data-hero", "fallback");
+    expect(container.querySelector("[data-hero]")).not.toBeInTheDocument();
 
     rerender(
       <MediaInformation
@@ -51,7 +108,8 @@ describe("详情页窄屏布局", () => {
         releaseDateLabel="2026-12-18"
       />,
     );
-    expect(container.querySelector("[data-hero]")).toHaveAttribute("data-hero", "backdrop");
+    expect(container.querySelector("[data-hero]")).not.toBeInTheDocument();
+    expect(container.querySelector("[data-poster] img")).toHaveAttribute("src", expect.stringContaining("poster.jpg"));
   });
 
   it("短简介不提供展开控件", () => {
