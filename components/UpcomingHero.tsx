@@ -3,6 +3,7 @@
 import { useRef, useState, useSyncExternalStore } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import LetterTile from "@/components/LetterTile";
 import type { UpcomingRelease } from "@/lib/types";
 import { daysUntil, pickUpcoming, sgtDateKey } from "@/lib/upcoming";
 
@@ -122,7 +123,7 @@ export default function UpcomingHero({ items, renderedOn }: UpcomingHeroProps) {
         if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setInteracting(false);
       }}
     >
-      <div className="relative z-10 grid items-center gap-6 lg:grid-cols-2 lg:gap-10">
+      <div className="relative z-10 grid items-start gap-4 sm:gap-5 lg:grid-cols-[minmax(0,1fr)_auto] lg:gap-8">
         {/* 左侧：倒计时、标题、类型标签与简介 */}
         <div
           id="upcoming-panel"
@@ -131,7 +132,7 @@ export default function UpcomingHero({ items, renderedOn }: UpcomingHeroProps) {
           aria-roledescription="条目"
           aria-label={hasMultiple ? `第 ${activeIndex + 1} 条，共 ${upcomingList.length} 条` : undefined}
           aria-live={canRotate && !rotationPaused ? "off" : "polite"}
-          className="animate-spotlight-fade flex min-w-0 flex-col justify-between max-w-2xl w-full order-2 lg:order-1"
+          className="animate-spotlight-fade flex min-w-0 w-full max-w-2xl flex-col justify-between"
         >
           <div>
             {/* 顶栏徽标 */}
@@ -148,7 +149,7 @@ export default function UpcomingHero({ items, renderedOn }: UpcomingHeroProps) {
 
             {/* 作品标题（艺术衬线体） */}
             <h2
-              className="font-serif-movie line-clamp-2 text-balance text-4xl font-black leading-tight tracking-tight text-white drop-shadow-[0_2px_30px_rgba(0,0,0,0.45)] sm:text-5xl lg:text-6xl"
+              className="font-serif-movie line-clamp-2 text-balance text-3xl font-black leading-tight tracking-tight text-white sm:text-4xl"
               title={currentItem.title}
             >
               {currentItem.title}
@@ -176,7 +177,7 @@ export default function UpcomingHero({ items, renderedOn }: UpcomingHeroProps) {
 
             {currentItem.summary && (
               <div className="mt-4">
-                <p className="max-w-xl text-sm sm:text-base leading-relaxed text-fg-secondary line-clamp-2 sm:line-clamp-3 md:line-clamp-4 font-normal">
+                <p className="max-w-xl text-sm leading-relaxed text-fg-secondary line-clamp-2 font-normal">
                   {currentItem.summary}
                 </p>
               </div>
@@ -184,7 +185,7 @@ export default function UpcomingHero({ items, renderedOn }: UpcomingHeroProps) {
           </div>
 
           {/* 倒计时与行动呼吁 */}
-          <div className="mt-7 flex flex-wrap items-center gap-x-6 gap-y-4">
+          <div className="mt-4 flex flex-wrap items-center gap-x-6 gap-y-3">
             <p className="flex items-baseline gap-2">
               <span className="sr-only">
                 {days <= 1 ? `${countdown.value}${labels.verb}` : `距${labels.verb}还有 ${days} 天`}
@@ -206,7 +207,7 @@ export default function UpcomingHero({ items, renderedOn }: UpcomingHeroProps) {
             </p>
             <Link
               href={currentItem.href}
-              className="button-accent group inline-flex h-12 items-center gap-2 rounded-full px-7 text-sm font-bold active:scale-[0.98]"
+              className="button-accent group inline-flex h-11 items-center gap-2 rounded-full px-6 text-sm font-bold focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white/70 active:scale-[0.98]"
             >
               <span>{labels.cta}</span>
               <span
@@ -217,9 +218,9 @@ export default function UpcomingHero({ items, renderedOn }: UpcomingHeroProps) {
           </div>
         </div>
 
-        {/* 右侧：海报舞台，左右箭头切换，底部分段进度条 */}
+        {/* 海报位固定 2:3。无图时用同尺寸字块，倒计时在另一列，不随图片有无挪位。 */}
         <div
-          className="relative order-1 h-80 w-full sm:h-96 lg:order-2 lg:h-[28rem]"
+          className="flex w-44 shrink-0 flex-col gap-2 lg:w-40"
           onTouchStart={(event) => {
             touchStartX.current = event.touches[0]?.clientX ?? null;
           }}
@@ -231,56 +232,52 @@ export default function UpcomingHero({ items, renderedOn }: UpcomingHeroProps) {
             step(endX < startX ? 1 : -1);
           }}
         >
-          {/* 海报按原图比例完整显示，竖版海报、方形专辑与书封都不裁切。 */}
-          <div
-            key={`poster-${currentItem.id}`}
-            className="animate-spotlight-fade absolute inset-x-14 top-2 bottom-12 flex items-center justify-center sm:inset-x-16"
-          >
+          <div key={`poster-${currentItem.id}`} className="relative aspect-[2/3] w-full">
             <Link
               href={currentItem.href}
               aria-label={`查看《${currentItem.title}》详情`}
-              className="group/poster relative flex h-full max-w-full items-center justify-center"
+              className="group/poster relative block h-full w-full overflow-hidden rounded-2xl ring-1 ring-white/15 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white/70"
             >
               {currentItem.cover_url ? (
                 <Image
                   src={currentItem.cover_url}
                   alt={currentItem.title}
-                  width={500}
-                  height={750}
+                  fill
                   priority
                   fetchPriority="high"
-                  className="h-full w-auto max-w-full rounded-2xl object-contain shadow-[0_40px_80px_-30px_rgba(0,0,0,0.9)] ring-1 ring-white/15 transition-transform duration-700 ease-out group-hover/poster:scale-[1.03]"
-                  sizes="(max-width: 639px) 214px, (max-width: 1023px) 256px, 320px"
+                  className="object-cover"
+                  sizes="176px"
                 />
               ) : (
-                <div className="surface-card flex aspect-2/3 h-full items-center justify-center rounded-2xl text-fg-faint">
-                  <span className="i-material-symbols-movie-rounded size-12" aria-hidden="true" />
-                </div>
+                <LetterTile title={currentItem.title} className="h-full w-full rounded-2xl" />
               )}
             </Link>
+            {hasMultiple && (
+              <>
+                <button
+                  type="button"
+                  onClick={() => step(-1)}
+                  aria-label="上一条"
+                  className="surface-panel absolute left-1 top-1/2 z-10 flex size-10 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full text-fg-secondary shadow-lg shadow-black/40 transition-all duration-200 hover:bg-white/15 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white/70 active:scale-95"
+                >
+                  <span className="i-material-symbols-chevron-left-rounded size-6" aria-hidden="true" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => step(1)}
+                  aria-label="下一条"
+                  className="surface-panel absolute right-1 top-1/2 z-10 flex size-10 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full text-fg-secondary shadow-lg shadow-black/40 transition-all duration-200 hover:bg-white/15 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white/70 active:scale-95"
+                >
+                  <span className="i-material-symbols-chevron-right-rounded size-6" aria-hidden="true" />
+                </button>
+              </>
+            )}
           </div>
 
           {hasMultiple && (
             <>
-              <button
-                type="button"
-                onClick={() => step(-1)}
-                aria-label="上一条"
-                className="surface-panel absolute left-0 top-[calc(50%-1.25rem)] z-10 flex size-10 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full text-fg-secondary shadow-lg shadow-black/40 transition-all duration-200 hover:bg-white/15 hover:text-white active:scale-95"
-              >
-                <span className="i-material-symbols-chevron-left-rounded size-6" aria-hidden="true" />
-              </button>
-              <button
-                type="button"
-                onClick={() => step(1)}
-                aria-label="下一条"
-                className="surface-panel absolute right-0 top-[calc(50%-1.25rem)] z-10 flex size-10 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full text-fg-secondary shadow-lg shadow-black/40 transition-all duration-200 hover:bg-white/15 hover:text-white active:scale-95"
-              >
-                <span className="i-material-symbols-chevron-right-rounded size-6" aria-hidden="true" />
-              </button>
-
               {/* 分段进度条：每段对应一条，当前段在 30 秒内填满；点击某段直接跳转。 */}
-              <div className="absolute inset-x-0 bottom-0 z-10 flex items-center justify-center gap-3">
+              <div className="flex items-center justify-center gap-3">
                 {canRotate && (
                   <button
                     type="button"

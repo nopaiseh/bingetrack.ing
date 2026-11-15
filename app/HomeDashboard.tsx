@@ -1,10 +1,11 @@
 "use client";
 
-import { useState, useEffect, useSyncExternalStore } from "react";
+import { useState, useEffect, useMemo, useSyncExternalStore } from "react";
 import ContinueWatchingRail, { type ContinueWatchingCard } from "@/components/ContinueWatchingRail";
 import UpcomingHero from "@/components/UpcomingHero";
 import DashboardIntro from "@/components/dashboard/DashboardIntro";
 import DashboardPanels from "@/components/dashboard/DashboardPanels";
+import HomeStatStrip from "@/components/dashboard/HomeStatStrip";
 import { deriveDashboardStats } from "@/components/dashboard/dashboard-stats";
 import {
   TABS,
@@ -24,7 +25,6 @@ export default function HomeDashboard({
   distributions,
   upcoming = [],
   continueWatching = [],
-  upcomingFirst = false,
   renderedOn,
 }: {
   summary: Summary[];
@@ -33,8 +33,6 @@ export default function HomeDashboard({
   distributions: MediaDistributions;
   upcoming?: UpcomingRelease[];
   continueWatching?: readonly ContinueWatchingCard[];
-  /** 服务端按新加坡日历计算：今天起 7 天内（含第 7 天）有片上映时为 true。为 true 时即将上映在前，false 或缺省时继续观看在前。 */
-  upcomingFirst?: boolean;
   renderedOn?: string;
 }) {
   const tabs = TABS;
@@ -58,6 +56,11 @@ export default function HomeDashboard({
   const [topMediaLoading, setTopMediaLoading] = useState(false);
 
   const stats = deriveDashboardStats(summary, selectedYear, distributions);
+  // 四格统计固定用全时段行（release_year 为 "All Time"），不跟年份选择器走。
+  const allTimeStats = useMemo(
+    () => deriveDashboardStats(summary, "All Time", distributions),
+    [summary, distributions],
+  );
 
   useEffect(
     /* 选择具体年份时启动榜单请求，离开该年份或卸载组件时取消请求。 */ () => {
@@ -104,17 +107,15 @@ export default function HomeDashboard({
   // 请求中途切回全时段时，被取消的请求不会复位加载状态，因此只在选定年份时采用该状态。
   const isTopMediaLoading = topMediaLoading && selectedYear !== "All Time";
 
-  // 用 DOM 顺序切换，不用 CSS order，读屏和键盘 Tab 会跟着变。两个组件各自在没有内容时返回 null，这里不包额外节点，避免空区块撑出间距。
+  // 放映单固定先倒计时、再继续观看。没有内容的那一块返回 null，这里不包额外节点，避免空区块撑出间距。
   const continueWatchingRail = <ContinueWatchingRail items={continueWatching} />;
   const upcomingHero = <UpcomingHero items={upcoming} renderedOn={renderedOn} />;
 
   return (
-    <div
-      className="container mx-auto flex max-w-7xl flex-col gap-6 px-4 pb-8 pt-20 sm:pt-22 sm:px-6 md:pb-12 lg:pt-24 lg:px-8"
-      data-upcoming-first={upcomingFirst ? "true" : "false"}
-    >
-      {upcomingFirst ? upcomingHero : continueWatchingRail}
-      {upcomingFirst ? continueWatchingRail : upcomingHero}
+    <div className="container mx-auto flex max-w-7xl flex-col gap-4 px-4 pb-8 pt-20 sm:gap-5 sm:px-6 sm:pt-22 md:pb-12 lg:px-8 lg:pt-24">
+      {upcomingHero}
+      {continueWatchingRail}
+      <HomeStatStrip stats={allTimeStats} />
 
       <DashboardIntro
         selectedYear={selectedYear}

@@ -3,6 +3,7 @@
 import { useLayoutEffect, useRef, useState, type CSSProperties, type KeyboardEvent } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import LetterTile from "@/components/LetterTile";
 
 /**
  * 首页「继续观看」卡片。只保留展示需要的字段。
@@ -33,11 +34,6 @@ const SCROLL_GAP = "0.75rem";
 export function continueWatchingTitle(title: string): string {
   const trimmed = title.trim();
   return trimmed || "未命名节目";
-}
-
-/** 无海报时用题名的第一个字占位，和卡片标题用同一套展示文案。 */
-export function continueWatchingInitial(title: string): string {
-  return Array.from(continueWatchingTitle(title))[0] ?? "剧";
 }
 
 /**
@@ -97,17 +93,11 @@ function scrollBehavior(): ScrollBehavior {
   return window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth";
 }
 
-/** 无海报，或图片加载失败时，用主题色浅底加题名首字。 */
+/** 无海报，或图片加载失败时，用和全站相同的字块渐变，格子仍是 2:3。 */
 function PosterFallback({ title }: { title: string }) {
   return (
-    <div
-      className="image-placeholder relative flex aspect-2/3 w-full items-center justify-center overflow-hidden"
-      data-poster-fallback=""
-    >
-      <span aria-hidden="true" className="absolute inset-0 bg-[var(--accent-soft)]" />
-      <span aria-hidden="true" className="relative z-2 text-6xl font-semibold leading-none text-fg">
-        {continueWatchingInitial(title)}
-      </span>
+    <div className="relative aspect-2/3 w-full overflow-hidden" data-poster-fallback="">
+      <LetterTile title={title} className="h-full w-full" />
     </div>
   );
 }
@@ -146,7 +136,7 @@ function ContinueWatchingCardLink({ item, eager }: { item: ContinueWatchingCard;
     <Link
       href={continueWatchingHref(item)}
       data-continue-card=""
-      className="surface-card interactive-media-card group flex w-[calc((100%-2*var(--cw-gap))/2.3)] flex-none snap-start flex-col overflow-hidden rounded-xl focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white/70 sm:w-44 md:w-48"
+      className="surface-card interactive-media-card group flex w-[calc((100%-2*var(--cw-gap))/3.05)] flex-none snap-start flex-col overflow-hidden rounded-xl focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white/70 sm:w-36"
     >
       <ContinueWatchingPoster item={item} eager={eager} />
       <div className="flex min-w-0 grow flex-col gap-1.5 px-3 py-3">
@@ -191,7 +181,7 @@ function ContinueWatchingCardLink({ item, eager }: { item: ContinueWatchingCard;
   );
 }
 
-/** 横向海报轨。没有正在看的节目时整段不渲染。窄屏大约露出 2.3 张，方便看出还能横滑。 */
+/** 横向等宽海报轨。没有正在看的节目时整段不渲染。手机大约露出三张。 */
 export default function ContinueWatchingRail({ items }: { items: readonly ContinueWatchingCard[] }) {
   const scrollerRef = useRef<HTMLDivElement>(null);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
@@ -256,7 +246,7 @@ export default function ContinueWatchingRail({ items }: { items: readonly Contin
           onClick={() => scrollByCard("left")}
           aria-label="向左滚动继续观看"
           aria-controls="continue-watching-scroller"
-          className={`${buttonClass} left-0 top-[9.75rem] ${canScrollLeft ? "hidden md:flex" : "hidden"}`}
+          className={`${buttonClass} left-0 top-[6.5rem] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white/70 ${canScrollLeft ? "hidden md:flex" : "hidden"}`}
         >
           <span
             className="i-material-symbols-chevron-left-rounded relative z-2 inline-block size-6"
@@ -268,7 +258,7 @@ export default function ContinueWatchingRail({ items }: { items: readonly Contin
           onClick={() => scrollByCard("right")}
           aria-label="向右滚动继续观看"
           aria-controls="continue-watching-scroller"
-          className={`${buttonClass} right-0 top-[9.75rem] ${canScrollRight ? "hidden md:flex" : "hidden"}`}
+          className={`${buttonClass} right-0 top-[6.5rem] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white/70 ${canScrollRight ? "hidden md:flex" : "hidden"}`}
         >
           <span
             className="i-material-symbols-chevron-right-rounded relative z-2 inline-block size-6"

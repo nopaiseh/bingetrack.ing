@@ -174,6 +174,15 @@ test("左右箭头循环切换条目", async () => {
   expect(screen.getByRole("heading", { name: "沙丘3" })).toBeInTheDocument();
 });
 
+test("没有海报时用同尺寸字块，倒计时仍在", () => {
+  render(<UpcomingHero items={[{ ...mockItems[0], cover_url: "" }]} />);
+  const tile = document.querySelector(".letter-tile");
+  expect(tile).toHaveAttribute("data-initial", "沙");
+  expect(tile?.className).toContain("h-full");
+  expect(screen.getByText("距上映还有 12 天")).toBeInTheDocument();
+  expect(screen.queryByRole("img", { name: "沙丘3" })).not.toBeInTheDocument();
+});
+
 test("只有一条时不显示箭头和进度条", () => {
   render(<UpcomingHero items={[mockItems[0]]} />);
   expect(screen.queryByRole("button", { name: "下一条" })).not.toBeInTheDocument();

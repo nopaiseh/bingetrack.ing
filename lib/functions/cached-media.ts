@@ -88,7 +88,7 @@ export const getCachedTopMediaServer = cache(
 );
 
 // 即将上映候选池长缓存 24 小时；候选池留有余量，缓存滞后时由浏览器按当天过滤。
-// upcomingFirst 不使用缓存里的“今天”，而是在首页重新生成时按新加坡日历现算。下限取 UTC 昨天，24 小时内仍覆盖新加坡的今天。
+// 下限取 UTC 昨天，24 小时内仍覆盖新加坡的今天。倒计时天数在页面重新生成时按新加坡日历现算，不使用缓存里的“今天”。
 export const getCachedUpcomingReleasesServer = cache(
   unstable_cache(fetchUpcomingReleasesServer, ["public-media-upcoming-v2"], {
     revalidate: 86400,
