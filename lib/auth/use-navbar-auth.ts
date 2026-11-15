@@ -2,7 +2,8 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { resetIdleSession } from "./idle";
+import { resetIdleSession, signalIdleLogout } from "./idle";
+import { SIGNED_IN_EVENT, logoutEverywhere } from "./use-idle-session";
 import { hasSupabaseAuthCookie } from "./session-cookie";
 
 /**
@@ -128,10 +129,17 @@ export function useNavbarAuth() {
           credentials: "same-origin",
           cache: "no-store",
         });
+        if (activity.status === 401) {
+          signalIdleLogout(data.user.id);
+          logoutEverywhere();
+          return;
+        }
         if (!activity.ok) {
           setError("登录已完成，但空闲保护未能启动，请重试。");
           return;
         }
+        // 软导航不会重挂根布局。已经挂上的 IdleSession 靠这个信号才开始计时。
+        window.dispatchEvent(new Event(SIGNED_IN_EVENT));
       }
       router.replace("/manage");
       router.refresh();

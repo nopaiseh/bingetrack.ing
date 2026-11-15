@@ -1,13 +1,17 @@
 // @vitest-environment node
+import { hkdfSync } from "node:crypto";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { IDLE_TIMEOUT } from "@/lib/auth/idle";
 import {
   ACTIVITY_COOKIE,
+  ACTIVITY_COOKIE_HKDF_INFO,
   activityCookieOptions,
   readActivitySecret,
+  readSessionAuthenticatedAt,
   signActivityCookie,
   skipsIdleEnforcement,
   verifyActivityCookie,
+  withinFreshSignIn,
 } from "@/lib/auth/activity-cookie";
 import { isStrictSiteOrigin } from "@/lib/auth/site-origin";
 
@@ -22,13 +26,67 @@ describe("活动 Cookie 签名", () => {
   it("优先使用 SUPABASE_SECRET_KEY，空白时改用 SERVICE_ROLE_KEY，都没有则无法签名", () => {
     vi.stubEnv("SUPABASE_SECRET_KEY", "  secret-key  ");
     vi.stubEnv("SUPABASE_SERVICE_ROLE_KEY", "service-role");
-    expect(readActivitySecret()).toBe("secret-key");
+    const fromSecret = readActivitySecret();
+    vi.stubEnv("SUPABASE_SECRET_KEY", "secret-key");
+    expect(fromSecret!.equals(readActivitySecret()!)).toBe(true);
 
     vi.stubEnv("SUPABASE_SECRET_KEY", "   ");
-    expect(readActivitySecret()).toBe("service-role");
+    const fromRole = readActivitySecret();
+    expect(fromRole!.equals(fromSecret!)).toBe(false);
+    vi.stubEnv("SUPABASE_SERVICE_ROLE_KEY", "service-role");
+    expect(readActivitySecret()!.equals(fromRole!)).toBe(true);
 
     vi.stubEnv("SUPABASE_SERVICE_ROLE_KEY", " ");
     expect(readActivitySecret()).toBeNull();
+  });
+
+  it("子密钥由 HKDF-SHA256 和固定 info 派生，用原始密钥签名的 Cookie 会被拒绝", () => {
+    vi.stubEnv("SUPABASE_SECRET_KEY", SECRET);
+    const derived = readActivitySecret();
+    const expected = Buffer.from(hkdfSync("sha256", SECRET, Buffer.alloc(0), ACTIVITY_COOKIE_HKDF_INFO, 32));
+    expect(derived!.equals(expected)).toBe(true);
+    expect(ACTIVITY_COOKIE_HKDF_INFO).toBe("bingetrack-idle-cookie-v1");
+    expect(derived!.equals(Buffer.from(SECRET))).toBe(false);
+
+    const now = Date.now();
+    const raw = signActivityCookie(USER, now, SECRET);
+    expect(verifyActivityCookie(raw, USER, now, derived)).toMatchObject({ reason: "signature" });
+    expect(verifyActivityCookie(signActivityCookie(USER, now, derived!), USER, now, derived)).toEqual({
+      ok: true,
+      at: now,
+    });
+  });
+
+  it("只改时间戳、留下原来的签名时拒绝", () => {
+    vi.stubEnv("SUPABASE_SECRET_KEY", SECRET);
+    const derived = readActivitySecret()!;
+    const now = Date.now();
+    const value = signActivityCookie(USER, now, derived);
+    const [version, id, stamp, signature] = value.split(".");
+    const tampered = `${version}.${id}.${Number(stamp) + 1}.${signature}`;
+    expect(verifyActivityCookie(tampered, USER, now, derived)).toMatchObject({ reason: "signature" });
+  });
+
+  it("补记窗口只认带时间戳的 amr，并且只用服务端时钟", () => {
+    const now = Date.parse("2026-01-01T00:00:00Z");
+    const recent = Math.floor((now - 30_000) / 1000);
+    expect(readSessionAuthenticatedAt([{ method: "webauthn", timestamp: recent }], now)).toBe(recent * 1000);
+    expect(
+      readSessionAuthenticatedAt(
+        [
+          { method: "otp", timestamp: recent - 100 },
+          { method: "webauthn", timestamp: recent },
+        ],
+        now,
+      ),
+    ).toBe(recent * 1000);
+    expect(readSessionAuthenticatedAt(["webauthn"], now)).toBeNull();
+    expect(
+      readSessionAuthenticatedAt([{ method: "webauthn", timestamp: Math.floor(now / 1000) + 120 }], now),
+    ).toBeNull();
+    expect(withinFreshSignIn(recent * 1000, now)).toBe(true);
+    expect(withinFreshSignIn(now - 3 * 60 * 1000, now)).toBe(false);
+    expect(withinFreshSignIn(null, now)).toBe(false);
   });
 
   it("Cookie 选项是 HttpOnly、Secure、SameSite=Lax", () => {
@@ -71,6 +129,7 @@ describe("活动 Cookie 签名", () => {
   it("只有建立会话的请求可以跳过空闲检查", () => {
     expect(skipsIdleEnforcement("POST", "/auth/activity")).toBe(true);
     expect(skipsIdleEnforcement("POST", "/auth/confirm")).toBe(true);
+    expect(skipsIdleEnforcement("GET", "/auth/confirm")).toBe(true);
     expect(skipsIdleEnforcement("POST", "/auth/confirm/verify")).toBe(true);
     expect(skipsIdleEnforcement("GET", "/auth/dev-login")).toBe(true);
     expect(skipsIdleEnforcement("POST", "/auth/agent-login")).toBe(true);

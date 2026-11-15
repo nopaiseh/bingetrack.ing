@@ -2,6 +2,8 @@ import "server-only";
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
+import { ACTIVITY_COOKIE, verifyActivityCookie } from "@/lib/auth/activity-cookie";
+import { clearActivityCookie } from "@/lib/auth/activity-store";
 
 /** 每次请求创建独立认证客户端，避免在用户之间共享会话。 */
 export async function getAuthServer() {
@@ -23,7 +25,7 @@ export async function getAuthServer() {
   });
 }
 
-/** 向 Auth 服务器验证账号，再从数据库校验唯一站长身份；配置缺失时拒绝访问。 */
+/** 向 Auth 服务器验证账号，核对空闲 Cookie，再从数据库校验唯一站长身份；配置缺失时拒绝访问。 */
 export async function requireOwner() {
   const db = await getAuthServer();
   const {
@@ -31,6 +33,16 @@ export async function requireOwner() {
     error,
   } = await db.auth.getUser();
   if (error || !user) redirect("/");
+  const jar = await cookies();
+  if (!verifyActivityCookie(jar.get(ACTIVITY_COOKIE)?.value, user.id).ok) {
+    try {
+      await db.auth.signOut({ scope: "local" });
+    } catch {
+      // 写不了 Cookie 也要离开管理区，下一跳 proxy 仍会拒绝这份会话。
+    }
+    await clearActivityCookie();
+    redirect("/");
+  }
   const owner = await db.rpc("is_site_owner");
   if (owner.error || owner.data !== true) redirect("/?authError=access");
   return { db, user };

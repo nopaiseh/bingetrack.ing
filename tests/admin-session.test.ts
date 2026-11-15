@@ -21,7 +21,7 @@ vi.mock("next/headers", () => ({
   cookies: async () => ({ set: cookieSet }),
 }));
 
-import { ACTIVITY_COOKIE, verifyActivityCookie } from "@/lib/auth/activity-cookie";
+import { ACTIVITY_COOKIE, readActivitySecret, verifyActivityCookie } from "@/lib/auth/activity-cookie";
 import { createAdminSession, generateAdminMagicLink } from "@/lib/auth/admin-session";
 
 const SUPABASE_URL = "https://example.supabase.co";
@@ -224,7 +224,7 @@ describe("运维密钥会话", () => {
       expect.objectContaining({ httpOnly: true, secure: true, sameSite: "lax", path: "/" }),
     );
     const value = cookieSet.mock.calls[0][1] as string;
-    expect(verifyActivityCookie(value, "user-1", Date.now(), "secret").ok).toBe(true);
+    expect(verifyActivityCookie(value, "user-1", Date.now(), readActivitySecret()).ok).toBe(true);
     expect(value).not.toContain("secret");
   });
 

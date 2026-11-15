@@ -2,9 +2,10 @@ import { cookies } from "next/headers";
 import { NextResponse, type NextRequest } from "next/server";
 import {
   ACTIVITY_COOKIE,
-  FRESH_SIGN_IN_MS,
   readActivitySecret,
+  readSessionAuthenticatedAt,
   verifyActivityCookie,
+  withinFreshSignIn,
 } from "@/lib/auth/activity-cookie";
 import { writeActivityCookie } from "@/lib/auth/activity-store";
 import { getAuthServer } from "@/lib/auth/server";
@@ -42,7 +43,10 @@ export const OPTIONS = methodNotAllowed;
 /**
  * 已登录用户上报一次真实活动。
  * Origin 必须等于本次请求的站点 origin，否则 403。
- * 未登录返回 401，并且不写 Cookie。过期、伪造或属于其他用户的 Cookie 同样拒绝刷新。
+ * 未登录返回 401，并且不写 Cookie。
+ * 已有 Cookie 验不过（过期、伪造、串号）时不接受它，只在本次会话的 amr 仍处于补记窗口内才另写一枚新 Cookie。
+ * 窗口用服务端时钟比较访问令牌里的 amr，不用客户端传来的时间，也不用用户级 last_sign_in_at。
+ * 因此已经闲置超时的旧会话不能靠删掉或改掉 Cookie 复活；刚用 Passkey 换过的新会话可以补上自己的 Cookie。
  */
 export async function POST(request: NextRequest) {
   if (!isStrictSiteOrigin(request)) return forbidden();
@@ -58,11 +62,10 @@ export async function POST(request: NextRequest) {
   const jar = await cookies();
   const existing = jar.get(ACTIVITY_COOKIE)?.value;
   const now = Date.now();
-  if (existing) {
-    if (!verifyActivityCookie(existing, user.id, now, secret).ok) return unauthorized();
-  } else {
-    const signedInAt = Date.parse(user.last_sign_in_at ?? "");
-    if (!Number.isFinite(signedInAt) || now - signedInAt > FRESH_SIGN_IN_MS) return unauthorized();
+  if (!verifyActivityCookie(existing, user.id, now, secret).ok) {
+    const claims = await db.auth.getClaims();
+    const authenticatedAt = readSessionAuthenticatedAt(claims?.data?.claims?.amr, now);
+    if (!withinFreshSignIn(authenticatedAt, now)) return unauthorized();
   }
 
   if (!(await writeActivityCookie(user.id, now))) return text("Activity tracking is unavailable", 503);

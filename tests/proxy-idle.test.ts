@@ -1,7 +1,7 @@
 // @vitest-environment node
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { NextRequest, type NextResponse } from "next/server";
-import { ACTIVITY_COOKIE, signActivityCookie } from "@/lib/auth/activity-cookie";
+import { ACTIVITY_COOKIE, readActivitySecret, signActivityCookie } from "@/lib/auth/activity-cookie";
 import { IDLE_TIMEOUT } from "@/lib/auth/idle";
 import { proxy } from "@/proxy";
 
@@ -22,6 +22,12 @@ vi.mock("@supabase/ssr", () => ({
     return { auth: { getClaims: ctx.getClaims, signOut: ctx.signOut } };
   },
 }));
+
+function signed(at: number, user = USER) {
+  const key = readActivitySecret();
+  if (!key) throw new Error("缺少签名密钥");
+  return signActivityCookie(user, at, key);
+}
 
 function setCookies(response: NextResponse) {
   return typeof response.headers.getSetCookie === "function" ? response.headers.getSetCookie().join("\n") : "";
@@ -54,7 +60,7 @@ describe("proxy 空闲期限", () => {
   });
 
   it("活动超过 30 分钟后再请求 /manage 会登出并回到首页，且不写活动 Cookie", async () => {
-    const request = manageRequest(signActivityCookie(USER, Date.now() - IDLE_TIMEOUT, SECRET));
+    const request = manageRequest(signed(Date.now() - IDLE_TIMEOUT));
     const response = await proxy(request);
 
     expect(response.status).toBe(303);
@@ -63,30 +69,35 @@ describe("proxy 空闲期限", () => {
     expect(ctx.signOut).toHaveBeenCalledWith({ scope: "local" });
     const header = setCookies(response);
     expect(header).toMatch(/sb-ref-auth-token=;/);
-    expect(header).not.toContain(`${ACTIVITY_COOKIE}=`);
+    expect(header).toMatch(/bt-activity=;/);
+    expect(header.toLowerCase()).toContain("max-age=0");
+    expect(header).not.toContain("bt-activity=v1.");
     expect(header).not.toContain("refreshed");
   });
 
   it("签名无效、用户不匹配、缺少 Cookie 或没有密钥时同样登出", async () => {
-    const forged = signActivityCookie(USER, Date.now(), SECRET).slice(0, -1) + "x";
-    const cases = [forged, signActivityCookie("other-user", Date.now(), SECRET), undefined];
+    const forged = signed(Date.now()).slice(0, -1) + "x";
+    const cases = [forged, signed(Date.now(), "other-user"), undefined];
     for (const activity of cases) {
       ctx.signOut.mockClear();
       const response = await proxy(manageRequest(activity));
       expect(response.status).toBe(303);
       expect(new URL(response.headers.get("location")!, "https://www.bingetrack.ing").pathname).toBe("/");
-      expect(setCookies(response)).not.toContain(`${ACTIVITY_COOKIE}=`);
+      expect(setCookies(response)).toMatch(/bt-activity=;/);
+      expect(setCookies(response)).not.toContain("bt-activity=v1.");
     }
 
+    const stillSigned = signed(Date.now());
     vi.stubEnv("SUPABASE_SECRET_KEY", "");
     vi.stubEnv("SUPABASE_SERVICE_ROLE_KEY", " ");
-    const unsigned = await proxy(manageRequest(signActivityCookie(USER, Date.now(), SECRET)));
+    const unsigned = await proxy(manageRequest(stillSigned));
     expect(unsigned.status).toBe(303);
-    expect(setCookies(unsigned)).not.toContain(`${ACTIVITY_COOKIE}=`);
+    expect(setCookies(unsigned)).toMatch(/bt-activity=;/);
+    expect(setCookies(unsigned)).not.toContain("bt-activity=v1.");
   });
 
   it("令牌刷新不会写成活动，新鲜的 Cookie 可以继续访问", async () => {
-    const response = await proxy(manageRequest(signActivityCookie(USER, Date.now(), SECRET)));
+    const response = await proxy(manageRequest(signed(Date.now())));
     expect(response.status).toBe(200);
     expect(response.headers.get("x-middleware-next")).toBe("1");
     expect(response.headers.get("location")).toBeNull();
@@ -99,7 +110,7 @@ describe("proxy 空闲期限", () => {
   it("后台预取不会延长活动，超时后的正式请求仍会登出", async () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date("2026-01-01T00:00:00Z"));
-    const value = signActivityCookie(USER, Date.now() - 20 * 60 * 1000, SECRET);
+    const value = signed(Date.now() - 20 * 60 * 1000);
     const headers = {
       cookie: `sb-ref-auth-token=session; ${ACTIVITY_COOKIE}=${value}`,
       rsc: "1",
@@ -115,7 +126,8 @@ describe("proxy 空闲期限", () => {
     const later = await proxy(new NextRequest("https://www.bingetrack.ing/manage", { headers }));
     expect(later.status).toBe(303);
     expect(new URL(later.headers.get("location")!, "https://www.bingetrack.ing").pathname).toBe("/");
-    expect(setCookies(later)).not.toContain(`${ACTIVITY_COOKIE}=`);
+    expect(setCookies(later)).toMatch(/bt-activity=;/);
+    expect(setCookies(later)).not.toContain("bt-activity=v1.");
   });
 
   it("登录和活动上报本身不会因为还没有活动 Cookie 而被打断", async () => {
@@ -124,6 +136,7 @@ describe("proxy 空闲期限", () => {
       ["POST", "/auth/confirm/verify"],
       ["GET", "/auth/dev-login"],
       ["POST", "/auth/agent-login"],
+      ["GET", "/auth/confirm"],
     ] as const) {
       const request = new NextRequest(`https://www.bingetrack.ing${path}`, { method });
       request.cookies.set("sb-ref-auth-token", "session");
@@ -139,7 +152,8 @@ describe("proxy 空闲期限", () => {
     const response = await proxy(manageRequest());
     expect(response.status).toBe(303);
     expect(setCookies(response)).toMatch(/sb-ref-auth-token=;/);
-    expect(setCookies(response)).not.toContain(`${ACTIVITY_COOKIE}=`);
+    expect(setCookies(response)).toMatch(/bt-activity=;/);
+    expect(setCookies(response)).not.toContain("bt-activity=v1.");
   });
 
   it("没有会话时不因为缺少活动 Cookie 而重定向", async () => {

@@ -17,6 +17,7 @@ function logoutKey(userId: string) {
   return `${LOGOUT_PREFIX}${userId}`;
 }
 
+/** 登出很少发生，单独开一条通道；页面上的连续操作复用 watchIdleSession 自己的通道。 */
 function postIdleMessage(message: IdleMessage) {
   try {
     const channel = new BroadcastChannel(CHANNEL);
@@ -71,17 +72,34 @@ export function watchIdleSession(userId: string, onExpire: () => void, signedInA
   };
   read();
   write();
+  let channel: BroadcastChannel | undefined;
+  try {
+    channel = new BroadcastChannel(CHANNEL);
+  } catch {
+    channel = undefined;
+  }
+  let lastShared: number | null = null;
   /** 先检查过期，避免恢复页面后的首次操作延长已过期会话。 */
   const check = () => {
     read();
     if (!expired && Date.now() - last >= IDLE_TIMEOUT) expire();
   };
+  /** 内存里的时间每次都更新；写存储和广播最多每秒一次，并复用本页的通道。 */
+  const share = (at: number) => {
+    if (lastShared !== null && at - lastShared < 1000) return;
+    lastShared = at;
+    write();
+    try {
+      channel?.postMessage({ type: "activity", userId, at });
+    } catch {
+      /* 广播失败不影响本页计时。 */
+    }
+  };
   const mark = () => {
     check();
     if (expired || document.visibilityState === "hidden") return;
     last = Date.now();
-    write();
-    postIdleMessage({ type: "activity", userId, at: last });
+    share(last);
     onActivity?.();
   };
   const onStorage = (event: Event) => {
@@ -95,9 +113,7 @@ export function watchIdleSession(userId: string, onExpire: () => void, signedInA
     if (document.visibilityState === "visible") mark();
     else check();
   };
-  let channel: BroadcastChannel | undefined;
-  try {
-    channel = new BroadcastChannel(CHANNEL);
+  if (channel) {
     channel.onmessage = (event: MessageEvent<IdleMessage>) => {
       const message = event.data;
       if (!message || message.userId !== userId) return;
@@ -111,8 +127,6 @@ export function watchIdleSession(userId: string, onExpire: () => void, signedInA
         check();
       }
     };
-  } catch {
-    channel = undefined;
   }
   const events = ["pointerdown", "pointermove", "keydown", "scroll", "touchstart"] as const;
   events.forEach((event) => window.addEventListener(event, mark, { passive: true }));

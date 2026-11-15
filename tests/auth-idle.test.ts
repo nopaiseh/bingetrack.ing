@@ -73,6 +73,28 @@ it("登录后同样闲置 30 分钟的会话仍会过期", () => {
   expect(expire).toHaveBeenCalledOnce();
 });
 
+it("连续指针移动每秒最多写一次存储", () => {
+  const sets: string[] = [];
+  const storage = new Map<string, string>();
+  vi.stubGlobal("localStorage", {
+    getItem: (key: string) => storage.get(key) ?? null,
+    setItem: (key: string, value: string) => {
+      sets.push(`${key}:${value}`);
+      storage.set(key, value);
+    },
+  });
+  const expire = vi.fn();
+  stop = watchIdleSession("owner", expire);
+  const afterStart = sets.length;
+  window.dispatchEvent(new Event("pointermove"));
+  window.dispatchEvent(new Event("pointermove"));
+  expect(sets.length).toBe(afterStart + 1);
+  vi.advanceTimersByTime(1000);
+  window.dispatchEvent(new Event("pointermove"));
+  expect(sets.length).toBe(afterStart + 2);
+  expect(expire).not.toHaveBeenCalled();
+});
+
 it("只有真实操作才算活动，焦点和别的标签页同步不会再次上报", () => {
   const expire = vi.fn();
   const activity = vi.fn();

@@ -1,6 +1,11 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
-import { ACTIVITY_COOKIE, skipsIdleEnforcement, verifyActivityCookie } from "@/lib/auth/activity-cookie";
+import {
+  ACTIVITY_COOKIE,
+  clearedActivityCookieOptions,
+  skipsIdleEnforcement,
+  verifyActivityCookie,
+} from "@/lib/auth/activity-cookie";
 import { isSupabaseAuthSessionCookie } from "@/lib/auth/session-cookie";
 import { isMediaId } from "@/lib/functions/media-id";
 
@@ -33,8 +38,8 @@ function rewriteConfirmPost(request: NextRequest): NextResponse | null {
 }
 
 /**
- * 清除 Supabase 会话 Cookie 并回到首页。
- * 不写入、不续期活动 Cookie；getClaims 刷新令牌产生的 Set-Cookie 也不会被带到这次重定向上。
+ * 清除 Supabase 会话和活动 Cookie，再回到首页。
+ * 这里只把活动 Cookie 设为过期，不写入新的时间戳；令牌刷新产生的 Set-Cookie 也不会被带到这次重定向上。
  */
 async function expireIdleSession(
   request: NextRequest,
@@ -50,6 +55,7 @@ async function expireIdleSession(
     if (!isSupabaseAuthSessionCookie(cookie.name)) continue;
     redirect.cookies.set(cookie.name, "", { path: "/", maxAge: 0, httpOnly: true, sameSite: "lax", secure: true });
   }
+  redirect.cookies.set(ACTIVITY_COOKIE, "", clearedActivityCookieOptions());
   redirect.headers.set("Cache-Control", "private, no-store");
   return redirect;
 }

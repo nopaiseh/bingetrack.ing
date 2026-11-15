@@ -30,7 +30,7 @@ vi.mock("next/headers", () => ({
   }),
 }));
 
-import { ACTIVITY_COOKIE, verifyActivityCookie } from "@/lib/auth/activity-cookie";
+import { ACTIVITY_COOKIE, readActivitySecret, verifyActivityCookie } from "@/lib/auth/activity-cookie";
 import { isSameOrigin } from "@/lib/auth/confirm-link";
 import { POST } from "@/app/auth/confirm/verify/route";
 
@@ -119,7 +119,7 @@ describe("一次性登录确认", () => {
       expect.objectContaining({ httpOnly: true, secure: true, sameSite: "lax" }),
     );
     const value = cookieSet.mock.calls.map((call) => call[1]).find((item) => item !== "session");
-    expect(verifyActivityCookie(String(value), "user-1", Date.now(), "confirm-secret").ok).toBe(true);
+    expect(verifyActivityCookie(String(value), "user-1", Date.now(), readActivitySecret()).ok).toBe(true);
 
     cookieSet.mockClear();
     verifyOtp.mockResolvedValueOnce({ data: { user: null, session: null }, error: new Error("expired") });

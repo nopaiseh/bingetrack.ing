@@ -3,6 +3,7 @@ import { cookies } from "next/headers";
 import {
   ACTIVITY_COOKIE,
   activityCookieOptions,
+  clearedActivityCookieOptions,
   readActivitySecret,
   signActivityCookie,
 } from "@/lib/auth/activity-cookie";
@@ -14,4 +15,15 @@ export async function writeActivityCookie(userId: string, at = Date.now()) {
   const jar = await cookies();
   jar.set(ACTIVITY_COOKIE, signActivityCookie(userId, at, secret), activityCookieOptions());
   return true;
+}
+
+/** 登出或空闲超时后清掉活动 Cookie。Server Component 写不了 Cookie 时返回 false。 */
+export async function clearActivityCookie() {
+  try {
+    const jar = await cookies();
+    jar.set(ACTIVITY_COOKIE, "", clearedActivityCookieOptions());
+    return true;
+  } catch {
+    return false;
+  }
 }
