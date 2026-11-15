@@ -221,10 +221,13 @@ describe("季与单集列表", () => {
     expect(parseAdminChildQuery("tv_episode", null, { pageSize: "100" }).pageSize).toBe(25);
   });
 
-  it("排序、状态和上级只接受白名单，季不能按评分排序", () => {
+  it("排序、状态和上级只接受白名单，季不能按评分排序，单集不接受在看", () => {
     expect(parseAdminChildQuery("tv_episode", showA, { sort: "rating", status: "watching" })).toMatchObject({
-      sort: "rating", status: "watching", parent: showA,
+      sort: "rating", status: "", parent: showA,
     });
+    expect(parseAdminChildQuery("tv_episode", showA, { status: "watched" }).status).toBe("watched");
+    expect(parseAdminChildQuery("tv_episode", showA, { status: "want_to_watch" }).status).toBe("want_to_watch");
+    expect(parseAdminChildQuery("tv_season", showA, { status: "watching" }).status).toBe("watching");
     expect(parseAdminChildQuery("tv_season", showA.toUpperCase(), { sort: "rating", status: "watched" })).toMatchObject({
       sort: "date", status: "watched", parent: showA.toUpperCase(),
     });
@@ -288,7 +291,15 @@ describe("季与单集列表", () => {
     ]);
     expect(calls(ordered, "range")[0].args).toEqual([25, 49]);
     expect(queries[1].table).toBe("media_items");
+    expect(calls(queries[1], "select")[0].args[0]).toBe([
+      "id,title,alternate_title,type,cover_url,release_date",
+      "tracking(status,rating)",
+      "tv_seasons!tv_seasons_id_fkey(season_number,parent:media_items!tv_seasons_series_id_fkey(title),episodes:tv_episodes!tv_episodes_season_id_fkey(count))",
+      "tv_episodes!tv_episodes_id_fkey(episode_number,parent:tv_seasons!tv_episodes_season_id_fkey(media_items!tv_seasons_id_fkey(title),series:media_items!tv_seasons_series_id_fkey(title)))",
+    ].join(","));
     expect(String(calls(queries[1], "select")[0].args[0])).not.toContain("!inner");
+    expect(String(calls(queries[1], "select")[0].args[0])).not.toContain("runtime");
+    expect(String(calls(queries[1], "select")[0].args[0])).not.toContain("seasons:tv_seasons");
     expect(calls(queries[1], "in")[0].args).toEqual(["id", [seasonB, seasonId]]);
     expect(page.total).toBe(30);
     expect(page.items.map((item) => item.id)).toEqual([seasonB, seasonId]);
@@ -345,6 +356,22 @@ describe("季与单集列表", () => {
     expect(calls(queries[0], "eq").map((call) => call.args[0])).toEqual(["type"]);
     await expect(listAdminChildren(db, "movie", null, {})).rejects.toThrow(AdminInputError);
     expect(from).toHaveBeenCalledTimes(1);
+  });
+
+  it("单集列表不把 watching 写进查询，季列表仍然按在看筛选", async () => {
+    const episodes = fakeDb(() => ({ data: [], count: 0 }));
+    const episodePage = await listAdminChildren(episodes.db, "tv_episode", seasonId, { status: "watching" });
+    expect(episodePage.status).toBe("");
+    expect(calls(episodes.queries[0], "eq").map((call) => call.args)).toEqual([["type", "tv_episode"], ["parent_id", seasonId]]);
+
+    const seasons = fakeDb(() => ({ data: [], count: 0 }));
+    const seasonPage = await listAdminChildren(seasons.db, "tv_season", showA, { status: "watching" });
+    expect(seasonPage.status).toBe("watching");
+    expect(calls(seasons.queries[0], "eq").map((call) => call.args)).toEqual([
+      ["type", "tv_season"],
+      ["parent_id", showA],
+      ["status", "watching"],
+    ]);
   });
 
   it("视图或详情查询失败时抛出原来的提示，且不退回逐条查询", async () => {
