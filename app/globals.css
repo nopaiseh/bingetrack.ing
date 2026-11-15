@@ -386,12 +386,15 @@ video {
   border-radius: var(--search-control-radius);
 }
 
-/* 根字号放大后，图标留白和筛选按钮会把输入区挤没。放不下时整行换行；输入框至少保留 14rem（普通字号下仍和按钮同一行，放大到 200% 的窄屏则换到下一行）。 */
-.flex:has(> .search-bar-control) {
+/* 搜索栏这一行专用。根字号放大后，图标留白和筛选按钮会把输入区挤没。放不下时整行换行；输入框外壳至少保留 14rem（普通字号下仍和按钮同一行，放大到 200% 的窄屏则换到下一行）。 */
+.search-bar-row {
+  display: flex;
+  align-items: stretch;
+  gap: 0.5rem;
   flex-wrap: wrap;
 }
 
-.flex:has(> .search-bar-control) > :has(> .search-bar-control) {
+.search-bar-row > :has(> .search-bar-control) {
   flex-basis: 14rem;
   min-width: min(100%, 14rem);
 }

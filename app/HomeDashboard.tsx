@@ -49,35 +49,7 @@ export default function HomeDashboard({
   const [topMediaError, setTopMediaError] = useState<string | null>(null);
   const [topMediaLoading, setTopMediaLoading] = useState(false);
 
-  const {
-    currentYearData,
-    movieDistribution,
-    seriesDistribution,
-    watchedMovies,
-    unwatchedMovies,
-    totalMovies,
-    moviesPercent,
-    avgMoviesRating,
-    avgMoviesRatingPercent,
-    moviesWatchedRuntime,
-    moviesUnwatchedRuntime,
-    totalMoviesRuntime,
-    watchedSeries,
-    watchingSeries,
-    unwatchedSeries,
-    totalSeries,
-    seriesPercent,
-    watchedEpisodes,
-    unwatchedEpisodes,
-    totalEpisodes,
-    seriesEpisodesPercent,
-    avgSeriesRating,
-    avgSeriesRatingPercent,
-    seriesWatchedRuntime,
-    seriesUnwatchedRuntime,
-    totalSeriesRuntime,
-    runtimePercent,
-  } = deriveDashboardStats(summary, selectedYear, distributions);
+  const stats = deriveDashboardStats(summary, selectedYear, distributions);
 
   useEffect(/* 选择具体年份时启动榜单请求，离开该年份或卸载组件时取消请求。 */ () => {
     if (selectedYear === "All Time") {
@@ -133,9 +105,9 @@ export default function HomeDashboard({
 
       <DashboardIntro
         selectedYear={selectedYear}
-        totalMovies={totalMovies}
-        totalSeries={totalSeries}
-        runtimePercent={runtimePercent}
+        totalMovies={stats.totalMovies}
+        totalSeries={stats.totalSeries}
+        runtimePercent={stats.runtimePercent}
         tabs={tabs}
         tabIds={tabIds}
         activeTab={activeTab}
@@ -145,40 +117,13 @@ export default function HomeDashboard({
       />
 
       <DashboardPanels
+        stats={stats}
         activeTab={activeTab}
         selectedYear={selectedYear}
         topMediaError={topMediaError}
         isTopMediaLoading={isTopMediaLoading}
-        watchedMovies={watchedMovies}
-        unwatchedMovies={unwatchedMovies}
-        totalMovies={totalMovies}
-        moviesPercent={moviesPercent}
-        avgMoviesRating={avgMoviesRating}
-        avgMoviesRatingPercent={avgMoviesRatingPercent}
-        moviesWatchedRuntime={moviesWatchedRuntime}
-        moviesUnwatchedRuntime={moviesUnwatchedRuntime}
-        totalMoviesRuntime={totalMoviesRuntime}
-        movieDistribution={movieDistribution}
         topMovies={topMovies}
         displayedTopMovies={displayedTopMovies}
-        watchedSeries={watchedSeries}
-        watchingSeries={watchingSeries}
-        unwatchedSeries={unwatchedSeries}
-        watchedEpisodes={watchedEpisodes}
-        unwatchedEpisodes={unwatchedEpisodes}
-        totalEpisodes={totalEpisodes}
-        seriesEpisodesPercent={seriesEpisodesPercent}
-        watchedSeasons={currentYearData?.watched_seasons ?? 0}
-        watchingSeasons={currentYearData?.watching_seasons ?? 0}
-        unwatchedSeasons={currentYearData?.unwatched_seasons ?? 0}
-        totalSeries={totalSeries}
-        seriesPercent={seriesPercent}
-        avgSeriesRating={avgSeriesRating}
-        avgSeriesRatingPercent={avgSeriesRatingPercent}
-        seriesWatchedRuntime={seriesWatchedRuntime}
-        seriesUnwatchedRuntime={seriesUnwatchedRuntime}
-        totalSeriesRuntime={totalSeriesRuntime}
-        seriesDistribution={seriesDistribution}
         topSeries={topSeries}
         displayedTopSeries={displayedTopSeries}
       />

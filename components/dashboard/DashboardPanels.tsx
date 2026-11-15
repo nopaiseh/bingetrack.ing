@@ -2,81 +2,28 @@
 
 import DashboardCategoryPanel from "@/components/dashboard/DashboardCategoryPanel";
 import OverviewBoards from "@/components/dashboard/OverviewBoards";
-import type { MediaCard, MediaDistribution } from "@/lib/types";
+import type { DashboardStats } from "@/components/dashboard/dashboard-stats";
+import type { MediaCard } from "@/lib/types";
 
 /** 按当前标签展示总览、电影或电视节目，并显示年度精选的加载与错误状态。 */
 export default function DashboardPanels({
+  stats,
   activeTab,
   selectedYear,
   topMediaError,
   isTopMediaLoading,
-  watchedMovies,
-  unwatchedMovies,
-  totalMovies,
-  moviesPercent,
-  avgMoviesRating,
-  avgMoviesRatingPercent,
-  moviesWatchedRuntime,
-  moviesUnwatchedRuntime,
-  totalMoviesRuntime,
-  movieDistribution,
   topMovies,
   displayedTopMovies,
-  watchedSeries,
-  watchingSeries,
-  unwatchedSeries,
-  watchedEpisodes,
-  unwatchedEpisodes,
-  totalEpisodes,
-  seriesEpisodesPercent,
-  watchedSeasons,
-  watchingSeasons,
-  unwatchedSeasons,
-  totalSeries,
-  seriesPercent,
-  avgSeriesRating,
-  avgSeriesRatingPercent,
-  seriesWatchedRuntime,
-  seriesUnwatchedRuntime,
-  totalSeriesRuntime,
-  seriesDistribution,
   topSeries,
   displayedTopSeries,
 }: {
+  stats: DashboardStats;
   activeTab: string;
   selectedYear: string;
   topMediaError: string | null;
   isTopMediaLoading: boolean;
-  watchedMovies: number;
-  unwatchedMovies: number;
-  totalMovies: number;
-  moviesPercent: number;
-  avgMoviesRating: number;
-  avgMoviesRatingPercent: number;
-  moviesWatchedRuntime: number;
-  moviesUnwatchedRuntime: number;
-  totalMoviesRuntime: number;
-  movieDistribution: MediaDistribution;
   topMovies: MediaCard[];
   displayedTopMovies: MediaCard[];
-  watchedSeries: number;
-  watchingSeries: number;
-  unwatchedSeries: number;
-  watchedEpisodes: number;
-  unwatchedEpisodes: number;
-  totalEpisodes: number;
-  seriesEpisodesPercent: number;
-  watchedSeasons: number;
-  watchingSeasons: number;
-  unwatchedSeasons: number;
-  totalSeries: number;
-  seriesPercent: number;
-  avgSeriesRating: number;
-  avgSeriesRatingPercent: number;
-  seriesWatchedRuntime: number;
-  seriesUnwatchedRuntime: number;
-  totalSeriesRuntime: number;
-  seriesDistribution: MediaDistribution;
   topSeries: MediaCard[];
   displayedTopSeries: MediaCard[];
 }) {
@@ -93,37 +40,13 @@ export default function DashboardPanels({
         </div>
       )}
       {activeTab === "总览" && (
-        <OverviewBoards
-          selectedYear={selectedYear}
-          watchedMovies={watchedMovies}
-          unwatchedMovies={unwatchedMovies}
-          totalMovies={totalMovies}
-          moviesPercent={moviesPercent}
-          watchedSeries={watchedSeries}
-          watchingSeries={watchingSeries}
-          unwatchedSeries={unwatchedSeries}
-          watchedEpisodes={watchedEpisodes}
-          unwatchedEpisodes={unwatchedEpisodes}
-          totalEpisodes={totalEpisodes}
-          seriesEpisodesPercent={seriesEpisodesPercent}
-          watchedSeasons={watchedSeasons}
-          watchingSeasons={watchingSeasons}
-          unwatchedSeasons={unwatchedSeasons}
-        />
+        <OverviewBoards stats={stats} selectedYear={selectedYear} />
       )}
       {activeTab === "电影" && (
         <DashboardCategoryPanel
+          stats={stats}
           panelKey="movies"
           categoryName="电影"
-          watchedCount={watchedMovies}
-          totalCount={totalMovies}
-          watchedPercent={moviesPercent}
-          avgRating={avgMoviesRating}
-          avgRatingPercent={avgMoviesRatingPercent}
-          watchedRuntime={moviesWatchedRuntime}
-          unwatchedRuntime={moviesUnwatchedRuntime}
-          totalRuntime={totalMoviesRuntime}
-          distribution={movieDistribution}
           isTopMediaLoading={isTopMediaLoading}
           allTimeTitle="影史精选"
           selectedYear={selectedYear}
@@ -135,17 +58,9 @@ export default function DashboardPanels({
       )}
       {activeTab === "电视节目" && (
         <DashboardCategoryPanel
+          stats={stats}
           panelKey="tv-shows"
           categoryName="电视节目"
-          watchedCount={watchedSeries}
-          totalCount={totalSeries}
-          watchedPercent={seriesPercent}
-          avgRating={avgSeriesRating}
-          avgRatingPercent={avgSeriesRatingPercent}
-          watchedRuntime={seriesWatchedRuntime}
-          unwatchedRuntime={seriesUnwatchedRuntime}
-          totalRuntime={totalSeriesRuntime}
-          distribution={seriesDistribution}
           isTopMediaLoading={isTopMediaLoading}
           allTimeTitle="剧集精选"
           selectedYear={selectedYear}

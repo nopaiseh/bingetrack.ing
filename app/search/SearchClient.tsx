@@ -6,159 +6,18 @@ import type { MediaCard } from "@/lib/types";
 import { MAX_SEARCH_QUERY_LENGTH } from "@/lib/api/search-limits";
 import type { SearchOptions } from "@/lib/functions/search-options";
 import { PAGE_SIZE, readFilters, writeFilters, readSearchPage, buildMediaSearchQuery, type SearchFilters } from "@/lib/api/search-state";
-
-import { SearchMediaCard, SearchMediaCardSkeleton } from "@/components/SearchMediaCard";
-import { WATCH_STATUSES } from "@/components/watch-status";
+import ActiveFilterBar from "@/components/search/ActiveFilterBar";
+import SearchBar from "@/components/search/SearchBar";
+import SearchFilterPanel from "@/components/search/SearchFilterPanel";
+import SearchResultSection from "@/components/search/SearchResultSection";
+import SearchScrollTop from "@/components/search/SearchScrollTop";
+import { countActiveFilters, EMPTY_FILTERS, resultRange, resultsHeading } from "@/components/search/search-model";
 import SearchLoading from "./loading";
-import { pageNumbers } from "@/lib/pagination";
 
 type SearchProps = {
   initialOptions: SearchOptions;
   initialResult: { rows: MediaCard[]; total: number; key: string; error: string | null };
 };
-
-const TYPE_OPTIONS = [
-  { value: "movie", label: "电影" },
-  { value: "tv_show", label: "电视节目" },
-  { value: "series", label: "系列" },
-  { value: "director", label: "导演" },
-  { value: "actor", label: "演员" },
-];
-
-const STATUS_OPTIONS = [
-  { value: "want_to_watch", label: WATCH_STATUSES.want_to_watch.label },
-  { value: "watching", label: WATCH_STATUSES.watching.label },
-  { value: "watched", label: WATCH_STATUSES.watched.label },
-  { value: "upcoming", label: "即将上映" },
-];
-
-const PRIMARY_CATEGORIES = [
-  { id: "type", label: "分类", options: TYPE_OPTIONS, multiSelect: true },
-  { id: "status", label: "状态", options: STATUS_OPTIONS, multiSelect: true },
-];
-
-const SORT_OPTIONS = [
-  { id: "date", label: "日期" },
-  { id: "rating", label: "评分" },
-];
-
-/** 按规范值查找选项文案，未知值原样显示。 */
-function optionLabel(options: { value: string; label: string }[], value: string) {
-  return options.find(/* 查找与规范值对应的选项。 */ (option) => option.value === value)?.label ?? value;
-}
-
-/** 渲染一个已选条件标签及其移除按钮；分类与状态使用强调色，其余属性使用中性色。 */
-function FilterChip({ category, label, accent = false, onRemove }: { category: string; label: string; accent?: boolean; onRemove: () => void }) {
-  return (
-    <span
-      className={`inline-flex items-center gap-1 rounded-md border px-2.5 py-1 text-xs font-medium text-white shadow-xs ${
-        accent ? "border-[var(--accent-border)] bg-[var(--accent-soft)]" : "border-white/15 bg-white/10"
-      }`}
-    >
-      <span className="text-fg-muted">{category}:</span>
-      <span>{label}</span>
-      <button
-        type="button"
-        aria-label={`移除${category}筛选：${label}`}
-        onClick={onRemove}
-        className="ml-0.5 rounded p-0.5 text-fg-secondary hover:bg-white/15 hover:text-white transition-colors"
-      >
-        <span className="i-material-symbols-close-rounded size-3 inline-block" aria-hidden="true" />
-      </button>
-    </span>
-  );
-}
-
-const EMPTY_FILTERS: SearchFilters = {
-  type: [],
-  status: [],
-  genre: [],
-  region: [],
-  language: [],
-  year: [],
-  sort: ["date_desc"],
-};
-
-/** 统计偏离默认值的筛选项，供手机端「筛选 (n)」展示。排序只在离开默认日期降序时计入。 */
-function countActiveFilters(filters: SearchFilters) {
-  const listed = ["type", "status", "genre", "region", "language"].reduce(
-    (sum, key) => sum + (filters[key]?.length ?? 0),
-    0,
-  );
-  const year = filters.year?.some(Boolean) ? 1 : 0;
-  const sort = filters.sort?.[0] && filters.sort[0] !== "date_desc" ? 1 : 0;
-  return listed + year + sort;
-}
-
-/** 当前排序在结果上方的一句说明。 */
-function sortCaption(sort: string) {
-  switch (sort) {
-    case "date_asc": return "按上映日期，旧到新";
-    case "rating_desc": return "按评分，从高到低";
-    case "rating_asc": return "按评分，从低到高";
-    default: return "按上映日期，新到旧";
-  }
-}
-
-/** 本页在全部结果中的区间，例如 1–9 / 9。没有结果时不显示。 */
-function resultRange(page: number, total: number) {
-  if (total <= 0) return null;
-  const start = (page - 1) * PAGE_SIZE + 1;
-  const end = Math.min(page * PAGE_SIZE, total);
-  return `${start}–${end} / ${total}`;
-}
-
-/** 有关键词且已经确定是 0 条时，标题改成「没有找到」。加载中仍用搜索结果，避免先闪空状态。 */
-function resultsHeading(query: string, total: number, pending: boolean) {
-  if (!query) return "搜索结果";
-  if (!pending && total === 0) return `没有找到“${query}”`;
-  return `“${query}”的搜索结果`;
-}
-
-/** 无结果时给出说明、对比度足够的清除按钮，以及电影 / 电视节目 / 即将上映三个起步方向。 */
-function SearchEmptyState({
-  query,
-  canReset,
-  onReset,
-  onSuggest,
-}: {
-  query: string;
-  canReset: boolean;
-  onReset: () => void;
-  onSuggest: (partial: Partial<Pick<SearchFilters, "type" | "status">>) => void;
-}) {
-  return (
-    <div className="col-span-full flex flex-col items-center px-4 py-16 text-center sm:py-24" role="status">
-      <span className="mb-5 inline-flex size-14 items-center justify-center rounded-full bg-[var(--surface-2)] text-fg-secondary">
-        <span className="i-material-symbols-search-rounded inline-block size-7" aria-hidden="true" />
-      </span>
-      <p className="text-lg font-semibold text-fg">没有匹配的作品</p>
-      <p className="mt-2 max-w-md text-sm leading-relaxed text-fg-secondary">
-        {query
-          ? "没有与这个关键词匹配的电影、电视节目或人物。可以换一个词，或清除目前的筛选后再试。"
-          : "没有作品符合当前筛选。可以放宽条件，或从下面的方向开始。"}
-      </p>
-      {canReset && (
-        <button
-          type="button"
-          onClick={onReset}
-          className="button-accent mt-6 inline-flex min-h-11 items-center gap-2 rounded-xl px-5 py-2.5 text-sm font-semibold"
-        >
-          <span className="i-material-symbols-filter-alt-off-rounded inline-block size-4" aria-hidden="true" />
-          清除筛选
-        </button>
-      )}
-      <div className="mt-8">
-        <p className="text-sm text-fg-muted">试试这些</p>
-        <div className="mt-3 flex flex-wrap items-center justify-center gap-2">
-          <button type="button" onClick={() => onSuggest({ type: ["movie"] })} className="filter-option min-h-10 rounded-full px-4 py-1.5 text-sm">电影</button>
-          <button type="button" onClick={() => onSuggest({ type: ["tv_show"] })} className="filter-option min-h-10 rounded-full px-4 py-1.5 text-sm">电视节目</button>
-          <button type="button" onClick={() => onSuggest({ status: ["upcoming"] })} className="filter-option min-h-10 rounded-full px-4 py-1.5 text-sm">即将上映</button>
-        </div>
-      </div>
-    </div>
-  );
-}
 
 /** 以 URL 为筛选和分页状态来源，复用服务端首屏结果，并管理搜索、防抖请求和交互界面。 */
 function SearchContent({ initialOptions, initialResult }: SearchProps) {
@@ -313,57 +172,6 @@ function SearchContent({ initialOptions, initialResult }: SearchProps) {
     resultsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
   };
 
-  const ADVANCED_CATEGORIES = [
-    { id: "genre", label: "类型", options: genreOptions, multiSelect: true },
-    { id: "region", label: "地区", options: regionOptions, multiSelect: true },
-    { id: "language", label: "语言", options: languageOptions, multiSelect: true },
-  ];
-
-  /** 根据点击项更新单选或多选筛选；全部选中时用空数组表示不限制。 */
-  const toggleFilter = (categoryId: string, value: string, isMultiSelect = true, allOptions: string[] = []) => {
-    setFilters(/* 基于此前选项切换当前值，并将全选状态折叠为无筛选。 */ (prev) => {
-      const currentSelected = prev[categoryId] || [];
-      if (value === "全部") return { ...prev, [categoryId]: [] };
-      if (!isMultiSelect) return { ...prev, [categoryId]: [value] };
-      if (currentSelected.includes(value)) {
-        return { ...prev, [categoryId]: currentSelected.filter(/* 从已选列表中移除再次点击的选项。 */ (item) => item !== value) };
-      }
-      const newSelected = [...currentSelected, value];
-      const hasSelectedAll = allOptions.length > 0 && allOptions.every(/* 判断该分类的所有可选值是否均已选中。 */ (opt) => newSelected.includes(opt));
-      return { ...prev, [categoryId]: hasSelectedAll ? [] : newSelected };
-    });
-  };
-
-  /** 同一排序字段再次点击时反转方向，切换字段时默认降序。 */
-  const handleSortToggle = (fieldId: string) => {
-    setFilters(/* 根据旧排序值生成下一次排序字段与方向。 */ (prev) => {
-      const currentSort = prev.sort[0] || "date_desc";
-      const [currentField, currentOrder] = currentSort.split("_");
-      if (currentField === fieldId) {
-        const newOrder = currentOrder === "desc" ? "asc" : "desc";
-        return { ...prev, sort: [`${fieldId}_${newOrder}`] };
-      } else {
-        return { ...prev, sort: [`${fieldId}_desc`] };
-      }
-    });
-  };
-
-  /** 更新起始或结束年份；出现倒置范围时将另一端同步到新值。 */
-  const handleYearChange = (type: "start" | "end", value: string) => {
-    setFilters(/* 保留未修改的年份端点，必要时调整另一端，确保起始年份不晚于结束年份。 */ (prev) => {
-      const currentStart = prev.year?.[0] || "";
-      const currentEnd = prev.year?.[1] || "";
-      let newStart = type === "start" ? value : currentStart;
-      let newEnd = type === "end" ? value : currentEnd;
-
-      if (newStart && newEnd && parseInt(newStart) > parseInt(newEnd)) {
-        if (type === "start") newEnd = newStart;
-        else newStart = newEnd;
-      }
-      return { ...prev, year: [newStart, newEnd] };
-    });
-  };
-
   const hasActiveFilters = Object.entries(filters).some(/* 判断是否存在非排序筛选；年份只在至少一个端点有值时算启用。 */ ([key, arr]) => {
     if (key === "sort") return false;
     if (key === "year") return arr.length > 0 && (arr[0] !== "" || arr[1] !== "");
@@ -378,7 +186,6 @@ function SearchContent({ initialOptions, initialResult }: SearchProps) {
   );
 
   const activeFilterCount = countActiveFilters(filters);
-  const advancedVisible = showAdvanced;
   const canResetSearch = activeFilterCount > 0 || urlQuery.trim().length > 0;
 
   /** 清空搜索词和全部筛选，让无结果状态能回到完整目录。 */
@@ -392,216 +199,6 @@ function SearchContent({ initialOptions, initialResult }: SearchProps) {
     setQuery("");
     setFilters({ ...EMPTY_FILTERS, ...partial });
   };
-
-  const filterPanel = (
-    <div
-      id="search-filter-panel"
-      ref={filterPanelRef}
-      className="surface-panel mt-4 rounded-2xl p-4 sm:p-5"
-    >
-      <div className="flex flex-col">
-              {/* 常驻一级筛选：分类 */}
-              {PRIMARY_CATEGORIES.map(/* 为每个主要分类渲染选项。 */ (category) => {
-                const activeSelections = filters[category.id] || [];
-                const isAllSelected = activeSelections.length === 0;
-
-                return (
-                  <div key={category.id} className="flex flex-col items-start gap-3 border-b border-white/10 py-3.5 sm:flex-row sm:gap-0">
-                    <span className="text-fg-muted text-sm font-medium w-16 shrink-0 mt-1.5 tracking-wider">
-                      {category.label}
-                    </span>
-                    <div className="flex flex-wrap gap-x-3 gap-y-2 flex-1 items-center">
-                      <button
-                        aria-pressed={isAllSelected}
-                        onClick={/* 清除当前分类的限制。 */ () => toggleFilter(category.id, "全部", category.multiSelect, category.options.map((o) => o.value))}
-                        className={`min-h-10 rounded-full px-4 py-1.5 text-sm transition-all duration-300 backdrop-blur-2xl ${
-                          isAllSelected
-                            ? "filter-option-active"
-                            : "filter-option"
-                        }`}
-                      >
-                        全部
-                      </button>
-
-                      {category.options.map(/* 渲染分类选项按钮。 */ (option) => {
-                        const isSelected = activeSelections.includes(option.value);
-                        return (
-                          <button
-                            key={option.value}
-                            aria-pressed={isSelected}
-                            onClick={/* 切换分类选项。 */ () => toggleFilter(category.id, option.value, category.multiSelect, category.options.map((o) => o.value))}
-                            className={`group flex min-h-10 items-center gap-1.5 rounded-full px-4 py-1.5 text-sm transition-all duration-300 backdrop-blur-2xl ${
-                              isSelected
-                                ? "filter-option-active"
-                                : "filter-option"
-                            }`}
-                          >
-                            {option.label}
-                            {isSelected && (
-                              <span className="i-material-symbols-close-rounded ml-1 inline-block size-3 opacity-60 group-hover:opacity-100 transition-opacity" aria-hidden="true" />
-                            )}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-                );
-              })}
-
-              {/* 常驻一级筛选：排序 */}
-              <div className={`flex flex-col items-start gap-3 py-3.5 sm:flex-row sm:gap-0 ${advancedVisible ? "border-b border-white/10" : ""}`}>
-                <span className="text-fg-muted text-sm font-medium w-16 shrink-0 mt-1.5 tracking-wider">
-                  排序
-                </span>
-                <div className="flex flex-wrap gap-x-3 gap-y-2 flex-1 items-center">
-                  {SORT_OPTIONS.map(/* 渲染排序按钮。 */ (option) => {
-                    const currentSort = filters.sort?.[0] || "date_desc";
-                    const [currentField, currentOrder] = currentSort.split("_");
-                    const isSelected = currentField === option.id;
-
-                    return (
-                      <button
-                        key={option.id}
-                        aria-pressed={isSelected}
-                        aria-label={isSelected ? `${option.label}，${currentOrder === "desc" ? "降序" : "升序"}` : option.label}
-                        onClick={/* 切换排序方向。 */ () => handleSortToggle(option.id)}
-                        className={`group flex min-h-10 items-center gap-2 rounded-full px-4 py-1.5 text-sm transition-all duration-300 backdrop-blur-2xl ${
-                          isSelected
-                            ? "filter-option-active"
-                            : "filter-option"
-                        }`}
-                      >
-                        {option.label}
-                        {isSelected && (
-                          currentOrder === "desc" ? <span className="i-material-symbols-arrow-downward-rounded inline-block size-3" aria-hidden="true" /> : <span className="i-material-symbols-arrow-upward-rounded inline-block size-3" aria-hidden="true" />
-                        )}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* 折叠高级筛选区域：类型、地区、语言、年份 */}
-              {advancedVisible && (
-                <div id="search-filters" className="flex flex-col origin-top animate-in slide-in-from-top-2 fade-in">
-                  {ADVANCED_CATEGORIES.map(/* 渲染高级分类选项。 */ (category) => {
-                    const activeSelections = filters[category.id] || [];
-                    const isAllSelected = activeSelections.length === 0;
-
-                    return (
-                      <div key={category.id} className="flex flex-col items-start gap-3 border-b border-white/10 py-3.5 sm:flex-row sm:gap-0">
-                        <span className="text-fg-muted text-sm font-medium w-16 shrink-0 mt-1.5 tracking-wider">
-                          {category.label}
-                        </span>
-                        <div className="flex flex-wrap gap-x-3 gap-y-2 flex-1 items-center">
-                          <button
-                            aria-pressed={isAllSelected}
-                            onClick={/* 清除当前分类限制。 */ () => toggleFilter(category.id, "全部", category.multiSelect, category.options)}
-                            className={`min-h-10 rounded-full px-4 py-1.5 text-sm transition-all duration-300 backdrop-blur-2xl ${
-                              isAllSelected
-                                ? "filter-option-active"
-                                : "filter-option"
-                            }`}
-                          >
-                            全部
-                          </button>
-
-                          {category.options.map(/* 渲染选项。 */ (option) => {
-                            const isSelected = activeSelections.includes(option);
-                            return (
-                              <button
-                                key={option}
-                                aria-pressed={isSelected}
-                                onClick={/* 切换选项。 */ () => toggleFilter(category.id, option, category.multiSelect, category.options)}
-                                className={`group flex min-h-10 items-center gap-1.5 rounded-full px-4 py-1.5 text-sm transition-all duration-300 backdrop-blur-2xl ${
-                                  isSelected
-                                    ? "filter-option-active"
-                                    : "filter-option"
-                                }`}
-                              >
-                                {option}
-                                {isSelected && (
-                                  <span className="i-material-symbols-close-rounded ml-1 inline-block size-3 opacity-60 group-hover:opacity-100 transition-opacity" aria-hidden="true" />
-                                )}
-                              </button>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    );
-                  })}
-
-                  <div className="flex flex-col items-start gap-3 py-3.5 sm:flex-row sm:items-center sm:gap-0">
-                    <span className="text-fg-muted text-sm font-medium w-16 shrink-0 tracking-wider">
-                      年份
-                    </span>
-                    <div className="flex w-full flex-col items-start gap-3 sm:w-auto sm:flex-row sm:items-center sm:gap-4">
-                      <button
-                        aria-pressed={!filters.year?.some(Boolean)}
-                        onClick={/* 清除起止年份。 */ () => {
-                          setFilters(/* 清除年份筛选。 */ (prev) => ({ ...prev, year: [] }));
-                        }}
-                        className={`min-h-10 rounded-full px-4 py-1.5 text-sm transition-all duration-300 backdrop-blur-2xl ${
-                          !filters.year?.length || (filters.year[0] === "" && filters.year[1] === "")
-                            ? "filter-option-active"
-                            : "filter-option"
-                        }`}
-                      >
-                        全部
-                      </button>
-
-                      <div className="grid w-full grid-cols-[1fr_auto_1fr] items-center gap-2 sm:flex sm:w-auto">
-                        <div className="relative group">
-                          <select
-                            aria-label="开始年份"
-                            value={filters.year?.[0] || ""}
-                            onChange={(e) => handleYearChange("start", e.target.value)}
-                            className={`min-h-10 w-full min-w-0 cursor-pointer appearance-none rounded-lg py-1.5 pl-3 pr-8 text-[13px] backdrop-blur-2xl transition-all sm:min-w-25 ${
-                              filters.year?.[0]
-                                ? "filter-option-active font-semibold"
-                                : "filter-option"
-                            }`}
-                          >
-                            <option value="" disabled hidden className="bg-neutral-900 text-neutral-300">开始年份</option>
-                            {yearOptions.map((y) => (
-                              <option key={y} value={y} className="bg-neutral-900 text-neutral-300">{y}</option>
-                            ))}
-                          </select>
-                          <span className={`i-material-symbols-expand-more-rounded absolute right-3 top-1/2 inline-block size-3 -translate-y-1/2 pointer-events-none transition-colors ${
-                            filters.year?.[0] ? "text-current opacity-90" : "text-fg-subtle group-hover:text-white"
-                          }`} aria-hidden="true" />
-                        </div>
-
-                        <span className="text-fg-muted text-[13px] font-medium px-1">至</span>
-
-                        <div className="relative group">
-                          <select
-                            aria-label="结束年份"
-                            value={filters.year?.[1] || ""}
-                            onChange={(e) => handleYearChange("end", e.target.value)}
-                            className={`min-h-10 w-full min-w-0 cursor-pointer appearance-none rounded-lg py-1.5 pl-3 pr-8 text-[13px] backdrop-blur-2xl transition-all sm:min-w-25 ${
-                              filters.year?.[1]
-                                ? "filter-option-active font-semibold"
-                                : "filter-option"
-                            }`}
-                          >
-                            <option value="" disabled hidden className="bg-neutral-900 text-neutral-300">最终年份</option>
-                            {yearOptions.map((y) => (
-                              <option key={y} value={y} className="bg-neutral-900 text-neutral-300">{y}</option>
-                            ))}
-                          </select>
-                          <span className={`i-material-symbols-expand-more-rounded absolute right-3 top-1/2 inline-block size-3 -translate-y-1/2 pointer-events-none transition-colors ${
-                            filters.year?.[1] ? "text-current opacity-90" : "text-fg-subtle group-hover:text-white"
-                          }`} aria-hidden="true" />
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
-      </div>
-    </div>
-  );
 
   const heading = resultsHeading(urlQuery.trim(), total, isLoading || Boolean(requestError));
   const rangeLabel = resultRange(page, isLoading || requestError ? 0 : total);
@@ -617,188 +214,61 @@ function SearchContent({ initialOptions, initialResult }: SearchProps) {
             {isLoading ? "加载中..." : requestError ? "加载失败" : `找到 ${total} 部作品`}
           </p>
 
-        <div className="mb-8 mt-6">
-          <div className="group relative flex items-stretch gap-2">
-            <div className="relative min-w-0 flex-1">
-              <div className="pointer-events-none absolute inset-y-0 left-0 z-10 flex items-center pl-5">
-                <span className="i-material-symbols-search-rounded inline-block size-4 text-fg-subtle transition-all duration-300 group-focus-within:text-white" aria-hidden="true" />
-              </div>
-
-              <input
-                ref={searchInputRef}
-                aria-label="搜索媒体"
-                aria-describedby={inputTooLong ? "search-query-limit" : undefined}
-                aria-invalid={inputTooLong}
-                value={query}
-                onChange={/* 将搜索输入框内容写入本地输入状态。 */ (e) => {
-                  setQuery(e.target.value);
-                }}
-                placeholder="搜索电影、电视节目、导演或演员..."
-                className="search-bar-control surface-control relative z-0 w-full border border-[var(--accent-border)] py-4 pl-12 pr-12 text-base text-white outline-none transition-all duration-300 placeholder:text-fg-subtle"
+          <div className="mb-8 mt-6">
+            <SearchBar
+              query={query}
+              onQueryChange={setQuery}
+              onClearQuery={() => setQuery("")}
+              inputRef={searchInputRef}
+              inputTooLong={inputTooLong}
+              maxLength={MAX_SEARCH_QUERY_LENGTH}
+              showAdvanced={showAdvanced}
+              hasActiveAdvancedFilters={hasActiveAdvancedFilters}
+              onToggleAdvanced={() => setShowAdvanced(!showAdvanced)}
+            />
+            <SearchFilterPanel
+              filters={filters}
+              setFilters={setFilters}
+              advancedVisible={showAdvanced}
+              genreOptions={genreOptions}
+              regionOptions={regionOptions}
+              languageOptions={languageOptions}
+              yearOptions={yearOptions}
+              panelRef={filterPanelRef}
+            />
+            {hasActiveFilters && (
+              <ActiveFilterBar
+                filters={filters}
+                setFilters={setFilters}
+                genreOptions={genreOptions}
+                regionOptions={regionOptions}
+                languageOptions={languageOptions}
               />
-              <div className="pointer-events-none absolute inset-y-0 right-0 z-10 flex items-center pr-3">
-                {query && (
-                  <button
-                    type="button"
-                    onClick={/* 清空搜索词，后续由防抖逻辑同步到 URL。 */ () => {
-                      setQuery("");
-                    }}
-                    className="pointer-events-auto text-fg-subtle transition-all duration-300 hover:text-[var(--accent-hover)]"
-                    aria-label="清除搜索"
-                  >
-                    <span className="i-material-symbols-close-rounded inline-block size-5" aria-hidden="true" />
-                  </button>
-                )}
-              </div>
-              {inputTooLong && (
-                <div id="search-query-limit" role="tooltip" className="absolute left-0 top-full z-20 mt-2 rounded-lg border border-red-400/30 bg-neutral-900 px-3 py-2 text-sm text-red-200 shadow-lg">
-                  搜索词最多 {MAX_SEARCH_QUERY_LENGTH} 个字符，请缩短后再搜索。
-                </div>
-              )}
-            </div>
-            <button
-              type="button"
-              aria-expanded={showAdvanced}
-              aria-controls="search-filters"
-              onClick={/* 展开类型、地区、语言和年份。分类、状态和排序始终可见。 */ () => setShowAdvanced(!showAdvanced)}
-              className={`search-bar-control inline-flex shrink-0 items-center gap-2 px-4 py-2 text-sm font-medium ${
-                showAdvanced || hasActiveAdvancedFilters ? "filter-option-active" : "filter-option"
-              }`}
-            >
-              <span className="i-material-symbols-tune-rounded inline-block size-4" aria-hidden="true" />
-              {showAdvanced ? "收起筛选" : "筛选"}
-            </button>
+            )}
           </div>
 
-          {filterPanel}
-
-          {/* 已选条件标签栏 (Active Filter Chips) */}
-          {hasActiveFilters && (
-            <div className="mt-3 flex flex-wrap items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 backdrop-blur-xl">
-              <span className="flex items-center gap-1.5 text-xs font-semibold tracking-wider text-fg-subtle mr-1">
-                <span className="i-material-symbols-filter-alt-outline-rounded size-3.5 inline-block text-[var(--accent)]" aria-hidden="true" />
-                已选条件:
-              </span>
-
-              {filters.type?.map((t) => (
-                <FilterChip key={`chip-type-${t}`} category="分类" label={optionLabel(TYPE_OPTIONS, t)} accent onRemove={() => toggleFilter("type", t, true, TYPE_OPTIONS.map((o) => o.value))} />
-              ))}
-              {filters.status?.map((s) => (
-                <FilterChip key={`chip-status-${s}`} category="状态" label={optionLabel(STATUS_OPTIONS, s)} accent onRemove={() => toggleFilter("status", s, true, STATUS_OPTIONS.map((o) => o.value))} />
-              ))}
-              {filters.genre?.map((g) => (
-                <FilterChip key={`chip-genre-${g}`} category="类型" label={g} onRemove={() => toggleFilter("genre", g, true, genreOptions)} />
-              ))}
-              {filters.region?.map((r) => (
-                <FilterChip key={`chip-region-${r}`} category="地区" label={r} onRemove={() => toggleFilter("region", r, true, regionOptions)} />
-              ))}
-              {filters.language?.map((l) => (
-                <FilterChip key={`chip-language-${l}`} category="语言" label={l} onRemove={() => toggleFilter("language", l, true, languageOptions)} />
-              ))}
-
-              {filters.year?.some(Boolean) && (
-                <span
-                  className="inline-flex items-center gap-1 rounded-md border border-white/15 bg-white/10 px-2.5 py-1 text-xs font-medium text-white shadow-xs"
-                >
-                  <span className="text-fg-muted">年份:</span>
-                  <span>
-                    {filters.year[0] && filters.year[1]
-                      ? `${filters.year[0]} - ${filters.year[1]}`
-                      : filters.year[0]
-                        ? `${filters.year[0]} 年起`
-                        : `截至 ${filters.year[1]} 年`}
-                  </span>
-                  <button
-                    type="button"
-                    aria-label="清除年份筛选"
-                    onClick={() => setFilters((prev) => ({ ...prev, year: [] }))}
-                    className="ml-0.5 rounded p-0.5 text-fg-secondary hover:bg-white/15 hover:text-white transition-colors"
-                  >
-                    <span className="i-material-symbols-close-rounded size-3 inline-block" aria-hidden="true" />
-                  </button>
-                </span>
-              )}
-
-              <button
-                type="button"
-                onClick={() => setFilters({ type: [], status: [], genre: [], region: [], language: [], year: [], sort: filters.sort || ["date_desc"] })}
-                className="ml-auto inline-flex items-center gap-1 px-2 py-1 text-xs text-fg-secondary transition-colors hover:text-fg cursor-pointer"
-              >
-                <span className="i-material-symbols-restart-alt-rounded size-3.5 inline-block" aria-hidden="true" />
-                清空筛选
-              </button>
-            </div>
-          )}
-        </div>
-
-          {(mediaItems.length > 0 || (isLoading && !requestError)) && (
-            <div className="mb-4 flex flex-wrap items-baseline justify-between gap-2 text-sm text-fg-muted">
-              <p>{sortCaption(filters.sort?.[0] || "date_desc")}</p>
-              {rangeLabel ? <p className="font-mono">{rangeLabel}</p> : null}
-            </div>
-          )}
-
-          {requestError && (
-            <div role="alert" className="mb-6 rounded-xl border border-red-400/30 bg-red-500/10 px-4 py-3 text-sm text-red-200">
-              {requestError}
-              {!queryTooLong && (
-                <button type="button" className="ml-3 underline underline-offset-4" onClick={/* 清除已完成的查询键，重新请求当前搜索条件。 */ () => setResult({ ...result, key: "", error: null })}>重试</button>
-              )}
-            </div>
-          )}
-
-          <div
-            className={`relative grid grid-cols-2 items-start gap-x-3 gap-y-6 sm:grid-cols-3 sm:gap-x-4 md:gap-x-5 lg:grid-cols-4 xl:grid-cols-6 ${
-              isLoading && mediaItems.length === 0 ? "min-h-128" : ""
-            }`}
-            aria-busy={isLoading}
-          >
-            {isLoading && mediaItems.length === 0 ? (
-              [...Array(PAGE_SIZE)].map(/* 为首轮搜索加载生成一张占位卡片。 */ (_, i) => (
-                <SearchMediaCardSkeleton key={`loading-initial-${i}`} />
-              ))
-            ) : requestError ? null : mediaItems.length > 0 ? (
-              mediaItems.map(/* 将搜索结果渲染为卡片，并携带当前地址作为详情页返回路径。 */ (item) => (
-                <SearchMediaCard key={`${item.type}-${item.id}`} item={item} returnHref={returnHref} />
-              ))
-            ) : total === 0 ? (
-              <SearchEmptyState
-                query={urlQuery.trim()}
-                canReset={canResetSearch}
-                onReset={clearSearchConditions}
-                onSuggest={suggestFilters}
-              />
-            ) : null}
-          </div>
-          
-          {totalPages > 1 && !isLoading && (
-            <nav className="mt-10 flex flex-wrap items-center justify-center gap-2" aria-label="搜索结果分页">
-              <button onClick={/* 返回上一页搜索结果。 */ () => goToPage(page - 1)} disabled={page === 1} className="surface-control rounded-xl p-2.5 text-fg-secondary transition-all hover:text-white disabled:pointer-events-none disabled:opacity-30" aria-label="上一页">
-                <span className="i-material-symbols-chevron-left-rounded inline-block size-4" aria-hidden="true" />
-              </button>
-              {pageNumbers(page, totalPages).map(/* 将页码窗口中的一页渲染为分页按钮。 */ (pageNumber) => (
-                <button key={pageNumber} onClick={/* 跳转到点击的结果页。 */ () => goToPage(pageNumber)} aria-current={pageNumber === page ? "page" : undefined} className={`min-w-10 rounded-xl px-3 py-2 text-center text-sm transition-all ${pageNumber === page ? "filter-option-active shadow-md" : "surface-muted border border-white/10 text-fg-secondary hover:bg-white/10 hover:text-white"}`}>
-                  {pageNumber}
-                </button>
-              ))}
-              <button onClick={/* 前往下一页搜索结果。 */ () => goToPage(page + 1)} disabled={page === totalPages} className="surface-control rounded-xl p-2.5 text-fg-secondary transition-all hover:text-white disabled:pointer-events-none disabled:opacity-30" aria-label="下一页">
-                <span className="i-material-symbols-chevron-right-rounded inline-block size-4" aria-hidden="true" />
-              </button>
-            </nav>
-          )}
+          <SearchResultSection
+            filters={filters}
+            mediaItems={mediaItems}
+            total={total}
+            page={page}
+            totalPages={totalPages}
+            isLoading={isLoading}
+            requestError={requestError}
+            queryTooLong={queryTooLong}
+            rangeLabel={rangeLabel}
+            returnHref={returnHref}
+            canResetSearch={canResetSearch}
+            urlQuery={urlQuery.trim()}
+            onRetry={() => setResult({ ...result, key: "", error: null })}
+            onReset={clearSearchConditions}
+            onSuggest={suggestFilters}
+            onPage={goToPage}
+          />
         </section>
       </div>
 
-      <button
-        onClick={scrollToTop}
-        aria-label="返回页面顶部"
-        inert={!showScrollTop}
-        className={`surface-muted fixed bottom-[calc(env(safe-area-inset-bottom)+6.5rem)] right-4 z-50 flex size-12 items-center justify-center rounded-full border border-white/10 text-fg-secondary shadow-[0_4px_15px_rgba(0,0,0,0.3)] backdrop-blur-2xl transition-all duration-300 hover:scale-105 hover:border-[var(--accent-border-hover)] hover:bg-white/10 hover:text-[var(--accent-hover)] hover:shadow-lg hover:shadow-black/50 sm:right-8 md:bottom-22 lg:right-12 ${
-          showScrollTop ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10 pointer-events-none"
-        }`}
-      >
-        <span className="i-material-symbols-arrow-upward-rounded inline-block size-5" aria-hidden="true" />
-      </button>
+      <SearchScrollTop visible={showScrollTop} onClick={scrollToTop} />
     </div>
   );
 }
