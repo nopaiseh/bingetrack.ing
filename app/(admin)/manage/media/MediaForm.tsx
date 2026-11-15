@@ -186,9 +186,10 @@ export default function MediaForm({
         <fieldset disabled={pending || deleting} className="edit-frame">
           <legend className="sr-only">媒体资料</legend>
           <input type="hidden" name="id" value={item?.id ?? ""} />
-          {showCover ? null : (
-            <input type="hidden" name="cover_url" value={item?.type === type ? (item.cover_url ?? "") : ""} />
-          )}
+          {/* 单集仍保存提交的封面。季的 cover_url 由服务端忽略，不再提交。 */}
+          {type === "tv_episode" ? (
+            <input type="hidden" name="cover_url" value={item?.type === "tv_episode" ? (item.cover_url ?? "") : ""} />
+          ) : null}
           {locked ? <input type="hidden" name="type" value={type} /> : null}
 
           <div className="edit-toolbar">
