@@ -36,11 +36,6 @@ export function continueWatchingTitle(title: string): string {
   return trimmed || "未命名节目";
 }
 
-/** 无海报时用题名的第一个字占位，和卡片标题用同一套展示文案。 */
-export function continueWatchingInitial(title: string): string {
-  return Array.from(continueWatchingTitle(title))[0] ?? "剧";
-}
-
 /**
  * 把后端给出的海报路径拼成图片地址。
  * 单段路径是 TMDB 文件名，用 w342（卡片大约 150–192px，两倍屏落在 342 附近）。

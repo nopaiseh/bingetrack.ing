@@ -11,7 +11,7 @@ import {
 import { buildMediaDistributions } from "@/lib/functions/media-distributions";
 import { handlePageDataError } from "@/lib/functions/page-data";
 import { TOP_MEDIA_LIMIT } from "@/lib/api/media-params";
-import { hasReleaseWithinSgtWindow, sgtDateKey } from "@/lib/upcoming";
+import { sgtDateKey } from "@/lib/upcoming";
 import type { MediaCard, Summary, UpcomingRelease } from "@/lib/types";
 import type { Metadata } from "next";
 import { buildWebsiteJsonLd } from "@/lib/seo/page";
@@ -22,7 +22,7 @@ export const metadata: Metadata = {
   alternates: { canonical: "/" },
 };
 
-// 首页仍是静态 ISR。upcomingFirst 按新加坡日历日计算，24 小时会让区块顺序在午夜后陈旧一整天，
+// 首页仍是静态 ISR。倒计时天数按新加坡日历日计算，24 小时会让“今天”在午夜后陈旧一整天，
 // 因此页面重新验证缩短到 1 小时（3600 必须是字面量，Next.js 才能静态分析）。
 // 过期后的第一次请求仍可能拿到旧页面（stale-while-revalidate），下一次即为新的一天。
 // 榜单、分布、即将上映候选池和继续看仍走 24 小时数据缓存。
@@ -93,7 +93,6 @@ export default async function HomePage() {
         distributions={distributions}
         upcoming={upcoming}
         continueWatching={continueWatching}
-        upcomingFirst={hasReleaseWithinSgtWindow(upcoming, now)}
         renderedOn={sgtDateKey(now)}
       />
     </div>

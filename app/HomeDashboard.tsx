@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useSyncExternalStore } from "react";
+import { useState, useEffect, useMemo, useSyncExternalStore } from "react";
 import ContinueWatchingRail, { type ContinueWatchingCard } from "@/components/ContinueWatchingRail";
 import UpcomingHero from "@/components/UpcomingHero";
 import DashboardIntro from "@/components/dashboard/DashboardIntro";
@@ -25,7 +25,6 @@ export default function HomeDashboard({
   distributions,
   upcoming = [],
   continueWatching = [],
-  upcomingFirst = false,
   renderedOn,
 }: {
   summary: Summary[];
@@ -34,8 +33,6 @@ export default function HomeDashboard({
   distributions: MediaDistributions;
   upcoming?: UpcomingRelease[];
   continueWatching?: readonly ContinueWatchingCard[];
-  /** 服务端按新加坡日历计算：今天起 7 天内（含第 7 天）有片上映时为 true。为 true 时即将上映在前，false 或缺省时继续观看在前。 */
-  upcomingFirst?: boolean;
   renderedOn?: string;
 }) {
   const tabs = TABS;
@@ -59,6 +56,11 @@ export default function HomeDashboard({
   const [topMediaLoading, setTopMediaLoading] = useState(false);
 
   const stats = deriveDashboardStats(summary, selectedYear, distributions);
+  // 四格统计固定用全时段行（release_year 为 "All Time"），不跟年份选择器走。
+  const allTimeStats = useMemo(
+    () => deriveDashboardStats(summary, "All Time", distributions),
+    [summary, distributions],
+  );
 
   useEffect(
     /* 选择具体年份时启动榜单请求，离开该年份或卸载组件时取消请求。 */ () => {
@@ -110,24 +112,10 @@ export default function HomeDashboard({
   const upcomingHero = <UpcomingHero items={upcoming} renderedOn={renderedOn} />;
 
   return (
-    <div
-      className="container mx-auto flex max-w-7xl flex-col gap-4 px-4 pb-8 pt-20 sm:gap-5 sm:px-6 sm:pt-22 md:pb-12 lg:px-8 lg:pt-24"
-      data-upcoming-first={upcomingFirst ? "true" : "false"}
-    >
+    <div className="container mx-auto flex max-w-7xl flex-col gap-4 px-4 pb-8 pt-20 sm:gap-5 sm:px-6 sm:pt-22 md:pb-12 lg:px-8 lg:pt-24">
       {upcomingHero}
       {continueWatchingRail}
-      <HomeStatStrip
-        runtimePercent={stats.runtimePercent}
-        totalMovies={stats.totalMovies}
-        watchedMovies={stats.watchedMovies}
-        unwatchedMovies={stats.unwatchedMovies}
-        totalSeries={stats.totalSeries}
-        watchedSeries={stats.watchedSeries}
-        watchingSeries={stats.watchingSeries}
-        episodePercent={stats.seriesEpisodesPercent}
-        watchedEpisodes={stats.watchedEpisodes}
-        totalEpisodes={stats.totalEpisodes}
-      />
+      <HomeStatStrip stats={allTimeStats} />
 
       <DashboardIntro
         selectedYear={selectedYear}

@@ -128,17 +128,17 @@ describe("HomeDashboard", () => {
     seasonProgress: { seasonNumber: 1, watched: 1, total: 1 },
   };
 
-  function renderDashboard(upcomingFirst?: boolean) {
-    const props = {
-      summary: [],
-      topMovies: [],
-      topSeries: [],
-      distributions: buildMediaDistributions([]),
-      upcoming: [{ id: "next-release" } as never],
-      continueWatching: [watchingItem],
-      ...(upcomingFirst === undefined ? {} : { upcomingFirst }),
-    };
-    return render(<HomeDashboard {...props} />);
+  function renderDashboard() {
+    return render(
+      <HomeDashboard
+        summary={[]}
+        topMovies={[]}
+        topSeries={[]}
+        distributions={buildMediaDistributions([])}
+        upcoming={[{ id: "next-release" } as never]}
+        continueWatching={[watchingItem]}
+      />,
+    );
   }
 
   /** 只看这两个区块在 DOM 里的先后，不看 CSS order。 */
@@ -157,26 +157,54 @@ describe("HomeDashboard", () => {
   }
 
   it("放映单始终先放倒计时，再放继续观看", () => {
-    const { container, rerender } = renderDashboard(true);
-    const root = container.firstElementChild as HTMLElement;
-    expect(root.dataset.upcomingFirst).toBe("true");
+    const { container } = renderDashboard();
     expect(leadBlockOrder(container)).toEqual(["upcoming", "continue"]);
     const heading = screen.getByRole("heading", { name: "继续观看" });
     const upcoming = screen.getByTestId("upcoming");
     expect(upcoming.compareDocumentPosition(heading) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
 
-    rerender(
+  it("四格统计固定用全时段，切换年份后数字不变", () => {
+    render(
       <HomeDashboard
-        summary={[]}
+        summary={[
+          {
+            release_year: "All Time",
+            watched_movies: 60,
+            unwatched_movies: 7,
+            watched_series: 4,
+            watching_series: 3,
+            total_watched_runtime: 66,
+            total_runtime: 100,
+            watched_series_episodes: 132,
+            total_series_episodes: 245,
+          } as Summary,
+          {
+            release_year: "2024",
+            watched_movies: 1,
+            unwatched_movies: 2,
+            watched_series: 0,
+            watching_series: 1,
+            total_watched_runtime: 1,
+            total_runtime: 10,
+            watched_series_episodes: 2,
+            total_series_episodes: 10,
+          } as Summary,
+        ]}
         topMovies={[]}
         topSeries={[]}
         distributions={buildMediaDistributions([])}
-        upcoming={[{ id: "next-release" } as never]}
-        continueWatching={[watchingItem]}
-        upcomingFirst={false}
       />,
     );
-    expect(root.dataset.upcomingFirst).toBe("false");
-    expect(leadBlockOrder(container)).toEqual(["upcoming", "continue"]);
+
+    const strip = screen.getByRole("region", { name: "全时段统计" });
+    expect(strip).toHaveTextContent("已看 60 · 想看 7");
+    expect(strip).toHaveTextContent("132 / 245 集");
+
+    fireEvent.click(screen.getByText("year-2024"));
+
+    expect(strip).toHaveTextContent("已看 60 · 想看 7");
+    expect(strip).not.toHaveTextContent("已看 1 · 想看 2");
+    expect(screen.getByText("2024 年度档案")).toBeInTheDocument();
   });
 });
