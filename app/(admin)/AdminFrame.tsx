@@ -42,7 +42,11 @@ function AdminMobileBar({
           aria-hidden="true"
         />
       </button>
-      <Link href="/manage" className="min-w-0 truncate font-mono text-sm font-medium tracking-tight text-fg">
+      <Link
+        href="/manage"
+        prefetch={false}
+        className="min-w-0 truncate font-mono text-sm font-medium tracking-tight text-fg"
+      >
         bingetrack<span className="text-[var(--accent)]">.</span>ing
       </Link>
       <div className="ml-auto flex items-center gap-1">

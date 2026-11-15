@@ -1,5 +1,6 @@
 import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import type { AnchorHTMLAttributes, ReactNode } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import AdminFrame from "@/app/(admin)/AdminFrame";
 import ManageNav from "@/app/(admin)/manage/ManageNav";
@@ -11,6 +12,24 @@ vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: vi.fn() }),
 }));
 vi.mock("@/app/(admin)/manage/actions", () => ({ manualRevalidateCache: vi.fn() }));
+
+// next/link 不会把 prefetch 写到 DOM 上，测试替身用 data-prefetch 露出这个属性。
+vi.mock("next/link", () => ({
+  default: ({
+    href,
+    children,
+    prefetch,
+    ...props
+  }: AnchorHTMLAttributes<HTMLAnchorElement> & {
+    href: string;
+    children?: ReactNode;
+    prefetch?: boolean | "auto" | null;
+  }) => (
+    <a href={href} data-prefetch={prefetch === false ? "false" : undefined} {...props}>
+      {children}
+    </a>
+  ),
+}));
 
 beforeEach(() => {
   navigation.pathname = "/manage";
@@ -64,6 +83,18 @@ describe("管理侧栏", () => {
     expect(screen.getByRole("link", { name: "账号安全" })).toHaveAttribute("aria-current", "page");
     const nav = screen.getByRole("navigation", { name: "内容管理分类" });
     expect(within(nav).getByRole("link", { name: "概览" })).not.toHaveAttribute("aria-current");
+  });
+
+  it("导航和顶栏里指向 /manage 的链接关闭预取", () => {
+    render(
+      <AdminFrame initialCollapsed={false} nav={<ManageNav />}>
+        <p>内容</p>
+      </AdminFrame>,
+    );
+    const manageLinks = screen.getAllByRole("link").filter((link) => link.getAttribute("href") === "/manage");
+    expect(manageLinks.map((link) => link.getAttribute("data-prefetch"))).toEqual(["false", "false", "false"]);
+    const categories = screen.getByRole("navigation", { name: "内容管理分类" });
+    expect(within(categories).getByRole("link", { name: "电影" })).not.toHaveAttribute("data-prefetch");
   });
 
   it("菜单按钮展开同一套导航，而不是另一份分类", async () => {

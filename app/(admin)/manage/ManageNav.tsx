@@ -141,10 +141,13 @@ export default function ManageNav() {
 
   function entry(item: { label: string; value: string; icon: string }) {
     const selected = highlighted === item.value;
+    const destination = href(item.value);
     return (
       <Link
         key={item.value}
-        href={href(item.value)}
+        href={destination}
+        // 概览就是 /manage。预取会在活动 Cookie 写入前穿过 proxy 并 signOut。
+        prefetch={destination === "/manage" ? false : undefined}
         onClick={(event) => open(event, item.value)}
         aria-current={selected ? "page" : undefined}
         aria-label={iconOnly ? item.label : undefined}
@@ -174,6 +177,7 @@ export default function ManageNav() {
       >
         <Link
           href="/manage"
+          prefetch={false}
           aria-label="bingetrack.ing"
           className={`flex min-w-0 items-center rounded-lg text-fg ${iconOnly ? "size-11 justify-center" : "gap-2"}`}
         >
