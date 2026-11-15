@@ -5,7 +5,7 @@ import { afterEach, beforeEach, expect, test, vi } from "vitest";
 import HideOnAdmin from "@/components/HideOnAdmin";
 import IdleSession from "@/components/IdleSession";
 import { ACTIVITY_REPORT_INTERVAL, IDLE_TIMEOUT } from "@/lib/auth/idle";
-import { SIGNED_IN_EVENT, reportIdleActivity } from "@/lib/auth/use-idle-session";
+import { SIGNED_IN_EVENT, logoutEverywhere, reportIdleActivity } from "@/lib/auth/use-idle-session";
 
 const getAuthBrowser = vi.hoisted(() => vi.fn());
 const replace = vi.hoisted(() => vi.fn());
@@ -248,5 +248,27 @@ test("登出请求失败时仍清理本地会话并离开页面", async () => {
     await Promise.resolve();
   });
   expect(signOut).toHaveBeenCalledWith({ scope: "local" });
+  expect(replace).toHaveBeenCalledWith("/");
+});
+
+test("指定站内地址登出，请求失败时仍清本地会话", async () => {
+  const signOut = vi.fn(async () => ({ error: null }));
+  getAuthBrowser.mockReturnValue({ auth: { signOut } });
+  fetchMock.mockRejectedValue(new Error("offline"));
+  logoutEverywhere("/?authError=activity");
+  await act(async () => {
+    await Promise.resolve();
+    await Promise.resolve();
+  });
+  expect(signOut).toHaveBeenCalledWith({ scope: "local" });
+  expect(replace).toHaveBeenCalledWith("/?authError=activity");
+
+  signOut.mockClear();
+  replace.mockClear();
+  logoutEverywhere("//evil.example");
+  await act(async () => {
+    await Promise.resolve();
+    await Promise.resolve();
+  });
   expect(replace).toHaveBeenCalledWith("/");
 });

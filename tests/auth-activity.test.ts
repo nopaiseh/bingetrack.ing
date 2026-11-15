@@ -102,11 +102,14 @@ describe("POST /auth/activity", () => {
   });
 
   it("未登录返回 401，且不写 Cookie", async () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
     getUser.mockResolvedValue({ data: { user: null }, error: null });
     const response = await POST(activityRequest("https://www.bingetrack.ing"));
     expect(response.status).toBe(401);
+    expect(warn).toHaveBeenCalledWith("[auth/activity] 401 no_session");
     expect(cookieSet).not.toHaveBeenCalled();
     expect(cookiesFn).not.toHaveBeenCalled();
+    warn.mockRestore();
 
     getUser.mockResolvedValue({ data: null, error: new Error("expired") });
     const failed = await POST(activityRequest("https://www.bingetrack.ing"));
@@ -116,6 +119,7 @@ describe("POST /auth/activity", () => {
 
   it("Origin 必须等于本次请求的站点 origin，否则 403 且不查用户、不写 Cookie", async () => {
     vi.stubEnv("NEXT_PUBLIC_SITE_URL", "https://www.bingetrack.ing");
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
     for (const origin of ["https://evil.example", "https://bingetrack.ing", "null", undefined]) {
       cookieSet.mockClear();
       getUser.mockClear();
@@ -125,6 +129,9 @@ describe("POST /auth/activity", () => {
       expect(cookieSet).not.toHaveBeenCalled();
       expect(cookiesFn).not.toHaveBeenCalled();
     }
+    expect(warn).toHaveBeenCalledWith("[auth/activity] 403 bad_origin");
+    expect(warn.mock.calls.flat().join(" ")).not.toContain("evil.example");
+    warn.mockRestore();
   });
 
   it("非 POST 返回 405，且不写 Cookie", async () => {
@@ -316,8 +323,9 @@ describe("POST /auth/activity", () => {
   it("getClaims 失败时直接 401，不用 last_sign_in_at 补记", async () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date("2026-01-01T00:10:00Z"));
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
     getUser.mockResolvedValue({
-      data: { user: { id: USER, last_sign_in_at: new Date().toISOString() } },
+      data: { user: { id: USER, last_sign_in_at: new Date().toISOString(), email: "owner@example.com" } },
       error: null,
     });
     getClaims.mockResolvedValue({ data: null, error: new Error("jwks") });
@@ -325,6 +333,83 @@ describe("POST /auth/activity", () => {
     const response = await POST(activityRequest("https://www.bingetrack.ing"));
     expect(response.status).toBe(401);
     expect(cookieSet).not.toHaveBeenCalled();
+    expect(warn).toHaveBeenCalledWith("[auth/activity] 401 claims_error");
+    expect(warn.mock.calls.flat().join(" ")).not.toContain("jwks");
+    expect(warn.mock.calls.flat().join(" ")).not.toContain("owner@example.com");
+    warn.mockRestore();
+  });
+
+  it("Passkey 的 amr 是方法加 unix 秒时立刻补记，旧的 last_sign_in_at 不影响，写下的 Cookie 能通过管理区校验", async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-01-01T00:10:00Z"));
+    const now = Date.now();
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    getUser.mockResolvedValue({
+      data: {
+        user: {
+          id: USER,
+          email: "owner@example.com",
+          last_sign_in_at: new Date(now - 3 * 60 * 60 * 1000).toISOString(),
+        },
+      },
+      error: null,
+    });
+    getClaims.mockResolvedValue({
+      data: {
+        claims: {
+          sub: USER,
+          iat: Math.floor(now / 1000),
+          exp: Math.floor(now / 1000) + 3600,
+          amr: [{ method: "passkey", timestamp: Math.floor((now - 5_000) / 1000) }],
+        },
+      },
+      error: null,
+    });
+
+    const response = await POST(activityRequest("https://www.bingetrack.ing"));
+    expect(response.status).toBe(204);
+    expect(warn).not.toHaveBeenCalled();
+    const value = store.get(ACTIVITY_COOKIE);
+    expect(verifyActivityCookie(value, USER, now, derived())).toEqual({ ok: true, at: now });
+    warn.mockRestore();
+  });
+
+  it("Passkey 令牌只有方法名且 last_sign_in_at 仍是上一次登录时，第一次补记返回 401", async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-01-01T00:10:00Z"));
+    const now = Date.now();
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    getUser.mockResolvedValue({
+      data: {
+        user: {
+          id: USER,
+          email: "owner@example.com",
+          last_sign_in_at: new Date(now - 3 * 60 * 60 * 1000).toISOString(),
+        },
+      },
+      error: null,
+    });
+    getClaims.mockResolvedValue({
+      data: {
+        claims: {
+          sub: USER,
+          iat: Math.floor(now / 1000),
+          exp: Math.floor(now / 1000) + 3600,
+          amr: [{ method: "passkey" }],
+        },
+      },
+      error: null,
+    });
+
+    const response = await POST(activityRequest("https://www.bingetrack.ing"));
+    expect(response.status).toBe(401);
+    expect(cookieSet).not.toHaveBeenCalled();
+    expect(warn).toHaveBeenCalledWith("[auth/activity] 401 outside_window amr=passkey:no-ts cookie=missing");
+    const logged = warn.mock.calls.flat().join(" ");
+    expect(logged).not.toContain(USER);
+    expect(logged).not.toContain("owner@example.com");
+    expect(logged).not.toContain("iat");
+    warn.mockRestore();
   });
 
   it("用户 id 含点号时无法签名，不写 Cookie", async () => {

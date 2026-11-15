@@ -98,6 +98,13 @@ test("authError 不依赖认证客户端", async () => {
   expect(getAuthBrowser).not.toHaveBeenCalled();
 });
 
+test("活动补记失败的 authError 说明要重试", async () => {
+  window.history.pushState({}, "", "/?authError=activity");
+  render(<Navbar />);
+  expect(await screen.findByRole("alert")).toHaveTextContent("登录已完成，但空闲保护未能启动，请重试。");
+  expect(getAuthBrowser).not.toHaveBeenCalled();
+});
+
 test("已有会话 Cookie 时站长看到管理和退出", async () => {
   const unsubscribe = vi.fn();
   setCookie("sb-example-auth-token.0");
@@ -130,16 +137,18 @@ test("已有会话 Cookie 时站长看到管理和退出", async () => {
   expect(unsubscribe).toHaveBeenCalled();
 });
 
-test("Passkey 成功后先上报活动，再进入管理区", async () => {
+test("Passkey 成功后先刷新会话再上报活动，然后进入管理区", async () => {
   const user = userEvent.setup();
   const fetchMock = vi.fn(async () => new Response(null, { status: 204 }));
   vi.stubGlobal("fetch", fetchMock);
+  const refreshSession = vi.fn(async () => ({ data: { session: {} }, error: null }));
   setCookie("sb-example-auth-token.0");
   getAuthBrowser.mockReturnValue({
     auth: {
       onAuthStateChange: () => ({ data: { subscription: { unsubscribe: vi.fn() } } }),
+      refreshSession,
       signInWithPasskey: vi.fn(async () => ({
-        data: { user: { id: "owner-1" } },
+        data: { user: { id: "owner-1" }, session: { access_token: "new" } },
         error: null,
       })),
       signOut: vi.fn(),
@@ -153,25 +162,36 @@ test("Passkey 成功后先上报活动，再进入管理区", async () => {
   await user.click(screen.getByRole("button", { name: "登录" }));
 
   await waitFor(() => expect(replace).toHaveBeenCalledWith("/manage"));
+  expect(refreshSession).toHaveBeenCalledOnce();
   expect(fetchMock).toHaveBeenCalledWith(
     "/auth/activity",
     expect.objectContaining({ method: "POST", credentials: "same-origin" }),
   );
+  expect(refreshSession.mock.invocationCallOrder[0]).toBeLessThan(fetchMock.mock.invocationCallOrder[0]);
   expect(fetchMock.mock.invocationCallOrder[0]).toBeLessThan(replace.mock.invocationCallOrder[0]);
   expect(signedIn).toHaveBeenCalled();
   window.removeEventListener(SIGNED_IN_EVENT, signedIn);
   vi.unstubAllGlobals();
 });
 
-test("活动上报返回 401 时立即登出，不进入管理区", async () => {
+test("活动上报第一次 401 后刷新会话再成功，会进入管理区", async () => {
   const user = userEvent.setup();
-  const fetchMock = vi.fn(async () => new Response("Unauthorized", { status: 401 }));
+  let activityPosts = 0;
+  const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+    if (String(input).includes("/auth/activity")) {
+      activityPosts += 1;
+      if (activityPosts === 1) return new Response("Unauthorized", { status: 401 });
+    }
+    return new Response(null, { status: 204 });
+  });
   vi.stubGlobal("fetch", fetchMock);
+  const refreshSession = vi.fn(async () => ({ data: { session: {} }, error: null }));
   getAuthBrowser.mockReturnValue({
     auth: {
       onAuthStateChange: () => ({ data: { subscription: { unsubscribe: vi.fn() } } }),
+      refreshSession,
       signInWithPasskey: vi.fn(async () => ({
-        data: { user: { id: "owner-1" } },
+        data: { user: { id: "owner-1" }, session: { access_token: "new" } },
         error: null,
       })),
       signOut: vi.fn(),
@@ -182,7 +202,35 @@ test("活动上报返回 401 时立即登出，不进入管理区", async () => 
   render(<Navbar />);
   await user.click(screen.getByRole("button", { name: "登录" }));
 
-  await waitFor(() => expect(replaceDocument).toHaveBeenCalledWith("/"));
+  await waitFor(() => expect(replace).toHaveBeenCalledWith("/manage"));
+  expect(refreshSession).toHaveBeenCalledTimes(2);
+  expect(activityPosts).toBe(2);
+  expect(replaceDocument).not.toHaveBeenCalled();
+  vi.unstubAllGlobals();
+});
+
+test("活动上报持续 401 时说明失败原因并登出，不进入管理区", async () => {
+  const user = userEvent.setup();
+  const fetchMock = vi.fn(async () => new Response("Unauthorized", { status: 401 }));
+  vi.stubGlobal("fetch", fetchMock);
+  getAuthBrowser.mockReturnValue({
+    auth: {
+      onAuthStateChange: () => ({ data: { subscription: { unsubscribe: vi.fn() } } }),
+      refreshSession: vi.fn(async () => ({ data: { session: {} }, error: null })),
+      signInWithPasskey: vi.fn(async () => ({
+        data: { user: { id: "owner-1" }, session: { access_token: "new" } },
+        error: null,
+      })),
+      signOut: vi.fn(),
+    },
+    rpc: vi.fn(),
+  });
+
+  render(<Navbar />);
+  await user.click(screen.getByRole("button", { name: "登录" }));
+
+  expect(await screen.findByRole("alert")).toHaveTextContent("登录已完成，但空闲保护未能启动，请重试。");
+  await waitFor(() => expect(replaceDocument).toHaveBeenCalledWith("/?authError=activity"));
   expect(fetchMock).toHaveBeenCalledWith("/auth/logout", expect.objectContaining({ method: "POST" }));
   expect(replace).not.toHaveBeenCalled();
   vi.unstubAllGlobals();

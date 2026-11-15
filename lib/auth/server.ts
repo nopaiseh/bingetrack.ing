@@ -34,7 +34,10 @@ export async function requireOwner() {
   } = await db.auth.getUser();
   if (error || !user) redirect("/");
   const jar = await cookies();
-  if (!verifyActivityCookie(jar.get(ACTIVITY_COOKIE)?.value, user.id).ok) {
+  const activity = verifyActivityCookie(jar.get(ACTIVITY_COOKIE)?.value, user.id);
+  if (!activity.ok) {
+    // 原因码只有活动 Cookie 的校验结果。不写用户 id、令牌或 Cookie 值。
+    console.warn(`[requireOwner] ${activity.reason === "expired" ? "idle_expired" : activity.reason}`);
     try {
       await db.auth.signOut({ scope: "local" });
     } catch {
