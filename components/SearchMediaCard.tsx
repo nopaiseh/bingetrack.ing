@@ -1,9 +1,31 @@
 import Image from "next/image";
 import Link from "next/link";
 import type { MediaCard } from "@/lib/types";
+import { isUpcomingDate } from "@/lib/upcoming";
 import { SkeletonBlock } from "./LoadingSkeletons";
 import MediaCardBody from "./MediaCardBody";
 import MediaCardStatusBadge from "./MediaCardStatusBadge";
+
+/** 已看、在看优先于即将上映；还没看且日期在今天之后，用即将上映代替想看。 */
+function showUpcoming(item: MediaCard): boolean {
+  if (item.status === "watched" || item.status === "watching") return false;
+  return isUpcomingDate(item.date);
+}
+
+/** 海报右上角的「即将上映」角标，外形与观看状态角标一致。 */
+function UpcomingPosterBadge() {
+  return (
+    <span
+      data-testid="media-card-upcoming-badge"
+      className="pointer-events-none absolute top-2 right-2 z-10 inline-flex items-center gap-1.5 rounded-full border border-[var(--accent-border)] bg-[var(--canvas)] px-2 py-1 text-xs font-medium text-[var(--accent-hover)] transition-opacity duration-300"
+      aria-label="即将上映"
+      title="即将上映"
+    >
+      <span className="inline-block size-1.5 rounded-full bg-[var(--accent)]" aria-hidden="true" />
+      即将上映
+    </span>
+  );
+}
 
 /** 搜索结果加载时的卡片骨架，外形与目录卡一致。 */
 export function SearchMediaCardSkeleton() {
@@ -51,7 +73,7 @@ export function SearchMediaCard({ item, returnHref }: { item: MediaCard; returnH
             aria-hidden="true"
           />
         )}
-        <MediaCardStatusBadge status={item.status} />
+        {showUpcoming(item) ? <UpcomingPosterBadge /> : <MediaCardStatusBadge status={item.status} />}
       </div>
       <MediaCardBody item={item} type={mediaType} />
     </Link>

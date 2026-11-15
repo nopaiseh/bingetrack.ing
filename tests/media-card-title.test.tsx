@@ -85,6 +85,40 @@ test("search cards reuse the catalog card surface, poster badge, and body", () =
   expect(screen.getByText("意大利语")).toBeInTheDocument();
 });
 
+test("search cards show 即将上映 on the poster only when unwatched and dated ahead", () => {
+  const future = {
+    ...series[0],
+    id: "future",
+    title: "尚未定档",
+    date: "2099-06-01",
+    status: "want_to_watch",
+  };
+  const { unmount } = render(<SearchMediaCard item={future} returnHref="/search" />);
+  const upcoming = screen.getByTestId("media-card-upcoming-badge");
+  expect(upcoming).toHaveTextContent("即将上映");
+  expect(upcoming).toHaveAttribute("aria-label", "即将上映");
+  expect(upcoming.className).toContain("absolute");
+  expect(upcoming.className).toContain("top-2");
+  expect(upcoming.className).toContain("right-2");
+  expect(upcoming.className).toContain("rounded-full");
+  expect(screen.queryByTestId("media-card-status-badge")).not.toBeInTheDocument();
+  unmount();
+
+  const past = render(
+    <SearchMediaCard item={{ ...future, id: "past", title: "已经上映", date: "2000-01-01" }} returnHref="/search" />,
+  );
+  expect(screen.queryByTestId("media-card-upcoming-badge")).not.toBeInTheDocument();
+  expect(screen.getByTestId("media-card-status-badge")).toHaveTextContent("想看");
+  expect(screen.getByTestId("media-card-status-badge")).toHaveAttribute("aria-label", "观看状态：想看");
+  past.unmount();
+
+  render(
+    <SearchMediaCard item={{ ...future, id: "seen", title: "已看的新片", status: "watched" }} returnHref="/search" />,
+  );
+  expect(screen.queryByTestId("media-card-upcoming-badge")).not.toBeInTheDocument();
+  expect(screen.getByTestId("media-card-status-badge")).toHaveTextContent("已看");
+});
+
 test("shared badges and filter chips stay at least 14px with a 40px chip target", () => {
   render(
     <>
