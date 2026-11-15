@@ -91,7 +91,7 @@ describe("ContinueWatchingRail", () => {
     expect(link).toHaveTextContent("打开节目页");
     expect(link).not.toHaveTextContent("S1");
     expect(screen.queryByRole("img")).not.toBeInTheDocument();
-    expect(document.querySelector("[data-poster-fallback]")?.textContent).toBe("航");
+    expect(document.querySelector("[data-poster-fallback] .letter-tile")).toHaveAttribute("data-initial", "航");
     expect(screen.getByRole("progressbar", { name: "第 1 季已看 40 集，共 40 集" })).toHaveAttribute(
       "aria-valuenow",
       "40",

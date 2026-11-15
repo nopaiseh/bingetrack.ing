@@ -156,21 +156,14 @@ describe("HomeDashboard", () => {
     return labels;
   }
 
-  it("upcomingFirst 为 true 时即将上映排在继续观看前面", () => {
-    const { container } = renderDashboard(true);
+  it("放映单始终先放倒计时，再放继续观看", () => {
+    const { container, rerender } = renderDashboard(true);
     const root = container.firstElementChild as HTMLElement;
     expect(root.dataset.upcomingFirst).toBe("true");
     expect(leadBlockOrder(container)).toEqual(["upcoming", "continue"]);
     const heading = screen.getByRole("heading", { name: "继续观看" });
     const upcoming = screen.getByTestId("upcoming");
     expect(upcoming.compareDocumentPosition(heading) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-  });
-
-  it("upcomingFirst 为 false 或缺省时继续观看排在即将上映前面", () => {
-    const { container, rerender } = renderDashboard();
-    const root = container.firstElementChild as HTMLElement;
-    expect(root.dataset.upcomingFirst).toBe("false");
-    expect(leadBlockOrder(container)).toEqual(["continue", "upcoming"]);
 
     rerender(
       <HomeDashboard
@@ -184,9 +177,6 @@ describe("HomeDashboard", () => {
       />,
     );
     expect(root.dataset.upcomingFirst).toBe("false");
-    expect(leadBlockOrder(container)).toEqual(["continue", "upcoming"]);
-    const heading = screen.getByRole("heading", { name: "继续观看" });
-    const upcoming = screen.getByTestId("upcoming");
-    expect(heading.compareDocumentPosition(upcoming) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(leadBlockOrder(container)).toEqual(["upcoming", "continue"]);
   });
 });

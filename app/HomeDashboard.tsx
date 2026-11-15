@@ -5,6 +5,7 @@ import ContinueWatchingRail, { type ContinueWatchingCard } from "@/components/Co
 import UpcomingHero from "@/components/UpcomingHero";
 import DashboardIntro from "@/components/dashboard/DashboardIntro";
 import DashboardPanels from "@/components/dashboard/DashboardPanels";
+import HomeStatStrip from "@/components/dashboard/HomeStatStrip";
 import { deriveDashboardStats } from "@/components/dashboard/dashboard-stats";
 import {
   TABS,
@@ -104,17 +105,29 @@ export default function HomeDashboard({
   // 请求中途切回全时段时，被取消的请求不会复位加载状态，因此只在选定年份时采用该状态。
   const isTopMediaLoading = topMediaLoading && selectedYear !== "All Time";
 
-  // 用 DOM 顺序切换，不用 CSS order，读屏和键盘 Tab 会跟着变。两个组件各自在没有内容时返回 null，这里不包额外节点，避免空区块撑出间距。
+  // 放映单固定先倒计时、再继续观看。没有内容的那一块返回 null，这里不包额外节点，避免空区块撑出间距。
   const continueWatchingRail = <ContinueWatchingRail items={continueWatching} />;
   const upcomingHero = <UpcomingHero items={upcoming} renderedOn={renderedOn} />;
 
   return (
     <div
-      className="container mx-auto flex max-w-7xl flex-col gap-6 px-4 pb-8 pt-20 sm:pt-22 sm:px-6 md:pb-12 lg:pt-24 lg:px-8"
+      className="container mx-auto flex max-w-7xl flex-col gap-4 px-4 pb-8 pt-20 sm:gap-5 sm:px-6 sm:pt-22 md:pb-12 lg:px-8 lg:pt-24"
       data-upcoming-first={upcomingFirst ? "true" : "false"}
     >
-      {upcomingFirst ? upcomingHero : continueWatchingRail}
-      {upcomingFirst ? continueWatchingRail : upcomingHero}
+      {upcomingHero}
+      {continueWatchingRail}
+      <HomeStatStrip
+        runtimePercent={stats.runtimePercent}
+        totalMovies={stats.totalMovies}
+        watchedMovies={stats.watchedMovies}
+        unwatchedMovies={stats.unwatchedMovies}
+        totalSeries={stats.totalSeries}
+        watchedSeries={stats.watchedSeries}
+        watchingSeries={stats.watchingSeries}
+        episodePercent={stats.seriesEpisodesPercent}
+        watchedEpisodes={stats.watchedEpisodes}
+        totalEpisodes={stats.totalEpisodes}
+      />
 
       <DashboardIntro
         selectedYear={selectedYear}
