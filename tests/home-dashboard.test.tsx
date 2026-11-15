@@ -164,7 +164,13 @@ describe("HomeDashboard", () => {
     expect(upcoming.compareDocumentPosition(heading) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
-  it("四格统计固定用全时段，切换年份后数字不变", () => {
+  it("不渲染全时段四格统计，年份切换只更新媒体全景", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => new Response("[]")),
+    );
+    window.history.replaceState(null, "", "/");
+
     render(
       <HomeDashboard
         summary={[
@@ -197,14 +203,18 @@ describe("HomeDashboard", () => {
       />,
     );
 
-    const strip = screen.getByRole("region", { name: "全时段统计" });
-    expect(strip).toHaveTextContent("已看 60 · 想看 7");
-    expect(strip).toHaveTextContent("132 / 245 集");
+    expect(screen.queryByRole("region", { name: "全时段统计" })).not.toBeInTheDocument();
+    const intro = screen.getByRole("region", { name: "媒体全景" });
+    expect(intro).toHaveTextContent("全时段档案");
+    expect(intro).toHaveTextContent("67");
 
-    fireEvent.click(screen.getByText("year-2024"));
+    await act(async () => {
+      fireEvent.click(screen.getByText("year-2024"));
+    });
 
-    expect(strip).toHaveTextContent("已看 60 · 想看 7");
-    expect(strip).not.toHaveTextContent("已看 1 · 想看 2");
-    expect(screen.getByText("2024 年度档案")).toBeInTheDocument();
+    expect(screen.queryByRole("region", { name: "全时段统计" })).not.toBeInTheDocument();
+    expect(intro).toHaveTextContent("2024 年度档案");
+    expect(intro).toHaveTextContent("3");
+    expect(intro).not.toHaveTextContent("67");
   });
 });
