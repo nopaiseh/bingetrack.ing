@@ -28,23 +28,30 @@ function SeasonListItem({ seriesId, season }: { seriesId: string; season: Season
   const watchLabel = seasonWatchLabel(season);
   const year = yearLabel(season);
   const started = season.watchedEpisodeCount > 0;
-  const percent = season.episodeCount > 0
-    ? Math.min(100, Math.round((season.watchedEpisodeCount / season.episodeCount) * 100))
-    : 0;
+  const percent =
+    season.episodeCount > 0 ? Math.min(100, Math.round((season.watchedEpisodeCount / season.episodeCount) * 100)) : 0;
   return (
     <Link
       href={`/shows/${seriesId}/seasons/${season.id}`}
       className="grid grid-cols-[auto_minmax(0,1fr)] items-start gap-x-3 gap-y-2.5 px-3.5 py-4 transition-colors hover:bg-white/[0.04] sm:grid-cols-[auto_minmax(0,1fr)_auto] sm:gap-x-5 sm:px-6 sm:py-5"
     >
-      <div className={`font-mono text-[30px] font-light leading-none tracking-[-0.04em] sm:min-w-[76px] sm:pt-0.5 sm:text-right sm:text-[44px] ${started ? "text-[var(--accent-hover)]" : "text-fg-subtle"}`}>
+      <div
+        className={`font-mono text-[30px] font-light leading-none tracking-[-0.04em] sm:min-w-[76px] sm:pt-0.5 sm:text-right sm:text-[44px] ${started ? "text-[var(--accent-hover)]" : "text-fg-subtle"}`}
+      >
         {season.seasonNumber}
       </div>
       <div className="min-w-0">
         <h3 className="break-words text-base font-bold leading-snug text-fg sm:text-[17px]">{label.title}</h3>
-        {label.subtitle ? <p className="mt-0.5 break-words text-[12.5px] leading-snug text-fg-subtle">{label.subtitle}</p> : null}
+        {label.subtitle ? (
+          <p className="mt-0.5 break-words text-[12.5px] leading-snug text-fg-subtle">{label.subtitle}</p>
+        ) : null}
         <p className="mt-2 flex flex-wrap items-center gap-x-3.5 gap-y-1 text-[12.5px] text-fg-muted">
           {year ? <span>{year}</span> : null}
-          {year ? <span aria-hidden="true" className="text-white/25">·</span> : null}
+          {year ? (
+            <span aria-hidden="true" className="text-white/25">
+              ·
+            </span>
+          ) : null}
           <span>{episodeCountLabel(season)}</span>
         </p>
         {season.episodeCount > 0 ? (
@@ -74,13 +81,7 @@ function SeasonListItem({ seriesId, season }: { seriesId: string; season: Season
 }
 
 /** 电视节目详情里的季列表。用文字行代替同一张海报的季卡片，方便直接比较季名和进度。 */
-export default function SeasonRow({
-  seriesId,
-  seasons,
-}: {
-  seriesId: string;
-  seasons: SeasonInfo[];
-}) {
+export default function SeasonRow({ seriesId, seasons }: { seriesId: string; seasons: SeasonInfo[] }) {
   return (
     <div className="mt-12 md:mb-12">
       <div className="mb-5 flex items-center gap-2 border-b border-white/10 pb-3">
@@ -94,8 +95,13 @@ export default function SeasonRow({
           暂无季集数据
         </div>
       ) : (
-        <section className="surface-card divide-y divide-white/[0.07] overflow-hidden rounded-[20px]" aria-label="季度列表">
-          {seasons.map((season) => <SeasonListItem key={season.id} seriesId={seriesId} season={season} />)}
+        <section
+          className="surface-card divide-y divide-white/[0.07] overflow-hidden rounded-[20px]"
+          aria-label="季度列表"
+        >
+          {seasons.map((season) => (
+            <SeasonListItem key={season.id} seriesId={seriesId} season={season} />
+          ))}
         </section>
       )}
     </div>

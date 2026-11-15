@@ -93,10 +93,7 @@ type RetryOptions = {
 /**
  * 为异步函数增加针对瞬时错误的指数退避重试，防止冷启动或短暂网络抖动阻断执行。
  */
-export async function withRetry<T>(
-  fn: () => Promise<T>,
-  options: RetryOptions = {},
-): Promise<T> {
+export async function withRetry<T>(fn: () => Promise<T>, options: RetryOptions = {}): Promise<T> {
   const {
     maxRetries = 2,
     initialDelayMs = 800,
@@ -119,7 +116,10 @@ export async function withRetry<T>(
       if (onRetry) {
         onRetry(error, attempt, delayMs);
       } else {
-        console.warn(`[withRetry] Transient error encountered (retry ${attempt}/${maxRetries} in ${delayMs}ms):`, error);
+        console.warn(
+          `[withRetry] Transient error encountered (retry ${attempt}/${maxRetries} in ${delayMs}ms):`,
+          error,
+        );
       }
       await new Promise((resolve) => setTimeout(resolve, delayMs));
     }

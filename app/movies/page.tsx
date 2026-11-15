@@ -1,15 +1,11 @@
-import MoviesCatalog from './MoviesCatalog';
-import { fetchMediaCardsServer, fetchStatsServer } from '@/lib/functions/media-repo';
-import { handlePageDataError } from '@/lib/functions/page-data';
-import type { MediaCard } from '@/lib/types';
-import { buildPageSocialMetadata } from '@/lib/seo/page';
+import MoviesCatalog from "./MoviesCatalog";
+import { fetchMediaCardsServer, fetchStatsServer } from "@/lib/functions/media-repo";
+import { handlePageDataError } from "@/lib/functions/page-data";
+import type { MediaCard } from "@/lib/types";
+import { buildPageSocialMetadata } from "@/lib/seo/page";
 
 export const metadata = {
-  ...buildPageSocialMetadata(
-    "电影",
-    "浏览已看、想看与即将上映的电影记录。",
-    "/movies",
-  ),
+  ...buildPageSocialMetadata("电影", "浏览已看、想看与即将上映的电影记录。", "/movies"),
   alternates: { canonical: "/movies" },
 };
 
@@ -42,11 +38,5 @@ export default async function MoviesPage() {
     handlePageDataError("movies page", error);
   }
 
-  return (
-    <MoviesCatalog
-      watched={watchedRes}
-      want={wantRes}
-      stats={stats}
-    />
-  );
+  return <MoviesCatalog watched={watchedRes} want={wantRes} stats={stats} />;
 }

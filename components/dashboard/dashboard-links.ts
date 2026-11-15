@@ -1,5 +1,9 @@
 /** 按媒体分类与观看状态生成搜索链接；指定年份时同时限定起止年份。 */
-export function getStatusSearchLink(type: "movie" | "tv_show", status: "watched" | "watching" | "want_to_watch", year: string) {
+export function getStatusSearchLink(
+  type: "movie" | "tv_show",
+  status: "watched" | "watching" | "want_to_watch",
+  year: string,
+) {
   const params = new URLSearchParams({ type, status });
   if (year !== "All Time") {
     params.set("startYear", year);

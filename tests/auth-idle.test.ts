@@ -4,9 +4,16 @@ let stop: (() => void) | undefined;
 beforeEach(() => {
   vi.useFakeTimers();
   const storage = new Map<string, string>();
-  vi.stubGlobal("localStorage", { getItem: (key: string) => storage.get(key) ?? null, setItem: (key: string, value: string) => storage.set(key, value) });
+  vi.stubGlobal("localStorage", {
+    getItem: (key: string) => storage.get(key) ?? null,
+    setItem: (key: string, value: string) => storage.set(key, value),
+  });
 });
-afterEach(() => { stop?.(); vi.useRealTimers(); vi.unstubAllGlobals(); });
+afterEach(() => {
+  stop?.();
+  vi.useRealTimers();
+  vi.unstubAllGlobals();
+});
 it("30 分钟没有操作时只退出一次", () => {
   const expire = vi.fn();
   stop = watchIdleSession("owner", expire);

@@ -69,8 +69,9 @@ describe("确认页", () => {
   });
 
   it("无效类型和外部回跳不渲染表单，也不验证", async () => {
-    await expect(renderConfirm({ type: "signup", token_hash: "test", next: "https://example.com" }))
-      .rejects.toThrow("REDIRECT:/?authError=link");
+    await expect(renderConfirm({ type: "signup", token_hash: "test", next: "https://example.com" })).rejects.toThrow(
+      "REDIRECT:/?authError=link",
+    );
     expect(verifyOtp).not.toHaveBeenCalled();
     expect(cookieSet).not.toHaveBeenCalled();
     expect(document.body).not.toHaveTextContent("example.com");

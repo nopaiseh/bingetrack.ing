@@ -15,17 +15,21 @@ import type { FetchMediaListOptions, MediaCard } from "@/lib/types";
  */
 function isCacheableSearch(params: FetchMediaListOptions): boolean {
   const single = (value: string | null | undefined) => !value?.includes(",");
-  return !params.q
-    && !params.offset
-    && !params.startYear
-    && !params.endYear
-    && single(params.genre)
-    && single(params.region)
-    && single(params.language);
+  return (
+    !params.q &&
+    !params.offset &&
+    !params.startYear &&
+    !params.endYear &&
+    single(params.genre) &&
+    single(params.region) &&
+    single(params.language)
+  );
 }
 
 /** 无参数的 /search 可索引并声明规范地址；带任意查询参数时不收录、允许跟随，且不把这些地址归并到 /search。 */
-export async function generateMetadata({ searchParams }: {
+export async function generateMetadata({
+  searchParams,
+}: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }): Promise<Metadata> {
   const query = await searchParams;
@@ -37,7 +41,9 @@ export async function generateMetadata({ searchParams }: {
 }
 
 /** 分类、状态、排序或类型／地区／语言含未知值时返回 404；否则将路由参数规范化为查询字符串，校验后读取首屏结果，再传给客户端搜索组件。 */
-export default async function SearchPage({ searchParams }: {
+export default async function SearchPage({
+  searchParams,
+}: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const query = await searchParams;
@@ -51,7 +57,13 @@ export default async function SearchPage({ searchParams }: {
   const initialOptions = await fetchSearchOptionsServer();
   // notFound() 以抛错实现，须放在下方 try 之外。
   const tags = new URLSearchParams(key);
-  if (!hasOnlyKnownTagFilters({ genre: tags.get("genre"), region: tags.get("region"), language: tags.get("language") }, initialOptions)) notFound();
+  if (
+    !hasOnlyKnownTagFilters(
+      { genre: tags.get("genre"), region: tags.get("region"), language: tags.get("language") },
+      initialOptions,
+    )
+  )
+    notFound();
 
   let initialResult: { rows: MediaCard[]; total: number; key: string; error: string | null };
   try {

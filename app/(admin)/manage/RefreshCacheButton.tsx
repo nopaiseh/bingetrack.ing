@@ -36,10 +36,18 @@ export default function RefreshCacheButton({ className = "", iconOnly = false }:
     });
   }
 
-  const toast = notice && <StatusModal key={notice.id} tone={notice.tone} message={notice.message} onClose={() => setNotice(null)} />;
+  const toast = notice && (
+    <StatusModal key={notice.id} tone={notice.tone} message={notice.message} onClose={() => setNotice(null)} />
+  );
 
   if (iconOnly) {
-    const label = isPending ? "正在刷新缓存" : status === "success" ? "缓存已刷新" : status === "error" ? (errorMessage || "刷新失败") : "刷新公开缓存";
+    const label = isPending
+      ? "正在刷新缓存"
+      : status === "success"
+        ? "缓存已刷新"
+        : status === "error"
+          ? errorMessage || "刷新失败"
+          : "刷新公开缓存";
     return (
       <>
         <button
@@ -50,7 +58,10 @@ export default function RefreshCacheButton({ className = "", iconOnly = false }:
           aria-label={label}
           className={`!min-h-0 !size-10 !p-0 !rounded-xl ${status === "success" ? "!border-emerald-500/30 text-emerald-400" : status === "error" ? "!border-rose-500/30 text-rose-400" : "text-fg-secondary"} ${className}`}
         >
-          <span className={`size-4.5 inline-block shrink-0 ${isPending ? "i-material-symbols-sync-rounded animate-spin" : status === "success" ? "i-material-symbols-check-circle-rounded" : "i-material-symbols-cached-rounded"}`} aria-hidden="true" />
+          <span
+            className={`size-4.5 inline-block shrink-0 ${isPending ? "i-material-symbols-sync-rounded animate-spin" : status === "success" ? "i-material-symbols-check-circle-rounded" : "i-material-symbols-cached-rounded"}`}
+            aria-hidden="true"
+          />
         </button>
         {toast}
       </>
@@ -59,34 +70,35 @@ export default function RefreshCacheButton({ className = "", iconOnly = false }:
 
   return (
     <>
-    <button
-      type="button"
-      onClick={handleRefresh}
-      disabled={isPending}
-      title="清除并刷新 CDN 缓存（在 Supabase 直接修改数据后使用）"
-      aria-label="刷新缓存"
-      className={`max-w-[55%] shrink-0 !shadow-[var(--control-shadow)] ${
-        status === "success"
-          ? "!border-emerald-500/30 !bg-emerald-500/10 !text-emerald-400"
-          : status === "error"
-          ? "!border-rose-500/30 !bg-rose-500/10 !text-rose-400"
-          : "!border-[var(--control-border)] hover:!border-[var(--control-border-hover)]"
-      } ${className}`}
-    >
-      <span
-        className={`size-4 inline-block shrink-0 ${
-          isPending
-            ? "i-material-symbols-sync-rounded animate-spin"
-            : status === "success"
-            ? "i-material-symbols-check-circle-rounded text-emerald-400"
-            : "i-material-symbols-cached-rounded"
-        }`}
-        aria-hidden="true"
-      />
-      <span className="truncate">{isPending ? "刷新中..." : status === "success" ? "已刷新" : status === "error" ? errorMessage : "刷新缓存"}</span>
-    </button>
-    {toast}
+      <button
+        type="button"
+        onClick={handleRefresh}
+        disabled={isPending}
+        title="清除并刷新 CDN 缓存（在 Supabase 直接修改数据后使用）"
+        aria-label="刷新缓存"
+        className={`max-w-[55%] shrink-0 !shadow-[var(--control-shadow)] ${
+          status === "success"
+            ? "!border-emerald-500/30 !bg-emerald-500/10 !text-emerald-400"
+            : status === "error"
+              ? "!border-rose-500/30 !bg-rose-500/10 !text-rose-400"
+              : "!border-[var(--control-border)] hover:!border-[var(--control-border-hover)]"
+        } ${className}`}
+      >
+        <span
+          className={`size-4 inline-block shrink-0 ${
+            isPending
+              ? "i-material-symbols-sync-rounded animate-spin"
+              : status === "success"
+                ? "i-material-symbols-check-circle-rounded text-emerald-400"
+                : "i-material-symbols-cached-rounded"
+          }`}
+          aria-hidden="true"
+        />
+        <span className="truncate">
+          {isPending ? "刷新中..." : status === "success" ? "已刷新" : status === "error" ? errorMessage : "刷新缓存"}
+        </span>
+      </button>
+      {toast}
     </>
   );
 }
-

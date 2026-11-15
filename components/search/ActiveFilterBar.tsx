@@ -22,30 +22,78 @@ export default function ActiveFilterBar({
   return (
     <div className="mt-3 flex flex-wrap items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 backdrop-blur-xl">
       <span className="flex items-center gap-1.5 text-xs font-semibold tracking-wider text-fg-subtle mr-1">
-        <span className="i-material-symbols-filter-alt-outline-rounded size-3.5 inline-block text-[var(--accent)]" aria-hidden="true" />
+        <span
+          className="i-material-symbols-filter-alt-outline-rounded size-3.5 inline-block text-[var(--accent)]"
+          aria-hidden="true"
+        />
         已选条件:
       </span>
 
       {filters.type?.map((t) => (
-        <FilterChip key={`chip-type-${t}`} category="分类" label={optionLabel(TYPE_OPTIONS, t)} accent onRemove={() => setFilters((prev) => toggleSearchFilter(prev, "type", t, true, TYPE_OPTIONS.map((option) => option.value)))} />
+        <FilterChip
+          key={`chip-type-${t}`}
+          category="分类"
+          label={optionLabel(TYPE_OPTIONS, t)}
+          accent
+          onRemove={() =>
+            setFilters((prev) =>
+              toggleSearchFilter(
+                prev,
+                "type",
+                t,
+                true,
+                TYPE_OPTIONS.map((option) => option.value),
+              ),
+            )
+          }
+        />
       ))}
       {filters.status?.map((s) => (
-        <FilterChip key={`chip-status-${s}`} category="状态" label={optionLabel(STATUS_OPTIONS, s)} accent onRemove={() => setFilters((prev) => toggleSearchFilter(prev, "status", s, true, STATUS_OPTIONS.map((option) => option.value)))} />
+        <FilterChip
+          key={`chip-status-${s}`}
+          category="状态"
+          label={optionLabel(STATUS_OPTIONS, s)}
+          accent
+          onRemove={() =>
+            setFilters((prev) =>
+              toggleSearchFilter(
+                prev,
+                "status",
+                s,
+                true,
+                STATUS_OPTIONS.map((option) => option.value),
+              ),
+            )
+          }
+        />
       ))}
       {filters.genre?.map((g) => (
-        <FilterChip key={`chip-genre-${g}`} category="类型" label={g} onRemove={() => setFilters((prev) => toggleSearchFilter(prev, "genre", g, true, genreOptions))} />
+        <FilterChip
+          key={`chip-genre-${g}`}
+          category="类型"
+          label={g}
+          onRemove={() => setFilters((prev) => toggleSearchFilter(prev, "genre", g, true, genreOptions))}
+        />
       ))}
       {filters.region?.map((r) => (
-        <FilterChip key={`chip-region-${r}`} category="地区" label={r} onRemove={() => setFilters((prev) => toggleSearchFilter(prev, "region", r, true, regionOptions))} />
+        <FilterChip
+          key={`chip-region-${r}`}
+          category="地区"
+          label={r}
+          onRemove={() => setFilters((prev) => toggleSearchFilter(prev, "region", r, true, regionOptions))}
+        />
       ))}
       {filters.language?.map((l) => (
-        <FilterChip key={`chip-language-${l}`} category="语言" label={l} onRemove={() => setFilters((prev) => toggleSearchFilter(prev, "language", l, true, languageOptions))} />
+        <FilterChip
+          key={`chip-language-${l}`}
+          category="语言"
+          label={l}
+          onRemove={() => setFilters((prev) => toggleSearchFilter(prev, "language", l, true, languageOptions))}
+        />
       ))}
 
       {filters.year?.some(Boolean) && (
-        <span
-          className="inline-flex items-center gap-1 rounded-md border border-white/15 bg-white/10 px-2.5 py-1 text-xs font-medium text-white shadow-xs"
-        >
+        <span className="inline-flex items-center gap-1 rounded-md border border-white/15 bg-white/10 px-2.5 py-1 text-xs font-medium text-white shadow-xs">
           <span className="text-fg-muted">年份:</span>
           <span>
             {filters.year[0] && filters.year[1]

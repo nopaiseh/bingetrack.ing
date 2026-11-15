@@ -28,9 +28,10 @@ export function readFilters(searchParams: URLSearchParams): SearchFilters {
     genre: searchParams.get("genre")?.split(",").filter(Boolean) ?? [],
     region: searchParams.get("region")?.split(",").filter(Boolean) ?? [],
     language: searchParams.get("language")?.split(",").filter(Boolean) ?? [],
-    year: searchParams.get("startYear") || searchParams.get("endYear")
-      ? [searchParams.get("startYear") || "", searchParams.get("endYear") || ""]
-      : [],
+    year:
+      searchParams.get("startYear") || searchParams.get("endYear")
+        ? [searchParams.get("startYear") || "", searchParams.get("endYear") || ""]
+        : [],
     sort: [searchParams.get("sort") || "date_desc"],
   };
 }
@@ -63,7 +64,9 @@ export function buildMediaSearchQuery(searchParams: URLSearchParams): string {
   if (query) params.set("q", query);
 
   const mediaTypes = filters.type.filter(/* 媒体分类映射为数据库媒体类型。 */ (t) => t === "movie" || t === "tv_show");
-  const creditRoles = filters.type.filter(/* 人员分类映射为导演或演员角色。 */ (t) => t === "director" || t === "actor");
+  const creditRoles = filters.type.filter(
+    /* 人员分类映射为导演或演员角色。 */ (t) => t === "director" || t === "actor",
+  );
   if (mediaTypes.length > 0) params.set("type", mediaTypes.join(","));
   if (filters.type.includes("series")) params.set("series", "true");
   if (creditRoles.length > 0) params.set("creditRole", creditRoles.join(","));

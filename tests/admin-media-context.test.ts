@@ -24,14 +24,17 @@ function fakeDb(handle: (query: Query) => Result) {
     const query: Query = { table, calls: [] };
     queries.push(query);
     const builder: Record<string, unknown> = {};
-    const chain = (method: string) => (...args: unknown[]) => {
-      query.calls.push({ method, args });
-      return builder;
-    };
+    const chain =
+      (method: string) =>
+      (...args: unknown[]) => {
+        query.calls.push({ method, args });
+        return builder;
+      };
     for (const method of ["select", "eq", "gt", "lt", "order", "limit"]) builder[method] = chain(method);
     const finish = () => ({ data: null, error: null, count: null, ...handle(query) });
     builder.maybeSingle = () => Promise.resolve(finish());
-    builder.then = (resolve: (value: Result) => unknown, reject?: (reason: unknown) => unknown) => Promise.resolve(finish()).then(resolve, reject);
+    builder.then = (resolve: (value: Result) => unknown, reject?: (reason: unknown) => unknown) =>
+      Promise.resolve(finish()).then(resolve, reject);
     return builder;
   });
   return { db: { from } as unknown as SupabaseClient, queries, from };
@@ -98,7 +101,9 @@ describe("删除范围", () => {
   });
 
   it("计数失败时拒绝，不用返回行数冒充总数", async () => {
-    const { db } = fakeDb((query) => query.table === "tv_episodes" ? { count: null, error: { code: "42501" } } : { count: 1 });
+    const { db } = fakeDb((query) =>
+      query.table === "tv_episodes" ? { count: null, error: { code: "42501" } } : { count: 1 },
+    );
     await expect(readImpact(db, show, "tv_show")).rejects.toThrow("无法核对下属内容数量，请重试。");
   });
 });
@@ -138,7 +143,8 @@ describe("相邻条目", () => {
         const earlier = query.calls.some((call) => call.method === "lt");
         const later = query.calls.some((call) => call.method === "gt");
         if (parent === season2 && earlier) return { data: null };
-        if (parent === season2 && later) return { data: { id: episode2, episode_number: 2, media: { title: "第二集" } } };
+        if (parent === season2 && later)
+          return { data: { id: episode2, episode_number: 2, media: { title: "第二集" } } };
         if (parent === season1) return { data: { id: episode9, episode_number: 9, media: [{ title: "季终" }] } };
         return { data: null };
       }
@@ -152,7 +158,9 @@ describe("相邻条目", () => {
       previous: { id: episode9, title: "季终", number: 9, season: 1 },
       next: { id: episode2, title: "第二集", number: 2 },
     });
-    const crossSeason = queries.filter((query) => query.table === "tv_seasons" && query.calls.some((call) => call.method === "lt"));
+    const crossSeason = queries.filter(
+      (query) => query.table === "tv_seasons" && query.calls.some((call) => call.method === "lt"),
+    );
     expect(crossSeason).toHaveLength(1);
     expect(callArgs(crossSeason[0], "eq")).toEqual(["series_id", show]);
   });
@@ -168,7 +176,9 @@ describe("相邻条目", () => {
       previous: undefined,
       next: { id: episode2, title: "第二集", number: 2 },
     });
-    expect(queries.some((query) => query.calls.some((call) => call.method === "lt" && call.args[0] === "season_number"))).toBe(false);
+    expect(
+      queries.some((query) => query.calls.some((call) => call.method === "lt" && call.args[0] === "season_number")),
+    ).toBe(false);
   });
 
   it("相邻查询失败时抛出页面文案", async () => {

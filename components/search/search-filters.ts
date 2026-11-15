@@ -12,10 +12,15 @@ export function toggleSearchFilter(
   if (value === "全部") return { ...prev, [categoryId]: [] };
   if (!isMultiSelect) return { ...prev, [categoryId]: [value] };
   if (currentSelected.includes(value)) {
-    return { ...prev, [categoryId]: currentSelected.filter(/* 从已选列表中移除再次点击的选项。 */ (item) => item !== value) };
+    return {
+      ...prev,
+      [categoryId]: currentSelected.filter(/* 从已选列表中移除再次点击的选项。 */ (item) => item !== value),
+    };
   }
   const newSelected = [...currentSelected, value];
-  const hasSelectedAll = allOptions.length > 0 && allOptions.every(/* 判断该分类的所有可选值是否均已选中。 */ (opt) => newSelected.includes(opt));
+  const hasSelectedAll =
+    allOptions.length > 0 &&
+    allOptions.every(/* 判断该分类的所有可选值是否均已选中。 */ (opt) => newSelected.includes(opt));
   return { ...prev, [categoryId]: hasSelectedAll ? [] : newSelected };
 }
 

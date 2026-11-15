@@ -51,10 +51,10 @@ export function nextUnwatchedAfterLastWatched<T extends { status: string | null 
 export function nextUnwatchedEpisodeNumber(
   episodes: readonly { episodeNumber: number; status: string | null }[],
 ): number | null {
-  return nextUnwatchedAfterLastWatched(
-    episodes,
-    (left, right) => left.episodeNumber - right.episodeNumber,
-  )?.next?.episodeNumber ?? null;
+  return (
+    nextUnwatchedAfterLastWatched(episodes, (left, right) => left.episodeNumber - right.episodeNumber)?.next
+      ?.episodeNumber ?? null
+  );
 }
 
 /** 判断分页、状态和排序是否都是季页的默认值。 */

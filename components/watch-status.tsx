@@ -47,14 +47,14 @@ export const WATCH_STATUSES: Record<WatchStatusId, WatchStatus> = {
 
 const ALIASES: Record<string, WatchStatusId> = {
   watched: "watched",
-  "已看": "watched",
-  "已观看": "watched",
+  已看: "watched",
+  已观看: "watched",
   watching: "watching",
-  "在看": "watching",
-  "正在看": "watching",
+  在看: "watching",
+  正在看: "watching",
   want_to_watch: "want_to_watch",
-  "想看": "want_to_watch",
-  "想要看": "want_to_watch",
+  想看: "want_to_watch",
+  想要看: "want_to_watch",
 };
 
 /** 把状态值或旧文案解析成统一配置；未记录和未知值返回 null。 */

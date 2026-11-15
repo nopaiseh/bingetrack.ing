@@ -38,7 +38,14 @@ export default function NavigationProgressBar() {
   useEffect(() => {
     const handleAnchorClick = (event: MouseEvent) => {
       // 忽略右键、中键、新窗口打开等行为
-      if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.altKey || event.shiftKey) {
+      if (
+        event.defaultPrevented ||
+        event.button !== 0 ||
+        event.metaKey ||
+        event.ctrlKey ||
+        event.altKey ||
+        event.shiftKey
+      ) {
         return;
       }
 

@@ -33,12 +33,17 @@ describe("hasReleaseWithinSgtWindow", () => {
   });
 
   it("多条里只要有一条落在窗口内就为 true", () => {
-    expect(hasReleaseWithinSgtWindow([
-      { releaseDate: null },
-      { releaseDate: "2026-11-12" },
-      { releaseDate: "2026-11-21" },
-      { releaseDate: "2026-11-20" },
-    ], sgtNoon)).toBe(true);
+    expect(
+      hasReleaseWithinSgtWindow(
+        [
+          { releaseDate: null },
+          { releaseDate: "2026-11-12" },
+          { releaseDate: "2026-11-21" },
+          { releaseDate: "2026-11-20" },
+        ],
+        sgtNoon,
+      ),
+    ).toBe(true);
   });
 
   it("新加坡午夜前按当天计算，并与 UTC 日期相同", () => {
@@ -72,7 +77,9 @@ describe("hasReleaseWithinSgtWindow", () => {
       expect(freshKey(new Date("2026-11-13T15:59:59.999Z"))).toBe("2026-11-13");
       expect(freshKey(new Date("2026-11-13T16:00:00.000Z"))).toBe("2026-11-14");
       expect(freshKey(new Date("2026-01-01T00:00:00.000Z"))).toBe("2026-01-01");
-      const singapore = spy.mock.instances.filter((formatter) => formatter.resolvedOptions().timeZone === "Asia/Singapore");
+      const singapore = spy.mock.instances.filter(
+        (formatter) => formatter.resolvedOptions().timeZone === "Asia/Singapore",
+      );
       expect(singapore).toHaveLength(1);
     } finally {
       spy.mockRestore();
@@ -115,16 +122,19 @@ describe("即将上映日期", () => {
       genres: [],
       languages: [],
     });
-    const picked = pickUpcoming([
-      item("late", "show-a", "2026-11-20"),
-      item("past", "show-a", "2026-11-12"),
-      item("b-later", "show-b", "2026-11-15"),
-      item("b-early-z", "show-b", "2026-11-14"),
-      item("same-b", "show-c", "2026-11-14"),
-      item("same-a", "show-c", "2026-11-14"),
-      item("far", "show-d", "2026-12-01"),
-      item("fifth", "show-e", "2026-11-16"),
-    ], today);
+    const picked = pickUpcoming(
+      [
+        item("late", "show-a", "2026-11-20"),
+        item("past", "show-a", "2026-11-12"),
+        item("b-later", "show-b", "2026-11-15"),
+        item("b-early-z", "show-b", "2026-11-14"),
+        item("same-b", "show-c", "2026-11-14"),
+        item("same-a", "show-c", "2026-11-14"),
+        item("far", "show-d", "2026-12-01"),
+        item("fifth", "show-e", "2026-11-16"),
+      ],
+      today,
+    );
     expect(picked.map((entry) => entry.id)).toEqual(["b-early-z", "same-a", "fifth", "late"]);
     expect(pickUpcoming([item("only", "show-a", "2026-11-13")], today, 1)).toHaveLength(1);
     expect(pickUpcoming([item("past", "show-a", "2026-11-12")], today)).toEqual([]);

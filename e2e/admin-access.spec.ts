@@ -7,7 +7,9 @@ test("管理区拒绝匿名访问，首页导航栏无注册和邮箱输入", as
   await expect(page.getByRole("button", { name: "登录" })).toBeVisible();
   await expect(page.locator('input[type="email"], input[type="password"]')).toHaveCount(0);
   await expect(page.getByRole("link", { name: /注册|register/i })).toHaveCount(0);
-  expect(await page.evaluate(/* 检查窄屏无横向溢出。 */ () => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+  expect(
+    await page.evaluate(/* 检查窄屏无横向溢出。 */ () => document.documentElement.scrollWidth <= window.innerWidth),
+  ).toBe(true);
 });
 
 /** 无效的一次性链接不能建立会话或重定向到外部地址。 */

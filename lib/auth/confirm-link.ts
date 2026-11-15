@@ -11,9 +11,7 @@ function isConfirmType(value: string): value is ConfirmType {
 
 export type ConfirmNext = "/settings" | "/manage";
 
-export type ConfirmQuery =
-  | { ok: true; tokenHash: string; type: ConfirmType; next: ConfirmNext }
-  | { ok: false };
+export type ConfirmQuery = { ok: true; tokenHash: string; type: ConfirmType; next: ConfirmNext } | { ok: false };
 
 type QueryValue = string | string[] | null | undefined;
 
@@ -78,7 +76,10 @@ export function isSameOrigin(request: OriginRequest): boolean {
 
   const allowed = new Set<string>([request.nextUrl.origin]);
   const host = header(request, "host")?.split(",")[0]?.trim();
-  for (const protocol of [httpProtocol(request.nextUrl.protocol), httpProtocol(header(request, "x-forwarded-proto")?.split(",")[0])]) {
+  for (const protocol of [
+    httpProtocol(request.nextUrl.protocol),
+    httpProtocol(header(request, "x-forwarded-proto")?.split(",")[0]),
+  ]) {
     if (host && protocol) allowed.add(`${protocol}://${host}`);
   }
   const site = process.env.NEXT_PUBLIC_SITE_URL?.trim();

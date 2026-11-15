@@ -26,7 +26,10 @@ export function SearchMediaCardSkeleton() {
     <div className="search-media-card flex flex-col">
       <div className="relative flex aspect-2/3 w-full items-center justify-center overflow-hidden rounded-xl bg-[var(--surface-2)]">
         <SkeletonBlock className="absolute inset-0 rounded-none bg-transparent" />
-        <span className="i-material-symbols-image-outline-rounded inline-block size-8 text-white/15" aria-hidden="true" />
+        <span
+          className="i-material-symbols-image-outline-rounded inline-block size-8 text-white/15"
+          aria-hidden="true"
+        />
       </div>
       <div className="space-y-2 px-0.5 pt-2.5">
         <div className="min-h-10 space-y-1.5">

@@ -14,7 +14,7 @@ afterEach(() => {
 test("AnimatedNumber renders initial value immediately without raf animation", () => {
   const rafSpy = vi.spyOn(window, "requestAnimationFrame");
   render(<AnimatedNumber value={100} />);
-  
+
   expect(screen.getByText("100")).toBeInTheDocument();
   // 首屏水合阶段不应调用 requestAnimationFrame 动画循环
   expect(rafSpy).not.toHaveBeenCalled();
@@ -38,4 +38,3 @@ test("AnimatedNumber smoothly animates on value update", () => {
     vi.advanceTimersByTime(600);
   });
 });
-

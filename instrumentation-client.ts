@@ -1,4 +1,3 @@
-
 import * as Sentry from "@sentry/nextjs";
 import { parseSentryTracesSampleRate } from "./lib/sentry-sampling";
 import { scrubSentryBreadcrumb, scrubSentryEvent } from "./lib/sentry-scrub";
@@ -11,9 +10,7 @@ Sentry.init({
   dsn: SENTRY_DSN,
 
   // 这里只控制性能追踪采样，错误事件不受该采样率影响。
-  tracesSampleRate: parseSentryTracesSampleRate(
-    process.env.NEXT_PUBLIC_SENTRY_TRACES_SAMPLE_RATE,
-  ),
+  tracesSampleRate: parseSentryTracesSampleRate(process.env.NEXT_PUBLIC_SENTRY_TRACES_SAMPLE_RATE),
 
   // 确认页的一次性凭证会留在地址栏，直到用户点击继续；上报前去掉。
   beforeSend(event) {

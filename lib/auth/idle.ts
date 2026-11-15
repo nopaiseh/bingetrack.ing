@@ -14,10 +14,16 @@ export function watchIdleSession(userId: string, onExpire: () => void, signedInA
     try {
       const value = Number(localStorage.getItem(key));
       if (Number.isFinite(value) && value > 0) last = Math.max(value, floor);
-    } catch { /* 隐私模式下使用内存时间。 */ }
+    } catch {
+      /* 隐私模式下使用内存时间。 */
+    }
   };
   const write = () => {
-    try { localStorage.setItem(key, String(last)); } catch { /* 存储不可用不影响本页计时。 */ }
+    try {
+      localStorage.setItem(key, String(last));
+    } catch {
+      /* 存储不可用不影响本页计时。 */
+    }
   };
   read();
   write();
@@ -37,7 +43,7 @@ export function watchIdleSession(userId: string, onExpire: () => void, signedInA
     }
   };
   const events = ["pointerdown", "pointermove", "keydown", "scroll", "touchstart"];
-  events.forEach(event => window.addEventListener(event, activity, { passive: true }));
+  events.forEach((event) => window.addEventListener(event, activity, { passive: true }));
   window.addEventListener("focus", check);
   window.addEventListener("storage", check);
   document.addEventListener("visibilitychange", check);
@@ -45,7 +51,7 @@ export function watchIdleSession(userId: string, onExpire: () => void, signedInA
   check();
   return () => {
     window.clearInterval(timer);
-    events.forEach(event => window.removeEventListener(event, activity));
+    events.forEach((event) => window.removeEventListener(event, activity));
     window.removeEventListener("focus", check);
     window.removeEventListener("storage", check);
     document.removeEventListener("visibilitychange", check);
@@ -54,5 +60,9 @@ export function watchIdleSession(userId: string, onExpire: () => void, signedInA
 
 /** 新验证完成后开始新的空闲周期。 */
 export function resetIdleSession(userId: string) {
-  try { localStorage.setItem(`bingetrack:activity:v1:${userId}`, String(Date.now())); } catch { /* 使用页面内计时。 */ }
+  try {
+    localStorage.setItem(`bingetrack:activity:v1:${userId}`, String(Date.now()));
+  } catch {
+    /* 使用页面内计时。 */
+  }
 }

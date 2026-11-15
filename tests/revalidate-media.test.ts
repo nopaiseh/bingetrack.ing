@@ -17,8 +17,14 @@ type Row = Record<string, string>;
 const tables: Record<string, Row[]> = {
   tv_seasons: [{ id: season, series_id: show }],
   tv_episodes: [{ id: episode, season_id: season }],
-  media_item_series: [{ media_item_id: show, series_id: collection }, { media_item_id: sequel, series_id: collection }],
-  media_credits: [{ media_item_id: episode, person_id: person }, { media_item_id: episode, person_id: person }],
+  media_item_series: [
+    { media_item_id: show, series_id: collection },
+    { media_item_id: sequel, series_id: collection },
+  ],
+  media_credits: [
+    { media_item_id: episode, person_id: person },
+    { media_item_id: episode, person_id: person },
+  ],
   media_genres: [],
 };
 
@@ -27,9 +33,15 @@ function fakeDb(failing?: string) {
   return {
     from: (table: string) => ({
       select: (columns: string) => ({
-        in: async (key: string, values: string[]) => failing === table
-          ? { data: null, error: { message: "boom" } }
-          : { data: tables[table].filter(/* 按 in 条件筛选。 */ (row) => values.includes(row[key])).map(/* 只返回所选列。 */ (row) => ({ [columns]: row[columns] })), error: null },
+        in: async (key: string, values: string[]) =>
+          failing === table
+            ? { data: null, error: { message: "boom" } }
+            : {
+                data: tables[table]
+                  .filter(/* 按 in 条件筛选。 */ (row) => values.includes(row[key]))
+                  .map(/* 只返回所选列。 */ (row) => ({ [columns]: row[columns] })),
+                error: null,
+              },
       }),
     }),
   } as unknown as SupabaseClient;

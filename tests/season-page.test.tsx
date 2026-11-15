@@ -5,11 +5,15 @@ import type { EpisodeInfo, Media, SeasonInfo } from "@/lib/types";
 
 vi.mock("next/link", () => ({
   default: ({ href, children, ...props }: { href: string; children: ReactNode }) => (
-    <a href={href} {...props}>{children}</a>
+    <a href={href} {...props}>
+      {children}
+    </a>
   ),
 }));
 vi.mock("next/navigation", () => ({
-  notFound: () => { throw new Error("NOT_FOUND"); },
+  notFound: () => {
+    throw new Error("NOT_FOUND");
+  },
   useSearchParams: () => new URLSearchParams(),
   useRouter: () => ({ replace: vi.fn() }),
 }));
@@ -20,8 +24,17 @@ vi.mock("@/lib/functions/cached-media", () => ({
   getCachedSeasonNextEpisodeNumber: vi.fn(),
 }));
 
-import SeasonPage, { generateMetadata, generateStaticParams, revalidate } from "@/app/shows/[id]/seasons/[seasonId]/page";
-import { getCachedMediaById, getCachedSeasonEpisodes, getCachedSeasonNextEpisodeNumber, getCachedSeasonsBySeriesId } from "@/lib/functions/cached-media";
+import SeasonPage, {
+  generateMetadata,
+  generateStaticParams,
+  revalidate,
+} from "@/app/shows/[id]/seasons/[seasonId]/page";
+import {
+  getCachedMediaById,
+  getCachedSeasonEpisodes,
+  getCachedSeasonNextEpisodeNumber,
+  getCachedSeasonsBySeriesId,
+} from "@/lib/functions/cached-media";
 import { SITE_URL } from "@/lib/site";
 
 const seriesId = "50000000-0000-4000-8000-000000000002";
@@ -38,7 +51,12 @@ const season: SeasonInfo = {
 
 /** 准备一季的默认数据，供页面只读取第 1 页。 */
 function mockSeason() {
-  vi.mocked(getCachedMediaById).mockResolvedValue({ id: seriesId, title: "城市信号", type: "shows", cover_url: "" } as Media);
+  vi.mocked(getCachedMediaById).mockResolvedValue({
+    id: seriesId,
+    title: "城市信号",
+    type: "shows",
+    cover_url: "",
+  } as Media);
   vi.mocked(getCachedSeasonsBySeriesId).mockResolvedValue([season]);
   vi.mocked(getCachedSeasonEpisodes).mockResolvedValue({
     season,
@@ -145,7 +163,9 @@ describe("SeasonPage", () => {
     });
 
     const { container } = render(await SeasonPage({ params: Promise.resolve({ id: seriesId, seasonId }) }));
-    const episodeHeadings = screen.getAllByRole("heading", { level: 2 }).filter((heading) => heading.textContent?.startsWith("第 "));
+    const episodeHeadings = screen
+      .getAllByRole("heading", { level: 2 })
+      .filter((heading) => heading.textContent?.startsWith("第 "));
     expect(episodeHeadings).toHaveLength(20);
     expect(screen.queryByRole("heading", { level: 2, name: "第 101 集" })).not.toBeInTheDocument();
 
@@ -167,7 +187,10 @@ describe("SeasonPage", () => {
   it("窄屏把海报收在标题旁，统计收成一行，长简介可以展开", async () => {
     season.summary = "本季从摸索走到定型。".repeat(10);
     const { container } = render(await SeasonPage({ params: Promise.resolve({ id: seriesId, seasonId }) }));
-    expect(container.querySelector("header")).toHaveClass("grid-cols-[5rem_minmax(0,1fr)]", "lg:grid-cols-[18rem_minmax(0,1fr)_auto]");
+    expect(container.querySelector("header")).toHaveClass(
+      "grid-cols-[5rem_minmax(0,1fr)]",
+      "lg:grid-cols-[18rem_minmax(0,1fr)_auto]",
+    );
     expect(screen.getByRole("heading", { level: 1, name: "城市信号 第一季" })).toHaveClass("text-2xl", "lg:text-5xl");
     expect(screen.getByRole("region", { name: "本季统计" })).toHaveClass("whitespace-nowrap", "lg:grid");
     expect(screen.getByText(/本季从摸索走到定型/)).toHaveClass("max-w-[70ch]");

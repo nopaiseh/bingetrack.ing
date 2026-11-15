@@ -5,7 +5,13 @@ const state = vi.hoisted(() => ({
   client: vi.fn(),
 }));
 vi.mock("@/lib/supabase/public-server", () => ({ getSupabasePublicServer: state.client }));
-import { getMediaById, getSeasonsBySeriesId, getSeasonEpisodes, getSeasonNextEpisodeNumber, MediaRepositoryError } from "@/lib/functions/media-repo";
+import {
+  getMediaById,
+  getSeasonsBySeriesId,
+  getSeasonEpisodes,
+  getSeasonNextEpisodeNumber,
+  MediaRepositoryError,
+} from "@/lib/functions/media-repo";
 
 const id = "12345678-1234-1234-1234-123456789abc";
 beforeEach(() => {
@@ -20,13 +26,16 @@ beforeEach(() => {
   state.client.mockReturnValue({ from: () => chain, rpc: () => Promise.resolve(state.result) });
 });
 
-test.each(["null", "undefined", "", "bad-id", "123", `${id}x`, ` ${id}`, id.replace("a", "g")])("invalid ID %s never reaches the database", async (invalid) => {
-  expect(await getMediaById(invalid)).toBeNull();
-  expect(await getSeasonsBySeriesId(invalid)).toEqual([]);
-  expect(await getSeasonEpisodes(invalid, id, 1, 10)).toBeNull();
-  expect(await getSeasonEpisodes(id, invalid, 1, 10)).toBeNull();
-  expect(state.client).not.toHaveBeenCalled();
-});
+test.each(["null", "undefined", "", "bad-id", "123", `${id}x`, ` ${id}`, id.replace("a", "g")])(
+  "invalid ID %s never reaches the database",
+  async (invalid) => {
+    expect(await getMediaById(invalid)).toBeNull();
+    expect(await getSeasonsBySeriesId(invalid)).toEqual([]);
+    expect(await getSeasonEpisodes(invalid, id, 1, 10)).toBeNull();
+    expect(await getSeasonEpisodes(id, invalid, 1, 10)).toBeNull();
+    expect(state.client).not.toHaveBeenCalled();
+  },
+);
 
 test("valid but missing media and seasons return not-found results", async () => {
   expect(await getMediaById(id)).toBeNull();
@@ -69,7 +78,10 @@ test("watch progress failures keep their original cause", async () => {
   state.client.mockReturnValue({ from: () => builder, rpc: () => Promise.resolve(state.result) });
   const log = vi.spyOn(console, "error").mockImplementation(() => {});
   try {
-    await expect(getSeasonNextEpisodeNumber(id, id)).rejects.toMatchObject({ name: "MediaRepositoryError", cause: error });
+    await expect(getSeasonNextEpisodeNumber(id, id)).rejects.toMatchObject({
+      name: "MediaRepositoryError",
+      cause: error,
+    });
   } finally {
     log.mockRestore();
   }

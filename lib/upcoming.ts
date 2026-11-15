@@ -62,13 +62,16 @@ export function pickUpcoming(items: UpcomingRelease[], today: string, limit = 4)
   const seen = new Set<string>();
   return items
     .filter(/* 只保留今天及以后上映的条目。 */ (item) => item.releaseDate >= today)
-    .sort(/* 按上映日期升序，同日按 ID 保持稳定顺序。 */ (left, right) =>
-      left.releaseDate.localeCompare(right.releaseDate) || left.id.localeCompare(right.id),
+    .sort(
+      /* 按上映日期升序，同日按 ID 保持稳定顺序。 */ (left, right) =>
+        left.releaseDate.localeCompare(right.releaseDate) || left.id.localeCompare(right.id),
     )
-    .filter(/* 同一分组已出现过时跳过，避免一部剧的多集占满展台。 */ (item) => {
-      if (seen.has(item.groupId)) return false;
-      seen.add(item.groupId);
-      return true;
-    })
+    .filter(
+      /* 同一分组已出现过时跳过，避免一部剧的多集占满展台。 */ (item) => {
+        if (seen.has(item.groupId)) return false;
+        seen.add(item.groupId);
+        return true;
+      },
+    )
     .slice(0, limit);
 }

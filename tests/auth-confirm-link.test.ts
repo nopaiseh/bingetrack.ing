@@ -13,11 +13,13 @@ describe("一次性登录回跳", () => {
   });
 
   it("只取第一个非空值，类型必须是 magiclink 或 invite", () => {
-    expect(readConfirmQuery({
-      token_hash: ["  hash  ", "other"],
-      type: ["invite", "magiclink"],
-      next: ["/manage", "/settings"],
-    })).toEqual({ ok: true, tokenHash: "hash", type: "invite", next: "/manage" });
+    expect(
+      readConfirmQuery({
+        token_hash: ["  hash  ", "other"],
+        type: ["invite", "magiclink"],
+        next: ["/manage", "/settings"],
+      }),
+    ).toEqual({ ok: true, tokenHash: "hash", type: "invite", next: "/manage" });
     expect(readConfirmQuery({ token_hash: "hash", type: "magiclink", next: "https://evil.example" })).toEqual({
       ok: true,
       tokenHash: "hash",

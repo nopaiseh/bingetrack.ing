@@ -25,7 +25,10 @@ export default function AnimatedNumber({ value, decimals = 0 }: AnimatedNumberPr
     const end = value;
     if (start === end) return;
 
-    const isReducedMotion = typeof window !== "undefined" && typeof window.matchMedia === "function" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const isReducedMotion =
+      typeof window !== "undefined" &&
+      typeof window.matchMedia === "function" &&
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     let animationFrameId: number;
 
     if (isReducedMotion) {

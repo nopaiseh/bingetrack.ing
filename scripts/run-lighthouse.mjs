@@ -2,7 +2,11 @@ import { mkdirSync, readFileSync } from "node:fs";
 import { spawnSync } from "node:child_process";
 import { resolve } from "node:path";
 
-const baseUrl = (process.argv.find(/* 找到首个以 http 开头的命令行参数作为待测站点地址。 */ (argument) => argument.startsWith("http")) ?? "http://localhost:3000").replace(/\/$/, "");
+const baseUrl = (
+  process.argv.find(
+    /* 找到首个以 http 开头的命令行参数作为待测站点地址。 */ (argument) => argument.startsWith("http"),
+  ) ?? "http://localhost:3000"
+).replace(/\/$/, "");
 const enforceBudgets = process.argv.includes("--enforce");
 const outputDirectory = resolve(".lighthouse");
 const lighthouseBinary = resolve("node_modules/.bin/lighthouse");
@@ -40,22 +44,24 @@ function firstHref(html, pattern) {
 async function addDynamicRoutes() {
   const moviesHtml = await fetchHtml("/movies");
   const seriesHtml = await fetchHtml("/shows");
-  const moviePath = configuredPath("LIGHTHOUSE_MOVIE_PATH", "/movies")
-    ?? firstHref(moviesHtml, /href="(\/movies\/[^"?#]+(?:\?[^"#]*)?)"/);
-  const seriesPath = configuredPath("LIGHTHOUSE_SERIES_PATH", "/shows")
-    ?? firstHref(seriesHtml, /href="(\/shows\/[^"?#]+(?:\?[^"#]*)?)"/);
+  const moviePath =
+    configuredPath("LIGHTHOUSE_MOVIE_PATH", "/movies") ??
+    firstHref(moviesHtml, /href="(\/movies\/[^"?#]+(?:\?[^"#]*)?)"/);
+  const seriesPath =
+    configuredPath("LIGHTHOUSE_SERIES_PATH", "/shows") ??
+    firstHref(seriesHtml, /href="(\/shows\/[^"?#]+(?:\?[^"#]*)?)"/);
 
   if (!moviePath || !seriesPath) {
-    throw new Error("Could not discover movie and series detail samples. Set LIGHTHOUSE_MOVIE_PATH and LIGHTHOUSE_SERIES_PATH.");
+    throw new Error(
+      "Could not discover movie and series detail samples. Set LIGHTHOUSE_MOVIE_PATH and LIGHTHOUSE_SERIES_PATH.",
+    );
   }
 
-  routes.push(
-    { name: "movie-detail", path: moviePath },
-    { name: "series-detail", path: seriesPath },
-  );
+  routes.push({ name: "movie-detail", path: moviePath }, { name: "series-detail", path: seriesPath });
 
-  const seasonPath = configuredPath("LIGHTHOUSE_SEASON_PATH", `${seriesPath.split("?")[0]}/seasons`)
-    ?? firstHref(await fetchHtml(seriesPath), /href="(\/shows\/[^"?#]+\/seasons\/[^"?#]+(?:\?[^"#]*)?)"/);
+  const seasonPath =
+    configuredPath("LIGHTHOUSE_SEASON_PATH", `${seriesPath.split("?")[0]}/seasons`) ??
+    firstHref(await fetchHtml(seriesPath), /href="(\/shows\/[^"?#]+\/seasons\/[^"?#]+(?:\?[^"#]*)?)"/);
   if (!seasonPath) {
     throw new Error("Could not discover a season detail sample. Set LIGHTHOUSE_SEASON_PATH.");
   }
@@ -78,7 +84,14 @@ for (const route of routes) {
   const outputPath = resolve(outputDirectory, `${route.name}.json`);
   const result = spawnSync(
     lighthouseBinary,
-    [`${baseUrl}${route.path}`, "--quiet", "--chrome-flags=--headless", "--only-categories=performance", "--output=json", `--output-path=${outputPath}`],
+    [
+      `${baseUrl}${route.path}`,
+      "--quiet",
+      "--chrome-flags=--headless",
+      "--only-categories=performance",
+      "--output=json",
+      `--output-path=${outputPath}`,
+    ],
     { encoding: "utf8", stdio: "inherit" },
   );
 

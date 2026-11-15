@@ -20,18 +20,30 @@ beforeEach(() => {
 
 describe("管理侧栏", () => {
   it("不带类型的 /manage 高亮概览，编辑季集时高亮电视节目", () => {
-    const { rerender } = render(<AdminFrame initialCollapsed={false} nav={<ManageNav />}><p>内容</p></AdminFrame>);
+    const { rerender } = render(
+      <AdminFrame initialCollapsed={false} nav={<ManageNav />}>
+        <p>内容</p>
+      </AdminFrame>,
+    );
     const nav = screen.getByRole("navigation", { name: "内容管理分类" });
     expect(within(nav).getByRole("link", { name: "概览" })).toHaveAttribute("aria-current", "page");
     navigation.pathname = "/manage/media/abc";
     navigation.search = "type=tv_episode";
-    rerender(<AdminFrame initialCollapsed={false} nav={<ManageNav />}><p>内容</p></AdminFrame>);
+    rerender(
+      <AdminFrame initialCollapsed={false} nav={<ManageNav />}>
+        <p>内容</p>
+      </AdminFrame>,
+    );
     expect(within(nav).getByRole("link", { name: "电视节目" })).toHaveAttribute("aria-current", "page");
     expect(within(nav).queryByRole("link", { name: "单集" })).not.toBeInTheDocument();
   });
 
   it("收起后只留图标，名称由无障碍标签提供，偏好写入 Cookie", async () => {
-    render(<AdminFrame initialCollapsed={false} nav={<ManageNav />}><p>内容</p></AdminFrame>);
+    render(
+      <AdminFrame initialCollapsed={false} nav={<ManageNav />}>
+        <p>内容</p>
+      </AdminFrame>,
+    );
     await userEvent.click(screen.getByRole("button", { name: "收起侧栏" }));
     const nav = screen.getByRole("navigation", { name: "内容管理分类" });
     const movie = within(nav).getByRole("link", { name: "电影" });
@@ -44,14 +56,22 @@ describe("管理侧栏", () => {
 
   it("账号安全页高亮设置，概览不再是当前页", () => {
     navigation.pathname = "/settings";
-    render(<AdminFrame initialCollapsed={false} nav={<ManageNav />}><p>内容</p></AdminFrame>);
+    render(
+      <AdminFrame initialCollapsed={false} nav={<ManageNav />}>
+        <p>内容</p>
+      </AdminFrame>,
+    );
     expect(screen.getByRole("link", { name: "账号安全" })).toHaveAttribute("aria-current", "page");
     const nav = screen.getByRole("navigation", { name: "内容管理分类" });
     expect(within(nav).getByRole("link", { name: "概览" })).not.toHaveAttribute("aria-current");
   });
 
   it("菜单按钮展开同一套导航，而不是另一份分类", async () => {
-    render(<AdminFrame initialCollapsed={false} nav={<ManageNav />}><p>内容</p></AdminFrame>);
+    render(
+      <AdminFrame initialCollapsed={false} nav={<ManageNav />}>
+        <p>内容</p>
+      </AdminFrame>,
+    );
     const button = screen.getByRole("button", { name: "打开管理导航" });
     expect(button).toHaveAttribute("aria-expanded", "false");
     expect(button).toHaveAttribute("aria-controls", "admin-nav-drawer");

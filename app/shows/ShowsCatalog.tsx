@@ -3,12 +3,7 @@ import MediaRow from "@/components/MediaRow";
 import { MediaCatalogProps } from "@/lib/types";
 
 /** 将电视节目统计及已看、在看、想看列表渲染为目录页。 */
-export default function ShowsCatalog({
-  watched,
-  watching,
-  want,
-  stats,
-}: MediaCatalogProps) {
+export default function ShowsCatalog({ watched, watching, want, stats }: MediaCatalogProps) {
   const statItems = [
     { label: "电视节目总数量", value: stats?.total || 0, href: "/search?type=tv_show" },
     { label: "已看的电视节目", value: stats?.watched || 0, href: "/search?type=tv_show&status=watched" },
@@ -23,13 +18,33 @@ export default function ShowsCatalog({
         <h1 className="sr-only">电视节目</h1>
         <CatalogStatGrid items={statItems} />
 
-        
         <div className="space-y-12">
-          <MediaRow title="我已看" items={watched ?? []} eagerCount={2} viewAllLink="/search?type=tv_show&status=watched" type="shows" hideStatusBadge />
-          <MediaRow title="我在看" items={watching ?? []} eagerCount={watched?.length ? 0 : 2} viewAllLink="/search?type=tv_show&status=watching" type="shows" hideStatusBadge />
-          <MediaRow title="我想看" items={want ?? []} eagerCount={watched?.length || watching?.length ? 0 : 2} viewAllLink="/search?type=tv_show&status=want_to_watch" type="shows" hideStatusBadge />
+          <MediaRow
+            title="我已看"
+            items={watched ?? []}
+            eagerCount={2}
+            viewAllLink="/search?type=tv_show&status=watched"
+            type="shows"
+            hideStatusBadge
+          />
+          <MediaRow
+            title="我在看"
+            items={watching ?? []}
+            eagerCount={watched?.length ? 0 : 2}
+            viewAllLink="/search?type=tv_show&status=watching"
+            type="shows"
+            hideStatusBadge
+          />
+          <MediaRow
+            title="我想看"
+            items={want ?? []}
+            eagerCount={watched?.length || watching?.length ? 0 : 2}
+            viewAllLink="/search?type=tv_show&status=want_to_watch"
+            type="shows"
+            hideStatusBadge
+          />
         </div>
       </div>
-    </div>      
+    </div>
   );
 }

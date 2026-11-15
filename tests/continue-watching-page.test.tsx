@@ -41,14 +41,16 @@ describe("HomePage continue watching", () => {
     expect(getCachedContinueWatching).toHaveBeenCalledOnce();
     const { getByTestId } = render(page);
     const items = JSON.parse(getByTestId("home-dashboard").getAttribute("data-watching") ?? "null");
-    expect(items).toEqual([{
-      showId: "show-1",
-      title: "跑男",
-      posterPath: "/abc.jpg",
-      href: "/shows/show-1",
-      nextEpisode: watching.nextEpisode,
-      seasonProgress: watching.seasonProgress,
-    }]);
+    expect(items).toEqual([
+      {
+        showId: "show-1",
+        title: "跑男",
+        posterPath: "/abc.jpg",
+        href: "/shows/show-1",
+        nextEpisode: watching.nextEpisode,
+        seasonProgress: watching.seasonProgress,
+      },
+    ]);
     expect(JSON.stringify(items)).not.toContain("lastWatchedAt");
   });
 });

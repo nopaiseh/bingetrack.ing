@@ -23,11 +23,17 @@ export default function MediaStatusCard({
     <>
       <div className="flex items-center justify-between text-sm font-semibold text-fg transition-colors group-hover:text-[var(--accent-hover)]">
         <div className="flex items-center gap-2.5">
-          <span className={`${icon} size-4 inline-block ${toneClass} group-hover:text-[var(--accent-hover)]`} aria-hidden="true" />
+          <span
+            className={`${icon} size-4 inline-block ${toneClass} group-hover:text-[var(--accent-hover)]`}
+            aria-hidden="true"
+          />
           <span>{title}</span>
         </div>
         {href && (
-          <span className="i-material-symbols-arrow-outward-rounded hidden size-3.5 text-fg-subtle sm:inline-block transition-all duration-200 group-hover:text-[var(--accent)] group-hover:translate-x-0.5 group-hover:-translate-y-0.5" aria-hidden="true" />
+          <span
+            className="i-material-symbols-arrow-outward-rounded hidden size-3.5 text-fg-subtle sm:inline-block transition-all duration-200 group-hover:text-[var(--accent)] group-hover:translate-x-0.5 group-hover:-translate-y-0.5"
+            aria-hidden="true"
+          />
         )}
       </div>
       <div className="flex items-baseline gap-1.5">
@@ -36,28 +42,25 @@ export default function MediaStatusCard({
         </span>
         <span className="text-sm text-fg-secondary">部</span>
       </div>
-      <p className="flex items-center gap-1.5 font-mono text-xs text-fg-secondary" aria-hidden={details ? undefined : true}>
+      <p
+        className="flex items-center gap-1.5 font-mono text-xs text-fg-secondary"
+        aria-hidden={details ? undefined : true}
+      >
         <span>{details || " "}</span>
       </p>
     </>
   );
 
-  const containerClasses = "surface-inline group flex min-w-0 flex-col gap-3 rounded-2xl p-3 sm:p-4 transition-all duration-300 hover:border-white/20 hover:bg-white/[0.07]";
+  const containerClasses =
+    "surface-inline group flex min-w-0 flex-col gap-3 rounded-2xl p-3 sm:p-4 transition-all duration-300 hover:border-white/20 hover:bg-white/[0.07]";
 
   if (href) {
     return (
-      <Link
-        href={href}
-        className={`${containerClasses} cursor-pointer`}
-      >
+      <Link href={href} className={`${containerClasses} cursor-pointer`}>
         {content}
       </Link>
     );
   }
 
-  return (
-    <div className={containerClasses}>
-      {content}
-    </div>
-  );
+  return <div className={containerClasses}>{content}</div>;
 }

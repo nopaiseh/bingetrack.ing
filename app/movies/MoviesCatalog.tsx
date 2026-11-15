@@ -3,11 +3,7 @@ import MediaRow from "@/components/MediaRow";
 import { MediaCatalogProps } from "@/lib/types";
 
 /** 将电影统计和已看、想看列表渲染为目录页。 */
-export default function MoviesCatalog({
-  watched,
-  want,
-  stats,
-}: MediaCatalogProps) {
+export default function MoviesCatalog({ watched, want, stats }: MediaCatalogProps) {
   const statItems = [
     { label: "电影总数量", value: stats?.total || 0, href: "/search?type=movie" },
     { label: "已看的电影", value: stats?.watched || 0, href: "/search?type=movie&status=watched" },
@@ -21,10 +17,23 @@ export default function MoviesCatalog({
         <h1 className="sr-only">电影</h1>
         <CatalogStatGrid items={statItems} />
 
-        
         <div className="space-y-12">
-          <MediaRow title="我已看" items={watched ?? []} eagerCount={2} viewAllLink="/search?type=movie&status=watched" type="movies" hideStatusBadge />
-          <MediaRow title="我想看" items={want ?? []} eagerCount={watched?.length ? 0 : 2} viewAllLink="/search?type=movie&status=want_to_watch" type="movies" hideStatusBadge />
+          <MediaRow
+            title="我已看"
+            items={watched ?? []}
+            eagerCount={2}
+            viewAllLink="/search?type=movie&status=watched"
+            type="movies"
+            hideStatusBadge
+          />
+          <MediaRow
+            title="我想看"
+            items={want ?? []}
+            eagerCount={watched?.length ? 0 : 2}
+            viewAllLink="/search?type=movie&status=want_to_watch"
+            type="movies"
+            hideStatusBadge
+          />
         </div>
       </div>
     </div>

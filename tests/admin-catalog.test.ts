@@ -19,8 +19,12 @@ describe("reference search filters", () => {
 
 describe("media choice detail", () => {
   it("describes a season by its show and number instead of the raw type", () => {
-    expect(mediaChoiceDetail({ type: "tv_season", season: { season_number: 2, parent: { title: "人生切割术" } } })).toBe("人生切割术 · 第 2 季");
-    expect(mediaChoiceDetail({ type: "tv_season", season: { season_number: 1, parent: null } })).toBe("未知电视节目 · 第 1 季");
+    expect(
+      mediaChoiceDetail({ type: "tv_season", season: { season_number: 2, parent: { title: "人生切割术" } } }),
+    ).toBe("人生切割术 · 第 2 季");
+    expect(mediaChoiceDetail({ type: "tv_season", season: { season_number: 1, parent: null } })).toBe(
+      "未知电视节目 · 第 1 季",
+    );
   });
 
   it("falls back to the type label for other media", () => {

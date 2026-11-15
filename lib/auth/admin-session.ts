@@ -11,10 +11,7 @@ type GenerateFailed = { ok: false; reason: "generate_failed"; message: string };
 /** verifyOtp 拒绝了一次性凭证。 */
 type VerifyFailed = { ok: false; reason: "verify_failed"; message: string };
 
-export type AdminMagicLinkResult =
-  | { ok: true; hashedToken: string }
-  | MissingConfig
-  | GenerateFailed;
+export type AdminMagicLinkResult = { ok: true; hashedToken: string } | MissingConfig | GenerateFailed;
 
 export type AdminSessionResult = { ok: true } | MissingConfig | GenerateFailed | VerifyFailed;
 
@@ -23,10 +20,7 @@ export type AdminSessionResult = { ok: true } | MissingConfig | GenerateFailed |
  * 只含空白的值视为未设置。
  */
 function readServiceRoleKey() {
-  return (
-    process.env.SUPABASE_SECRET_KEY?.trim() ||
-    process.env.SUPABASE_SERVICE_ROLE_KEY?.trim()
-  );
+  return process.env.SUPABASE_SECRET_KEY?.trim() || process.env.SUPABASE_SERVICE_ROLE_KEY?.trim();
 }
 
 /** 用运维密钥创建 Admin 客户端。不持久化、不刷新会话。配置不齐时返回 null。 */

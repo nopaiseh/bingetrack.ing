@@ -6,13 +6,7 @@ import type { DashboardStats } from "@/components/dashboard/dashboard-stats";
 import { WATCH_STATUSES } from "@/components/watch-status";
 
 /** 总览标签下的电影与电视节目看板，含观看状态和完成度。 */
-export default function OverviewBoards({
-  stats,
-  selectedYear,
-}: {
-  stats: DashboardStats;
-  selectedYear: string;
-}) {
+export default function OverviewBoards({ stats, selectedYear }: { stats: DashboardStats; selectedYear: string }) {
   const {
     watchedMovies,
     unwatchedMovies,
@@ -31,7 +25,12 @@ export default function OverviewBoards({
   const unwatchedSeasons = stats.currentYearData?.unwatched_seasons ?? 0;
 
   return (
-    <div id="dashboard-panel-overview" role="tabpanel" aria-labelledby="dashboard-tab-overview" className="flex flex-col gap-4 md:gap-6">
+    <div
+      id="dashboard-panel-overview"
+      role="tabpanel"
+      aria-labelledby="dashboard-tab-overview"
+      className="flex flex-col gap-4 md:gap-6"
+    >
       <div className="grid grid-cols-1 gap-4 md:gap-6 xl:grid-cols-2">
         <div className="dashboard-deferred surface-card flex h-full flex-col gap-6 rounded-3xl p-4 sm:p-5 lg:p-7">
           <div className="flex items-center border-b border-white/10 pb-3">
@@ -39,9 +38,7 @@ export default function OverviewBoards({
               <div className="stat-icon flex items-center justify-center rounded-lg p-2">
                 <span className="i-material-symbols-movie-rounded size-4 inline-block" aria-hidden="true" />
               </div>
-              <span className="text-sm font-bold text-fg-secondary tracking-wide">
-                电影看板
-              </span>
+              <span className="text-sm font-bold text-fg-secondary tracking-wide">电影看板</span>
             </div>
           </div>
 
@@ -65,7 +62,9 @@ export default function OverviewBoards({
           <div className="mt-auto flex flex-col gap-2">
             <div className="flex items-center justify-between text-xs text-fg-secondary font-medium">
               <span>观影完成度</span>
-              <span className="font-mono text-fg">{watchedMovies} / {totalMovies} 部 · {moviesPercent}%</span>
+              <span className="font-mono text-fg">
+                {watchedMovies} / {totalMovies} 部 · {moviesPercent}%
+              </span>
             </div>
             <div className="progress-track h-2 w-full overflow-hidden rounded-full">
               <div
@@ -82,9 +81,7 @@ export default function OverviewBoards({
               <div className="stat-icon flex items-center justify-center rounded-lg p-2">
                 <span className="i-material-symbols-tv-rounded size-4 inline-block" aria-hidden="true" />
               </div>
-              <span className="text-sm font-bold text-fg-secondary tracking-wide">
-                电视节目看板
-              </span>
+              <span className="text-sm font-bold text-fg-secondary tracking-wide">电视节目看板</span>
             </div>
           </div>
 
@@ -118,7 +115,9 @@ export default function OverviewBoards({
           <div className="mt-auto flex flex-col gap-2">
             <div className="flex items-center justify-between text-xs text-fg-secondary font-medium">
               <span>单集观看进度</span>
-              <span className="font-mono text-fg">{watchedEpisodes} / {totalEpisodes} 集 · {seriesEpisodesPercent}%</span>
+              <span className="font-mono text-fg">
+                {watchedEpisodes} / {totalEpisodes} 集 · {seriesEpisodesPercent}%
+              </span>
             </div>
             <div className="progress-track h-2 w-full overflow-hidden rounded-full">
               <div

@@ -2,8 +2,10 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("@/lib/functions/search-options", async (importOriginal) => ({
-  ...await importOriginal<typeof import("@/lib/functions/search-options")>(),
-  fetchSearchOptionsServer: vi.fn().mockResolvedValue({ genres: ["剧情"], regions: ["日本"], languages: ["日语"], years: [] }),
+  ...(await importOriginal<typeof import("@/lib/functions/search-options")>()),
+  fetchSearchOptionsServer: vi
+    .fn()
+    .mockResolvedValue({ genres: ["剧情"], regions: ["日本"], languages: ["日语"], years: [] }),
 }));
 vi.mock("@/lib/functions/media-repo", () => ({ searchMediaServer: vi.fn() }));
 vi.mock("@/lib/report-error", () => ({ reportHandledError: vi.fn() }));

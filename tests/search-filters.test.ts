@@ -19,13 +19,10 @@ describe("toggleSearchFilter", () => {
     const cleared = toggleSearchFilter({ ...EMPTY_FILTERS, status: ["watched"] }, "status", "全部");
     expect(cleared.status).toEqual([]);
 
-    const collapsed = toggleSearchFilter(
-      { ...EMPTY_FILTERS, genre: ["剧情"] },
-      "genre",
+    const collapsed = toggleSearchFilter({ ...EMPTY_FILTERS, genre: ["剧情"] }, "genre", "喜剧", true, [
+      "剧情",
       "喜剧",
-      true,
-      ["剧情", "喜剧"],
-    );
+    ]);
     expect(collapsed.genre).toEqual([]);
   });
 
@@ -47,7 +44,10 @@ describe("toggleSearchSort", () => {
 describe("changeSearchYear", () => {
   it("sets one end and pulls the other end when the range is inverted", () => {
     expect(changeSearchYear(EMPTY_FILTERS, "start", "2019").year).toEqual(["2019", ""]);
-    expect(changeSearchYear({ ...EMPTY_FILTERS, year: ["2010", "2020"] }, "end", "2018").year).toEqual(["2010", "2018"]);
+    expect(changeSearchYear({ ...EMPTY_FILTERS, year: ["2010", "2020"] }, "end", "2018").year).toEqual([
+      "2010",
+      "2018",
+    ]);
     expect(changeSearchYear({ ...EMPTY_FILTERS, year: ["", "2010"] }, "start", "2020").year).toEqual(["2020", "2020"]);
     expect(changeSearchYear({ ...EMPTY_FILTERS, year: ["2020", ""] }, "end", "2010").year).toEqual(["2010", "2010"]);
   });

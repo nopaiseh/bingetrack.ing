@@ -63,18 +63,27 @@ describe("ContinueWatchingRail", () => {
     const poster = screen.getByRole("img", { name: "跑男" });
     expect(decodeURIComponent(poster.getAttribute("src") ?? "")).toContain("https://image.tmdb.org/t/p/w342/abc.jpg");
     expect(poster).toHaveAttribute("loading", "eager");
-    expect(screen.getByRole("progressbar", { name: "第 2 季已看 33 集，共 51 集" })).toHaveAttribute("aria-valuenow", "33");
+    expect(screen.getByRole("progressbar", { name: "第 2 季已看 33 集，共 51 集" })).toHaveAttribute(
+      "aria-valuenow",
+      "33",
+    );
     expect(screen.getByRole("heading", { level: 3, name: "跑男" }).className).toContain("line-clamp-2");
     expect(screen.getByRole("heading", { name: "继续观看" })).toBeInTheDocument();
   });
 
   it("uses the show page and a finished-season line when there is no next episode", () => {
-    render(<ContinueWatchingRail items={[card({
-      title: "航海王",
-      posterPath: null,
-      nextEpisode: null,
-      seasonProgress: { seasonNumber: 1, watched: 40, total: 40 },
-    })]} />);
+    render(
+      <ContinueWatchingRail
+        items={[
+          card({
+            title: "航海王",
+            posterPath: null,
+            nextEpisode: null,
+            seasonProgress: { seasonNumber: 1, watched: 40, total: 40 },
+          }),
+        ]}
+      />,
+    );
 
     const link = screen.getByRole("link");
     expect(link).toHaveAttribute("href", "/shows/show-1");
@@ -83,7 +92,10 @@ describe("ContinueWatchingRail", () => {
     expect(link).not.toHaveTextContent("S1");
     expect(screen.queryByRole("img")).not.toBeInTheDocument();
     expect(document.querySelector("[data-poster-fallback]")?.textContent).toBe("航");
-    expect(screen.getByRole("progressbar", { name: "第 1 季已看 40 集，共 40 集" })).toHaveAttribute("aria-valuenow", "40");
+    expect(screen.getByRole("progressbar", { name: "第 1 季已看 40 集，共 40 集" })).toHaveAttribute(
+      "aria-valuenow",
+      "40",
+    );
   });
 
   it("does not render lastWatchedAt even when the payload still has it", () => {
@@ -103,7 +115,11 @@ describe("ContinueWatchingRail", () => {
     Object.defineProperty(HTMLElement.prototype, "scrollBy", { configurable: true, value: scrollBy });
 
     try {
-      render(<ContinueWatchingRail items={[card(), card({ showId: "show-2", title: "爱情公寓", posterPath: "/love.jpg" })]} />);
+      render(
+        <ContinueWatchingRail
+          items={[card(), card({ showId: "show-2", title: "爱情公寓", posterPath: "/love.jpg" })]}
+        />,
+      );
       expect(screen.getByRole("img", { name: "爱情公寓" })).toHaveAttribute("loading", "lazy");
       const scroller = screen.getByLabelText("继续观看列表");
       expect(scroller).toHaveAttribute("tabindex", "0");

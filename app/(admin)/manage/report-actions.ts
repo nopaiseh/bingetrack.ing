@@ -16,9 +16,11 @@ export async function deleteUnused(_previous: ActionResult, form: FormData): Pro
   const expected = Number(form.get("confirm_count"));
   const { count, error: countError } = await db.from(config.view).select("id", { count: "exact", head: true });
   if (countError) return { error: "无法读取报告，请重试。" };
-  if (!Number.isInteger(expected) || expected !== count) return { error: `请输入当前数量 ${count ?? 0} 以确认删除；如数量有变化，请刷新后再确认。` };
+  if (!Number.isInteger(expected) || expected !== count)
+    return { error: `请输入当前数量 ${count ?? 0} 以确认删除；如数量有变化，请刷新后再确认。` };
   const { data, error } = await db.rpc("manage_delete_unused", { p_kind: config.bulkDelete });
-  if (error) return { error: error.code === "23503" ? "部分资料仍被其他内容引用，请刷新后重试。" : "删除失败，请重试。" };
+  if (error)
+    return { error: error.code === "23503" ? "部分资料仍被其他内容引用，请刷新后重试。" : "删除失败，请重试。" };
   // 闲置资料没有被任何作品引用，详情页不受影响；只刷新聚合数据，让筛选选项去掉已删除的项目。
   revalidateMediaItems([]);
   redirect(`/manage/reports/${report}?deleted=${Number(data) || 0}&n=${Date.now()}`);
@@ -29,7 +31,7 @@ const MAX_PEOPLE_PER_GROUP = 20;
 
 /** 读取表单里的人物 ID，统一小写（与数据库 uuid 排序一致）、去重，拒绝格式不正确或数量超出上限的值。 */
 function personIds(form: FormData, key: string) {
-  const values = [...new Set(form.getAll(key).map(value => String(value).toLowerCase()))];
+  const values = [...new Set(form.getAll(key).map((value) => String(value).toLowerCase()))];
   return values.length <= MAX_PEOPLE_PER_GROUP && values.every(isMediaId) ? values : null;
 }
 
@@ -37,7 +39,7 @@ function personIds(form: FormData, key: string) {
 export async function mergePeople(_previous: ActionResult, form: FormData): Promise<ActionResult> {
   const { db } = await requireOwner();
   const keep = String(form.get("keep") ?? "").toLowerCase();
-  const remove = personIds(form, "remove")?.filter(id => id !== keep);
+  const remove = personIds(form, "remove")?.filter((id) => id !== keep);
   if (!isMediaId(keep) || !remove?.length) return { error: "请选择要保留的人物。" };
   // 合并会删除其余人物及其演职关联，须在合并前查出这些人物参与的作品。
   const affected = await referenceMediaIds(db, "people", [keep, ...remove]);
@@ -57,8 +59,12 @@ export async function dismissSimilarPeople(_previous: ActionResult, form: FormDa
   const { db } = await requireOwner();
   const ids = personIds(form, "person");
   if (!ids || ids.length < 2) return { error: "至少需要两位人物。" };
-  const pairs = ids.flatMap((a, index) => ids.slice(index + 1).map(b => (a < b ? { person_a: a, person_b: b } : { person_a: b, person_b: a })));
-  const { error } = await db.from("people_distinct_pairs").upsert(pairs, { onConflict: "person_a,person_b", ignoreDuplicates: true });
+  const pairs = ids.flatMap((a, index) =>
+    ids.slice(index + 1).map((b) => (a < b ? { person_a: a, person_b: b } : { person_a: b, person_b: a })),
+  );
+  const { error } = await db
+    .from("people_distinct_pairs")
+    .upsert(pairs, { onConflict: "person_a,person_b", ignoreDuplicates: true });
   if (error) return { error: error.code === "23503" ? "人物已不存在，请刷新后重试。" : "标记失败，请重试。" };
   redirect(`/manage/reports/similar-people?dismissed=1&n=${Date.now()}`);
 }

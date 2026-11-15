@@ -24,7 +24,9 @@ export default function CategoryHeaderCards({
     <div className="grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-6 lg:grid-cols-4">
       <div className="surface-card col-span-1 flex flex-col justify-center rounded-2xl p-4 sm:p-5 lg:col-span-3 lg:p-6">
         <div className="text-fg-secondary mb-4 flex justify-between items-center">
-          <h3 className="text-lg font-semibold">{year} {categoryName} 阅览进度</h3>
+          <h3 className="text-lg font-semibold">
+            {year} {categoryName} 阅览进度
+          </h3>
         </div>
         <div>
           <div className="flex items-baseline gap-2 mb-2">
@@ -72,4 +74,3 @@ export default function CategoryHeaderCards({
     </div>
   );
 }
-

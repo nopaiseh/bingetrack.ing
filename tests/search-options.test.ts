@@ -12,7 +12,12 @@ vi.mock("next/cache", () => ({
 vi.mock("@/lib/supabase/public-server", () => ({
   getSupabasePublicServer: () => ({
     from(table: string) {
-      const request = { table, select: undefined as string | undefined, orders: [] as unknown[][], neq: [] as unknown[][] };
+      const request = {
+        table,
+        select: undefined as string | undefined,
+        orders: [] as unknown[][],
+        neq: [] as unknown[][],
+      };
       const chain = {
         select(columns: string) {
           request.select = columns;

@@ -57,35 +57,74 @@ export default function AddMediaMenu() {
     if (open && position) menu.current?.querySelectorAll<HTMLElement>("[role=menuitem]")[active]?.focus();
   }, [open, position, active]);
 
-  return <>
-    <button ref={trigger} type="button" className="admin-primary" aria-haspopup="menu" aria-expanded={open} aria-controls={open ? menuId : undefined}
-      onClick={() => { setActive(0); setOpen(value => !value); }}
-      onKeyDown={event => {
-        if (event.key !== "ArrowDown" && event.key !== "ArrowUp") return;
-        event.preventDefault();
-        setActive(event.key === "ArrowDown" ? 0 : options.length - 1);
-        setOpen(true);
-      }}>
-      <span className="i-material-symbols-add-rounded size-4.5" aria-hidden="true" />新增
-      <span className={`i-material-symbols-expand-more-rounded size-4 transition-transform duration-300 ${open ? "rotate-180" : ""}`} aria-hidden="true" />
-    </button>
-    {/* 挂到 body：嵌套在带 backdrop-filter 的面板内时，毛玻璃只能模糊面板自身。 */}
-    {open && position && createPortal(
-      <div ref={menu} id={menuId} role="menu" aria-label="新增类型" className="surface-overlay fixed z-50 w-44 rounded-2xl p-1" style={{ top: position.top, right: position.right }}
-        onKeyDown={event => {
-          if (event.key === "Escape" || event.key === "Tab") { if (event.key === "Escape") event.preventDefault(); close(event.key === "Escape"); return; }
-          const step = { ArrowDown: 1, ArrowUp: -1 }[event.key];
-          if (!step) return;
+  return (
+    <>
+      <button
+        ref={trigger}
+        type="button"
+        className="admin-primary"
+        aria-haspopup="menu"
+        aria-expanded={open}
+        aria-controls={open ? menuId : undefined}
+        onClick={() => {
+          setActive(0);
+          setOpen((value) => !value);
+        }}
+        onKeyDown={(event) => {
+          if (event.key !== "ArrowDown" && event.key !== "ArrowUp") return;
           event.preventDefault();
-          setActive(index => (index + step + options.length) % options.length);
-        }}>
-        {options.map(({ type, icon }, index) =>
-          <Link key={type} href={`/manage/media/new?type=${type}`} role="menuitem" tabIndex={-1} data-active={active === index} className="dropdown-option outline-none"
-            onMouseEnter={() => setActive(index)} onClick={() => close()}>
-            <span className={`${icon} size-4.5 shrink-0 text-[var(--accent-light)]`} aria-hidden="true" />{mediaTypes[type]}
-          </Link>)}
-      </div>,
-      document.body,
-    )}
-  </>;
+          setActive(event.key === "ArrowDown" ? 0 : options.length - 1);
+          setOpen(true);
+        }}
+      >
+        <span className="i-material-symbols-add-rounded size-4.5" aria-hidden="true" />
+        新增
+        <span
+          className={`i-material-symbols-expand-more-rounded size-4 transition-transform duration-300 ${open ? "rotate-180" : ""}`}
+          aria-hidden="true"
+        />
+      </button>
+      {/* 挂到 body：嵌套在带 backdrop-filter 的面板内时，毛玻璃只能模糊面板自身。 */}
+      {open &&
+        position &&
+        createPortal(
+          <div
+            ref={menu}
+            id={menuId}
+            role="menu"
+            aria-label="新增类型"
+            className="surface-overlay fixed z-50 w-44 rounded-2xl p-1"
+            style={{ top: position.top, right: position.right }}
+            onKeyDown={(event) => {
+              if (event.key === "Escape" || event.key === "Tab") {
+                if (event.key === "Escape") event.preventDefault();
+                close(event.key === "Escape");
+                return;
+              }
+              const step = { ArrowDown: 1, ArrowUp: -1 }[event.key];
+              if (!step) return;
+              event.preventDefault();
+              setActive((index) => (index + step + options.length) % options.length);
+            }}
+          >
+            {options.map(({ type, icon }, index) => (
+              <Link
+                key={type}
+                href={`/manage/media/new?type=${type}`}
+                role="menuitem"
+                tabIndex={-1}
+                data-active={active === index}
+                className="dropdown-option outline-none"
+                onMouseEnter={() => setActive(index)}
+                onClick={() => close()}
+              >
+                <span className={`${icon} size-4.5 shrink-0 text-[var(--accent-light)]`} aria-hidden="true" />
+                {mediaTypes[type]}
+              </Link>
+            ))}
+          </div>,
+          document.body,
+        )}
+    </>
+  );
 }

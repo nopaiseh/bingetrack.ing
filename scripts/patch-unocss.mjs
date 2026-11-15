@@ -9,7 +9,9 @@ if (fs.existsSync(target)) {
   if (!content.includes("module.exports = unocss;")) {
     const anchor = "exports.default = unocss;";
     if (!content.includes(anchor)) {
-      console.error(`[patch-unocss] ${anchor} not found in ${target}; the @unocss/postcss build changed. Re-check whether this patch is still needed.`);
+      console.error(
+        `[patch-unocss] ${anchor} not found in ${target}; the @unocss/postcss build changed. Re-check whether this patch is still needed.`,
+      );
       process.exit(1);
     }
     fs.writeFileSync(target, content.replace(anchor, `${anchor}\nmodule.exports = unocss;`), "utf8");

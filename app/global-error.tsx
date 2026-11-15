@@ -5,9 +5,12 @@ import { useEffect } from "react";
 
 /** 上报根级渲染错误，并提供独立的 HTML 错误页面与整页刷新入口。 */
 export default function GlobalError({ error }: { error: Error & { digest?: string } }) {
-  useEffect(/* 在错误对象变化时将异常发送给 Sentry。 */ () => {
-    Sentry.captureException(error);
-  }, [error]);
+  useEffect(
+    /* 在错误对象变化时将异常发送给 Sentry。 */ () => {
+      Sentry.captureException(error);
+    },
+    [error],
+  );
 
   return (
     <html lang="zh-CN">

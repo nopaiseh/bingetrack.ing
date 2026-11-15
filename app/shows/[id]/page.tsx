@@ -12,7 +12,9 @@ import { buildMediaJsonLd, buildMediaMetadata, serializeJsonLd } from "@/lib/seo
 export const revalidate = 86400;
 
 /** 构建时不枚举电视节目 ID，详情页由访问触发按需生成。 */
-export function generateStaticParams() { return []; }
+export function generateStaticParams() {
+  return [];
+}
 
 /** 用缓存的电视节目详情生成页面与分享元数据；无记录时返回未找到标题。 */
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
@@ -24,71 +26,81 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
 
 /** 并行读取各作品系列的其他条目，并按作品系列分组展示。 */
 async function RelatedSeries({ seriesNames, currentId }: { seriesNames: string[]; currentId: string }) {
-  const relatedGroups = await Promise.all(seriesNames.map(/* 查询一个作品系列中的其他条目，保留系列名用于展示。 */ async (seriesName) => ({
-    seriesName,
-    items: await getRelatedBySeries(seriesName, currentId),
-  })));
+  const relatedGroups = await Promise.all(
+    seriesNames.map(
+      /* 查询一个作品系列中的其他条目，保留系列名用于展示。 */ async (seriesName) => ({
+        seriesName,
+        items: await getRelatedBySeries(seriesName, currentId),
+      }),
+    ),
+  );
   // 系列里没有其他条目时不渲染任何节点，外层留白容器随之隐藏。
   const groups = relatedGroups.filter(/* 只保留有其他条目的系列分组。 */ ({ items }) => items.length > 0);
   if (groups.length === 0) return null;
 
   return (
     <div className="space-y-12">
-      {groups.map(/* 将一个相关作品分组渲染为横向卡片列表。 */ ({ seriesName, items }) => (
-        <MediaRow key={seriesName} title={`《${seriesName}》系列`} items={items} />
-      ))}
+      {groups.map(
+        /* 将一个相关作品分组渲染为横向卡片列表。 */ ({ seriesName, items }) => (
+          <MediaRow key={seriesName} title={`《${seriesName}》系列`} items={items} />
+        ),
+      )}
     </div>
   );
 }
 
 /** 并行加载电视节目与季摘要，汇总单集年份和观看进度，再展示详情、各季和相关作品。 */
-export default async function SeriesDetailPage({
-  params,
-}: {
-  params: Promise<{ id: string }>;
-}) {
+export default async function SeriesDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const [series, seasons] = await Promise.all([
-    getCachedMediaById(id),
-    getCachedSeasonsBySeriesId(id),
-  ]);
+  const [series, seasons] = await Promise.all([getCachedMediaById(id), getCachedSeasonsBySeriesId(id)]);
   if (!series) notFound();
   // 电影 ID 不属于电视节目路径。
   if (series.type !== "shows") notFound();
   const jsonLd = buildMediaJsonLd(series);
 
-  const episodeYears = seasons.flatMap(/* 从季的年份范围提取四位年份，缺失时不贡献年份。 */ (season) => season.releaseYearRange?.match(/\d{4}/g) ?? []);
+  const episodeYears = seasons.flatMap(
+    /* 从季的年份范围提取四位年份，缺失时不贡献年份。 */ (season) => season.releaseYearRange?.match(/\d{4}/g) ?? [],
+  );
   const firstEpisodeYear = episodeYears.length > 0 ? Math.min(...episodeYears.map(Number)) : null;
   const lastEpisodeYear = episodeYears.length > 0 ? Math.max(...episodeYears.map(Number)) : null;
-  const releaseYearRange = firstEpisodeYear !== null && lastEpisodeYear !== null
-    ? (firstEpisodeYear === lastEpisodeYear ? String(firstEpisodeYear) : `${firstEpisodeYear} - ${lastEpisodeYear}`)
-    : series.date?.slice(0, 4) ?? "";
-  const totalEpisodes = seasons.reduce(/* 将本季集数累加到电视节目总集数。 */ (total, season) => total + season.episodeCount, 0);
-  const watchedEpisodes = seasons.reduce(/* 将本季已看集数累加到电视节目已看总集数。 */ (total, season) => total + season.watchedEpisodeCount, 0);
-  const episodeDerivedStatus = totalEpisodes === 0
-    ? series.status
-    : watchedEpisodes === totalEpisodes
-      ? "watched"
-      : watchedEpisodes > 0
-        ? "watching"
-        : "unwatched";
+  const releaseYearRange =
+    firstEpisodeYear !== null && lastEpisodeYear !== null
+      ? firstEpisodeYear === lastEpisodeYear
+        ? String(firstEpisodeYear)
+        : `${firstEpisodeYear} - ${lastEpisodeYear}`
+      : (series.date?.slice(0, 4) ?? "");
+  const totalEpisodes = seasons.reduce(
+    /* 将本季集数累加到电视节目总集数。 */ (total, season) => total + season.episodeCount,
+    0,
+  );
+  const watchedEpisodes = seasons.reduce(
+    /* 将本季已看集数累加到电视节目已看总集数。 */ (total, season) => total + season.watchedEpisodeCount,
+    0,
+  );
+  const episodeDerivedStatus =
+    totalEpisodes === 0
+      ? series.status
+      : watchedEpisodes === totalEpisodes
+        ? "watched"
+        : watchedEpisodes > 0
+          ? "watching"
+          : "unwatched";
 
   return (
     <div className="relative text-fg selection:bg-[var(--accent-soft)] selection:text-white font-sans">
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: serializeJsonLd(jsonLd) }}
-      />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: serializeJsonLd(jsonLd) }} />
       <MediaInformation
         media={series}
         seasons={seasons}
         releaseDateLabel={releaseYearRange}
         displayStatus={episodeDerivedStatus}
-        relatedContent={series.series && series.series.length > 0 ? (
-          <Suspense fallback={<RelatedMediaLoadingSkeleton />}>
-            <RelatedSeries seriesNames={series.series} currentId={series.id} />
-          </Suspense>
-        ) : null}
+        relatedContent={
+          series.series && series.series.length > 0 ? (
+            <Suspense fallback={<RelatedMediaLoadingSkeleton />}>
+              <RelatedSeries seriesNames={series.series} currentId={series.id} />
+            </Suspense>
+          ) : null
+        }
       />
     </div>
   );

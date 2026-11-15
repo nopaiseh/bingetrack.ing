@@ -1,6 +1,13 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { deleteUnused } from "@/app/(admin)/manage/report-actions";
-import { isReportKind, reportGroups, reportRowHref, reportRowType, reportTagLabels, reports } from "@/lib/admin/reports";
+import {
+  isReportKind,
+  reportGroups,
+  reportRowHref,
+  reportRowType,
+  reportTagLabels,
+  reports,
+} from "@/lib/admin/reports";
 import { requireOwner } from "@/lib/auth/server";
 import { revalidatePath, revalidateTag } from "next/cache";
 import { redirect } from "next/navigation";
@@ -11,7 +18,11 @@ const id = "11111111-1111-4111-8111-111111111111";
 const select = vi.fn();
 const from = vi.fn(() => ({ select }));
 const rpc = vi.fn();
-function form(values: Record<string, string>) { const result = new FormData(); for (const [key, value] of Object.entries(values)) result.set(key, value); return result; }
+function form(values: Record<string, string>) {
+  const result = new FormData();
+  for (const [key, value] of Object.entries(values)) result.set(key, value);
+  return result;
+}
 
 describe("报告配置", () => {
   it("只接受已定义的报告", () => {
@@ -20,7 +31,11 @@ describe("报告配置", () => {
     expect(isReportKind("toString")).toBe(false);
   });
   it("每份报告都在分组中出现一次", () => {
-    expect(reportGroups().flatMap(group => group.kinds).sort()).toEqual(Object.keys(reports).sort());
+    expect(
+      reportGroups()
+        .flatMap((group) => group.kinds)
+        .sort(),
+    ).toEqual(Object.keys(reports).sort());
   });
   it("媒体进入编辑页，关联资料进入详情", () => {
     expect(reportRowHref({ link_type: "tv_episode", link_id: id })).toBe(`/manage/media/${id}?type=tv_episode`);
@@ -38,13 +53,17 @@ describe("报告配置", () => {
 describe("批量删除闲置资料", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.mocked(requireOwner).mockResolvedValue({ db: { from, rpc }, user: {} } as unknown as Awaited<ReturnType<typeof requireOwner>>);
+    vi.mocked(requireOwner).mockResolvedValue({ db: { from, rpc }, user: {} } as unknown as Awaited<
+      ReturnType<typeof requireOwner>
+    >);
     select.mockResolvedValue({ count: 3, error: null });
     rpc.mockResolvedValue({ data: 3, error: null });
   });
   it("先检查站长身份", async () => {
     vi.mocked(requireOwner).mockRejectedValue(new Error("unauthorized"));
-    await expect(deleteUnused({}, form({ report: "orphan-people", confirm_count: "3" }))).rejects.toThrow("unauthorized");
+    await expect(deleteUnused({}, form({ report: "orphan-people", confirm_count: "3" }))).rejects.toThrow(
+      "unauthorized",
+    );
     expect(rpc).not.toHaveBeenCalled();
   });
   it("拒绝未知报告和不支持批量删除的报告", async () => {
@@ -62,7 +81,9 @@ describe("批量删除闲置资料", () => {
     await deleteUnused({}, form({ report: "unused-references", confirm_count: "3" }));
     expect(from).toHaveBeenCalledWith("v_report_unused_references");
     expect(rpc).toHaveBeenCalledWith("manage_delete_unused", { p_kind: "references" });
-    expect(redirect).toHaveBeenCalledWith(expect.stringMatching(/^\/manage\/reports\/unused-references\?deleted=3&n=\d+$/));
+    expect(redirect).toHaveBeenCalledWith(
+      expect.stringMatching(/^\/manage\/reports\/unused-references\?deleted=3&n=\d+$/),
+    );
   });
   it("闲置资料不影响详情页，只刷新聚合数据，不清空全站缓存", async () => {
     await deleteUnused({}, form({ report: "orphan-people", confirm_count: "3" }));

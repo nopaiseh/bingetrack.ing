@@ -1,6 +1,16 @@
 "use client";
 import Image from "next/image";
-import { useEffect, useId, useLayoutEffect, useRef, useState, type ChangeEvent, type KeyboardEvent, type ReactNode, type RefObject } from "react";
+import {
+  useEffect,
+  useId,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type ChangeEvent,
+  type KeyboardEvent,
+  type ReactNode,
+  type RefObject,
+} from "react";
 import { createPortal } from "react-dom";
 import { searchChoices } from "./reference-actions";
 import type { Choice } from "@/lib/admin/catalog";
@@ -9,13 +19,24 @@ import { listInitial, listTint } from "./list/model";
 /** 下拉挂到 body：嵌套在带 backdrop-filter 的卡片内时，毛玻璃只能模糊卡片自身而显得透明。
  * 外包 admin-shell 以沿用管理区的按钮样式；定位随滚动与缩放同步，与选择器等宽。
  * 固定定位无法随页面滚入视口，下方空间不足时改向上展开，并按可用空间限制高度。 */
-function FloatingResults({ root, input, listRef, children }: {
+function FloatingResults({
+  root,
+  input,
+  listRef,
+  children,
+}: {
   root: RefObject<HTMLDivElement | null>;
   input: RefObject<HTMLInputElement | null>;
   listRef: RefObject<HTMLDivElement | null>;
   children: ReactNode;
 }) {
-  const [position, setPosition] = useState<{ top?: number; bottom?: number; left: number; width: number; maxHeight: number } | null>(null);
+  const [position, setPosition] = useState<{
+    top?: number;
+    bottom?: number;
+    left: number;
+    width: number;
+    maxHeight: number;
+  } | null>(null);
   useLayoutEffect(() => {
     /** 以选择器定宽、搜索框上下沿定位，选择空间较大的一侧展开。 */
     function update() {
@@ -162,7 +183,9 @@ export default function ChoicePicker({
   const newName = term.trim();
   // 可定位的候选项：搜索结果在前，允许新增时末尾附新增项。
   const options: { choice: Choice; create?: boolean }[] = [
-    ...(loading || error ? [] : choices.filter((item) => !selected.some((value) => same(value, item))).map((choice) => ({ choice }))),
+    ...(loading || error
+      ? []
+      : choices.filter((item) => !selected.some((value) => same(value, item))).map((choice) => ({ choice }))),
     ...(allowCreate && newName && !selected.some(exists) && !choices.some(exists)
       ? [{ choice: { id: `new:${newName}`, name: newName }, create: true }]
       : []),
@@ -173,7 +196,8 @@ export default function ChoicePicker({
 
   // 键盘定位到列表可视区外的候选项时，把它滚入视野。
   useEffect(() => {
-    if (open && active >= 0) document.getElementById(`${listId}-option-${active}`)?.scrollIntoView?.({ block: "nearest" });
+    if (open && active >= 0)
+      document.getElementById(`${listId}-option-${active}`)?.scrollIntoView?.({ block: "nearest" });
   }, [open, active, listId]);
 
   /** 两种模式共用的搜索框行为：上下键定位候选项，回车确认，Escape 关闭。
@@ -215,8 +239,16 @@ export default function ChoicePicker({
 
   const results = (
     <>
-      {loading && <p role="status" className="p-2 text-sm text-neutral-400">正在搜索…</p>}
-      {error && <p role="alert" className="p-2 text-sm text-red-300">{error}</p>}
+      {loading && (
+        <p role="status" className="p-2 text-sm text-neutral-400">
+          正在搜索…
+        </p>
+      )}
+      {error && (
+        <p role="alert" className="p-2 text-sm text-red-300">
+          {error}
+        </p>
+      )}
       {!loading && !error && choices.length === 0 && <p className="p-2 text-sm text-neutral-400">没有匹配资料</p>}
       {options.length > 0 && (
         <div id={resultsId} role="listbox" aria-label={`${label}搜索结果`}>
@@ -235,17 +267,28 @@ export default function ChoicePicker({
             >
               {create ? (
                 <>
-                  <span className="i-material-symbols-add-rounded size-4 shrink-0 text-[var(--accent)]" aria-hidden="true" />
+                  <span
+                    className="i-material-symbols-add-rounded size-4 shrink-0 text-[var(--accent)]"
+                    aria-hidden="true"
+                  />
                   <span className="min-w-0 break-words">新增并关联「{newName}」</span>
                 </>
               ) : (
                 <>
                   {choice.cover_url && (
-                    <Image src={choice.cover_url} width={28} height={42} alt="" className="h-10 w-7 shrink-0 rounded object-cover shadow-sm" />
+                    <Image
+                      src={choice.cover_url}
+                      width={28}
+                      height={42}
+                      alt=""
+                      className="h-10 w-7 shrink-0 rounded object-cover shadow-sm"
+                    />
                   )}
                   <span className="min-w-0 break-words font-medium">
                     {choice.name}
-                    {choice.detail && <span className="block text-xs font-normal text-neutral-400">{choice.detail}</span>}
+                    {choice.detail && (
+                      <span className="block text-xs font-normal text-neutral-400">{choice.detail}</span>
+                    )}
                   </span>
                 </>
               )}
@@ -265,7 +308,8 @@ export default function ChoicePicker({
         ref={root}
         className="relative min-w-0"
         onBlur={(event) => {
-          if (!event.currentTarget.contains(event.relatedTarget) && !list.current?.contains(event.relatedTarget)) setOpen(false);
+          if (!event.currentTarget.contains(event.relatedTarget) && !list.current?.contains(event.relatedTarget))
+            setOpen(false);
         }}
       >
         <input type="hidden" name={name} value={selected[0]?.id ?? ""} />
@@ -276,7 +320,10 @@ export default function ChoicePicker({
         {selected.length > 0 ? (
           <div className="flex h-[42px] items-center justify-between gap-2 rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-sm">
             <div className="flex min-w-0 items-center gap-2">
-              <span className="i-material-symbols-folder-rounded size-4 shrink-0 text-[var(--accent)]" aria-hidden="true" />
+              <span
+                className="i-material-symbols-folder-rounded size-4 shrink-0 text-[var(--accent)]"
+                aria-hidden="true"
+              />
               <span className="truncate font-medium text-white">{selected[0].name}</span>
               {selected[0].detail && <span className="truncate text-xs text-neutral-400">({selected[0].detail})</span>}
             </div>
@@ -295,10 +342,7 @@ export default function ChoicePicker({
             </button>
           </div>
         ) : (
-          <input
-            {...comboboxProps}
-            placeholder={`搜索${label}`}
-          />
+          <input {...comboboxProps} placeholder={`搜索${label}`} />
         )}
         {open && (
           <FloatingResults root={root} input={input} listRef={list}>
@@ -340,21 +384,45 @@ export default function ChoicePicker({
           {sortable ? (
             <div className="ml-1 flex items-center gap-0.5 border-l border-white/15 pl-1">
               {index > 0 && (
-                <button type="button" title={`前移${item.name}`} aria-label={`上移${item.name}`} className="inline-flex size-4.5 items-center justify-center rounded text-neutral-400 hover:bg-white/15 hover:text-white transition-colors" onClick={() => move(index, index - 1)}>
+                <button
+                  type="button"
+                  title={`前移${item.name}`}
+                  aria-label={`上移${item.name}`}
+                  className="inline-flex size-4.5 items-center justify-center rounded text-neutral-400 hover:bg-white/15 hover:text-white transition-colors"
+                  onClick={() => move(index, index - 1)}
+                >
                   <span className="i-material-symbols-chevron-left-rounded size-3.5" aria-hidden="true" />
                 </button>
               )}
               {index < selected.length - 1 && (
-                <button type="button" title={`后移${item.name}`} aria-label={`下移${item.name}`} className="inline-flex size-4.5 items-center justify-center rounded text-neutral-400 hover:bg-white/15 hover:text-white transition-colors" onClick={() => move(index, index + 1)}>
+                <button
+                  type="button"
+                  title={`后移${item.name}`}
+                  aria-label={`下移${item.name}`}
+                  className="inline-flex size-4.5 items-center justify-center rounded text-neutral-400 hover:bg-white/15 hover:text-white transition-colors"
+                  onClick={() => move(index, index + 1)}
+                >
                   <span className="i-material-symbols-chevron-right-rounded size-3.5" aria-hidden="true" />
                 </button>
               )}
-              <button type="button" title={`移除关联：${item.name}`} aria-label={`移除关联：${item.name}`} className="inline-flex size-4.5 items-center justify-center rounded text-neutral-400 hover:bg-rose-500/20 hover:text-rose-300 transition-colors" onClick={() => change(selected.filter((value) => value.id !== item.id))}>
+              <button
+                type="button"
+                title={`移除关联：${item.name}`}
+                aria-label={`移除关联：${item.name}`}
+                className="inline-flex size-4.5 items-center justify-center rounded text-neutral-400 hover:bg-rose-500/20 hover:text-rose-300 transition-colors"
+                onClick={() => change(selected.filter((value) => value.id !== item.id))}
+              >
                 <span className="i-material-symbols-close-rounded size-3.5" aria-hidden="true" />
               </button>
             </div>
           ) : (
-            <button type="button" title={`移除关联：${item.name}`} aria-label={`移除关联：${item.name}`} className="ml-0.5 inline-flex size-4 items-center justify-center rounded-full text-neutral-400 hover:bg-rose-500/20 hover:text-rose-300 transition-colors" onClick={() => change(selected.filter((value) => value.id !== item.id))}>
+            <button
+              type="button"
+              title={`移除关联：${item.name}`}
+              aria-label={`移除关联：${item.name}`}
+              className="ml-0.5 inline-flex size-4 items-center justify-center rounded-full text-neutral-400 hover:bg-rose-500/20 hover:text-rose-300 transition-colors"
+              onClick={() => change(selected.filter((value) => value.id !== item.id))}
+            >
               <span className="i-material-symbols-close-rounded size-3" aria-hidden="true" />
             </button>
           )}
@@ -365,89 +433,126 @@ export default function ChoicePicker({
 
   const castRows = rows && (
     <>
-    {selected.length > 0 && (
-      <div className="edit-cast-columns" aria-hidden="true">
-        <span />
-        <span>#</span>
-        <span>{label}</span>
-        {withCharacter ? <span>饰演</span> : <span />}
-        <span />
-      </div>
-    )}
-    <ul className="edit-cast-list" aria-label={`${label}顺序`}>
-      {selected.length === 0 && <li className="edit-cast-empty">还没有{label}。在下方搜索名字即可添加。</li>}
-      {selected.map((item, index) => (
-        <li
-          key={item.id}
-          className="edit-cast-row"
-          data-dragging={dragIndex === index ? "true" : undefined}
-          onDragOver={(event) => { event.preventDefault(); if (event.dataTransfer) event.dataTransfer.dropEffect = "move"; }}
-          onDrop={(event) => {
-            event.preventDefault();
-            if (dragIndex != null) move(dragIndex, index);
-            setDragIndex(null);
-          }}
-        >
-          <button
-            type="button"
-            className="edit-icon"
-            draggable
-            aria-label={`拖动调整${item.name}的顺序`}
-            onDragStart={(event) => {
-              event.dataTransfer?.setData("text/plain", String(index));
-              if (event.dataTransfer) event.dataTransfer.effectAllowed = "move";
-              setDragIndex(index);
+      {selected.length > 0 && (
+        <div className="edit-cast-columns" aria-hidden="true">
+          <span />
+          <span>#</span>
+          <span>{label}</span>
+          {withCharacter ? <span>饰演</span> : <span />}
+          <span />
+        </div>
+      )}
+      <ul className="edit-cast-list" aria-label={`${label}顺序`}>
+        {selected.length === 0 && <li className="edit-cast-empty">还没有{label}。在下方搜索名字即可添加。</li>}
+        {selected.map((item, index) => (
+          <li
+            key={item.id}
+            className="edit-cast-row"
+            data-dragging={dragIndex === index ? "true" : undefined}
+            onDragOver={(event) => {
+              event.preventDefault();
+              if (event.dataTransfer) event.dataTransfer.dropEffect = "move";
             }}
-            onDragEnd={() => setDragIndex(null)}
-            onKeyDown={(event) => {
-              if (event.key === "ArrowUp") { event.preventDefault(); move(index, index - 1); }
-              if (event.key === "ArrowDown") { event.preventDefault(); move(index, index + 1); }
+            onDrop={(event) => {
+              event.preventDefault();
+              if (dragIndex != null) move(dragIndex, index);
+              setDragIndex(null);
             }}
           >
-            <span className="i-material-symbols-drag-indicator size-5" aria-hidden="true" />
-          </button>
-          <span className="edit-cast-index font-mono" aria-hidden="true">{index + 1}</span>
-          <span className="edit-cast-person">
-            <span className="edit-cast-mark" style={{ backgroundColor: listTint(item.name) }} aria-hidden="true">{listInitial(item.name)}</span>
-            <span className="min-w-0">
-              <span className="block break-words font-medium">{item.name}</span>
-              {item.detail && <span className="block break-words text-sm text-fg-secondary">{item.detail}</span>}
+            <button
+              type="button"
+              className="edit-icon"
+              draggable
+              aria-label={`拖动调整${item.name}的顺序`}
+              onDragStart={(event) => {
+                event.dataTransfer?.setData("text/plain", String(index));
+                if (event.dataTransfer) event.dataTransfer.effectAllowed = "move";
+                setDragIndex(index);
+              }}
+              onDragEnd={() => setDragIndex(null)}
+              onKeyDown={(event) => {
+                if (event.key === "ArrowUp") {
+                  event.preventDefault();
+                  move(index, index - 1);
+                }
+                if (event.key === "ArrowDown") {
+                  event.preventDefault();
+                  move(index, index + 1);
+                }
+              }}
+            >
+              <span className="i-material-symbols-drag-indicator size-5" aria-hidden="true" />
+            </button>
+            <span className="edit-cast-index font-mono" aria-hidden="true">
+              {index + 1}
             </span>
-          </span>
-          {withCharacter && (
-            <input
-              className="edit-cast-character"
-              value={item.character ?? ""}
-              maxLength={200}
-              autoComplete="off"
-              placeholder="饰演"
-              aria-label={`${item.name}饰演的角色`}
-              onChange={(event) => setCharacter(item.id, event.target.value)}
-            />
-          )}
-          <span className="edit-cast-actions">
-            <button type="button" className="edit-icon" aria-label={`上移${item.name}`} disabled={index === 0} onClick={() => move(index, index - 1)}>
-              <span className="i-material-symbols-keyboard-arrow-up-rounded size-5" aria-hidden="true" />
-            </button>
-            <button type="button" className="edit-icon" aria-label={`下移${item.name}`} disabled={index === selected.length - 1} onClick={() => move(index, index + 1)}>
-              <span className="i-material-symbols-keyboard-arrow-down-rounded size-5" aria-hidden="true" />
-            </button>
-            <button type="button" className="edit-icon edit-icon-danger" aria-label={`移除关联：${item.name}`} onClick={() => change(selected.filter((value) => value.id !== item.id))}>
-              <span className="i-material-symbols-close-rounded size-5" aria-hidden="true" />
-            </button>
-          </span>
-        </li>
-      ))}
-    </ul>
+            <span className="edit-cast-person">
+              <span className="edit-cast-mark" style={{ backgroundColor: listTint(item.name) }} aria-hidden="true">
+                {listInitial(item.name)}
+              </span>
+              <span className="min-w-0">
+                <span className="block break-words font-medium">{item.name}</span>
+                {item.detail && <span className="block break-words text-sm text-fg-secondary">{item.detail}</span>}
+              </span>
+            </span>
+            {withCharacter && (
+              <input
+                className="edit-cast-character"
+                value={item.character ?? ""}
+                maxLength={200}
+                autoComplete="off"
+                placeholder="饰演"
+                aria-label={`${item.name}饰演的角色`}
+                onChange={(event) => setCharacter(item.id, event.target.value)}
+              />
+            )}
+            <span className="edit-cast-actions">
+              <button
+                type="button"
+                className="edit-icon"
+                aria-label={`上移${item.name}`}
+                disabled={index === 0}
+                onClick={() => move(index, index - 1)}
+              >
+                <span className="i-material-symbols-keyboard-arrow-up-rounded size-5" aria-hidden="true" />
+              </button>
+              <button
+                type="button"
+                className="edit-icon"
+                aria-label={`下移${item.name}`}
+                disabled={index === selected.length - 1}
+                onClick={() => move(index, index + 1)}
+              >
+                <span className="i-material-symbols-keyboard-arrow-down-rounded size-5" aria-hidden="true" />
+              </button>
+              <button
+                type="button"
+                className="edit-icon edit-icon-danger"
+                aria-label={`移除关联：${item.name}`}
+                onClick={() => change(selected.filter((value) => value.id !== item.id))}
+              >
+                <span className="i-material-symbols-close-rounded size-5" aria-hidden="true" />
+              </button>
+            </span>
+          </li>
+        ))}
+      </ul>
     </>
   );
 
   return (
     <div
       ref={root}
-      className={rows ? "edit-cast relative min-w-0" : inline ? "edit-inline-field relative min-w-0" : "choice-picker-card relative min-w-0"}
+      className={
+        rows
+          ? "edit-cast relative min-w-0"
+          : inline
+            ? "edit-inline-field relative min-w-0"
+            : "choice-picker-card relative min-w-0"
+      }
       onBlur={(event) => {
-        if (!event.currentTarget.contains(event.relatedTarget) && !list.current?.contains(event.relatedTarget)) setOpen(false);
+        if (!event.currentTarget.contains(event.relatedTarget) && !list.current?.contains(event.relatedTarget))
+          setOpen(false);
       }}
     >
       <input
@@ -463,7 +568,9 @@ export default function ChoicePicker({
       />
 
       {rows ? (
-        <p className="edit-hint">{selected.length} 位{label} · 拖动左侧手柄排序，或使用上移、下移按钮</p>
+        <p className="edit-hint">
+          {selected.length} 位{label} · 拖动左侧手柄排序，或使用上移、下移按钮
+        </p>
       ) : inline ? (
         <div className="edit-inline-label">
           <label htmlFor={listId}>{label}</label>
@@ -495,13 +602,22 @@ export default function ChoicePicker({
 
       <div className={rows || inline ? "edit-inline-search" : "relative flex items-center"}>
         {rows ? (
-          <label htmlFor={listId} className="sr-only">{label}</label>
+          <label htmlFor={listId} className="sr-only">
+            {label}
+          </label>
         ) : null}
-        {!inline && <span className="i-material-symbols-search-rounded pointer-events-none absolute left-3 z-10 size-4 text-fg-subtle" aria-hidden="true" />}
+        {!inline && (
+          <span
+            className="i-material-symbols-search-rounded pointer-events-none absolute left-3 z-10 size-4 text-fg-subtle"
+            aria-hidden="true"
+          />
+        )}
         <input
           {...comboboxProps}
           placeholder={rows ? `添加${label}` : inline ? "添加…" : `搜索${label}…`}
-          className={inline ? "" : "!pl-9 !py-2 !text-sm !bg-black/30 hover:!bg-black/40 focus:!bg-black/60 !rounded-xl"}
+          className={
+            inline ? "" : "!pl-9 !py-2 !text-sm !bg-black/30 hover:!bg-black/40 focus:!bg-black/60 !rounded-xl"
+          }
         />
       </div>
 

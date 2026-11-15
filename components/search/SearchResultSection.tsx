@@ -53,10 +53,19 @@ export default function SearchResultSection({
       )}
 
       {requestError && (
-        <div role="alert" className="mb-6 rounded-xl border border-red-400/30 bg-red-500/10 px-4 py-3 text-sm text-red-200">
+        <div
+          role="alert"
+          className="mb-6 rounded-xl border border-red-400/30 bg-red-500/10 px-4 py-3 text-sm text-red-200"
+        >
           {requestError}
           {!queryTooLong && (
-            <button type="button" className="ml-3 underline underline-offset-4" onClick={/* 清除已完成的查询键，重新请求当前搜索条件。 */ onRetry}>重试</button>
+            <button
+              type="button"
+              className="ml-3 underline underline-offset-4"
+              onClick={/* 清除已完成的查询键，重新请求当前搜索条件。 */ onRetry}
+            >
+              重试
+            </button>
           )}
         </div>
       )}
@@ -68,34 +77,48 @@ export default function SearchResultSection({
         aria-busy={isLoading}
       >
         {isLoading && mediaItems.length === 0 ? (
-          [...Array(PAGE_SIZE)].map(/* 为首轮搜索加载生成一张占位卡片。 */ (_, i) => (
-            <SearchMediaCardSkeleton key={`loading-initial-${i}`} />
-          ))
+          [...Array(PAGE_SIZE)].map(
+            /* 为首轮搜索加载生成一张占位卡片。 */ (_, i) => <SearchMediaCardSkeleton key={`loading-initial-${i}`} />,
+          )
         ) : requestError ? null : mediaItems.length > 0 ? (
-          mediaItems.map(/* 将搜索结果渲染为卡片，并携带当前地址作为详情页返回路径。 */ (item) => (
-            <SearchMediaCard key={`${item.type}-${item.id}`} item={item} returnHref={returnHref} />
-          ))
+          mediaItems.map(
+            /* 将搜索结果渲染为卡片，并携带当前地址作为详情页返回路径。 */ (item) => (
+              <SearchMediaCard key={`${item.type}-${item.id}`} item={item} returnHref={returnHref} />
+            ),
+          )
         ) : total === 0 ? (
-          <SearchEmptyState
-            query={urlQuery}
-            canReset={canResetSearch}
-            onReset={onReset}
-            onSuggest={onSuggest}
-          />
+          <SearchEmptyState query={urlQuery} canReset={canResetSearch} onReset={onReset} onSuggest={onSuggest} />
         ) : null}
       </div>
 
       {totalPages > 1 && !isLoading && (
         <nav className="mt-10 flex flex-wrap items-center justify-center gap-2" aria-label="搜索结果分页">
-          <button onClick={/* 返回上一页搜索结果。 */ () => onPage(page - 1)} disabled={page === 1} className="surface-control rounded-xl p-2.5 text-fg-secondary transition-all hover:text-white disabled:pointer-events-none disabled:opacity-30" aria-label="上一页">
+          <button
+            onClick={/* 返回上一页搜索结果。 */ () => onPage(page - 1)}
+            disabled={page === 1}
+            className="surface-control rounded-xl p-2.5 text-fg-secondary transition-all hover:text-white disabled:pointer-events-none disabled:opacity-30"
+            aria-label="上一页"
+          >
             <span className="i-material-symbols-chevron-left-rounded inline-block size-4" aria-hidden="true" />
           </button>
-          {pageNumbers(page, totalPages).map(/* 将页码窗口中的一页渲染为分页按钮。 */ (pageNumber) => (
-            <button key={pageNumber} onClick={/* 跳转到点击的结果页。 */ () => onPage(pageNumber)} aria-current={pageNumber === page ? "page" : undefined} className={`min-w-10 rounded-xl px-3 py-2 text-center text-sm transition-all ${pageNumber === page ? "filter-option-active shadow-md" : "surface-muted border border-white/10 text-fg-secondary hover:bg-white/10 hover:text-white"}`}>
-              {pageNumber}
-            </button>
-          ))}
-          <button onClick={/* 前往下一页搜索结果。 */ () => onPage(page + 1)} disabled={page === totalPages} className="surface-control rounded-xl p-2.5 text-fg-secondary transition-all hover:text-white disabled:pointer-events-none disabled:opacity-30" aria-label="下一页">
+          {pageNumbers(page, totalPages).map(
+            /* 将页码窗口中的一页渲染为分页按钮。 */ (pageNumber) => (
+              <button
+                key={pageNumber}
+                onClick={/* 跳转到点击的结果页。 */ () => onPage(pageNumber)}
+                aria-current={pageNumber === page ? "page" : undefined}
+                className={`min-w-10 rounded-xl px-3 py-2 text-center text-sm transition-all ${pageNumber === page ? "filter-option-active shadow-md" : "surface-muted border border-white/10 text-fg-secondary hover:bg-white/10 hover:text-white"}`}
+              >
+                {pageNumber}
+              </button>
+            ),
+          )}
+          <button
+            onClick={/* 前往下一页搜索结果。 */ () => onPage(page + 1)}
+            disabled={page === totalPages}
+            className="surface-control rounded-xl p-2.5 text-fg-secondary transition-all hover:text-white disabled:pointer-events-none disabled:opacity-30"
+            aria-label="下一页"
+          >
             <span className="i-material-symbols-chevron-right-rounded inline-block size-4" aria-hidden="true" />
           </button>
         </nav>

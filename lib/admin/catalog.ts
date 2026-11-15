@@ -9,11 +9,21 @@ export const referenceTypes = {
   languages: { label: "语言", table: "languages", link: "media_languages", key: "language_id", alternate: false },
 } as const;
 export type ReferenceType = keyof typeof referenceTypes;
-export type Choice = { id: string; name: string; detail?: string; cover_url?: string | null; character?: string | null };
+export type Choice = {
+  id: string;
+  name: string;
+  detail?: string;
+  cover_url?: string | null;
+  character?: string | null;
+};
 
 /** 影视选项需要的字段；季额外带出季号与所属电视节目标题。 */
-export const mediaChoiceFields = "id,title,type,cover_url,season:tv_seasons!tv_seasons_id_fkey(season_number,parent:media_items!tv_seasons_series_id_fkey(title))";
-export type MediaChoiceRow = { type?: ManagedMediaType | null; season?: { season_number: number; parent?: { title?: string } | null } | null };
+export const mediaChoiceFields =
+  "id,title,type,cover_url,season:tv_seasons!tv_seasons_id_fkey(season_number,parent:media_items!tv_seasons_series_id_fkey(title))";
+export type MediaChoiceRow = {
+  type?: ManagedMediaType | null;
+  season?: { season_number: number; parent?: { title?: string } | null } | null;
+};
 
 /** 影视选项的补充说明：季显示「节目 · 第 N 季」，其余显示类型名，搜索结果与预填上级保持一致。 */
 export function mediaChoiceDetail(row: MediaChoiceRow) {

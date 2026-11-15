@@ -54,4 +54,3 @@ describe("formatRuntime", () => {
     assert.equal(formatRuntime(2900), "2 天 20 分钟");
   });
 });
-

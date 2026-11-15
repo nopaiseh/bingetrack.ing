@@ -17,8 +17,7 @@ export function mapViewRowToMedia(
   overrideType?: "movies" | "shows",
 ): Media {
   const mediaType: "movies" | "shows" =
-    overrideType ??
-    (item.type === "movie" || item.type === "movies" ? "movies" : "shows");
+    overrideType ?? (item.type === "movie" || item.type === "movies" ? "movies" : "shows");
 
   return {
     id: String(item.id),

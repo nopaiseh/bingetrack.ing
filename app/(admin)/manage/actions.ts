@@ -5,7 +5,12 @@ import { refresh } from "next/cache";
 import { requireOwner } from "@/lib/auth/server";
 import { parseMediaForm } from "@/lib/admin/media-form";
 import { isMediaId } from "@/lib/functions/media-id";
-import { affectedMediaIds, mergeAffected, revalidateAllMedia, revalidateMediaItems } from "@/lib/admin/revalidate-media";
+import {
+  affectedMediaIds,
+  mergeAffected,
+  revalidateAllMedia,
+  revalidateMediaItems,
+} from "@/lib/admin/revalidate-media";
 
 export type ActionResult = { error?: string; saved?: boolean; id?: string };
 
@@ -21,7 +26,9 @@ function writeError(code?: string) {
 export async function saveMedia(_previous: ActionResult, form: FormData): Promise<ActionResult> {
   const { db } = await requireOwner();
   let payload;
-  try { payload = parseMediaForm(form); } catch (error) {
+  try {
+    payload = parseMediaForm(form);
+  } catch (error) {
     return { error: error instanceof Error ? error.message : "资料格式不正确。" };
   }
   // 保存前记下旧的上级与系列成员，条目移走后它们的详情页也要刷新。
@@ -46,7 +53,8 @@ export async function deleteMedia(_previous: ActionResult, form: FormData): Prom
   const affected = await affectedMediaIds(db, [id]);
   const { data: target } = await db.from("media_items").select("type").eq("id", id).maybeSingle();
   const { error } = await db.rpc("admin_delete_media", { p_id: id, p_confirm_title: title });
-  if (error) return { error: error.code === "22023" ? "标题不匹配，请输入当前条目的完整标题。" : writeError(error.code) };
+  if (error)
+    return { error: error.code === "22023" ? "标题不匹配，请输入当前条目的完整标题。" : writeError(error.code) };
   revalidateMediaItems(affected);
   redirect(`/manage?type=${target?.type === "movie" || !target ? "movie" : "tv_show"}&deleted=1&n=${Date.now()}`);
 }

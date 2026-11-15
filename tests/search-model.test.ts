@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { countActiveFilters, optionLabel, resultRange, resultsHeading, sortCaption } from "@/components/search/search-model";
+import {
+  countActiveFilters,
+  optionLabel,
+  resultRange,
+  resultsHeading,
+  sortCaption,
+} from "@/components/search/search-model";
 import { EMPTY_FILTERS } from "@/components/search/search-model";
 
 describe("search model helpers", () => {
@@ -18,13 +24,15 @@ describe("search model helpers", () => {
     expect(countActiveFilters(EMPTY_FILTERS)).toBe(0);
     expect(countActiveFilters({ ...EMPTY_FILTERS, year: ["", ""] })).toBe(0);
     expect(countActiveFilters({ ...EMPTY_FILTERS, sort: ["date_desc"] })).toBe(0);
-    expect(countActiveFilters({
-      ...EMPTY_FILTERS,
-      type: ["movie"],
-      status: ["watched", "watching"],
-      year: ["2020", ""],
-      sort: ["rating_asc"],
-    })).toBe(5);
+    expect(
+      countActiveFilters({
+        ...EMPTY_FILTERS,
+        type: ["movie"],
+        status: ["watched", "watching"],
+        year: ["2020", ""],
+        sort: ["rating_asc"],
+      }),
+    ).toBe(5);
     expect(countActiveFilters({ sort: [] })).toBe(0);
   });
 

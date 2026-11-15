@@ -10,7 +10,7 @@ vi.mock("next/cache", () => ({ refresh: vi.fn(), revalidatePath: vi.fn(), revali
 vi.mock("next/navigation", () => ({ redirect: vi.fn() }));
 vi.mock("@/lib/admin/revalidate-media", () => ({
   affectedMediaIds: vi.fn(async (_db: unknown, ids: string[]) => ids),
-  mergeAffected: (...groups: (string[] | null)[]) => groups.flatMap(group => group ?? []),
+  mergeAffected: (...groups: (string[] | null)[]) => groups.flatMap((group) => group ?? []),
   revalidateMediaItems: vi.fn(),
   revalidateAllMedia: vi.fn(),
 }));
@@ -21,7 +21,16 @@ const rpc = vi.fn();
 
 function episodeForm(extra: Record<string, string> = {}) {
   const form = new FormData();
-  for (const [key, value] of Object.entries({ id: "", type: "tv_episode", title: "第 8 集", parent_id: season, number: "8", status: "want_to_watch", ...extra })) form.set(key, value);
+  for (const [key, value] of Object.entries({
+    id: "",
+    type: "tv_episode",
+    title: "第 8 集",
+    parent_id: season,
+    number: "8",
+    status: "want_to_watch",
+    ...extra,
+  }))
+    form.set(key, value);
   return form;
 }
 
@@ -32,18 +41,27 @@ beforeEach(() => {
   vi.clearAllMocks();
   rpc.mockResolvedValue({ data: saved, error: null });
   target.mockResolvedValue({ data: { type: "movie" }, error: null });
-  vi.mocked(requireOwner).mockResolvedValue({ db: { rpc, from }, user: {} } as unknown as Awaited<ReturnType<typeof requireOwner>>);
+  vi.mocked(requireOwner).mockResolvedValue({ db: { rpc, from }, user: {} } as unknown as Awaited<
+    ReturnType<typeof requireOwner>
+  >);
 });
 
 describe("deleteMedia", () => {
   /** /manage 已是概览页，删除后回到条目所属的列表；季与单集归入电视节目。 */
-  it.each([["movie", "movie"], ["tv_show", "tv_show"], ["tv_season", "tv_show"], ["tv_episode", "tv_show"]])("删除%s后回到 %s 列表", async (type, list) => {
+  it.each([
+    ["movie", "movie"],
+    ["tv_show", "tv_show"],
+    ["tv_season", "tv_show"],
+    ["tv_episode", "tv_show"],
+  ])("删除%s后回到 %s 列表", async (type, list) => {
     target.mockResolvedValue({ data: { type }, error: null });
     const form = new FormData();
     form.set("id", saved);
     form.set("confirm_title", "标题");
     await deleteMedia({}, form);
-    expect(redirect).toHaveBeenCalledWith(expect.stringMatching(new RegExp(`^/manage\\?type=${list}&deleted=1&n=\\d+$`)));
+    expect(redirect).toHaveBeenCalledWith(
+      expect.stringMatching(new RegExp(`^/manage\\?type=${list}&deleted=1&n=\\d+$`)),
+    );
   });
 });
 
@@ -58,7 +76,9 @@ describe("saveMedia 快速新增", () => {
 
   it("未选择连续录入时打开新条目", async () => {
     await saveMedia({}, episodeForm({ after: "open" }));
-    expect(redirect).toHaveBeenCalledWith(expect.stringMatching(new RegExp(`^/manage/media/${saved}\\?saved=1&n=\\d+$`)));
+    expect(redirect).toHaveBeenCalledWith(
+      expect.stringMatching(new RegExp(`^/manage/media/${saved}\\?saved=1&n=\\d+$`)),
+    );
     expect(refresh).not.toHaveBeenCalled();
   });
 

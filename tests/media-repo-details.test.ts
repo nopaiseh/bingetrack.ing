@@ -21,14 +21,17 @@ vi.mock("@/lib/supabase/public-server", () => ({
         const query: Query = { table, calls: [] };
         state.queries.push(query);
         const builder: Record<string, unknown> = {};
-        const chain = (method: string) => (...args: unknown[]) => {
-          query.calls.push({ method, args });
-          return builder;
-        };
+        const chain =
+          (method: string) =>
+          (...args: unknown[]) => {
+            query.calls.push({ method, args });
+            return builder;
+          };
         for (const method of ["select", "eq", "neq", "in", "order"]) builder[method] = chain(method);
         const finish = () => ({ data: null, error: null, ...state.handle(query) });
         builder.maybeSingle = () => Promise.resolve(finish());
-        builder.then = (resolve: (value: Result) => unknown, reject?: (reason: unknown) => unknown) => Promise.resolve(finish()).then(resolve, reject);
+        builder.then = (resolve: (value: Result) => unknown, reject?: (reason: unknown) => unknown) =>
+          Promise.resolve(finish()).then(resolve, reject);
         return builder;
       },
       rpc(fn: string, args: unknown) {
@@ -80,12 +83,15 @@ describe("作品详情与相关作品", () => {
     expect(args(state.queries[1], "order")).toEqual(["position", { ascending: true, nullsFirst: false }]);
 
     state.queries = [];
-    state.handle = (query) => query.table === "v_all_media"
-      ? { data: { id: mediaId, type: "tv_show", title: "剧" } }
-      : { data: null, error: { code: "42501" } };
+    state.handle = (query) =>
+      query.table === "v_all_media"
+        ? { data: { id: mediaId, type: "tv_show", title: "剧" } }
+        : { data: null, error: { code: "42501" } };
     expect(await getMediaById(mediaId)).toMatchObject({ title: "剧", series: [] });
     expect(reportHandledError).toHaveBeenCalledTimes(1);
-    expect(reportHandledError).toHaveBeenCalledWith(`Failed to fetch series memberships for media ${mediaId}:`, { code: "42501" });
+    expect(reportHandledError).toHaveBeenCalledWith(`Failed to fetch series memberships for media ${mediaId}:`, {
+      code: "42501",
+    });
   });
 
   it("视图没有这一行时不再读取系列成员", async () => {
@@ -116,7 +122,9 @@ describe("作品详情与相关作品", () => {
     expect(args(membership, "eq")).toEqual(["media_series.name", "系列"]);
     expect(args(membership, "neq")).toEqual(["media_item_id", "current"]);
     const cardsQuery = state.queries[1];
-    expect(args(cardsQuery, "select")).toEqual(["id,type,title,sort_date,first_air_date,last_air_date,release_year,rating,genres,languages,cover_url,status"]);
+    expect(args(cardsQuery, "select")).toEqual([
+      "id,type,title,sort_date,first_air_date,last_air_date,release_year,rating,genres,languages,cover_url,status",
+    ]);
     expect(args(cardsQuery, "in")).toEqual(["id", [otherId, mediaId]]);
     expect(String(args(cardsQuery, "select")?.[0])).not.toMatch(/summary|casts|directors|runtime/);
 
@@ -128,16 +136,21 @@ describe("作品详情与相关作品", () => {
     state.queries = [];
     state.handle = () => ({ data: null, error: { message: "membership down" } });
     expect(await getRelatedBySeries("系列", mediaId)).toEqual([]);
-    expect(reportHandledError).toHaveBeenCalledWith("Failed to fetch related media IDs for series 系列:", { message: "membership down" });
+    expect(reportHandledError).toHaveBeenCalledWith("Failed to fetch related media IDs for series 系列:", {
+      message: "membership down",
+    });
     expect(state.queries.map((query) => query.table)).toEqual(["media_item_series"]);
   });
 
   it("卡片查询失败时上报并返回空列表", async () => {
-    state.handle = (query) => query.table === "media_item_series"
-      ? { data: [{ media_item_id: otherId }] }
-      : { data: null, error: { message: "cards down" } };
+    state.handle = (query) =>
+      query.table === "media_item_series"
+        ? { data: [{ media_item_id: otherId }] }
+        : { data: null, error: { message: "cards down" } };
     expect(await getRelatedBySeries("系列", mediaId)).toEqual([]);
-    expect(reportHandledError).toHaveBeenCalledWith("Failed to fetch related media details for series 系列:", { message: "cards down" });
+    expect(reportHandledError).toHaveBeenCalledWith("Failed to fetch related media details for series 系列:", {
+      message: "cards down",
+    });
   });
 });
 
@@ -163,26 +176,52 @@ describe("季详情与单集分页", () => {
             last_release_date: "2021-03-04",
             total: "12",
             episodes: [
-              { id: "e1", episode_number: 1, title: null, alternate_title: null, summary: null, cover_url: "https://image.tmdb.org/e.jpg", release_date: null, runtime: 40, status: "watched", rating: "9.5" },
-              { id: "e2", episode_number: 2, title: "回响", alternate_title: "Echo", summary: "文本", cover_url: "https://image.tmdb.org/e2.jpg", release_date: "2020-01-09", runtime: null, status: null, rating: null },
+              {
+                id: "e1",
+                episode_number: 1,
+                title: null,
+                alternate_title: null,
+                summary: null,
+                cover_url: "https://image.tmdb.org/e.jpg",
+                release_date: null,
+                runtime: 40,
+                status: "watched",
+                rating: "9.5",
+              },
+              {
+                id: "e2",
+                episode_number: 2,
+                title: "回响",
+                alternate_title: "Echo",
+                summary: "文本",
+                cover_url: "https://image.tmdb.org/e2.jpg",
+                release_date: "2020-01-09",
+                runtime: null,
+                status: null,
+                rating: null,
+              },
             ],
           },
         };
       }
-      return { data: { title: "第二季", alternate_title: "Two", summary: "简介", cover_url: "https://image.tmdb.org/s.jpg" } };
+      return {
+        data: { title: "第二季", alternate_title: "Two", summary: "简介", cover_url: "https://image.tmdb.org/s.jpg" },
+      };
     };
 
     const page = await getSeasonEpisodes(seriesId, seasonId, 2, 20, "watched", "desc");
     const rpc = state.queries.find((query) => query.table === "rpc:get_season_episode_page");
     const season = state.queries.find((query) => query.table === "media_items");
-    expect(rpc?.calls[0].args).toEqual([{
-      p_series_id: seriesId,
-      p_season_id: seasonId,
-      p_status: "watched",
-      p_order: "desc",
-      p_limit: 20,
-      p_offset: 20,
-    }]);
+    expect(rpc?.calls[0].args).toEqual([
+      {
+        p_series_id: seriesId,
+        p_season_id: seasonId,
+        p_status: "watched",
+        p_order: "desc",
+        p_limit: 20,
+        p_offset: 20,
+      },
+    ]);
     expect(args(season!, "select")).toEqual(["title, alternate_title, summary, cover_url"]);
     expect(args(season!, "eq")).toEqual(["id", seasonId]);
     expect(page).toMatchObject({
@@ -224,15 +263,27 @@ describe("季详情与单集分页", () => {
       expect(await getSeasonEpisodes(seriesId, "bad", 1, 20)).toBeNull();
       expect(state.builds).toBe(0);
 
-      state.handle = (query) => query.table === "rpc:get_season_episode_page"
-        ? { data: null, error: null }
-        : { data: { title: "季" }, error: null };
+      state.handle = (query) =>
+        query.table === "rpc:get_season_episode_page"
+          ? { data: null, error: null }
+          : { data: { title: "季" }, error: null };
       expect(await getSeasonEpisodes(seriesId, seasonId, 1, 20)).toBeNull();
 
       const cause = { code: "42501", message: "permission denied" };
-      state.handle = (query) => query.table === "media_items"
-        ? { data: null, error: cause }
-        : { data: { season_number: 1, episode_count: 0, watched_count: 0, total_runtime: 0, average_rating: null, total: 0, episodes: [] } };
+      state.handle = (query) =>
+        query.table === "media_items"
+          ? { data: null, error: cause }
+          : {
+              data: {
+                season_number: 1,
+                episode_count: 0,
+                watched_count: 0,
+                total_runtime: 0,
+                average_rating: null,
+                total: 0,
+                episodes: [],
+              },
+            };
       await expect(getSeasonEpisodes(seriesId, seasonId, 1, 20)).rejects.toMatchObject({
         name: "MediaRepositoryError",
         message: "Media repository operation failed: fetch season summary",

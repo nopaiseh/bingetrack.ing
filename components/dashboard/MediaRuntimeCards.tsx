@@ -68,9 +68,7 @@ export default function MediaRuntimeCards({
           </div>
           <RuntimeValue runtime={watchedRuntime} />
         </div>
-        <p className="mt-4 border-t border-white/10 pt-4 text-xs text-fg-subtle">
-          倾注在光影与故事里的专注时光
-        </p>
+        <p className="mt-4 border-t border-white/10 pt-4 text-xs text-fg-subtle">倾注在光影与故事里的专注时光</p>
       </div>
 
       <div className="surface-card flex flex-col justify-between rounded-2xl p-4 sm:p-5 lg:p-6">
@@ -83,9 +81,7 @@ export default function MediaRuntimeCards({
           </div>
           <RuntimeValue runtime={unwatchedRuntime} />
         </div>
-        <p className="mt-4 border-t border-white/10 pt-4 text-xs text-fg-subtle">
-          等待翻开的精彩篇章
-        </p>
+        <p className="mt-4 border-t border-white/10 pt-4 text-xs text-fg-subtle">等待翻开的精彩篇章</p>
       </div>
 
       <div className="surface-card flex flex-col justify-between rounded-2xl p-4 sm:p-5 lg:p-6">
@@ -97,9 +93,7 @@ export default function MediaRuntimeCards({
             <span className="text-sm font-bold tracking-wide text-fg-secondary">完成进度</span>
           </div>
           <div className="mb-2 flex items-baseline gap-2">
-            <span
-              className="font-mono text-3xl sm:text-4xl lg:text-4xl xl:text-5xl tracking-tighter text-[var(--accent-light)]"
-            >
+            <span className="font-mono text-3xl sm:text-4xl lg:text-4xl xl:text-5xl tracking-tighter text-[var(--accent-light)]">
               <AnimatedNumber value={completionPercent} />%
             </span>
             <span className="font-medium text-fg-subtle text-sm sm:text-base">已完成</span>
@@ -114,5 +108,3 @@ export default function MediaRuntimeCards({
     </div>
   );
 }
-
-

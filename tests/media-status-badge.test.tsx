@@ -73,4 +73,3 @@ describe("MediaCardStatusBadge", () => {
     expect(container.firstChild).toBeNull();
   });
 });
-

@@ -9,11 +9,10 @@ function compactSeasonName(value: string): string {
  * 季列表的统一标题。
  * 主标题始终来自季序号；库里的原标题如果不是「第 N 季」这种通用名，就留作副标题。
  */
-export function seasonListLabel(season: {
-  seasonNumber: number;
+export function seasonListLabel(season: { seasonNumber: number; title: string; alternateTitle?: string | null }): {
   title: string;
-  alternateTitle?: string | null;
-}): { title: string; subtitle: string | null } {
+  subtitle: string | null;
+} {
   const title = `第 ${season.seasonNumber} 季`;
   const stored = season.title.trim();
   const alternate = season.alternateTitle?.trim() ?? "";

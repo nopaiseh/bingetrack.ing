@@ -8,7 +8,10 @@ const state = vi.hoisted(() => ({
     ins: Array<[string, unknown[]]>;
     ranges: Array<[number, number]>;
   }>,
-  results: [] as Array<{ data: unknown; error: unknown } | ((call: { table: string; ranges: Array<[number, number]> }) => { data: unknown; error: unknown })>,
+  results: [] as Array<
+    | { data: unknown; error: unknown }
+    | ((call: { table: string; ranges: Array<[number, number]> }) => { data: unknown; error: unknown })
+  >,
 }));
 
 vi.mock("@/lib/supabase/public-server", () => ({
@@ -22,15 +25,29 @@ vi.mock("@/lib/supabase/public-server", () => ({
         ranges: [] as Array<[number, number]>,
       };
       const chain = {
-        select(columns: string) { call.select = columns; return chain; },
-        eq(column: string, value: unknown) { call.eqs.push([column, value]); return chain; },
-        in(column: string, value: unknown[]) { call.ins.push([column, value]); return chain; },
-        order() { return chain; },
-        range(start: number, end: number) { call.ranges.push([start, end]); return chain; },
+        select(columns: string) {
+          call.select = columns;
+          return chain;
+        },
+        eq(column: string, value: unknown) {
+          call.eqs.push([column, value]);
+          return chain;
+        },
+        in(column: string, value: unknown[]) {
+          call.ins.push([column, value]);
+          return chain;
+        },
+        order() {
+          return chain;
+        },
+        range(start: number, end: number) {
+          call.ranges.push([start, end]);
+          return chain;
+        },
         then(resolve: (value: unknown) => unknown, reject?: (reason: unknown) => unknown) {
           state.calls.push(call);
           const next = state.results.shift();
-          const result = typeof next === "function" ? next(call) : next ?? { data: [], error: null };
+          const result = typeof next === "function" ? next(call) : (next ?? { data: [], error: null });
           return Promise.resolve(result).then(resolve, reject);
         },
       };
@@ -55,7 +72,10 @@ function show(overrides: Partial<ContinueWatchingShow> & Pick<ContinueWatchingSh
   };
 }
 
-function episode(overrides: Partial<ContinueWatchingShow["episodes"][number]> & Pick<ContinueWatchingShow["episodes"][number], "seasonNumber" | "episodeNumber">) {
+function episode(
+  overrides: Partial<ContinueWatchingShow["episodes"][number]> &
+    Pick<ContinueWatchingShow["episodes"][number], "seasonNumber" | "episodeNumber">,
+) {
   return {
     showId,
     seasonId: overrides.seasonNumber === 2 ? seasonTwo : seasonOne,
@@ -74,12 +94,14 @@ beforeEach(() => {
 describe("assembleContinueWatching", () => {
   it("returns an empty list when nothing is in progress", () => {
     expect(assembleContinueWatching([])).toEqual([]);
-    expect(assembleContinueWatching([
-      show({
-        showId,
-        episodes: [episode({ seasonNumber: 1, episodeNumber: 1, status: "want_to_watch" })],
-      }),
-    ])).toEqual([]);
+    expect(
+      assembleContinueWatching([
+        show({
+          showId,
+          episodes: [episode({ seasonNumber: 1, episodeNumber: 1, status: "want_to_watch" })],
+        }),
+      ]),
+    ).toEqual([]);
   });
 
   it("skips earlier gaps and continues into the next season", () => {
@@ -146,7 +168,9 @@ describe("assembleContinueWatching", () => {
     const [missingAll] = assembleContinueWatching([
       show({
         showId: otherId,
-        episodes: [episode({ showId: otherId, seasonNumber: 1, episodeNumber: 1, status: "watched", releaseDate: null })],
+        episodes: [
+          episode({ showId: otherId, seasonNumber: 1, episodeNumber: 1, status: "watched", releaseDate: null }),
+        ],
       }),
     ]);
 
@@ -161,13 +185,15 @@ describe("assembleContinueWatching", () => {
       const day = index >= 7 ? "20" : String(index + 1).padStart(2, "0");
       return show({
         showId: id,
-        episodes: [episode({
-          showId: id,
-          seasonNumber: 1,
-          episodeNumber: 1,
-          status: "watched",
-          releaseDate: `2024-06-${day}`,
-        })],
+        episodes: [
+          episode({
+            showId: id,
+            seasonNumber: 1,
+            episodeNumber: 1,
+            status: "watched",
+            releaseDate: `2024-06-${day}`,
+          }),
+        ],
       });
     });
 
@@ -193,7 +219,10 @@ describe("getContinueWatching", () => {
     await expect(getContinueWatching()).resolves.toEqual([]);
     expect(state.calls).toHaveLength(1);
     expect(state.calls[0].table).toBe("v_all_media");
-    expect(state.calls[0].eqs).toEqual([["type", "tv_show"], ["status", "watching"]]);
+    expect(state.calls[0].eqs).toEqual([
+      ["type", "tv_show"],
+      ["status", "watching"],
+    ]);
     expect(state.calls[0].select).toBe("id,title,cover_url");
     expect(state.calls[0].ranges).toEqual([[0, 999]]);
   });
@@ -201,11 +230,13 @@ describe("getContinueWatching", () => {
   it("batches episode progress and applies the next-episode rule", async () => {
     state.results = [
       {
-        data: [{
-          id: showId,
-          title: "信号",
-          cover_url: "https://image.tmdb.org/t/p/original/signal.jpg",
-        }],
+        data: [
+          {
+            id: showId,
+            title: "信号",
+            cover_url: "https://image.tmdb.org/t/p/original/signal.jpg",
+          },
+        ],
         error: null,
       },
       {
@@ -230,20 +261,22 @@ describe("getContinueWatching", () => {
       },
     ];
 
-    await expect(getContinueWatching()).resolves.toEqual([{
-      showId,
-      title: "信号",
-      posterPath: "/signal.jpg",
-      href: `/shows/${showId}`,
-      nextEpisode: {
-        seasonNumber: 1,
-        episodeNumber: 2,
-        title: null,
-        href: `/shows/${showId}/seasons/${seasonOne}`,
+    await expect(getContinueWatching()).resolves.toEqual([
+      {
+        showId,
+        title: "信号",
+        posterPath: "/signal.jpg",
+        href: `/shows/${showId}`,
+        nextEpisode: {
+          seasonNumber: 1,
+          episodeNumber: 2,
+          title: null,
+          href: `/shows/${showId}/seasons/${seasonOne}`,
+        },
+        seasonProgress: { seasonNumber: 1, watched: 1, total: 3 },
+        lastWatchedAt: "2024-02-01T00:00:00.000Z",
       },
-      seasonProgress: { seasonNumber: 1, watched: 1, total: 3 },
-      lastWatchedAt: "2024-02-01T00:00:00.000Z",
-    }]);
+    ]);
     expect(state.calls[1].table).toBe("tv_episodes");
     expect(state.calls[1].ins).toEqual([["season.series_id", [showId]]]);
     expect(state.calls[1].select).not.toMatch(/\*/);

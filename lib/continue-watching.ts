@@ -15,7 +15,8 @@ const MISSING_RELEASE_INSTANT = "1970-01-01T00:00:00.000Z";
 const RELEASE_DATE = /^(\d{4}-\d{2}-\d{2})/;
 const TMDB_POSTER_PATH = /^https:\/\/image\.tmdb\.org\/t\/p\/[^/]+(\/[^?#]+)/;
 
-const EPISODE_COLUMNS = "episode_number,season:tv_seasons!tv_episodes_season_id_fkey!inner(id,series_id,season_number),media:media_items!tv_episodes_id_fkey(title,release_date,tracking(status))";
+const EPISODE_COLUMNS =
+  "episode_number,season:tv_seasons!tv_episodes_season_id_fkey!inner(id,series_id,season_number),media:media_items!tv_episodes_id_fkey(title,release_date,tracking(status))";
 
 /**
  * 首页「继续看」的一条电视节目。
@@ -165,7 +166,9 @@ export function assembleContinueWatching(shows: readonly ContinueWatchingShow[])
   }
 
   return items
-    .sort((left, right) => right.lastWatchedAt.localeCompare(left.lastWatchedAt) || left.showId.localeCompare(right.showId))
+    .sort(
+      (left, right) => right.lastWatchedAt.localeCompare(left.lastWatchedAt) || left.showId.localeCompare(right.showId),
+    )
     .slice(0, CONTINUE_WATCHING_LIMIT);
 }
 
@@ -191,13 +194,15 @@ async function eachPage<T>(
 /** 读取状态为在看的电视节目。电影的观看状态不参与。 */
 async function fetchWatchingShows(): Promise<ShowRow[]> {
   const db = getSupabasePublicServer();
-  return eachPage("shows", (offset) => db
-    .from("v_all_media")
-    .select("id,title,cover_url")
-    .eq("type", "tv_show")
-    .eq("status", "watching")
-    .order("id", { ascending: true })
-    .range(offset, offset + PAGE_SIZE - 1));
+  return eachPage("shows", (offset) =>
+    db
+      .from("v_all_media")
+      .select("id,title,cover_url")
+      .eq("type", "tv_show")
+      .eq("status", "watching")
+      .order("id", { ascending: true })
+      .range(offset, offset + PAGE_SIZE - 1),
+  );
 }
 
 /** 一次读出这些节目的全部单集，供内存里套用下一集规则。 */
@@ -207,12 +212,14 @@ async function fetchEpisodes(showIds: readonly string[]): Promise<EpisodeProgres
 
   for (let index = 0; index < showIds.length; index += SHOW_ID_CHUNK) {
     const ids = showIds.slice(index, index + SHOW_ID_CHUNK);
-    const rows = await eachPage("episodes", (offset) => db
-      .from("tv_episodes")
-      .select(EPISODE_COLUMNS)
-      .in("season.series_id", [...ids])
-      .order("id", { ascending: true })
-      .range(offset, offset + PAGE_SIZE - 1));
+    const rows = await eachPage("episodes", (offset) =>
+      db
+        .from("tv_episodes")
+        .select(EPISODE_COLUMNS)
+        .in("season.series_id", [...ids])
+        .order("id", { ascending: true })
+        .range(offset, offset + PAGE_SIZE - 1),
+    );
 
     for (const row of rows as EpisodeRow[]) {
       const season = firstRelated(row.season);

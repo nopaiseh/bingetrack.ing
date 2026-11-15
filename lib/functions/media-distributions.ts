@@ -23,9 +23,18 @@ function topFive(counts: Map<string, number>): DistributionItem[] {
   if (total === 0) return [];
 
   return Array.from(counts.entries())
-    .sort(/* 按数量降序排序，数量相同时按中文名称排序。 */ (left, right) => right[1] - left[1] || left[0].localeCompare(right[0], "zh-CN"))
+    .sort(
+      /* 按数量降序排序，数量相同时按中文名称排序。 */ (left, right) =>
+        right[1] - left[1] || left[0].localeCompare(right[0], "zh-CN"),
+    )
     .slice(0, 5)
-    .map(/* 保留名称和数量，并计算占该维度总数的整数百分比。 */ ([name, count]) => ({ name, count, percent: Math.round((count / total) * 100) }));
+    .map(
+      /* 保留名称和数量，并计算占该维度总数的整数百分比。 */ ([name, count]) => ({
+        name,
+        count,
+        percent: Math.round((count / total) * 100),
+      }),
+    );
 }
 
 /** 将三个维度的原始计数分别转换为前五名展示数据。 */
@@ -56,7 +65,17 @@ export function buildMediaDistributions(rows: DistributionCountRow[]): MediaDist
   if (!countsByType.shows.has("All Time")) countsByType.shows.set("All Time", createDistributionCounts());
 
   return {
-    movies: Object.fromEntries(Array.from(countsByType.movies, /* 将某年电影计数转换为年度分布条目。 */ ([year, counts]) => [year, finalizeDistribution(counts)])),
-    shows: Object.fromEntries(Array.from(countsByType.shows, /* 将某年电视节目计数转换为年度分布条目。 */ ([year, counts]) => [year, finalizeDistribution(counts)])),
+    movies: Object.fromEntries(
+      Array.from(
+        countsByType.movies,
+        /* 将某年电影计数转换为年度分布条目。 */ ([year, counts]) => [year, finalizeDistribution(counts)],
+      ),
+    ),
+    shows: Object.fromEntries(
+      Array.from(
+        countsByType.shows,
+        /* 将某年电视节目计数转换为年度分布条目。 */ ([year, counts]) => [year, finalizeDistribution(counts)],
+      ),
+    ),
   };
 }

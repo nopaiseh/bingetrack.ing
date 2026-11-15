@@ -1,5 +1,12 @@
 import { mediaTypes } from "@/lib/admin/media-form";
-import { reportGroups, reportRowType, reportTagLabels, reports, type ReportKind, type ReportRow } from "@/lib/admin/reports";
+import {
+  reportGroups,
+  reportRowType,
+  reportTagLabels,
+  reports,
+  type ReportKind,
+  type ReportRow,
+} from "@/lib/admin/reports";
 
 /** 待处理卡片里先展示的行数；其余从「查看全部」进入报告。 */
 export const REPORT_PREVIEW_LIMIT = 5;
@@ -21,7 +28,7 @@ export type ReportCardModel = {
 export function partitionReports(counts: Map<ReportKind, number | null>) {
   const pending: ReportKind[] = [];
   const cleared: ReportKind[] = [];
-  for (const kind of reportGroups().flatMap(group => group.kinds)) {
+  for (const kind of reportGroups().flatMap((group) => group.kinds)) {
     const count = counts.get(kind) ?? null;
     if (count === 0) cleared.push(kind);
     else pending.push(kind);
@@ -58,7 +65,7 @@ export function previewCopy(kind: ReportKind, row: ReportRow): { title: string; 
   const detail = row.detail?.trim() ?? "";
   if (detail && Object.hasOwn(mediaTypes, row.link_type) && type) return { title, detail: `${type}：${detail}` };
   if (detail) return { title, detail };
-  const tags = (row.tags ?? []).map(tag => reportTagLabels[tag] ?? tag).filter(tag => tag && tag !== type);
+  const tags = (row.tags ?? []).map((tag) => reportTagLabels[tag] ?? tag).filter((tag) => tag && tag !== type);
   if (tags.length) {
     const tagText = tags.join(" · ");
     return { title, detail: type && Object.hasOwn(mediaTypes, row.link_type) ? `${type} · ${tagText}` : tagText };

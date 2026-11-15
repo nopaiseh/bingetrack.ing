@@ -58,7 +58,12 @@ export default function DashboardCategoryPanel({
   const distribution = movies ? stats.movieDistribution : stats.seriesDistribution;
 
   return (
-    <div id={`dashboard-panel-${panelKey}`} role="tabpanel" aria-labelledby={`dashboard-tab-${panelKey}`} className="animate-fade-in flex flex-col gap-4 md:gap-6">
+    <div
+      id={`dashboard-panel-${panelKey}`}
+      role="tabpanel"
+      aria-labelledby={`dashboard-tab-${panelKey}`}
+      className="animate-fade-in flex flex-col gap-4 md:gap-6"
+    >
       <CategoryHeaderCards
         year={selectedYear === "All Time" ? "全时段" : selectedYear}
         categoryName={categoryName}

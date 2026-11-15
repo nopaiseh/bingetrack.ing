@@ -2,7 +2,14 @@ import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import type { ReactNode } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import AdminList from "@/app/(admin)/manage/list/AdminList";
-import { ADMIN_LIST_PAGE_SIZE, LIST_TINTS, adminListHref, listInitial, listTint, mediaBulkActions } from "@/app/(admin)/manage/list/model";
+import {
+  ADMIN_LIST_PAGE_SIZE,
+  LIST_TINTS,
+  adminListHref,
+  listInitial,
+  listTint,
+  mediaBulkActions,
+} from "@/app/(admin)/manage/list/model";
 import type { AdminListRow } from "@/app/(admin)/manage/list/model";
 
 const navigation = vi.hoisted(() => ({ push: vi.fn(), refresh: vi.fn(), pathname: "/manage" }));
@@ -12,7 +19,11 @@ const bulk = vi.hoisted(() => ({
 }));
 
 vi.mock("next/link", () => ({
-  default: ({ href, children, ...props }: { href: string; children: ReactNode }) => <a href={href} {...props}>{children}</a>,
+  default: ({ href, children, ...props }: { href: string; children: ReactNode }) => (
+    <a href={href} {...props}>
+      {children}
+    </a>
+  ),
 }));
 vi.mock("next/image", () => ({
   default: ({ alt }: { alt: string }) => <span role="img" aria-label={alt} />,
@@ -45,7 +56,11 @@ const rows: AdminListRow[] = [
       { key: "runtime", label: "片长", value: "2 小时 45 分钟" },
     ],
     status: { label: "没看过", tone: "want" },
-    trailing: { href: "/movies/avengers", label: "查看复仇者联盟的公开页面", icon: "i-material-symbols-arrow-outward-rounded" },
+    trailing: {
+      href: "/movies/avengers",
+      label: "查看复仇者联盟的公开页面",
+      icon: "i-material-symbols-arrow-outward-rounded",
+    },
   },
   {
     id: "spiderman",
@@ -69,9 +84,31 @@ function renderList(search = "") {
       preserved={{ type: "movie" }}
       defaults={{ sort: "date" }}
       search={{ name: "q", label: "搜索标题", placeholder: "搜索标题或原名", value: search }}
-      chips={{ name: "status", label: "观看状态", value: "", options: [{ value: "", label: "全部" }, { value: "watched", label: "看过" }, { value: "want_to_watch", label: "没看过" }] }}
-      selects={[{ name: "sort", label: "排序", value: "date", options: [{ value: "date", label: "上映日期（新→旧）" }, { value: "title", label: "标题" }] }]}
-      columns={[{ key: "date", label: "上映", className: "admin-col-date" }, { key: "runtime", label: "片长", className: "admin-col-runtime" }]}
+      chips={{
+        name: "status",
+        label: "观看状态",
+        value: "",
+        options: [
+          { value: "", label: "全部" },
+          { value: "watched", label: "看过" },
+          { value: "want_to_watch", label: "没看过" },
+        ],
+      }}
+      selects={[
+        {
+          name: "sort",
+          label: "排序",
+          value: "date",
+          options: [
+            { value: "date", label: "上映日期（新→旧）" },
+            { value: "title", label: "标题" },
+          ],
+        },
+      ]}
+      columns={[
+        { key: "date", label: "上映", className: "admin-col-date" },
+        { key: "runtime", label: "片长", className: "admin-col-runtime" },
+      ]}
       rows={rows}
       page={1}
       pageSize={ADMIN_LIST_PAGE_SIZE}
@@ -89,8 +126,12 @@ function renderList(search = "") {
 
 describe("列表地址", () => {
   it("空值和默认排序不进查询串，其余筛选可以分享", () => {
-    expect(adminListHref("/manage", { type: "movie", q: "", status: "", sort: "date" }, { sort: "date" })).toBe("/manage?type=movie");
-    expect(adminListHref("/manage", { type: "movie", q: "复 仇", status: "watched", sort: "title" }, { sort: "date" })).toBe("/manage?type=movie&q=%E5%A4%8D+%E4%BB%87&status=watched&sort=title");
+    expect(adminListHref("/manage", { type: "movie", q: "", status: "", sort: "date" }, { sort: "date" })).toBe(
+      "/manage?type=movie",
+    );
+    expect(
+      adminListHref("/manage", { type: "movie", q: "复 仇", status: "watched", sort: "title" }, { sort: "date" }),
+    ).toBe("/manage?type=movie&q=%E5%A4%8D+%E4%BB%87&status=watched&sort=title");
     expect(adminListHref("/manage/references/people", { q: "万" })).toBe("/manage/references/people?q=%E4%B8%87");
   });
 
@@ -130,7 +171,9 @@ describe("管理列表", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "看过" }));
     expect(screen.getByRole("button", { name: "看过" })).toHaveAttribute("aria-pressed", "true");
-    expect(navigation.push).toHaveBeenLastCalledWith("/manage?type=movie&q=%E5%A4%8D&status=watched&sort=title", { scroll: false });
+    expect(navigation.push).toHaveBeenLastCalledWith("/manage?type=movie&q=%E5%A4%8D&status=watched&sort=title", {
+      scroll: false,
+    });
   });
 
   it("回车立刻搜索，后退带来的地址不会盖掉还在输入的草稿", async () => {
@@ -145,7 +188,9 @@ describe("管理列表", () => {
     view.rerender(listElement(""));
     expect(search).toHaveValue("蜘蛛侠");
     await vi.advanceTimersByTimeAsync(300);
-    expect(navigation.push).toHaveBeenLastCalledWith("/manage?type=movie&q=%E8%9C%98%E8%9B%9B%E4%BE%A0", { scroll: false });
+    expect(navigation.push).toHaveBeenLastCalledWith("/manage?type=movie&q=%E8%9C%98%E8%9B%9B%E4%BE%A0", {
+      scroll: false,
+    });
   });
 
   it("行链接可键盘打开，无图用首字，勾选后批量操作保持禁用并说明 Coming soon", () => {
@@ -164,7 +209,11 @@ describe("管理列表", () => {
     expect(bar).toHaveTextContent("已选 1 部");
     expect(screen.getByRole("button", { name: "已看" })).toBeDisabled();
     expect(screen.getByRole("button", { name: "删除" })).toBeDisabled();
-    expect(screen.getAllByRole("tooltip").map((tip) => tip.textContent)).toEqual(["Coming soon", "Coming soon", "Coming soon"]);
+    expect(screen.getAllByRole("tooltip").map((tip) => tip.textContent)).toEqual([
+      "Coming soon",
+      "Coming soon",
+      "Coming soon",
+    ]);
 
     fireEvent.click(screen.getByRole("checkbox", { name: "全选本页" }));
     expect(bar).toHaveTextContent("已选 2 部");
@@ -218,8 +267,18 @@ function listElement(search: string) {
       preserved={{ type: "movie" }}
       defaults={{ sort: "date" }}
       search={{ name: "q", label: "搜索标题", placeholder: "搜索标题或原名", value: search }}
-      chips={{ name: "status", label: "观看状态", value: "", options: [{ value: "", label: "全部" }, { value: "watched", label: "看过" }] }}
-      selects={[{ name: "sort", label: "排序", value: "date", options: [{ value: "date", label: "上映日期（新→旧）" }] }]}
+      chips={{
+        name: "status",
+        label: "观看状态",
+        value: "",
+        options: [
+          { value: "", label: "全部" },
+          { value: "watched", label: "看过" },
+        ],
+      }}
+      selects={[
+        { name: "sort", label: "排序", value: "date", options: [{ value: "date", label: "上映日期（新→旧）" }] },
+      ]}
       columns={[]}
       rows={rows}
       page={1}

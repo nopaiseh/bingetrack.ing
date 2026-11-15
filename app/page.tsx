@@ -85,10 +85,7 @@ export default async function HomePage() {
 
   return (
     <div>
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: serializeJsonLd(buildWebsiteJsonLd()) }}
-      />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: serializeJsonLd(buildWebsiteJsonLd()) }} />
       <HomeDashboard
         summary={summary}
         topMovies={topMovies}
@@ -102,4 +99,3 @@ export default async function HomePage() {
     </div>
   );
 }
-

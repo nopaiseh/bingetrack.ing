@@ -54,7 +54,9 @@ export function scrubSensitiveUrl(value: string): string {
   return `${value.slice(0, question)}${stripped ? `?${stripped}` : ""}${suffix}`;
 }
 
-function scrubQueryValue(value: NonNullable<Event["request"]>["query_string"]): NonNullable<Event["request"]>["query_string"] {
+function scrubQueryValue(
+  value: NonNullable<Event["request"]>["query_string"],
+): NonNullable<Event["request"]>["query_string"] {
   if (typeof value === "string") return scrubSensitiveUrl(value);
   if (Array.isArray(value)) return value.filter(([key]) => !isSensitiveKey(key));
   if (value && typeof value === "object") {
@@ -88,7 +90,10 @@ function scrubSpanData(data: { [key: string]: unknown }): void {
     const value = data[key];
     if (typeof value === "string") {
       data[key] = scrubSensitiveUrl(value);
-    } else if (Array.isArray(value) && value.every((item): item is string | null | undefined => item == null || typeof item === "string")) {
+    } else if (
+      Array.isArray(value) &&
+      value.every((item): item is string | null | undefined => item == null || typeof item === "string")
+    ) {
       data[key] = value.map((item) => (typeof item === "string" ? scrubSensitiveUrl(item) : item));
     }
   }
@@ -105,7 +110,8 @@ function scrubSpan(span: NonNullable<Event["spans"]>[number]): void {
 export function scrubSentryEvent<T extends Event>(event: T): T {
   if (event.request) {
     if (typeof event.request.url === "string") event.request.url = scrubSensitiveUrl(event.request.url);
-    if (event.request.query_string !== undefined) event.request.query_string = scrubQueryValue(event.request.query_string);
+    if (event.request.query_string !== undefined)
+      event.request.query_string = scrubQueryValue(event.request.query_string);
     if (event.request.headers) {
       for (const key of Object.keys(event.request.headers)) {
         const value = event.request.headers[key];

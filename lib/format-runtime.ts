@@ -27,10 +27,9 @@ export function formatRuntime(runtime: number | null | undefined, fallbackZero =
 
   const { days, hours, minutes } = parseRuntimeParts(runtime);
 
-  return [
-    days > 0 ? `${days} 天` : null,
-    hours > 0 ? `${hours} 小时` : null,
-    minutes > 0 ? `${minutes} 分钟` : null,
-  ].filter(Boolean).join(" ") || (fallbackZero ? "0 分钟" : null);
+  return (
+    [days > 0 ? `${days} 天` : null, hours > 0 ? `${hours} 小时` : null, minutes > 0 ? `${minutes} 分钟` : null]
+      .filter(Boolean)
+      .join(" ") || (fallbackZero ? "0 分钟" : null)
+  );
 }
-

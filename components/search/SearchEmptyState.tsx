@@ -38,9 +38,27 @@ export default function SearchEmptyState({
       <div className="mt-8">
         <p className="text-sm text-fg-muted">试试这些</p>
         <div className="mt-3 flex flex-wrap items-center justify-center gap-2">
-          <button type="button" onClick={() => onSuggest({ type: ["movie"] })} className="filter-option min-h-10 rounded-full px-4 py-1.5 text-sm">电影</button>
-          <button type="button" onClick={() => onSuggest({ type: ["tv_show"] })} className="filter-option min-h-10 rounded-full px-4 py-1.5 text-sm">电视节目</button>
-          <button type="button" onClick={() => onSuggest({ status: ["upcoming"] })} className="filter-option min-h-10 rounded-full px-4 py-1.5 text-sm">即将上映</button>
+          <button
+            type="button"
+            onClick={() => onSuggest({ type: ["movie"] })}
+            className="filter-option min-h-10 rounded-full px-4 py-1.5 text-sm"
+          >
+            电影
+          </button>
+          <button
+            type="button"
+            onClick={() => onSuggest({ type: ["tv_show"] })}
+            className="filter-option min-h-10 rounded-full px-4 py-1.5 text-sm"
+          >
+            电视节目
+          </button>
+          <button
+            type="button"
+            onClick={() => onSuggest({ status: ["upcoming"] })}
+            className="filter-option min-h-10 rounded-full px-4 py-1.5 text-sm"
+          >
+            即将上映
+          </button>
         </div>
       </div>
     </div>

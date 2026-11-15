@@ -1,9 +1,7 @@
 type EnvironmentVariables = Record<string, string | undefined>;
 
 /** 按 GitHub Actions、Vercel 部署环境、通用 CI 标志的优先级判断环境，默认归为本地。 */
-export function resolveSentryEnvironment(
-  env: EnvironmentVariables,
-): "local" | "ci" | "preview" | "production" {
+export function resolveSentryEnvironment(env: EnvironmentVariables): "local" | "ci" | "preview" | "production" {
   // GitHub Actions 优先标记为 ci，避免测试继承部署变量后被归入生产环境。
   if (env.GITHUB_ACTIONS === "true") return "ci";
 

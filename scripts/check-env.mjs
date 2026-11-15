@@ -11,9 +11,7 @@ const missingVariables = requiredVariables.filter(
 );
 
 if (missingVariables.length > 0) {
-  console.error(
-    `Missing required environment variables: ${missingVariables.join(", ")}`,
-  );
+  console.error(`Missing required environment variables: ${missingVariables.join(", ")}`);
   process.exit(1);
 }
 

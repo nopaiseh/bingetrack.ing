@@ -14,13 +14,26 @@ const matches = (url: string) => unstable_doesMiddlewareMatch({ config, nextConf
 
 describe("详情路由的非法 ID", () => {
   it("合法 UUID 详情页不经过 proxy，保持直接命中 ISR 缓存", () => {
-    for (const url of [`/movies/${id}`, `/shows/${id}`, `/shows/${id.toUpperCase()}`, `/shows/${id}/seasons/${id}`, "/movies", "/shows"]) {
+    for (const url of [
+      `/movies/${id}`,
+      `/shows/${id}`,
+      `/shows/${id.toUpperCase()}`,
+      `/shows/${id}/seasons/${id}`,
+      "/movies",
+      "/shows",
+    ]) {
       expect(matches(url), url).toBe(false);
     }
   });
 
   it("非 UUID 的详情路径进入 proxy", () => {
-    for (const url of ["/movies/wp-login.php", "/movies/123", `/movies/${id}x`, "/shows/old-slug", "/shows/old-slug/seasons/1"]) {
+    for (const url of [
+      "/movies/wp-login.php",
+      "/movies/123",
+      `/movies/${id}x`,
+      "/shows/old-slug",
+      "/shows/old-slug/seasons/1",
+    ]) {
       expect(matches(url), url).toBe(true);
     }
   });
@@ -65,7 +78,13 @@ describe("详情路由的非法 ID", () => {
     for (const url of [`/movies/${id}`, `/shows/${id}`, `/shows/${id.toUpperCase()}`, "/movies", "/shows"]) {
       expect(matches(url), url).toBe(false);
     }
-    for (const url of ["/movies/wp-login.php", "/movies/123", `/movies/${id}x`, "/shows/old-slug", `/shows/old-slug/seasons/${seasonId}`]) {
+    for (const url of [
+      "/movies/wp-login.php",
+      "/movies/123",
+      `/movies/${id}x`,
+      "/shows/old-slug",
+      `/shows/old-slug/seasons/${seasonId}`,
+    ]) {
       expect(matches(url), url).toBe(true);
     }
 
@@ -84,7 +103,9 @@ describe("详情路由的非法 ID", () => {
   });
 
   it("确认页禁止缓存并标记 noindex，且不写入会话 Cookie", async () => {
-    const response = await proxy(new NextRequest("https://www.bingetrack.ing/auth/confirm?type=magiclink&token_hash=test"));
+    const response = await proxy(
+      new NextRequest("https://www.bingetrack.ing/auth/confirm?type=magiclink&token_hash=test"),
+    );
     expect(response.headers.get("x-middleware-next")).toBe("1");
     expect(response.headers.get("cache-control")).toContain("no-store");
     expect(response.headers.get("x-robots-tag")).toContain("noindex");

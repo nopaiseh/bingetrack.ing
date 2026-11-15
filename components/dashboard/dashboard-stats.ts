@@ -43,7 +43,7 @@ export function deriveDashboardStats(summary: Summary[], selectedYear: string, d
   // 电视节目进度按已看集数占比计算，真实反映追剧进展并避免全 0% 空白条。
   const watchedEpisodes = currentYearData?.watched_series_episodes ?? 0;
   const unwatchedEpisodes = currentYearData?.unwatched_episodes ?? 0;
-  const totalEpisodes = currentYearData?.total_series_episodes ?? (watchedEpisodes + unwatchedEpisodes);
+  const totalEpisodes = currentYearData?.total_series_episodes ?? watchedEpisodes + unwatchedEpisodes;
   const seriesEpisodesPercent = percent(watchedEpisodes, totalEpisodes);
 
   const avgSeriesRating = currentYearData?.series_avg_rating || 0;

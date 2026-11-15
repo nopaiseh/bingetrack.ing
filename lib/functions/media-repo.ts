@@ -3,10 +3,19 @@ import { mapViewRowToMedia, mapViewRowToMediaCard } from "@/lib/functions/media-
 import { buildMediaDistributions, type DistributionCountRow } from "@/lib/functions/media-distributions";
 import { isMediaId } from "@/lib/functions/media-id";
 import { withRetry } from "@/lib/functions/retry";
-import { EpisodeInfo, MediaCard, Media, MediaDistributions, SeasonEpisodePage, SeasonInfo, UpcomingRelease, ViewAllMediaRow, FetchMediaListOptions } from "@/lib/types";
+import {
+  EpisodeInfo,
+  MediaCard,
+  Media,
+  MediaDistributions,
+  SeasonEpisodePage,
+  SeasonInfo,
+  UpcomingRelease,
+  ViewAllMediaRow,
+  FetchMediaListOptions,
+} from "@/lib/types";
 import { reportHandledError } from "@/lib/report-error";
 import { nextUnwatchedEpisodeNumber } from "@/lib/season-browse";
-
 
 // 统一为查询失败附加操作名称和原始错误，让页面区分加载失败与查无记录。
 export class MediaRepositoryError extends Error {
@@ -18,9 +27,11 @@ export class MediaRepositoryError extends Error {
 }
 
 // 列表只读取卡片需要的字段，避免把简介和演职员等详情数据传到客户端。
-const MEDIA_CARD_COLUMNS = "id,type,title,sort_date,first_air_date,last_air_date,release_year,rating,genres,languages,cover_url,status";
+const MEDIA_CARD_COLUMNS =
+  "id,type,title,sort_date,first_air_date,last_air_date,release_year,rating,genres,languages,cover_url,status";
 // 榜单精选读取卡片字段及简介摘要，供首页展台和精选展示使用。
-const TOP_MEDIA_COLUMNS = "id,type,title,sort_date,first_air_date,last_air_date,release_year,rating,genres,languages,cover_url,status,summary";
+const TOP_MEDIA_COLUMNS =
+  "id,type,title,sort_date,first_air_date,last_air_date,release_year,rating,genres,languages,cover_url,status,summary";
 
 // v_all_media 实际输出的观看状态。
 const WATCH_STATUSES = new Set(["want_to_watch", "watching", "watched"]);
@@ -57,9 +68,13 @@ export async function getSitemapMediaEntries(): Promise<SitemapMediaEntry[]> {
       }
 
       const rows = data ?? [];
-      entries.push(...rows.map(/* 根据媒体类型构造详情路径，并对 ID 做 URL 编码。 */ (row) => ({
-        path: `/${row.type === "movie" ? "movies" : "shows"}/${encodeURIComponent(String(row.id))}`,
-      })));
+      entries.push(
+        ...rows.map(
+          /* 根据媒体类型构造详情路径，并对 ID 做 URL 编码。 */ (row) => ({
+            path: `/${row.type === "movie" ? "movies" : "shows"}/${encodeURIComponent(String(row.id))}`,
+          }),
+        ),
+      );
 
       if (rows.length < SITEMAP_PAGE_SIZE) break;
     }
@@ -77,9 +92,13 @@ export async function getSitemapMediaEntries(): Promise<SitemapMediaEntry[]> {
       }
 
       const rows = data ?? [];
-      entries.push(...rows.map(/* 对电视节目和季 ID 编码后构造季详情路径。 */ (row) => ({
-        path: `/shows/${encodeURIComponent(String(row.series_id))}/seasons/${encodeURIComponent(String(row.id))}`,
-      })));
+      entries.push(
+        ...rows.map(
+          /* 对电视节目和季 ID 编码后构造季详情路径。 */ (row) => ({
+            path: `/shows/${encodeURIComponent(String(row.series_id))}/seasons/${encodeURIComponent(String(row.id))}`,
+          }),
+        ),
+      );
 
       if (rows.length < SITEMAP_PAGE_SIZE) break;
     }
@@ -98,13 +117,25 @@ async function addSeriesReleaseYearRanges<T extends MediaCard>(
     .map(/* 提取需要查询年份范围的电视节目 ID。 */ (item) => item.id);
   if (seriesIds.length === 0) return items;
 
-  const { data, error } = await db.from("v_media_series_years")
-    .select("series_id,first_year,last_year").in("series_id", seriesIds);
+  const { data, error } = await db
+    .from("v_media_series_years")
+    .select("series_id,first_year,last_year")
+    .in("series_id", seriesIds);
   if (error) throw new MediaRepositoryError("fetch series year aggregates", error);
-  const years = new Map((data ?? []).map(/* 将电视节目 ID 与格式化后的首末年份组成查找表条目。 */ (row) => [
-    row.series_id, formatYearRange(row.first_year, row.last_year),
-  ]));
-  return items.map(/* 用聚合年份覆盖显示年份，缺少聚合结果时保留原值。 */ (item) => ({ ...item, release_year: years.get(item.id) ?? item.release_year }));
+  const years = new Map(
+    (data ?? []).map(
+      /* 将电视节目 ID 与格式化后的首末年份组成查找表条目。 */ (row) => [
+        row.series_id,
+        formatYearRange(row.first_year, row.last_year),
+      ],
+    ),
+  );
+  return items.map(
+    /* 用聚合年份覆盖显示年份，缺少聚合结果时保留原值。 */ (item) => ({
+      ...item,
+      release_year: years.get(item.id) ?? item.release_year,
+    }),
+  );
 }
 
 // 详情读取完整视图；找不到记录返回 null，查询失败则抛出错误。
@@ -114,11 +145,7 @@ export async function getMediaById(id: string): Promise<Media | null> {
   return withRetry(async () => {
     const db = getSupabasePublicServer();
 
-    const { data: viewData, error: viewError } = await db
-      .from("v_all_media")
-      .select("*")
-      .eq("id", id)
-      .maybeSingle();
+    const { data: viewData, error: viewError } = await db.from("v_all_media").select("*").eq("id", id).maybeSingle();
 
     if (viewError) {
       console.error(`Failed to fetch media details for id ${id}:`, viewError);
@@ -137,12 +164,14 @@ export async function getMediaById(id: string): Promise<Media | null> {
       reportHandledError(`Failed to fetch series memberships for media ${id}:`, seriesError);
     }
 
-    const seriesNames = (seriesData ?? []).flatMap(/* 兼容对象或数组形式的系列关联，只收集非空系列名称。 */ (membership) => {
-      const linkedSeries = Array.isArray(membership.media_series)
-        ? membership.media_series[0]
-        : membership.media_series;
-      return linkedSeries?.name ? [linkedSeries.name] : [];
-    });
+    const seriesNames = (seriesData ?? []).flatMap(
+      /* 兼容对象或数组形式的系列关联，只收集非空系列名称。 */ (membership) => {
+        const linkedSeries = Array.isArray(membership.media_series)
+          ? membership.media_series[0]
+          : membership.media_series;
+        return linkedSeries?.name ? [linkedSeries.name] : [];
+      },
+    );
 
     return mapViewRowToMedia(viewData as ViewAllMediaRow, seriesNames);
   });
@@ -187,7 +216,7 @@ export async function getRelatedBySeries(seriesName: string, currentId: string):
 
 // 关联结果可能是对象或数组，统一取首项，并将空关联转换为 undefined。
 function firstRelated<T>(value: T | T[] | null | undefined): T | undefined {
-  return Array.isArray(value) ? value[0] : value ?? undefined;
+  return Array.isArray(value) ? value[0] : (value ?? undefined);
 }
 
 /** 读取 v_media_season_summaries 中的季摘要。查询失败一律抛出 MediaRepositoryError。 */
@@ -196,21 +225,27 @@ export async function getSeasonsBySeriesId(seriesId: string): Promise<SeasonInfo
 
   return withRetry(async () => {
     const db = getSupabasePublicServer();
-    const { data, error } = await db.from("v_media_season_summaries")
-      .select("id,season_number,title,alternate_title,summary,cover_url,episode_count,watched_episode_count,first_year,last_year")
-      .eq("series_id", seriesId).order("season_number", { ascending: true });
+    const { data, error } = await db
+      .from("v_media_season_summaries")
+      .select(
+        "id,season_number,title,alternate_title,summary,cover_url,episode_count,watched_episode_count,first_year,last_year",
+      )
+      .eq("series_id", seriesId)
+      .order("season_number", { ascending: true });
     if (error) throw new MediaRepositoryError("fetch season aggregates", error);
-    return (data ?? []).map(/* 将聚合行转换为季摘要，规范计数字段、年份范围与空值。 */ (row) => ({
-      id: row.id,
-      seasonNumber: row.season_number,
-      title: row.title ?? `第 ${row.season_number} 季`,
-      alternateTitle: row.alternate_title ?? null,
-      coverUrl: row.cover_url ?? "",
-      episodeCount: Number(row.episode_count),
-      watchedEpisodeCount: Number(row.watched_episode_count),
-      releaseYearRange: formatYearRange(row.first_year, row.last_year),
-      summary: row.summary ?? "",
-    }));
+    return (data ?? []).map(
+      /* 将聚合行转换为季摘要，规范计数字段、年份范围与空值。 */ (row) => ({
+        id: row.id,
+        seasonNumber: row.season_number,
+        title: row.title ?? `第 ${row.season_number} 季`,
+        alternateTitle: row.alternate_title ?? null,
+        coverUrl: row.cover_url ?? "",
+        episodeCount: Number(row.episode_count),
+        watchedEpisodeCount: Number(row.watched_episode_count),
+        releaseYearRange: formatYearRange(row.first_year, row.last_year),
+        summary: row.summary ?? "",
+      }),
+    );
   });
 }
 
@@ -224,7 +259,7 @@ type SeasonEpisodePageRow = {
   last_release_date: string | null;
   total: number | string;
   episodes: Array<{
-  id: string;
+    id: string;
     episode_number: number;
     title: string | null;
     alternate_title: string | null;
@@ -261,11 +296,7 @@ export async function getSeasonEpisodes(
         p_limit: pageSize,
         p_offset: offset,
       }),
-      db
-        .from("media_items")
-        .select("title, alternate_title, summary, cover_url")
-        .eq("id", seasonId)
-        .maybeSingle(),
+      db.from("media_items").select("title, alternate_title, summary, cover_url").eq("id", seasonId).maybeSingle(),
     ]);
     const { data: episodePageData, error: episodePageError } = episodePageResult;
     const { data: seasonMedia, error: seasonMediaError } = seasonMediaResult;
@@ -283,7 +314,8 @@ export async function getSeasonEpisodes(
 
     const result = episodePageData as SeasonEpisodePageRow;
     // 列表改为纯文字，不再把剧照地址放进页面或接口响应。数据库函数仍会选出 cover_url，这里直接丢掉。
-    const episodes: EpisodeInfo[] = (result.episodes ?? []).map(/* 将 RPC 单集行转换为展示对象，补齐空字段并转换评分数值。 */ (episode) => ({
+    const episodes: EpisodeInfo[] = (result.episodes ?? []).map(
+      /* 将 RPC 单集行转换为展示对象，补齐空字段并转换评分数值。 */ (episode) => ({
         id: episode.id,
         episodeNumber: episode.episode_number,
         title: episode.title ?? `第 ${episode.episode_number} 集`,
@@ -293,7 +325,8 @@ export async function getSeasonEpisodes(
         runtime: episode.runtime,
         status: episode.status,
         rating: episode.rating === null ? null : Number(episode.rating),
-    }));
+      }),
+    );
     const firstYear = result.first_release_date?.slice(0, 4);
     const lastYear = result.last_release_date?.slice(0, 4);
     const episodeCount = Number(result.episode_count);
@@ -308,7 +341,8 @@ export async function getSeasonEpisodes(
         coverUrl: seasonMedia?.cover_url ?? "",
         episodeCount,
         watchedEpisodeCount: watchedCount,
-        releaseYearRange: firstYear && lastYear ? (firstYear === lastYear ? firstYear : `${firstYear} - ${lastYear}`) : undefined,
+        releaseYearRange:
+          firstYear && lastYear ? (firstYear === lastYear ? firstYear : `${firstYear} - ${lastYear}`) : undefined,
         summary: seasonMedia?.summary ?? "",
       },
       episodes,
@@ -322,11 +356,14 @@ export async function getSeasonEpisodes(
 
 type SeasonProgressRow = {
   episode_number: number;
-  media: {
-    tracking: { status: string | null } | Array<{ status: string | null }> | null;
-  } | Array<{
-    tracking: { status: string | null } | Array<{ status: string | null }> | null;
-  }> | null;
+  media:
+    | {
+        tracking: { status: string | null } | Array<{ status: string | null }> | null;
+      }
+    | Array<{
+        tracking: { status: string | null } | Array<{ status: string | null }> | null;
+      }>
+    | null;
 };
 
 const SEASON_PROGRESS_PAGE = 1000;
@@ -345,7 +382,8 @@ export async function getSeasonNextEpisodeNumber(seriesId: string, seasonId: str
 
     for (let page = 0; page < SEASON_PROGRESS_PAGE_LIMIT; page += 1) {
       const offset = page * SEASON_PROGRESS_PAGE;
-      const progressColumns = "episode_number, media:media_items!tv_episodes_id_fkey(tracking(status)), season:tv_seasons!tv_episodes_season_id_fkey!inner(series_id)";
+      const progressColumns =
+        "episode_number, media:media_items!tv_episodes_id_fkey(tracking(status)), season:tv_seasons!tv_episodes_season_id_fkey!inner(series_id)";
       const { data, error } = await db
         .from("tv_episodes")
         .select(progressColumns)
@@ -390,10 +428,10 @@ export async function fetchTopMediaServer(
       };
 
       // 按年份查看电视节目榜单时，由数据库按当年单集评分排名，再补齐卡片信息。
-      const { data: rankedData, error: rankingError } = await db.rpc(
-        "get_top_tv_shows_by_year",
-        { p_year: Number(year), p_limit: limit },
-      );
+      const { data: rankedData, error: rankingError } = await db.rpc("get_top_tv_shows_by_year", {
+        p_year: Number(year),
+        p_limit: limit,
+      });
 
       if (rankingError || !rankedData) {
         if (rankingError) console.error(`Failed to rank TV series released in ${year}:`, rankingError);
@@ -404,10 +442,14 @@ export async function fetchTopMediaServer(
       const seriesIds = rankedRows.map(/* 提取数据库排名返回的电视节目 ID。 */ (row) => row.series_id);
       if (seriesIds.length === 0) return [];
 
-      const ratingsBySeries = new Map(rankedRows.map(/* 将电视节目 ID 和可为空的年度评分组成查找表条目。 */ (row) => [
-        row.series_id,
-        row.year_rating === null ? null : Number(row.year_rating),
-      ]));
+      const ratingsBySeries = new Map(
+        rankedRows.map(
+          /* 将电视节目 ID 和可为空的年度评分组成查找表条目。 */ (row) => [
+            row.series_id,
+            row.year_rating === null ? null : Number(row.year_rating),
+          ],
+        ),
+      );
 
       const { data: seriesData, error: seriesError } = await db
         .from("v_all_media")
@@ -421,16 +463,19 @@ export async function fetchTopMediaServer(
       }
 
       const rankedSeries = (seriesData as ViewAllMediaRow[])
-        .map(/* 将电视节目视图行转成卡片，并把评分替换为所选年份的评分。 */ (item) => {
-          const yearRating = ratingsBySeries.get(String(item.id)) ?? null;
-          return {
-            ...mapViewRowToMediaCard(item),
-            rating: yearRating,
-            ...(item.summary ? { summary: item.summary } : {}),
-          };
-        })
-        .sort(/* 按年度评分降序排列，缺失评分置后，同分时按 ID 排序。 */ (left, right) =>
-          (right.rating ?? -1) - (left.rating ?? -1) || left.id.localeCompare(right.id),
+        .map(
+          /* 将电视节目视图行转成卡片，并把评分替换为所选年份的评分。 */ (item) => {
+            const yearRating = ratingsBySeries.get(String(item.id)) ?? null;
+            return {
+              ...mapViewRowToMediaCard(item),
+              rating: yearRating,
+              ...(item.summary ? { summary: item.summary } : {}),
+            };
+          },
+        )
+        .sort(
+          /* 按年度评分降序排列，缺失评分置后，同分时按 ID 排序。 */ (left, right) =>
+            (right.rating ?? -1) - (left.rating ?? -1) || left.id.localeCompare(right.id),
         );
       return addSeriesReleaseYearRanges(db, rankedSeries);
     }
@@ -455,10 +500,12 @@ export async function fetchTopMediaServer(
     }
     if (!data) return [];
 
-    const items = data.map(/* 将榜单视图行转换为媒体卡片。 */ (item: ViewAllMediaRow) => ({
-      ...mapViewRowToMediaCard(item),
-      ...(item.summary ? { summary: item.summary } : {}),
-    }));
+    const items = data.map(
+      /* 将榜单视图行转换为媒体卡片。 */ (item: ViewAllMediaRow) => ({
+        ...mapViewRowToMediaCard(item),
+        ...(item.summary ? { summary: item.summary } : {}),
+      }),
+    );
     return mediaType === "tv_show" ? addSeriesReleaseYearRanges(db, items) : items;
   });
 }
@@ -472,15 +519,20 @@ type UpcomingEpisodeRow = {
   id: string;
   title: string | null;
   release_date: string;
-  tv_episodes: {
-    season_id: string;
-    episode_number: number;
-    tv_seasons: { season_number: number; series_id: string } | Array<{ season_number: number; series_id: string }> | null;
-  } | Array<{
-    season_id: string;
-    episode_number: number;
-    tv_seasons: { season_number: number; series_id: string } | Array<{ season_number: number; series_id: string }> | null;
-  }> | null;
+  tv_episodes:
+    | {
+        season_id: string;
+        episode_number: number;
+        tv_seasons:
+          { season_number: number; series_id: string } | Array<{ season_number: number; series_id: string }> | null;
+      }
+    | Array<{
+        season_id: string;
+        episode_number: number;
+        tv_seasons:
+          { season_number: number; series_id: string } | Array<{ season_number: number; series_id: string }> | null;
+      }>
+    | null;
 };
 
 /** 返回 UTC 昨天的日期，作为候选下限，让比 UTC 慢的时区仍能看到当地“今天”上映的条目。 */
@@ -495,15 +547,19 @@ export async function fetchUpcomingReleasesServer(): Promise<UpcomingRelease[]> 
     const since = upcomingLowerBound();
 
     const [moviesRes, episodesRes] = await Promise.all([
-      db.from("v_all_media")
+      db
+        .from("v_all_media")
         .select(TOP_MEDIA_COLUMNS)
         .eq("type", "movie")
         .gte("sort_date", since)
         .order("sort_date", { ascending: true })
         .order("id", { ascending: true })
         .limit(UPCOMING_MOVIE_LIMIT),
-      db.from("media_items")
-        .select("id,title,release_date,tv_episodes!inner(season_id,episode_number,tv_seasons!inner(season_number,series_id))")
+      db
+        .from("media_items")
+        .select(
+          "id,title,release_date,tv_episodes!inner(season_id,episode_number,tv_seasons!inner(season_number,series_id))",
+        )
         .eq("type", "tv_episode")
         .gte("release_date", since)
         .order("release_date", { ascending: true })
@@ -516,67 +572,96 @@ export async function fetchUpcomingReleasesServer(): Promise<UpcomingRelease[]> 
       throw new MediaRepositoryError("fetch upcoming releases", moviesRes.error ?? episodesRes.error);
     }
 
-    const movies = ((moviesRes.data ?? []) as ViewAllMediaRow[]).map(/* 将电影视图行转换为倒计时条目。 */ (row): UpcomingRelease => {
-      const card = mapViewRowToMediaCard(row);
-      return {
-        id: card.id,
-        kind: "movie",
-        groupId: card.id,
-        title: card.title,
-        releaseDate: String(row.sort_date),
-        cover_url: card.cover_url,
-        href: `/movies/${encodeURIComponent(card.id)}`,
-        genres: card.genres,
-        languages: card.languages,
-        ...(row.summary ? { summary: row.summary } : {}),
-      };
-    });
+    const movies = ((moviesRes.data ?? []) as ViewAllMediaRow[]).map(
+      /* 将电影视图行转换为倒计时条目。 */ (row): UpcomingRelease => {
+        const card = mapViewRowToMediaCard(row);
+        return {
+          id: card.id,
+          kind: "movie",
+          groupId: card.id,
+          title: card.title,
+          releaseDate: String(row.sort_date),
+          cover_url: card.cover_url,
+          href: `/movies/${encodeURIComponent(card.id)}`,
+          genres: card.genres,
+          languages: card.languages,
+          ...(row.summary ? { summary: row.summary } : {}),
+        };
+      },
+    );
 
     // 每部剧只保留最早的几集，控制候选池大小。
     const perShow = new Map<string, number>();
-    const episodes = ((episodesRes.data ?? []) as UpcomingEpisodeRow[]).flatMap(/* 展开单集所属季与剧，超出每剧上限的单集丢弃。 */ (row) => {
-      const episode = firstRelated(row.tv_episodes);
-      const season = firstRelated(episode?.tv_seasons);
-      if (!episode || !season) return [];
-      const count = perShow.get(season.series_id) ?? 0;
-      if (count >= UPCOMING_EPISODES_PER_SHOW) return [];
-      perShow.set(season.series_id, count + 1);
-      return [{ row, seasonId: episode.season_id, episodeNumber: episode.episode_number, seasonNumber: season.season_number, seriesId: season.series_id }];
-    });
+    const episodes = ((episodesRes.data ?? []) as UpcomingEpisodeRow[]).flatMap(
+      /* 展开单集所属季与剧，超出每剧上限的单集丢弃。 */ (row) => {
+        const episode = firstRelated(row.tv_episodes);
+        const season = firstRelated(episode?.tv_seasons);
+        if (!episode || !season) return [];
+        const count = perShow.get(season.series_id) ?? 0;
+        if (count >= UPCOMING_EPISODES_PER_SHOW) return [];
+        perShow.set(season.series_id, count + 1);
+        return [
+          {
+            row,
+            seasonId: episode.season_id,
+            episodeNumber: episode.episode_number,
+            seasonNumber: season.season_number,
+            seriesId: season.series_id,
+          },
+        ];
+      },
+    );
 
     const seriesIds = [...perShow.keys()];
     let seriesById = new Map<string, ViewAllMediaRow>();
     if (seriesIds.length > 0) {
-      const { data, error } = await db.from("v_all_media").select(TOP_MEDIA_COLUMNS).eq("type", "tv_show").in("id", seriesIds);
+      const { data, error } = await db
+        .from("v_all_media")
+        .select(TOP_MEDIA_COLUMNS)
+        .eq("type", "tv_show")
+        .in("id", seriesIds);
       if (error) {
         console.error("Failed to fetch upcoming series:", error);
         throw new MediaRepositoryError("fetch upcoming series", error);
       }
-      seriesById = new Map(((data ?? []) as ViewAllMediaRow[]).map(/* 以剧集 ID 建立查找表。 */ (row) => [String(row.id), row]));
+      seriesById = new Map(
+        ((data ?? []) as ViewAllMediaRow[]).map(/* 以剧集 ID 建立查找表。 */ (row) => [String(row.id), row]),
+      );
     }
 
-    const shows = episodes.flatMap(/* 用所属剧的标题、海报和简介补全单集条目。 */ ({ row, seasonId, episodeNumber, seasonNumber, seriesId }): UpcomingRelease[] => {
-      const series = seriesById.get(seriesId);
-      if (!series) return [];
-      const card = mapViewRowToMediaCard(series);
-      const code = `第 ${seasonNumber} 季 · 第 ${episodeNumber} 集`;
-      return [{
-        id: String(row.id),
-        kind: "episode",
-        groupId: card.id,
-        title: card.title,
-        subtitle: row.title ? `${code} · ${row.title}` : code,
-        releaseDate: row.release_date,
-        cover_url: card.cover_url,
-        href: `/shows/${encodeURIComponent(card.id)}/seasons/${encodeURIComponent(seasonId)}`,
-        genres: card.genres,
-        languages: card.languages,
-        ...(series.summary ? { summary: series.summary } : {}),
-      }];
-    });
+    const shows = episodes.flatMap(
+      /* 用所属剧的标题、海报和简介补全单集条目。 */ ({
+        row,
+        seasonId,
+        episodeNumber,
+        seasonNumber,
+        seriesId,
+      }): UpcomingRelease[] => {
+        const series = seriesById.get(seriesId);
+        if (!series) return [];
+        const card = mapViewRowToMediaCard(series);
+        const code = `第 ${seasonNumber} 季 · 第 ${episodeNumber} 集`;
+        return [
+          {
+            id: String(row.id),
+            kind: "episode",
+            groupId: card.id,
+            title: card.title,
+            subtitle: row.title ? `${code} · ${row.title}` : code,
+            releaseDate: row.release_date,
+            cover_url: card.cover_url,
+            href: `/shows/${encodeURIComponent(card.id)}/seasons/${encodeURIComponent(seasonId)}`,
+            genres: card.genres,
+            languages: card.languages,
+            ...(series.summary ? { summary: series.summary } : {}),
+          },
+        ];
+      },
+    );
 
-    return [...movies, ...shows].sort(/* 按上映日期升序合并两类条目。 */ (left, right) =>
-      left.releaseDate.localeCompare(right.releaseDate) || left.id.localeCompare(right.id),
+    return [...movies, ...shows].sort(
+      /* 按上映日期升序合并两类条目。 */ (left, right) =>
+        left.releaseDate.localeCompare(right.releaseDate) || left.id.localeCompare(right.id),
     );
   });
 }
@@ -597,7 +682,9 @@ export async function fetchMediaDistributionsServer(): Promise<MediaDistribution
 }
 
 /** 使用统一列表查询执行搜索，返回卡片与精确总数。 */
-export async function searchMediaServer(opts: FetchMediaListOptions = {}): Promise<{ rows: MediaCard[]; total: number }> {
+export async function searchMediaServer(
+  opts: FetchMediaListOptions = {},
+): Promise<{ rows: MediaCard[]; total: number }> {
   return withRetry(async () => fetchMediaList(opts));
 }
 
@@ -607,23 +694,48 @@ export async function fetchMediaCardsServer(opts: FetchMediaListOptions = {}): P
 }
 
 /** 按关键词与分类取得候选条目，统一应用属性筛选与稳定排序，再分页读取卡片并按需查询总数。 */
-async function fetchMediaList(opts: FetchMediaListOptions, includeTotal = true): Promise<{ rows: MediaCard[]; total: number }> {
+async function fetchMediaList(
+  opts: FetchMediaListOptions,
+  includeTotal = true,
+): Promise<{ rows: MediaCard[]; total: number }> {
   const db = getSupabasePublicServer();
   const {
-    type, seriesOnly = false, creditRole, status, upcoming = false, genre, region, language, startYear, endYear, q, sort, limit = 30, offset = 0,
+    type,
+    seriesOnly = false,
+    creditRole,
+    status,
+    upcoming = false,
+    genre,
+    region,
+    language,
+    startYear,
+    endYear,
+    q,
+    sort,
+    limit = 30,
+    offset = 0,
   } = opts || {};
 
   const types = type?.split(",").filter(Boolean) ?? [];
-  const creditRoles = creditRole?.split(",").filter(/* 只接受导演和演员两类演职员角色。 */ (role) => role === "director" || role === "actor") ?? [];
+  const creditRoles =
+    creditRole
+      ?.split(",")
+      .filter(/* 只接受导演和演员两类演职员角色。 */ (role) => role === "director" || role === "actor") ?? [];
   const hasQuery = typeof q === "string" && q.trim().length > 0;
   // 关键词和“系列”分类的匹配需要跨表合并，交给数据库函数完成，避免把命中 ID 回传到 URL 而被截断。
   const usesSearchFunction = hasQuery || seriesOnly;
   // 无关键词时省略 p_query 使用函数默认值：计数请求走 HEAD 查询串，null 会被序列化成字符串 "null"。
-  const searchArgs = { ...(hasQuery ? { p_query: q.trim() } : {}), p_types: types, p_series_only: seriesOnly, p_credit_roles: creditRoles };
+  const searchArgs = {
+    ...(hasQuery ? { p_query: q.trim() } : {}),
+    p_types: types,
+    p_series_only: seriesOnly,
+    p_credit_roles: creditRoles,
+  };
   /** 从搜索函数或列表视图选取字段，二者返回相同的 v_all_media 行，后续筛选可共用。 */
-  const source = (columns: string, options?: { count: "exact"; head: true }) => usesSearchFunction
-    ? db.rpc("search_media", searchArgs, options).select(columns)
-    : db.from("v_all_media").select(columns, options);
+  const source = (columns: string, options?: { count: "exact"; head: true }) =>
+    usesSearchFunction
+      ? db.rpc("search_media", searchArgs, options).select(columns)
+      : db.from("v_all_media").select(columns, options);
 
   let dataQuery = source(MEDIA_CARD_COLUMNS);
   let countQuery = source("id", { count: "exact", head: true });
@@ -635,7 +747,8 @@ async function fetchMediaList(opts: FetchMediaListOptions, includeTotal = true):
   // 数据查询与计数查询使用相同筛选条件，保证分页总数对应当前结果集。
   // “即将上映”与观看状态同属状态筛选，多选时按任一满足合并；电影的 last_air_date 即上映日期，剧集为最后一集播出日期。
   // 状态值会拼进 .or() 表达式，这里再按允许值过滤一次，不依赖调用方已经校验。
-  const statuses = status?.split(",").filter(/* 只保留视图实际使用的观看状态。 */ (value) => WATCH_STATUSES.has(value)) ?? [];
+  const statuses =
+    status?.split(",").filter(/* 只保留视图实际使用的观看状态。 */ (value) => WATCH_STATUSES.has(value)) ?? [];
   if (upcoming) {
     const upcomingFilter = `last_air_date.gte.${new Date().toISOString().slice(0, 10)}`;
     const filter = statuses.length > 0 ? `status.in.(${statuses.join(",")}),${upcomingFilter}` : upcomingFilter;
@@ -691,7 +804,10 @@ async function fetchMediaList(opts: FetchMediaListOptions, includeTotal = true):
 
   dataQuery = dataQuery.range(offset, offset + limit - 1);
 
-  const [dataRes, countRes] = await Promise.all([dataQuery, includeTotal ? countQuery : Promise.resolve({ count: null, error: null })]);
+  const [dataRes, countRes] = await Promise.all([
+    dataQuery,
+    includeTotal ? countQuery : Promise.resolve({ count: null, error: null }),
+  ]);
 
   if (dataRes.error || countRes.error) {
     console.error("Failed to fetch media list:", dataRes.error ?? countRes.error);
@@ -703,7 +819,9 @@ async function fetchMediaList(opts: FetchMediaListOptions, includeTotal = true):
 
   if (!data) return { rows: [], total };
 
-  const mappedResults: MediaCard[] = (data as unknown as ViewAllMediaRow[]).map(/* 将分页查询结果转换为卡片对象。 */ (item) => mapViewRowToMediaCard(item));
+  const mappedResults: MediaCard[] = (data as unknown as ViewAllMediaRow[]).map(
+    /* 将分页查询结果转换为卡片对象。 */ (item) => mapViewRowToMediaCard(item),
+  );
   const results = await addSeriesReleaseYearRanges(db, mappedResults);
 
   return { rows: results, total };

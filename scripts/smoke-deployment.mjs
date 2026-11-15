@@ -11,11 +11,7 @@ const checks = [
   {
     path: "/",
     expectedContentType: "text/html",
-    requiredHeaders: [
-      "content-security-policy",
-      "x-content-type-options",
-      "referrer-policy",
-    ],
+    requiredHeaders: ["content-security-policy", "x-content-type-options", "referrer-policy"],
   },
   { path: "/search", expectedContentType: "text/html" },
   { path: "/api/media?q=matrix&limit=1", expectedContentType: "application/json" },
@@ -60,9 +56,7 @@ for (const check of checks) {
     if (!response.ok) {
       failures.push(`${url}: HTTP ${response.status}`);
     } else if (!contentType.includes(check.expectedContentType)) {
-      failures.push(
-        `${url}: expected ${check.expectedContentType}, received ${contentType || "no content type"}`,
-      );
+      failures.push(`${url}: expected ${check.expectedContentType}, received ${contentType || "no content type"}`);
     } else if (
       check.requiredHeaders?.some(/* 判断响应是否缺少任一必需的 HTTP 头。 */ (name) => !response.headers.has(name))
     ) {

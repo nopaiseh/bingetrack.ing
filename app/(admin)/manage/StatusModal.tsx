@@ -28,13 +28,18 @@ export default function StatusModal({ message, tone = "success", duration = 5000
   const onCloseRef = useRef(onClose);
   const box = useRef<HTMLDivElement>(null);
 
-  useEffect(() => { onCloseRef.current = onClose; });
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  });
 
   useEffect(() => {
     let removeTimer: ReturnType<typeof setTimeout> | undefined;
     const close = () => {
       setIsClosing(true);
-      removeTimer = setTimeout(() => { setIsOpen(false); onCloseRef.current?.(); }, 200);
+      removeTimer = setTimeout(() => {
+        setIsOpen(false);
+        onCloseRef.current?.();
+      }, 200);
     };
     const timer = setTimeout(close, duration);
     const onKeyDown = (e: KeyboardEvent) => {
@@ -43,7 +48,11 @@ export default function StatusModal({ message, tone = "success", duration = 5000
       if (!removeTimer) close();
     };
     window.addEventListener("keydown", onKeyDown);
-    return () => { clearTimeout(timer); clearTimeout(removeTimer); window.removeEventListener("keydown", onKeyDown); };
+    return () => {
+      clearTimeout(timer);
+      clearTimeout(removeTimer);
+      window.removeEventListener("keydown", onKeyDown);
+    };
   }, [duration]);
 
   // 放进浏览器顶层（popover），即使在原生 <dialog> 弹窗打开时也不会被盖住。
@@ -54,7 +63,11 @@ export default function StatusModal({ message, tone = "success", duration = 5000
     // 浏览器给 [popover] 的默认样式是 inset: 0，容器必须显式写 bottom-auto，否则会被拉满整屏高度。
     el.setAttribute("popover", "manual");
     // 提示只是锦上添花，顶层失败时退回固定定位，绝不能让页面崩溃。
-    try { el.showPopover(); } catch { el.removeAttribute("popover"); }
+    try {
+      el.showPopover();
+    } catch {
+      el.removeAttribute("popover");
+    }
   }, [isOpen]);
 
   if (!isOpen) return null;
@@ -91,6 +104,9 @@ export function ActionNotice({ state, saved }: { state: { error?: string; saved?
   const message = state.error || (state.saved ? saved : undefined);
   if (!message) return null;
   let id = noticeIds.get(state);
-  if (id === undefined) { id = ++nextNoticeId; noticeIds.set(state, id); }
+  if (id === undefined) {
+    id = ++nextNoticeId;
+    noticeIds.set(state, id);
+  }
   return <StatusModal key={id} tone={state.error ? "error" : "success"} message={message} />;
 }

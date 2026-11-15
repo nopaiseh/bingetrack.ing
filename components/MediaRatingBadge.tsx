@@ -51,7 +51,8 @@ function getRatingTier(rating: number | null | undefined): RatingTierInfo {
   if (num >= 6.0) {
     return {
       label: "尚可",
-      badgeClass: "border-[color-mix(in_srgb,#7dd3fc_45%,var(--border))] bg-[color-mix(in_srgb,#7dd3fc_12%,transparent)] text-[#7dd3fc]",
+      badgeClass:
+        "border-[color-mix(in_srgb,#7dd3fc_45%,var(--border))] bg-[color-mix(in_srgb,#7dd3fc_12%,transparent)] text-[#7dd3fc]",
       glowClass: "text-[#7dd3fc]",
       textClass: "text-[#7dd3fc] font-medium",
       icon: "i-material-symbols-star-rounded",
@@ -78,7 +79,8 @@ function getRatingTier(rating: number | null | undefined): RatingTierInfo {
   if (num >= 3.0) {
     return {
       label: "较差",
-      badgeClass: "border-[color-mix(in_srgb,var(--violet)_45%,var(--border))] bg-[color-mix(in_srgb,var(--violet)_12%,transparent)] text-[var(--violet)]",
+      badgeClass:
+        "border-[color-mix(in_srgb,var(--violet)_45%,var(--border))] bg-[color-mix(in_srgb,var(--violet)_12%,transparent)] text-[var(--violet)]",
       glowClass: "text-[var(--violet)]",
       textClass: "text-[var(--violet)]",
       icon: "i-material-symbols-star-outline-rounded",
@@ -87,7 +89,8 @@ function getRatingTier(rating: number | null | undefined): RatingTierInfo {
   if (num >= 2.0) {
     return {
       label: "烂片",
-      badgeClass: "border-[color-mix(in_srgb,var(--danger)_45%,var(--border))] bg-[var(--danger-soft)] text-[var(--danger)]",
+      badgeClass:
+        "border-[color-mix(in_srgb,var(--danger)_45%,var(--border))] bg-[var(--danger-soft)] text-[var(--danger)]",
       glowClass: "text-[var(--danger)]",
       textClass: "text-[var(--danger)]",
       icon: "i-material-symbols-thumb-down-rounded",
@@ -96,7 +99,8 @@ function getRatingTier(rating: number | null | undefined): RatingTierInfo {
   if (num >= 1.0) {
     return {
       label: "灾难",
-      badgeClass: "border-[color-mix(in_srgb,var(--danger)_45%,var(--border))] bg-[var(--danger-soft)] text-[var(--danger)]",
+      badgeClass:
+        "border-[color-mix(in_srgb,var(--danger)_45%,var(--border))] bg-[var(--danger-soft)] text-[var(--danger)]",
       glowClass: "text-[var(--danger)]",
       textClass: "text-[var(--danger)] font-semibold",
       icon: "i-material-symbols-warning-rounded",
@@ -105,7 +109,8 @@ function getRatingTier(rating: number | null | undefined): RatingTierInfo {
   // 0.0 ~ 0.9
   return {
     label: "神烂",
-    badgeClass: "border-[color-mix(in_srgb,var(--danger)_45%,var(--border))] bg-[var(--danger-soft)] text-[var(--danger)]",
+    badgeClass:
+      "border-[color-mix(in_srgb,var(--danger)_45%,var(--border))] bg-[var(--danger-soft)] text-[var(--danger)]",
     glowClass: "text-[var(--danger)]",
     textClass: "text-[var(--danger)] font-semibold",
     icon: "i-material-symbols-skull-rounded",
@@ -159,9 +164,7 @@ export default function MediaRatingBadge({
         {showTier && (
           <>
             <span className="h-3 w-px bg-current/25" aria-hidden="true" />
-            <span className="text-xs font-semibold tracking-tight uppercase leading-none">
-              {tier.label}
-            </span>
+            <span className="text-xs font-semibold tracking-tight uppercase leading-none">{tier.label}</span>
           </>
         )}
       </div>
@@ -201,4 +204,3 @@ export default function MediaRatingBadge({
     </div>
   );
 }
-

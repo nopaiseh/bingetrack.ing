@@ -7,9 +7,15 @@ export function rememberedList(category: string, fallback: string): string {
     const stored = sessionStorage.getItem(`manage:list:${category}`);
     if (!stored) return fallback;
     const url = new URL(stored, window.location.origin);
-    if (url.origin !== window.location.origin || (url.pathname !== "/manage" && url.pathname !== `/manage/references/${category}`)) return fallback;
+    if (
+      url.origin !== window.location.origin ||
+      (url.pathname !== "/manage" && url.pathname !== `/manage/references/${category}`)
+    )
+      return fallback;
     return `${url.pathname}${url.search}`;
-  } catch { return fallback; }
+  } catch {
+    return fallback;
+  }
 }
 /** 下拉分类和弹窗关闭没有原生链接，复用未保存检查事件。 */
 export function mayLeaveEditor() {

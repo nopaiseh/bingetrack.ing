@@ -24,9 +24,15 @@ export const getServerUrlSnapshot = () => "";
 /** 用 replaceState 更新看板参数，不新增历史记录；默认值从查询串中省略。 */
 export function writeDashboardParams(view: string, year: string) {
   const params = new URLSearchParams(window.location.search);
-  if (view === TAB_IDS["总览"]) params.delete("view"); else params.set("view", view);
-  if (year === "All Time") params.delete("year"); else params.set("year", year);
+  if (view === TAB_IDS["总览"]) params.delete("view");
+  else params.set("view", view);
+  if (year === "All Time") params.delete("year");
+  else params.set("year", year);
   const query = params.toString();
-  window.history.replaceState(null, "", `${window.location.pathname}${query ? `?${query}` : ""}${window.location.hash}`);
+  window.history.replaceState(
+    null,
+    "",
+    `${window.location.pathname}${query ? `?${query}` : ""}${window.location.hash}`,
+  );
   urlListeners.forEach((listener) => listener());
 }

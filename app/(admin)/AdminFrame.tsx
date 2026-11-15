@@ -20,7 +20,13 @@ export function useNavState() {
 }
 
 /** 手机顶栏：菜单按钮打开同一套侧栏。桌面侧栏常驻，这条栏不显示。 */
-function AdminMobileBar({ drawerOpen, setDrawerOpen }: { drawerOpen: boolean; setDrawerOpen: (open: boolean) => void }) {
+function AdminMobileBar({
+  drawerOpen,
+  setDrawerOpen,
+}: {
+  drawerOpen: boolean;
+  setDrawerOpen: (open: boolean) => void;
+}) {
   return (
     <div className="admin-mobile-bar sticky top-0 z-30 flex h-14 items-center gap-2 border-b border-[var(--border)] bg-[var(--canvas)] px-3">
       <button
@@ -31,7 +37,10 @@ function AdminMobileBar({ drawerOpen, setDrawerOpen }: { drawerOpen: boolean; se
         aria-controls="admin-nav-drawer"
         onClick={() => setDrawerOpen(!drawerOpen)}
       >
-        <span className={`${drawerOpen ? "i-material-symbols-close-rounded" : "i-material-symbols-menu-rounded"} size-5`} aria-hidden="true" />
+        <span
+          className={`${drawerOpen ? "i-material-symbols-close-rounded" : "i-material-symbols-menu-rounded"} size-5`}
+          aria-hidden="true"
+        />
       </button>
       <Link href="/manage" className="min-w-0 truncate font-mono text-sm font-medium tracking-tight text-fg">
         bingetrack<span className="text-[var(--accent)]">.</span>ing
@@ -39,7 +48,9 @@ function AdminMobileBar({ drawerOpen, setDrawerOpen }: { drawerOpen: boolean; se
       <div className="ml-auto flex items-center gap-1">
         <RefreshCacheButton iconOnly />
         <form action="/auth/logout" method="POST">
-          <button type="submit" className="admin-nav-item !w-auto px-3">退出</button>
+          <button type="submit" className="admin-nav-item !w-auto px-3">
+            退出
+          </button>
         </form>
       </div>
     </div>
@@ -47,7 +58,15 @@ function AdminMobileBar({ drawerOpen, setDrawerOpen }: { drawerOpen: boolean; se
 }
 
 /** 管理区外框：桌面侧栏贴左整列，手机收到顶栏菜单里。偏好存入 Cookie，服务端首次渲染即用对应宽度。 */
-export default function AdminFrame({ initialCollapsed, nav, children }: { initialCollapsed: boolean; nav: ReactNode; children: ReactNode }) {
+export default function AdminFrame({
+  initialCollapsed,
+  nav,
+  children,
+}: {
+  initialCollapsed: boolean;
+  nav: ReactNode;
+  children: ReactNode;
+}) {
   const [collapsed, setCollapsed] = useState(initialCollapsed);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [isDesktop, setIsDesktop] = useState(true);
@@ -71,13 +90,22 @@ export default function AdminFrame({ initialCollapsed, nav, children }: { initia
     if (!drawerOpen || isDesktop) return;
     const previous = document.body.style.overflow;
     document.body.style.overflow = "hidden";
-    return () => { document.body.style.overflow = previous; };
+    return () => {
+      document.body.style.overflow = previous;
+    };
   }, [drawerOpen, isDesktop]);
 
   return (
     <NavState value={{ collapsed, toggle, drawerOpen, setDrawerOpen, isDesktop }}>
       <div className="admin-frame flex min-h-dvh w-full items-start">
-        {drawerOpen ? <button type="button" className="admin-backdrop" aria-label="关闭管理导航" onClick={() => setDrawerOpen(false)} /> : null}
+        {drawerOpen ? (
+          <button
+            type="button"
+            className="admin-backdrop"
+            aria-label="关闭管理导航"
+            onClick={() => setDrawerOpen(false)}
+          />
+        ) : null}
         {nav}
         <div className="flex min-w-0 flex-1 flex-col" inert={drawerOpen && !isDesktop ? true : undefined}>
           <AdminMobileBar drawerOpen={drawerOpen} setDrawerOpen={setDrawerOpen} />

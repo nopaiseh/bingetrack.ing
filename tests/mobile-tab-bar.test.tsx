@@ -3,9 +3,12 @@ import { expect, test, vi } from "vitest";
 import MobileTabBar from "@/components/MobileTabBar";
 
 const pathname = vi.hoisted(() => ({ value: "/" }));
-vi.mock("next/navigation", /* 模拟可切换当前路径的 Next.js 导航模块。 */ () => ({
-  usePathname: () => pathname.value,
-}));
+vi.mock(
+  "next/navigation",
+  /* 模拟可切换当前路径的 Next.js 导航模块。 */ () => ({
+    usePathname: () => pathname.value,
+  }),
+);
 
 test("渲染四个主要栏目并只标记首页为当前页", () => {
   pathname.value = "/";
