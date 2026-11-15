@@ -9,6 +9,11 @@ describe("search model helpers", () => {
     expect(optionLabel([], "")).toBe("");
   });
 
+  it("freezes the default filters and their lists", () => {
+    expect(Object.isFrozen(EMPTY_FILTERS)).toBe(true);
+    for (const list of Object.values(EMPTY_FILTERS)) expect(Object.isFrozen(list)).toBe(true);
+  });
+
   it("counts only filters that leave the defaults, including an empty list", () => {
     expect(countActiveFilters(EMPTY_FILTERS)).toBe(0);
     expect(countActiveFilters({ ...EMPTY_FILTERS, year: ["", ""] })).toBe(0);

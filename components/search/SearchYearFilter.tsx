@@ -9,7 +9,7 @@ export default function SearchYearFilter({
   yearOptions,
   setFilters,
 }: {
-  year: string[] | undefined;
+  year: readonly string[] | undefined;
   yearOptions: string[];
   setFilters: (update: SearchFilters | ((previous: SearchFilters) => SearchFilters)) => void;
 }) {

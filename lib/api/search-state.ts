@@ -1,5 +1,5 @@
 export const PAGE_SIZE = 30;
-export type SearchFilters = Record<string, string[]>;
+export type SearchFilters = Readonly<Record<string, readonly string[]>>;
 
 const TYPE_VALUES = new Set(["movie", "tv_show", "series", "director", "actor"]);
 const STATUS_VALUES = new Set(["want_to_watch", "watching", "watched", "upcoming"]);

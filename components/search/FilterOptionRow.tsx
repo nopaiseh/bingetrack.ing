@@ -10,7 +10,7 @@ export default function FilterOptionRow({
 }: {
   label: string;
   options: { value: string; label: string }[];
-  selected: string[];
+  selected: readonly string[];
   onClear: () => void;
   onToggle: (value: string) => void;
 }) {
