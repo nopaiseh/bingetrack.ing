@@ -106,6 +106,16 @@ describe("活动 Cookie 签名", () => {
     expect(readBackfillAuthenticatedAt(undefined, undefined, now)).toBeNull();
   });
 
+  it("混合格式的 amr 只用有效时间戳，不回退 last_sign_in_at", () => {
+    const now = Date.parse("2026-01-01T00:10:00Z");
+    const stamp = Math.floor((now - 40 * 60 * 1000) / 1000);
+    const recent = new Date(now - 10_000).toISOString();
+    const mixed = ["passkey", { method: "otp" }, { method: "webauthn", timestamp: stamp }, { timestamp: "nope" }];
+
+    expect(readBackfillAuthenticatedAt(mixed, recent, now)).toBe(stamp * 1000);
+    expect(withinFreshSignIn(readBackfillAuthenticatedAt(mixed, recent, now), now)).toBe(false);
+  });
+
   it("Cookie 选项是 HttpOnly、Secure、SameSite=Lax", () => {
     expect(activityCookieOptions()).toEqual({
       httpOnly: true,

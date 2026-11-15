@@ -313,6 +313,20 @@ describe("POST /auth/activity", () => {
     expect(store.get(ACTIVITY_COOKIE)).toBe(expired);
   });
 
+  it("getClaims 失败时直接 401，不用 last_sign_in_at 补记", async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-01-01T00:10:00Z"));
+    getUser.mockResolvedValue({
+      data: { user: { id: USER, last_sign_in_at: new Date().toISOString() } },
+      error: null,
+    });
+    getClaims.mockResolvedValue({ data: null, error: new Error("jwks") });
+
+    const response = await POST(activityRequest("https://www.bingetrack.ing"));
+    expect(response.status).toBe(401);
+    expect(cookieSet).not.toHaveBeenCalled();
+  });
+
   it("用户 id 含点号时无法签名，不写 Cookie", async () => {
     signedIn(Date.now(), "bad.id");
     const dotted = await POST(activityRequest("https://www.bingetrack.ing"));
