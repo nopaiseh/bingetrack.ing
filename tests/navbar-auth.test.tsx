@@ -52,6 +52,7 @@ test("公开导航源码不静态引入 supabase 浏览器客户端", () => {
   expect(imports).not.toMatch(/browser|@supabase\//);
   expect(navbar).not.toMatch(/@supabase\/|lib\/auth\/browser/);
   expect(hook).toMatch(/import\(\s*["']\.\/browser["']\s*\)/);
+  expect(hook).not.toMatch(/watchIdleSession/);
 });
 
 test("匿名访客不加载认证客户端，登录失败提示仍可用", async () => {
@@ -121,4 +122,58 @@ test("已有会话 Cookie 时站长看到管理和退出", async () => {
 
   unmount();
   expect(unsubscribe).toHaveBeenCalled();
+});
+
+test("Passkey 成功后先上报活动，再进入管理区", async () => {
+  const user = userEvent.setup();
+  const fetchMock = vi.fn(async () => new Response(null, { status: 204 }));
+  vi.stubGlobal("fetch", fetchMock);
+  setCookie("sb-example-auth-token.0");
+  getAuthBrowser.mockReturnValue({
+    auth: {
+      onAuthStateChange: () => ({ data: { subscription: { unsubscribe: vi.fn() } } }),
+      signInWithPasskey: vi.fn(async () => ({
+        data: { user: { id: "owner-1" } },
+        error: null,
+      })),
+      signOut: vi.fn(),
+    },
+    rpc: vi.fn(),
+  });
+
+  render(<Navbar />);
+  await user.click(screen.getByRole("button", { name: "登录" }));
+
+  await waitFor(() => expect(replace).toHaveBeenCalledWith("/manage"));
+  expect(fetchMock).toHaveBeenCalledWith(
+    "/auth/activity",
+    expect.objectContaining({ method: "POST", credentials: "same-origin" }),
+  );
+  expect(fetchMock.mock.invocationCallOrder[0]).toBeLessThan(replace.mock.invocationCallOrder[0]);
+  vi.unstubAllGlobals();
+});
+
+test("活动 Cookie 没写上时不进入管理区", async () => {
+  const user = userEvent.setup();
+  vi.stubGlobal(
+    "fetch",
+    vi.fn(async () => new Response("Unauthorized", { status: 401 })),
+  );
+  getAuthBrowser.mockReturnValue({
+    auth: {
+      onAuthStateChange: () => ({ data: { subscription: { unsubscribe: vi.fn() } } }),
+      signInWithPasskey: vi.fn(async () => ({
+        data: { user: { id: "owner-1" } },
+        error: null,
+      })),
+    },
+    rpc: vi.fn(),
+  });
+
+  render(<Navbar />);
+  await user.click(screen.getByRole("button", { name: "登录" }));
+
+  expect(await screen.findByRole("alert")).toHaveTextContent("空闲保护未能启动");
+  expect(replace).not.toHaveBeenCalled();
+  vi.unstubAllGlobals();
 });

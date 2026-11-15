@@ -6,6 +6,7 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import MobileTabBar from "@/components/MobileTabBar";
 import HideOnAdmin from "@/components/HideOnAdmin";
+import IdleSession from "@/components/IdleSession";
 import NavigationProgressBar from "@/components/NavigationProgressBar";
 import { SITE_URL } from "@/lib/site";
 import { FAVICON_PNG_ID, FAVICON_SVG_ID, THEME_COLORS, THEME_INIT_SCRIPT } from "@/lib/themes";
@@ -99,6 +100,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           跳到主要内容
         </a>
 
+        <IdleSession />
         <HideOnAdmin>
           <Navbar />
         </HideOnAdmin>

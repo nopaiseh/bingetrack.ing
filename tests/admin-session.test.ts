@@ -1,9 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-const { generateLink, verifyOtp, createClient } = vi.hoisted(() => ({
+const { generateLink, verifyOtp, createClient, cookieSet } = vi.hoisted(() => ({
   generateLink: vi.fn(),
   verifyOtp: vi.fn(),
   createClient: vi.fn(),
+  cookieSet: vi.fn(),
 }));
 
 vi.mock("@supabase/supabase-js", () => ({
@@ -16,6 +17,11 @@ vi.mock("@/lib/auth/server", () => ({
   }),
 }));
 
+vi.mock("next/headers", () => ({
+  cookies: async () => ({ set: cookieSet }),
+}));
+
+import { ACTIVITY_COOKIE, verifyActivityCookie } from "@/lib/auth/activity-cookie";
 import { createAdminSession, generateAdminMagicLink } from "@/lib/auth/admin-session";
 
 const SUPABASE_URL = "https://example.supabase.co";
@@ -33,6 +39,7 @@ describe("运维密钥会话", () => {
     generateLink.mockReset();
     verifyOtp.mockReset();
     createClient.mockReset();
+    cookieSet.mockReset();
     createClient.mockImplementation(() => ({
       auth: { admin: { generateLink } },
     }));
@@ -195,6 +202,30 @@ describe("运维密钥会话", () => {
       token_hash: "hash-session",
       type: "magiclink",
     });
+  });
+
+  it("会话签发成功时写下绑定该用户的活动 Cookie", async () => {
+    stubAdminEnv({ SUPABASE_SECRET_KEY: "secret" });
+    generateLink.mockResolvedValue({
+      data: { properties: { hashed_token: "hash-session" } },
+      error: null,
+    });
+    verifyOtp.mockResolvedValue({
+      data: { user: { id: "user-1" }, session: { user: { id: "user-1" } } },
+      error: null,
+    });
+
+    const result = await createAdminSession(EMAIL);
+
+    expect(result).toEqual({ ok: true });
+    expect(cookieSet).toHaveBeenCalledWith(
+      ACTIVITY_COOKIE,
+      expect.any(String),
+      expect.objectContaining({ httpOnly: true, secure: true, sameSite: "lax", path: "/" }),
+    );
+    const value = cookieSet.mock.calls[0][1] as string;
+    expect(verifyActivityCookie(value, "user-1", Date.now(), "secret").ok).toBe(true);
+    expect(value).not.toContain("secret");
   });
 
   it("verifyOtp 失败时返回其 message，不再签发成功", async () => {

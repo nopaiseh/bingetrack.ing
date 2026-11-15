@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
+import { writeActivityCookie } from "@/lib/auth/activity-store";
 import { isSameOrigin, readConfirmQuery } from "@/lib/auth/confirm-link";
 import { getAuthServer } from "@/lib/auth/server";
 
@@ -52,7 +53,9 @@ export async function POST(request: NextRequest) {
   if (!parsed.ok) return redirectWithinSite("/?authError=link");
 
   const db = await getAuthServer();
-  const { error } = await db.auth.verifyOtp({ token_hash: parsed.tokenHash, type: parsed.type });
-  if (!error) return redirectWithinSite(parsed.next);
-  return redirectWithinSite("/?authError=link");
+  const { data, error } = await db.auth.verifyOtp({ token_hash: parsed.tokenHash, type: parsed.type });
+  if (error) return redirectWithinSite("/?authError=link");
+  const userId = data?.user?.id ?? data?.session?.user?.id;
+  if (userId) await writeActivityCookie(userId);
+  return redirectWithinSite(parsed.next);
 }
