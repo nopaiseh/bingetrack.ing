@@ -3,12 +3,19 @@ import Link from "next/link";
 import { Suspense, type ReactNode } from "react";
 import MediaBackLink, { DefaultMediaBackLink } from "./MediaBackLink";
 import { Media, SeasonInfo } from "@/lib/types";
+import { formatRuntime } from "@/lib/format-runtime";
+import { isUpcomingDate } from "@/lib/upcoming";
 import SearchTag from "./SearchTag";
 import { ratingTierLabel } from "./MediaRatingBadge";
 import SeasonRow from "./SeasonRow";
 import ClampedCopy from "./ClampedCopy";
 import LetterTile from "./LetterTile";
 import { resolveWatchStatus, WATCH_STATUSES } from "./watch-status";
+
+/** 页头时长写成「2 小时 45 分」，和事实区的完整分钟写法分开。 */
+function heroRuntime(runtime: number | null | undefined): string | null {
+  return formatRuntime(runtime)?.replaceAll("分钟", "分") ?? null;
+}
 
 /** 元信息行里的年份。完整日期只取年；剧集的年份区间保留短横。 */
 function releaseYearLabel(media: Media, releaseDateLabel?: string): string {
@@ -137,12 +144,37 @@ export default function MediaInformation({
   displayStatus?: string;
 }) {
   const yearLabel = releaseYearLabel(media, releaseDateLabel);
+  const runtimeLabel = heroRuntime(media.runtime);
   const typeLabel = media.type === "shows" ? "电视节目" : "电影";
   const status = displayStatus ?? media.status;
   const statusConfig = resolveWatchStatus(status) ?? WATCH_STATUSES.want_to_watch;
+  // 与搜索卡一致：已看、在看优先；还没看且日期在今天或之后，用即将上映代替想看。
+  const upcoming = statusConfig.id !== "watched" && statusConfig.id !== "watching" && isUpcomingDate(media.date);
   const score = media.rating == null ? null : Number(media.rating).toFixed(1);
   const tier = ratingTierLabel(media.rating);
   const alternate = media.alternate_title && media.alternate_title !== media.title ? media.alternate_title : null;
+  const metaItems = [
+    yearLabel ? (
+      <span key="year" className="font-mono text-fg-secondary">
+        {yearLabel}
+      </span>
+    ) : null,
+    <span key="type">{typeLabel}</span>,
+    runtimeLabel ? <span key="runtime">{runtimeLabel}</span> : null,
+    upcoming ? (
+      <span
+        key="upcoming"
+        className="inline-flex items-center rounded-full border border-[var(--accent-border)] bg-[var(--accent-soft)] px-2.5 py-0.5 font-medium text-[var(--accent-hover)]"
+        aria-label="即将上映"
+      >
+        即将上映
+      </span>
+    ) : (
+      <span key="status" className={`font-medium ${statusConfig.textClass}`}>
+        {statusConfig.label}
+      </span>
+    ),
+  ].filter((item) => item != null);
 
   return (
     <>
@@ -161,17 +193,16 @@ export default function MediaInformation({
             </h1>
             {alternate ? <p className="mt-1 text-sm text-fg-secondary">{alternate}</p> : null}
             <p className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-fg-muted">
-              {yearLabel ? <span className="font-mono text-fg-secondary">{yearLabel}</span> : null}
-              {yearLabel ? (
-                <span aria-hidden="true" className="text-fg-subtle">
-                  ·
-                </span>
-              ) : null}
-              <span>{typeLabel}</span>
-              <span aria-hidden="true" className="text-fg-subtle">
-                ·
-              </span>
-              <span className={`font-medium ${statusConfig.textClass}`}>{statusConfig.label}</span>
+              {metaItems.flatMap((item, index) =>
+                index === 0
+                  ? [item]
+                  : [
+                      <span key={`dot-${index}`} aria-hidden="true" className="text-fg-subtle">
+                        ·
+                      </span>,
+                      item,
+                    ],
+              )}
             </p>
           </div>
         </div>
