@@ -1,5 +1,6 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import type { AnchorHTMLAttributes, ReactNode } from "react";
 import { beforeEach, expect, test, vi } from "vitest";
 import Navbar from "@/components/Navbar";
 
@@ -15,6 +16,24 @@ vi.mock(
     useRouter: /* 返回带跳转监视函数的路由器替身。 */ () => ({ push }),
   }),
 );
+
+// next/link 不会把 prefetch 写到 DOM 上，测试替身用 data-prefetch 露出这个属性。
+vi.mock("next/link", () => ({
+  default: ({
+    href,
+    children,
+    prefetch,
+    ...props
+  }: AnchorHTMLAttributes<HTMLAnchorElement> & {
+    href: string;
+    children?: ReactNode;
+    prefetch?: boolean | "auto" | null;
+  }) => (
+    <a href={href} data-prefetch={prefetch === false ? "false" : undefined} {...props}>
+      {children}
+    </a>
+  ),
+}));
 
 beforeEach(
   /* 在每个导航测试前清空跳转记录并回到电影栏目。 */ () => {
@@ -127,4 +146,24 @@ test("导航栏直接登录，站长登录后展示管理和退出，不展示�
   expect(manageLinks).toHaveLength(2);
   for (const link of manageLinks) expect(link).toHaveAttribute("href", "/manage");
   expect(screen.queryByRole("link", { name: "设置" })).not.toBeInTheDocument();
+});
+
+test("桌面栏目和手机图标两处管理链接都关闭预取", () => {
+  auth.signedIn = true;
+  auth.owner = true;
+  render(<Navbar />);
+
+  const manageLinks = screen.getAllByRole("link", { name: "管理" });
+  const desktop = manageLinks.find((link) => link.textContent === "管理");
+  const mobile = manageLinks.find((link) => link.classList.contains("md:hidden"));
+  expect(desktop).toBeTruthy();
+  expect(mobile).toBeTruthy();
+  expect(desktop).not.toBe(mobile);
+  for (const link of [desktop, mobile]) {
+    expect(link).toHaveAttribute("href", "/manage");
+    expect(link).toHaveAttribute("data-prefetch", "false");
+  }
+  for (const name of ["首页", "电影", "电视节目"]) {
+    expect(screen.getByRole("link", { name })).not.toHaveAttribute("data-prefetch");
+  }
 });

@@ -53,11 +53,12 @@ export default function Navbar() {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [pathname, router]);
 
-  const navItems = [
+  const navItems: Array<{ name: string; href: string; prefetch?: false }> = [
     { name: "首页", href: "/" },
     { name: "电影", href: "/movies" },
     { name: "电视节目", href: "/shows" },
-    ...(auth.owner ? [{ name: "管理", href: "/manage" }] : []),
+    // 预取 /manage 会在活动 Cookie 写入前穿过 proxy 并 signOut。
+    ...(auth.owner ? [{ name: "管理", href: "/manage", prefetch: false as const }] : []),
   ];
 
   const onSearchPage = pathname === "/search";
@@ -102,6 +103,7 @@ export default function Navbar() {
                   <Link
                     key={item.name}
                     href={item.href}
+                    prefetch={item.prefetch}
                     aria-current={isActive(item.href) ? "page" : undefined}
                     className={`rounded-lg px-3 py-1.5 transition-all duration-200 ${
                       isActive(item.href)
@@ -146,10 +148,11 @@ export default function Navbar() {
               </form>
             )}
 
-            {/* 768px 以下由底部标签栏承担栏目与搜索入口；站长的管理入口不在标签栏中，单独保留在顶部。 */}
+            {/* 768px 以下由底部标签栏承担栏目与搜索入口；站长的管理入口不在标签栏中，单独保留在顶部。同样不能预取 /manage。 */}
             {auth.owner && (
               <Link
                 href="/manage"
+                prefetch={false}
                 aria-label="管理"
                 aria-current={isActive("/manage") ? "page" : undefined}
                 className="surface-control flex size-9 shrink-0 cursor-pointer items-center justify-center rounded-full text-fg-secondary outline-none transition-all duration-200 hover:text-white active:scale-95 md:hidden"
