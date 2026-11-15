@@ -2,7 +2,7 @@
 
 import FilterChip from "@/components/search/FilterChip";
 import { toggleSearchFilter } from "@/components/search/search-filters";
-import { optionLabel, STATUS_OPTIONS, TYPE_OPTIONS } from "@/components/search/search-model";
+import { EMPTY_FILTERS, optionLabel, STATUS_OPTIONS, TYPE_OPTIONS } from "@/components/search/search-model";
 import type { SearchFilters } from "@/lib/api/search-state";
 
 /** 已选条件标签。排序不在这里出现；清空时保留当前排序。 */
@@ -67,7 +67,7 @@ export default function ActiveFilterBar({
 
       <button
         type="button"
-        onClick={() => setFilters({ type: [], status: [], genre: [], region: [], language: [], year: [], sort: filters.sort || ["date_desc"] })}
+        onClick={() => setFilters({ ...EMPTY_FILTERS, sort: filters.sort || EMPTY_FILTERS.sort })}
         className="ml-auto inline-flex items-center gap-1 px-2 py-1 text-xs text-fg-secondary transition-colors hover:text-fg cursor-pointer"
       >
         <span className="i-material-symbols-restart-alt-rounded size-3.5 inline-block" aria-hidden="true" />
