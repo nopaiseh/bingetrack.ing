@@ -1,0 +1,28 @@
+# Dependencies and package manager state
+node_modules
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# Build output
+.next
+out
+build
+dist
+
+# Test and coverage artifacts
+coverage
+playwright-report
+test-results
+.lighthouse
+
+# Generated files
+next-env.d.ts
+*.tsbuildinfo
+
+# Supabase migrations are applied in order and must stay byte-for-byte.
+supabase/migrations
+
+# Generated Supabase types (none are committed today; keep them unformatted if added).
+database.types.ts
+**/types/supabase.ts

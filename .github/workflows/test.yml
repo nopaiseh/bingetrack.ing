@@ -53,6 +53,9 @@ jobs:
           fi
           exit "$code"
 
+      - name: Check formatting (Prettier)
+        run: npm run format:check
+
       - name: Check code quality (ESLint)
         run: npm run lint
 
