@@ -114,7 +114,7 @@ export default function MediaForm({
   const formRef = useRef<HTMLFormElement>(null);
   const locked = Boolean(item || lockType);
   const isChild = type === "tv_season" || type === "tv_episode";
-  const showCover = type !== "tv_episode";
+  const showCover = type !== "tv_episode" && type !== "tv_season";
   const showCast = !isChild;
   const dated = type === "movie" || type === "tv_episode";
   const showTypeSelect = !(locked && type === "tv_episode");
@@ -169,7 +169,6 @@ export default function MediaForm({
 
   return (
     <div>
-      ;
       <UnsavedGuard dirty={dirty && !pending && !deleting} />
       <form
         ref={formRef}
@@ -187,9 +186,9 @@ export default function MediaForm({
         <fieldset disabled={pending || deleting} className="edit-frame">
           <legend className="sr-only">媒体资料</legend>
           <input type="hidden" name="id" value={item?.id ?? ""} />
-          {type === "tv_episode" ? (
-            <input type="hidden" name="cover_url" value={item?.type === "tv_episode" ? (item.cover_url ?? "") : ""} />
-          ) : null}
+          {showCover ? null : (
+            <input type="hidden" name="cover_url" value={item?.type === type ? (item.cover_url ?? "") : ""} />
+          )}
           {locked ? <input type="hidden" name="type" value={type} /> : null}
 
           <div className="edit-toolbar">
@@ -467,7 +466,7 @@ export default function MediaForm({
                   <header className="edit-card-head">
                     <div>
                       <h2 id="edit-poster-heading">海报与图片</h2>
-                      <p className="edit-hint">电影和电视节目保留海报与剧照；单集不设图片</p>
+                      <p className="edit-hint">电影和电视节目保留海报与剧照；季和单集不设图片</p>
                     </div>
                   </header>
                   <div className="edit-poster-row">
