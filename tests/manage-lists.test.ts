@@ -3,8 +3,11 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { nameOrAliasFilter, titleOrAliasFilter } from "@/lib/admin/catalog";
 import {
   ADMIN_BULK_MAX_IDS,
+  ADMIN_LIST_MAX_PAGE,
   ADMIN_LIST_MAX_PAGE_SIZE,
   AdminInputError,
+  parseAdminChildListType,
+  parseAdminChildQuery,
   parseAdminMediaQuery,
   parseAdminPeopleQuery,
   parseBulkIds,
@@ -16,6 +19,7 @@ import {
   bulkDeleteTvShows,
   bulkSetMovieStatus,
   bulkSetTvShowStatus,
+  listAdminChildren,
   listAdminMedia,
   listAdminPeople,
 } from "@/lib/admin/lists";
@@ -194,6 +198,166 @@ describe("人物与影视列表查询", () => {
     const { db, from } = fakeDb(() => ({}));
     await expect(listAdminMedia(db, "movie", { sort: "music" })).rejects.toThrow(AdminInputError);
     expect(from).not.toHaveBeenCalled();
+  });
+});
+
+describe("季与单集列表", () => {
+  const seasonId = "12121212-1212-4121-8121-121212121212";
+  const seasonB = "13131313-1313-4131-8131-131313131313";
+  const episodeId = "34343434-3434-4343-8343-343434343434";
+  const readError = "无法读取管理列表，请稍后重试。";
+
+  it("默认日期倒序和空筛选，页码夹在 1 到上限，搜索词只截断", () => {
+    expect(parseAdminChildQuery("tv_episode", undefined, {})).toEqual({
+      page: 1, pageSize: 25, q: "", sort: "date", status: "", parent: "",
+    });
+    expect(parseAdminChildQuery("tv_episode", "  ", { page: "0" }).page).toBe(1);
+    expect(parseAdminChildQuery("tv_episode", null, { page: "-4" }).page).toBe(1);
+    expect(parseAdminChildQuery("tv_episode", null, { page: "12abc" }).page).toBe(12);
+    expect(parseAdminChildQuery("tv_episode", null, { page: "nope" }).page).toBe(1);
+    expect(parseAdminChildQuery("tv_season", null, { page: String(ADMIN_LIST_MAX_PAGE + 1) }).page).toBe(ADMIN_LIST_MAX_PAGE);
+    expect(parseAdminChildQuery("tv_episode", null, { q: `  ${"x".repeat(250)}` }).q).toHaveLength(200);
+    expect(parseAdminChildQuery("tv_episode", null, { q: "  星  " }).q).toBe("  星  ");
+    expect(parseAdminChildQuery("tv_episode", null, { pageSize: "100" }).pageSize).toBe(25);
+  });
+
+  it("排序、状态和上级只接受白名单，季不能按评分排序", () => {
+    expect(parseAdminChildQuery("tv_episode", showA, { sort: "rating", status: "watching" })).toMatchObject({
+      sort: "rating", status: "watching", parent: showA,
+    });
+    expect(parseAdminChildQuery("tv_season", showA.toUpperCase(), { sort: "rating", status: "watched" })).toMatchObject({
+      sort: "date", status: "watched", parent: showA.toUpperCase(),
+    });
+    expect(parseAdminChildQuery("tv_episode", "not-a-uuid", { sort: "item_number", status: "watched,id.neq.0" })).toMatchObject({
+      sort: "date", status: "", parent: "",
+    });
+    expect(parseAdminChildQuery("tv_season", showA, { sort: "title", status: "want_to_watch" }).sort).toBe("title");
+    expect(parseAdminChildListType("tv_episode")).toBe("tv_episode");
+    expect(() => parseAdminChildListType("movie")).toThrow(AdminInputError);
+    expect(() => parseAdminChildListType("tv_show")).toThrow(AdminInputError);
+  });
+
+  it("季按排序视图分页，状态和日期取视图，不使用条目自身的观看记录", async () => {
+    const { db, queries } = fakeDb((query) => {
+      if (query.table === "v_manage_media_order") return {
+        data: [
+          { id: seasonB, status: "watching", rating: 9, sort_date: "2025-03-01" },
+          { id: seasonId, status: null, rating: null, sort_date: "2024-01-01" },
+        ],
+        count: 30,
+      };
+      return {
+        data: [
+          {
+            id: seasonId,
+            title: "第 1 季",
+            alternate_title: null,
+            type: "tv_season",
+            cover_url: null,
+            release_date: "2020-01-01",
+            tracking: { status: "watched", rating: 9 },
+            tv_seasons: { season_number: 1, parent: { title: "人生切割术" }, episodes: [{ count: 9 }] },
+            tv_episodes: null,
+          },
+          {
+            id: seasonB,
+            title: "第 2 季",
+            alternate_title: "Two",
+            type: "tv_season",
+            cover_url: "https://image.tmdb.org/s.jpg",
+            release_date: null,
+            tracking: null,
+            tv_seasons: { season_number: 2, parent: null, episodes: [{ count: "3" }] },
+            tv_episodes: null,
+          },
+        ],
+      };
+    });
+    const page = await listAdminChildren(db, "tv_season", showA, { q: "100%", status: "watching", sort: "title", page: "2" });
+    const ordered = queries[0];
+    expect(ordered.table).toBe("v_manage_media_order");
+    expect(calls(ordered, "select")[0].args).toEqual(["id, status, rating, sort_date", { count: "exact" }]);
+    expect(calls(ordered, "eq").map((call) => call.args)).toEqual([["type", "tv_season"], ["parent_id", showA], ["status", "watching"]]);
+    expect(calls(ordered, "or")[0].args).toEqual([titleOrAliasFilter("100%")]);
+    expect(calls(ordered, "order").map((call) => call.args)).toEqual([
+      ["title"],
+      ["sort_date", { ascending: false, nullsFirst: false }],
+      ["item_number", { ascending: false, nullsFirst: false }],
+      ["title"],
+      ["id"],
+    ]);
+    expect(calls(ordered, "range")[0].args).toEqual([25, 49]);
+    expect(queries[1].table).toBe("media_items");
+    expect(String(calls(queries[1], "select")[0].args[0])).not.toContain("!inner");
+    expect(calls(queries[1], "in")[0].args).toEqual(["id", [seasonB, seasonId]]);
+    expect(page.total).toBe(30);
+    expect(page.items.map((item) => item.id)).toEqual([seasonB, seasonId]);
+    expect(page.items[0]).toMatchObject({
+      type: "tv_season",
+      title: "第 2 季",
+      status: "watching",
+      rating: null,
+      display_date: "2025-03-01",
+      cover_url: "https://image.tmdb.org/s.jpg",
+      season: { seriesTitle: null, seasonNumber: 2, episodeCount: 3 },
+      episode: null,
+    });
+    expect(page.items[1]).toMatchObject({ status: "want_to_watch", rating: null, display_date: "2024-01-01", season: { seriesTitle: "人生切割术", episodeCount: 9 } });
+    expect(page.sort).toBe("title");
+  });
+
+  it("单集的状态和评分来自 tracking，日期来自上映日，评分排序写在最前", async () => {
+    const { db, queries } = fakeDb((query) => query.table === "v_manage_media_order" ? {
+      data: [{ id: episodeId, status: "want_to_watch", rating: 1, sort_date: "2024-06-01" }],
+      count: 1,
+    } : {
+      data: [{
+        id: episodeId,
+        title: "启程",
+        alternate_title: null,
+        type: "tv_episode",
+        cover_url: null,
+        release_date: "2024-06-02",
+        tracking: [{ status: "watched", rating: "8.5" }],
+        tv_seasons: null,
+        tv_episodes: { episode_number: 8, parent: { media_items: { title: "第 1 季" }, series: { title: "人生切割术" } } },
+      }],
+    });
+    const page = await listAdminChildren(db, "tv_episode", seasonId, { sort: "rating", status: "watched" });
+    expect(calls(queries[0], "order").map((call) => call.args[0])).toEqual(["rating", "sort_date", "item_number", "title", "id"]);
+    expect(calls(queries[0], "eq").map((call) => call.args)).toEqual([["type", "tv_episode"], ["parent_id", seasonId], ["status", "watched"]]);
+    expect(page.items[0]).toMatchObject({
+      status: "watched",
+      rating: 8.5,
+      display_date: "2024-06-02",
+      season: null,
+      episode: { seriesTitle: "人生切割术", seasonTitle: "第 1 季", episodeNumber: 8 },
+    });
+  });
+
+  it("空白页不再读取详情，非法排序和状态不会进入查询", async () => {
+    const { db, queries, from } = fakeDb(() => ({ data: [], count: 0 }));
+    const page = await listAdminChildren(db, "tv_episode", "not-a-uuid", { q: "   ", sort: "release_date", status: "dropped" });
+    expect(page).toMatchObject({ items: [], total: 0, page: 1, pageSize: 25, sort: "date", status: "", parent: "" });
+    expect(queries).toHaveLength(1);
+    expect(calls(queries[0], "or")).toHaveLength(1);
+    expect(calls(queries[0], "order").map((call) => call.args[0])).toEqual(["sort_date", "item_number", "title", "id"]);
+    expect(calls(queries[0], "eq").map((call) => call.args[0])).toEqual(["type"]);
+    await expect(listAdminChildren(db, "movie", null, {})).rejects.toThrow(AdminInputError);
+    expect(from).toHaveBeenCalledTimes(1);
+  });
+
+  it("视图或详情查询失败时抛出原来的提示，且不退回逐条查询", async () => {
+    const missing = fakeDb(() => ({ data: null, error: { code: "PGRST205", message: "Could not find the table" }, count: null }));
+    await expect(listAdminChildren(missing.db, "tv_season", showA, {})).rejects.toSatisfy((error: Error) => error.message === readError && !error.message.includes("PGRST205"));
+    expect(missing.queries.map((query) => query.table)).toEqual(["v_manage_media_order"]);
+
+    const denied = fakeDb((query) => query.table === "media_items"
+      ? { data: null, error: { code: "42501", message: "permission denied" } }
+      : { data: [{ id: seasonId, status: "watched", rating: null, sort_date: "2024-01-01" }], count: 1 });
+    await expect(listAdminChildren(denied.db, "tv_season", null, {})).rejects.toThrow(readError);
+    expect(denied.queries.map((query) => query.table)).toEqual(["v_manage_media_order", "media_items"]);
+    expect(denied.queries.some((query) => query.table === "tv_seasons" || query.table === "tv_episodes")).toBe(false);
   });
 });
 

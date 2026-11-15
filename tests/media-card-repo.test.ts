@@ -101,12 +101,28 @@ test("season aggregates preserve empty seasons and single-year display", /* 验�
   expect(state.executed).toHaveLength(1);
 });
 
-test("only missing views use the rollout fallback", /* 验证仅视图缺失会触发回退，权限类错误仍抛出。 */ async () => {
+test("aggregate view errors throw MediaRepositoryError and do not scan episodes", async () => {
+  const id = "12345678-1234-1234-1234-123456789abc";
   state.results.v_media_season_summaries = { data: null, error: { code: "PGRST205" } };
-  expect(await getSeasonsBySeriesId("12345678-1234-1234-1234-123456789abc")).toEqual([]);
-  expect(state.executed.map(/* 提取查询表名以确认执行了缺失视图回退。 */ (query) => query.table)).toEqual(["v_media_season_summaries", "tv_seasons"]);
+  await expect(getSeasonsBySeriesId(id)).rejects.toMatchObject({
+    name: "MediaRepositoryError",
+    message: "Media repository operation failed: fetch season aggregates",
+  });
+  expect(state.executed.map((query) => query.table)).toEqual(["v_media_season_summaries"]);
+
+  state.executed = [];
   state.results.v_media_season_summaries = { data: null, error: { code: "42501" } };
-  await expect(getSeasonsBySeriesId("12345678-1234-1234-1234-123456789abc")).rejects.toBeInstanceOf(MediaRepositoryError);
+  await expect(getSeasonsBySeriesId(id)).rejects.toBeInstanceOf(MediaRepositoryError);
+  expect(state.executed.map((query) => query.table)).toEqual(["v_media_season_summaries"]);
+
+  state.executed = [];
+  state.results.v_all_media = { data: [{ id: "s", type: "tv_show", release_year: "2020" }], error: null };
+  state.results.v_media_series_years = { data: null, error: { code: "42P01" } };
+  await expect(fetchMediaCardsServer()).rejects.toMatchObject({
+    name: "MediaRepositoryError",
+    message: "Media repository operation failed: fetch series year aggregates",
+  });
+  expect(state.executed.map((query) => query.table)).toEqual(["v_all_media", "v_media_series_years"]);
 });
 
 test("fetchStatsServer converts string counts to numbers including upcoming", /* 验证统计函数正确转换各种计数为数字（包括 upcoming）。 */ async () => {

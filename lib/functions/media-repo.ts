@@ -25,23 +25,11 @@ const TOP_MEDIA_COLUMNS = "id,type,title,sort_date,first_air_date,last_air_date,
 // v_all_media 实际输出的观看状态。
 const WATCH_STATUSES = new Set(["want_to_watch", "watching", "watched"]);
 
-/** 只将 PostgREST 表缺失或 PostgreSQL 关系缺失错误识别为聚合视图缺失。 */
-function isMissingAggregateView(error: { code?: string } | null): boolean {
-  return error?.code === "PGRST205" || error?.code === "42P01";
-}
-
 /** 缺少任一端年份时返回 undefined，同年显示单年，跨年显示起止范围。 */
 function formatYearRange(first: number | null, last: number | null): string | undefined {
   if (first == null || last == null) return undefined;
   return first === last ? String(first) : `${first} - ${last}`;
 }
-
-type SeriesReleaseYearRow = {
-  series_id: string;
-  tv_episodes: Array<{
-    media_items: { release_date: string | null } | Array<{ release_date: string | null }> | null;
-  }> | null;
-};
 
 type SitemapMediaEntry = {
   path: string;
@@ -100,7 +88,7 @@ export async function getSitemapMediaEntries(): Promise<SitemapMediaEntry[]> {
   });
 }
 
-/** 为电视节目卡片补齐单集首末年份，优先用聚合视图，仅视图缺失时回退逐集计算。 */
+/** 用 v_media_series_years 为电视节目卡片补齐单集首末年份。查询失败一律抛出 MediaRepositoryError。 */
 async function addSeriesReleaseYearRanges<T extends MediaCard>(
   db: ReturnType<typeof getSupabasePublicServer>,
   items: T[],
@@ -110,50 +98,13 @@ async function addSeriesReleaseYearRanges<T extends MediaCard>(
     .map(/* 提取需要查询年份范围的电视节目 ID。 */ (item) => item.id);
   if (seriesIds.length === 0) return items;
 
-  const aggregate = await db.from("v_media_series_years")
+  const { data, error } = await db.from("v_media_series_years")
     .select("series_id,first_year,last_year").in("series_id", seriesIds);
-  if (!aggregate.error) {
-    const years = new Map((aggregate.data ?? []).map(/* 将电视节目 ID 与格式化后的首末年份组成查找表条目。 */ (row) => [
-      row.series_id, formatYearRange(row.first_year, row.last_year),
-    ]));
-    return items.map(/* 用聚合年份覆盖显示年份，缺少聚合结果时保留原值。 */ (item) => ({ ...item, release_year: years.get(item.id) ?? item.release_year }));
-  }
-  if (!isMissingAggregateView(aggregate.error)) {
-    throw new MediaRepositoryError("fetch series year aggregates", aggregate.error);
-  }
-
-  // 聚合视图不存在时才逐集计算首末年份；前面的检查会直接抛出其他聚合查询错误。
-  const { data, error } = await db
-    .from("tv_seasons")
-    .select("series_id, tv_episodes(media_items(release_date))")
-    .in("series_id", seriesIds);
-
-  if (error || !data) {
-    if (error) reportHandledError("Failed to fetch series release year ranges:", error);
-    return items;
-  }
-
-  const yearsBySeries = new Map<string, number[]>();
-  for (const season of data as SeriesReleaseYearRow[]) {
-    const years = yearsBySeries.get(season.series_id) ?? [];
-    for (const episode of season.tv_episodes ?? []) {
-      const releaseDate = firstRelated(episode.media_items)?.release_date;
-      const year = releaseDate?.match(/^(\d{4})-/)?.[1];
-      if (year) years.push(Number(year));
-    }
-    yearsBySeries.set(season.series_id, years);
-  }
-
-  return items.map(/* 根据已收集单集年份计算范围，没有年份时保留原条目。 */ (item) => {
-    const years = yearsBySeries.get(item.id);
-    if (!years?.length) return item;
-    const firstYear = Math.min(...years);
-    const lastYear = Math.max(...years);
-    return {
-      ...item,
-      release_year: firstYear === lastYear ? String(firstYear) : `${firstYear} - ${lastYear}`,
-    };
-  });
+  if (error) throw new MediaRepositoryError("fetch series year aggregates", error);
+  const years = new Map((data ?? []).map(/* 将电视节目 ID 与格式化后的首末年份组成查找表条目。 */ (row) => [
+    row.series_id, formatYearRange(row.first_year, row.last_year),
+  ]));
+  return items.map(/* 用聚合年份覆盖显示年份，缺少聚合结果时保留原值。 */ (item) => ({ ...item, release_year: years.get(item.id) ?? item.release_year }));
 }
 
 // 详情读取完整视图；找不到记录返回 null，查询失败则抛出错误。
@@ -234,104 +185,32 @@ export async function getRelatedBySeries(seriesName: string, currentId: string):
   });
 }
 
-type SeasonRow = {
-  id: string;
-  season_number: number;
-  tv_episodes: Array<{
-    id: string;
-    media_items: {
-      release_date: string | null;
-      tracking: { status: string | null } | Array<{ status: string | null }> | null;
-    } | Array<{
-      release_date: string | null;
-      tracking: { status: string | null } | Array<{ status: string | null }> | null;
-    }> | null;
-  }> | null;
-};
-
 // 关联结果可能是对象或数组，统一取首项，并将空关联转换为 undefined。
 function firstRelated<T>(value: T | T[] | null | undefined): T | undefined {
   return Array.isArray(value) ? value[0] : value ?? undefined;
 }
 
-// 优先读取数据库聚合好的季摘要；仅在视图缺失时回退到逐集统计。
+/** 读取 v_media_season_summaries 中的季摘要。查询失败一律抛出 MediaRepositoryError。 */
 export async function getSeasonsBySeriesId(seriesId: string): Promise<SeasonInfo[]> {
   if (!isMediaId(seriesId)) return [];
 
   return withRetry(async () => {
     const db = getSupabasePublicServer();
-    const aggregate = await db.from("v_media_season_summaries")
+    const { data, error } = await db.from("v_media_season_summaries")
       .select("id,season_number,title,alternate_title,summary,cover_url,episode_count,watched_episode_count,first_year,last_year")
       .eq("series_id", seriesId).order("season_number", { ascending: true });
-    if (!aggregate.error) {
-      return (aggregate.data ?? []).map(/* 将聚合行转换为季摘要，规范计数字段、年份范围与空值。 */ (row) => ({
-        id: row.id,
-        seasonNumber: row.season_number,
-        title: row.title ?? `第 ${row.season_number} 季`,
-        alternateTitle: row.alternate_title ?? null,
-        coverUrl: row.cover_url ?? "",
-        episodeCount: Number(row.episode_count),
-        watchedEpisodeCount: Number(row.watched_episode_count),
-        releaseYearRange: formatYearRange(row.first_year, row.last_year),
-        summary: row.summary ?? "",
-      }));
-    }
-    if (!isMissingAggregateView(aggregate.error)) {
-      throw new MediaRepositoryError("fetch season aggregates", aggregate.error);
-    }
-    const { data, error } = await db
-      .from("tv_seasons")
-      .select("id, season_number, tv_episodes(id, media_items(release_date, tracking(status)))")
-      .eq("series_id", seriesId)
-      .order("season_number", { ascending: true });
-
-    if (error) {
-      console.error(`Failed to fetch seasons for series ${seriesId}:`, error);
-      throw new MediaRepositoryError("fetch series seasons", error);
-    }
-
-    const seasonRows = (data ?? []) as SeasonRow[];
-    const seasonIds = seasonRows.map(/* 提取季 ID，用于批量读取季简介和封面。 */ (season) => season.id);
-    const { data: mediaItems, error: mediaItemsError } = seasonIds.length > 0
-      ? await db.from("media_items").select("id, title, alternate_title, summary, cover_url").in("id", seasonIds)
-      : { data: [], error: null };
-
-    if (mediaItemsError) {
-      reportHandledError(`Failed to fetch season summaries for series ${seriesId}:`, mediaItemsError);
-    }
-
-    const seasonMedia = new Map((mediaItems ?? []).map(/* 以媒体 ID 建立完整行的查找表条目。 */ (item) => [item.id, item]));
-
-    return seasonRows.map(/* 根据该季单集计算首末发行年份和已看集数，并合并季的简介与封面。 */ (season) => {
-      const releaseDates = (season.tv_episodes ?? [])
-        .map(/* 兼容对象或数组关联，读取单集发行日期。 */ (episode) => {
-          const mediaItem = Array.isArray(episode.media_items) ? episode.media_items[0] : episode.media_items;
-          return mediaItem?.release_date;
-        })
-        .filter(/* 仅保留非空且符合四位年、两位月日格式的日期字符串。 */ (date): date is string => Boolean(date && /^\d{4}-\d{2}-\d{2}$/.test(date)))
-        .sort();
-      const firstYear = releaseDates[0]?.slice(0, 4);
-      const lastYear = releaseDates.at(-1)?.slice(0, 4);
-      const mediaItem = seasonMedia.get(season.id);
-      const watchedEpisodeCount = (season.tv_episodes ?? []).filter(/* 判断单集首个关联观看记录是否为已看。 */ (episode) => {
-        const episodeMedia = Array.isArray(episode.media_items) ? episode.media_items[0] : episode.media_items;
-        return firstRelated(episodeMedia?.tracking)?.status === "watched";
-      }).length;
-
-      return {
-        id: season.id,
-        seasonNumber: season.season_number,
-        title: mediaItem?.title ?? `第 ${season.season_number} 季`,
-        alternateTitle: mediaItem?.alternate_title ?? null,
-        coverUrl: mediaItem?.cover_url ?? "",
-        episodeCount: season.tv_episodes?.length ?? 0,
-        watchedEpisodeCount,
-        releaseYearRange: firstYear && lastYear
-          ? (firstYear === lastYear ? firstYear : `${firstYear} - ${lastYear}`)
-          : undefined,
-        summary: mediaItem?.summary ?? "",
-      };
-    });
+    if (error) throw new MediaRepositoryError("fetch season aggregates", error);
+    return (data ?? []).map(/* 将聚合行转换为季摘要，规范计数字段、年份范围与空值。 */ (row) => ({
+      id: row.id,
+      seasonNumber: row.season_number,
+      title: row.title ?? `第 ${row.season_number} 季`,
+      alternateTitle: row.alternate_title ?? null,
+      coverUrl: row.cover_url ?? "",
+      episodeCount: Number(row.episode_count),
+      watchedEpisodeCount: Number(row.watched_episode_count),
+      releaseYearRange: formatYearRange(row.first_year, row.last_year),
+      summary: row.summary ?? "",
+    }));
   });
 }
 
