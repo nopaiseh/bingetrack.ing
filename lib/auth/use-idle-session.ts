@@ -38,12 +38,13 @@ export type ActivityReport = "throttled" | "ok" | "unauthorized";
 /** Passkey 等软导航登录成功后发出，让已经挂载的 IdleSession 开始订阅。 */
 export const SIGNED_IN_EVENT = "bingetrack:signed-in";
 
-/** 服务端拒绝活动上报时立刻登出，避免过期会话留在浏览器里。 */
-export function logoutEverywhere() {
+/** 服务端拒绝活动上报时立刻登出，避免过期会话留在浏览器里。target 只能是站内路径。 */
+export function logoutEverywhere(target = "/") {
+  const next = target.startsWith("/") && !target.startsWith("//") ? target : "/";
   void fetch("/auth/logout", { method: "POST", credentials: "same-origin", cache: "no-store" })
     .catch(() => loadAuthBrowser().then((db) => db.auth.signOut({ scope: "local" })))
     .finally(() => {
-      replaceDocument("/");
+      replaceDocument(next);
     });
 }
 

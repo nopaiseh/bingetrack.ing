@@ -3,8 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { resetIdleSession, signalIdleLogout } from "./idle";
-import { replaceDocument } from "./location";
-import { SIGNED_IN_EVENT } from "./use-idle-session";
+import { SIGNED_IN_EVENT, logoutEverywhere } from "./use-idle-session";
 import { hasSupabaseAuthCookie } from "./session-cookie";
 
 /**
@@ -167,11 +166,7 @@ export function useNavbarAuth() {
           setError(ACTIVITY_FAILURE);
           if (activity.status === 401) {
             signalIdleLogout(data.user.id);
-            void fetch("/auth/logout", { method: "POST", credentials: "same-origin", cache: "no-store" }).finally(
-              () => {
-                replaceDocument("/?authError=activity");
-              },
-            );
+            logoutEverywhere("/?authError=activity");
           }
           return;
         }
