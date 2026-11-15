@@ -48,9 +48,15 @@ export const childSorts = {
 } as const satisfies Record<string, SortDirection>;
 export type ChildSortKey = keyof typeof childSorts;
 
-/** 与管理列表状态筛选一致。空字符串表示不筛选。 */
+/**
+ * 季列表的状态筛选。在看只由单集汇总产生，季可以按它筛选。
+ * 单集列表另有更窄的白名单，不接受 watching。空字符串表示不筛选。
+ */
 export const childStatuses = ["watched", "watching", "want_to_watch"] as const;
 export type ChildStatus = (typeof childStatuses)[number];
+
+/** 单集 tracking 只有已看和想看。watching 不是合法筛选。 */
+const episodeStatuses = ["watched", "want_to_watch"] as const;
 
 /** 可以写入 tracking 的状态。watching 只由单集汇总产生，不能直接保存。 */
 export const bulkStatuses = ["watched", "want_to_watch"] as const;
@@ -228,15 +234,22 @@ function parseChildPage(value: unknown): number {
 }
 
 const childStatusSet: ReadonlySet<string> = new Set(childStatuses);
+const episodeStatusSet: ReadonlySet<string> = new Set(episodeStatuses);
+
+function parseChildStatus(type: AdminChildListType, value: unknown): ChildStatus | "" {
+  if (typeof value !== "string") return "";
+  const allowed = type === "tv_episode" ? episodeStatusSet : childStatusSet;
+  return allowed.has(value) ? value as ChildStatus : "";
+}
 
 /**
  * 季与单集的排序、状态、搜索词和上级条目。非法值回落到默认，不把用户输入拼进查询。
- * 季没有评分，sort=rating 视为 date。搜索词只截断，保留首尾空白。
+ * 季没有评分，sort=rating 视为 date。单集不接受 watching。搜索词只截断，保留首尾空白。
  */
 export function parseAdminChildQuery(type: AdminChildListType, parent: unknown, input?: AdminChildListInput | null): ParsedAdminChildQuery {
   const source = input ?? {};
   const sort = typeof source.sort === "string" && Object.hasOwn(childSorts, source.sort) ? source.sort as ChildSortKey : "date";
-  const status = typeof source.status === "string" && childStatusSet.has(source.status) ? source.status as ChildStatus : "";
+  const status = parseChildStatus(type, source.status);
   return {
     page: parseChildPage(source.page),
     pageSize: ADMIN_LIST_DEFAULT_PAGE_SIZE,

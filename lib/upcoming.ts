@@ -2,14 +2,17 @@ import type { UpcomingRelease } from "@/lib/types";
 
 const DAY_MS = 86_400_000;
 
+/** 首页每次渲染都会取新加坡当天。格式化器创建一次，避免重复构造。 */
+const sgtDateFormatter = new Intl.DateTimeFormat("en-US", {
+  timeZone: "Asia/Singapore",
+  year: "numeric",
+  month: "2-digit",
+  day: "2-digit",
+});
+
 /** Asia/Singapore 的日历日，YYYY-MM-DD。新加坡全年 UTC+8，没有夏令时。 */
 export function sgtDateKey(date: Date = new Date()): string {
-  const parts = new Intl.DateTimeFormat("en-US", {
-    timeZone: "Asia/Singapore",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  }).formatToParts(date);
+  const parts = sgtDateFormatter.formatToParts(date);
   const year = parts.find((part) => part.type === "year")?.value;
   const month = parts.find((part) => part.type === "month")?.value;
   const day = parts.find((part) => part.type === "day")?.value;

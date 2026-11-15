@@ -169,8 +169,16 @@ export async function listAdminMedia(db: SupabaseClient, type: AdminMediaListTyp
   };
 }
 
-/** 与原先管理页详情查询一致：去掉仅用于回退路径的 !inner 后的字段。 */
-const CHILD_DETAIL_COLUMNS = "id,title,alternate_title,type,cover_url,release_date,runtime,tracking(status,rating),tv_seasons!tv_seasons_id_fkey(series_id,season_number,parent:media_items!tv_seasons_series_id_fkey(title),episodes:tv_episodes!tv_episodes_season_id_fkey(count)),tv_episodes!tv_episodes_id_fkey(season_id,episode_number,parent:tv_seasons!tv_episodes_season_id_fkey(media_items!tv_seasons_id_fkey(title),series:media_items!tv_seasons_series_id_fkey(title))),seasons:tv_seasons!tv_seasons_series_id_fkey(season_number,episodes:tv_episodes!tv_episodes_season_id_fkey(count))";
+/**
+ * 季和单集列表补详情时实际用到的列。
+ * 不读 runtime，也不嵌入所属节目下的全部季：那一次还会为每一季再数一遍单集，列表并不展示。
+ */
+const CHILD_DETAIL_COLUMNS = [
+  "id,title,alternate_title,type,cover_url,release_date",
+  "tracking(status,rating)",
+  "tv_seasons!tv_seasons_id_fkey(season_number,parent:media_items!tv_seasons_series_id_fkey(title),episodes:tv_episodes!tv_episodes_season_id_fkey(count))",
+  "tv_episodes!tv_episodes_id_fkey(episode_number,parent:tv_seasons!tv_episodes_season_id_fkey(media_items!tv_seasons_id_fkey(title),series:media_items!tv_seasons_series_id_fkey(title)))",
+].join(",");
 
 export type AdminChildListResult = AdminListPage<ChildListItem> & Pick<ParsedAdminChildQuery, "q" | "sort" | "status" | "parent">;
 
