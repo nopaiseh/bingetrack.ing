@@ -90,3 +90,69 @@ describe("saveMedia 快速新增", () => {
     expect(redirect).not.toHaveBeenCalled();
   });
 });
+
+describe("saveMedia 封面", () => {
+  const cover = "https://image.tmdb.org/t/p/original/poster.jpg";
+  const show = "11111111-1111-4111-8111-111111111111";
+
+  /** 取出写入 RPC 的封面，确认服务端保存的是丢掉或保留之后的值。 */
+  function savedCover() {
+    return rpc.mock.calls[0]?.[1]?.p_data?.cover_url;
+  }
+
+  it("新建季时丢掉提交的封面，写入 null", async () => {
+    await saveMedia(
+      {},
+      episodeForm({
+        type: "tv_season",
+        title: "第 1 季",
+        parent_id: show,
+        number: "1",
+        cover_url: "https://evil.example/poster.jpg",
+        after: "continue",
+      }),
+    );
+    expect(savedCover()).toBeNull();
+    expect(rpc).toHaveBeenCalledWith(
+      "manage_save_media",
+      expect.objectContaining({ p_data: expect.objectContaining({ type: "tv_season", id: null, cover_url: null }) }),
+    );
+  });
+
+  it("更新季时丢掉新封面，不改成提交的地址", async () => {
+    await saveMedia(
+      {},
+      episodeForm({
+        id: saved,
+        type: "tv_season",
+        title: "第 1 季",
+        parent_id: show,
+        number: "1",
+        cover_url: cover,
+        after: "continue",
+      }),
+    );
+    expect(savedCover()).toBeNull();
+    expect(rpc.mock.calls[0][1].p_data.id).toBe(saved);
+    expect(rpc.mock.calls[0][1].p_data.cover_url).not.toBe(cover);
+  });
+
+  it.each([
+    ["movie", { type: "movie", title: "测试电影" }],
+    ["tv_show", { type: "tv_show", title: "测试剧集" }],
+    ["tv_episode", { type: "tv_episode", title: "第 8 集", parent_id: season, number: "8" }],
+  ] as const)("新建%s保留封面", async (_label, fields) => {
+    await saveMedia({}, episodeForm({ ...fields, cover_url: cover, after: "continue" }));
+    expect(savedCover()).toBe(cover);
+  });
+
+  it.each([
+    ["movie", { type: "movie", title: "测试电影" }],
+    ["tv_show", { type: "tv_show", title: "测试剧集" }],
+    ["tv_episode", { type: "tv_episode", title: "第 8 集", parent_id: season, number: "8" }],
+  ] as const)("更新%s保留封面", async (_label, fields) => {
+    await saveMedia({}, episodeForm({ id: saved, ...fields, cover_url: cover, after: "continue" }));
+    expect(savedCover()).toBe(cover);
+    expect(rpc.mock.calls[0][1].p_data.id).toBe(saved);
+  });
+});

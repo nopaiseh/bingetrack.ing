@@ -2,6 +2,15 @@ import { isMediaId } from "@/lib/functions/media-id";
 
 export const mediaTypes = { movie: "电影", tv_show: "电视节目", tv_season: "季", tv_episode: "单集" } as const;
 export type ManagedMediaType = keyof typeof mediaTypes;
+
+/**
+ * 决定写入媒体条目的封面。
+ * 季忽略提交值，新建和更新都存 null，不会改成新的地址。电影、电视节目和单集保留提交的封面。
+ */
+export function coverUrlForSave(type: ManagedMediaType, supplied: string | null): string | null {
+  return type === "tv_season" ? null : supplied;
+}
+
 /** 关联人物；id 为 null 表示按名称匹配或新建无别名人物，同名人物只能凭 id 区分。 */
 export type PersonRef = { id: string | null; name: string; alternate_name?: string | null };
 /** 演员及其饰演的角色；未填写角色时为 null。 */
@@ -98,7 +107,9 @@ export function parseMediaForm(form: FormData): MediaInput {
   if ((type === "tv_season" || type === "tv_episode") && (!parent_id || number === null))
     throw new Error("请指定上级条目和季／集编号。");
   if (id && id === parent_id) throw new Error("不能把条目设为自己的上级。");
-  const cover_url = string("cover_url", 2000);
+  // 季不设海报。不读取、不校验提交的 cover_url，新建和更新都写入 null，不采用新的封面地址。
+  // 这里不改已有行；只有之后再次保存该季时，数据库才会按这份 payload 把封面写成 null。
+  const cover_url = coverUrlForSave(type as ManagedMediaType, type === "tv_season" ? null : string("cover_url", 2000));
   if (cover_url) {
     let url: URL;
     try {
