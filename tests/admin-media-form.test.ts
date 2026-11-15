@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { parseMediaForm } from "@/lib/admin/media-form";
+import { coverUrlForSave, parseMediaForm } from "@/lib/admin/media-form";
 
 /** 生成有效的最小媒体表单，可覆盖字段以验证边界。 */
 function form(values: Record<string, string> = {}) {
@@ -81,6 +81,28 @@ describe("管理媒体输入", () => {
     expect(parseMediaForm(form({ cover_url: "https://image.tmdb.org/t/p/w500/a.jpg" })).cover_url).toContain(
       "image.tmdb.org",
     );
+  });
+  it("新建和更新季时丢掉封面，其他类型保留", () => {
+    const cover = "https://image.tmdb.org/t/p/original/poster.jpg";
+    const parent = "11111111-1111-4111-8111-111111111111";
+    const id = "22222222-2222-4222-8222-222222222222";
+    const season = { type: "tv_season", title: "第 1 季", parent_id: parent, number: "1", cover_url: cover };
+    expect(parseMediaForm(form(season)).cover_url).toBeNull();
+    expect(parseMediaForm(form({ ...season, id })).cover_url).toBeNull();
+    expect(parseMediaForm(form({ ...season, cover_url: "not a url" })).cover_url).toBeNull();
+    expect(parseMediaForm(form({ ...season, cover_url: "x".repeat(2001) })).cover_url).toBeNull();
+    expect(coverUrlForSave("tv_season", cover)).toBeNull();
+
+    expect(parseMediaForm(form({ cover_url: cover })).cover_url).toBe(cover);
+    expect(parseMediaForm(form({ id, cover_url: cover })).cover_url).toBe(cover);
+    expect(parseMediaForm(form({ type: "tv_show", title: "测试剧集", cover_url: cover })).cover_url).toBe(cover);
+    expect(parseMediaForm(form({ id, type: "tv_show", title: "测试剧集", cover_url: cover })).cover_url).toBe(cover);
+    const episode = { type: "tv_episode", title: "第 1 集", parent_id: parent, number: "1", cover_url: cover };
+    expect(parseMediaForm(form(episode)).cover_url).toBe(cover);
+    expect(parseMediaForm(form({ ...episode, id })).cover_url).toBe(cover);
+    expect(coverUrlForSave("movie", cover)).toBe(cover);
+    expect(coverUrlForSave("tv_show", cover)).toBe(cover);
+    expect(coverUrlForSave("tv_episode", null)).toBeNull();
   });
   it("拒绝无效日期和无上级关系的集", () => {
     expect(() => parseMediaForm(form({ release_date: "2026-02-30" }))).toThrow();
