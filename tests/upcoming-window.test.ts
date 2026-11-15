@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { gmt8DateKey, hasReleaseWithinSgtWindow, sgtDateKey } from "@/lib/upcoming";
+import { hasReleaseWithinSgtWindow, sgtDateKey } from "@/lib/upcoming";
 
 // 2026-11-13 12:00 Asia/Singapore。
 const sgtNoon = new Date("2026-11-13T04:00:00.000Z");
@@ -52,7 +52,6 @@ describe("hasReleaseWithinSgtWindow", () => {
   it("跨过新加坡午夜后按新的一天计算，即使 UTC 日期还没变", () => {
     const justAfter = new Date("2026-11-13T16:00:00.000Z");
     expect(sgtDateKey(justAfter)).toBe("2026-11-14");
-    expect(gmt8DateKey(justAfter)).toBe("2026-11-14");
     expect(justAfter.toISOString().slice(0, 10)).toBe("2026-11-13");
     expect(hasReleaseWithinSgtWindow([{ releaseDate: "2026-11-13" }], justAfter)).toBe(false);
     expect(hasReleaseWithinSgtWindow([{ releaseDate: "2026-11-14" }], justAfter)).toBe(true);
