@@ -76,7 +76,7 @@ export function signActivityCookie(userId: string, at: number, secret: BinaryLik
 
 /**
  * 从已验证的访问令牌 amr 里取本次会话的认证时间（毫秒）。
- * 字符串形式的 amr 没有时间戳，不能用来补记。未来时间视为不可信。
+ * 字符串形式的 amr 没有时间戳。未来时间视为不可信。不读取 iat。
  */
 export function readSessionAuthenticatedAt(amr: unknown, now = Date.now()) {
   if (!Array.isArray(amr)) return null;
@@ -93,7 +93,19 @@ export function readSessionAuthenticatedAt(amr: unknown, now = Date.now()) {
   return at;
 }
 
-/** 只有本次会话的认证时间落在补记窗口内，才允许在没有有效活动 Cookie 时补写。 */
+/**
+ * 补记窗口用的认证时间。有可用的 amr 时间戳时只用它，即使它已经超出窗口，也不改用 last_sign_in_at。
+ * 只有 amr 没有可用时间戳时，才用 Auth 服务器返回的 last_sign_in_at。绝不使用令牌的 iat 或 exp。
+ */
+export function readBackfillAuthenticatedAt(amr: unknown, lastSignInAt: string | null | undefined, now = Date.now()) {
+  const fromAmr = readSessionAuthenticatedAt(amr, now);
+  if (fromAmr !== null) return fromAmr;
+  const parsed = Date.parse(lastSignInAt ?? "");
+  if (!Number.isFinite(parsed) || parsed > now + FUTURE_SKEW_MS) return null;
+  return parsed;
+}
+
+/** 只有认证时间落在补记窗口内，才允许在没有有效活动 Cookie 时补写。 */
 export function withinFreshSignIn(authenticatedAt: number | null, now = Date.now()) {
   if (authenticatedAt === null) return false;
   return authenticatedAt <= now + FUTURE_SKEW_MS && now - authenticatedAt <= FRESH_SIGN_IN_MS;

@@ -7,6 +7,7 @@ import {
   ACTIVITY_COOKIE_HKDF_INFO,
   activityCookieOptions,
   readActivitySecret,
+  readBackfillAuthenticatedAt,
   readSessionAuthenticatedAt,
   signActivityCookie,
   skipsIdleEnforcement,
@@ -87,6 +88,22 @@ describe("活动 Cookie 签名", () => {
     expect(withinFreshSignIn(recent * 1000, now)).toBe(true);
     expect(withinFreshSignIn(now - 3 * 60 * 1000, now)).toBe(false);
     expect(withinFreshSignIn(null, now)).toBe(false);
+  });
+
+  it("有 amr 时间戳时不用 last_sign_in_at，没有时才回退，并且不看 iat", () => {
+    const now = Date.parse("2026-01-01T00:10:00Z");
+    const recent = new Date(now - 20_000).toISOString();
+    const old = new Date(now - 40 * 60 * 1000).toISOString();
+    const oldAmr = [{ method: "passkey", timestamp: Math.floor((now - 40 * 60 * 1000) / 1000) }];
+    const freshAmr = [{ method: "passkey", timestamp: Math.floor((now - 20_000) / 1000) }];
+
+    expect(readBackfillAuthenticatedAt(freshAmr, old, now)).toBe(freshAmr[0].timestamp * 1000);
+    expect(withinFreshSignIn(readBackfillAuthenticatedAt(freshAmr, old, now), now)).toBe(true);
+    expect(withinFreshSignIn(readBackfillAuthenticatedAt(oldAmr, recent, now), now)).toBe(false);
+    expect(readBackfillAuthenticatedAt(["passkey"], recent, now)).toBe(Date.parse(recent));
+    expect(withinFreshSignIn(readBackfillAuthenticatedAt(["passkey"], recent, now), now)).toBe(true);
+    expect(withinFreshSignIn(readBackfillAuthenticatedAt(["passkey"], old, now), now)).toBe(false);
+    expect(readBackfillAuthenticatedAt(undefined, undefined, now)).toBeNull();
   });
 
   it("Cookie 选项是 HttpOnly、Secure、SameSite=Lax", () => {

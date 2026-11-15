@@ -3,7 +3,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import {
   ACTIVITY_COOKIE,
   readActivitySecret,
-  readSessionAuthenticatedAt,
+  readBackfillAuthenticatedAt,
   verifyActivityCookie,
   withinFreshSignIn,
 } from "@/lib/auth/activity-cookie";
@@ -44,9 +44,10 @@ export const OPTIONS = methodNotAllowed;
  * 已登录用户上报一次真实活动。
  * Origin 必须等于本次请求的站点 origin，否则 403。
  * 未登录返回 401，并且不写 Cookie。
- * 已有 Cookie 验不过（过期、伪造、串号）时不接受它，只在本次会话的 amr 仍处于补记窗口内才另写一枚新 Cookie。
- * 窗口用服务端时钟比较访问令牌里的 amr，不用客户端传来的时间，也不用用户级 last_sign_in_at。
- * 因此已经闲置超时的旧会话不能靠删掉或改掉 Cookie 复活；刚用 Passkey 换过的新会话可以补上自己的 Cookie。
+ * 已有 Cookie 验不过时不把它当成有效活动。只有没有有效 Cookie，并且认证时间仍在两分钟窗口内，才补写新 Cookie。
+ * 认证时间优先用访问令牌里的 amr 时间戳。amr 没有可用时间戳时，才用 getUser() 返回的 last_sign_in_at。
+ * 两者都由服务端读取，用服务器时钟比较。不用令牌的 iat 或 exp，避免刷新令牌把已经超时的会话补活。
+ * last_sign_in_at 是账号级的：同一账号在别处重新登录，会给其他仍有效的会话打开这两分钟窗口。
  */
 export async function POST(request: NextRequest) {
   if (!isStrictSiteOrigin(request)) return forbidden();
@@ -64,7 +65,7 @@ export async function POST(request: NextRequest) {
   const now = Date.now();
   if (!verifyActivityCookie(existing, user.id, now, secret).ok) {
     const claims = await db.auth.getClaims();
-    const authenticatedAt = readSessionAuthenticatedAt(claims?.data?.claims?.amr, now);
+    const authenticatedAt = readBackfillAuthenticatedAt(claims?.data?.claims?.amr, user.last_sign_in_at, now);
     if (!withinFreshSignIn(authenticatedAt, now)) return unauthorized();
   }
 

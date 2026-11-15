@@ -195,13 +195,125 @@ describe("POST /auth/activity", () => {
     expect(verifyActivityCookie(store.get(ACTIVITY_COOKIE), "other-user", Date.now(), derived()).ok).toBe(false);
   });
 
-  it("没有 amr 时间或用户 id 无法签名时不写 Cookie", async () => {
-    getUser.mockResolvedValue({ data: { user: { id: USER, last_sign_in_at: new Date().toISOString() } }, error: null });
-    getClaims.mockResolvedValue({ data: { claims: { sub: USER, amr: ["webauthn"] } }, error: null });
-    const missingStamp = await POST(activityRequest("https://www.bingetrack.ing"));
-    expect(missingStamp.status).toBe(401);
-    expect(cookieSet).not.toHaveBeenCalled();
+  it("amr 带时间戳时用它补记，不看 last_sign_in_at 或 iat", async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-01-01T00:10:00Z"));
+    const now = Date.now();
+    getUser.mockResolvedValue({
+      data: { user: { id: USER, last_sign_in_at: new Date(now - 3 * 60 * 60 * 1000).toISOString() } },
+      error: null,
+    });
+    getClaims.mockResolvedValue({
+      data: {
+        claims: {
+          sub: USER,
+          iat: Math.floor(now / 1000),
+          exp: Math.floor(now / 1000) + 3600,
+          amr: [{ method: "passkey", timestamp: Math.floor((now - 15_000) / 1000) }],
+        },
+      },
+      error: null,
+    });
 
+    const response = await POST(activityRequest("https://www.bingetrack.ing"));
+    expect(response.status).toBe(204);
+    expect(verifyActivityCookie(store.get(ACTIVITY_COOKIE), USER, now, derived())).toMatchObject({ ok: true });
+  });
+
+  it("amr 没有时间戳时才用服务端 last_sign_in_at，窗口外拒绝，并且忽略新鲜的 iat", async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-01-01T00:10:00Z"));
+    const now = Date.now();
+    getUser.mockResolvedValue({
+      data: { user: { id: USER, last_sign_in_at: new Date(now - 20_000).toISOString() } },
+      error: null,
+    });
+    getClaims.mockResolvedValue({
+      data: { claims: { sub: USER, iat: Math.floor((now - 3 * 60 * 60 * 1000) / 1000), amr: ["passkey"] } },
+      error: null,
+    });
+    const accepted = await POST(activityRequest("https://www.bingetrack.ing"));
+    expect(accepted.status).toBe(204);
+    expect(cookieSet).toHaveBeenCalledOnce();
+
+    store.clear();
+    cookieSet.mockClear();
+    getUser.mockResolvedValue({
+      data: { user: { id: USER, last_sign_in_at: new Date(now - FRESH_SIGN_IN_MS - 5_000).toISOString() } },
+      error: null,
+    });
+    getClaims.mockResolvedValue({
+      data: {
+        claims: { sub: USER, iat: Math.floor(now / 1000), exp: Math.floor(now / 1000) + 3600, amr: ["passkey"] },
+      },
+      error: null,
+    });
+    const rejected = await POST(activityRequest("https://www.bingetrack.ing"));
+    expect(rejected.status).toBe(401);
+    expect(cookieSet).not.toHaveBeenCalled();
+  });
+
+  it("amr 时间戳已超出窗口时，即使 last_sign_in_at 很新也不补记", async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-01-01T00:10:00Z"));
+    const now = Date.now();
+    getUser.mockResolvedValue({
+      data: { user: { id: USER, last_sign_in_at: new Date(now - 10_000).toISOString() } },
+      error: null,
+    });
+    getClaims.mockResolvedValue({
+      data: {
+        claims: {
+          sub: USER,
+          iat: Math.floor(now / 1000),
+          amr: [{ method: "passkey", timestamp: Math.floor((now - FRESH_SIGN_IN_MS - 5_000) / 1000) }],
+        },
+      },
+      error: null,
+    });
+
+    const response = await POST(activityRequest("https://www.bingetrack.ing"));
+    expect(response.status).toBe(401);
+    expect(cookieSet).not.toHaveBeenCalled();
+  });
+
+  it("已经超时的会话不能靠 last_sign_in_at 回退拿到新 Cookie", async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-01-01T01:00:00Z"));
+    const now = Date.now();
+    const expired = signActivityCookie(USER, now - IDLE_TIMEOUT, derived());
+    store.set(ACTIVITY_COOKIE, expired);
+    getUser.mockResolvedValue({
+      data: { user: { id: USER, last_sign_in_at: new Date(now - IDLE_TIMEOUT).toISOString() } },
+      error: null,
+    });
+    getClaims.mockResolvedValue({
+      data: {
+        claims: {
+          sub: USER,
+          iat: Math.floor(now / 1000),
+          amr: [{ method: "passkey", timestamp: Math.floor((now - IDLE_TIMEOUT) / 1000) }],
+        },
+      },
+      error: null,
+    });
+
+    const withOldAmr = await POST(activityRequest("https://www.bingetrack.ing"));
+    expect(withOldAmr.status).toBe(401);
+    expect(cookieSet).not.toHaveBeenCalled();
+    expect(store.get(ACTIVITY_COOKIE)).toBe(expired);
+
+    getClaims.mockResolvedValue({
+      data: { claims: { sub: USER, iat: Math.floor(now / 1000), amr: ["passkey"] } },
+      error: null,
+    });
+    const withFallback = await POST(activityRequest("https://www.bingetrack.ing"));
+    expect(withFallback.status).toBe(401);
+    expect(cookieSet).not.toHaveBeenCalled();
+    expect(store.get(ACTIVITY_COOKIE)).toBe(expired);
+  });
+
+  it("用户 id 含点号时无法签名，不写 Cookie", async () => {
     signedIn(Date.now(), "bad.id");
     const dotted = await POST(activityRequest("https://www.bingetrack.ing"));
     expect(dotted.status).toBe(503);
