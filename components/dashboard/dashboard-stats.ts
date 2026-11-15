@@ -86,3 +86,5 @@ export function deriveDashboardStats(summary: Summary[], selectedYear: string, d
     runtimePercent,
   };
 }
+
+export type DashboardStats = ReturnType<typeof deriveDashboardStats>;

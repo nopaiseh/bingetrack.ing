@@ -2,44 +2,36 @@
 
 import MediaStatusCard from "@/components/dashboard/MediaStatusCard";
 import { getStatusSearchLink } from "@/components/dashboard/dashboard-links";
+import type { DashboardStats } from "@/components/dashboard/dashboard-stats";
 import { WATCH_STATUSES } from "@/components/watch-status";
 
 /** 总览标签下的电影与电视节目看板，含观看状态和完成度。 */
 export default function OverviewBoards({
+  stats,
   selectedYear,
-  watchedMovies,
-  unwatchedMovies,
-  totalMovies,
-  moviesPercent,
-  watchedSeries,
-  watchingSeries,
-  unwatchedSeries,
-  watchedEpisodes,
-  unwatchedEpisodes,
-  totalEpisodes,
-  seriesEpisodesPercent,
-  watchedSeasons,
-  watchingSeasons,
-  unwatchedSeasons,
 }: {
+  stats: DashboardStats;
   selectedYear: string;
-  watchedMovies: number;
-  unwatchedMovies: number;
-  totalMovies: number;
-  moviesPercent: number;
-  watchedSeries: number;
-  watchingSeries: number;
-  unwatchedSeries: number;
-  watchedEpisodes: number;
-  unwatchedEpisodes: number;
-  totalEpisodes: number;
-  seriesEpisodesPercent: number;
-  watchedSeasons: number;
-  watchingSeasons: number;
-  unwatchedSeasons: number;
 }) {
+  const {
+    watchedMovies,
+    unwatchedMovies,
+    totalMovies,
+    moviesPercent,
+    watchedSeries,
+    watchingSeries,
+    unwatchedSeries,
+    watchedEpisodes,
+    unwatchedEpisodes,
+    totalEpisodes,
+    seriesEpisodesPercent,
+  } = stats;
+  const watchedSeasons = stats.currentYearData?.watched_seasons ?? 0;
+  const watchingSeasons = stats.currentYearData?.watching_seasons ?? 0;
+  const unwatchedSeasons = stats.currentYearData?.unwatched_seasons ?? 0;
+
   return (
-    <div key="overview" id="dashboard-panel-overview" role="tabpanel" aria-labelledby="dashboard-tab-overview" className="flex flex-col gap-4 md:gap-6">
+    <div id="dashboard-panel-overview" role="tabpanel" aria-labelledby="dashboard-tab-overview" className="flex flex-col gap-4 md:gap-6">
       <div className="grid grid-cols-1 gap-4 md:gap-6 xl:grid-cols-2">
         <div className="dashboard-deferred surface-card flex h-full flex-col gap-6 rounded-3xl p-4 sm:p-5 lg:p-7">
           <div className="flex items-center border-b border-white/10 pb-3">
