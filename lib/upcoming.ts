@@ -1,28 +1,6 @@
 import type { UpcomingRelease } from "@/lib/types";
 
 const DAY_MS = 86_400_000;
-const GMT8_OFFSET_MS = 8 * 3_600_000;
-
-/** 以 GMT+8 生成 YYYY-MM-DD 日期键，与数据库中不带时区的上映日期直接比较；服务端与任意时区的浏览器结果一致。 */
-export function gmt8DateKey(date: Date = new Date()): string {
-  return new Date(date.getTime() + GMT8_OFFSET_MS).toISOString().slice(0, 10);
-}
-
-/** 上映日期是今天或更晚时视为即将上映。只认 YYYY-MM-DD，年份或区间不当成未来日期。 */
-export function isUpcomingDate(date: string | null | undefined, today = gmt8DateKey()): boolean {
-  if (!date || !/^\d{4}-\d{2}-\d{2}/.test(date)) return false;
-  return date.slice(0, 10) >= today;
-}
-
-/** 计算两个 YYYY-MM-DD 日期相差的整天数，按 UTC 零点解析以避开夏令时偏差。 */
-export function daysUntil(releaseDate: string, today: string): number {
-  return Math.round((Date.parse(`${releaseDate}T00:00:00Z`) - Date.parse(`${today}T00:00:00Z`)) / DAY_MS);
-}
-
-/** 即将上映排到继续观看前面的窗口：新加坡今天起 7 天，含今天与第 7 天。 */
-export const UPCOMING_FIRST_WINDOW_DAYS = 7;
-
-const RELEASE_DAY = /^\d{4}-\d{2}-\d{2}/;
 
 /** Asia/Singapore 的日历日，YYYY-MM-DD。新加坡全年 UTC+8，没有夏令时。 */
 export function sgtDateKey(date: Date = new Date()): string {
@@ -37,6 +15,22 @@ export function sgtDateKey(date: Date = new Date()): string {
   const day = parts.find((part) => part.type === "day")?.value;
   return `${year}-${month}-${day}`;
 }
+
+/** 上映日期是今天或更晚时视为即将上映。只认 YYYY-MM-DD，年份或区间不当成未来日期。 */
+export function isUpcomingDate(date: string | null | undefined, today = sgtDateKey()): boolean {
+  if (!date || !/^\d{4}-\d{2}-\d{2}/.test(date)) return false;
+  return date.slice(0, 10) >= today;
+}
+
+/** 计算两个 YYYY-MM-DD 日期相差的整天数，按 UTC 零点解析以避开夏令时偏差。 */
+export function daysUntil(releaseDate: string, today: string): number {
+  return Math.round((Date.parse(`${releaseDate}T00:00:00Z`) - Date.parse(`${today}T00:00:00Z`)) / DAY_MS);
+}
+
+/** 即将上映排到继续观看前面的窗口：新加坡今天起 7 天，含今天与第 7 天。 */
+export const UPCOMING_FIRST_WINDOW_DAYS = 7;
+
+const RELEASE_DAY = /^\d{4}-\d{2}-\d{2}/;
 
 /** 发行日相对某个 YYYY-MM-DD 的整天差。无法识别时返回 null。 */
 function daysFromReleaseDate(releaseDate: string | null | undefined, today: string): number | null {
