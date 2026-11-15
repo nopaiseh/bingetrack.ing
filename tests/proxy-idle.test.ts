@@ -130,7 +130,11 @@ describe("proxy 空闲期限", () => {
     expect(setCookies(prefetch)).not.toContain(ACTIVITY_COOKIE);
 
     vi.setSystemTime(Date.now() + 11 * 60 * 1000);
-    const later = await proxy(new NextRequest("https://www.bingetrack.ing/manage", { headers }));
+    const later = await proxy(
+      new NextRequest("https://www.bingetrack.ing/manage", {
+        headers: { cookie: headers.cookie, rsc: "1" },
+      }),
+    );
     expect(later.status).toBe(303);
     expect(new URL(later.headers.get("location")!, "https://www.bingetrack.ing").pathname).toBe("/");
     expect(setCookies(later)).toMatch(/bt-activity=;/);
@@ -161,6 +165,61 @@ describe("proxy 空闲期限", () => {
     expect(setCookies(response)).toMatch(/sb-ref-auth-token=;/);
     expect(setCookies(response)).toMatch(/bt-activity=;/);
     expect(setCookies(response)).not.toContain("bt-activity=v1.");
+  });
+
+  it.each([
+    ["next-router-prefetch", "1"],
+    ["next-router-prefetch", "2"],
+    ["next-router-prefetch", "3"],
+    ["next-router-segment-prefetch", "1"],
+    ["purpose", "prefetch"],
+    ["sec-purpose", "prefetch"],
+  ])("预取头 %s=%s 且活动 Cookie 无效时直接拒绝，不登出也不放行", async (name, value) => {
+    for (const activity of [undefined, `${signed(Date.now())}tampered`]) {
+      ctx.signOut.mockClear();
+      const response = await proxy(manageRequest(activity, { headers: { [name]: value } }));
+      expect(response.status).toBe(204);
+      expect(response.headers.get("location")).toBeNull();
+      expect(response.headers.get("x-middleware-next")).toBeNull();
+      expect(response.headers.get("cache-control")).toContain("no-store");
+      expect(await response.text()).toBe("");
+      expect(setCookies(response)).toBe("");
+      expect(ctx.signOut).not.toHaveBeenCalled();
+    }
+  });
+
+  it("没有预取头时，缺少活动 Cookie 的 /manage 仍登出并清掉会话", async () => {
+    const response = await proxy(manageRequest());
+    expect(response.status).toBe(303);
+    expect(new URL(response.headers.get("location")!, "https://www.bingetrack.ing").pathname).toBe("/");
+    expect(ctx.signOut).toHaveBeenCalledWith({ scope: "local" });
+    const header = setCookies(response);
+    expect(header).toMatch(/sb-ref-auth-token=;/);
+    expect(header).toMatch(/bt-activity=;/);
+    expect(header.toLowerCase()).toContain("max-age=0");
+  });
+
+  it("带有效活动 Cookie 的预取仍放行，且不登出", async () => {
+    const response = await proxy(
+      manageRequest(signed(Date.now()), { headers: { "next-router-prefetch": "1", rsc: "1" } }),
+    );
+    expect(response.status).toBe(200);
+    expect(response.headers.get("x-middleware-next")).toBe("1");
+    expect(response.headers.get("location")).toBeNull();
+    expect(ctx.signOut).not.toHaveBeenCalled();
+  });
+
+  it("伪造的预取头配上无效活动 Cookie 拿不到页面，也不会撤销会话", async () => {
+    const response = await proxy(
+      manageRequest(`${signed(Date.now())}forged`, {
+        headers: { "next-router-prefetch": "1", purpose: "prefetch", "sec-purpose": "prefetch" },
+      }),
+    );
+    expect(response.status).toBe(204);
+    expect(response.headers.get("x-middleware-next")).toBeNull();
+    expect(await response.text()).toBe("");
+    expect(setCookies(response)).not.toMatch(/sb-|bt-activity/);
+    expect(ctx.signOut).not.toHaveBeenCalled();
   });
 
   it("没有会话时不因为缺少活动 Cookie 而重定向", async () => {
