@@ -951,6 +951,12 @@ select:is(.filter-option, .filter-option-active):focus-visible {
   outline-offset: 3px;
 }
 
+/* 紧凑键盘焦点环（偏移 2px）；保持未分层以覆盖上方 :where(...) 的 3px 默认偏移。 */
+.focus-ring:focus-visible {
+  outline: 2px solid rgba(255, 255, 255, 0.7);
+  outline-offset: 2px;
+}
+
 @keyframes spotlight-fade {
   0% {
     opacity: 0;
