@@ -38,9 +38,27 @@ export type ActivityReport = "throttled" | "ok" | "unauthorized";
 /** Passkey 等软导航登录成功后发出，让已经挂载的 IdleSession 开始订阅。 */
 export const SIGNED_IN_EVENT = "bingetrack:signed-in";
 
+const CONTROL_OR_WHITESPACE = /[\u0000-\u001f\u007f\s]/;
+const SAME_SITE_ORIGIN = "https://same-site.invalid";
+
+/** 跳转目标只允许站内相对路径：拒绝控制字符/空白、反斜杠或编码后变成 // 的地址，最后用 URL 解析确认没换域名。 */
+export function isSameSitePath(target: string): boolean {
+  if (CONTROL_OR_WHITESPACE.test(target)) return false;
+  if (!target.startsWith("/")) return false;
+  if (target.replace(/\\/g, "/").startsWith("//")) return false;
+  try {
+    const decoded = decodeURIComponent(target);
+    if (decoded.replace(/\\/g, "/").startsWith("//")) return false;
+    const url = new URL(target, SAME_SITE_ORIGIN);
+    return url.origin === SAME_SITE_ORIGIN;
+  } catch {
+    return false;
+  }
+}
+
 /** 服务端拒绝活动上报时立刻登出，避免过期会话留在浏览器里。target 只能是站内路径。 */
 export function logoutEverywhere(target = "/") {
-  const next = target.startsWith("/") && !target.startsWith("//") ? target : "/";
+  const next = isSameSitePath(target) ? target : "/";
   void fetch("/auth/logout", { method: "POST", credentials: "same-origin", cache: "no-store" })
     .catch(() => loadAuthBrowser().then((db) => db.auth.signOut({ scope: "local" })))
     .finally(() => {
