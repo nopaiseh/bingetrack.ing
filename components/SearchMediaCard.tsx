@@ -56,7 +56,7 @@ export function SearchMediaCard({ item, returnHref }: { item: MediaCard; returnH
   return (
     <Link
       href={`/${item.type}/${item.id}?from=${encodeURIComponent(returnHref)}`}
-      className="search-media-card surface-card interactive-media-card group flex h-full cursor-pointer flex-col overflow-hidden rounded-xl focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white/70"
+      className="search-media-card surface-card interactive-media-card group flex h-full cursor-pointer flex-col overflow-hidden rounded-xl focus-ring"
     >
       <div className="image-placeholder relative flex aspect-2/3 w-full items-center justify-center overflow-hidden">
         {item.cover_url ? (

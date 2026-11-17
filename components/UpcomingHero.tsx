@@ -207,7 +207,7 @@ export default function UpcomingHero({ items, renderedOn }: UpcomingHeroProps) {
             </p>
             <Link
               href={currentItem.href}
-              className="button-accent group inline-flex h-11 items-center gap-2 rounded-full px-6 text-sm font-bold focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white/70 active:scale-[0.98]"
+              className="button-accent group inline-flex h-11 items-center gap-2 rounded-full px-6 text-sm font-bold focus-ring active:scale-[0.98]"
             >
               <span>{labels.cta}</span>
               <span
@@ -236,7 +236,7 @@ export default function UpcomingHero({ items, renderedOn }: UpcomingHeroProps) {
             <Link
               href={currentItem.href}
               aria-label={`查看《${currentItem.title}》详情`}
-              className="group/poster relative block h-full w-full overflow-hidden rounded-2xl ring-1 ring-white/15 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white/70"
+              className="group/poster relative block h-full w-full overflow-hidden rounded-2xl ring-1 ring-white/15 focus-ring"
             >
               {currentItem.cover_url ? (
                 <Image
@@ -258,7 +258,7 @@ export default function UpcomingHero({ items, renderedOn }: UpcomingHeroProps) {
                   type="button"
                   onClick={() => step(-1)}
                   aria-label="上一条"
-                  className="surface-panel absolute left-1 top-1/2 z-10 flex size-10 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full text-fg-secondary shadow-lg shadow-black/40 transition-all duration-200 hover:bg-white/15 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white/70 active:scale-95"
+                  className="surface-panel absolute left-1 top-1/2 z-10 flex size-10 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full text-fg-secondary shadow-lg shadow-black/40 transition-all duration-200 hover:bg-white/15 hover:text-white focus-ring active:scale-95"
                 >
                   <span className="i-material-symbols-chevron-left-rounded size-6" aria-hidden="true" />
                 </button>
@@ -266,7 +266,7 @@ export default function UpcomingHero({ items, renderedOn }: UpcomingHeroProps) {
                   type="button"
                   onClick={() => step(1)}
                   aria-label="下一条"
-                  className="surface-panel absolute right-1 top-1/2 z-10 flex size-10 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full text-fg-secondary shadow-lg shadow-black/40 transition-all duration-200 hover:bg-white/15 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white/70 active:scale-95"
+                  className="surface-panel absolute right-1 top-1/2 z-10 flex size-10 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full text-fg-secondary shadow-lg shadow-black/40 transition-all duration-200 hover:bg-white/15 hover:text-white focus-ring active:scale-95"
                 >
                   <span className="i-material-symbols-chevron-right-rounded size-6" aria-hidden="true" />
                 </button>

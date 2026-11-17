@@ -136,7 +136,7 @@ function ContinueWatchingCardLink({ item, eager }: { item: ContinueWatchingCard;
     <Link
       href={continueWatchingHref(item)}
       data-continue-card=""
-      className="surface-card interactive-media-card group flex w-[calc((100%-2*var(--cw-gap))/3.05)] flex-none snap-start flex-col overflow-hidden rounded-xl focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white/70 sm:w-36"
+      className="surface-card interactive-media-card group flex w-[calc((100%-2*var(--cw-gap))/3.05)] flex-none snap-start flex-col overflow-hidden rounded-xl focus-ring sm:w-36"
     >
       <ContinueWatchingPoster item={item} eager={eager} />
       <div className="flex min-w-0 grow flex-col gap-1.5 px-3 py-3">
@@ -246,7 +246,7 @@ export default function ContinueWatchingRail({ items }: { items: readonly Contin
           onClick={() => scrollByCard("left")}
           aria-label="向左滚动继续观看"
           aria-controls="continue-watching-scroller"
-          className={`${buttonClass} left-0 top-[6.5rem] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white/70 ${canScrollLeft ? "hidden md:flex" : "hidden"}`}
+          className={`${buttonClass} left-0 top-[6.5rem] focus-ring ${canScrollLeft ? "hidden md:flex" : "hidden"}`}
         >
           <span
             className="i-material-symbols-chevron-left-rounded relative z-2 inline-block size-6"
@@ -258,7 +258,7 @@ export default function ContinueWatchingRail({ items }: { items: readonly Contin
           onClick={() => scrollByCard("right")}
           aria-label="向右滚动继续观看"
           aria-controls="continue-watching-scroller"
-          className={`${buttonClass} right-0 top-[6.5rem] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white/70 ${canScrollRight ? "hidden md:flex" : "hidden"}`}
+          className={`${buttonClass} right-0 top-[6.5rem] focus-ring ${canScrollRight ? "hidden md:flex" : "hidden"}`}
         >
           <span
             className="i-material-symbols-chevron-right-rounded relative z-2 inline-block size-6"
@@ -272,7 +272,7 @@ export default function ContinueWatchingRail({ items }: { items: readonly Contin
           aria-label="继续观看列表"
           onKeyDown={onKeyDown}
           style={{ "--cw-gap": SCROLL_GAP } as CSSProperties}
-          className="no-scrollbar flex snap-x snap-mandatory gap-[var(--cw-gap)] overflow-x-auto overscroll-x-contain scroll-px-1 px-1 pb-4 pt-3 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white/70"
+          className="no-scrollbar flex snap-x snap-mandatory gap-[var(--cw-gap)] overflow-x-auto overscroll-x-contain scroll-px-1 px-1 pb-4 pt-3 focus-ring"
         >
           {items.map((item, index) => (
             <ContinueWatchingCardLink key={item.showId} item={item} eager={index === 0} />

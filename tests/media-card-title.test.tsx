@@ -59,7 +59,7 @@ test("search cards reuse the catalog card surface, poster badge, and body", () =
   expect(link.className).toContain("interactive-media-card");
   expect(link.className).toContain("overflow-hidden");
   expect(link.className).toContain("rounded-xl");
-  expect(link.className).toContain("focus-visible:outline-2");
+  expect(link.className).toContain("focus-ring");
   expect(link).toHaveAttribute("href", "/shows/it?from=%2Fsearch%3Ftype%3Dtv_show");
   link.focus();
   expect(link).toHaveFocus();
