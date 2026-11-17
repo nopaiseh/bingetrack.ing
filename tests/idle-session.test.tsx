@@ -5,7 +5,7 @@ import { afterEach, beforeEach, expect, test, vi } from "vitest";
 import HideOnAdmin from "@/components/HideOnAdmin";
 import IdleSession from "@/components/IdleSession";
 import { ACTIVITY_REPORT_INTERVAL, IDLE_TIMEOUT } from "@/lib/auth/idle";
-import { SIGNED_IN_EVENT, logoutEverywhere, reportIdleActivity } from "@/lib/auth/use-idle-session";
+import { SIGNED_IN_EVENT, isSameSitePath, logoutEverywhere, reportIdleActivity } from "@/lib/auth/use-idle-session";
 
 const getAuthBrowser = vi.hoisted(() => vi.fn());
 const replace = vi.hoisted(() => vi.fn());
@@ -271,4 +271,26 @@ test("指定站内地址登出，请求失败时仍清本地会话", async () =>
     await Promise.resolve();
   });
   expect(replace).toHaveBeenCalledWith("/");
+
+  for (const unsafe of ["/\\evil.example", "\\\\evil.example", "/%5Cevil.example", "/%2F/evil.example", "/\tevil"]) {
+    expect(isSameSitePath(unsafe)).toBe(false);
+    replace.mockClear();
+    logoutEverywhere(unsafe);
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+    expect(replace).toHaveBeenCalledWith("/");
+  }
+
+  for (const safe of ["/", "/?authError=activity", "/manage/shows?page=2"]) {
+    expect(isSameSitePath(safe)).toBe(true);
+    replace.mockClear();
+    logoutEverywhere(safe);
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+    expect(replace).toHaveBeenCalledWith(safe);
+  }
 });

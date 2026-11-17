@@ -38,9 +38,17 @@ export type ActivityReport = "throttled" | "ok" | "unauthorized";
 /** Passkey 等软导航登录成功后发出，让已经挂载的 IdleSession 开始订阅。 */
 export const SIGNED_IN_EVENT = "bingetrack:signed-in";
 
+/** 校验跳转目标是否为安全的站内相对路径，拒绝协议相对地址、反斜杠、编码斜杠与空白/控制字符。 */
+export function isSameSitePath(target: string): boolean {
+  if (!target.startsWith("/") || target.startsWith("//") || target.startsWith("/\\")) return false;
+  if (target.includes("\\") || /^\/%(?:2f|5c)/i.test(target)) return false;
+  if (/[\u0000-\u001f\u007f\s]/.test(target)) return false;
+  return true;
+}
+
 /** 服务端拒绝活动上报时立刻登出，避免过期会话留在浏览器里。target 只能是站内路径。 */
 export function logoutEverywhere(target = "/") {
-  const next = target.startsWith("/") && !target.startsWith("//") ? target : "/";
+  const next = isSameSitePath(target) ? target : "/";
   void fetch("/auth/logout", { method: "POST", credentials: "same-origin", cache: "no-store" })
     .catch(() => loadAuthBrowser().then((db) => db.auth.signOut({ scope: "local" })))
     .finally(() => {
