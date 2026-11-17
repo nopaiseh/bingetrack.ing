@@ -146,7 +146,7 @@ export default function ManageNav() {
       <Link
         key={item.value}
         href={destination}
-        // 概览就是 /manage。预取会在活动 Cookie 写入前穿过 proxy 并 signOut。
+        // 概览就是 /manage。proxy 会给活动 Cookie 失效的预取返回空 204；关闭预取作为纵深防御，也避免管理路由的无谓中间件开销。
         prefetch={destination === "/manage" ? false : undefined}
         onClick={(event) => open(event, item.value)}
         aria-current={selected ? "page" : undefined}
