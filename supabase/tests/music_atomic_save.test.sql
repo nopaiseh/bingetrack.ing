@@ -1,5 +1,5 @@
 begin;
-select plan(18);
+select plan(20);
 
 -- 虚构站长与外人，事务结束回滚。
 insert into auth.users(id,email) values
@@ -183,7 +183,26 @@ select is(
     join public.media_items m on m.id = a.media_item_id
     where m.title = 'Boundary album'),
   2,
-  'album_with_tracks writes music_albums.track_count'
+  'album_with_tracks writes music_albums.track_count from actual rows'
+);
+
+-- 仅保存专辑（空 tracks）不得把已有曲目数写成 0。
+select lives_ok(
+  $$select public.admin_save_album_with_tracks(
+      pg_temp.album_payload('Boundary album')
+        || jsonb_build_object(
+          'id', (select id from public.media_items where title = 'Boundary album' and type = 'album')
+        ),
+      '[]'::jsonb
+    )$$,
+  'album-only save with empty tracks array succeeds'
+);
+select is(
+  (select track_count from public.music_albums a
+    join public.media_items m on m.id = a.media_item_id
+    where m.title = 'Boundary album'),
+  2,
+  'empty tracks array does not zero out existing track_count'
 );
 
 select * from finish();

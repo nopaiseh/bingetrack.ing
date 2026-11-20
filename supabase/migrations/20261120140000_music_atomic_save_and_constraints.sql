@@ -303,11 +303,12 @@ security invoker
 set search_path = ''
 as $$
 declare
-  album_id uuid;
+  saved_album_id uuid;
   track jsonb;
   track_payload jsonb;
   track_parent uuid;
   tracks_len integer;
+  actual_track_count integer;
 begin
   if not public.is_site_owner() then raise insufficient_privilege; end if;
 
@@ -323,24 +324,20 @@ begin
   end if;
 
   -- collections 走 manage_save_media；专辑本体与艺人／类型落在扩展后的 admin_save_media。
-  album_id := public.manage_save_media(p_album);
-
-  update public.music_albums
-  set track_count = tracks_len
-  where media_item_id = album_id;
+  saved_album_id := public.manage_save_media(p_album);
 
   for track in select value from jsonb_array_elements(p_tracks) loop
     if jsonb_typeof(track) is distinct from 'object' then
       raise exception 'Invalid track payload' using errcode = '22023';
     end if;
     track_parent := nullif(track->>'parent_id', '')::uuid;
-    if track_parent is not null and track_parent is distinct from album_id then
+    if track_parent is not null and track_parent is distinct from saved_album_id then
       raise exception 'Track parent must match album' using errcode = '22023';
     end if;
     track_payload := track
       || jsonb_build_object(
         'type', 'music',
-        'parent_id', album_id::text
+        'parent_id', saved_album_id::text
       );
     if coalesce(track_payload->>'status', '') = '' then
       track_payload := track_payload || jsonb_build_object('status', 'want_to_watch');
@@ -348,7 +345,15 @@ begin
     perform public.admin_save_media(track_payload);
   end loop;
 
-  return album_id;
+  -- 按库中实际曲目数回写；空 tracks 数组保存专辑时不得把已有曲目数清成 0。
+  select count(*)::integer into actual_track_count
+  from public.music
+  where album_id = saved_album_id;
+  update public.music_albums
+  set track_count = actual_track_count
+  where media_item_id = saved_album_id;
+
+  return saved_album_id;
 end $$;
 
 revoke all on function public.admin_save_album_with_tracks(jsonb, jsonb) from public, anon;
