@@ -11,7 +11,7 @@ import SeasonRow from "./SeasonRow";
 import ClampedCopy from "./ClampedCopy";
 import LetterTile from "./LetterTile";
 import { resolveWatchStatus, WATCH_STATUSES } from "./watch-status";
-import { publicMediaTypeLabel, type PublicMediaType } from "@/lib/media-types";
+import { normalizeToPublicMediaType, publicMediaTypeLabel } from "@/lib/media-types";
 
 /** 页头时长写成「2 小时 45 分」，和事实区的完整分钟写法分开。 */
 function heroRuntime(runtime: number | null | undefined): string | null {
@@ -146,7 +146,7 @@ export default function MediaInformation({
 }) {
   const yearLabel = releaseYearLabel(media, releaseDateLabel);
   const runtimeLabel = heroRuntime(media.runtime);
-  const publicType = (media.type ?? "movies") as PublicMediaType;
+  const publicType = normalizeToPublicMediaType(media.type);
   const typeLabel = publicMediaTypeLabel(publicType);
   const status = displayStatus ?? media.status;
   const statusConfig = resolveWatchStatus(status) ?? WATCH_STATUSES.want_to_watch;

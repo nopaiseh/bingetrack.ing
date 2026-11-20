@@ -11,7 +11,7 @@ vi.mock("@/lib/functions/cached-media", () => ({
   getCachedTopMediaServer: vi.fn().mockRejectedValue(new Error("Supabase outage")),
   getCachedMediaDistributionsServer: vi.fn().mockRejectedValue(new Error("Supabase outage")),
   getCachedUpcomingReleasesServer: vi.fn().mockRejectedValue(new Error("Supabase outage")),
-  getCachedContinueWatching: vi.fn().mockRejectedValue(new Error("Supabase outage")),
+  getCachedHomeContinue: vi.fn().mockRejectedValue(new Error("Supabase outage")),
 }));
 
 // Mock catalog and dashboard components to inspect props
@@ -85,6 +85,7 @@ describe("Prerender graceful fallbacks", () => {
       expect(props.topSeries).toEqual([]);
       expect(props.upcoming).toEqual([]);
       expect(props.continueWatching).toEqual([]);
+      expect(props.continueListening).toEqual([]);
       expect(props.distributions).toBeDefined();
     } finally {
       errorSpy.mockRestore();

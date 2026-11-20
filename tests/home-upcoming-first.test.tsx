@@ -6,7 +6,7 @@ vi.mock("@/lib/functions/cached-media", () => ({
   getCachedTopMediaServer: vi.fn(async () => []),
   getCachedMediaDistributionsServer: vi.fn(async () => ({ movies: {}, shows: {} })),
   getCachedUpcomingReleasesServer: vi.fn(async () => []),
-  getCachedContinueWatching: vi.fn(async () => []),
+  getCachedHomeContinue: vi.fn(async () => ({ watching: [], listening: [] })),
 }));
 
 vi.mock("@/app/HomeDashboard", () => ({

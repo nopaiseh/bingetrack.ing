@@ -1,18 +1,25 @@
 import { describe, expect, it } from "vitest";
 import {
+  ADMIN_BULK_DB_TYPES,
   CATALOG_DB_TYPES,
   MEDIA_TYPE_DEFINITIONS,
   PUBLIC_MEDIA_TYPES,
+  PUBLIC_SEASON_PATH_PATTERN,
+  adminBulkOpsLabelList,
   adminMediaListTypes,
   dbTypeToPublicRoute,
+  isAdminBulkMediaType,
   isCatalogDbMediaType,
   isManagedMediaType,
   isPublicMediaType,
+  mediaDefaultDescription,
+  mediaSchemaType,
   mediaTypes,
   normalizeToPublicMediaType,
   publicMediaTypeLabel,
   publicPathForDbType,
   publicRouteToDbType,
+  tryPublicRouteToDbType,
 } from "@/lib/media-types";
 
 describe("media type config", () => {
@@ -88,5 +95,31 @@ describe("media type config", () => {
     expect(normalizeToPublicMediaType("tv_season")).toBe("shows");
     expect(normalizeToPublicMediaType("tv_episode")).toBe("shows");
     expect(normalizeToPublicMediaType(null)).toBe("shows");
+  });
+
+  it("exposes schema.org types and default SEO descriptions from config", () => {
+    expect(mediaSchemaType("movies")).toBe("Movie");
+    expect(mediaSchemaType("shows")).toBe("TVSeries");
+    expect(mediaSchemaType("music")).toBe("MusicRecording");
+    expect(mediaSchemaType("album")).toBe("MusicAlbum");
+    expect(mediaDefaultDescription("测试", "shows")).toBe("查看《测试》的季度、单集与观看记录。");
+    expect(mediaDefaultDescription("歌", "music")).toBe("查看《歌》的收听记录与详细信息。");
+  });
+
+  it("keeps music out of admin bulk ops and derives the list-type error labels", () => {
+    expect(ADMIN_BULK_DB_TYPES).toEqual(["movie", "tv_show"]);
+    expect(isAdminBulkMediaType("movie")).toBe(true);
+    expect(isAdminBulkMediaType("music")).toBe(false);
+    expect(isAdminBulkMediaType("album")).toBe(false);
+    expect(MEDIA_TYPE_DEFINITIONS.music.adminBulkOps).toBe(false);
+    expect(adminBulkOpsLabelList()).toBe("电影和电视节目");
+  });
+
+  it("safely converts public routes and derives the season path from config", () => {
+    expect(tryPublicRouteToDbType("movies")).toBe("movie");
+    expect(tryPublicRouteToDbType("albums")).toBeNull();
+    expect(tryPublicRouteToDbType("music")).toBeNull();
+    expect(tryPublicRouteToDbType(undefined)).toBeNull();
+    expect("/shows/abc/seasons/def".match(PUBLIC_SEASON_PATH_PATTERN)?.[1]).toBe("def");
   });
 });

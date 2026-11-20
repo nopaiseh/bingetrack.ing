@@ -27,6 +27,9 @@ describe("continue watching poster paths", () => {
   it("builds a w342 TMDB url for a single-segment path and keeps site paths", () => {
     expect(continueWatchingPosterSrc("/abc.jpg")).toBe("https://image.tmdb.org/t/p/w342/abc.jpg");
     expect(continueWatchingPosterSrc("/already/poster.jpg")).toBe("/already/poster.jpg");
+    expect(continueWatchingPosterSrc("https://is1-ssl.mzstatic.com/image/thumb/cover.jpg")).toBe(
+      "https://is1-ssl.mzstatic.com/image/thumb/cover.jpg",
+    );
     expect(continueWatchingPosterSrc(null)).toBeNull();
     expect(continueWatchingPosterSrc("  ")).toBeNull();
     expect(continueWatchingPosterSrc("//evil.example/a.jpg")).toBeNull();

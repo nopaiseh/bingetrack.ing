@@ -78,6 +78,18 @@ describe(
     );
 
     it(
+      "uses schema types and fallback copy from media type config for music",
+      /* 验证音乐类型走配置中的 MusicRecording／MusicAlbum，默认描述来自 config。 */ () => {
+        const track = { ...movie, id: "track-1", type: "music" as never, summary: "" };
+        const album = { ...movie, id: "album-1", type: "album" as never, summary: "" };
+        expect(getMediaDescription(track)).toBe("查看《测试电影》的收听记录与详细信息。");
+        expect(getMediaDescription(album)).toBe("查看《测试电影》的曲目与收听记录。");
+        expect(buildMediaJsonLd(track)["@type"]).toBe("MusicRecording");
+        expect(buildMediaJsonLd(album)["@type"]).toBe("MusicAlbum");
+      },
+    );
+
+    it(
       "escapes markup-like text in JSON-LD",
       /* 验证 JSON-LD 转义脚本闭合文本，避免输出原始结束标签。 */ () => {
         expect(serializeJsonLd({ value: "</script>" })).not.toContain("</script>");

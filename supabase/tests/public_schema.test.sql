@@ -11,8 +11,8 @@ select is(
       and c.relkind in ('r', 'p')
       and c.relrowsecurity
   ),
-  -- 含 20260929010000 新增的 people_distinct_pairs。
-  18,
+  -- 含 20260929010000 的 people_distinct_pairs 与 20261120000000 的 ownership。
+  19,
   'all public tables have RLS enabled'
 );
 
@@ -47,7 +47,7 @@ select is(
     where schemaname = 'public'
       and roles = array['anon', 'authenticated']::name[]
   ),
-  16,
+  17,
   'all public-read policies target anon and authenticated'
 );
 

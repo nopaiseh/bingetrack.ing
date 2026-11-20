@@ -371,7 +371,8 @@ function rowsIn<Row extends { id: string }>(rows: Row[], allowed: string[]) {
 
 /**
  * 删除人物。演职关联和「不是同一人」记录随外键级联删除，影视条目保留。
- * music_albums.artist_id 没有级联：仍被专辑引用的人物计为失败，不改表结构。音乐表本身不写入。
+ * music_albums.artist_id 已弃用（艺人改走 media_credits），但列与外键仍在：仍被该列引用的人物计为失败。
+ * media_credits 随 people 级联删除，不额外拦截。
  */
 export async function bulkDeletePeople(db: SupabaseClient, ids: unknown): Promise<BulkCounts> {
   const targets = parseBulkIds(ids);
