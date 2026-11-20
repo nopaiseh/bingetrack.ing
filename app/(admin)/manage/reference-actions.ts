@@ -12,6 +12,7 @@ import {
 } from "@/lib/admin/catalog";
 import { isMediaId } from "@/lib/functions/media-id";
 import { affectedMediaIds, mergeAffected, referenceMediaIds, revalidateMediaItems } from "@/lib/admin/revalidate-media";
+import { reportHandledError } from "@/lib/report-error";
 import { redirect } from "next/navigation";
 import type { ActionResult } from "./actions";
 
@@ -73,7 +74,8 @@ export async function saveReference(_previous: ActionResult, form: FormData): Pr
   const payload = { name, ...(config.alternate ? { alternate_name: alternate || null } : {}) };
   const query = id ? db.from(config.table).update(payload).eq("id", id) : db.from(config.table).insert(payload);
   const { data, error } = await query.select("id").single();
-  if (error)
+  if (error) {
+    reportHandledError(`manage saveReference failed for ${kind} ${id || "new"}:`, error);
     return {
       error:
         error.code === "23505"
@@ -82,6 +84,7 @@ export async function saveReference(_previous: ActionResult, form: FormData): Pr
             : "此名称已经存在，请选择现有资料或使用其他名称。"
           : "保存失败，资料可能已被删除或暂无写入权限。",
     };
+  }
   // 只失效引用这条资料的详情页；聚合数据与搜索选项随 lists 标签一起刷新，新建资料也会出现在筛选项中。
   revalidateMediaItems(await referenceMediaIds(db, kind, [data.id]));
   if (form.get("return_list") === "1") return { saved: true };
@@ -98,8 +101,11 @@ export async function deleteReference(_previous: ActionResult, form: FormData): 
   // 级联删除会移除关联行，须在删除前找出受影响的详情页。
   const affected = await referenceMediaIds(db, kind, [id]);
   const { data, error } = await db.from(referenceTypes[kind].table).delete().eq("id", id).eq("name", name).select("id");
-  if (error)
+  if (error) {
+    reportHandledError(`manage deleteReference failed for ${kind} ${id}:`, error);
     return { error: error.code === "23503" ? "此资料仍被其他内容引用，请先移除这些关联。" : "删除失败，请重试。" };
+  }
+  // 确认名称不符是用户可预期的校验，不上报。
   if (!data?.length) return { error: "名称不匹配或资料已被删除，请刷新确认。" };
   revalidateMediaItems(affected);
   redirect(`/manage/references/${kind}?deleted=1&n=${Date.now()}`);
@@ -127,7 +133,13 @@ export async function saveCollectionMember(_previous: ActionResult, form: FormDa
         .from("media_item_series")
         .upsert({ series_id: series, media_item_id: media, position }, { onConflict: "media_item_id,series_id" })
         .select("media_item_id");
-  if (result.error || !result.data?.length) return { error: "关联保存失败，请刷新后重试。" };
+  if (result.error || !result.data?.length) {
+    reportHandledError(
+      `manage saveCollectionMember failed for media ${media}:`,
+      result.error ?? new Error("no rows affected"),
+    );
+    return { error: "关联保存失败，请刷新后重试。" };
+  }
   revalidateMediaItems(mergeAffected(before, await affectedMediaIds(db, [media])));
   return { saved: true };
 }

@@ -11,6 +11,10 @@ import {
 import { requireOwner } from "@/lib/auth/server";
 import { revalidatePath, revalidateTag } from "next/cache";
 import { redirect } from "next/navigation";
+vi.mock("@/lib/report-error", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/lib/report-error")>();
+  return { ...actual, reportHandledError: vi.fn() };
+});
 vi.mock("@/lib/auth/server", () => ({ requireOwner: vi.fn() }));
 vi.mock("next/cache", () => ({ revalidatePath: vi.fn(), revalidateTag: vi.fn() }));
 vi.mock("next/navigation", () => ({ redirect: vi.fn() }));

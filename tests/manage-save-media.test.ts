@@ -6,6 +6,10 @@ import { redirect } from "next/navigation";
 import { revalidateMediaItems } from "@/lib/admin/revalidate-media";
 import { deleteMusicTree, saveMusicMedia } from "@/lib/admin/save-music-media";
 
+vi.mock("@/lib/report-error", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/lib/report-error")>();
+  return { ...actual, reportHandledError: vi.fn() };
+});
 vi.mock("@/lib/auth/server", () => ({ requireOwner: vi.fn() }));
 vi.mock("next/cache", () => ({ refresh: vi.fn(), revalidatePath: vi.fn(), revalidateTag: vi.fn() }));
 vi.mock("next/navigation", () => ({ redirect: vi.fn() }));

@@ -4,6 +4,10 @@ import { requireOwner } from "@/lib/auth/server";
 import { redirect } from "next/navigation";
 import { referenceMediaIds, revalidateMediaItems } from "@/lib/admin/revalidate-media";
 
+vi.mock("@/lib/report-error", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/lib/report-error")>();
+  return { ...actual, reportHandledError: vi.fn() };
+});
 vi.mock("@/lib/auth/server", () => ({ requireOwner: vi.fn() }));
 vi.mock("@/lib/admin/revalidate-media", () => ({
   referenceMediaIds: vi.fn(async () => [movie]),
