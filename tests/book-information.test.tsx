@@ -49,4 +49,28 @@ describe("BookInformation", () => {
     expect(screen.queryByText("出版社")).not.toBeInTheDocument();
     expect(screen.queryByText("页数")).not.toBeInTheDocument();
   });
+
+  it("显示系列标签，且无评分时写未评分", () => {
+    render(
+      <BookInformation
+        media={{
+          ...base,
+          rating: null,
+          status: "want_to_watch",
+          series: ["马尔克斯作品"],
+          genres: [],
+          languages: [],
+          alternate_title: null,
+          cover_url: "https://image.tmdb.org/t/p/w500/book.jpg",
+        }}
+        publisher="  "
+        pageCount={0}
+      />,
+    );
+    expect(screen.getByText("马尔克斯作品")).toBeInTheDocument();
+    expect(screen.getByText("未评分")).toBeInTheDocument();
+    expect(document.querySelector("[data-poster] img")).toBeTruthy();
+    expect(screen.queryByText("出版社")).not.toBeInTheDocument();
+    expect(screen.queryByText("页数")).not.toBeInTheDocument();
+  });
 });
