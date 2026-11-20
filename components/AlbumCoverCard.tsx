@@ -5,6 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import LetterTile from "@/components/LetterTile";
 import MediaRatingBadge from "@/components/MediaRatingBadge";
+import { ALBUM_COVER_SIZES } from "@/lib/poster-image-sizes";
 import { publicMediaDetailPath } from "@/lib/media-types";
 import type { MediaCard } from "@/lib/types";
 
@@ -28,7 +29,7 @@ export default function AlbumCoverCard({ item, eager = false }: { item: MediaCar
             src={item.cover_url}
             alt=""
             fill
-            sizes="(max-width: 639px) 33vw, (max-width: 1023px) 20vw, 12vw"
+            sizes={ALBUM_COVER_SIZES}
             className="object-cover transition-transform duration-500 ease-out group-hover:scale-105"
             loading={eager ? "eager" : "lazy"}
             onError={() => setFailed(true)}
