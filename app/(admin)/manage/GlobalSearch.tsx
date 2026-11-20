@@ -11,11 +11,10 @@ const badges: Record<ManagedMediaType, string> = {
   tv_show: "border-sky-500/25 bg-sky-500/10 text-sky-300",
   tv_season: "border-amber-500/25 bg-amber-500/10 text-amber-300",
   tv_episode: "border-emerald-500/25 bg-emerald-500/10 text-emerald-300",
-  // album／music：类型兼容占位；筛选与双栏编辑 UI 由前端另 PR 实现。
   album: "border-violet-500/25 bg-violet-500/10 text-violet-300",
   music: "border-fuchsia-500/25 bg-fuchsia-500/10 text-fuchsia-300",
 };
-const filters: (ManagedMediaType | "all")[] = ["all", "movie", "tv_show", "tv_season", "tv_episode"];
+const filters: (ManagedMediaType | "all")[] = ["all", "movie", "tv_show", "tv_season", "tv_episode", "album", "music"];
 
 /** 概览页的全局搜索：同时搜电影、电视节目、季与单集，可按类型缩小；方向键选择，回车打开。 */
 export default function GlobalSearch() {
@@ -83,7 +82,7 @@ export default function GlobalSearch() {
           value={term}
           maxLength={200}
           autoComplete="off"
-          placeholder="搜索电影、电视节目、季和单集的标题或副标题"
+          placeholder="搜索电影、电视节目、专辑、曲目的标题或副标题"
           onChange={(event) => {
             setTerm(event.target.value);
             if (!event.target.value.trim()) {
@@ -165,7 +164,7 @@ export default function GlobalSearch() {
       )}
       <p className="text-xs text-neutral-400">
         {searching
-          ? "↑↓ 选择 · 回车打开 · 单集与季直接进入所属节目的工作台"
+          ? "↑↓ 选择 · 回车打开 · 季／集进节目工作台，曲目进专辑工作台"
           : "输入标题或副标题即可搜索，最多显示 40 条。"}
       </p>
     </section>
