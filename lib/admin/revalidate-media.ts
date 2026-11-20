@@ -4,9 +4,10 @@ import { revalidatePath, revalidateTag } from "next/cache";
 import { isMediaId } from "@/lib/functions/media-id";
 import { MEDIA_LISTS_TAG, MEDIA_TAG, mediaItemTag } from "@/lib/functions/media-cache-tags";
 import { referenceTypes, type ReferenceType } from "@/lib/admin/catalog";
+import { ENABLED_PUBLIC_CATALOG_PATHS } from "@/lib/media-types";
 
 // 目录页与站点地图直接查询数据库、不带数据缓存标签，只能按路径失效。
-const UNTAGGED_PUBLIC_PATHS = ["/", "/movies", "/shows", "/sitemap.xml"];
+const UNTAGGED_PUBLIC_PATHS = ["/", ...ENABLED_PUBLIC_CATALOG_PATHS, "/sitemap.xml"];
 
 /** 从查询结果中取出非空 ID 列；任一查询失败时返回 null。 */
 function column<K extends string>(

@@ -1,4 +1,7 @@
-type MediaType = "movies" | "shows";
+import type { PublicMediaType } from "@/lib/media-types";
+
+/** 公开站点路由段；由 lib/media-types 配置派生。 */
+type MediaType = PublicMediaType;
 
 export interface Media {
   id: string;

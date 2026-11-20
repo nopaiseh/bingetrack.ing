@@ -14,6 +14,7 @@ import {
   ViewAllMediaRow,
   FetchMediaListOptions,
 } from "@/lib/types";
+import { CATALOG_DB_TYPES, publicMediaDetailPath, publicPathForDbType } from "@/lib/media-types";
 import { reportHandledError } from "@/lib/report-error";
 import { nextUnwatchedEpisodeNumber } from "@/lib/season-browse";
 
@@ -58,7 +59,7 @@ export async function getSitemapMediaEntries(): Promise<SitemapMediaEntry[]> {
       const { data, error } = await db
         .from("v_all_media")
         .select("id, type")
-        .in("type", ["movie", "tv_show"])
+        .in("type", [...CATALOG_DB_TYPES])
         .order("id", { ascending: true })
         .range(offset, offset + SITEMAP_PAGE_SIZE - 1);
 
@@ -69,10 +70,11 @@ export async function getSitemapMediaEntries(): Promise<SitemapMediaEntry[]> {
 
       const rows = data ?? [];
       entries.push(
-        ...rows.map(
-          /* 根据媒体类型构造详情路径，并对 ID 做 URL 编码。 */ (row) => ({
-            path: `/${row.type === "movie" ? "movies" : "shows"}/${encodeURIComponent(String(row.id))}`,
-          }),
+        ...rows.flatMap(
+          /* 根据媒体类型构造详情路径，并对 ID 做 URL 编码。 */ (row) => {
+            const path = publicPathForDbType(String(row.type), String(row.id));
+            return path ? [{ path }] : [];
+          },
         ),
       );
 
@@ -582,7 +584,7 @@ export async function fetchUpcomingReleasesServer(): Promise<UpcomingRelease[]> 
           title: card.title,
           releaseDate: String(row.sort_date),
           cover_url: card.cover_url,
-          href: `/movies/${encodeURIComponent(card.id)}`,
+          href: publicMediaDetailPath("movies", card.id),
           genres: card.genres,
           languages: card.languages,
           ...(row.summary ? { summary: row.summary } : {}),

@@ -5,6 +5,7 @@ import { PosterRowSkeleton } from "@/components/LoadingSkeletons";
 import { getSearchViewAllLink } from "@/components/dashboard/dashboard-links";
 import type { DashboardStats } from "@/components/dashboard/dashboard-stats";
 import type { MediaCard } from "@/lib/types";
+import type { CatalogDbMediaType } from "@/lib/media-types";
 
 const CategoryHeaderCards = dynamic(() => import("@/components/dashboard/CategoryHeaderCards"), {
   loading: () => <div className="min-h-36 rounded-2xl bg-white/5 animate-pulse" />,
@@ -44,7 +45,7 @@ export default function DashboardCategoryPanel({
   allTimeItems: MediaCard[];
   yearItems: MediaCard[];
   mediaType: "movies" | "shows";
-  searchType: "movie" | "tv_show";
+  searchType: CatalogDbMediaType;
 }) {
   const movies = panelKey === "movies";
   const watchedCount = movies ? stats.watchedMovies : stats.watchedSeries;

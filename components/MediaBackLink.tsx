@@ -2,10 +2,11 @@
 
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
+import { publicMediaTypeLabel, type PublicMediaType } from "@/lib/media-types";
 
 /** 按电影或电视节目类型生成默认返回目录链接。 */
-export function DefaultMediaBackLink({ type }: { type: "movies" | "shows" }) {
-  return <BackLink href={`/${type}`} label={type === "shows" ? "返回电视节目列表" : "返回电影列表"} />;
+export function DefaultMediaBackLink({ type }: { type: PublicMediaType }) {
+  return <BackLink href={`/${type}`} label={`返回${publicMediaTypeLabel(type)}列表`} />;
 }
 
 /** 用统一箭头和样式渲染传入地址与标签的返回链接。 */
@@ -22,7 +23,7 @@ export function BackLink({ href, label, className = "mb-6" }: { href: string; la
 }
 
 /** 仅接受站内搜索页作为来源返回地址，其余情况返回对应媒体目录。 */
-export default function MediaBackLink({ type }: { type: "movies" | "shows" }) {
+export default function MediaBackLink({ type }: { type: PublicMediaType }) {
   const from = useSearchParams().get("from");
   return from === "/search" || from?.startsWith("/search?") ? (
     <BackLink href={from} label="返回搜索页" />

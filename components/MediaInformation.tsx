@@ -11,6 +11,7 @@ import SeasonRow from "./SeasonRow";
 import ClampedCopy from "./ClampedCopy";
 import LetterTile from "./LetterTile";
 import { resolveWatchStatus, WATCH_STATUSES } from "./watch-status";
+import { publicMediaTypeLabel, type PublicMediaType } from "@/lib/media-types";
 
 /** 页头时长写成「2 小时 45 分」，和事实区的完整分钟写法分开。 */
 function heroRuntime(runtime: number | null | undefined): string | null {
@@ -145,7 +146,8 @@ export default function MediaInformation({
 }) {
   const yearLabel = releaseYearLabel(media, releaseDateLabel);
   const runtimeLabel = heroRuntime(media.runtime);
-  const typeLabel = media.type === "shows" ? "电视节目" : "电影";
+  const publicType = (media.type ?? "movies") as PublicMediaType;
+  const typeLabel = publicMediaTypeLabel(publicType);
   const status = displayStatus ?? media.status;
   const statusConfig = resolveWatchStatus(status) ?? WATCH_STATUSES.want_to_watch;
   // 与搜索卡一致：已看、在看优先；还没看且日期在今天或之后，用即将上映代替想看。
@@ -179,8 +181,8 @@ export default function MediaInformation({
   return (
     <>
       <header className="container mx-auto max-w-7xl px-4 pb-8 pt-24 sm:px-6 lg:px-8">
-        <Suspense fallback={<DefaultMediaBackLink type={media.type === "shows" ? "shows" : "movies"} />}>
-          <MediaBackLink type={media.type === "shows" ? "shows" : "movies"} />
+        <Suspense fallback={<DefaultMediaBackLink type={publicType} />}>
+          <MediaBackLink type={publicType} />
         </Suspense>
 
         <div className="flex items-start gap-4 sm:gap-5">

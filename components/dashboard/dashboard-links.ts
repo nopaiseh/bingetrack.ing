@@ -1,6 +1,8 @@
+import type { CatalogDbMediaType } from "@/lib/media-types";
+
 /** 按媒体分类与观看状态生成搜索链接；指定年份时同时限定起止年份。 */
 export function getStatusSearchLink(
-  type: "movie" | "tv_show",
+  type: CatalogDbMediaType,
   status: "watched" | "watching" | "want_to_watch",
   year: string,
 ) {
@@ -13,7 +15,7 @@ export function getStatusSearchLink(
 }
 
 /** 按媒体分类生成评分降序的搜索链接；指定年份时同时限定起止年份。 */
-export function getSearchViewAllLink(type: "movie" | "tv_show", year: string) {
+export function getSearchViewAllLink(type: CatalogDbMediaType, year: string) {
   const params = new URLSearchParams({ type, sort: "rating_desc" });
   if (year !== "All Time") {
     params.set("startYear", year);

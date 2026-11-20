@@ -1,4 +1,9 @@
 import { isMediaId } from "@/lib/functions/media-id";
+import {
+  adminMediaListTypes as catalogDbTypes,
+  isCatalogDbMediaType,
+  type CatalogDbMediaType,
+} from "@/lib/media-types";
 
 /** 管理列表校验失败。消息不含 SQL，调用方可以直接展示。 */
 export class AdminInputError extends Error {
@@ -33,8 +38,8 @@ export const mediaSorts = {
 } as const satisfies Record<string, SortDirection>;
 export type MediaSortKey = keyof typeof mediaSorts;
 
-export const adminMediaListTypes = ["movie", "tv_show"] as const;
-export type AdminMediaListType = (typeof adminMediaListTypes)[number];
+export const adminMediaListTypes = catalogDbTypes;
+export type AdminMediaListType = CatalogDbMediaType;
 
 /** 管理页里仍按上级条目浏览的两种类型。电影和电视节目走 parseAdminMediaQuery。 */
 export const adminChildListTypes = ["tv_season", "tv_episode"] as const;
@@ -217,7 +222,7 @@ export function parseAdminMediaQuery(input?: AdminListInput | null) {
 
 /** 只接受电影或电视节目，避免批量操作落到季、单集或预留的音乐表。 */
 export function parseAdminMediaListType(value: unknown): AdminMediaListType {
-  if (value === "movie" || value === "tv_show") return value;
+  if (typeof value === "string" && isCatalogDbMediaType(value)) return value;
   throw new AdminInputError("只支持电影和电视节目。");
 }
 
