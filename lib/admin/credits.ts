@@ -1,7 +1,14 @@
 import { mediaTypes } from "./media-form";
 
 /** 职务显示顺序：同一作品兼任多职时按此顺序合并，如「导演、演员」。 */
-const creditRoles = { director: "导演", actor: "演员", author: "作者", artist: "艺术家", composer: "作曲" } as const;
+const creditRoles = {
+  director: "导演",
+  actor: "演员",
+  author: "作者",
+  artist: "艺人",
+  lyricist: "作词",
+  composer: "作曲",
+} as const;
 
 /** 关联作品列表展示所需的媒体字段；季与单集附带所属节目，便于区分同名条目。 */
 export type RelatedMedia = {

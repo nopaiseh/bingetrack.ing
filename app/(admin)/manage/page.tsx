@@ -14,6 +14,8 @@ export default async function AdminPage({
   // 不带类型的 /manage 是登录后的管理首页；各列表地址都带 type。
   if (!params.type) return <Overview db={db} />;
   const type = Object.hasOwn(mediaTypes, params.type) ? (params.type as ManagedMediaType) : "movie";
-  if (type === "movie" || type === "tv_show") return <PagedMediaList type={type} search={params} />;
-  return <PagedChildList db={db} type={type} search={params} />;
+  if (type === "movie" || type === "tv_show" || type === "album") return <PagedMediaList type={type} search={params} />;
+  if (type === "tv_season" || type === "tv_episode" || type === "music")
+    return <PagedChildList db={db} type={type} search={params} />;
+  return <PagedMediaList type="movie" search={params} />;
 }

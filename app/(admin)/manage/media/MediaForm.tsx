@@ -17,6 +17,8 @@ const deleteLabels: Record<ManagedMediaType, string> = {
   tv_show: "删除这部电视节目…",
   tv_season: "删除这一季…",
   tv_episode: "删除这一集…",
+  album: "删除这张专辑…",
+  music: "删除这首曲目…",
 };
 
 const deleteHints: Record<ManagedMediaType, string> = {
@@ -24,19 +26,40 @@ const deleteHints: Record<ManagedMediaType, string> = {
   tv_show: "删除后会同时移除下属季、集、观看记录和演员关联，且无法恢复。",
   tv_season: "删除后会同时移除这一季的单集和观看记录，且无法恢复。",
   tv_episode: "删除后会同时移除观看记录，且无法恢复。",
+  album: "删除后会同时移除下属曲目、收听记录和艺人关联，且无法恢复。",
+  music: "删除后会同时移除收听记录和作词作曲关联，且无法恢复。",
 };
 
-/** 路径补成 TMDB 原图地址；已经是完整地址时原样保留，避免一次保存改掉尺寸。 */
-function normalizeCover(value: string) {
+/** 路径补成 TMDB 原图地址；已经是完整地址时原样保留，避免一次保存改掉尺寸。音乐封面不改写。 */
+function normalizeCover(value: string, music = false) {
   const trimmed = value.trim();
   if (!trimmed || /^https?:\/\//i.test(trimmed)) return trimmed;
+  if (music) return trimmed;
   return `https://image.tmdb.org/t/p/original/${trimmed.replace(/^\/+/, "")}`;
 }
 
-/** 预览只请求 TMDB 上的文件名。其它网站的地址和 javascript: 不进图片元素。 */
-function posterPreviewSrc(value: string): string | null {
+/** 预览：TMDB 用 w500；音乐封面用原 HTTPS 地址（iTunes／CAA）。其它协议不进图片元素。 */
+function posterPreviewSrc(value: string, music = false): string | null {
   const trimmed = value.trim();
   if (!trimmed) return null;
+  if (music) {
+    try {
+      const url = new URL(trimmed);
+      if (url.protocol !== "https:" || url.username || url.password) return null;
+      const host = url.hostname;
+      if (
+        host === "image.tmdb.org" ||
+        host === "coverartarchive.org" ||
+        host === "archive.org" ||
+        host.endsWith(".mzstatic.com") ||
+        host.endsWith(".archive.org")
+      )
+        return trimmed;
+    } catch {
+      return null;
+    }
+    return null;
+  }
   if (/^[a-z][a-z0-9+.-]*:/i.test(trimmed) && !trimmed.startsWith("https://image.tmdb.org/t/p/")) return null;
   if (trimmed.startsWith("https://image.tmdb.org/t/p/")) {
     try {
@@ -53,9 +76,9 @@ function posterPreviewSrc(value: string): string | null {
   return `https://image.tmdb.org/t/p/w500/${encodeURIComponent(file)}`;
 }
 
-function PosterPreview({ title, src }: { title: string; src: string }) {
+function PosterPreview({ title, src, music = false }: { title: string; src: string; music?: boolean }) {
   const [failed, setFailed] = useState(false);
-  const preview = posterPreviewSrc(src);
+  const preview = posterPreviewSrc(src, music);
   const showImage = Boolean(preview) && !failed;
   return (
     <div className="edit-poster" style={showImage ? undefined : { backgroundColor: listTint(title || "片") }}>
@@ -91,7 +114,7 @@ export default function MediaForm({
   parent?: ParentChoice;
   ancestorName?: string | null;
   nextNumber?: number;
-  impact?: { seasons: number; episodes: number };
+  impact?: { seasons: number; episodes: number; tracks?: number };
   publicHref?: string | null;
   publicLabel?: string;
   meta?: string | null;
@@ -113,22 +136,33 @@ export default function MediaForm({
   const confirmInput = useRef<HTMLInputElement>(null);
   const formRef = useRef<HTMLFormElement>(null);
   const locked = Boolean(item || lockType);
-  const isChild = type === "tv_season" || type === "tv_episode";
+  const isTvChild = type === "tv_season" || type === "tv_episode";
+  const isMusicTrack = type === "music";
+  const isChild = isTvChild || isMusicTrack;
+  const isAlbum = type === "album";
   const showCover = type !== "tv_episode" && type !== "tv_season";
-  const showCast = !isChild;
-  const dated = type === "movie" || type === "tv_episode";
-  const showTypeSelect = !(locked && type === "tv_episode");
+  const showCast = !isChild && !isAlbum;
+  const showMusicCredits = isAlbum || isMusicTrack;
+  const dated = type === "movie" || type === "tv_episode" || type === "album" || type === "music";
+  const showTypeSelect = !(locked && (type === "tv_episode" || type === "music"));
   const titleField = field("title", item?.title);
   const summaryField = field("summary", item?.summary);
   const runtimeField = field("runtime", item?.runtime);
   const ratingField = field("rating", item?.rating != null ? Number(item.rating).toFixed(1) : null);
   const rated = ratingField.value.trim() !== "";
   const runtimeHint =
-    runtimeField.value.trim() !== "" && Number(runtimeField.value) > 0
+    !isMusicTrack && runtimeField.value.trim() !== "" && Number(runtimeField.value) > 0
       ? formatRuntime(Number(runtimeField.value))
       : null;
   const heading = titleField.value.trim() || (item ? item.title : `新增${mediaTypes[type]}`);
-  const dateLabel = type === "tv_episode" ? "播出日期" : "上映日期";
+  const dateLabel = type === "tv_episode" ? "播出日期" : type === "album" || type === "music" ? "发行日期" : "上映日期";
+  const listHref =
+    type === "movie"
+      ? "/manage?type=movie"
+      : type === "album" || type === "music"
+        ? "/manage?type=album"
+        : "/manage?type=tv_show";
+  const listLabel = type === "movie" ? "电影" : type === "album" || type === "music" ? "专辑" : "电视节目";
 
   useEffect(() => {
     function onKey(event: KeyboardEvent) {
@@ -177,7 +211,7 @@ export default function MediaForm({
         onSubmit={() => {
           const cover = formRef.current?.elements.namedItem("cover_url");
           if (cover instanceof HTMLInputElement && cover.type !== "hidden") {
-            const next = normalizeCover(cover.value);
+            const next = normalizeCover(cover.value, type === "album" || type === "music");
             cover.value = next;
             setCoverUrl(next);
           }
@@ -198,9 +232,7 @@ export default function MediaForm({
                 {parent ? (
                   <Link href={`/manage/media/${parent.id}?type=${parent.type}`}>← {parent.name}</Link>
                 ) : (
-                  <Link href={type === "movie" ? "/manage?type=movie" : "/manage?type=tv_show"}>
-                    ← {type === "movie" ? "电影" : "电视节目"}
-                  </Link>
+                  <Link href={listHref}>← {listLabel}</Link>
                 )}
               </div>
               <div className="edit-title-row">
@@ -258,22 +290,25 @@ export default function MediaForm({
                     <div className={type === "tv_episode" && ancestorName ? "span-3" : "span-3"}>
                       <ChoicePicker
                         key={`${resetKey}-${type}`}
-                        kind={type === "tv_season" ? "tv_show" : "tv_season"}
+                        kind={type === "tv_season" ? "tv_show" : type === "music" ? "album" : "tv_season"}
                         name="parent_id"
-                        label={type === "tv_season" ? "所属节目" : "所属季"}
+                        label={type === "tv_season" ? "所属节目" : type === "music" ? "所属专辑" : "所属季"}
                         multiple={false}
                         required
                         initial={
-                          parent && parent.type === (type === "tv_season" ? "tv_show" : "tv_season") ? [parent] : []
+                          parent &&
+                          parent.type === (type === "tv_season" ? "tv_show" : type === "music" ? "album" : "tv_season")
+                            ? [parent]
+                            : []
                         }
                       />
                     </div>
                   ) : null}
                   {isChild ? (
-                    <div className={type === "tv_episode" ? "span-2" : "span-3"}>
+                    <div className={type === "tv_episode" || type === "music" ? "span-2" : "span-3"}>
                       <div className="mb-1.5 flex items-center justify-between gap-2">
                         <label htmlFor="field-number">
-                          {type === "tv_season" ? "季编号（特别篇可填 0）" : "集编号"}
+                          {type === "tv_season" ? "季编号（特别篇可填 0）" : type === "music" ? "曲序" : "集编号"}
                         </label>
                         <span className="edit-required">必填</span>
                       </div>
@@ -330,10 +365,10 @@ export default function MediaForm({
                       />
                     </div>
                   ) : null}
-                  {dated ? (
+                  {dated && type !== "album" ? (
                     <div className={showTypeSelect ? "span-2" : "span-3"}>
                       <label htmlFor="field-runtime" className="mb-1.5">
-                        片长
+                        {isMusicTrack ? "时长（秒）" : "片长"}
                       </label>
                       <div className="edit-runtime">
                         <input
@@ -342,12 +377,12 @@ export default function MediaForm({
                           name="runtime"
                           min="0"
                           max="100000"
-                          step="any"
+                          step={isMusicTrack ? "1" : "any"}
                           {...runtimeField}
-                          placeholder="分钟"
+                          placeholder={isMusicTrack ? "秒" : "分钟"}
                           className="font-mono"
                         />
-                        <span className="edit-hint">{runtimeHint ?? "单位为分钟"}</span>
+                        <span className="edit-hint">{isMusicTrack ? "单位为秒" : (runtimeHint ?? "单位为分钟")}</span>
                       </div>
                     </div>
                   ) : null}
@@ -443,16 +478,89 @@ export default function MediaForm({
                 </section>
               ) : null}
 
+              {showMusicCredits ? (
+                <section className="edit-card edit-cast-card" aria-labelledby="edit-music-credits-heading">
+                  <header className="edit-card-head">
+                    <div>
+                      <h2 id="edit-music-credits-heading">{isAlbum ? "艺人" : "曲目人员"}</h2>
+                      <p className="edit-hint">一行一人；保存时写入 media_credits。</p>
+                    </div>
+                  </header>
+                  <ChoicePicker
+                    key={`${resetKey}-artists`}
+                    kind="people"
+                    name="artists"
+                    label="歌手／艺人"
+                    allowCreate
+                    sortable
+                    rows
+                    initial={(item?.artists ?? []).map((person) => ({
+                      id: person.id ?? `new:${person.name}`,
+                      name: person.name,
+                      detail: person.alternate_name ?? undefined,
+                    }))}
+                  />
+                  {isMusicTrack ? (
+                    <>
+                      <ChoicePicker
+                        key={`${resetKey}-lyricists`}
+                        kind="people"
+                        name="lyricists"
+                        label="作词"
+                        allowCreate
+                        sortable
+                        rows
+                        initial={(item?.lyricists ?? []).map((person) => ({
+                          id: person.id ?? `new:${person.name}`,
+                          name: person.name,
+                          detail: person.alternate_name ?? undefined,
+                        }))}
+                      />
+                      <ChoicePicker
+                        key={`${resetKey}-composers`}
+                        kind="people"
+                        name="composers"
+                        label="作曲"
+                        allowCreate
+                        sortable
+                        rows
+                        initial={(item?.composers ?? []).map((person) => ({
+                          id: person.id ?? `new:${person.name}`,
+                          name: person.name,
+                          detail: person.alternate_name ?? undefined,
+                        }))}
+                      />
+                    </>
+                  ) : (
+                    <div className="mt-4">
+                      <label htmlFor="field-label" className="mb-1.5">
+                        唱片公司
+                      </label>
+                      <input
+                        id="field-label"
+                        name="label"
+                        {...field("label", item?.label)}
+                        maxLength={200}
+                        placeholder="可留空"
+                      />
+                    </div>
+                  )}
+                </section>
+              ) : null}
+
               {item ? (
                 <section className="edit-card edit-danger" aria-labelledby="edit-danger-heading">
                   <header className="edit-card-head">
                     <h2 id="edit-danger-heading">危险操作</h2>
                   </header>
                   <p className="edit-hint">{deleteHints[type]}</p>
-                  {impact && (isChild || type === "tv_show") ? (
+                  {impact && (isTvChild || type === "tv_show") ? (
                     <p className="edit-hint">
                       本次还会删除 {impact.seasons} 季、{impact.episodes} 集及其观看记录。
                     </p>
+                  ) : null}
+                  {impact && type === "album" && (impact.tracks ?? 0) > 0 ? (
+                    <p className="edit-hint">本次还会删除 {impact.tracks} 首曲目及其收听记录。</p>
                   ) : null}
                   <button type="button" className="admin-danger" onClick={openConfirm}>
                     {deleteLabels[type]}
@@ -467,7 +575,11 @@ export default function MediaForm({
                   <header className="edit-card-head">
                     <div>
                       <h2 id="edit-poster-heading">海报与图片</h2>
-                      <p className="edit-hint">电影和电视节目保留海报与剧照；季和单集不设图片</p>
+                      <p className="edit-hint">
+                        {isAlbum || isMusicTrack
+                          ? "可粘贴 iTunes／Cover Art Archive／TMDB 封面；留空保存时尝试自动解析"
+                          : "电影和电视节目保留海报与剧照；季和单集不设图片"}
+                      </p>
                     </div>
                   </header>
                   <div className="edit-poster-row">
@@ -475,20 +587,23 @@ export default function MediaForm({
                       key={coverUrl}
                       title={titleField.value || item?.title || mediaTypes[type]}
                       src={coverUrl}
+                      music={isAlbum || isMusicTrack}
                     />
                     <div className="min-w-0">
-                      {normalizeCover(coverUrl) ? (
+                      {normalizeCover(coverUrl, isAlbum || isMusicTrack) ? (
                         <p className="edit-hint">已填写海报地址，预览使用这张图片。</p>
                       ) : (
                         <p className="edit-hint">无海报时的预览用标题首字和列表同款色块，公开页同样使用。</p>
                       )}
                     </div>
                   </div>
-                  <button type="button" onClick={() => document.getElementById("field-cover-url")?.focus()}>
-                    从 TMDB 加载海报
-                  </button>
+                  {!(isAlbum || isMusicTrack) ? (
+                    <button type="button" onClick={() => document.getElementById("field-cover-url")?.focus()}>
+                      从 TMDB 加载海报
+                    </button>
+                  ) : null}
                   <label htmlFor="field-cover-url" className="mb-1.5 mt-4">
-                    TMDB 海报路径
+                    {isAlbum || isMusicTrack ? "封面地址" : "TMDB 海报路径"}
                   </label>
                   <input
                     id="field-cover-url"
@@ -500,14 +615,22 @@ export default function MediaForm({
                       setCoverUrl(event.target.value);
                       setDirty(true);
                     }}
-                    onBlur={(event) => setCoverUrl(normalizeCover(event.target.value))}
+                    onBlur={(event) => setCoverUrl(normalizeCover(event.target.value, isAlbum || isMusicTrack))}
                     maxLength={2000}
-                    placeholder="https://image.tmdb.org/t/p/original/…"
+                    placeholder={
+                      isAlbum || isMusicTrack
+                        ? "https://…mzstatic.com/… 或 coverartarchive.org/…"
+                        : "https://image.tmdb.org/t/p/original/…"
+                    }
                     autoComplete="off"
                     spellCheck={false}
                     className="font-mono"
                   />
-                  <p className="edit-hint">粘贴完整网址或文件路径。路径会补成 TMDB 原图地址后再保存。</p>
+                  <p className="edit-hint">
+                    {isAlbum || isMusicTrack
+                      ? "粘贴完整 HTTPS 封面地址。留空时会尝试 iTunes／Cover Art Archive。"
+                      : "粘贴完整网址或文件路径。路径会补成 TMDB 原图地址后再保存。"}
+                  </p>
                 </section>
               ) : null}
 
@@ -524,7 +647,7 @@ export default function MediaForm({
                     </p>
                   </div>
                 </header>
-                {showCast ? (
+                {showCast || isAlbum ? (
                   <div className="edit-taxonomies">
                     <ChoicePicker
                       key={`${resetKey}-genres`}
@@ -544,36 +667,40 @@ export default function MediaForm({
                       allowCreate
                       initial={(item?.collections ?? []).map((value) => ({ id: value, name: value }))}
                     />
-                    <ChoicePicker
-                      key={`${resetKey}-regions`}
-                      kind="regions"
-                      name="regions"
-                      label="地区"
-                      inline
-                      allowCreate
-                      initial={(item?.regions ?? []).map((value) => ({ id: value, name: value }))}
-                    />
-                    <ChoicePicker
-                      key={`${resetKey}-languages`}
-                      kind="languages"
-                      name="languages"
-                      label="语言"
-                      inline
-                      allowCreate
-                      initial={(item?.languages ?? []).map((value) => ({ id: value, name: value }))}
-                    />
+                    {showCast ? (
+                      <>
+                        <ChoicePicker
+                          key={`${resetKey}-regions`}
+                          kind="regions"
+                          name="regions"
+                          label="地区"
+                          inline
+                          allowCreate
+                          initial={(item?.regions ?? []).map((value) => ({ id: value, name: value }))}
+                        />
+                        <ChoicePicker
+                          key={`${resetKey}-languages`}
+                          kind="languages"
+                          name="languages"
+                          label="语言"
+                          inline
+                          allowCreate
+                          initial={(item?.languages ?? []).map((value) => ({ id: value, name: value }))}
+                        />
+                      </>
+                    ) : null}
                   </div>
                 ) : null}
-                {dated ? (
+                {dated && !isAlbum ? (
                   <div className="edit-watch">
-                    <div className="edit-segment" role="group" aria-label="观看状态">
+                    <div className="edit-segment" role="group" aria-label={isMusicTrack ? "收听状态" : "观看状态"}>
                       <button
                         type="button"
                         className="edit-segment-btn"
                         aria-pressed={rated}
                         onClick={() => document.getElementById("field-rating")?.focus()}
                       >
-                        已看
+                        {isMusicTrack ? "听过" : "已看"}
                       </button>
                       <button
                         type="button"
@@ -581,7 +708,7 @@ export default function MediaForm({
                         aria-pressed={!rated}
                         onClick={() => setRating("")}
                       >
-                        未看
+                        {isMusicTrack ? "未听" : "未看"}
                       </button>
                     </div>
                     <div className="mb-1.5 mt-4 flex items-center justify-between gap-2">
@@ -685,13 +812,18 @@ export default function MediaForm({
               ? "所有下属季和集的资料、观看记录及评分也会一起删除。"
               : type === "tv_season"
                 ? "此季的所有集及其观看记录和评分也会一起删除。"
-                : ""}
+                : type === "album"
+                  ? "所有下属曲目的资料、收听记录及评分也会一起删除。"
+                  : ""}
             此操作无法撤销。
           </p>
-          {impact && (isChild || type === "tv_show") && (
+          {impact && (isTvChild || type === "tv_show") && (
             <p className="mb-4 text-sm text-red-200">
               本次还会删除 {impact.seasons} 季、{impact.episodes} 集及其观看记录。
             </p>
+          )}
+          {impact && type === "album" && (impact.tracks ?? 0) > 0 && (
+            <p className="mb-4 text-sm text-red-200">本次还会删除 {impact.tracks} 首曲目及其收听记录。</p>
           )}
           <form action={deleteAction} className="space-y-4">
             <input type="hidden" name="id" value={item.id ?? ""} />

@@ -103,6 +103,10 @@ it("季不提交封面地址，单集用隐藏字段带回已有地址，电影�
         regions: [],
         actors: [],
         directors: [],
+        artists: [],
+        lyricists: [],
+        composers: [],
+        label: null,
       }}
     />,
   );
@@ -135,6 +139,10 @@ it("季不提交封面地址，单集用隐藏字段带回已有地址，电影�
         regions: [],
         actors: [],
         directors: [],
+        artists: [],
+        lyricists: [],
+        composers: [],
+        label: null,
       }}
     />,
   );
@@ -240,6 +248,10 @@ it("电影和单集显示日期和片长，电视节目和季不显示，日期�
         regions: [],
         actors: [],
         directors: [],
+        artists: [],
+        lyricists: [],
+        composers: [],
+        label: null,
       }}
     />,
   );

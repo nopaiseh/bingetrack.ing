@@ -9,6 +9,8 @@ export async function readEditableMedia(db: SupabaseClient, id: string): Promise
     db.from("tracking").select("status,rating").eq("media_item_id", id).maybeSingle(),
     db.from("tv_seasons").select("series_id,season_number").eq("id", id).maybeSingle(),
     db.from("tv_episodes").select("season_id,episode_number").eq("id", id).maybeSingle(),
+    db.from("music").select("album_id,track_number").eq("media_item_id", id).maybeSingle(),
+    db.from("music_albums").select("label").eq("media_item_id", id).maybeSingle(),
     db.from("media_genres").select("genres(name)").eq("media_item_id", id),
     db.from("media_languages").select("languages(name)").eq("media_item_id", id),
     db.from("media_regions").select("regions(name)").eq("media_item_id", id),
@@ -21,7 +23,8 @@ export async function readEditableMedia(db: SupabaseClient, id: string): Promise
   ]);
   if (results.some(/* 任一失败均禁止继续编辑。 */ (result) => result.error))
     throw new Error("无法完整读取媒体资料，请重试。");
-  const [media, tracking, season, episode, genres, languages, regions, collections, credits] = results;
+  const [media, tracking, season, episode, track, albumMeta, genres, languages, regions, collections, credits] =
+    results;
   if (!media.data) return null;
   /** Supabase 多对一关联在此按数据库外键返回单个对象。 */
   function names(data: unknown, key: string, role?: string): string[] {
@@ -35,7 +38,10 @@ export async function readEditableMedia(db: SupabaseClient, id: string): Promise
       .filter((name): name is string => typeof name === "string" && name.length > 0);
   }
   /** 人物连同 ID 和别名读取，重新保存时仍关联原人物，不会被同名人物替换。 */
-  function people(data: unknown, role: "actor" | "director"): (PersonRef & { character_name?: unknown })[] {
+  function people(
+    data: unknown,
+    role: "actor" | "director" | "artist" | "lyricist" | "composer",
+  ): (PersonRef & { character_name?: unknown })[] {
     if (!Array.isArray(data)) return [];
     return data.flatMap(
       /* 跳过无效行和缺少人物的关联。 */ (row) => {
@@ -62,7 +68,7 @@ export async function readEditableMedia(db: SupabaseClient, id: string): Promise
   }
   let status: "watched" | "watching" | "want_to_watch" = "want_to_watch";
   let rating: number | null = null;
-  if (media.data.type === "tv_show") {
+  if (media.data.type === "tv_show" || media.data.type === "album") {
     const { data: seriesStatus } = await db.from("v_all_media").select("status,rating").eq("id", id).maybeSingle();
     status = (seriesStatus?.status as "watched" | "watching" | "want_to_watch") ?? "want_to_watch";
     rating = seriesStatus?.rating != null ? Number(seriesStatus.rating) : null;
@@ -80,10 +86,12 @@ export async function readEditableMedia(db: SupabaseClient, id: string): Promise
     status = (tracking.data?.status as "watched" | "want_to_watch") ?? "want_to_watch";
     rating = tracking.data?.rating ?? null;
   }
+  const personOnly = (role: "artist" | "lyricist" | "composer") =>
+    people(credits.data, role).map(({ id, name, alternate_name }) => ({ id, name, alternate_name }));
   return {
     ...media.data,
-    parent_id: season.data?.series_id ?? episode.data?.season_id ?? null,
-    number: season.data?.season_number ?? episode.data?.episode_number ?? null,
+    parent_id: season.data?.series_id ?? episode.data?.season_id ?? track.data?.album_id ?? null,
+    number: season.data?.season_number ?? episode.data?.episode_number ?? track.data?.track_number ?? null,
     status,
     rating,
     genres: names(genres.data, "genres"),
@@ -92,5 +100,9 @@ export async function readEditableMedia(db: SupabaseClient, id: string): Promise
     collections: names(collections.data, "media_series"),
     actors: actorCredits(credits.data),
     directors: people(credits.data, "director").map(({ id, name, alternate_name }) => ({ id, name, alternate_name })),
+    artists: personOnly("artist"),
+    lyricists: personOnly("lyricist"),
+    composers: personOnly("composer"),
+    label: albumMeta.data?.label ?? null,
   } as MediaInput;
 }

@@ -3,9 +3,18 @@ import { mediaTypes, type ManagedMediaType } from "@/lib/media-types";
 
 export { mediaTypes, type ManagedMediaType };
 
+/** 管理端可接受的封面主机（与 CSP img-src 对齐）。 */
+const COVER_HOSTS = new Set(["image.tmdb.org", "coverartarchive.org", "archive.org"]);
+
+function isAllowedCoverHost(hostname: string) {
+  if (COVER_HOSTS.has(hostname)) return true;
+  // iTunes／Apple 封面：*.mzstatic.com；archive.org 镜像：*.archive.org
+  return hostname.endsWith(".mzstatic.com") || hostname.endsWith(".archive.org");
+}
+
 /**
  * 决定写入媒体条目的封面。
- * 季忽略提交值，新建和更新都存 null，不会改成新的地址。电影、电视节目和单集保留提交的封面。
+ * 季忽略提交值，新建和更新都存 null。其余类型保留提交的封面。
  */
 export function coverUrlForSave(type: ManagedMediaType, supplied: string | null): string | null {
   return type === "tv_season" ? null : supplied;
@@ -33,8 +42,39 @@ export type MediaInput = {
   regions: string[];
   actors: ActorCredit[];
   directors: PersonRef[];
+  /** 专辑／曲目艺人（media_credits.role=artist）。 */
+  artists: PersonRef[];
+  /** 曲目作词（media_credits.role=lyricist）。 */
+  lyricists: PersonRef[];
+  /** 曲目作曲（media_credits.role=composer）。 */
+  composers: PersonRef[];
+  /** 唱片公司；仅专辑写入 music_albums.label。 */
+  label: string | null;
   collections?: string[];
 };
+
+/** 校验封面 URL：影视限 TMDB；音乐另接受 iTunes／CAA／archive.org（与 CSP 一致）。 */
+export function assertCoverUrl(cover_url: string, type: ManagedMediaType) {
+  let url: URL;
+  try {
+    url = new URL(cover_url);
+  } catch {
+    throw new Error("封面地址必须是有效的 HTTPS 地址。");
+  }
+  if (url.protocol !== "https:" || url.username || url.password || url.port) {
+    throw new Error(
+      type === "album" || type === "music" ? "封面请使用 HTTPS 图片地址。" : "封面请使用 TMDB HTTPS 图片地址。",
+    );
+  }
+  if (type === "album" || type === "music") {
+    if (!isAllowedCoverHost(url.hostname)) throw new Error("封面请使用 iTunes、Cover Art Archive 或 TMDB 图片地址。");
+    return;
+  }
+  // 与 CSP 的 img-src 和 lib/tmdb-image.ts 的尺寸换算一致，其他地址浏览器不会加载。
+  if (url.hostname !== "image.tmdb.org" || !url.pathname.startsWith("/t/p/")) {
+    throw new Error("封面请使用 TMDB HTTPS 图片地址。");
+  }
+}
 
 /** 严格检查服务端表单，公开查询的筛选语义不受影响。 */
 export function parseMediaForm(form: FormData): MediaInput {
@@ -104,32 +144,16 @@ export function parseMediaForm(form: FormData): MediaInput {
   if (!type || !Object.hasOwn(mediaTypes, type)) throw new Error("不支持的媒体类型。");
   if (!title) throw new Error("请填写标题。");
   const number = numeric("number", 100000, true);
-  if ((type === "tv_season" || type === "tv_episode") && (!parent_id || number === null))
-    throw new Error("请指定上级条目和季／集编号。");
+  const needsParentNumber = type === "tv_season" || type === "tv_episode" || type === "music";
+  if (needsParentNumber && (!parent_id || number === null))
+    throw new Error(type === "music" ? "请指定所属专辑和曲序。" : "请指定上级条目和季／集编号。");
   if (id && id === parent_id) throw new Error("不能把条目设为自己的上级。");
   // 季不设海报。不读取、不校验提交的 cover_url，新建和更新都写入 null，不采用新的封面地址。
   // 这里不改已有行；只有之后再次保存该季时，数据库才会按这份 payload 把封面写成 null。
   const cover_url = coverUrlForSave(type as ManagedMediaType, type === "tv_season" ? null : string("cover_url", 2000));
-  if (cover_url) {
-    let url: URL;
-    try {
-      url = new URL(cover_url);
-    } catch {
-      throw new Error("封面地址必须是有效的 TMDB HTTPS 地址。");
-    }
-    // 与 CSP 的 img-src 和 lib/tmdb-image.ts 的尺寸换算一致，其他地址浏览器不会加载。
-    if (
-      url.protocol !== "https:" ||
-      url.hostname !== "image.tmdb.org" ||
-      !url.pathname.startsWith("/t/p/") ||
-      url.username ||
-      url.password ||
-      url.port
-    )
-      throw new Error("封面请使用 TMDB HTTPS 图片地址。");
-  }
-  const isDerived = type === "tv_show" || type === "tv_season";
-  const release_date = isDerived ? null : string("release_date");
+  if (cover_url) assertCoverUrl(cover_url, type as ManagedMediaType);
+  const isDerived = type === "tv_show" || type === "tv_season" || type === "album";
+  const release_date = isDerived && type !== "album" ? null : string("release_date");
   if (
     release_date &&
     (!/^\d{4}-\d{2}-\d{2}$/.test(release_date) ||
@@ -137,13 +161,22 @@ export function parseMediaForm(form: FormData): MediaInput {
       new Date(release_date).toISOString().slice(0, 10) !== release_date)
   )
     throw new Error("发行日期无效。");
-  const rating = isDerived ? null : numeric("rating", 10);
+  // 专辑评分由曲目汇总，不写入自身 tracking；电视节目／季同理。
+  const rating = type === "tv_show" || type === "tv_season" || type === "album" ? null : numeric("rating", 10);
   if (rating !== null && Math.abs(rating * 10 - Math.round(rating * 10)) > 1e-8)
     throw new Error("评分最多保留一位小数。");
   // 有评分即看过、没有评分即没看过，不再单独选择观看状态；忽略提交的 status，旧页面也不会写出不一致的记录。
-  // 电视节目与季没有评分，状态恒为 want_to_watch，仅用于通过 RPC 校验，数据库不会为它们保存 tracking。
+  // 电视节目、季与专辑没有评分，状态恒为 want_to_watch，仅用于通过校验，数据库不为它们保存 tracking。
   const effectiveStatus: "watched" | "want_to_watch" = rating !== null ? "watched" : "want_to_watch";
-  const isChild = type === "tv_season" || type === "tv_episode";
+  const isTvChild = type === "tv_season" || type === "tv_episode";
+  const isMusicTrack = type === "music";
+  const isAlbum = type === "album";
+  const artists = isAlbum || isMusicTrack ? credits("artists").map(({ id, name }) => ({ id, name })) : [];
+  const lyricists = isMusicTrack ? credits("lyricists").map(({ id, name }) => ({ id, name })) : [];
+  const composers = isMusicTrack ? credits("composers").map(({ id, name }) => ({ id, name })) : [];
+  const label = isAlbum ? string("label", 200) : null;
+  // 曲目时长以秒计（存储与展示一致）；影视片长仍为分钟。
+  const runtime = type === "tv_show" || type === "tv_season" || type === "album" ? null : numeric("runtime", 100000);
   return {
     id,
     type: type as ManagedMediaType,
@@ -151,17 +184,21 @@ export function parseMediaForm(form: FormData): MediaInput {
     alternate_title: string("alternate_title"),
     summary: string("summary", 20000),
     cover_url,
-    release_date,
-    runtime: isDerived ? null : numeric("runtime", 100000),
+    release_date: type === "tv_show" || type === "tv_season" ? null : release_date,
+    runtime,
     parent_id,
     number,
     status: effectiveStatus,
     rating,
-    genres: isChild ? [] : names("genres"),
-    languages: isChild ? [] : names("languages"),
-    regions: isChild ? [] : names("regions"),
-    actors: isChild ? [] : credits("actors"),
-    directors: isChild ? [] : credits("directors").map(({ id, name }) => ({ id, name })),
-    collections: isChild ? [] : names("collections"),
+    genres: isTvChild || isMusicTrack ? [] : names("genres"),
+    languages: isTvChild || isMusicTrack || isAlbum ? [] : names("languages"),
+    regions: isTvChild || isMusicTrack || isAlbum ? [] : names("regions"),
+    actors: isTvChild || isMusicTrack || isAlbum ? [] : credits("actors"),
+    directors: isTvChild || isMusicTrack || isAlbum ? [] : credits("directors").map(({ id, name }) => ({ id, name })),
+    artists,
+    lyricists,
+    composers,
+    label,
+    collections: isTvChild || isMusicTrack ? [] : names("collections"),
   };
 }

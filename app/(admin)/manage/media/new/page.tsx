@@ -28,6 +28,15 @@ export default async function NewMediaPage({
       .limit(1);
     if (error) throw new Error("无法读取编号建议。");
     nextNumber = Math.min(100000, ((data as unknown as Record<string, number>[])?.[0]?.[column] ?? 0) + 1);
+  } else if (parent && type === "music") {
+    const { data, error } = await db
+      .from("music")
+      .select("track_number")
+      .eq("album_id", parent.id)
+      .order("track_number", { ascending: false })
+      .limit(1);
+    if (error) throw new Error("无法读取编号建议。");
+    nextNumber = Math.min(100000, (data?.[0]?.track_number ?? 0) + 1);
   }
   return (
     <section className="admin-edit-page space-y-6">
