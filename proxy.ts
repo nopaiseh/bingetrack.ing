@@ -8,8 +8,9 @@ import {
 } from "@/lib/auth/activity-cookie";
 import { isSupabaseAuthSessionCookie } from "@/lib/auth/session-cookie";
 import { isMediaId } from "@/lib/functions/media-id";
+import { PUBLIC_DETAIL_PATH_PATTERN } from "@/lib/media-types";
 
-const DETAIL_PATH = /^\/(?:movies|shows)\/([^/]+)/;
+const DETAIL_PATH = PUBLIC_DETAIL_PATH_PATTERN;
 const SEASON_PATH = /^\/shows\/[^/]+\/seasons\/([^/]+)/;
 
 /** 详情页和季页的 loading 会先以 200 开始流式输出，notFound() 无法再改状态码，非法 ID 会被当成正常页面写入 ISR 缓存；因此在渲染前直接返回 404。 */

@@ -1,4 +1,5 @@
 import type { MediaCard, Media, ViewAllMediaRow } from "@/lib/types";
+import { normalizeToPublicMediaType, type PublicMediaType } from "@/lib/media-types";
 
 const nameCollator = new Intl.Collator(undefined, {
   numeric: true,
@@ -14,10 +15,9 @@ function sortNames(names: string[] | null | undefined): string[] {
 export function mapViewRowToMedia(
   item: ViewAllMediaRow,
   overrideSeries?: string[] | null,
-  overrideType?: "movies" | "shows",
+  overrideType?: PublicMediaType,
 ): Media {
-  const mediaType: "movies" | "shows" =
-    overrideType ?? (item.type === "movie" || item.type === "movies" ? "movies" : "shows");
+  const mediaType = overrideType ?? normalizeToPublicMediaType(item.type);
 
   return {
     id: String(item.id),
@@ -53,6 +53,6 @@ export function mapViewRowToMediaCard(item: ViewAllMediaRow): MediaCard {
     languages: sortNames(item.languages),
     cover_url: item.cover_url ?? "",
     status: item.status || undefined,
-    type: item.type === "movie" || item.type === "movies" ? "movies" : "shows",
+    type: normalizeToPublicMediaType(item.type),
   };
 }

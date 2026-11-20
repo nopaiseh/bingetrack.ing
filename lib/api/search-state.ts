@@ -1,7 +1,9 @@
+import { CATALOG_DB_TYPES, isCatalogDbMediaType } from "@/lib/media-types";
+
 export const PAGE_SIZE = 30;
 export type SearchFilters = Readonly<Record<string, readonly string[]>>;
 
-const TYPE_VALUES = new Set(["movie", "tv_show", "series", "director", "actor"]);
+const TYPE_VALUES = new Set([...CATALOG_DB_TYPES, "series", "director", "actor"]);
 const STATUS_VALUES = new Set(["want_to_watch", "watching", "watched", "upcoming"]);
 // “即将上映”在页面上是一个状态选项，但发给 API 时单独成为 upcoming 参数。
 const WATCH_STATUS_VALUES = new Set(["want_to_watch", "watching", "watched"]);
@@ -63,7 +65,7 @@ export function buildMediaSearchQuery(searchParams: URLSearchParams): string {
   const params = new URLSearchParams();
   if (query) params.set("q", query);
 
-  const mediaTypes = filters.type.filter(/* 媒体分类映射为数据库媒体类型。 */ (t) => t === "movie" || t === "tv_show");
+  const mediaTypes = filters.type.filter(/* 媒体分类映射为数据库媒体类型。 */ (t) => isCatalogDbMediaType(t));
   const creditRoles = filters.type.filter(
     /* 人员分类映射为导演或演员角色。 */ (t) => t === "director" || t === "actor",
   );

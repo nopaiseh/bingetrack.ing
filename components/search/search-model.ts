@@ -1,9 +1,9 @@
 import { WATCH_STATUSES } from "@/components/watch-status";
 import { PAGE_SIZE, type SearchFilters } from "@/lib/api/search-state";
+import { CATALOG_DB_TYPES, MEDIA_TYPE_DEFINITIONS } from "@/lib/media-types";
 
 export const TYPE_OPTIONS = [
-  { value: "movie", label: "电影" },
-  { value: "tv_show", label: "电视节目" },
+  ...CATALOG_DB_TYPES.map((value) => ({ value, label: MEDIA_TYPE_DEFINITIONS[value].label })),
   { value: "series", label: "系列" },
   { value: "director", label: "导演" },
   { value: "actor", label: "演员" },

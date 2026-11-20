@@ -1,9 +1,10 @@
 import type { DistributionItem, MediaDistribution, MediaDistributions } from "@/lib/types";
+import { PUBLIC_MEDIA_TYPES, type PublicMediaType } from "@/lib/media-types";
 
 type DistributionDimension = keyof MediaDistribution;
 
 export type DistributionCountRow = {
-  media_type: "movies" | "shows";
+  media_type: PublicMediaType;
   release_year: string;
   dimension: DistributionDimension;
   name: string;
@@ -48,34 +49,32 @@ function finalizeDistribution(counts: DistributionCounts): MediaDistribution {
 
 /** 按媒体类型和年份组织数据库计数，生成各维度前五名并补齐空的全部年份分组。 */
 export function buildMediaDistributions(rows: DistributionCountRow[]): MediaDistributions {
-  const countsByType: Record<"movies" | "shows", Map<string, DistributionCounts>> = {
-    movies: new Map(),
-    shows: new Map(),
-  };
+  const countsByType = Object.fromEntries(
+    PUBLIC_MEDIA_TYPES.map((type) => [type, new Map<string, DistributionCounts>()]),
+  ) as Record<PublicMediaType, Map<string, DistributionCounts>>;
 
   for (const row of rows) {
     const yearCounts = countsByType[row.media_type];
+    if (!yearCounts) continue;
     if (!yearCounts.has(row.release_year)) {
       yearCounts.set(row.release_year, createDistributionCounts());
     }
     yearCounts.get(row.release_year)![row.dimension].set(row.name, row.item_count);
   }
 
-  if (!countsByType.movies.has("All Time")) countsByType.movies.set("All Time", createDistributionCounts());
-  if (!countsByType.shows.has("All Time")) countsByType.shows.set("All Time", createDistributionCounts());
+  for (const type of PUBLIC_MEDIA_TYPES) {
+    if (!countsByType[type].has("All Time")) countsByType[type].set("All Time", createDistributionCounts());
+  }
 
-  return {
-    movies: Object.fromEntries(
-      Array.from(
-        countsByType.movies,
-        /* 将某年电影计数转换为年度分布条目。 */ ([year, counts]) => [year, finalizeDistribution(counts)],
+  return Object.fromEntries(
+    PUBLIC_MEDIA_TYPES.map((type) => [
+      type,
+      Object.fromEntries(
+        Array.from(
+          countsByType[type],
+          /* 将某年计数转换为年度分布条目。 */ ([year, counts]) => [year, finalizeDistribution(counts)],
+        ),
       ),
-    ),
-    shows: Object.fromEntries(
-      Array.from(
-        countsByType.shows,
-        /* 将某年电视节目计数转换为年度分布条目。 */ ([year, counts]) => [year, finalizeDistribution(counts)],
-      ),
-    ),
-  };
+    ]),
+  ) as MediaDistributions;
 }

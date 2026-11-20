@@ -1,7 +1,7 @@
 import { isMediaId } from "@/lib/functions/media-id";
+import { mediaTypes, type ManagedMediaType } from "@/lib/media-types";
 
-export const mediaTypes = { movie: "电影", tv_show: "电视节目", tv_season: "季", tv_episode: "单集" } as const;
-export type ManagedMediaType = keyof typeof mediaTypes;
+export { mediaTypes, type ManagedMediaType };
 
 /**
  * 决定写入媒体条目的封面。

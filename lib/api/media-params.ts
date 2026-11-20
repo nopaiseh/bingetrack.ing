@@ -1,4 +1,5 @@
 import type { FetchMediaListOptions } from "@/lib/types";
+import { CATALOG_DB_TYPES, isCatalogDbMediaType, type CatalogDbMediaType } from "@/lib/media-types";
 import { MAX_SEARCH_QUERY_LENGTH } from "./search-limits";
 
 export class ApiValidationError extends Error {
@@ -9,7 +10,7 @@ export class ApiValidationError extends Error {
   }
 }
 
-const MEDIA_TYPES = new Set(["movie", "tv_show"]);
+const MEDIA_TYPES = new Set<string>(CATALOG_DB_TYPES);
 const CREDIT_ROLES = new Set(["director", "actor"]);
 // 与 v_all_media 实际产生的状态一致；视图不会输出 "unwatched"。
 const STATUSES = new Set(["want_to_watch", "watching", "watched"]);
@@ -90,10 +91,10 @@ export const TOP_MEDIA_LIMIT = 10;
 /** 只接受电影或电视节目榜单并校验可选年份；条数固定为 TOP_MEDIA_LIMIT。 */
 export function parseTopMediaParams(searchParams: URLSearchParams) {
   const type = searchParams.get("type");
-  if (type !== "movie" && type !== "tv_show") {
+  if (!type || !isCatalogDbMediaType(type)) {
     throw new ApiValidationError("Invalid media type");
   }
 
   const year = parseYear(searchParams.get("year"), "year") ?? null;
-  return { type: type as "movie" | "tv_show", year, limit: TOP_MEDIA_LIMIT };
+  return { type: type as CatalogDbMediaType, year, limit: TOP_MEDIA_LIMIT };
 }

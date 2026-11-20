@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import type { EpisodeInfo, Media, SeasonInfo } from "@/lib/types";
 import { SITE_URL } from "@/lib/site";
 import { tmdbImageUrl } from "@/lib/tmdb-image";
+import { publicMediaDetailPath, type PublicMediaType } from "@/lib/media-types";
 
 // 分享描述按显示宽度截断：汉字等全角字符计 2，拉丁字符计 1，上限约等于 160 个拉丁字符，中文因此大约停在 80 字。
 const DESCRIPTION_TARGET_WIDTH = 160;
@@ -109,8 +110,9 @@ export function truncateMetaDescription(input: string): string {
 
 /** 修剪并按显示宽度截取媒体简介，缺少简介时按电影或电视节目生成默认描述。 */
 export function getMediaDescription(media: Media): string {
+  const type = (media.type ?? "movies") as PublicMediaType;
   const fallback =
-    media.type === "shows"
+    type === "shows"
       ? `查看《${media.title}》的季度、单集与观看记录。`
       : `查看《${media.title}》的观看记录与详细信息。`;
   const summary = media.summary?.trim();
@@ -119,8 +121,8 @@ export function getMediaDescription(media: Media): string {
 
 /** 按媒体类型选取详情栏目，并对媒体 ID 编码形成规范路径。 */
 function getMediaPath(media: Pick<Media, "id" | "type">): string {
-  const section = media.type === "shows" ? "shows" : "movies";
-  return `/${section}/${encodeURIComponent(media.id)}`;
+  const section = (media.type ?? "movies") as PublicMediaType;
+  return publicMediaDetailPath(section, media.id);
 }
 
 /** 生成媒体标题、描述、规范地址和社交分享元数据，无海报时使用站点默认图片。 */
@@ -155,7 +157,7 @@ export function buildMediaMetadata(media: Media): Metadata {
 export function buildMediaJsonLd(media: Media): Record<string, unknown> {
   const jsonLd: Record<string, unknown> = {
     "@context": "https://schema.org",
-    "@type": media.type === "shows" ? "TVSeries" : "Movie",
+    "@type": ((media.type ?? "movies") as PublicMediaType) === "shows" ? "TVSeries" : "Movie",
     name: media.title,
     url: `${SITE_URL}${getMediaPath(media)}`,
     description: getMediaDescription(media),
