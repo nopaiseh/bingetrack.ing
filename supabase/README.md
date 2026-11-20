@@ -4,13 +4,14 @@
 
 ## 目录
 
-| 路径                    | 内容                                                         |
-| ----------------------- | ------------------------------------------------------------ |
-| `migrations/`           | 版本化结构迁移。新环境、本地和 CI 都从这里重建               |
-| `fixtures/e2e_seed.sql` | 固定的浏览器测试数据，只用于本地和 CI，不要导入生产库        |
-| `tests/`                | pgTAP 测试：公开数据语义、站长权限、事务行为、管理视图与报告 |
-| `config.toml`           | 本地 Supabase 配置（已关闭注册，Passkey 使用 `localhost`）   |
-| `seed.sql`              | CLI 默认的种子入口，有意留空；测试数据单独加载               |
+| 路径                          | 内容                                                                |
+| ----------------------------- | ------------------------------------------------------------------- |
+| `migrations/`                 | 版本化结构迁移。新环境、本地和 CI 都从这里重建                      |
+| `fixtures/e2e_seed.sql`       | 固定的浏览器测试数据（影视／图书），只用于本地和 CI，不要导入生产库 |
+| `fixtures/e2e_album_seed.sql` | 专辑／曲目夹具；CI 在生产构建后载入，以保留 `/albums` 空状态 ISR    |
+| `tests/`                      | pgTAP 测试：公开数据语义、站长权限、事务行为、管理视图与报告        |
+| `config.toml`                 | 本地 Supabase 配置（已关闭注册，Passkey 使用 `localhost`）          |
+| `seed.sql`                    | CLI 默认的种子入口，有意留空；测试数据单独加载                      |
 
 ## 搭建本地数据库
 
@@ -19,6 +20,8 @@
 ```sh
 supabase start   # 启动并自动应用 migrations/
 psql postgresql://postgres:postgres@127.0.0.1:54322/postgres -v ON_ERROR_STOP=1 -f supabase/fixtures/e2e_seed.sql
+# 跑含专辑详情的浏览器测试前，再载入专辑夹具（生产构建之后载入可保留目录空状态）：
+psql postgresql://postgres:postgres@127.0.0.1:54322/postgres -v ON_ERROR_STOP=1 -f supabase/fixtures/e2e_album_seed.sql
 supabase test db
 ```
 

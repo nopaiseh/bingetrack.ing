@@ -98,6 +98,15 @@ jobs:
       - name: Verify production build (Next.js)
         run: npm run build
 
+      # 专辑夹具在构建后载入，让 /albums 目录 ISR 保留「还没有专辑。」空状态，详情页按需读取曲目。
+      - name: Load album fixtures after production build
+        env:
+          PGPASSWORD: postgres
+        run: >-
+          psql --host 127.0.0.1 --port 54322 --username postgres
+          --dbname postgres --set ON_ERROR_STOP=1
+          --file supabase/fixtures/e2e_album_seed.sql
+
       - name: Test browser flows (Playwright)
         run: npm run test:e2e
 

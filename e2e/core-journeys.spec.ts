@@ -24,7 +24,8 @@ test(
   "type and year filters update the URL and results",
   /* 验证媒体分类和年份筛选同时更新地址与结果。 */ async ({ page }) => {
     await page.goto("/search");
-    await expect(page.getByText("找到 2 部作品")).toBeVisible();
+    // 构建后专辑夹具已载入：电影、剧集、三本图书、一张专辑与两首曲目。
+    await expect(page.getByText("找到 8 部作品")).toBeVisible();
 
     const filtersToggle = page.getByRole("button", { name: /^筛选(\s\(\d+\))?$/ });
     if (await filtersToggle.isVisible()) await filtersToggle.click();
