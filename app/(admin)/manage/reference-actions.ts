@@ -18,7 +18,7 @@ import type { ActionResult } from "./actions";
 /** 搜索只返回展示所需字段；每次调用仍独立验证站长身份。 */
 export async function searchChoices(kind: string, term: string): Promise<{ choices: Choice[]; error?: string }> {
   const { db } = await requireOwner();
-  const media = ["movie", "tv_show", "tv_season", "tv_episode", "media"].includes(kind);
+  const media = ["movie", "tv_show", "tv_season", "tv_episode", "album", "music", "media"].includes(kind);
   if (!media && !isReferenceType(kind)) return { choices: [], error: "不支持的资料类别。" };
   const table = media ? "media_items" : referenceTypes[kind as keyof typeof referenceTypes].table;
   let query = db
@@ -35,7 +35,9 @@ export async function searchChoices(kind: string, term: string): Promise<{ choic
       : query.ilike(media ? "title" : "name", `%${escapeLikePattern(search)}%`);
   if (media)
     query =
-      kind === "media" ? query.in("type", ["movie", "tv_show", "tv_season", "tv_episode"]) : query.eq("type", kind);
+      kind === "media"
+        ? query.in("type", ["movie", "tv_show", "tv_season", "tv_episode", "album", "music"])
+        : query.eq("type", kind);
   const { data, error } = await query;
   if (error) return { choices: [], error: "搜索失败，请重试。" };
   return {

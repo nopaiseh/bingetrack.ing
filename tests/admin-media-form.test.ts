@@ -170,6 +170,87 @@ describe("管理媒体输入", () => {
     expect(seasonResult.release_date).toBeNull();
     expect(seasonResult.runtime).toBeNull();
   });
+  it("解析专辑与曲目字段，时长按秒，封面接受音乐主机", () => {
+    const albumId = "11111111-1111-4111-8111-111111111111";
+    const album = parseMediaForm(
+      form({
+        type: "album",
+        title: "测试专辑",
+        release_date: "2024-01-01",
+        cover_url: "https://is1-ssl.mzstatic.com/image/thumb/Music/cover.jpg",
+        artists: "\t歌手甲\n\t歌手乙",
+        genres: "流行",
+        label: "测试厂牌",
+        rating: "9",
+        runtime: "40",
+      }),
+    );
+    expect(album).toMatchObject({
+      type: "album",
+      release_date: "2024-01-01",
+      rating: null,
+      runtime: null,
+      label: "测试厂牌",
+      artists: [
+        { id: null, name: "歌手甲" },
+        { id: null, name: "歌手乙" },
+      ],
+      genres: ["流行"],
+      actors: [],
+      directors: [],
+    });
+    expect(album.cover_url).toContain("mzstatic.com");
+
+    const track = parseMediaForm(
+      form({
+        type: "music",
+        title: "测试曲目",
+        parent_id: albumId,
+        number: "3",
+        runtime: "215",
+        rating: "8.5",
+        cover_url: "https://coverartarchive.org/release/abc/front-500",
+        artists: "\t主唱",
+        lyricists: "\t作词人",
+        composers: "\t作曲人",
+        genres: "流行",
+      }),
+    );
+    expect(track).toMatchObject({
+      type: "music",
+      parent_id: albumId,
+      number: 3,
+      runtime: 215,
+      status: "watched",
+      rating: 8.5,
+      genres: [],
+      artists: [{ id: null, name: "主唱" }],
+      lyricists: [{ id: null, name: "作词人" }],
+      composers: [{ id: null, name: "作曲人" }],
+    });
+    expect(() => parseMediaForm(form({ type: "music", title: "无上级", number: "1" }))).toThrow(/所属专辑/);
+    expect(() =>
+      parseMediaForm(
+        form({
+          type: "music",
+          title: "小数秒",
+          parent_id: albumId,
+          number: "1",
+          runtime: "3.5",
+        }),
+      ),
+    ).toThrow(/时长、评分或编号超出有效范围/);
+    expect(() =>
+      parseMediaForm(
+        form({
+          type: "album",
+          title: "坏封面",
+          cover_url: "https://evil.example/cover.jpg",
+        }),
+      ),
+    ).toThrow(/封面/);
+  });
+
   it("季和单集条目强制清空所有关联资料", () => {
     const parentId = "11111111-1111-4111-8111-111111111111";
     const seasonForm = form({

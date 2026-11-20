@@ -43,11 +43,11 @@ export type MediaSortKey = keyof typeof mediaSorts;
 
 export const adminMediaListTypes = catalogDbTypes;
 export type AdminMediaListType = CatalogDbMediaType;
-/** 管理端顶层批量操作类型；与 MEDIA_TYPE_DEFINITIONS.adminBulkOps 对齐（当前不含 music／album）。 */
+/** 管理端顶层批量操作类型；与 MEDIA_TYPE_DEFINITIONS.adminBulkOps 对齐（电影／电视节目／专辑）。 */
 export type AdminBulkListType = AdminBulkMediaType;
 
-/** 管理页里仍按上级条目浏览的两种类型。电影和电视节目走 parseAdminMediaQuery。 */
-export const adminChildListTypes = ["tv_season", "tv_episode"] as const;
+/** 管理页里仍按上级条目浏览的类型。电影、电视节目、专辑走 parseAdminMediaQuery。 */
+export const adminChildListTypes = ["tv_season", "tv_episode", "music"] as const;
 export type AdminChildListType = (typeof adminChildListTypes)[number];
 
 /** 季与单集的排序。季没有评分，parseAdminChildQuery 会把 rating 改回 date。 */
@@ -135,19 +135,25 @@ export type ChildEpisodeContext = {
   episodeNumber: number;
 };
 
+export type ChildTrackContext = {
+  albumTitle: string | null;
+  trackNumber: number;
+};
+
 export type ChildListItem = {
   id: string;
   type: AdminChildListType;
   title: string;
   alternate_title: string | null;
   cover_url: string | null;
-  /** 季为最近播出日期；单集为自身上映日期。 */
+  /** 季为最近播出日期；单集／曲目为自身上映／发行日期。 */
   display_date: string | null;
   status: "watched" | "watching" | "want_to_watch";
   /** 季不评分，恒为 null。 */
   rating: number | null;
   season: ChildSeasonContext | null;
   episode: ChildEpisodeContext | null;
+  track: ChildTrackContext | null;
 };
 
 export type MediaListItem = {
@@ -156,16 +162,18 @@ export type MediaListItem = {
   title: string;
   alternate_title: string | null;
   cover_url: string | null;
-  /** 电影为自身上映日期。电视节目通常为空，播出日期看 sort_date。 */
+  /** 电影／专辑为自身上映日期。电视节目通常为空，播出日期看 sort_date。 */
   release_date: string | null;
-  /** 电影片长（分钟）。电视节目为空。 */
+  /** 电影片长（分钟）。电视节目／专辑为空。 */
   runtime: number | null;
-  /** 电影等于上映日期；电视节目为最近一集播出日期，与管理列表排序口径一致。 */
+  /** 电影／专辑等于上映日期；电视节目为最近一集播出日期，与管理列表排序口径一致。 */
   sort_date: string | null;
   status: "watched" | "watching" | "want_to_watch";
   rating: number | null;
   season_count: number;
   episode_count: number;
+  /** 专辑曲目数；电影／电视节目为 0。 */
+  track_count: number;
 };
 
 function parseOptionalInteger(value: unknown, label: string): number | undefined {
@@ -226,18 +234,18 @@ export function parseAdminMediaQuery(input?: AdminListInput | null) {
 }
 
 /**
- * 只接受配置中 adminBulkOps 为 true 的类型（当前为电影／电视节目）。
- * music／album 后端已支持，但尚未加入管理端批量入口。
+ * 只接受配置中 adminBulkOps 为 true 的顶层类型（电影／电视节目／专辑）。
+ * 曲目（music）挂在专辑下，使用 listAdminChildren。
  */
 export function parseAdminMediaListType(value: unknown): AdminMediaListType {
   if (typeof value === "string" && isAdminBulkMediaType(value) && isCatalogDbMediaType(value)) return value;
   throw new AdminInputError(`只支持${adminBulkOpsLabelList()}。`);
 }
 
-/** 只接受季或单集。电影和电视节目使用 listAdminMedia。 */
+/** 只接受季、单集或曲目。电影、电视节目、专辑使用 listAdminMedia。 */
 export function parseAdminChildListType(value: unknown): AdminChildListType {
-  if (value === "tv_season" || value === "tv_episode") return value;
-  throw new AdminInputError("只支持季和单集。");
+  if (value === "tv_season" || value === "tv_episode" || value === "music") return value;
+  throw new AdminInputError("只支持季、单集和曲目。");
 }
 
 /** 与管理页原逻辑一致：非法页码回落到 1，超过上限时截断，不拒绝整页。 */
@@ -252,13 +260,14 @@ const episodeStatusSet: ReadonlySet<string> = new Set(episodeStatuses);
 
 function parseChildStatus(type: AdminChildListType, value: unknown): ChildStatus | "" {
   if (typeof value !== "string") return "";
-  const allowed = type === "tv_episode" ? episodeStatusSet : childStatusSet;
+  // 单集与曲目 tracking 只有已看／想看；watching 不是合法筛选。
+  const allowed = type === "tv_episode" || type === "music" ? episodeStatusSet : childStatusSet;
   return allowed.has(value) ? (value as ChildStatus) : "";
 }
 
 /**
- * 季与单集的排序、状态、搜索词和上级条目。非法值回落到默认，不把用户输入拼进查询。
- * 季没有评分，sort=rating 视为 date。单集不接受 watching。搜索词只截断，保留首尾空白。
+ * 季、单集与曲目的排序、状态、搜索词和上级条目。非法值回落到默认，不把用户输入拼进查询。
+ * 季没有评分，sort=rating 视为 date。单集／曲目不接受 watching。搜索词只截断，保留首尾空白。
  */
 export function parseAdminChildQuery(
   type: AdminChildListType,

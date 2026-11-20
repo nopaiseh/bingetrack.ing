@@ -6,7 +6,14 @@ import type { ManagedMediaType } from "@/lib/admin/media-form";
 export type MediaHit = { id: string; type: ManagedMediaType; title: string; context: string; coverUrl: string | null };
 
 const LIMIT = 40;
-const typeOrder: Record<ManagedMediaType, number> = { tv_show: 0, movie: 1, tv_season: 2, tv_episode: 3 };
+const typeOrder: Record<ManagedMediaType, number> = {
+  tv_show: 0,
+  movie: 1,
+  album: 2,
+  tv_season: 3,
+  tv_episode: 4,
+  music: 5,
+};
 
 type Row = {
   id: string;
@@ -43,10 +50,12 @@ function context(row: Row) {
       .join(" · ");
   if (row.type === "tv_show")
     return [row.alternate_title, `${count(row.seasons?.[0]?.count ?? 0)} 季`].filter(Boolean).join(" · ");
+  if (row.type === "album") return [row.alternate_title, row.release_date, "专辑"].filter(Boolean).join(" · ");
+  if (row.type === "music") return [row.alternate_title, row.release_date, "曲目"].filter(Boolean).join(" · ");
   return [row.alternate_title, row.release_date].filter(Boolean).join(" · ");
 }
 
-/** 一次搜索全部影视的标题与副标题；标题完全相同的排在最前，其次按节目、电影、季、单集。每次调用独立验证站长身份。 */
+/** 一次搜索全部影视与专辑／曲目的标题与副标题；标题完全相同的排在最前。每次调用独立验证站长身份。 */
 export async function searchMedia(term: string): Promise<{ hits: MediaHit[]; error?: string }> {
   const { db } = await requireOwner();
   const search = term.trim().slice(0, 200);
@@ -56,7 +65,7 @@ export async function searchMedia(term: string): Promise<{ hits: MediaHit[]; err
     .select(
       "id,type,title,alternate_title,release_date,cover_url,season:tv_seasons!tv_seasons_id_fkey(season_number,parent:media_items!tv_seasons_series_id_fkey(title)),episode:tv_episodes!tv_episodes_id_fkey(episode_number,season:tv_seasons!tv_episodes_season_id_fkey(season_number,series:media_items!tv_seasons_series_id_fkey(title))),seasons:tv_seasons!tv_seasons_series_id_fkey(count)",
     )
-    .in("type", ["movie", "tv_show", "tv_season", "tv_episode"])
+    .in("type", ["movie", "tv_show", "tv_season", "tv_episode", "album", "music"])
     .or(titleOrAliasFilter(search))
     .order("title")
     .order("id")

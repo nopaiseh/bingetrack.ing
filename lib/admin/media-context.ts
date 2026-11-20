@@ -22,7 +22,12 @@ export async function readParent(db: SupabaseClient, id: string): Promise<Parent
 }
 /** 使用精确计数显示删除范围，不把数据库的返回行数上限当成实际数量。 */
 export async function readImpact(db: SupabaseClient, id: string, type: string) {
-  if (type !== "tv_show" && type !== "tv_season") return { seasons: 0, episodes: 0 };
+  if (type === "album") {
+    const tracks = await db.from("music").select("media_item_id", { count: "exact", head: true }).eq("album_id", id);
+    if (tracks.error) throw new Error("无法核对下属内容数量，请重试。");
+    return { seasons: 0, episodes: 0, tracks: tracks.count ?? 0 };
+  }
+  if (type !== "tv_show" && type !== "tv_season") return { seasons: 0, episodes: 0, tracks: 0 };
   const seasonQuery =
     type === "tv_show"
       ? db.from("tv_seasons").select("id", { count: "exact", head: true }).eq("series_id", id)
@@ -36,7 +41,7 @@ export async function readImpact(db: SupabaseClient, id: string, type: string) {
       : db.from("tv_episodes").select("id", { count: "exact", head: true }).eq("season_id", id);
   const [seasons, episodes] = await Promise.all([seasonQuery, episodeQuery]);
   if (seasons.error || episodes.error) throw new Error("无法核对下属内容数量，请重试。");
-  return { seasons: seasons.count ?? 0, episodes: episodes.count ?? 0 };
+  return { seasons: seasons.count ?? 0, episodes: episodes.count ?? 0, tracks: 0 };
 }
 
 export type Sibling = { id: string; title: string; number: number; season?: number };
@@ -70,6 +75,30 @@ async function readNeighbour(
   return { id: record.id, title: media?.title ?? "", number: Number(record[numberColumn]) };
 }
 
+/** 同一专辑内按曲序相邻的曲目。 */
+async function readTrackNeighbour(
+  db: SupabaseClient,
+  albumId: string,
+  ascending: boolean,
+  number?: number,
+): Promise<Sibling | undefined> {
+  let query = db
+    .from("music")
+    .select("media_item_id,track_number,media:media_items!music_media_item_id_fkey(title)")
+    .eq("album_id", albumId);
+  if (number != null) query = ascending ? query.gt("track_number", number) : query.lt("track_number", number);
+  const { data, error } = await query.order("track_number", { ascending }).limit(1).maybeSingle();
+  if (error) throw new Error("无法读取相邻条目。");
+  if (!data) return undefined;
+  const record = data as unknown as {
+    media_item_id: string;
+    track_number: number;
+    media: { title: string } | { title: string }[] | null;
+  };
+  const media = Array.isArray(record.media) ? record.media[0] : record.media;
+  return { id: record.media_item_id, title: media?.title ?? "", number: Number(record.track_number) };
+}
+
 /** 本季已到首集或末集时，沿季号顺序找到最近一个有单集的季，取其末集或首集。 */
 async function readAcrossSeasons(
   db: SupabaseClient,
@@ -83,13 +112,21 @@ async function readAcrossSeasons(
   return undefined;
 }
 
-/** 读取紧邻的前后条目方便连续编辑：季限同一电视节目，单集可跨季衔接。 */
+/** 读取紧邻的前后条目方便连续编辑：季限同一电视节目，单集可跨季衔接，曲目限同一专辑。 */
 export async function readSiblings(
   db: SupabaseClient,
   type: string,
   parentId: string | null | undefined,
   number: number | null | undefined,
 ): Promise<{ previous?: Sibling; next?: Sibling }> {
+  if (type === "music") {
+    if (!parentId || number == null) return {};
+    const [previous, next] = await Promise.all([
+      readTrackNeighbour(db, parentId, false, number),
+      readTrackNeighbour(db, parentId, true, number),
+    ]);
+    return { previous, next };
+  }
   if ((type !== "tv_season" && type !== "tv_episode") || !parentId || number == null) return {};
   const table = type === "tv_season" ? "tv_seasons" : "tv_episodes";
   const [previous, next] = await Promise.all([
