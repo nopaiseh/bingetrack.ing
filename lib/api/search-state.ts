@@ -4,9 +4,10 @@ export const PAGE_SIZE = 30;
 export type SearchFilters = Readonly<Record<string, readonly string[]>>;
 
 const TYPE_VALUES = new Set([...CATALOG_DB_TYPES, "series", "director", "actor"]);
-const STATUS_VALUES = new Set(["want_to_watch", "watching", "watched", "upcoming"]);
+const STATUS_VALUES = new Set(["want_to_watch", "watching", "watched", "in_progress", "upcoming"]);
 // “即将上映”在页面上是一个状态选项，但发给 API 时单独成为 upcoming 参数。
-const WATCH_STATUS_VALUES = new Set(["want_to_watch", "watching", "watched"]);
+// in_progress 为图书「在读」；影视不会产出该状态。
+const WATCH_STATUS_VALUES = new Set(["want_to_watch", "watching", "watched", "in_progress"]);
 const SORT_VALUES = new Set(["date_asc", "date_desc", "rating_asc", "rating_desc"]);
 
 /** 拆分逗号列表并去重。 */

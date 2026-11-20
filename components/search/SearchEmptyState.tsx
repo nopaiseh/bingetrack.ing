@@ -22,7 +22,7 @@ export default function SearchEmptyState({
       <p className="text-lg font-semibold text-fg">没有匹配的作品</p>
       <p className="mt-2 max-w-md text-sm leading-relaxed text-fg-secondary">
         {query
-          ? "没有与这个关键词匹配的电影、电视节目或人物。可以换一个词，或清除目前的筛选后再试。"
+          ? "没有与这个关键词匹配的电影、电视节目、图书或人物。可以换一个词，或清除目前的筛选后再试。"
           : "没有作品符合当前筛选。可以放宽条件，或从下面的方向开始。"}
       </p>
       {canReset && (

@@ -1,7 +1,8 @@
 import HomeDashboard from "@/app/HomeDashboard";
 import type { ContinueListeningCard } from "@/components/ContinueListeningRail";
 import type { ContinueWatchingCard } from "@/components/ContinueWatchingRail";
-import type { ContinueListeningItem, ContinueWatchingItem } from "@/lib/continue-watching";
+import type { CurrentlyReadingCard } from "@/components/CurrentlyReadingRail";
+import type { ContinueListeningItem, ContinueWatchingItem, CurrentlyReadingItem } from "@/lib/continue-watching";
 import {
   getCachedHomeContinue,
   getCachedReleaseYearStats,
@@ -57,7 +58,18 @@ function continueListeningCards(items: readonly ContinueListeningItem[]): Contin
   }));
 }
 
-/** 并行读取年度统计、榜单、分布、即将上映和继续（在看／在听）；仅构建期失败时降级为空数据，运行期失败保留旧页面。 */
+/** 丢掉 releaseAt 排序键，只把展示字段交给界面。 */
+function currentlyReadingCards(items: readonly CurrentlyReadingItem[]): CurrentlyReadingCard[] {
+  return items.map((item) => ({
+    bookId: item.bookId,
+    title: item.title,
+    posterPath: item.posterPath,
+    href: item.href,
+    authors: item.authors,
+  }));
+}
+
+/** 并行读取年度统计、榜单、分布、即将上映和继续（在看／在听／在读）；仅构建期失败时降级为空数据，运行期失败保留旧页面。 */
 export default async function HomePage() {
   let summary: Summary[] = [];
   let topMovies: MediaCard[] = [];
@@ -66,6 +78,7 @@ export default async function HomePage() {
   let upcoming: UpcomingRelease[] = [];
   let continueWatching: ContinueWatchingCard[] = [];
   let continueListening: ContinueListeningCard[] = [];
+  let currentlyReading: CurrentlyReadingCard[] = [];
 
   const dashboardResult = Promise.all([
     getCachedReleaseYearStats(),
@@ -91,6 +104,7 @@ export default async function HomePage() {
   if (homeContinueResult.status === "fulfilled") {
     continueWatching = continueWatchingCards(homeContinueResult.value.watching);
     continueListening = continueListeningCards(homeContinueResult.value.listening);
+    currentlyReading = currentlyReadingCards(homeContinueResult.value.reading ?? []);
   } else {
     handlePageDataError("home continue", homeContinueResult.reason);
   }
@@ -108,6 +122,7 @@ export default async function HomePage() {
         upcoming={upcoming}
         continueWatching={continueWatching}
         continueListening={continueListening}
+        currentlyReading={currentlyReading}
         renderedOn={sgtDateKey(now)}
       />
     </div>

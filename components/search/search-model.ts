@@ -12,6 +12,7 @@ export const TYPE_OPTIONS = [
 export const STATUS_OPTIONS = [
   { value: "want_to_watch", label: WATCH_STATUSES.want_to_watch.label },
   { value: "watching", label: WATCH_STATUSES.watching.label },
+  { value: "in_progress", label: WATCH_STATUSES.in_progress.label },
   { value: "watched", label: WATCH_STATUSES.watched.label },
   { value: "upcoming", label: "即将上映" },
 ];

@@ -54,6 +54,7 @@ test(
     expect(movieLink).toHaveClass("text-[var(--accent)]");
     expect(movieLink).toHaveAttribute("aria-current", "page");
     expect(screen.getByRole("link", { name: "音乐" })).toHaveAttribute("href", "/albums");
+    expect(screen.getByRole("link", { name: "图书" })).toHaveAttribute("href", "/books");
     expect(screen.queryByRole("link", { name: "专辑" })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "打开导航菜单" })).not.toBeInTheDocument();
     expect(document.querySelector("#mobile-navigation")).toBeNull();

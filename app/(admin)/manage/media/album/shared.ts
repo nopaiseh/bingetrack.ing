@@ -8,7 +8,7 @@ export const listenStatusLabels: Record<WatchStatus, string> = {
   want_to_watch: "没听过",
 };
 
-/** 编辑链接带上类型，侧栏据此把曲目归入「专辑」。 */
+/** 编辑链接带上类型，侧栏据此把曲目归入「音乐」。 */
 export function albumMediaHref(type: AlbumCurrentItem["type"], id: string) {
   return `/manage/media/${id}?type=${type}`;
 }

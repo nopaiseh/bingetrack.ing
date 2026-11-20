@@ -72,4 +72,16 @@ describe("MediaCardStatusBadge", () => {
     const { container } = render(<MediaCardStatusBadge status={undefined} />);
     expect(container.firstChild).toBeNull();
   });
+
+  it("maps in_progress to 在读 and book kind uses reading verbs", () => {
+    expect(getStatusBadgeConfig("in_progress")?.label).toBe("在读");
+    expect(getStatusBadgeConfig("watched", "book")?.label).toBe("读过");
+    expect(getStatusBadgeConfig("want_to_watch", "book")?.label).toBe("想读");
+    expect(getStatusBadgeConfig("in_progress", "book")?.label).toBe("在读");
+
+    render(<MediaCardStatusBadge status="in_progress" kind="book" placement="inline" />);
+    const badge = screen.getByTestId("media-card-status-badge");
+    expect(badge).toHaveTextContent("在读");
+    expect(badge).toHaveAttribute("aria-label", "阅读状态：在读");
+  });
 });

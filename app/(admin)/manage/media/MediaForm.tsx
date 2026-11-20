@@ -147,6 +147,12 @@ export default function MediaForm({
   const [coverUrl, setCoverUrl] = useState(item?.cover_url ?? "");
   const [dirty, setDirty] = useState(false);
   const [resetKey, setResetKey] = useState(0);
+  const [bookStatus, setBookStatus] = useState<"want_to_watch" | "in_progress" | "watched">(
+    item?.type === "book" &&
+      (item.status === "want_to_watch" || item.status === "in_progress" || item.status === "watched")
+      ? item.status
+      : "want_to_watch",
+  );
   const [state, action, pending] = useActionState(async (previous: ActionResult, form: FormData) => {
     setDirty(false);
     const result = await saveMedia(previous, form);
@@ -162,14 +168,15 @@ export default function MediaForm({
   const isTvChild = type === "tv_season" || type === "tv_episode";
   const isMusicTrack = type === "music";
   const isAlbum = type === "album";
+  const isBook = type === "book";
   const isChild = isTvChild || isMusicTrack;
-  const showCover = type === "movie" || type === "tv_show" || isAlbum;
+  const showCover = type === "movie" || type === "tv_show" || isAlbum || isBook;
   const showFilmCast = type === "movie" || type === "tv_show";
   const showMusicPeople = isAlbum || isMusicTrack;
-  /** 电影／单集／曲目可填评分；专辑发行日可填但评分由曲目汇总。 */
-  const hasReleaseDate = type === "movie" || type === "tv_episode" || isAlbum || isMusicTrack;
+  /** 电影／单集／曲目／图书可填评分；专辑发行日可填但评分由曲目汇总。 */
+  const hasReleaseDate = type === "movie" || type === "tv_episode" || isAlbum || isMusicTrack || isBook;
   const hasRuntime = type === "movie" || type === "tv_episode" || isMusicTrack;
-  const hasRatingInput = type === "movie" || type === "tv_episode" || isMusicTrack;
+  const hasRatingInput = type === "movie" || type === "tv_episode" || isMusicTrack || isBook;
   const showTypeSelect = !(locked && (type === "tv_episode" || isMusicTrack));
   const titleField = field("title", item?.title);
   const summaryField = field("summary", item?.summary);
@@ -184,23 +191,16 @@ export default function MediaForm({
       : null;
   const heading = titleField.value.trim() || (item ? item.title : `新增${mediaTypes[type]}`);
   const dateLabel =
-    type === "tv_episode"
-      ? "播出日期"
-      : isAlbum || isMusicTrack
-        ? "发行日期"
-        : type === "book"
-          ? "出版日期"
-          : "上映日期";
+    type === "tv_episode" ? "播出日期" : isAlbum || isMusicTrack ? "发行日期" : isBook ? "出版日期" : "上映日期";
   const listBackHref =
     type === "movie"
       ? "/manage?type=movie"
       : isAlbum || isMusicTrack
         ? "/manage?type=album"
-        : type === "book"
+        : isBook
           ? "/manage?type=book"
           : "/manage?type=tv_show";
-  const listBackLabel =
-    type === "movie" ? "电影" : isAlbum || isMusicTrack ? "专辑" : type === "book" ? "图书" : "电视节目";
+  const listBackLabel = type === "movie" ? "电影" : isAlbum || isMusicTrack ? "音乐" : isBook ? "图书" : "电视节目";
 
   useEffect(() => {
     function onKey(event: KeyboardEvent) {
@@ -222,6 +222,12 @@ export default function MediaForm({
     field.reset();
     setCoverUrl(item?.cover_url ?? "");
     setType(item?.type ?? initialType);
+    setBookStatus(
+      item?.type === "book" &&
+        (item.status === "want_to_watch" || item.status === "in_progress" || item.status === "watched")
+        ? item.status
+        : "want_to_watch",
+    );
     setDirty(false);
     setResetKey((value) => value + 1);
   }
@@ -456,6 +462,42 @@ export default function MediaForm({
                       />
                     </div>
                   ) : null}
+                  {isBook ? (
+                    <>
+                      <div className="span-2">
+                        <label htmlFor="field-publisher" className="mb-1.5">
+                          出版社
+                        </label>
+                        <input
+                          id="field-publisher"
+                          name="publisher"
+                          {...field("publisher", item?.publisher)}
+                          maxLength={200}
+                          placeholder="可留空"
+                        />
+                      </div>
+                      <div className="span-2">
+                        <label htmlFor="field-page-count" className="mb-1.5">
+                          页数
+                        </label>
+                        <input
+                          id="field-page-count"
+                          type="number"
+                          name="page_count"
+                          min="1"
+                          max="20000"
+                          step="1"
+                          {...field("page_count", item?.page_count)}
+                          placeholder="1–20000，可留空"
+                          className="font-mono"
+                          aria-describedby="field-page-count-hint"
+                        />
+                        <p id="field-page-count-hint" className="edit-hint mt-1">
+                          只记录总页数，不跟踪阅读进度。
+                        </p>
+                      </div>
+                    </>
+                  ) : null}
                   {showTypeSelect && locked ? (
                     <div className="span-2">
                       <label htmlFor="field-type-locked" className="mb-1.5">
@@ -605,6 +647,31 @@ export default function MediaForm({
                 </section>
               ) : null}
 
+              {isBook ? (
+                <section className="edit-card edit-cast-card" aria-labelledby="edit-authors-heading">
+                  <header className="edit-card-head">
+                    <div>
+                      <h2 id="edit-authors-heading">作者</h2>
+                      <p className="edit-hint">通过人物选择器添加；无译者字段。提交时带人物 ID。</p>
+                    </div>
+                  </header>
+                  <ChoicePicker
+                    key={`${resetKey}-authors`}
+                    kind="people"
+                    name="authors"
+                    label="作者"
+                    allowCreate
+                    sortable
+                    rows
+                    initial={(item?.authors ?? []).map((person) => ({
+                      id: person.id ?? `new:${person.name}`,
+                      name: person.name,
+                      detail: person.alternate_name ?? undefined,
+                    }))}
+                  />
+                </section>
+              ) : null}
+
               {item ? (
                 <section className="edit-card edit-danger" aria-labelledby="edit-danger-heading">
                   <header className="edit-card-head">
@@ -626,16 +693,18 @@ export default function MediaForm({
               ) : null}
             </div>
 
-            <aside className="edit-rail" aria-label={isAlbum ? "封面与发布" : "海报与发布"}>
+            <aside className="edit-rail" aria-label={isAlbum || isBook ? "封面与发布" : "海报与发布"}>
               {showCover ? (
                 <section className="edit-card edit-poster-card" aria-labelledby="edit-poster-heading">
                   <header className="edit-card-head">
                     <div>
-                      <h2 id="edit-poster-heading">{isAlbum ? "封面图片" : "海报与图片"}</h2>
+                      <h2 id="edit-poster-heading">{isAlbum ? "封面图片" : isBook ? "封面图片" : "海报与图片"}</h2>
                       <p className="edit-hint">
                         {isAlbum
                           ? "专辑封面为正方形；无图时用色块首字"
-                          : "电影和电视节目保留海报与剧照；季和单集不设图片"}
+                          : isBook
+                            ? "图书封面为 2:3；无图时用色块首字"
+                            : "电影和电视节目保留海报与剧照；季和单集不设图片"}
                       </p>
                     </div>
                   </header>
@@ -650,11 +719,13 @@ export default function MediaForm({
                     <div className="min-w-0">
                       {normalizeCover(coverUrl, type) ? (
                         <p className="edit-hint">
-                          {isAlbum ? "已填写封面地址，预览使用这张图片。" : "已填写海报地址，预览使用这张图片。"}
+                          {isAlbum || isBook
+                            ? "已填写封面地址，预览使用这张图片。"
+                            : "已填写海报地址，预览使用这张图片。"}
                         </p>
                       ) : (
                         <p className="edit-hint">
-                          {isAlbum
+                          {isAlbum || isBook
                             ? "无封面时的预览用标题首字和列表同款色块，公开页同样使用。"
                             : "无海报时的预览用标题首字和列表同款色块，公开页同样使用。"}
                         </p>
@@ -663,11 +734,11 @@ export default function MediaForm({
                   </div>
                   {!isAlbum ? (
                     <button type="button" onClick={() => document.getElementById("field-cover-url")?.focus()}>
-                      从 TMDB 加载海报
+                      {isBook ? "粘贴封面地址" : "从 TMDB 加载海报"}
                     </button>
                   ) : null}
                   <label htmlFor="field-cover-url" className="mb-1.5 mt-4">
-                    {isAlbum ? "封面图片 URL" : "TMDB 海报路径"}
+                    {isAlbum ? "封面图片 URL" : isBook ? "封面图片 URL" : "TMDB 海报路径"}
                   </label>
                   <input
                     id="field-cover-url"
@@ -681,7 +752,13 @@ export default function MediaForm({
                     }}
                     onBlur={(event) => setCoverUrl(normalizeCover(event.target.value, type))}
                     maxLength={2000}
-                    placeholder={isAlbum ? "https://…（iTunes／CAA／TMDB）" : "https://image.tmdb.org/t/p/original/…"}
+                    placeholder={
+                      isAlbum
+                        ? "https://…（iTunes／CAA／TMDB）"
+                        : isBook
+                          ? "https://image.tmdb.org/t/p/original/…"
+                          : "https://image.tmdb.org/t/p/original/…"
+                    }
                     autoComplete="off"
                     spellCheck={false}
                     className="font-mono"
@@ -689,7 +766,9 @@ export default function MediaForm({
                   <p className="edit-hint">
                     {isAlbum
                       ? "粘贴完整 HTTPS 封面地址。留空时保存可能尝试自动匹配封面。"
-                      : "粘贴完整网址或文件路径。路径会补成 TMDB 原图地址后再保存。"}
+                      : isBook
+                        ? "粘贴完整 TMDB HTTPS 地址或文件路径。无 ISBN 字段。"
+                        : "粘贴完整网址或文件路径。路径会补成 TMDB 原图地址后再保存。"}
                   </p>
                 </section>
               ) : null}
@@ -702,16 +781,18 @@ export default function MediaForm({
                       {hasRatingInput
                         ? isMusicTrack
                           ? "本曲收听状态与评分"
-                          : type === "tv_episode"
-                            ? "本集观看状态与评分"
-                            : "分类标签与观看状态。会显示在公开页"
+                          : isBook
+                            ? "阅读状态与评分。会显示在公开页"
+                            : type === "tv_episode"
+                              ? "本集观看状态与评分"
+                              : "分类标签与观看状态。会显示在公开页"
                         : isAlbum
                           ? "类型标签与由曲目汇总的收听状态"
                           : "分类标签与由单集汇总的观看状态"}
                     </p>
                   </div>
                 </header>
-                {showFilmCast || isAlbum ? (
+                {showFilmCast || isAlbum || isBook ? (
                   <div className="edit-taxonomies">
                     <ChoicePicker
                       key={`${resetKey}-genres`}
@@ -752,6 +833,27 @@ export default function MediaForm({
                           initial={(item?.languages ?? []).map((value) => ({ id: value, name: value }))}
                         />
                       </>
+                    ) : isBook ? (
+                      <>
+                        <ChoicePicker
+                          key={`${resetKey}-collections`}
+                          kind="collections"
+                          name="collections"
+                          label="系列"
+                          inline
+                          allowCreate
+                          initial={(item?.collections ?? []).map((value) => ({ id: value, name: value }))}
+                        />
+                        <ChoicePicker
+                          key={`${resetKey}-languages`}
+                          kind="languages"
+                          name="languages"
+                          label="语言"
+                          inline
+                          allowCreate
+                          initial={(item?.languages ?? []).map((value) => ({ id: value, name: value }))}
+                        />
+                      </>
                     ) : (
                       <ChoicePicker
                         key={`${resetKey}-collections`}
@@ -765,7 +867,66 @@ export default function MediaForm({
                     )}
                   </div>
                 ) : null}
-                {hasRatingInput ? (
+                {isBook ? (
+                  <div className="edit-watch">
+                    <input type="hidden" name="status" value={bookStatus} />
+                    <div className="edit-segment" role="group" aria-label="阅读状态">
+                      {(
+                        [
+                          ["want_to_watch", "想读"],
+                          ["in_progress", "在读"],
+                          ["watched", "读过"],
+                        ] as const
+                      ).map(([value, label]) => (
+                        <button
+                          key={value}
+                          type="button"
+                          className="edit-segment-btn"
+                          aria-pressed={bookStatus === value}
+                          onClick={() => {
+                            setBookStatus(value);
+                            setDirty(true);
+                          }}
+                        >
+                          {label}
+                        </button>
+                      ))}
+                    </div>
+                    <div className="mb-1.5 mt-4 flex items-center justify-between gap-2">
+                      <label htmlFor="field-rating">评分（0–10，可留空）</label>
+                      <span className="edit-hint font-mono">{rated ? `当前 ${ratingField.value}` : "未评分"}</span>
+                    </div>
+                    <input
+                      id="field-rating"
+                      type="number"
+                      name="rating"
+                      min="0"
+                      max="10"
+                      step="0.1"
+                      aria-describedby="field-rating-status"
+                      {...ratingField}
+                      placeholder="例如 8.5"
+                      className="font-mono"
+                    />
+                    <div className="edit-score-row">
+                      {Array.from({ length: 11 }, (_, score) => (
+                        <button
+                          key={score}
+                          type="button"
+                          className="edit-score"
+                          aria-pressed={activeScore === score}
+                          aria-label={`${score} 分`}
+                          onClick={() => setRating(String(score))}
+                        >
+                          {score}
+                        </button>
+                      ))}
+                    </div>
+                    <p id="field-rating-status" className="edit-hint">
+                      阅读状态可单独选择；评分可选。无页数进度字段。
+                    </p>
+                  </div>
+                ) : hasRatingInput ? (
                   <div className="edit-watch">
                     <div className="edit-segment" role="group" aria-label={isMusicTrack ? "收听状态" : "观看状态"}>
                       <button
@@ -889,14 +1050,18 @@ export default function MediaForm({
             永久删除「{item.title}」？
           </h2>
           <p className="my-4 text-sm leading-relaxed text-neutral-300">
-            将删除这个条目及其观看记录、评分和关联。
+            将删除这个条目及其
+            {type === "book" ? "阅读" : type === "album" || type === "music" ? "收听" : "观看"}
+            记录、评分和关联。
             {type === "tv_show"
               ? "所有下属季和集的资料、观看记录及评分也会一起删除。"
               : type === "tv_season"
                 ? "此季的所有集及其观看记录和评分也会一起删除。"
                 : type === "album"
                   ? "所有下属曲目、收听记录及艺人关联也会一起删除。"
-                  : ""}
+                  : type === "book"
+                    ? "作者关联也会一起删除。"
+                    : ""}
             此操作无法撤销。
           </p>
           {impact && (isTvChild || type === "tv_show") && (

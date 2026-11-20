@@ -4,9 +4,12 @@ import { useLayoutEffect, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { MediaCard } from "@/lib/types";
+import LetterTile from "./LetterTile";
 import MediaCardBody from "./MediaCardBody";
 import MediaCardStatusBadge from "./MediaCardStatusBadge";
 import { edgeFadeMask } from "@/lib/edge-fade-mask";
+
+type RowMediaType = "movies" | "shows" | "books";
 
 /** 展示卡片海报，并按参数控制图片加载优先级。标题和标签交给共用的卡片正文。 */
 function ItemCard({
@@ -17,11 +20,12 @@ function ItemCard({
   hideStatusBadge,
 }: {
   item: MediaCard;
-  type: "movies" | "shows";
+  type: RowMediaType;
   eager: boolean;
   highPriority: boolean;
   hideStatusBadge?: boolean;
 }) {
+  const bodyType = type === "shows" ? "shows" : "movies";
   return (
     <>
       <div className="image-placeholder relative flex aspect-2/3 w-full items-center justify-center overflow-hidden">
@@ -35,15 +39,17 @@ function ItemCard({
             priority={highPriority}
             loading={highPriority ? undefined : eager ? "eager" : "lazy"}
           />
+        ) : type === "books" ? (
+          <LetterTile title={item.title} />
         ) : (
           <span
             className="i-material-symbols-image-outline-rounded inline-block size-10 text-fg-muted"
             aria-hidden="true"
           />
         )}
-        {!hideStatusBadge && <MediaCardStatusBadge status={item.status} />}
+        {!hideStatusBadge && <MediaCardStatusBadge status={item.status} kind={type === "books" ? "book" : "watch"} />}
       </div>
-      <MediaCardBody item={item} type={type} />
+      <MediaCardBody item={item} type={bodyType} />
     </>
   );
 }
@@ -60,7 +66,7 @@ export default function MediaRow({
   title: string;
   items: MediaCard[];
   viewAllLink?: string;
-  type?: "movies" | "shows";
+  type?: RowMediaType;
   eagerCount?: number;
   hideStatusBadge?: boolean;
 }) {
@@ -155,13 +161,18 @@ export default function MediaRow({
         >
           {items.map(
             /* 决定卡片详情路由类型，并按索引设置首批图片的加载优先级。 */ (media: MediaCard, index: number) => {
-              // 横向海报行只服务影视 2:3 卡片；专辑走封面墙，不进此组件。
-              const mediaType: "movies" | "shows" = type === "shows" || media.type === "shows" ? "shows" : "movies";
+              // 横向海报行服务影视与图书 2:3 卡片；专辑走封面墙，不进此组件。
+              const mediaType: RowMediaType =
+                type === "books" || media.type === "books"
+                  ? "books"
+                  : type === "shows" || media.type === "shows"
+                    ? "shows"
+                    : "movies";
               return (
                 <Link
                   href={`/${mediaType}/${media.id}`}
                   key={media.id}
-                  className="surface-card interactive-media-card group flex w-40 flex-none snap-start cursor-pointer flex-col overflow-hidden rounded-xl last:snap-end sm:w-48"
+                  className="surface-card interactive-media-card group flex w-40 flex-none snap-start cursor-pointer flex-col overflow-hidden rounded-xl focus-ring last:snap-end sm:w-48"
                 >
                   <ItemCard
                     item={media}
