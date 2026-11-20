@@ -77,7 +77,7 @@ export async function PagedMediaList({
         title={mediaTypes[type]}
         description={
           <>
-            共 {result.total} 个条目 · {album ? "管理专辑与曲目" : book ? "管理图书与阅读记录" : "管理影视与观看记录"}
+            共 {result.total} 个条目 · {album ? "管理音乐与曲目" : book ? "管理图书与阅读记录" : "管理影视与观看记录"}
           </>
         }
         actions={

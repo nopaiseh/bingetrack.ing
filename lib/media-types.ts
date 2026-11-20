@@ -147,7 +147,7 @@ export const MEDIA_TYPE_DEFINITIONS = {
   album: {
     db: "album",
     route: "albums",
-    label: "专辑",
+    label: "音乐",
     coverAspect: "1/1",
     metadataFields: [
       "release_date",

@@ -200,7 +200,7 @@ export default function MediaForm({
         : isBook
           ? "/manage?type=book"
           : "/manage?type=tv_show";
-  const listBackLabel = type === "movie" ? "电影" : isAlbum || isMusicTrack ? "专辑" : isBook ? "图书" : "电视节目";
+  const listBackLabel = type === "movie" ? "电影" : isAlbum || isMusicTrack ? "音乐" : isBook ? "图书" : "电视节目";
 
   useEffect(() => {
     function onKey(event: KeyboardEvent) {

@@ -71,7 +71,7 @@ describe("media type config", () => {
       tv_season: "季",
       tv_episode: "单集",
       music: "单曲",
-      album: "专辑",
+      album: "音乐",
       book: "图书",
     });
     expect(Object.keys(mediaTypes).every(isManagedMediaType)).toBe(true);
@@ -131,7 +131,7 @@ describe("media type config", () => {
     expect(MEDIA_TYPE_DEFINITIONS.music.adminBulkOps).toBe(false);
     expect(MEDIA_TYPE_DEFINITIONS.album.adminBulkOps).toBe(true);
     expect(MEDIA_TYPE_DEFINITIONS.book.adminBulkOps).toBe(true);
-    expect(adminBulkOpsLabelList()).toBe("电影和电视节目和专辑和图书");
+    expect(adminBulkOpsLabelList()).toBe("电影和电视节目和音乐和图书");
   });
 
   it("safely converts public routes and derives the season path from config", () => {
