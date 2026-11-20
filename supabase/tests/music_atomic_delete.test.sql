@@ -1,5 +1,5 @@
 begin;
-select plan(9);
+select plan(12);
 
 -- 虚构站长与外人，事务结束回滚。
 insert into auth.users(id,email) values
@@ -99,7 +99,26 @@ select is(
   'failed confirmation leaves tracks intact'
 );
 
--- 站长删除专辑：曲目一并消失
+-- 单删曲目：所属专辑与同专辑其他曲目保留
+select lives_ok(
+  $$select public.admin_delete_media(
+      (select id from public.media_items where title = 'Delete track one' and type = 'music'),
+      'Delete track one'
+    )$$,
+  'owner deletes a single track through RPC'
+);
+select is(
+  (select count(*)::integer from public.media_items where title = 'Atomic delete album' and type = 'album'),
+  1,
+  'single track delete leaves album intact'
+);
+select is(
+  (select count(*)::integer from public.media_items where title = 'Delete track two' and type = 'music'),
+  1,
+  'single track delete leaves sibling tracks intact'
+);
+
+-- 站长删除专辑：剩余曲目一并消失
 select lives_ok(
   $$select public.admin_delete_media(
       (select id from public.media_items where title = 'Atomic delete album' and type = 'album'),
