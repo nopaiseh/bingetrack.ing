@@ -6,14 +6,21 @@ const MOVIE_ID = "50000000-0000-4000-8000-000000000001";
 const SERIES_ID = "50000000-0000-4000-8000-000000000002";
 const SEASON_ID = "50000000-0000-4000-8000-000000000003";
 
+const BOOK_ID = "50000000-0000-4000-8000-000000000010";
+const ALBUM_ID = "50000000-0000-4000-8000-000000000020";
+
 const routes = [
   { name: "首页", path: "/" },
   { name: "电影目录", path: "/movies" },
   { name: "电视节目目录", path: "/shows" },
+  { name: "图书目录", path: "/books" },
+  { name: "专辑目录", path: "/albums" },
   { name: "搜索", path: "/search" },
   { name: "电影详情", path: `/movies/${MOVIE_ID}` },
   { name: "电视节目详情", path: `/shows/${SERIES_ID}` },
   { name: "季度详情", path: `/shows/${SERIES_ID}/seasons/${SEASON_ID}` },
+  { name: "图书详情", path: `/books/${BOOK_ID}` },
+  { name: "专辑详情", path: `/albums/${ALBUM_ID}` },
 ];
 
 type AxeViolation = {
