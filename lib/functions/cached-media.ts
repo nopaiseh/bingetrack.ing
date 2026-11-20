@@ -11,6 +11,7 @@ import {
   fetchMediaDistributionsServer,
   fetchUpcomingReleasesServer,
 } from "./media-repo";
+import { getAlbumDetail } from "./album-repo";
 import { reportHandledError } from "@/lib/report-error";
 import { parseMediaSearchParams } from "@/lib/api/media-params";
 import { getSupabasePublicServer } from "@/lib/supabase/public-server";
@@ -25,6 +26,15 @@ import type { Summary } from "@/lib/types";
 export const getCachedMediaById = cache(async (id: string) => {
   if (!isMediaId(id)) return null;
   return unstable_cache(getMediaById, ["public-media-detail-v3"], {
+    revalidate: 86400,
+    tags: [MEDIA_TAG, mediaItemTag(id)],
+  })(id);
+});
+
+/** 专辑详情（元数据、拥有权、曲目与 credits）长缓存 24 小时。 */
+export const getCachedAlbumDetail = cache(async (id: string) => {
+  if (!isMediaId(id)) return null;
+  return unstable_cache(getAlbumDetail, ["public-album-detail-v1"], {
     revalidate: 86400,
     tags: [MEDIA_TAG, mediaItemTag(id)],
   })(id);

@@ -92,11 +92,11 @@ describe("HomeDashboard", () => {
     expect(screen.getByTestId("upcoming").dataset.ids).toBe("next-release");
   });
 
-  it("把继续观看放在看板最上方，没有条目时不占位", () => {
+  it("把在看放在看板最上方，没有条目时不占位", () => {
     const { rerender } = render(
       <HomeDashboard summary={[]} topMovies={[]} topSeries={[]} distributions={buildMediaDistributions([])} />,
     );
-    expect(screen.queryByRole("heading", { name: "继续观看" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "在看" })).not.toBeInTheDocument();
 
     const item: ContinueWatchingCard = {
       showId: "show-1",
@@ -115,7 +115,7 @@ describe("HomeDashboard", () => {
         continueWatching={[item]}
       />,
     );
-    expect(screen.getByRole("heading", { name: "继续观看" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "在看" })).toBeInTheDocument();
     expect(screen.getByRole("link")).toHaveAttribute("href", "/shows/show-1");
   });
 
@@ -156,10 +156,10 @@ describe("HomeDashboard", () => {
     return labels;
   }
 
-  it("放映单始终先放倒计时，再放继续观看", () => {
+  it("放映单始终先放倒计时，再放在看", () => {
     const { container } = renderDashboard();
     expect(leadBlockOrder(container)).toEqual(["upcoming", "continue"]);
-    const heading = screen.getByRole("heading", { name: "继续观看" });
+    const heading = screen.getByRole("heading", { name: "在看" });
     const upcoming = screen.getByTestId("upcoming");
     expect(upcoming.compareDocumentPosition(heading) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });

@@ -3,11 +3,8 @@
 import DashboardCategoryPanel from "@/components/dashboard/DashboardCategoryPanel";
 import OverviewBoards from "@/components/dashboard/OverviewBoards";
 import type { DashboardStats } from "@/components/dashboard/dashboard-stats";
-import { MEDIA_TYPE_DEFINITIONS, dbTypeToPublicRoute, type CatalogDbMediaType } from "@/lib/media-types";
+import { MEDIA_TYPE_DEFINITIONS } from "@/lib/media-types";
 import type { MediaCard } from "@/lib/types";
-
-const MOVIE_ROUTE = dbTypeToPublicRoute("movie")!;
-const SHOW_ROUTE = dbTypeToPublicRoute("tv_show")!;
 
 const CATEGORY_PANELS = [
   {
@@ -15,8 +12,8 @@ const CATEGORY_PANELS = [
     panelKey: "movies" as const,
     categoryName: MEDIA_TYPE_DEFINITIONS.movie.label,
     allTimeTitle: "影史精选",
-    mediaType: MOVIE_ROUTE,
-    searchType: "movie" as CatalogDbMediaType,
+    mediaType: "movies" as const,
+    searchType: "movie" as const,
     itemsKey: "movies" as const,
   },
   {
@@ -24,8 +21,8 @@ const CATEGORY_PANELS = [
     panelKey: "tv-shows" as const,
     categoryName: MEDIA_TYPE_DEFINITIONS.tv_show.label,
     allTimeTitle: "剧集精选",
-    mediaType: SHOW_ROUTE,
-    searchType: "tv_show" as CatalogDbMediaType,
+    mediaType: "shows" as const,
+    searchType: "tv_show" as const,
     itemsKey: "shows" as const,
   },
 ] as const;

@@ -29,10 +29,10 @@ export class MediaRepositoryError extends Error {
 
 // 列表只读取卡片需要的字段，避免把简介和演职员等详情数据传到客户端。
 const MEDIA_CARD_COLUMNS =
-  "id,type,title,sort_date,first_air_date,last_air_date,release_year,rating,genres,languages,cover_url,status";
+  "id,type,title,sort_date,first_air_date,last_air_date,release_year,rating,genres,languages,cover_url,status,artists";
 // 榜单精选读取卡片字段及简介摘要，供首页展台和精选展示使用。
 const TOP_MEDIA_COLUMNS =
-  "id,type,title,sort_date,first_air_date,last_air_date,release_year,rating,genres,languages,cover_url,status,summary";
+  "id,type,title,sort_date,first_air_date,last_air_date,release_year,rating,genres,languages,cover_url,status,summary,artists";
 
 // v_all_media 实际输出的观看状态。
 const WATCH_STATUSES = new Set(["want_to_watch", "watching", "watched"]);

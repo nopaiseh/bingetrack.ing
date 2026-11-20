@@ -82,6 +82,12 @@ describe("按条目失效公开缓存", () => {
       [`media:item:${sequel}`, { expire: 0 }],
       ["media:lists", { expire: 0 }],
     ]);
-    expect(vi.mocked(revalidatePath).mock.calls).toEqual([["/"], ["/movies"], ["/shows"], ["/sitemap.xml"]]);
+    expect(vi.mocked(revalidatePath).mock.calls).toEqual([
+      ["/"],
+      ["/movies"],
+      ["/shows"],
+      ["/albums"],
+      ["/sitemap.xml"],
+    ]);
   });
 });

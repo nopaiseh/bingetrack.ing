@@ -6,7 +6,8 @@ import { usePathname } from "next/navigation";
 const TABS = [
   { name: "首页", href: "/", icon: "i-material-symbols-home-rounded" },
   { name: "电影", href: "/movies", icon: "i-material-symbols-movie-rounded" },
-  { name: "电视节目", href: "/shows", icon: "i-material-symbols-tv-rounded" },
+  { name: "电视", href: "/shows", icon: "i-material-symbols-tv-rounded" },
+  { name: "专辑", href: "/albums", icon: "i-material-symbols-album-rounded" },
   { name: "搜索", href: "/search", icon: "i-material-symbols-search-rounded" },
 ];
 
@@ -23,7 +24,7 @@ export default function MobileTabBar() {
       <div aria-hidden="true" className="mobile-tab-scrim md:hidden" />
       <nav
         aria-label="底部导航"
-        className="mobile-tab-bar fixed inset-x-4 bottom-[calc(env(safe-area-inset-bottom)+0.75rem)] z-50 grid h-16 grid-cols-4 gap-1 rounded-full p-1.5 md:hidden"
+        className="mobile-tab-bar fixed inset-x-3 bottom-[calc(env(safe-area-inset-bottom)+0.75rem)] z-50 grid h-16 grid-cols-5 gap-0.5 rounded-full p-1.5 sm:inset-x-4 sm:gap-1 md:hidden"
       >
         {TABS.map(
           /* 渲染一个底部栏目入口并标记当前栏目。 */ (tab) => {

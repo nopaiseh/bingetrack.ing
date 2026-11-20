@@ -44,8 +44,8 @@ export default function DashboardCategoryPanel({
   selectedYear: string;
   allTimeItems: MediaCard[];
   yearItems: MediaCard[];
-  mediaType: PublicMediaType;
-  searchType: CatalogDbMediaType;
+  mediaType: Extract<PublicMediaType, "movies" | "shows">;
+  searchType: Extract<CatalogDbMediaType, "movie" | "tv_show">;
 }) {
   const movies = panelKey === "movies";
   const watchedCount = movies ? stats.watchedMovies : stats.watchedSeries;
