@@ -96,16 +96,24 @@ test(
     await expect(page.getByRole("heading", { level: 1, name: "测试图书：在读笔记" })).toBeVisible();
     await expect(page.getByRole("definition").filter({ hasText: "测试出版社" })).toBeVisible();
     await expect(page.getByRole("definition").filter({ hasText: "280" })).toBeVisible();
-    await expect(page.getByRole("group", { name: "阅读状态" })).toBeVisible();
-    await expect(page.getByRole("status", { name: "在读" })).toHaveAttribute("aria-current", "true");
+    const readingStatus = page.getByRole("group", { name: "阅读状态" });
+    await expect(readingStatus).toBeVisible();
+    // status 角色通常没有 accessible name，按文案断言当前态（与单元测试一致）。
+    await expect(readingStatus.getByText("在读", { exact: true })).toHaveAttribute("aria-current", "true");
 
     await page.goto(`/books/${BOOK_READ_ID}`);
     await expect(page.getByRole("heading", { level: 1, name: "测试图书：读过篇章" })).toBeVisible();
-    await expect(page.getByRole("status", { name: "读过" })).toHaveAttribute("aria-current", "true");
+    await expect(page.getByRole("group", { name: "阅读状态" }).getByText("读过", { exact: true })).toHaveAttribute(
+      "aria-current",
+      "true",
+    );
 
     await page.goto(`/books/${BOOK_WANT_ID}`);
     await expect(page.getByRole("heading", { level: 1, name: "测试图书：想读清单" })).toBeVisible();
-    await expect(page.getByRole("status", { name: "想读" })).toHaveAttribute("aria-current", "true");
+    await expect(page.getByRole("group", { name: "阅读状态" }).getByText("想读", { exact: true })).toHaveAttribute(
+      "aria-current",
+      "true",
+    );
   },
 );
 
