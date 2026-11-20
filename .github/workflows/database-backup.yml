@@ -2,8 +2,8 @@ name: Database backup
 
 on:
   schedule:
-    # 每周一 02:00（新加坡时间）。
-    - cron: "0 18 * * 0"
+    # 每天 02:00（新加坡时间）。
+    - cron: "0 18 * * *"
   workflow_dispatch:
 
 concurrency:
@@ -60,4 +60,5 @@ jobs:
           name: database-backup-${{ github.run_id }}
           path: database-backup.tar.gz.gpg
           if-no-files-found: error
-          retention-days: 90
+          # 每日备份：保留约一个月，避免按周 90 天在改为每日后堆积过多产物。
+          retention-days: 30
