@@ -24,8 +24,16 @@ select ok(
 );
 
 select ok(
-  (select proconfig is null from pg_proc where oid = 'public.search_media(text, text[], boolean, text[])'::regprocedure),
-  'search RPC has no SET clause, so the planner can inline it'
+  (
+    select exists (
+      select 1
+      from unnest(proconfig) as cfg
+      where cfg like 'search_path=%'
+    )
+    from pg_proc
+    where oid = 'public.search_media(text, text[], boolean, text[])'::regprocedure
+  ),
+  'search RPC locks search_path so the advisor is satisfied'
 );
 
 -- 超过旧版 100 个 ID 上限的标题命中，用于验证结果不再被截断。
