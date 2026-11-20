@@ -5,10 +5,14 @@ const BOOK_READ_ID = "50000000-0000-4000-8000-000000000011";
 const BOOK_WANT_ID = "50000000-0000-4000-8000-000000000012";
 const ALBUM_ID = "50000000-0000-4000-8000-000000000020";
 
+/** MediaRow 分栏标题（排除统计卡里同名的小号 h2）。 */
+function sectionHeading(page: Page, name: string) {
+  return page.locator("h2.text-xl", { hasText: name });
+}
+
 /** 按断点从首页进入图书或音乐：手机走底部标签栏，平板／桌面走顶部主导航。 */
 async function openCatalogFromHome(page: Page, testInfo: TestInfo, name: "图书" | "音乐", path: RegExp) {
   await page.goto("/");
-  await page.waitForLoadState("networkidle");
 
   if (testInfo.project.name === "phone") {
     const tabBar = page.getByRole("navigation", { name: "底部导航" });
@@ -44,7 +48,7 @@ test(
     await expect(page.getByRole("link", { name: /^在读/ })).toBeVisible();
     await expect(page.getByRole("link", { name: /读过的书/ })).toBeVisible();
     await expect(page.getByRole("link", { name: /^想读/ })).toBeVisible();
-    await expect(page.getByText("3", { exact: true }).first()).toBeVisible();
+    await expect(page.getByRole("link", { name: /图书总数量/ })).toContainText("3");
 
     const filters = page.getByRole("tablist", { name: "阅读状态筛选" });
     await expect(filters.getByRole("tab", { name: "全部" })).toHaveAttribute("aria-selected", "true");
@@ -52,9 +56,9 @@ test(
     await expect(filters.getByRole("tab", { name: "在读" })).toBeVisible();
     await expect(filters.getByRole("tab", { name: "读过" })).toBeVisible();
 
-    await expect(page.getByRole("heading", { name: "在读", exact: true })).toBeVisible();
-    await expect(page.getByRole("heading", { name: "我已读", exact: true })).toBeVisible();
-    await expect(page.getByRole("heading", { name: "我想读", exact: true })).toBeVisible();
+    await expect(sectionHeading(page, "在读")).toBeVisible();
+    await expect(sectionHeading(page, "我已读")).toBeVisible();
+    await expect(sectionHeading(page, "我想读")).toBeVisible();
     await expect(page.getByRole("link", { name: /测试图书：在读笔记/ })).toBeVisible();
     await expect(page.getByRole("link", { name: /测试图书：读过篇章/ })).toBeVisible();
     await expect(page.getByRole("link", { name: /测试图书：想读清单/ })).toBeVisible();
@@ -68,10 +72,10 @@ test(
 
     await page.getByRole("tab", { name: "在读" }).click();
     await expect(page.getByRole("tab", { name: "在读" })).toHaveAttribute("aria-selected", "true");
-    await expect(page.getByRole("heading", { name: "在读", exact: true })).toBeVisible();
+    await expect(sectionHeading(page, "在读")).toBeVisible();
     await expect(page.getByRole("link", { name: /测试图书：在读笔记/ })).toBeVisible();
-    await expect(page.getByRole("heading", { name: "我已读", exact: true })).toHaveCount(0);
-    await expect(page.getByRole("heading", { name: "我想读", exact: true })).toHaveCount(0);
+    await expect(sectionHeading(page, "我已读")).toHaveCount(0);
+    await expect(sectionHeading(page, "我想读")).toHaveCount(0);
     await expect(page.getByRole("link", { name: /测试图书：读过篇章/ })).toHaveCount(0);
 
     await page.getByRole("tab", { name: "读过" }).click();
@@ -80,8 +84,8 @@ test(
 
     await page.getByRole("tab", { name: "想读" }).click();
     await expect(page.getByRole("link", { name: /测试图书：想读清单/ })).toBeVisible();
-    await expect(page.getByRole("heading", { name: "在读", exact: true })).toHaveCount(0);
-    await expect(page.getByRole("heading", { name: "我已读", exact: true })).toHaveCount(0);
+    await expect(sectionHeading(page, "在读")).toHaveCount(0);
+    await expect(sectionHeading(page, "我已读")).toHaveCount(0);
   },
 );
 
@@ -90,8 +94,8 @@ test(
   /* 打开种子图书详情，验证标题、出版社／页数与三态阅读状态。 */ async ({ page }) => {
     await page.goto(`/books/${BOOK_READING_ID}`);
     await expect(page.getByRole("heading", { level: 1, name: "测试图书：在读笔记" })).toBeVisible();
-    await expect(page.getByText("测试出版社")).toBeVisible();
-    await expect(page.getByText("280")).toBeVisible();
+    await expect(page.getByRole("definition").filter({ hasText: "测试出版社" })).toBeVisible();
+    await expect(page.getByRole("definition").filter({ hasText: "280" })).toBeVisible();
     await expect(page.getByRole("group", { name: "阅读状态" })).toBeVisible();
     await expect(page.getByRole("status", { name: "在读" })).toHaveAttribute("aria-current", "true");
 
