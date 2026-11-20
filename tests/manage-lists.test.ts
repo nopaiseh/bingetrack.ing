@@ -291,11 +291,16 @@ describe("人物与影视列表查询", () => {
       if (query.table === "music") {
         return { data: [{ album_id: albumA }, { album_id: albumA }, { album_id: null }] };
       }
+      if (query.table === "music_albums") {
+        return { data: [{ media_item_id: albumA, track_count: 12 }] };
+      }
       return {};
     });
     const page = await listAdminMedia(db, "album", {});
+    // 有实际曲目时以实际数为准，忽略过期的 music_albums.track_count
     expect(page.items[0]).toMatchObject({ type: "album", track_count: 2, season_count: 0, episode_count: 0 });
     expect(queries.some((query) => query.table === "music")).toBe(true);
+    expect(queries.some((query) => query.table === "music_albums")).toBe(true);
   });
 });
 

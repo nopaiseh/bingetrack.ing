@@ -26,6 +26,7 @@ function albumStructure(artists: AlbumStructure["album"]["artists"]): AlbumStruc
       artists,
     },
     tracks: [],
+    trackCount: null,
     nextTrackNumber: 1,
   };
 }

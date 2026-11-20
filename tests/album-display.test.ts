@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { formatTrackDuration, ownershipLabel } from "@/lib/album-display";
+import { formatTrackDuration, ownershipLabel, resolveAlbumTrackCount } from "@/lib/album-display";
 import { listenStatusLabel } from "@/lib/listen-status";
 
 describe("album display helpers", () => {
@@ -18,5 +18,17 @@ describe("album display helpers", () => {
     expect(listenStatusLabel("want_to_watch")).toBe("想听");
     expect(listenStatusLabel("watching")).toBe("在听");
     expect(listenStatusLabel(null)).toBeNull();
+  });
+
+  it("resolves album track count from actual tracks first", () => {
+    // 有曲目且 track_count 不一致：以实际曲目数为准
+    expect(resolveAlbumTrackCount(3, 12)).toBe(3);
+    expect(resolveAlbumTrackCount(5, null)).toBe(5);
+    // 无曲目有 track_count：回退到手填／已知总数
+    expect(resolveAlbumTrackCount(0, 12)).toBe(12);
+    expect(resolveAlbumTrackCount(0, 0)).toBe(0);
+    // 都没有
+    expect(resolveAlbumTrackCount(0, null)).toBeNull();
+    expect(resolveAlbumTrackCount(0, undefined)).toBeNull();
   });
 });
