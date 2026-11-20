@@ -3,6 +3,7 @@
 import { useState, useEffect, useSyncExternalStore } from "react";
 import ContinueListeningRail, { type ContinueListeningCard } from "@/components/ContinueListeningRail";
 import ContinueWatchingRail, { type ContinueWatchingCard } from "@/components/ContinueWatchingRail";
+import CurrentlyReadingRail, { type CurrentlyReadingCard } from "@/components/CurrentlyReadingRail";
 import UpcomingHero from "@/components/UpcomingHero";
 import DashboardIntro from "@/components/dashboard/DashboardIntro";
 import DashboardPanels from "@/components/dashboard/DashboardPanels";
@@ -26,6 +27,7 @@ export default function HomeDashboard({
   upcoming = [],
   continueWatching = [],
   continueListening = [],
+  currentlyReading = [],
   renderedOn,
 }: {
   summary: Summary[];
@@ -35,6 +37,7 @@ export default function HomeDashboard({
   upcoming?: UpcomingRelease[];
   continueWatching?: readonly ContinueWatchingCard[];
   continueListening?: readonly ContinueListeningCard[];
+  currentlyReading?: readonly CurrentlyReadingCard[];
   renderedOn?: string;
 }) {
   const tabs = TABS;
@@ -104,9 +107,10 @@ export default function HomeDashboard({
   // 请求中途切回全时段时，被取消的请求不会复位加载状态，因此只在选定年份时采用该状态。
   const isTopMediaLoading = topMediaLoading && selectedYear !== "All Time";
 
-  // 放映单固定先倒计时、再在看、再在听。没有内容的那一块返回 null，这里不包额外节点，避免空区块撑出间距。
+  // 放映单固定先倒计时、再在看、再在听、再在读。没有内容的那一块返回 null，这里不包额外节点，避免空区块撑出间距。
   const continueWatchingRail = <ContinueWatchingRail items={continueWatching} />;
   const continueListeningRail = <ContinueListeningRail items={continueListening} />;
+  const currentlyReadingRail = <CurrentlyReadingRail items={currentlyReading} />;
   const upcomingHero = <UpcomingHero items={upcoming} renderedOn={renderedOn} />;
 
   return (
@@ -114,6 +118,7 @@ export default function HomeDashboard({
       {upcomingHero}
       {continueWatchingRail}
       {continueListeningRail}
+      {currentlyReadingRail}
 
       <DashboardIntro
         selectedYear={selectedYear}

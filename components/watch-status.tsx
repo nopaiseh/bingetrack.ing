@@ -1,10 +1,10 @@
 import type { ReactNode } from "react";
 
-export type WatchStatusId = "watched" | "watching" | "want_to_watch";
+export type WatchStatusId = "watched" | "watching" | "want_to_watch" | "in_progress";
 
 export interface WatchStatus {
   id: WatchStatusId;
-  label: "已看" | "在看" | "想看";
+  label: "已看" | "在看" | "想看" | "在读" | "读过" | "想读";
   dotClass: string;
   borderClass: string;
   textClass: string;
@@ -13,7 +13,7 @@ export interface WatchStatus {
   icon: string;
 }
 
-/** 公开页面共用的观看状态：文案和颜色只在这里定义。 */
+/** 公开页面共用的观看／阅读状态：文案和颜色只在这里定义。 */
 export const WATCH_STATUSES: Record<WatchStatusId, WatchStatus> = {
   watched: {
     id: "watched",
@@ -43,18 +43,39 @@ export const WATCH_STATUSES: Record<WatchStatusId, WatchStatus> = {
     surfaceClass: "bg-[var(--accent-soft)]",
     icon: "i-material-symbols-bookmark-outline-rounded",
   },
+  in_progress: {
+    id: "in_progress",
+    label: "在读",
+    dotClass: "bg-[var(--warn)]",
+    borderClass: "border-[color-mix(in_srgb,var(--warn)_45%,var(--border))]",
+    textClass: "text-[var(--warn)]",
+    surfaceClass: "bg-[var(--warn-soft)]",
+    pulse: true,
+    icon: "i-material-symbols-menu-book-outline-rounded",
+  },
+};
+
+/** 图书卡片／详情用的阅读状态文案（同 DB 值，展示动词不同）。 */
+export const READ_STATUS_DISPLAY: Record<"watched" | "want_to_watch" | "in_progress", string> = {
+  watched: "读过",
+  want_to_watch: "想读",
+  in_progress: "在读",
 };
 
 const ALIASES: Record<string, WatchStatusId> = {
   watched: "watched",
   已看: "watched",
   已观看: "watched",
+  读过: "watched",
   watching: "watching",
   在看: "watching",
   正在看: "watching",
   want_to_watch: "want_to_watch",
   想看: "want_to_watch",
   想要看: "want_to_watch",
+  想读: "want_to_watch",
+  in_progress: "in_progress",
+  在读: "in_progress",
 };
 
 /** 把状态值或旧文案解析成统一配置；未记录和未知值返回 null。 */

@@ -389,12 +389,13 @@ describe("getContinueListening / getHomeContinue", () => {
   });
 
   it("returns watching, listening and reading lists in parallel", async () => {
-    // book.enabled=false 时 getCurrentlyReading 不查库，直接空数组。
+    // book.enabled=true 时 getCurrentlyReading 查 v_all_media（在读）与 media_credits（作者）。
     state.results = [
+      { data: [], error: null },
       { data: [], error: null },
       { data: [], error: null },
     ];
     await expect(getHomeContinue()).resolves.toEqual({ watching: [], listening: [], reading: [] });
-    expect(state.calls.map((call) => call.table).sort()).toEqual(["v_all_media", "v_continue_listening"]);
+    expect(state.calls.map((call) => call.table).sort()).toEqual(["v_all_media", "v_all_media", "v_continue_listening"]);
   });
 });

@@ -11,7 +11,8 @@ import { getMediaTypeDefinition, MEDIA_TYPE_DEFINITIONS, publicPathForDbType } f
 
 /** 已看、在看优先于即将上映；还没看且日期在今天之后，用即将上映代替想看。 */
 function showUpcoming(item: MediaCard): boolean {
-  if (item.status === "watched" || item.status === "watching") return false;
+  if (item.status === "watched" || item.status === "watching" || item.status === "in_progress") return false;
+  if (item.dbType === "book" || item.type === "books") return false;
   return isUpcomingDate(item.date);
 }
 
@@ -38,6 +39,7 @@ function typeTagLabel(item: MediaCard): string | null {
   if (item.type === "music") return MEDIA_TYPE_DEFINITIONS.music.label;
   if (item.type === "movies") return MEDIA_TYPE_DEFINITIONS.movie.label;
   if (item.type === "shows") return MEDIA_TYPE_DEFINITIONS.tv_show.label;
+  if (item.type === "books") return MEDIA_TYPE_DEFINITIONS.book.label;
   return null;
 }
 
@@ -51,7 +53,7 @@ function detailHref(item: MediaCard, returnHref: string): string | null {
     const path = publicPathForDbType(item.dbType, item.id);
     if (path) return `${path}?from=${encodeURIComponent(returnHref)}`;
   }
-  if (item.type === "movies" || item.type === "shows" || item.type === "albums") {
+  if (item.type === "movies" || item.type === "shows" || item.type === "albums" || item.type === "books") {
     return `/${item.type}/${item.id}?from=${encodeURIComponent(returnHref)}`;
   }
   return null;
@@ -111,9 +113,14 @@ function MusicSearchBody({ item, typeLabel }: { item: MediaCard; typeLabel: stri
   );
 }
 
-/** 搜索网格：影视 2:3、音乐 1:1；专辑／单曲带类型标签。无公开详情的单曲只展示、不可点进详情。 */
+function isBookCard(item: MediaCard): boolean {
+  return item.dbType === "book" || item.type === "books";
+}
+
+/** 搜索网格：影视／图书 2:3、音乐 1:1；专辑／单曲带类型标签。无公开详情的单曲只展示、不可点进详情。 */
 export function SearchMediaCard({ item, returnHref }: { item: MediaCard; returnHref: string }) {
   const square = isSquareCover(item);
+  const book = isBookCard(item);
   const typeLabel = typeTagLabel(item);
   const href = detailHref(item, returnHref);
   const mediaBodyType = item.type === "shows" ? "shows" : "movies";
@@ -135,7 +142,7 @@ export function SearchMediaCard({ item, returnHref }: { item: MediaCard; returnH
           className="object-cover transition-transform duration-500 ease-out group-hover:scale-105"
           sizes="(max-width: 639px) 46vw, (max-width: 1279px) 30vw, 16vw"
         />
-      ) : square ? (
+      ) : square || book ? (
         <LetterTile title={item.title} />
       ) : (
         <span
@@ -143,7 +150,11 @@ export function SearchMediaCard({ item, returnHref }: { item: MediaCard; returnH
           aria-hidden="true"
         />
       )}
-      {showUpcoming(item) ? <UpcomingPosterBadge /> : <MediaCardStatusBadge status={item.status} />}
+      {showUpcoming(item) ? (
+        <UpcomingPosterBadge />
+      ) : (
+        <MediaCardStatusBadge status={item.status} kind={book ? "book" : "watch"} />
+      )}
       {showTypeOnFilmCard ? (
         <span className="pointer-events-none absolute bottom-2 left-2 z-10 inline-flex items-center rounded-md border border-[var(--accent-border)] bg-[var(--canvas)]/90 px-1.5 py-0.5 text-[11px] font-medium text-[var(--accent-hover)]">
           {typeLabel}

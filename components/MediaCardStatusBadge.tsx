@@ -1,5 +1,5 @@
 import type { ReactElement } from "react";
-import { resolveWatchStatus } from "@/components/watch-status";
+import { READ_STATUS_DISPLAY, resolveWatchStatus } from "@/components/watch-status";
 
 interface StatusBadgeConfig {
   label: string;
@@ -9,12 +9,19 @@ interface StatusBadgeConfig {
   textClass: string;
 }
 
-/** 解析观看状态值，返回与全站一致的红绿灯样式；未记录状态返回 null。 */
-export function getStatusBadgeConfig(status: string | null | undefined): StatusBadgeConfig | null {
+/** 解析观看／阅读状态值，返回与全站一致的红绿灯样式；未记录状态返回 null。 */
+export function getStatusBadgeConfig(
+  status: string | null | undefined,
+  kind: "watch" | "book" = "watch",
+): StatusBadgeConfig | null {
   const config = resolveWatchStatus(status);
   if (!config) return null;
+  const bookLabel =
+    kind === "book" && (status === "watched" || status === "want_to_watch" || status === "in_progress")
+      ? READ_STATUS_DISPLAY[status]
+      : null;
   return {
-    label: config.label,
+    label: bookLabel ?? config.label,
     dotClass: config.dotClass,
     ...(config.pulse ? { pulse: true } : {}),
     borderClass: config.borderClass,
@@ -22,19 +29,23 @@ export function getStatusBadgeConfig(status: string | null | undefined): StatusB
   };
 }
 
-/** 渲染卡片右上角的红绿灯观看状态微光徽标（已看=绿，在看=黄，想看=红）。 */
+/** 渲染卡片右上角的红绿灯状态微光徽标（完成=绿，进行中=黄，想要=强调色）。 */
 export default function MediaCardStatusBadge({
   status,
   className = "",
   placement = "overlay",
+  kind = "watch",
 }: {
   status?: string | null;
   className?: string;
   /** overlay 盖在海报角上；inline 跟在年份后面，给搜索海报网格用。 */
   placement?: "overlay" | "inline";
+  /** book 使用想读／在读／读过文案。 */
+  kind?: "watch" | "book";
 }): ReactElement | null {
-  const config = getStatusBadgeConfig(status);
+  const config = getStatusBadgeConfig(status, kind);
   if (!config) return null;
+  const ariaKind = kind === "book" ? "阅读状态" : "观看状态";
 
   return (
     <div
@@ -44,7 +55,7 @@ export default function MediaCardStatusBadge({
           ? "absolute top-2 right-2 z-10 bg-[var(--canvas)] transition-opacity duration-300"
           : "bg-transparent"
       } ${config.borderClass} ${config.textClass} ${className}`}
-      aria-label={`观看状态：${config.label}`}
+      aria-label={`${ariaKind}：${config.label}`}
       title={config.label}
     >
       {config.pulse ? (

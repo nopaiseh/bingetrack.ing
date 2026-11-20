@@ -10,7 +10,7 @@ vi.mock(
   }),
 );
 
-test("渲染五个主要栏目并只标记首页为当前页", () => {
+test("渲染六个主要栏目并只标记首页为当前页", () => {
   pathname.value = "/";
   render(<MobileTabBar />);
 
@@ -19,10 +19,18 @@ test("渲染五个主要栏目并只标记首页为当前页", () => {
   expect(document.querySelector(".mobile-tab-scrim")).toBeInTheDocument();
   const links = screen.getAllByRole("link");
   expect(nav).toContainElement(links[0]);
-  expect(links.map((link) => link.getAttribute("href"))).toEqual(["/", "/movies", "/shows", "/albums", "/search"]);
+  expect(links.map((link) => link.getAttribute("href"))).toEqual([
+    "/",
+    "/movies",
+    "/shows",
+    "/albums",
+    "/books",
+    "/search",
+  ]);
   expect(screen.getByRole("link", { name: "首页" })).toHaveAttribute("aria-current", "page");
   expect(screen.getByRole("link", { name: "电影" })).not.toHaveAttribute("aria-current");
   expect(screen.getByRole("link", { name: "音乐" })).toHaveAttribute("href", "/albums");
+  expect(screen.getByRole("link", { name: "图书" })).toHaveAttribute("href", "/books");
   expect(screen.queryByRole("link", { name: "专辑" })).not.toBeInTheDocument();
 });
 
