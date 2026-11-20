@@ -20,6 +20,17 @@ export function coverUrlForSave(type: ManagedMediaType, supplied: string | null)
   return type === "tv_season" ? null : supplied;
 }
 
+/** 演员／导演人数上限（credits）。 */
+export const MAX_CREDITS = 300;
+/** 演员／导演整段原始文本字符上限。 */
+export const MAX_CREDITS_RAW = 150000;
+/** 类型、语言、地区、系列等名称列表条目上限（names）。 */
+export const MAX_NAMES = 100;
+/** 名称列表整段原始文本字符上限。 */
+export const MAX_NAMES_RAW = 10000;
+/** 单条姓名、角色或关联名称的字符上限。 */
+export const MAX_CREDIT_FIELD = 200;
+
 /** 关联人物；id 为 null 表示按名称匹配或新建无别名人物，同名人物只能凭 id 区分。 */
 export type PersonRef = { id: string | null; name: string; alternate_name?: string | null };
 /** 演员及其饰演的角色；未填写角色时为 null。 */
@@ -51,6 +62,21 @@ export type MediaInput = {
   /** 唱片公司；仅专辑写入 music_albums.label。 */
   label: string | null;
   collections?: string[];
+};
+
+const nameFieldLabels: Record<string, string> = {
+  genres: "类型",
+  languages: "语言",
+  regions: "地区",
+  collections: "系列",
+};
+
+const creditFieldLabels: Record<string, string> = {
+  actors: "演员",
+  directors: "导演",
+  artists: "艺人",
+  lyricists: "作词",
+  composers: "作曲",
 };
 
 /** 校验封面 URL：影视限 TMDB；音乐另接受 iTunes／CAA／archive.org（与 CSP 一致）。 */
@@ -97,43 +123,49 @@ export function parseMediaForm(form: FormData): MediaInput {
   }
   /** 一行一个名称，保留名字里的逗号，并去除重复条目。 */
   function names(key: string) {
-    const values = [
-      ...new Set(
-        (string(key, 10000) ?? "")
-          .split(/\r?\n/)
-          .map(/* 去除每行首尾空白。 */ (value) => value.trim())
-          .filter(Boolean),
-      ),
-    ];
-    if (values.length > 100 || values.some(/* 每个名称最多 200 字符。 */ (value) => value.length > 200))
-      throw new Error("关联名称过多或过长。");
+    const label = nameFieldLabels[key] ?? key;
+    const raw = form.get(key);
+    if (raw !== null && typeof raw !== "string") throw new Error("表单字段格式不正确。");
+    const text = raw?.trim() ?? "";
+    if (text.length > MAX_NAMES_RAW) throw new Error(`${label}文本过长（最多 ${MAX_NAMES_RAW} 字符）。`);
+    const seen = new Set<string>();
+    const values: string[] = [];
+    for (const [index, line] of text.split(/\r?\n/).entries()) {
+      const value = line.trim();
+      if (!value) continue;
+      if (value.length > MAX_CREDIT_FIELD) throw new Error(`${label}第 ${index + 1} 行超过 ${MAX_CREDIT_FIELD} 字。`);
+      if (seen.has(value)) continue;
+      seen.add(value);
+      values.push(value);
+    }
+    if (values.length > MAX_NAMES) throw new Error(`${label}最多 ${MAX_NAMES} 个，当前 ${values.length} 个。`);
     return values;
   }
   /** 每行「人物 ID<Tab>姓名<Tab>角色」，ID 与角色可留空，无制表符的行视为仅有姓名；同一人物只保留第一行，无 ID 时按姓名去重。 */
   function credits(key: string): ActorCredit[] {
     // 不整体 trim，首行空 ID 的前导制表符是格式的一部分。
     const raw = form.get(key) ?? "";
-    if (typeof raw !== "string" || raw.length > 30000) throw new Error("关联名称过多或过长。");
+    const label = creditFieldLabels[key] ?? key;
+    if (typeof raw !== "string" || raw.length > MAX_CREDITS_RAW)
+      throw new Error(`${label}表文本过长（最多 ${MAX_CREDITS_RAW} 字符）。`);
     const seen = new Set<string>();
-    const values = raw.split(/\r?\n/).flatMap(
-      /* 拆出人物 ID、姓名与角色并去除重复人物。 */ (line) => {
-        const [rawId, rawName = "", ...rest] = line.includes("\t") ? line.split("\t") : ["", line];
-        const id = rawId.trim() || null;
-        const name = rawName.trim();
-        if (id && !isMediaId(id)) throw new Error("人物 ID 格式不正确。");
-        const identity = id ?? `name:${name}`;
-        if (!name || seen.has(identity)) return [];
-        seen.add(identity);
-        return [{ id, name, character: rest.join(" ").trim() || null }];
-      },
-    );
-    if (
-      values.length > 100 ||
-      values.some(
-        /* 姓名与角色各最多 200 字符。 */ (value) => value.name.length > 200 || (value.character?.length ?? 0) > 200,
-      )
-    )
-      throw new Error("关联名称过多或过长。");
+    const values: ActorCredit[] = [];
+    for (const [index, line] of raw.split(/\r?\n/).entries()) {
+      const [rawId, rawName = "", ...rest] = line.includes("\t") ? line.split("\t") : ["", line];
+      const id = rawId.trim() || null;
+      const name = rawName.trim();
+      if (id && !isMediaId(id)) throw new Error("人物 ID 格式不正确。");
+      const identity = id ?? `name:${name}`;
+      if (!name || seen.has(identity)) continue;
+      if (name.length > MAX_CREDIT_FIELD)
+        throw new Error(`${label}表第 ${index + 1} 行姓名超过 ${MAX_CREDIT_FIELD} 字。`);
+      const character = rest.join(" ").trim() || null;
+      if (character && character.length > MAX_CREDIT_FIELD)
+        throw new Error(`${label}表第 ${index + 1} 行角色超过 ${MAX_CREDIT_FIELD} 字。`);
+      seen.add(identity);
+      values.push({ id, name, character });
+    }
+    if (values.length > MAX_CREDITS) throw new Error(`${label}最多 ${MAX_CREDITS} 人，当前 ${values.length} 人。`);
     return values;
   }
   const id = string("id");

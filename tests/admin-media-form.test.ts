@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { coverUrlForSave, parseMediaForm } from "@/lib/admin/media-form";
+import { coverUrlForSave, MAX_CREDITS, MAX_CREDIT_FIELD, MAX_NAMES, parseMediaForm } from "@/lib/admin/media-form";
 
 /** 生成有效的最小媒体表单，可覆盖字段以验证边界。 */
 function form(values: Record<string, string> = {}) {
@@ -7,6 +7,11 @@ function form(values: Record<string, string> = {}) {
   for (const [key, value] of Object.entries({ type: "movie", title: "测试电影", status: "want_to_watch", ...values }))
     result.set(key, value);
   return result;
+}
+
+/** 生成 N 行「\\t姓名」演员表文本。 */
+function actorLines(count: number) {
+  return Array.from({ length: count }, (_, i) => `\t演员${i + 1}`).join("\n");
 }
 
 describe("管理媒体输入", () => {
@@ -63,8 +68,29 @@ describe("管理媒体输入", () => {
   it("拒绝格式错误的人物 ID", () => {
     expect(() => parseMediaForm(form({ actors: "not-a-uuid\t张三" }))).toThrow();
   });
-  it("拒绝过长的角色名", () => {
-    expect(() => parseMediaForm(form({ actors: `\t张三\t${"角".repeat(201)}` }))).toThrow();
+  it("拒绝过长的角色名，并指出原始行号", () => {
+    expect(() => parseMediaForm(form({ actors: `\t张三\t${"角".repeat(MAX_CREDIT_FIELD + 1)}` }))).toThrow(
+      `演员表第 1 行角色超过 ${MAX_CREDIT_FIELD} 字。`,
+    );
+  });
+  it(`接受恰好 ${MAX_CREDITS} 名演员`, () => {
+    expect(parseMediaForm(form({ actors: actorLines(MAX_CREDITS) })).actors).toHaveLength(MAX_CREDITS);
+  });
+  it(`拒绝超过 ${MAX_CREDITS} 名演员，并报告当前人数`, () => {
+    expect(() => parseMediaForm(form({ actors: actorLines(MAX_CREDITS + 1) }))).toThrow(
+      `演员最多 ${MAX_CREDITS} 人，当前 ${MAX_CREDITS + 1} 人。`,
+    );
+  });
+  it("超长姓名报错带原始行号", () => {
+    const actors = `\t甲\n\t${"名".repeat(MAX_CREDIT_FIELD + 1)}\n\t乙`;
+    expect(() => parseMediaForm(form({ actors }))).toThrow(`演员表第 2 行姓名超过 ${MAX_CREDIT_FIELD} 字。`);
+  });
+  it(`names 仍限 ${MAX_NAMES} 个`, () => {
+    const genres = Array.from({ length: MAX_NAMES }, (_, i) => `类型${i + 1}`).join("\n");
+    expect(parseMediaForm(form({ genres })).genres).toHaveLength(MAX_NAMES);
+    expect(() => parseMediaForm(form({ genres: `${genres}\n类型${MAX_NAMES + 1}` }))).toThrow(
+      `类型最多 ${MAX_NAMES} 个，当前 ${MAX_NAMES + 1} 个。`,
+    );
   });
   it.each([
     "javascript:alert(1)",

@@ -111,6 +111,13 @@ select is((select count(*)::integer from public.people where name='Same name'),2
 select throws_ok($$select public.admin_save_media(pg_temp.admin_payload('movie','Missing person') || '{"actors":[{"id":"fa000000-0000-4000-8000-000000000199","name":"Ghost"}]}')$$,'P0002',null,'unknown person id is rejected');
 select throws_ok($$select public.admin_save_media(pg_temp.admin_payload('movie','Bad person id') || '{"actors":[{"id":"nope","name":"Ghost"}]}')$$,'22023',null,'malformed person id is rejected');
 
+-- 演员上限 300：恰好 300 可存，301 拒绝；类型仍限 100。
+select lives_ok($$select public.admin_save_media(pg_temp.admin_payload('movie','Three hundred actors') || jsonb_build_object('actors',(select jsonb_agg('Actor '||g) from generate_series(1,300) g)))$$,'owner can save 300 actors');
+select is((select count(*)::integer from public.media_credits where role='actor' and media_item_id=(select id from public.media_items where title='Three hundred actors')),300,'300 actors persisted');
+select throws_ok($$select public.admin_save_media(pg_temp.admin_payload('movie','Too many actors') || jsonb_build_object('actors',(select jsonb_agg('Actor '||g) from generate_series(1,301) g)))$$,'22023',null,'301 actors are rejected');
+select is((select count(*)::integer from public.media_items where title='Too many actors'),0,'rejected oversize cast leaves no media');
+select throws_ok($$select public.admin_save_media(pg_temp.admin_payload('movie','Too many genres') || jsonb_build_object('genres',(select jsonb_agg('Genre '||g) from generate_series(1,101) g)))$$,'22023',null,'101 genres are still rejected');
+
 reset role;
 set local role anon;
 select lives_ok($$select id,title from public.media_items limit 1$$,'public browsing still works');
