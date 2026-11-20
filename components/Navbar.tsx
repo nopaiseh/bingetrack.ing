@@ -90,7 +90,7 @@ export default function Navbar() {
       <div className="container mx-auto max-w-7xl px-4 pt-2.5 sm:px-6 sm:pt-4 lg:px-8">
         <div className="surface-panel pointer-events-auto flex h-14 w-full items-center justify-between px-4 sm:px-6 rounded-2xl">
           <div className="flex items-center gap-6">
-            <Link href="/" className="flex items-center gap-2.5 group cursor-pointer">
+            <Link href="/" className="focus-ring flex items-center gap-2.5 group cursor-pointer rounded-lg">
               <BrandMark className="size-6 text-white/90 group-hover:rotate-12 transition-transform duration-300" />
               <span className="font-mono text-xl font-light tracking-tight text-fg">
                 bingetrack
@@ -107,7 +107,7 @@ export default function Navbar() {
                     href={item.href}
                     prefetch={item.prefetch}
                     aria-current={isActive(item.href) ? "page" : undefined}
-                    className={`rounded-lg px-3 py-1.5 transition-all duration-200 ${
+                    className={`focus-ring rounded-lg px-3 py-1.5 transition-all duration-200 ${
                       isActive(item.href)
                         ? "surface-active text-[var(--accent)] font-semibold shadow-xs"
                         : "text-fg-muted hover:text-white hover:bg-white/5"
@@ -126,7 +126,7 @@ export default function Navbar() {
                 <button
                   type="submit"
                   aria-label="搜索"
-                  className="absolute inset-y-0 left-0 flex items-center pl-3.5 cursor-pointer z-10"
+                  className="focus-ring absolute inset-y-0 left-0 z-10 flex cursor-pointer items-center rounded-full pl-3.5"
                 >
                   <span
                     className="i-material-symbols-search-rounded inline-block size-4 text-fg-subtle group-focus-within:text-white transition-colors duration-300"
@@ -157,7 +157,7 @@ export default function Navbar() {
                 prefetch={false}
                 aria-label="管理"
                 aria-current={isActive("/manage") ? "page" : undefined}
-                className="surface-control flex size-9 shrink-0 cursor-pointer items-center justify-center rounded-full text-fg-secondary outline-none transition-all duration-200 hover:text-white active:scale-95 md:hidden"
+                className="surface-control focus-ring flex size-9 shrink-0 cursor-pointer items-center justify-center rounded-full text-fg-secondary outline-none transition-all duration-200 hover:text-white active:scale-95 md:hidden"
               >
                 <span className="i-material-symbols-settings-rounded inline-block size-4.5" aria-hidden="true" />
               </Link>
@@ -167,7 +167,7 @@ export default function Navbar() {
               <form action="/auth/logout" method="POST">
                 <button
                   type="submit"
-                  className="surface-control shrink-0 cursor-pointer rounded-full px-3.5 py-1.5 text-sm font-medium text-fg transition-all duration-200 hover:text-white active:scale-95"
+                  className="surface-control focus-ring shrink-0 cursor-pointer rounded-full px-3.5 py-1.5 text-sm font-medium text-fg transition-all duration-200 hover:text-white active:scale-95"
                 >
                   退出
                 </button>
@@ -177,7 +177,7 @@ export default function Navbar() {
                 type="button"
                 disabled={auth.busy}
                 onClick={() => void auth.signIn()}
-                className="surface-control shrink-0 cursor-pointer rounded-full px-3.5 py-1.5 text-sm font-medium text-fg transition-all duration-200 hover:text-white active:scale-95 disabled:cursor-not-allowed disabled:opacity-60 disabled:active:scale-100"
+                className="surface-control focus-ring shrink-0 cursor-pointer rounded-full px-3.5 py-1.5 text-sm font-medium text-fg transition-all duration-200 hover:text-white active:scale-95 disabled:cursor-not-allowed disabled:opacity-60 disabled:active:scale-100"
               >
                 {auth.busy ? "验证中…" : "登录"}
               </button>

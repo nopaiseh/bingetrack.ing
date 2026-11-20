@@ -61,6 +61,22 @@ test(
   },
 );
 
+test("导航链接与按钮统一使用 focus-ring", () => {
+  auth.signedIn = true;
+  auth.owner = true;
+  render(<Navbar />);
+
+  expect(screen.getByRole("link", { name: /bingetrack/ })).toHaveClass("focus-ring");
+  for (const name of ["首页", "电影", "电视节目", "音乐", "图书"]) {
+    expect(screen.getByRole("link", { name })).toHaveClass("focus-ring");
+  }
+  expect(screen.getByRole("button", { name: "搜索" })).toHaveClass("focus-ring");
+  expect(screen.getByRole("button", { name: "退出" })).toHaveClass("focus-ring");
+  for (const link of screen.getAllByRole("link", { name: "管理" })) {
+    expect(link).toHaveClass("focus-ring");
+  }
+});
+
 test(
   "submits trimmed desktop search text to the search route",
   /* 验证桌面搜索修剪输入空白并跳转到正确编码的搜索地址。 */ async () => {
