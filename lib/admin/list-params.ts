@@ -3,7 +3,6 @@ import {
   adminBulkOpsLabelList,
   adminMediaListTypes as catalogDbTypes,
   isAdminBulkMediaType,
-  isCatalogDbMediaType,
   type AdminBulkMediaType,
   type CatalogDbMediaType,
 } from "@/lib/media-types";
@@ -236,9 +235,10 @@ export function parseAdminMediaQuery(input?: AdminListInput | null) {
 /**
  * 只接受配置中 adminBulkOps 为 true 的顶层类型（电影／电视节目／专辑）。
  * 曲目（music）挂在专辑下，使用 listAdminChildren。
+ * adminBulkOps 类型当前均属启用目录类型，无需再叠 isCatalogDbMediaType。
  */
 export function parseAdminMediaListType(value: unknown): AdminMediaListType {
-  if (typeof value === "string" && isAdminBulkMediaType(value) && isCatalogDbMediaType(value)) return value;
+  if (typeof value === "string" && isAdminBulkMediaType(value)) return value;
   throw new AdminInputError(`只支持${adminBulkOpsLabelList()}。`);
 }
 
