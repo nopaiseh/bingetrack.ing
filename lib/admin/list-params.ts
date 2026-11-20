@@ -1,7 +1,10 @@
 import { isMediaId } from "@/lib/functions/media-id";
 import {
+  adminBulkOpsLabelList,
   adminMediaListTypes as catalogDbTypes,
+  isAdminBulkMediaType,
   isCatalogDbMediaType,
+  type AdminBulkMediaType,
   type CatalogDbMediaType,
 } from "@/lib/media-types";
 
@@ -40,6 +43,8 @@ export type MediaSortKey = keyof typeof mediaSorts;
 
 export const adminMediaListTypes = catalogDbTypes;
 export type AdminMediaListType = CatalogDbMediaType;
+/** 管理端顶层批量操作类型；与 MEDIA_TYPE_DEFINITIONS.adminBulkOps 对齐（当前不含 music／album）。 */
+export type AdminBulkListType = AdminBulkMediaType;
 
 /** 管理页里仍按上级条目浏览的两种类型。电影和电视节目走 parseAdminMediaQuery。 */
 export const adminChildListTypes = ["tv_season", "tv_episode"] as const;
@@ -220,10 +225,13 @@ export function parseAdminMediaQuery(input?: AdminListInput | null) {
   return parseQuery(input, mediaSorts, "date");
 }
 
-/** 只接受电影或电视节目，避免批量操作落到季、单集或预留的音乐表。 */
+/**
+ * 只接受配置中 adminBulkOps 为 true 的类型（当前为电影／电视节目）。
+ * music／album 后端已支持，但尚未加入管理端批量入口。
+ */
 export function parseAdminMediaListType(value: unknown): AdminMediaListType {
-  if (typeof value === "string" && isCatalogDbMediaType(value)) return value;
-  throw new AdminInputError("只支持电影和电视节目。");
+  if (typeof value === "string" && isAdminBulkMediaType(value) && isCatalogDbMediaType(value)) return value;
+  throw new AdminInputError(`只支持${adminBulkOpsLabelList()}。`);
 }
 
 /** 只接受季或单集。电影和电视节目使用 listAdminMedia。 */

@@ -39,10 +39,19 @@ export type MediaTypeDefinition = {
   coverAspect: CoverAspectRatio;
   metadataFields: readonly MediaMetadataField[];
   trackingLabels: TrackingStatusLabels;
+  /** schema.org @type（JSON-LD）。 */
+  schemaType: string;
+  /** 缺少简介时的 SEO 描述模板；`{title}` 替换为作品名。 */
+  defaultDescription: string;
   /** 是否对产品开放（目录、搜索、管理写入等）。 */
   enabled: boolean;
   /** 是否出现在管理端媒体表单／列表（子集于 enabled）。 */
   adminManaged: boolean;
+  /**
+   * 是否参与管理端顶层批量操作（listAdminMedia／bulk delete 等）。
+   * 当前仅电影与电视节目；music／album 虽有后端支持，本阶段不加入批量入口。
+   */
+  adminBulkOps: boolean;
 };
 
 const MOVIE_TV_METADATA = [
@@ -67,8 +76,11 @@ export const MEDIA_TYPE_DEFINITIONS = {
     coverAspect: "2/3",
     metadataFields: MOVIE_TV_METADATA,
     trackingLabels: MOVIE_TV_TRACKING,
+    schemaType: "Movie",
+    defaultDescription: "查看《{title}》的观看记录与详细信息。",
     enabled: true,
     adminManaged: true,
+    adminBulkOps: true,
   },
   tv_show: {
     db: "tv_show",
@@ -77,8 +89,11 @@ export const MEDIA_TYPE_DEFINITIONS = {
     coverAspect: "2/3",
     metadataFields: MOVIE_TV_METADATA,
     trackingLabels: MOVIE_TV_TRACKING,
+    schemaType: "TVSeries",
+    defaultDescription: "查看《{title}》的季度、单集与观看记录。",
     enabled: true,
     adminManaged: true,
+    adminBulkOps: true,
   },
   tv_season: {
     db: "tv_season",
@@ -87,8 +102,11 @@ export const MEDIA_TYPE_DEFINITIONS = {
     coverAspect: "2/3",
     metadataFields: ["release_date", "summary"] as const satisfies readonly MediaMetadataField[],
     trackingLabels: MOVIE_TV_TRACKING,
+    schemaType: "TVSeason",
+    defaultDescription: "查看《{title}》的单集与观看记录。",
     enabled: true,
     adminManaged: true,
+    adminBulkOps: false,
   },
   tv_episode: {
     db: "tv_episode",
@@ -97,8 +115,11 @@ export const MEDIA_TYPE_DEFINITIONS = {
     coverAspect: "2/3",
     metadataFields: ["release_date", "runtime", "rating", "summary"] as const satisfies readonly MediaMetadataField[],
     trackingLabels: MOVIE_TV_TRACKING,
+    schemaType: "TVEpisode",
+    defaultDescription: "查看《{title}》的观看记录与详细信息。",
     enabled: true,
     adminManaged: true,
+    adminBulkOps: false,
   },
   music: {
     db: "music",
@@ -114,8 +135,11 @@ export const MEDIA_TYPE_DEFINITIONS = {
       "summary",
     ] as const satisfies readonly MediaMetadataField[],
     trackingLabels: { done: "听过", want: "想听" },
+    schemaType: "MusicRecording",
+    defaultDescription: "查看《{title}》的收听记录与详细信息。",
     enabled: false,
     adminManaged: false,
+    adminBulkOps: false,
   },
   album: {
     db: "album",
@@ -130,8 +154,11 @@ export const MEDIA_TYPE_DEFINITIONS = {
       "summary",
     ] as const satisfies readonly MediaMetadataField[],
     trackingLabels: { done: "听过", want: "想听" },
+    schemaType: "MusicAlbum",
+    defaultDescription: "查看《{title}》的曲目与收听记录。",
     enabled: false,
     adminManaged: false,
+    adminBulkOps: false,
   },
   book: {
     db: "book",
@@ -147,8 +174,11 @@ export const MEDIA_TYPE_DEFINITIONS = {
       "summary",
     ] as const satisfies readonly MediaMetadataField[],
     trackingLabels: { done: "读过", want: "想读" },
+    schemaType: "Book",
+    defaultDescription: "查看《{title}》的阅读记录与详细信息。",
     enabled: false,
     adminManaged: false,
+    adminBulkOps: false,
   },
 } as const satisfies Record<DbMediaType, MediaTypeDefinition>;
 
@@ -171,6 +201,11 @@ export type PublicMediaType = {
 /** 管理端可写入的媒体类型（电影／电视节目／季／单集）。 */
 export type ManagedMediaType = {
   [K in MediaTypeKey]: (typeof MEDIA_TYPE_DEFINITIONS)[K]["adminManaged"] extends true ? K : never;
+}[MediaTypeKey];
+
+/** 管理端顶层批量操作接受的类型（当前仅电影／电视节目）。 */
+export type AdminBulkMediaType = {
+  [K in MediaTypeKey]: (typeof MEDIA_TYPE_DEFINITIONS)[K]["adminBulkOps"] extends true ? K : never;
 }[MediaTypeKey];
 
 /** @deprecated 使用 PublicMediaType；保留 MediaType 别名供现有类型文件引用。 */
@@ -199,12 +234,23 @@ export const mediaTypes = Object.fromEntries(
 /** 管理列表顶层类型（不含季／集），与历史 adminMediaListTypes 一致。 */
 export const adminMediaListTypes = CATALOG_DB_TYPES;
 
+/** 参与管理端批量操作的数据库类型。 */
+export const ADMIN_BULK_DB_TYPES = ALL_KEYS.filter(
+  (key): key is AdminBulkMediaType => MEDIA_TYPE_DEFINITIONS[key].adminBulkOps,
+) as readonly AdminBulkMediaType[];
+
 /** 启用类型的公开目录路径，如 /movies、/shows。 */
 export const ENABLED_PUBLIC_CATALOG_PATHS = PUBLIC_MEDIA_TYPES.map((route) => `/${route}`);
 
 function escapeRegExp(value: string) {
   return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
+
+/** 电视节目公开路由段（季页挂在其下）。 */
+export const TV_SHOW_PUBLIC_ROUTE = MEDIA_TYPE_DEFINITIONS.tv_show.route as "shows";
+
+/** 季详情路径正则：/shows/<showId>/seasons/<seasonId>。 */
+export const PUBLIC_SEASON_PATH_PATTERN = new RegExp(`^/${escapeRegExp(TV_SHOW_PUBLIC_ROUTE)}/[^/]+/seasons/([^/]+)`);
 
 /** 详情页路径正则：/movies|shows/<id>。 */
 export const PUBLIC_DETAIL_PATH_PATTERN = new RegExp(`^/(?:${PUBLIC_MEDIA_TYPES.map(escapeRegExp).join("|")})/([^/]+)`);
@@ -218,6 +264,7 @@ const dbToRoute = new Map<string, PublicMediaType>(
 );
 
 const catalogDbTypeSet = new Set<string>(CATALOG_DB_TYPES);
+const adminBulkDbTypeSet = new Set<string>(ADMIN_BULK_DB_TYPES);
 
 /** 判断是否为已知数据库媒体类型。 */
 export function isDbMediaType(value: string): value is DbMediaType {
@@ -239,6 +286,11 @@ export function isManagedMediaType(value: string): value is ManagedMediaType {
   return isDbMediaType(value) && MEDIA_TYPE_DEFINITIONS[value].adminManaged;
 }
 
+/** 判断是否为管理端批量操作类型。 */
+export function isAdminBulkMediaType(value: string): value is AdminBulkMediaType {
+  return adminBulkDbTypeSet.has(value);
+}
+
 /** 数据库类型 → 公开路由段；非目录类型返回 null。 */
 export function dbTypeToPublicRoute(dbType: string): PublicMediaType | null {
   return dbToRoute.get(dbType) ?? null;
@@ -258,14 +310,43 @@ export function normalizeToPublicMediaType(raw: string | null | undefined): Publ
 
 /** 公开路由段 → 数据库类型。 */
 export function publicRouteToDbType(route: PublicMediaType): CatalogDbMediaType {
-  const db = routeToDb.get(route);
+  const db = tryPublicRouteToDbType(route);
   if (!db) throw new Error(`Unknown public media route: ${route}`);
   return db;
+}
+
+/**
+ * 安全地将公开路由段转为数据库类型。
+ * 未启用或未知路由（含未来的 music／albums）返回 null，不抛错。
+ */
+export function tryPublicRouteToDbType(route: string | null | undefined): CatalogDbMediaType | null {
+  if (!route) return null;
+  return routeToDb.get(route) ?? null;
 }
 
 /** 读取类型定义；未知 key 返回 undefined。 */
 export function getMediaTypeDefinition(key: string): MediaTypeDefinition | undefined {
   return isDbMediaType(key) ? MEDIA_TYPE_DEFINITIONS[key] : undefined;
+}
+
+/** 由公开路由或数据库类型解析定义；无法识别时回退到电视节目。 */
+export function resolveMediaTypeDefinition(raw: string | null | undefined): MediaTypeDefinition {
+  if (!raw) return MEDIA_TYPE_DEFINITIONS.tv_show;
+  if (isPublicMediaType(raw)) return MEDIA_TYPE_DEFINITIONS[publicRouteToDbType(raw)];
+  if (isDbMediaType(raw)) return MEDIA_TYPE_DEFINITIONS[raw];
+  const fromDb = dbTypeToPublicRoute(raw);
+  if (fromDb) return MEDIA_TYPE_DEFINITIONS[publicRouteToDbType(fromDb)];
+  return MEDIA_TYPE_DEFINITIONS.tv_show;
+}
+
+/** schema.org @type。 */
+export function mediaSchemaType(raw: string | null | undefined): string {
+  return resolveMediaTypeDefinition(raw).schemaType;
+}
+
+/** 缺少简介时的默认 SEO 描述。 */
+export function mediaDefaultDescription(title: string, raw: string | null | undefined): string {
+  return resolveMediaTypeDefinition(raw).defaultDescription.replaceAll("{title}", title);
 }
 
 /** 公开路由段对应的中文标签。 */
@@ -282,4 +363,9 @@ export function publicMediaDetailPath(route: PublicMediaType, id: string): strin
 export function publicPathForDbType(dbType: string, id: string): string | null {
   const route = dbTypeToPublicRoute(dbType);
   return route ? publicMediaDetailPath(route, id) : null;
+}
+
+/** 管理端批量操作支持的中文标签列表（用于错误提示）。 */
+export function adminBulkOpsLabelList(): string {
+  return ADMIN_BULK_DB_TYPES.map((key) => MEDIA_TYPE_DEFINITIONS[key].label).join("和");
 }

@@ -3,7 +3,32 @@
 import DashboardCategoryPanel from "@/components/dashboard/DashboardCategoryPanel";
 import OverviewBoards from "@/components/dashboard/OverviewBoards";
 import type { DashboardStats } from "@/components/dashboard/dashboard-stats";
+import { MEDIA_TYPE_DEFINITIONS, dbTypeToPublicRoute, type CatalogDbMediaType } from "@/lib/media-types";
 import type { MediaCard } from "@/lib/types";
+
+const MOVIE_ROUTE = dbTypeToPublicRoute("movie")!;
+const SHOW_ROUTE = dbTypeToPublicRoute("tv_show")!;
+
+const CATEGORY_PANELS = [
+  {
+    tab: MEDIA_TYPE_DEFINITIONS.movie.label,
+    panelKey: "movies" as const,
+    categoryName: MEDIA_TYPE_DEFINITIONS.movie.label,
+    allTimeTitle: "影史精选",
+    mediaType: MOVIE_ROUTE,
+    searchType: "movie" as CatalogDbMediaType,
+    itemsKey: "movies" as const,
+  },
+  {
+    tab: MEDIA_TYPE_DEFINITIONS.tv_show.label,
+    panelKey: "tv-shows" as const,
+    categoryName: MEDIA_TYPE_DEFINITIONS.tv_show.label,
+    allTimeTitle: "剧集精选",
+    mediaType: SHOW_ROUTE,
+    searchType: "tv_show" as CatalogDbMediaType,
+    itemsKey: "shows" as const,
+  },
+] as const;
 
 /** 按当前标签展示总览、电影或电视节目，并显示年度精选的加载与错误状态。 */
 export default function DashboardPanels({
@@ -27,6 +52,11 @@ export default function DashboardPanels({
   topSeries: MediaCard[];
   displayedTopSeries: MediaCard[];
 }) {
+  const itemsByKey = {
+    movies: { allTime: topMovies, year: displayedTopMovies },
+    shows: { allTime: topSeries, year: displayedTopSeries },
+  };
+
   return (
     <div className="w-full">
       {topMediaError && selectedYear !== "All Time" && (
@@ -46,33 +76,22 @@ export default function DashboardPanels({
         </div>
       )}
       {activeTab === "总览" && <OverviewBoards stats={stats} selectedYear={selectedYear} />}
-      {activeTab === "电影" && (
-        <DashboardCategoryPanel
-          stats={stats}
-          panelKey="movies"
-          categoryName="电影"
-          isTopMediaLoading={isTopMediaLoading}
-          allTimeTitle="影史精选"
-          selectedYear={selectedYear}
-          allTimeItems={topMovies}
-          yearItems={displayedTopMovies}
-          mediaType="movies"
-          searchType="movie"
-        />
-      )}
-      {activeTab === "电视节目" && (
-        <DashboardCategoryPanel
-          stats={stats}
-          panelKey="tv-shows"
-          categoryName="电视节目"
-          isTopMediaLoading={isTopMediaLoading}
-          allTimeTitle="剧集精选"
-          selectedYear={selectedYear}
-          allTimeItems={topSeries}
-          yearItems={displayedTopSeries}
-          mediaType="shows"
-          searchType="tv_show"
-        />
+      {CATEGORY_PANELS.map((panel) =>
+        activeTab === panel.tab ? (
+          <DashboardCategoryPanel
+            key={panel.panelKey}
+            stats={stats}
+            panelKey={panel.panelKey}
+            categoryName={panel.categoryName}
+            isTopMediaLoading={isTopMediaLoading}
+            allTimeTitle={panel.allTimeTitle}
+            selectedYear={selectedYear}
+            allTimeItems={itemsByKey[panel.itemsKey].allTime}
+            yearItems={itemsByKey[panel.itemsKey].year}
+            mediaType={panel.mediaType}
+            searchType={panel.searchType}
+          />
+        ) : null,
       )}
     </div>
   );
