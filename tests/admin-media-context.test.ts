@@ -80,21 +80,29 @@ describe("上级资料", () => {
 describe("删除范围", () => {
   it("电影和单集没有下属季集，不发计数查询", async () => {
     const { db, from } = fakeDb(() => ({ count: 9 }));
-    expect(await readImpact(db, show, "movie")).toEqual({ seasons: 0, episodes: 0 });
-    expect(await readImpact(db, show, "tv_episode")).toEqual({ seasons: 0, episodes: 0 });
+    expect(await readImpact(db, show, "movie")).toEqual({ seasons: 0, episodes: 0, tracks: 0 });
+    expect(await readImpact(db, show, "tv_episode")).toEqual({ seasons: 0, episodes: 0, tracks: 0 });
     expect(from).not.toHaveBeenCalled();
+  });
+
+  it("专辑只统计下属曲目数量", async () => {
+    const { db, queries } = fakeDb(() => ({ count: 12 }));
+    expect(await readImpact(db, show, "album")).toEqual({ seasons: 0, episodes: 0, tracks: 12 });
+    expect(queries).toHaveLength(1);
+    expect(queries[0].table).toBe("music");
+    expect(callArgs(queries[0], "eq")).toEqual(["album_id", show]);
   });
 
   it("电视节目按节目计数季和集，季只计本季单集", async () => {
     const showDb = fakeDb((query) => ({ count: query.table === "tv_seasons" ? 4 : 40 }));
-    expect(await readImpact(showDb.db, show, "tv_show")).toEqual({ seasons: 4, episodes: 40 });
+    expect(await readImpact(showDb.db, show, "tv_show")).toEqual({ seasons: 4, episodes: 40, tracks: 0 });
     expect(callArgs(showDb.queries[0], "select")).toEqual(["id", { count: "exact", head: true }]);
     expect(callArgs(showDb.queries[0], "eq")).toEqual(["series_id", show]);
     expect(callArgs(showDb.queries[1], "eq")).toEqual(["tv_seasons.series_id", show]);
     expect(String(callArgs(showDb.queries[1], "select")?.[0])).toContain("!inner");
 
     const seasonDb = fakeDb(() => ({ count: 9 }));
-    expect(await readImpact(seasonDb.db, season2, "tv_season")).toEqual({ seasons: 0, episodes: 9 });
+    expect(await readImpact(seasonDb.db, season2, "tv_season")).toEqual({ seasons: 0, episodes: 9, tracks: 0 });
     expect(seasonDb.queries).toHaveLength(1);
     expect(seasonDb.queries[0].table).toBe("tv_episodes");
     expect(callArgs(seasonDb.queries[0], "eq")).toEqual(["season_id", season2]);
@@ -114,7 +122,31 @@ describe("相邻条目", () => {
     expect(await readSiblings(db, "movie", show, 1)).toEqual({});
     expect(await readSiblings(db, "tv_season", null, 1)).toEqual({});
     expect(await readSiblings(db, "tv_episode", season2, null)).toEqual({});
+    expect(await readSiblings(db, "music", null, 1)).toEqual({});
+    expect(await readSiblings(db, "music", show, null)).toEqual({});
     expect(from).not.toHaveBeenCalled();
+  });
+
+  it("曲目在同一专辑内按曲序找前后", async () => {
+    const trackPrev = "77777777-7777-4777-8777-777777777777";
+    const trackNext = "88888888-8888-4888-8888-888888888888";
+    const { db, queries } = fakeDb((query) => {
+      const earlier = query.calls.some((call) => call.method === "lt");
+      return {
+        data: {
+          media_item_id: earlier ? trackPrev : trackNext,
+          track_number: earlier ? 1 : 3,
+          media: earlier ? { title: "上一首" } : [{ title: "下一首" }],
+        },
+      };
+    });
+    expect(await readSiblings(db, "music", show, 2)).toEqual({
+      previous: { id: trackPrev, title: "上一首", number: 1 },
+      next: { id: trackNext, title: "下一首", number: 3 },
+    });
+    expect(queries).toHaveLength(2);
+    expect(queries.every((query) => query.table === "music")).toBe(true);
+    expect(callArgs(queries[0], "eq")).toEqual(["album_id", show]);
   });
 
   it("同一季内找到前后集时不再跨季", async () => {

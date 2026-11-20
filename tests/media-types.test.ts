@@ -26,7 +26,7 @@ describe("media type config", () => {
   it("round-trips catalog db types and public routes", () => {
     expect(CATALOG_DB_TYPES).toEqual(["movie", "tv_show", "album"]);
     expect(PUBLIC_MEDIA_TYPES).toEqual(["movies", "shows", "albums"]);
-    expect(adminMediaListTypes).toEqual(["movie", "tv_show"]);
+    expect(adminMediaListTypes).toEqual(["movie", "tv_show", "album"]);
 
     for (const db of CATALOG_DB_TYPES) {
       const route = dbTypeToPublicRoute(db);
@@ -66,9 +66,12 @@ describe("media type config", () => {
       tv_show: "电视节目",
       tv_season: "季",
       tv_episode: "单集",
+      music: "单曲",
+      album: "专辑",
     });
     expect(Object.keys(mediaTypes).every(isManagedMediaType)).toBe(true);
-    expect(isManagedMediaType("album")).toBe(false);
+    expect(isManagedMediaType("album")).toBe(true);
+    expect(isManagedMediaType("music")).toBe(true);
 
     expect(publicMediaTypeLabel("movies")).toBe("电影");
     expect(publicMediaTypeLabel("shows")).toBe("电视节目");
@@ -107,13 +110,14 @@ describe("media type config", () => {
     expect(mediaDefaultDescription("歌", "music")).toBe("查看《歌》的收听记录与详细信息。");
   });
 
-  it("keeps music out of admin bulk ops and derives the list-type error labels", () => {
-    expect(ADMIN_BULK_DB_TYPES).toEqual(["movie", "tv_show"]);
+  it("includes album in admin bulk ops while keeping tracks out", () => {
+    expect(ADMIN_BULK_DB_TYPES).toEqual(["movie", "tv_show", "album"]);
     expect(isAdminBulkMediaType("movie")).toBe(true);
     expect(isAdminBulkMediaType("music")).toBe(false);
-    expect(isAdminBulkMediaType("album")).toBe(false);
+    expect(isAdminBulkMediaType("album")).toBe(true);
     expect(MEDIA_TYPE_DEFINITIONS.music.adminBulkOps).toBe(false);
-    expect(adminBulkOpsLabelList()).toBe("电影和电视节目");
+    expect(MEDIA_TYPE_DEFINITIONS.album.adminBulkOps).toBe(true);
+    expect(adminBulkOpsLabelList()).toBe("电影和电视节目和专辑");
   });
 
   it("safely converts public routes and derives the season path from config", () => {

@@ -2,6 +2,7 @@
 
 import { requireOwner } from "@/lib/auth/server";
 import {
+  bulkDeleteAlbums,
   bulkDeleteMovies,
   bulkDeletePeople,
   bulkDeleteTvShows,
@@ -30,6 +31,12 @@ export async function listTvShows(input: AdminListInput = {}) {
   return listAdminMedia(db, "tv_show", input);
 }
 
+/** 分页搜索专辑。 */
+export async function listAlbums(input: AdminListInput = {}) {
+  const { db } = await requireOwner();
+  return listAdminMedia(db, "album", input);
+}
+
 /** 批量删除人物。返回去重后的成功与失败条数。 */
 export async function deletePeople(ids: string[]) {
   const { db } = await requireOwner();
@@ -46,6 +53,12 @@ export async function deleteMovies(ids: string[]) {
 export async function deleteTvShows(ids: string[]) {
   const { db } = await requireOwner();
   return bulkDeleteTvShows(db, ids);
+}
+
+/** 批量删除专辑及其曲目。 */
+export async function deleteAlbums(ids: string[]) {
+  const { db } = await requireOwner();
+  return bulkDeleteAlbums(db, ids);
 }
 
 /** 批量修改电影观看状态，不改评分。 */

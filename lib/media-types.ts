@@ -49,7 +49,7 @@ export type MediaTypeDefinition = {
   adminManaged: boolean;
   /**
    * 是否参与管理端顶层批量操作（listAdminMedia／bulk delete 等）。
-   * 当前仅电影与电视节目；music／album 虽有后端支持，本阶段不加入批量入口。
+   * 专辑与电影／电视节目同为顶层；曲目（music）挂在专辑下，不进顶层批量。
    */
   adminBulkOps: boolean;
 };
@@ -137,9 +137,9 @@ export const MEDIA_TYPE_DEFINITIONS = {
     trackingLabels: { done: "听过", want: "想听" },
     schemaType: "MusicRecording",
     defaultDescription: "查看《{title}》的收听记录与详细信息。",
-    // 单曲暂无公开详情路由；搜索可展示类型标签，目录与导航只开专辑。
+    // 单曲暂无公开详情路由；管理端挂在专辑下编辑，搜索可展示类型标签。
     enabled: false,
-    adminManaged: false,
+    adminManaged: true,
     adminBulkOps: false,
   },
   album: {
@@ -158,8 +158,8 @@ export const MEDIA_TYPE_DEFINITIONS = {
     schemaType: "MusicAlbum",
     defaultDescription: "查看《{title}》的曲目与收听记录。",
     enabled: true,
-    adminManaged: false,
-    adminBulkOps: false,
+    adminManaged: true,
+    adminBulkOps: true,
   },
   book: {
     db: "book",
@@ -199,12 +199,12 @@ export type PublicMediaType = {
   [K in CatalogDbMediaType]: (typeof MEDIA_TYPE_DEFINITIONS)[K]["route"];
 }[CatalogDbMediaType];
 
-/** 管理端可写入的媒体类型（电影／电视节目／季／单集）。 */
+/** 管理端可写入的媒体类型（电影／电视节目／季／单集／专辑／曲目）。 */
 export type ManagedMediaType = {
   [K in MediaTypeKey]: (typeof MEDIA_TYPE_DEFINITIONS)[K]["adminManaged"] extends true ? K : never;
 }[MediaTypeKey];
 
-/** 管理端顶层批量操作接受的类型（当前仅电影／电视节目）。 */
+/** 管理端顶层批量操作接受的类型（电影／电视节目／专辑）。 */
 export type AdminBulkMediaType = {
   [K in MediaTypeKey]: (typeof MEDIA_TYPE_DEFINITIONS)[K]["adminBulkOps"] extends true ? K : never;
 }[MediaTypeKey];
@@ -232,7 +232,7 @@ export const mediaTypes = Object.fromEntries(
   ]),
 ) as { readonly [K in ManagedMediaType]: (typeof MEDIA_TYPE_DEFINITIONS)[K]["label"] };
 
-/** 管理列表顶层类型（不含季／集）：公开目录中且 adminManaged 的类型；专辑进公开目录但不进管理列表。 */
+/** 管理列表顶层类型（不含季／集／曲目）：公开目录中且 adminManaged 的类型（电影、电视节目、专辑）。 */
 export const adminMediaListTypes = CATALOG_DB_TYPES.filter((key) => MEDIA_TYPE_DEFINITIONS[key].adminManaged);
 
 /** 参与管理端批量操作的数据库类型。 */

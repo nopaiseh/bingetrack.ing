@@ -149,7 +149,8 @@ export default async function EditMediaPage({
       />
     </>
   );
-  if (!structure || item.type === "movie")
+  // album／music 无剧集结构；双栏工作台由前端另 PR。此处避免把它们收窄进 SeriesWorkspace。
+  if (!structure || item.type === "movie" || item.type === "album" || item.type === "music")
     return (
       <section className="admin-edit-page space-y-6">
         {header}

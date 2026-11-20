@@ -177,6 +177,17 @@ export async function listAdminMedia(
           LIST_READ_ERROR,
         );
   const detailById = new Map(details.map((row) => [row.id, row]));
+  const trackCountByAlbum = new Map<string, number>();
+  if (mediaType === "album" && ids.length > 0) {
+    const trackRows = readRows<{ album_id: string }>(
+      await db.from("music").select("album_id").in("album_id", ids),
+      LIST_READ_ERROR,
+    );
+    for (const row of trackRows) {
+      if (!row.album_id) continue;
+      trackCountByAlbum.set(row.album_id, (trackCountByAlbum.get(row.album_id) ?? 0) + 1);
+    }
+  }
   return {
     items: page.rows.map((row) => {
       const detail = detailById.get(row.id);
@@ -194,6 +205,7 @@ export async function listAdminMedia(
         rating: toNumber(row.rating),
         season_count: seasons.length,
         episode_count: seasons.reduce((sum, season) => sum + (season.episodes?.[0]?.count ?? 0), 0),
+        track_count: mediaType === "album" ? (trackCountByAlbum.get(row.id) ?? 0) : 0,
       };
     }),
     total: page.total,
@@ -295,8 +307,9 @@ function childPage(query: ParsedAdminChildQuery, items: ChildListItem[], total: 
 }
 
 /**
- * 分页读取某一季列表或单集列表。筛选、排序和精确计数都在 v_manage_media_order 上完成，
- * 再用这一页的 ID 补标题、封面和所属节目。查询失败直接抛出与原管理页相同的错误，不再退回逐条计算。
+ * 分页读取某一季列表、单集列表或专辑曲目列表。
+ * 季／单集：筛选、排序和精确计数在 v_manage_media_order 上完成。
+ * 曲目：music.album_id 不在该视图 parent_id 中，改走 listAdminTracks。
  * 调用方必须已经通过 requireOwner()。
  */
 export async function listAdminChildren(
@@ -306,6 +319,7 @@ export async function listAdminChildren(
   input?: AdminChildListInput | null,
 ): Promise<AdminChildListResult> {
   const mediaType: AdminChildListType = parseAdminChildListType(type);
+  if (mediaType === "music") return listAdminTracks(db, parent, input);
   const query = parseAdminChildQuery(mediaType, parent, input);
   const start = (query.page - 1) * query.pageSize;
   let request = db
@@ -346,9 +360,126 @@ export async function listAdminChildren(
         rating: season || tracking?.rating == null ? null : Number(tracking.rating),
         season: detail.tv_seasons ? seasonContext(detail.tv_seasons) : null,
         episode: !detail.tv_seasons && detail.tv_episodes ? episodeContext(detail.tv_episodes) : null,
+        track: null,
       };
     });
   return childPage(query, items, total);
+}
+
+type TrackListRow = {
+  media_item_id: string;
+  track_number: number | null;
+  media:
+    | {
+        id: string;
+        title: string | null;
+        alternate_title: string | null;
+        cover_url: string | null;
+        release_date: string | null;
+        tracking:
+          | { status?: string | null; rating?: number | string | null }
+          | { status?: string | null; rating?: number | string | null }[]
+          | null;
+      }
+    | Array<{
+        id: string;
+        title: string | null;
+        alternate_title: string | null;
+        cover_url: string | null;
+        release_date: string | null;
+        tracking:
+          | { status?: string | null; rating?: number | string | null }
+          | { status?: string | null; rating?: number | string | null }[]
+          | null;
+      }>
+    | null;
+};
+
+/**
+ * 读取某专辑下的曲目并在内存中筛选／排序／分页。
+ * 专辑曲目量通常很小；v_manage_media_order 的 parent_id 不含 music.album_id。
+ * 调用方必须已经通过 requireOwner()。
+ */
+export async function listAdminTracks(
+  db: SupabaseClient,
+  parent: unknown,
+  input?: AdminChildListInput | null,
+): Promise<AdminChildListResult> {
+  const query = parseAdminChildQuery("music", parent, input);
+  if (!query.parent) return childPage(query, [], 0);
+
+  const { data: album, error: albumError } = await db
+    .from("media_items")
+    .select("title")
+    .eq("id", query.parent)
+    .eq("type", "album")
+    .maybeSingle();
+  if (albumError) throw new Error(CHILD_LIST_READ_ERROR);
+  const albumTitle = album?.title ?? null;
+
+  const rows = readRows<TrackListRow>(
+    await db
+      .from("music")
+      .select(
+        "media_item_id,track_number,media:media_items!music_media_item_id_fkey(id,title,alternate_title,cover_url,release_date,tracking(status,rating))",
+      )
+      .eq("album_id", query.parent)
+      .order("track_number", { ascending: true, nullsFirst: false })
+      .order("media_item_id", { ascending: true }),
+    CHILD_LIST_READ_ERROR,
+  );
+
+  const needle = query.q.trim().toLowerCase();
+  let items: ChildListItem[] = rows.map((row) => {
+    const media = Array.isArray(row.media) ? row.media[0] : row.media;
+    const tracking = Array.isArray(media?.tracking) ? media?.tracking[0] : media?.tracking;
+    return {
+      id: row.media_item_id,
+      type: "music" as const,
+      title: media?.title ?? "",
+      alternate_title: media?.alternate_title ?? null,
+      cover_url: media?.cover_url ?? null,
+      display_date: media?.release_date ?? null,
+      status: watchStatus(tracking?.status),
+      rating: tracking?.rating == null ? null : Number(tracking.rating),
+      season: null,
+      episode: null,
+      track: {
+        albumTitle,
+        trackNumber: Number(row.track_number ?? 0),
+      },
+    };
+  });
+
+  if (needle) {
+    items = items.filter(
+      (item) =>
+        item.title.toLowerCase().includes(needle) || (item.alternate_title ?? "").toLowerCase().includes(needle),
+    );
+  }
+  if (query.status) items = items.filter((item) => item.status === query.status);
+
+  if (query.sort === "rating") {
+    items = [...items].sort(
+      (left, right) =>
+        (right.rating ?? -1) - (left.rating ?? -1) ||
+        left.title.localeCompare(right.title, "zh-CN") ||
+        left.id.localeCompare(right.id),
+    );
+  } else if (query.sort === "title") {
+    items = [...items].sort(
+      (left, right) => left.title.localeCompare(right.title, "zh-CN") || left.id.localeCompare(right.id),
+    );
+  } else {
+    items = [...items].sort(
+      (left, right) =>
+        (left.track?.trackNumber ?? 0) - (right.track?.trackNumber ?? 0) || left.id.localeCompare(right.id),
+    );
+  }
+
+  const total = items.length;
+  const start = (query.page - 1) * query.pageSize;
+  return childPage(query, items.slice(start, start + query.pageSize), total);
 }
 
 function deletedIds(rows: { id: string }[]) {
@@ -402,6 +533,39 @@ export async function bulkDeleteMovies(db: SupabaseClient, ids: unknown): Promis
   const affected = await affectedMediaIds(db, targets);
   const { data, error } = await db.from("media_items").delete().in("id", targets).eq("type", "movie").select("id");
   if (error?.code === "23503") return { succeeded: 0, failed: targets.length };
+  assertWrite(error, DELETE_ERROR);
+  const succeeded = deletedIds((data ?? []) as { id: string }[]).size;
+  if (succeeded > 0) revalidateMediaItems(affected);
+  return { succeeded, failed: targets.length - succeeded };
+}
+
+/**
+ * 批量删除专辑及其曲目。music.album_id 无 ON DELETE CASCADE，须先删曲目 media_items 再删专辑。
+ * 不调用 admin_delete_media（该 RPC 尚不接受 album）。
+ */
+export async function bulkDeleteAlbums(db: SupabaseClient, ids: unknown): Promise<BulkCounts> {
+  const targets = parseBulkIds(ids);
+  const albums = rowsIn(
+    readRows<{ id: string; title: string }>(
+      await db.from("media_items").select("id,title").in("id", targets).eq("type", "album"),
+      DELETE_ERROR,
+    ),
+    targets,
+  );
+  if (albums.length === 0) return { succeeded: 0, failed: targets.length };
+  const albumIds = albums.map((album) => album.id);
+  const affected = await affectedMediaIds(db, albumIds);
+
+  const trackRows = readRows<{ media_item_id: string }>(
+    await db.from("music").select("media_item_id").in("album_id", albumIds),
+    DELETE_ERROR,
+  );
+  const trackIds = [...new Set(trackRows.map((row) => row.media_item_id).filter(Boolean))];
+  if (trackIds.length > 0) {
+    const { error: trackError } = await db.from("media_items").delete().in("id", trackIds);
+    assertWrite(trackError, DELETE_ERROR);
+  }
+  const { data, error } = await db.from("media_items").delete().in("id", albumIds).eq("type", "album").select("id");
   assertWrite(error, DELETE_ERROR);
   const succeeded = deletedIds((data ?? []) as { id: string }[]).size;
   if (succeeded > 0) revalidateMediaItems(affected);

@@ -17,6 +17,9 @@ const deleteLabels: Record<ManagedMediaType, string> = {
   tv_show: "删除这部电视节目…",
   tv_season: "删除这一季…",
   tv_episode: "删除这一集…",
+  // album／music：类型兼容占位；编辑页 UI 由前端另 PR 实现。
+  album: "删除这张专辑…",
+  music: "删除这首曲目…",
 };
 
 const deleteHints: Record<ManagedMediaType, string> = {
@@ -24,6 +27,8 @@ const deleteHints: Record<ManagedMediaType, string> = {
   tv_show: "删除后会同时移除下属季、集、观看记录和演员关联，且无法恢复。",
   tv_season: "删除后会同时移除这一季的单集和观看记录，且无法恢复。",
   tv_episode: "删除后会同时移除观看记录，且无法恢复。",
+  album: "删除后会同时移除下属曲目、收听记录和艺人关联，且无法恢复。",
+  music: "删除后会同时移除收听记录和作词作曲关联，且无法恢复。",
 };
 
 /** 路径补成 TMDB 原图地址；已经是完整地址时原样保留，避免一次保存改掉尺寸。 */
