@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { deriveDashboardStats, percent } from "@/components/dashboard/dashboard-stats";
 import type { MediaDistributions, Summary } from "@/lib/types";
 
-const emptyDistributions: MediaDistributions = { movies: {}, shows: {}, albums: {}, books: {} };
+const emptyDistributions: MediaDistributions = { movies: {}, shows: {}, albums: {} };
 
 describe("percent", () => {
   it("returns 0 when the total is not positive", () => {
@@ -64,7 +64,6 @@ describe("deriveDashboardStats", () => {
       movies: { "2024": { regions: [{ name: "美国", count: 2, percent: 100 }], languages: [], genres: [] } },
       shows: {},
       albums: {},
-      books: {},
     };
 
     const stats = deriveDashboardStats(summary, "2024", distributions);

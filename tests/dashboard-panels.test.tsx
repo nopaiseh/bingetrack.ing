@@ -5,7 +5,7 @@ import DashboardCategoryPanel from "@/components/dashboard/DashboardCategoryPane
 import OverviewBoards from "@/components/dashboard/OverviewBoards";
 import type { MediaCard, MediaDistributions, Summary } from "@/lib/types";
 
-const distributions: MediaDistributions = { movies: {}, shows: {}, albums: {}, books: {} };
+const distributions: MediaDistributions = { movies: {}, shows: {}, albums: {} };
 
 function statsFor(summary: Summary[] = [], year = "All Time") {
   return deriveDashboardStats(summary, year, distributions);

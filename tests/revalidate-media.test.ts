@@ -99,7 +99,6 @@ describe("按条目失效公开缓存", () => {
       ["/movies"],
       ["/shows"],
       ["/albums"],
-      ["/books"],
       ["/sitemap.xml"],
     ]);
   });

@@ -1,10 +1,9 @@
 import { isMediaId } from "@/lib/functions/media-id";
 import {
   adminBulkOpsLabelList,
-  adminMediaListTypes as catalogDbTypes,
+  adminMediaListTypes as listTypes,
   isAdminBulkMediaType,
   type AdminBulkMediaType,
-  type CatalogDbMediaType,
 } from "@/lib/media-types";
 
 /** 管理列表校验失败。消息不含 SQL，调用方可以直接展示。 */
@@ -40,9 +39,10 @@ export const mediaSorts = {
 } as const satisfies Record<string, SortDirection>;
 export type MediaSortKey = keyof typeof mediaSorts;
 
-export const adminMediaListTypes = catalogDbTypes;
-export type AdminMediaListType = CatalogDbMediaType;
-/** 管理端顶层批量操作类型；与 MEDIA_TYPE_DEFINITIONS.adminBulkOps 对齐（电影／电视节目／专辑）。 */
+export const adminMediaListTypes = listTypes;
+/** 管理列表顶层类型；与 adminBulkOps 对齐（电影／电视节目／专辑／图书），不要求公开 enabled。 */
+export type AdminMediaListType = AdminBulkMediaType;
+/** 管理端顶层批量操作类型；与 MEDIA_TYPE_DEFINITIONS.adminBulkOps 对齐。 */
 export type AdminBulkListType = AdminBulkMediaType;
 
 /** 管理页里仍按上级条目浏览的类型。电影、电视节目、专辑走 parseAdminMediaQuery。 */
@@ -239,7 +239,7 @@ export function parseAdminMediaQuery(input?: AdminListInput | null) {
 /**
  * 只接受配置中 adminBulkOps 为 true 的顶层类型（电影／电视节目／专辑／图书）。
  * 曲目（music）挂在专辑下，使用 listAdminChildren。
- * adminBulkOps 类型当前均属启用目录类型，无需再叠 isCatalogDbMediaType。
+ * 图书公开路由未启用时仍可出现在管理列表（adminBulkOps）。
  */
 export function parseAdminMediaListType(value: unknown): AdminMediaListType {
   if (typeof value === "string" && isAdminBulkMediaType(value)) return value;

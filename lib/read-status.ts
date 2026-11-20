@@ -11,7 +11,7 @@ export function readStatusLabel(status: string | null | undefined): string | nul
     case "want_to_watch":
       return LABELS.want;
     case "in_progress":
-      return "在读";
+      return LABELS.inProgress ?? null;
     default:
       return null;
   }
