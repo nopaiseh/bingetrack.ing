@@ -5,7 +5,7 @@ import { requireOwner } from "@/lib/auth/server";
 import { deleteMovies, deleteTvShows, setMovieStatus, setTvShowStatus } from "@/app/(admin)/manage/list-actions";
 import { deleteMedia, saveMedia } from "@/app/(admin)/manage/actions";
 import { getHomeContinue } from "@/lib/continue-watching";
-import { getCachedContinueWatching } from "@/lib/functions/cached-media";
+import { getCachedHomeContinue } from "@/lib/functions/cached-media";
 
 const cacheSpecs = vi.hoisted(() => [] as Array<{ fn: unknown; keys: unknown; options: unknown }>);
 
@@ -105,7 +105,7 @@ describe("继续看数据缓存", () => {
           posterPath: "https://is1-ssl.mzstatic.com/image/thumb/cover.jpg",
           href: `/albums/${movieA}`,
           trackProgress: { watched: 1, total: 3 },
-          lastListenedAt: "2024-02-01T00:00:00.000Z",
+          latestWatchedTrackReleaseAt: "2024-02-01T00:00:00.000Z",
         },
       ],
     };
@@ -116,7 +116,7 @@ describe("继续看数据缓存", () => {
       keys: ["public-media-home-continue-v1"],
       options: { revalidate: 86400, tags: ["media", "media:lists"] },
     });
-    await expect(getCachedContinueWatching()).resolves.toEqual(payload);
+    await expect(getCachedHomeContinue()).resolves.toEqual(payload);
     expect(getHomeContinue).toHaveBeenCalledOnce();
   });
 });

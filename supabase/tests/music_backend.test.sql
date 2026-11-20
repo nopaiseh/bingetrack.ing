@@ -1,6 +1,6 @@
 begin;
 
-select plan(13);
+select plan(16);
 
 select ok(
   exists (select 1 from pg_type t join pg_namespace n on n.oid = t.typnamespace
@@ -119,6 +119,40 @@ select ok(
       and track_total = 3
   ),
   'continue listening lists albums with partial watched tracks'
+);
+
+select is(
+  (select status from public.v_all_media where id = 'a2000000-0000-4000-8000-000000000001'),
+  'watching',
+  'album with some watched tracks reports watching (在听)'
+);
+
+-- 仅有想听、没有任何听过的专辑：不得标成 watching
+insert into public.media_items (id, type, title, release_date) values
+  ('a2000000-0000-4000-8000-000000000011', 'album', '只想听专辑', '2024-02-01'),
+  ('a2000000-0000-4000-8000-000000000012', 'music', '想听曲 A', '2024-02-02'),
+  ('a2000000-0000-4000-8000-000000000013', 'music', '想听曲 B', '2024-02-03');
+insert into public.music_albums (media_item_id, track_count) values
+  ('a2000000-0000-4000-8000-000000000011', 2);
+insert into public.music (media_item_id, track_number, album_id) values
+  ('a2000000-0000-4000-8000-000000000012', 1, 'a2000000-0000-4000-8000-000000000011'),
+  ('a2000000-0000-4000-8000-000000000013', 2, 'a2000000-0000-4000-8000-000000000011');
+insert into public.tracking (media_item_id, status, rating) values
+  ('a2000000-0000-4000-8000-000000000012', 'want_to_watch', null),
+  ('a2000000-0000-4000-8000-000000000013', 'want_to_watch', null);
+
+select is(
+  (select status from public.v_all_media where id = 'a2000000-0000-4000-8000-000000000011'),
+  'want_to_watch',
+  'album with only want_to_watch tracks (no watched) is want_to_watch, not watching'
+);
+
+select ok(
+  not exists (
+    select 1 from public.v_continue_listening
+    where album_id = 'a2000000-0000-4000-8000-000000000011'
+  ),
+  'want-only albums are excluded from continue listening'
 );
 
 set local role anon;

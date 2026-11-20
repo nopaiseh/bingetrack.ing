@@ -2,6 +2,7 @@
  * 服务端封面解析：只返回可写入 cover_url 的绝对 URL，不持久化 MusicBrainz／iTunes 等外部 ID。
  * 顺序：iTunes Search →（临时查 MusicBrainz 取 release MBID）Cover Art Archive → null。
  * CAA 依赖 MusicBrainz 检索；MBID 仅在本次请求内存中使用，绝不写入数据库。
+ * CAA 封面存规范 URL（coverartarchive.org/.../front-500），不跟随重定向去写 archive.org 镜像。
  */
 
 export type MusicCoverEntity = "album" | "song";
@@ -19,6 +20,8 @@ export type ResolveMusicCoverDeps = {
 const ITUNES_SEARCH = "https://itunes.apple.com/search";
 const MUSICBRAINZ_SEARCH = "https://musicbrainz.org/ws/2/release";
 const COVER_ART_ARCHIVE = "https://coverartarchive.org/release";
+/** MusicBrainz 搜索分低于此阈值时视为不可靠，不采用该 release。 */
+const MUSICBRAINZ_MIN_SCORE = 90;
 
 /** iTunes 默认封面多为 100x100；替换为更大尺寸供站点展示。 */
 export function upscaleItunesArtworkUrl(url: string, size = 600): string {
@@ -74,7 +77,8 @@ type MusicBrainzReleaseList = {
 
 /**
  * 临时向 MusicBrainz 查询 release MBID，仅用于随后请求 Cover Art Archive。
- * 返回的 ID 不落库；查找失败或无封面时整体回退为 null。
+ * 只接受 score ≥ 90 的命中；返回的 ID 不落库。
+ * CAA 探测使用 redirect:manual，成功时仍返回规范 coverartarchive.org URL。
  */
 async function resolveFromCoverArtArchive(
   input: ResolveMusicCoverInput,
@@ -97,18 +101,20 @@ async function resolveFromCoverArtArchive(
   });
   if (!mbResponse.ok) return null;
   const mbBody = (await mbResponse.json()) as MusicBrainzReleaseList;
-  const releaseId = mbBody.releases?.find((row) => row.id)?.id;
+  const releaseId = mbBody.releases?.find(
+    (row) => row.id && typeof row.score === "number" && row.score >= MUSICBRAINZ_MIN_SCORE,
+  )?.id;
   if (!releaseId) return null;
 
   const caaUrl = `${COVER_ART_ARCHIVE}/${encodeURIComponent(releaseId)}/front-500`;
   const caaResponse = await fetchImpl(caaUrl, {
     method: "HEAD",
-    redirect: "follow",
+    // 不跟随到 ia*.us.archive.org；只确认封面存在，cover_url 始终写规范 CAA 地址。
+    redirect: "manual",
     signal: AbortSignal.timeout(8_000),
   });
-  if (!caaResponse.ok) return null;
-  // 跟随重定向后的最终 URL（常落在 archive.org）；不保存 releaseId。
-  return caaResponse.url || caaUrl;
+  if (caaResponse.status < 200 || caaResponse.status >= 400) return null;
+  return caaUrl;
 }
 
 /**

@@ -320,7 +320,7 @@ describe("getContinueWatching", () => {
 });
 
 describe("assembleContinueListening", () => {
-  it("keeps partial albums and sorts by last listened release date", () => {
+  it("keeps partial albums and sorts by watched-track release date", () => {
     const albumA = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
     const albumB = "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb";
     expect(
@@ -332,7 +332,7 @@ describe("assembleContinueListening", () => {
           release_date: "2020-01-01",
           track_total: 3,
           track_watched: 1,
-          last_listened_release_date: "2020-01-01",
+          latest_watched_track_release_date: "2020-01-01",
         },
         {
           album_id: albumB,
@@ -341,7 +341,7 @@ describe("assembleContinueListening", () => {
           release_date: "2024-06-01",
           track_total: "10",
           track_watched: "4",
-          last_listened_release_date: "2024-06-01",
+          latest_watched_track_release_date: "2024-06-01",
         },
       ]),
     ).toEqual([
@@ -351,7 +351,7 @@ describe("assembleContinueListening", () => {
         posterPath: null,
         href: `/albums/${albumB}`,
         trackProgress: { watched: 4, total: 10 },
-        lastListenedAt: "2024-06-01T00:00:00.000Z",
+        latestWatchedTrackReleaseAt: "2024-06-01T00:00:00.000Z",
       },
       {
         albumId: albumA,
@@ -359,7 +359,7 @@ describe("assembleContinueListening", () => {
         posterPath: "https://is1-ssl.mzstatic.com/image/thumb/a.jpg",
         href: `/albums/${albumA}`,
         trackProgress: { watched: 1, total: 3 },
-        lastListenedAt: "2020-01-01T00:00:00.000Z",
+        latestWatchedTrackReleaseAt: "2020-01-01T00:00:00.000Z",
       },
     ]);
   });
@@ -374,7 +374,7 @@ describe("assembleContinueListening", () => {
           release_date: null,
           track_total: 2,
           track_watched: 1,
-          last_listened_release_date: null,
+          latest_watched_track_release_date: null,
         },
       ])[0].posterPath,
     ).toBeNull();
@@ -382,43 +382,14 @@ describe("assembleContinueListening", () => {
 });
 
 describe("getContinueListening / getHomeContinue", () => {
-  it("reads v_continue_listening for in-progress albums", async () => {
-    const albumId = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
-    state.results = [
-      {
-        data: [
-          {
-            album_id: albumId,
-            title: "在听专辑",
-            cover_url: "https://coverartarchive.org/release/x/front-500",
-            release_date: "2023-01-01",
-            track_total: 5,
-            track_watched: 2,
-            last_listened_release_date: "2023-02-01",
-          },
-        ],
-        error: null,
-      },
-    ];
-    await expect(getContinueListening()).resolves.toEqual([
-      {
-        albumId,
-        title: "在听专辑",
-        posterPath: "https://coverartarchive.org/release/x/front-500",
-        href: `/albums/${albumId}`,
-        trackProgress: { watched: 2, total: 5 },
-        lastListenedAt: "2023-02-01T00:00:00.000Z",
-      },
-    ]);
-    expect(state.calls[0].table).toBe("v_continue_listening");
+  it("skips listening queries while the album public type is disabled", async () => {
+    await expect(getContinueListening()).resolves.toEqual([]);
+    expect(state.calls).toHaveLength(0);
   });
 
-  it("returns watching and listening separately", async () => {
-    state.results = [
-      { data: [], error: null },
-      { data: [], error: null },
-    ];
+  it("returns watching and an empty listening list while albums are disabled", async () => {
+    state.results = [{ data: [], error: null }];
     await expect(getHomeContinue()).resolves.toEqual({ watching: [], listening: [] });
-    expect(state.calls.map((call) => call.table)).toEqual(["v_all_media", "v_continue_listening"]);
+    expect(state.calls.map((call) => call.table)).toEqual(["v_all_media"]);
   });
 });

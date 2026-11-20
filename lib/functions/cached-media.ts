@@ -107,7 +107,7 @@ export const getCachedMediaDistributionsServer = cache(
 // 首页「继续」长缓存 24 小时，全站一条：{ watching, listening }。
 // getHomeContinue 只用公开读取客户端，缓存回调里不能读 cookies()、headers() 或当前用户。
 // 观看／收听写入走 revalidateMediaItems，失效 media:lists；全站刷新失效 media。
-export const getCachedContinueWatching = cache(
+export const getCachedHomeContinue = cache(
   unstable_cache(getHomeContinue, ["public-media-home-continue-v1"], {
     revalidate: 86400,
     tags: [MEDIA_TAG, MEDIA_LISTS_TAG],

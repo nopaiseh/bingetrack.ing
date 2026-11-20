@@ -33,7 +33,7 @@ describe("buildContentSecurityPolicy", () => {
     const csp = buildContentSecurityPolicy({ isDevelopment: false });
     expect(csp).toContain("script-src-attr 'none';");
     expect(csp).toContain(
-      "img-src 'self' data: blob: https://image.tmdb.org https://*.mzstatic.com https://coverartarchive.org https://*.archive.org;",
+      "img-src 'self' data: blob: https://image.tmdb.org https://*.mzstatic.com https://coverartarchive.org https://archive.org https://*.archive.org;",
     );
   });
 

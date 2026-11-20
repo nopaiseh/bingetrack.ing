@@ -1,6 +1,11 @@
 import { describe, expect, it, vi } from "vitest";
 import { resolveMusicCover, upscaleItunesArtworkUrl } from "@/lib/music/resolve-cover";
 
+/** 用 URL 主机名精确匹配，避免子串误伤（CodeQL）。 */
+function hostnameOf(input: RequestInfo | URL): string {
+  return new URL(String(input)).hostname;
+}
+
 describe("upscaleItunesArtworkUrl", () => {
   it("replaces the bb size segment with 600x600", () => {
     expect(
@@ -12,8 +17,8 @@ describe("upscaleItunesArtworkUrl", () => {
 describe("resolveMusicCover", () => {
   it("prefers iTunes artwork and does not call MusicBrainz when iTunes succeeds", async () => {
     const fetchImpl = vi.fn(async (input: RequestInfo | URL) => {
-      const url = String(input);
-      if (url.includes("itunes.apple.com")) {
+      const host = hostnameOf(input);
+      if (host === "itunes.apple.com") {
         return new Response(
           JSON.stringify({
             results: [
@@ -26,7 +31,7 @@ describe("resolveMusicCover", () => {
           { status: 200 },
         );
       }
-      throw new Error(`unexpected fetch ${url}`);
+      throw new Error(`unexpected fetch ${String(input)}`);
     });
 
     await expect(
@@ -35,33 +40,54 @@ describe("resolveMusicCover", () => {
     expect(fetchImpl).toHaveBeenCalledOnce();
   });
 
-  it("falls back to Cover Art Archive via a transient MusicBrainz lookup", async () => {
+  it("falls back to the canonical Cover Art Archive URL without following redirects", async () => {
     const fetchImpl = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
-      const url = String(input);
-      if (url.includes("itunes.apple.com")) {
+      const host = hostnameOf(input);
+      if (host === "itunes.apple.com") {
         return new Response(JSON.stringify({ results: [] }), { status: 200 });
       }
-      if (url.includes("musicbrainz.org")) {
-        return new Response(JSON.stringify({ releases: [{ id: "mbid-transient-only" }] }), { status: 200 });
-      }
-      if (url.includes("coverartarchive.org") && init?.method === "HEAD") {
-        return new Response(null, {
+      if (host === "musicbrainz.org") {
+        return new Response(JSON.stringify({ releases: [{ id: "mbid-transient-only", score: 95 }] }), {
           status: 200,
-          headers: { Location: "https://archive.org/download/mbid-front/front.jpg" },
         });
       }
-      throw new Error(`unexpected fetch ${url}`);
+      if (host === "coverartarchive.org" && init?.method === "HEAD") {
+        expect(init.redirect).toBe("manual");
+        return new Response(null, {
+          status: 307,
+          headers: { Location: "https://ia800000.us.archive.org/download/mbid-front/front.jpg" },
+        });
+      }
+      throw new Error(`unexpected fetch ${String(input)}`);
     });
 
-    // undici/Response.url for a constructed Response is empty; helper returns caa URL or followed url.
     const result = await resolveMusicCover(
       { title: "Obscure Album", artist: "Band", entity: "album" },
       { fetch: fetchImpl },
     );
-    expect(result).toContain("coverartarchive.org/release/mbid-transient-only/front-500");
+    expect(result).toBe("https://coverartarchive.org/release/mbid-transient-only/front-500");
+    expect(new URL(result!).hostname).toBe("coverartarchive.org");
     expect(fetchImpl).toHaveBeenCalledTimes(3);
-    const mbCall = fetchImpl.mock.calls.find((call) => String(call[0]).includes("musicbrainz.org"));
+    const mbCall = fetchImpl.mock.calls.find((call) => hostnameOf(call[0] as RequestInfo | URL) === "musicbrainz.org");
     expect(mbCall).toBeTruthy();
+  });
+
+  it("ignores MusicBrainz hits below score 90", async () => {
+    const fetchImpl = vi.fn(async (input: RequestInfo | URL) => {
+      const host = hostnameOf(input);
+      if (host === "itunes.apple.com") {
+        return new Response(JSON.stringify({ results: [] }), { status: 200 });
+      }
+      if (host === "musicbrainz.org") {
+        return new Response(JSON.stringify({ releases: [{ id: "low-score", score: 80 }] }), { status: 200 });
+      }
+      throw new Error(`unexpected fetch ${String(input)}`);
+    });
+
+    await expect(
+      resolveMusicCover({ title: "Ambiguous", artist: "Band", entity: "album" }, { fetch: fetchImpl }),
+    ).resolves.toBeNull();
+    expect(fetchImpl).toHaveBeenCalledTimes(2);
   });
 
   it("returns null when every source fails", async () => {

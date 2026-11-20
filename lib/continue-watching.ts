@@ -1,6 +1,7 @@
 import "server-only";
 
 import { MediaRepositoryError } from "@/lib/functions/media-repo";
+import { MEDIA_TYPE_DEFINITIONS } from "@/lib/media-types";
 import { withRetry } from "@/lib/functions/retry";
 import { nextUnwatchedAfterLastWatched } from "@/lib/season-browse";
 import { getSupabasePublicServer } from "@/lib/supabase/public-server";
@@ -282,7 +283,7 @@ export const CONTINUE_LISTENING_LIMIT = 8;
 /**
  * 首页「在听」的一张专辑。
  * 规则由 v_continue_listening 计算：至少一首曲目 watched，但并非全部曲目都 watched。
- * 公开专辑路由尚未启用，href 仍按配置中的 albums 段生成，供后续打开。
+ * 仅在 album 类型启用（公开路由开放）时查询与展示，避免链到未启用的 /albums/…。
  */
 export type ContinueListeningItem = {
   albumId: string;
@@ -293,7 +294,11 @@ export type ContinueListeningItem = {
     watched: number;
     total: number;
   };
-  lastListenedAt: string;
+  /**
+   * 排序用：已听曲目中最晚的上映日（UTC 零点）。
+   * tracking 没有收听时间戳，这不是真实“最近听过”时间。
+   */
+  latestWatchedTrackReleaseAt: string;
 };
 
 type ContinueListeningRow = {
@@ -303,11 +308,12 @@ type ContinueListeningRow = {
   release_date: string | null;
   track_total: number | string;
   track_watched: number | string;
-  last_listened_release_date: string | null;
+  latest_watched_track_release_date: string | null;
 };
 
-/** 把在听视图行收成首页条目；按最近听过曲目的上映日从新到旧。 */
+/** 把在听视图行收成首页条目；按已听曲目上映日从新到旧排序（非收听时间）。 */
 export function assembleContinueListening(rows: readonly ContinueListeningRow[]): ContinueListeningItem[] {
+  const albumRoute = MEDIA_TYPE_DEFINITIONS.album.route;
   return rows
     .map((row) => {
       const albumId = row.album_id;
@@ -317,17 +323,18 @@ export function assembleContinueListening(rows: readonly ContinueListeningRow[])
         albumId,
         title: (row.title ?? "").trim(),
         posterPath: posterPathFromCover(row.cover_url),
-        href: `/albums/${encodeURIComponent(albumId)}`,
+        href: `/${albumRoute}/${encodeURIComponent(albumId)}`,
         trackProgress: { watched, total },
-        lastListenedAt:
-          releaseDateToUtc(row.last_listened_release_date) ??
+        latestWatchedTrackReleaseAt:
+          releaseDateToUtc(row.latest_watched_track_release_date) ??
           releaseDateToUtc(row.release_date) ??
           MISSING_RELEASE_INSTANT,
       };
     })
     .sort(
       (left, right) =>
-        right.lastListenedAt.localeCompare(left.lastListenedAt) || left.albumId.localeCompare(right.albumId),
+        right.latestWatchedTrackReleaseAt.localeCompare(left.latestWatchedTrackReleaseAt) ||
+        left.albumId.localeCompare(right.albumId),
     )
     .slice(0, CONTINUE_LISTENING_LIMIT);
 }
@@ -337,14 +344,18 @@ async function fetchListeningAlbums(): Promise<ContinueListeningRow[]> {
   return eachPage("listening", (offset) =>
     db
       .from("v_continue_listening")
-      .select("album_id,title,cover_url,release_date,track_total,track_watched,last_listened_release_date")
+      .select("album_id,title,cover_url,release_date,track_total,track_watched,latest_watched_track_release_date")
       .order("album_id", { ascending: true })
       .range(offset, offset + PAGE_SIZE - 1),
   );
 }
 
-/** 首页「在听」：部分听过但未听完的专辑，最多 8 条。 */
+/**
+ * 首页「在听」：部分听过但未听完的专辑，最多 8 条。
+ * album 未在 media-types 中启用时直接返回空数组，不查询、不渲染，避免 /albums 404。
+ */
 export async function getContinueListening(): Promise<ContinueListeningItem[]> {
+  if (!MEDIA_TYPE_DEFINITIONS.album.enabled) return [];
   return withRetry(async () => {
     const rows = await fetchListeningAlbums();
     return assembleContinueListening(rows);

@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { render } from "@testing-library/react";
 
-const { watching, listening, getCachedContinueWatching } = vi.hoisted(() => {
+const { watching, listening, getCachedHomeContinue } = vi.hoisted(() => {
   const watching = {
     showId: "show-1",
     title: "跑男",
@@ -22,12 +22,12 @@ const { watching, listening, getCachedContinueWatching } = vi.hoisted(() => {
     posterPath: "https://is1-ssl.mzstatic.com/image/thumb/cover.jpg",
     href: "/albums/album-1",
     trackProgress: { watched: 2, total: 5 },
-    lastListenedAt: "2024-02-01T00:00:00.000Z",
+    latestWatchedTrackReleaseAt: "2024-02-01T00:00:00.000Z",
   };
   return {
     watching,
     listening,
-    getCachedContinueWatching: vi.fn(async () => ({ watching: [watching], listening: [listening] })),
+    getCachedHomeContinue: vi.fn(async () => ({ watching: [watching], listening: [listening] })),
   };
 });
 
@@ -36,7 +36,7 @@ vi.mock("@/lib/functions/cached-media", () => ({
   getCachedTopMediaServer: vi.fn(async () => []),
   getCachedMediaDistributionsServer: vi.fn(async () => ({ movies: {}, shows: {} })),
   getCachedUpcomingReleasesServer: vi.fn(async () => []),
-  getCachedContinueWatching,
+  getCachedHomeContinue,
 }));
 
 vi.mock("@/app/HomeDashboard", () => ({
@@ -54,7 +54,7 @@ import HomePage from "@/app/page";
 describe("HomePage continue watching", () => {
   it("passes watching and listening rails through and drops time proxy fields", async () => {
     const page = await HomePage();
-    expect(getCachedContinueWatching).toHaveBeenCalledOnce();
+    expect(getCachedHomeContinue).toHaveBeenCalledOnce();
     const { getByTestId } = render(page);
     const root = getByTestId("home-dashboard");
     const items = JSON.parse(root.getAttribute("data-watching") ?? "null");
@@ -79,6 +79,6 @@ describe("HomePage continue watching", () => {
       },
     ]);
     expect(JSON.stringify(items)).not.toContain("lastWatchedAt");
-    expect(JSON.stringify(listeningItems)).not.toContain("lastListenedAt");
+    expect(JSON.stringify(listeningItems)).not.toContain("latestWatchedTrackReleaseAt");
   });
 });

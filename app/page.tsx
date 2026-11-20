@@ -1,9 +1,9 @@
 import HomeDashboard from "@/app/HomeDashboard";
 import type { ContinueListeningCard } from "@/components/ContinueListeningRail";
 import type { ContinueWatchingCard } from "@/components/ContinueWatchingRail";
-import type { ContinueListeningItem, ContinueWatchingItem, HomeContinueData } from "@/lib/continue-watching";
+import type { ContinueListeningItem, ContinueWatchingItem } from "@/lib/continue-watching";
 import {
-  getCachedContinueWatching,
+  getCachedHomeContinue,
   getCachedReleaseYearStats,
   getCachedTopMediaServer,
   getCachedMediaDistributionsServer,
@@ -46,7 +46,7 @@ function continueWatchingCards(items: readonly ContinueWatchingItem[]): Continue
   }));
 }
 
-/** 丢掉 lastListenedAt（上映日代理），只把展示字段交给界面。 */
+/** 丢掉 latestWatchedTrackReleaseAt（曲目上映日排序键，不是收听时间），只把展示字段交给界面。 */
 function continueListeningCards(items: readonly ContinueListeningItem[]): ContinueListeningCard[] {
   return items.map((item) => ({
     albumId: item.albumId,
@@ -74,8 +74,8 @@ export default async function HomePage() {
     getCachedMediaDistributionsServer(),
     getCachedUpcomingReleasesServer(),
   ]);
-  const continueResult = getCachedContinueWatching();
-  const [dashboard, watching] = await Promise.allSettled([dashboardResult, continueResult]);
+  const continueResult = getCachedHomeContinue();
+  const [dashboard, homeContinueResult] = await Promise.allSettled([dashboardResult, continueResult]);
 
   if (dashboard.status === "fulfilled") {
     const [fetchedSummary, fetchedTopMovies, fetchedTopSeries, fetchedDistributions, fetchedUpcoming] = dashboard.value;
@@ -88,12 +88,11 @@ export default async function HomePage() {
     handlePageDataError("home dashboard", dashboard.reason);
   }
 
-  if (watching.status === "fulfilled") {
-    const homeContinue = watching.value as HomeContinueData;
-    continueWatching = continueWatchingCards(homeContinue.watching);
-    continueListening = continueListeningCards(homeContinue.listening);
+  if (homeContinueResult.status === "fulfilled") {
+    continueWatching = continueWatchingCards(homeContinueResult.value.watching);
+    continueListening = continueListeningCards(homeContinueResult.value.listening);
   } else {
-    handlePageDataError("continue watching", watching.reason);
+    handlePageDataError("home continue", homeContinueResult.reason);
   }
 
   const now = new Date();

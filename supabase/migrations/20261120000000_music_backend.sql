@@ -185,7 +185,8 @@ select
   item.release_date,
   count(mu.media_item_id)::integer as track_total,
   count(t.media_item_id) filter (where t.status = 'watched'::public.tracking_status)::integer as track_watched,
-  max(item_track.release_date) filter (where t.status = 'watched'::public.tracking_status) as last_listened_release_date
+  -- tracking 无收听时间戳；此处取已听曲目中最晚的上映日，仅供排序，不是真实收听时间。
+  max(item_track.release_date) filter (where t.status = 'watched'::public.tracking_status) as latest_watched_track_release_date
 from public.music_albums album
 join public.media_items item on item.id = album.media_item_id
 join public.music mu on mu.album_id = album.media_item_id
@@ -197,7 +198,7 @@ having count(t.media_item_id) filter (where t.status = 'watched'::public.trackin
        < count(mu.media_item_id);
 
 comment on view public.v_continue_listening is
-  '在听专辑：至少一首曲目 status=watched，但并非全部曲目都已 watched。无新 tracking 状态。';
+  '在听专辑：至少一首曲目 status=watched，但并非全部曲目都已 watched。排序键 latest_watched_track_release_date 是已听曲目上映日，不是收听时间。';
 
 grant select on public.v_continue_listening to anon, authenticated, service_role;
 
@@ -284,19 +285,17 @@ select
   public.album_average_rating(album_item.id) as rating,
   null::integer as runtime,
   case
+    -- 全部曲目均为听过
     when count(mu.media_item_id) > 0
-      and count(t.media_item_id) = count(mu.media_item_id)
-      and min(t.status)::text = 'watched'
-      and max(t.status)::text = 'watched'
+      and count(t.media_item_id) filter (where t.status = 'watched'::public.tracking_status)
+        = count(mu.media_item_id)
       then 'watched'
-    when count(mu.media_item_id) > 0
-      and count(t.media_item_id) = count(mu.media_item_id)
-      and min(t.status)::text = 'want_to_watch'
-      and max(t.status)::text = 'want_to_watch'
-      then 'want_to_watch'
+    -- 在听：至少一首听过，且尚未听完所有曲目
     when count(t.media_item_id) filter (where t.status = 'watched'::public.tracking_status) > 0
       then 'watching'
-    when count(t.media_item_id) > 0 then 'watching'
+    -- 仅有想听、没有任何听过（含部分未追踪）
+    when count(t.media_item_id) filter (where t.status = 'want_to_watch'::public.tracking_status) > 0
+      then 'want_to_watch'
     else null::text
   end as status,
   (select array_agg(g.name) from public.media_genres mg join public.genres g on g.id = mg.genre_id where mg.media_item_id = album_item.id) as genres,
