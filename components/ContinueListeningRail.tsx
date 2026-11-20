@@ -5,6 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import LetterTile from "@/components/LetterTile";
 import { continueWatchingPosterSrc } from "@/components/ContinueWatchingRail";
+import { scrollBehavior } from "@/lib/scroll-behavior";
 
 /** 首页「在听」卡片。 */
 export type ContinueListeningCard = {
@@ -45,11 +46,6 @@ function progressMax(total: number): number {
 function progressNow(progress: ContinueListeningCard["trackProgress"]): number {
   if (progress.total <= 0) return 0;
   return Math.min(progress.total, Math.max(0, progress.watched));
-}
-
-function scrollBehavior(): ScrollBehavior {
-  if (typeof window.matchMedia !== "function") return "smooth";
-  return window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth";
 }
 
 function CoverFallback({ title }: { title: string }) {

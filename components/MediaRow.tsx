@@ -8,6 +8,7 @@ import LetterTile from "./LetterTile";
 import MediaCardBody from "./MediaCardBody";
 import MediaCardStatusBadge from "./MediaCardStatusBadge";
 import { edgeFadeMask } from "@/lib/edge-fade-mask";
+import { scrollBehavior } from "@/lib/scroll-behavior";
 
 type RowMediaType = "movies" | "shows" | "books";
 
@@ -102,7 +103,7 @@ export default function MediaRow({
     const el = scrollerRef.current;
     if (!el) return;
     const offset = direction === "left" ? -el.clientWidth * 0.75 : el.clientWidth * 0.75;
-    el.scrollBy({ left: offset, behavior: "smooth" });
+    el.scrollBy({ left: offset, behavior: scrollBehavior() });
   };
 
   if (!items || items.length === 0) return null;
@@ -114,7 +115,7 @@ export default function MediaRow({
         {viewAllLink && (
           <Link
             href={viewAllLink}
-            className="text-sm text-fg-secondary hover:text-[var(--accent-hover)] transition-all duration-300 uppercase tracking-wider"
+            className="focus-ring rounded-sm text-sm text-fg-secondary uppercase tracking-wider transition-all duration-300 hover:text-[var(--accent-hover)]"
           >
             查看全部 &rarr;
           </Link>
@@ -128,7 +129,7 @@ export default function MediaRow({
           onClick={() => handleScroll("left")}
           aria-label={`向左滚动 ${title}`}
           disabled={!canScrollLeft}
-          className={`surface-panel absolute left-0 top-[8.5rem] z-20 size-10 -translate-y-1/2 items-center justify-center rounded-full text-fg-secondary shadow-lg shadow-black/40 transition-colors duration-200 hover:border-white/30 hover:bg-white/15 hover:text-white active:scale-95 sm:top-[10rem] ${
+          className={`surface-panel focus-ring absolute left-0 top-[8.5rem] z-20 size-10 -translate-y-1/2 items-center justify-center rounded-full text-fg-secondary shadow-lg shadow-black/40 transition-colors duration-200 hover:border-white/30 hover:bg-white/15 hover:text-white active:scale-95 sm:top-[10rem] ${
             canScrollLeft ? "flex" : "hidden"
           }`}
         >
@@ -143,7 +144,7 @@ export default function MediaRow({
           onClick={() => handleScroll("right")}
           aria-label={`向右滚动 ${title}`}
           disabled={!canScrollRight}
-          className={`surface-panel absolute right-0 top-[8.5rem] z-20 size-10 -translate-y-1/2 items-center justify-center rounded-full text-fg-secondary shadow-lg shadow-black/40 transition-colors duration-200 hover:border-white/30 hover:bg-white/15 hover:text-white active:scale-95 sm:top-[10rem] ${
+          className={`surface-panel focus-ring absolute right-0 top-[8.5rem] z-20 size-10 -translate-y-1/2 items-center justify-center rounded-full text-fg-secondary shadow-lg shadow-black/40 transition-colors duration-200 hover:border-white/30 hover:bg-white/15 hover:text-white active:scale-95 sm:top-[10rem] ${
             canScrollRight ? "flex" : "hidden"
           }`}
         >
@@ -157,7 +158,7 @@ export default function MediaRow({
         <div
           ref={scrollerRef}
           style={edgeFadeMask(canScrollLeft, canScrollRight, "3rem")}
-          className="no-scrollbar -mb-8 flex snap-x snap-mandatory space-x-4 overflow-x-auto scroll-px-1 px-1 pb-12 pt-4 scroll-smooth"
+          className="no-scrollbar -mb-8 flex snap-x snap-mandatory space-x-4 overflow-x-auto scroll-px-1 px-1 pb-12 pt-4 motion-safe:scroll-smooth"
         >
           {items.map(
             /* 决定卡片详情路由类型，并按索引设置首批图片的加载优先级。 */ (media: MediaCard, index: number) => {

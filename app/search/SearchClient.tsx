@@ -19,6 +19,7 @@ import SearchFilterPanel from "@/components/search/SearchFilterPanel";
 import SearchResultSection from "@/components/search/SearchResultSection";
 import SearchScrollTop from "@/components/search/SearchScrollTop";
 import { countActiveFilters, EMPTY_FILTERS, resultRange, resultsHeading } from "@/components/search/search-model";
+import { scrollBehavior } from "@/lib/scroll-behavior";
 import SearchLoading from "./loading";
 
 type SearchProps = {
@@ -142,9 +143,9 @@ function SearchContent({ initialOptions, initialResult }: SearchProps) {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  /** 平滑滚动到页面顶部。 */
+  /** 滚动到页面顶部；系统要求减少动态效果时不做平滑动画。 */
   const scrollToTop = () => {
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    window.scrollTo({ top: 0, behavior: scrollBehavior() });
   };
 
   // 查询键变化时请求新结果，并在查询再次变化或卸载时取消旧请求。
@@ -186,10 +187,10 @@ function SearchContent({ initialOptions, initialResult }: SearchProps) {
     [isLoading, requestError, page, totalPages, updatePage],
   );
 
-  /** 切换结果页，并平滑滚动到搜索结果区域。 */
+  /** 切换结果页，并滚动到搜索结果区域；系统要求减少动态效果时不做平滑动画。 */
   const goToPage = (nextPage: number) => {
     updatePage(nextPage);
-    resultsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    resultsRef.current?.scrollIntoView({ behavior: scrollBehavior(), block: "start" });
   };
 
   const hasActiveFilters = Object.entries(filters).some(

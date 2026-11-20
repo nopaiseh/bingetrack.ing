@@ -4,6 +4,7 @@ import { useLayoutEffect, useRef, useState, type CSSProperties, type KeyboardEve
 import Image from "next/image";
 import Link from "next/link";
 import LetterTile from "@/components/LetterTile";
+import { scrollBehavior } from "@/lib/scroll-behavior";
 
 /**
  * 首页「继续观看」卡片。只保留展示需要的字段。
@@ -87,12 +88,6 @@ function progressMax(total: number): number {
 function progressNow(progress: ContinueWatchingCard["seasonProgress"]): number {
   if (progress.total <= 0) return 0;
   return Math.min(progress.total, Math.max(0, progress.watched));
-}
-
-/** 系统要求减少动态效果时，滚动不要再做平滑动画。 */
-function scrollBehavior(): ScrollBehavior {
-  if (typeof window.matchMedia !== "function") return "smooth";
-  return window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth";
 }
 
 /** 无海报，或图片加载失败时，用和全站相同的字块渐变，格子仍是 2:3。 */
