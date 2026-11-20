@@ -1,6 +1,6 @@
 begin;
 
-select plan(16);
+select plan(15);
 
 select ok(
   exists (select 1 from pg_type t join pg_namespace n on n.oid = t.typnamespace
