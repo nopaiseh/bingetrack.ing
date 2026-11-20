@@ -7,7 +7,7 @@ const TABS = [
   { name: "首页", href: "/", icon: "i-material-symbols-home-rounded" },
   { name: "电影", href: "/movies", icon: "i-material-symbols-movie-rounded" },
   { name: "电视", href: "/shows", icon: "i-material-symbols-tv-rounded" },
-  { name: "专辑", href: "/albums", icon: "i-material-symbols-album-rounded" },
+  { name: "音乐", href: "/albums", icon: "i-material-symbols-album-rounded" },
   { name: "搜索", href: "/search", icon: "i-material-symbols-search-rounded" },
 ];
 

@@ -57,7 +57,7 @@ export default function Navbar() {
     { name: "首页", href: "/" },
     { name: "电影", href: "/movies" },
     { name: "电视节目", href: "/shows" },
-    { name: "专辑", href: "/albums" },
+    { name: "音乐", href: "/albums" },
     // proxy 会给活动 Cookie 失效的预取返回空 204；关闭 /manage 预取作为纵深防御，也避免管理路由的无谓中间件开销。
     ...(auth.owner ? [{ name: "管理", href: "/manage", prefetch: false as const }] : []),
   ];

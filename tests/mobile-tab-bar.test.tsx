@@ -22,6 +22,8 @@ test("渲染五个主要栏目并只标记首页为当前页", () => {
   expect(links.map((link) => link.getAttribute("href"))).toEqual(["/", "/movies", "/shows", "/albums", "/search"]);
   expect(screen.getByRole("link", { name: "首页" })).toHaveAttribute("aria-current", "page");
   expect(screen.getByRole("link", { name: "电影" })).not.toHaveAttribute("aria-current");
+  expect(screen.getByRole("link", { name: "音乐" })).toHaveAttribute("href", "/albums");
+  expect(screen.queryByRole("link", { name: "专辑" })).not.toBeInTheDocument();
 });
 
 test("详情等子路径按前缀标记所属栏目", () => {
