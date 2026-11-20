@@ -11,10 +11,11 @@ const badges: Record<ManagedMediaType, string> = {
   tv_show: "border-sky-500/25 bg-sky-500/10 text-sky-300",
   tv_season: "border-amber-500/25 bg-amber-500/10 text-amber-300",
   tv_episode: "border-emerald-500/25 bg-emerald-500/10 text-emerald-300",
+  // album／music：类型兼容占位；筛选与双栏编辑 UI 由前端另 PR 实现。
   album: "border-violet-500/25 bg-violet-500/10 text-violet-300",
   music: "border-fuchsia-500/25 bg-fuchsia-500/10 text-fuchsia-300",
 };
-const filters: (ManagedMediaType | "all")[] = ["all", "movie", "tv_show", "album", "tv_season", "tv_episode", "music"];
+const filters: (ManagedMediaType | "all")[] = ["all", "movie", "tv_show", "tv_season", "tv_episode"];
 
 /** 概览页的全局搜索：同时搜电影、电视节目、季与单集，可按类型缩小；方向键选择，回车打开。 */
 export default function GlobalSearch() {

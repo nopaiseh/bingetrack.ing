@@ -4,11 +4,10 @@ import { useEffect, useId, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { mediaTypes } from "@/lib/admin/media-form";
 
-/** 可直接新增的顶层类型；季／单集／曲目需从所属节目或专辑进入。 */
+/** 可直接新增的顶层类型；季与单集需从所属节目进入。以后加入书本、音乐等类型时在此追加一项。 */
 const options = [
   { type: "movie", icon: "i-material-symbols-movie-rounded" },
   { type: "tv_show", icon: "i-material-symbols-tv-rounded" },
-  { type: "album", icon: "i-material-symbols-album-rounded" },
 ] as const;
 
 /** 管理首页的「新增」按钮：展开菜单后选择要新增的媒体类型，类型再多也只占一个按钮。 */

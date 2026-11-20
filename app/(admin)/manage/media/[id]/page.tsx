@@ -37,7 +37,7 @@ export default async function EditMediaPage({
   const ancestor = grandparent?.data ? await readParent(db, grandparent.data.series_id) : undefined;
   const { saved, add, n } = await searchParams;
   const rootType = ancestor ? "tv_show" : (parent?.type ?? item.type);
-  const unit = item.type === "tv_season" ? "季" : item.type === "music" ? "曲" : "集";
+  const unit = item.type === "tv_season" ? "季" : "集";
   /** 渲染前后条目链接；没有相邻条目时保留占位，避免按钮位置跳动。 */
   const siblingLink = (sibling: Sibling | undefined, direction: "previous" | "next") => {
     const label = direction === "previous" ? `上一${unit}` : `下一${unit}`;
@@ -66,8 +66,7 @@ export default async function EditMediaPage({
         />
         <span className="min-w-0">
           <span className="block text-xs text-neutral-400">
-            {label} · {sibling.season != null && `第 ${sibling.season} 季 `}
-            {item.type === "music" ? `曲序 ${sibling.number}` : `第 ${sibling.number} ${unit}`}
+            {label} · {sibling.season != null && `第 ${sibling.season} 季 `}第 {sibling.number} {unit}
           </span>
           <span className="block truncate text-sm font-medium text-white group-hover:text-[var(--accent-hover)]">
             {sibling.title}
@@ -78,13 +77,7 @@ export default async function EditMediaPage({
   };
   const season = structure?.seasons.find((entry) => entry.id === structure.expandedSeasonId);
   const facts = !structure
-    ? item.type === "album"
-      ? [impact.tracks != null ? `${formatCount(impact.tracks)} 曲` : null, item.release_date]
-          .filter(Boolean)
-          .join(" · ")
-      : item.type === "music"
-        ? [`曲序 ${formatCount(item.number ?? 0)}`, item.release_date].filter(Boolean).join(" · ")
-        : null
+    ? null
     : item.type === "tv_show"
       ? `${formatCount(structure.seasons.length)} 季 · ${formatCount(structure.totalEpisodes)} 集`
       : item.type === "tv_season"
@@ -97,15 +90,11 @@ export default async function EditMediaPage({
       ? { href: `/movies/${id}`, label: "公开页面" }
       : item.type === "tv_show"
         ? { href: `/shows/${id}`, label: "公开页面" }
-        : item.type === "album"
-          ? { href: `/albums/${id}`, label: "公开页面" }
-          : item.type === "music" && parent
-            ? { href: `/albums/${parent.id}`, label: "公开专辑页面" }
-            : item.type === "tv_season" && parent
-              ? { href: `/shows/${parent.id}/seasons/${id}`, label: "公开季页面" }
-              : item.type === "tv_episode" && parent && ancestor
-                ? { href: `/shows/${ancestor.id}/seasons/${parent.id}`, label: "公开季页面" }
-                : null;
+        : item.type === "tv_season" && parent
+          ? { href: `/shows/${parent.id}/seasons/${id}`, label: "公开季页面" }
+          : item.type === "tv_episode" && parent && ancestor
+            ? { href: `/shows/${ancestor.id}/seasons/${parent.id}`, label: "公开季页面" }
+            : null;
   const header = (
     <nav aria-label="面包屑">
       <ol className="flex flex-wrap items-center gap-1.5 text-sm text-fg-secondary">
@@ -147,16 +136,6 @@ export default async function EditMediaPage({
           {siblingLink(siblings.next, "next")}
         </nav>
       )}
-      {item.type === "album" && (
-        <div className="flex flex-wrap gap-3 text-sm">
-          <Link href={`/manage/media/new?type=music&parent=${id}`} className="admin-button admin-primary">
-            新增曲目
-          </Link>
-          <Link href={`/manage?type=music&parent=${id}`} className="admin-button">
-            曲目列表
-          </Link>
-        </div>
-      )}
       {saved === "1" && <StatusModal key={n} message="保存成功，公开页面缓存已更新。" />}
       <MediaForm
         key={JSON.stringify(item)}
@@ -166,10 +145,11 @@ export default async function EditMediaPage({
         impact={impact}
         publicHref={publicLink?.href}
         publicLabel={publicLink?.label}
-        meta={item.type === "movie" ? null : typeof facts === "string" ? facts : null}
+        meta={item.type === "movie" ? null : facts}
       />
     </>
   );
+  // album／music 无剧集结构；双栏工作台由前端另 PR。此处避免把它们收窄进 SeriesWorkspace。
   if (!structure || item.type === "movie" || item.type === "album" || item.type === "music")
     return (
       <section className="admin-edit-page space-y-6">

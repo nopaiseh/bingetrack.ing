@@ -12,7 +12,7 @@ import {
 } from "@/lib/admin/list-params";
 import { listAdminChildren } from "@/lib/admin/lists";
 import { mediaTypes } from "@/lib/admin/media-form";
-import { listAlbums, listMovies, listPeople, listTvShows } from "../list-actions";
+import { listMovies, listPeople, listTvShows } from "../list-actions";
 import { formatCount, statusLabels } from "../media/series/shared";
 import PageHeader, { AdminCrumb } from "../../PageHeader";
 import StatusModal from "../StatusModal";
@@ -38,12 +38,12 @@ function pageParams(values: Record<string, string | undefined>) {
   return Object.fromEntries(Object.entries(values).flatMap(([key, value]) => (value ? [[key, value]] : [])));
 }
 
-/** 电影、电视节目与专辑走分页接口。季／单集／曲目由 PagedChildList 读取。 */
+/** 电影和电视节目走分页接口。季与单集由 PagedChildList 读取。 */
 export async function PagedMediaList({
   type,
   search,
 }: {
-  type: "movie" | "tv_show" | "album";
+  type: "movie" | "tv_show";
   search: Record<string, string | undefined>;
 }) {
   const q = (search.q ?? "").trim().slice(0, ADMIN_LIST_MAX_QUERY_LENGTH);
@@ -51,11 +51,7 @@ export async function PagedMediaList({
   const page = readPage(search.page);
   const pageSize = readPageSize(search.pageSize);
   const result =
-    type === "movie"
-      ? await listMovies({ q, sort, page, pageSize })
-      : type === "tv_show"
-        ? await listTvShows({ q, sort, page, pageSize })
-        : await listAlbums({ q, sort, page, pageSize });
+    type === "movie" ? await listMovies({ q, sort, page, pageSize }) : await listTvShows({ q, sort, page, pageSize });
   const totalPages = Math.max(1, Math.ceil(result.total / result.pageSize));
   const kept = pageParams({
     type,
@@ -65,17 +61,12 @@ export async function PagedMediaList({
   });
   if (page > totalPages) redirect(`/manage?${new URLSearchParams({ ...kept, page: String(totalPages) })}`);
   const show = type === "tv_show";
-  const album = type === "album";
   return (
     <section>
       <PageHeader
         eyebrow={<AdminCrumb current={mediaTypes[type]} />}
         title={mediaTypes[type]}
-        description={
-          <>
-            共 {result.total} 个条目 · {album ? "管理专辑与曲目" : "管理影视与观看记录"}
-          </>
-        }
+        description={<>共 {result.total} 个条目 · 管理影视与观看记录</>}
         actions={
           <Link href={`/manage/media/new?type=${type}`} className="admin-button admin-primary shrink-0">
             新增{mediaTypes[type]}
@@ -94,7 +85,7 @@ export async function PagedMediaList({
             label: "排序",
             value: sort,
             options: [
-              { value: "date", label: show ? "最近播出（新→旧）" : album ? "发行日期（新→旧）" : "上映日期（新→旧）" },
+              { value: "date", label: show ? "最近播出（新→旧）" : "上映日期（新→旧）" },
               { value: "title", label: "标题" },
               { value: "rating", label: "评分（高→低）" },
             ],
@@ -102,12 +93,10 @@ export async function PagedMediaList({
           { name: "pageSize", label: "每页", value: String(result.pageSize), options: pageSizes },
         ]}
         columns={[
-          { key: "date", label: show ? "最近播出" : album ? "发行" : "上映", className: "admin-col-date" },
+          { key: "date", label: show ? "最近播出" : "上映", className: "admin-col-date" },
           ...(show
             ? [{ key: "structure", label: "季 / 集", className: "admin-col-structure" }]
-            : album
-              ? [{ key: "structure", label: "曲目", className: "admin-col-structure" }]
-              : [{ key: "runtime", label: "片长", className: "admin-col-runtime" }]),
+            : [{ key: "runtime", label: "片长", className: "admin-col-runtime" }]),
           { key: "rating", label: "评分", className: "admin-col-rating" },
         ]}
         rows={result.items.map(mediaRow)}
@@ -117,7 +106,7 @@ export async function PagedMediaList({
         totalPages={totalPages}
         pageParams={kept}
         empty="没有符合条件的条目。"
-        noun={album ? "张" : "部"}
+        noun="部"
         listLabel={`${mediaTypes[type]}列表`}
         actions={[]}
         wired={type}
@@ -132,25 +121,12 @@ function mediaRow(item: MediaListItem): AdminListRow {
   const tone = item.status === "watched" ? "watched" : item.status === "watching" ? "watching" : "want";
   const runtime = formatRuntime(item.runtime);
   const structure = `${formatCount(item.season_count)} 季 · ${formatCount(item.episode_count)} 集`;
-  const tracks = `${formatCount(item.track_count)} 曲`;
   const cells = [
-    {
-      key: "date",
-      label: item.type === "tv_show" ? "最近播出" : item.type === "album" ? "发行" : "上映",
-      value: date ?? "—",
-    },
+    { key: "date", label: item.type === "tv_show" ? "最近播出" : "上映", value: date ?? "—" },
     ...(item.type === "movie" ? [{ key: "runtime", label: "片长", value: runtime ?? "—" }] : []),
     ...(item.type === "tv_show" ? [{ key: "structure", label: "季 / 集", value: structure }] : []),
-    ...(item.type === "album" ? [{ key: "structure", label: "曲目", value: tracks }] : []),
     { key: "rating", label: "评分", value: item.rating != null ? item.rating.toFixed(1) : "—" },
   ];
-  const listenStatus: AdminListRow["status"] =
-    item.type === "album"
-      ? {
-          label: item.status === "watched" ? "听过" : item.status === "watching" ? "在听" : "想听",
-          tone,
-        }
-      : { label: statusLabels[item.status], tone };
   return {
     id: item.id,
     href: `/manage/media/${item.id}?type=${item.type}`,
@@ -159,12 +135,10 @@ function mediaRow(item: MediaListItem): AdminListRow {
     detail:
       item.type === "movie"
         ? [date, item.runtime ? `${Math.round(item.runtime)} 分钟` : null].filter(Boolean).join(" · ")
-        : item.type === "album"
-          ? [date, tracks].filter(Boolean).join(" · ")
-          : [date, structure].filter(Boolean).join(" · "),
+        : [date, structure].filter(Boolean).join(" · "),
     imageUrl: item.cover_url,
     cells,
-    status: listenStatus,
+    status: { label: statusLabels[item.status], tone },
     trailing:
       item.type === "tv_show"
         ? {
@@ -172,17 +146,11 @@ function mediaRow(item: MediaListItem): AdminListRow {
             label: `为${item.title}新增季`,
             icon: "i-material-symbols-add-rounded",
           }
-        : item.type === "album"
-          ? {
-              href: `/manage/media/new?type=music&parent=${item.id}`,
-              label: `为${item.title}新增曲目`,
-              icon: "i-material-symbols-add-rounded",
-            }
-          : {
-              href: `/movies/${item.id}`,
-              label: `查看${item.title}的公开页面`,
-              icon: "i-material-symbols-arrow-outward-rounded",
-            },
+        : {
+            href: `/movies/${item.id}`,
+            label: `查看${item.title}的公开页面`,
+            icon: "i-material-symbols-arrow-outward-rounded",
+          },
   };
 }
 
@@ -267,18 +235,17 @@ export async function PagedPeopleList({
   );
 }
 
-/** 季、单集与曲目走 listAdminChildren。参数白名单在 list-params，页面只负责展示。 */
+/** 季与单集走 listAdminChildren。参数白名单在 list-params，页面只负责展示。 */
 export async function PagedChildList({
   db,
   type,
   search,
 }: {
   db: SupabaseClient;
-  type: "tv_season" | "tv_episode" | "music";
+  type: "tv_season" | "tv_episode";
   search: Record<string, string | undefined>;
 }) {
   const season = type === "tv_season";
-  const track = type === "music";
   const result = await listAdminChildren(db, type, search.parent, {
     q: search.q,
     sort: search.sort,
@@ -333,16 +300,13 @@ export async function PagedChildList({
         search={{ name: "q", label: "搜索标题", placeholder: "搜索标题或原名", value: result.q }}
         chips={{
           name: "status",
-          label: track ? "收听状态" : "观看状态",
+          label: "观看状态",
           value: result.status,
           options: [
             { value: "", label: "全部" },
             ...Object.entries(statusLabels)
               .filter(([value]) => !(value === "watching" && !season))
-              .map(([value, label]) => ({
-                value,
-                label: track ? (value === "watched" ? "听过" : value === "want_to_watch" ? "想听" : label) : label,
-              })),
+              .map(([value, label]) => ({ value, label })),
           ],
         }}
         selects={[
@@ -352,14 +316,11 @@ export async function PagedChildList({
             value: result.sort,
             options: Object.entries(childSortLabels)
               .filter(([value]) => !(value === "rating" && season))
-              .map(([value, label]) => ({
-                value,
-                label: value === "date" && season ? "最近播出（新→旧）" : value === "date" && track ? "曲序" : label,
-              })),
+              .map(([value, label]) => ({ value, label: value === "date" && season ? "最近播出（新→旧）" : label })),
           },
         ]}
         columns={[
-          { key: "date", label: season ? "最近播出" : track ? "曲序" : "上映", className: "admin-col-date" },
+          { key: "date", label: season ? "最近播出" : "上映", className: "admin-col-date" },
           ...(season ? [] : [{ key: "rating", label: "评分", className: "admin-col-rating" }]),
         ]}
         rows={result.items.map(childRow)}
@@ -369,7 +330,7 @@ export async function PagedChildList({
         totalPages={totalPages}
         pageParams={filters}
         empty="没有符合条件的条目。"
-        noun={season ? "季" : track ? "首" : "集"}
+        noun={season ? "季" : "集"}
         listLabel={`${mediaTypes[type]}列表`}
         actions={mediaBulkActions}
         showStatus
@@ -380,13 +341,8 @@ export async function PagedChildList({
 
 function childRow(item: ChildListItem): AdminListRow {
   const season = item.type === "tv_season";
-  const track = item.type === "music";
   const cells = [
-    {
-      key: "date",
-      label: season ? "最近播出" : track ? "曲序" : "上映",
-      value: track ? `#${formatCount(item.track?.trackNumber ?? 0)}` : (item.display_date ?? "—"),
-    },
+    { key: "date", label: season ? "最近播出" : "上映", value: item.display_date ?? "—" },
     ...(season ? [] : [{ key: "rating", label: "评分", value: item.rating != null ? item.rating.toFixed(1) : "—" }]),
   ];
   const tone = item.status === "watched" ? "watched" : item.status === "watching" ? "watching" : "want";
@@ -394,16 +350,7 @@ function childRow(item: ChildListItem): AdminListRow {
     ? `${item.season.seriesTitle ?? "未知电视节目"} · 第 ${item.season.seasonNumber} 季 · ${formatCount(item.season.episodeCount)} 集`
     : item.episode
       ? `${item.episode.seriesTitle ?? ""} · ${item.episode.seasonTitle ?? "未知季"} · 第 ${formatCount(item.episode.episodeNumber)} 集`
-      : item.track
-        ? `${item.track.albumTitle ?? "未知专辑"} · 曲序 ${formatCount(item.track.trackNumber)}`
-        : null;
-  const statusLabel = track
-    ? item.status === "watched"
-      ? "听过"
-      : item.status === "want_to_watch"
-        ? "想听"
-        : statusLabels[item.status]
-    : statusLabels[item.status];
+      : null;
   return {
     id: item.id,
     href: `/manage/media/${item.id}?type=${item.type}`,
@@ -417,7 +364,7 @@ function childRow(item: ChildListItem): AdminListRow {
     meta: context,
     imageUrl: item.cover_url,
     cells,
-    status: { label: statusLabel, tone },
+    status: { label: statusLabels[item.status], tone },
     trailing: null,
   };
 }
