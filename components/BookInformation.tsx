@@ -180,7 +180,11 @@ export default function BookInformation({
         {factItems.length > 0 ? (
           <dl
             className={`grid gap-px overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--border)] ${
-              factItems.length >= 4 ? "grid-cols-2 sm:grid-cols-4" : "grid-cols-2 sm:grid-cols-3"
+              factItems.length >= 5
+                ? "grid-cols-2 sm:grid-cols-3 lg:grid-cols-5"
+                : factItems.length === 4
+                  ? "grid-cols-2 sm:grid-cols-4"
+                  : "grid-cols-2 sm:grid-cols-3"
             }`}
           >
             {factItems}
