@@ -5,7 +5,14 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useId, useRef, useState } from "react";
 import ManagePagination from "../ManagePagination";
-import { deleteMovies, deletePeople, deleteTvShows, setMovieStatus, setTvShowStatus } from "../list-actions";
+import {
+  deleteAlbums,
+  deleteMovies,
+  deletePeople,
+  deleteTvShows,
+  setMovieStatus,
+  setTvShowStatus,
+} from "../list-actions";
 import type { BulkCounts } from "@/lib/admin/list-params";
 import {
   adminListHref,
@@ -44,10 +51,12 @@ type AdminListProps = {
   listLabel: string;
   /** 没有对应接口时渲染为禁用，并提示 Coming soon。 */
   actions: AdminBulkAction[];
-  /** 电影、电视节目、人物走已合并的批量接口。已看与想看只提供给影视。 */
-  wired?: "movie" | "tv_show" | "people";
+  /** 电影、电视节目、专辑、人物走已合并的批量接口。已看与想看只提供给影视。 */
+  wired?: "movie" | "tv_show" | "album" | "people";
   showStatus?: boolean;
 };
+
+type WiredKind = NonNullable<AdminListProps["wired"]>;
 
 function StatusChip({ status }: { status: AdminListStatus }) {
   return (
@@ -59,7 +68,22 @@ function StatusChip({ status }: { status: AdminListStatus }) {
 }
 
 function allowedCover(src: string) {
-  return src.startsWith("https://image.tmdb.org/t/p/") ? src : null;
+  if (src.startsWith("https://image.tmdb.org/t/p/")) return src;
+  try {
+    const url = new URL(src);
+    if (url.protocol !== "https:") return null;
+    const host = url.hostname;
+    if (
+      host === "coverartarchive.org" ||
+      host === "archive.org" ||
+      host.endsWith(".mzstatic.com") ||
+      host.endsWith(".archive.org")
+    )
+      return src;
+  } catch {
+    return null;
+  }
+  return null;
 }
 
 function ListThumb({ src, title }: { src?: string | null; title: string }) {
@@ -436,14 +460,14 @@ export default function AdminList({
   );
 }
 
-function liveActions(kind: "movie" | "tv_show" | "people"): AdminBulkAction[] {
+function liveActions(kind: WiredKind): AdminBulkAction[] {
   const remove: AdminBulkAction = {
     id: "delete",
     label: "删除",
     icon: "i-material-symbols-delete-outline-rounded",
     destructive: true,
   };
-  if (kind === "people") return [remove];
+  if (kind === "people" || kind === "album") return [remove];
   return [
     { id: "watched", label: "已看", icon: "i-material-symbols-check-circle-outline-rounded" },
     { id: "want", label: "想看", icon: "i-material-symbols-bookmark-outline-rounded" },
@@ -451,10 +475,11 @@ function liveActions(kind: "movie" | "tv_show" | "people"): AdminBulkAction[] {
   ];
 }
 
-function deleteConfirm(kind: "movie" | "tv_show" | "people", count: number, noun: string) {
+function deleteConfirm(kind: WiredKind, count: number, noun: string) {
   if (kind === "tv_show")
     return `确定删除所选 ${count} ${noun}电视节目？下属季、集和观看记录会一并删除。此操作无法撤销。`;
   if (kind === "people") return `确定删除所选 ${count} ${noun}人物？演职关联会删除，影视作品会保留。此操作无法撤销。`;
+  if (kind === "album") return `确定删除所选 ${count} ${noun}专辑？下属曲目和收听记录会一并删除。此操作无法撤销。`;
   return `确定删除所选 ${count} ${noun}电影？观看记录和关联会一并删除。此操作无法撤销。`;
 }
 
@@ -465,8 +490,9 @@ function bulkNotice(actionId: string, result: BulkCounts, noun: string) {
   return `已${verb} ${result.succeeded} ${noun}，${result.failed} ${noun}失败。`;
 }
 
-async function runBulk(kind: "movie" | "tv_show" | "people", actionId: string, ids: string[]) {
+async function runBulk(kind: WiredKind, actionId: string, ids: string[]) {
   if (kind === "people") return deletePeople(ids);
+  if (kind === "album") return deleteAlbums(ids);
   if (kind === "tv_show") {
     if (actionId === "watched") return setTvShowStatus(ids, "watched");
     if (actionId === "want") return setTvShowStatus(ids, "want_to_watch");

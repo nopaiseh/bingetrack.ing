@@ -7,12 +7,14 @@ import { readEditableMedia } from "@/lib/admin/read-media";
 import { mediaTypes } from "@/lib/admin/media-form";
 import { readParent, readImpact, readSiblings, type Sibling } from "@/lib/admin/media-context";
 import { readSeriesStructure } from "@/lib/admin/series-structure";
+import { readAlbumStructure } from "@/lib/admin/album-structure";
 import MediaForm from "../MediaForm";
 import StatusModal from "../../StatusModal";
 import SeriesWorkspace from "../series/SeriesWorkspace";
+import AlbumWorkspace from "../album/AlbumWorkspace";
 import { formatCount } from "../series/shared";
 
-/** 载入完整编辑资料；电视节目、季与单集进入带剧集结构栏的工作台，季集只在结构栏中新增。 */
+/** 载入完整编辑资料；电视节目走剧集工作台，专辑走曲目工作台，季集／曲目只在结构栏中新增。 */
 export default async function EditMediaPage({
   params,
   searchParams,
@@ -25,19 +27,24 @@ export default async function EditMediaPage({
   if (!isMediaId(id)) notFound();
   const item = await readEditableMedia(db, id);
   if (!item || !Object.hasOwn(mediaTypes, item.type)) notFound();
-  const [parent, impact, siblings, structure] = await Promise.all([
+  const [parent, impact, siblings, structure, albumStructure] = await Promise.all([
     readParent(db, item.parent_id ?? ""),
     readImpact(db, id, item.type),
     readSiblings(db, item.type, item.parent_id, item.number),
     readSeriesStructure(db, { id, type: item.type, parent_id: item.parent_id }),
+    readAlbumStructure(db, { id, type: item.type, parent_id: item.parent_id }),
   ]);
   const grandparent =
     parent?.type === "tv_season" ? await db.from("tv_seasons").select("series_id").eq("id", parent.id).single() : null;
   if (grandparent?.error) throw new Error("无法读取电视节目资料。");
   const ancestor = grandparent?.data ? await readParent(db, grandparent.data.series_id) : undefined;
   const { saved, add, n } = await searchParams;
-  const rootType = ancestor ? "tv_show" : (parent?.type ?? item.type);
-  const unit = item.type === "tv_season" ? "季" : "集";
+  const rootType = ancestor
+    ? "tv_show"
+    : parent?.type === "album" || item.type === "album" || item.type === "music"
+      ? "album"
+      : (parent?.type ?? item.type);
+  const unit = item.type === "tv_season" ? "季" : item.type === "music" ? "首" : "集";
   /** 渲染前后条目链接；没有相邻条目时保留占位，避免按钮位置跳动。 */
   const siblingLink = (sibling: Sibling | undefined, direction: "previous" | "next") => {
     const label = direction === "previous" ? `上一${unit}` : `下一${unit}`;
@@ -76,15 +83,19 @@ export default async function EditMediaPage({
     );
   };
   const season = structure?.seasons.find((entry) => entry.id === structure.expandedSeasonId);
-  const facts = !structure
-    ? null
-    : item.type === "tv_show"
-      ? `${formatCount(structure.seasons.length)} 季 · ${formatCount(structure.totalEpisodes)} 集`
-      : item.type === "tv_season"
-        ? `第 ${item.number} 季 · ${formatCount(season?.episodeCount ?? 0)} 集`
-        : [season && `第 ${season.number} 季`, `第 ${formatCount(item.number ?? 0)} 集`, item.release_date]
-            .filter(Boolean)
-            .join(" · ");
+  const facts = albumStructure
+    ? item.type === "album"
+      ? `${formatCount(albumStructure.tracks.length)} 首`
+      : [`第 ${formatCount(item.number ?? 0)} 首`, item.release_date].filter(Boolean).join(" · ")
+    : !structure
+      ? null
+      : item.type === "tv_show"
+        ? `${formatCount(structure.seasons.length)} 季 · ${formatCount(structure.totalEpisodes)} 集`
+        : item.type === "tv_season"
+          ? `第 ${item.number} 季 · ${formatCount(season?.episodeCount ?? 0)} 集`
+          : [season && `第 ${season.number} 季`, `第 ${formatCount(item.number ?? 0)} 集`, item.release_date]
+              .filter(Boolean)
+              .join(" · ");
   const publicLink =
     item.type === "movie"
       ? { href: `/movies/${id}`, label: "公开页面" }
@@ -94,7 +105,11 @@ export default async function EditMediaPage({
           ? { href: `/shows/${parent.id}/seasons/${id}`, label: "公开季页面" }
           : item.type === "tv_episode" && parent && ancestor
             ? { href: `/shows/${ancestor.id}/seasons/${parent.id}`, label: "公开季页面" }
-            : null;
+            : item.type === "album"
+              ? { href: `/albums/${id}`, label: "公开页面" }
+              : item.type === "music" && parent
+                ? { href: `/albums/${parent.id}`, label: "公开专辑页面" }
+                : null;
   const header = (
     <nav aria-label="面包屑">
       <ol className="flex flex-wrap items-center gap-1.5 text-sm text-fg-secondary">
@@ -149,8 +164,23 @@ export default async function EditMediaPage({
       />
     </>
   );
-  // album／music 无剧集结构；双栏工作台由前端另 PR。此处避免把它们收窄进 SeriesWorkspace。
-  if (!structure || item.type === "movie" || item.type === "album" || item.type === "music")
+
+  if (albumStructure && (item.type === "album" || item.type === "music")) {
+    return (
+      <div className="admin-edit-page">
+        <AlbumWorkspace
+          structure={albumStructure}
+          current={{ type: item.type, id }}
+          header={header}
+          initialAdd={add === "track" || add === "music"}
+        >
+          {body}
+        </AlbumWorkspace>
+      </div>
+    );
+  }
+
+  if (!structure || item.type === "movie")
     return (
       <section className="admin-edit-page space-y-6">
         {header}
@@ -161,7 +191,7 @@ export default async function EditMediaPage({
     <div className="admin-edit-page">
       <SeriesWorkspace
         structure={structure}
-        current={{ type: item.type, id }}
+        current={{ type: item.type as "tv_show" | "tv_season" | "tv_episode", id }}
         header={header}
         initialAdd={add === "season" || add === "episode" ? add : undefined}
       >

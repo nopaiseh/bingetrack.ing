@@ -3,7 +3,7 @@ import { mediaTypes, type ManagedMediaType } from "@/lib/admin/media-form";
 import Overview from "./Overview";
 import { PagedChildList, PagedMediaList } from "./list/wired";
 
-/** 不带类型时显示管理首页。电影、电视节目、季和单集分别进入对应的分页列表。 */
+/** 不带类型时显示管理首页。电影、电视节目、专辑、季和单集分别进入对应的分页列表。 */
 export default async function AdminPage({
   searchParams,
 }: {
@@ -14,8 +14,8 @@ export default async function AdminPage({
   // 不带类型的 /manage 是登录后的管理首页；各列表地址都带 type。
   if (!params.type) return <Overview db={db} />;
   const type = Object.hasOwn(mediaTypes, params.type) ? (params.type as ManagedMediaType) : "movie";
-  if (type === "movie" || type === "tv_show") return <PagedMediaList type={type} search={params} />;
-  // album／music 列表 UI 由前端另 PR；此处只保证类型收窄，避免误入季／集列表。
+  if (type === "movie" || type === "tv_show" || type === "album") return <PagedMediaList type={type} search={params} />;
   if (type === "tv_season" || type === "tv_episode") return <PagedChildList db={db} type={type} search={params} />;
+  // 曲目挂在专辑工作台下编辑，不提供顶层曲目列表。
   return <Overview db={db} />;
 }

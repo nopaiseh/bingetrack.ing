@@ -14,6 +14,7 @@ const groups = [
     items: [
       { label: "电影", value: "movie", icon: "i-material-symbols-movie-rounded" },
       { label: "电视节目", value: "tv_show", icon: "i-material-symbols-tv-rounded" },
+      { label: "专辑", value: "album", icon: "i-material-symbols-library-music-rounded" },
     ],
   },
   {
@@ -49,7 +50,8 @@ export default function ManageNav() {
       : pathname.startsWith("/manage/references/")
         ? pathname.split("/")[3]
         : (params.get("type") ?? (pathname === "/manage" ? "home" : ""));
-  const highlighted = active === "tv_season" || active === "tv_episode" ? "tv_show" : active;
+  const highlighted =
+    active === "tv_season" || active === "tv_episode" ? "tv_show" : active === "music" ? "album" : active;
 
   useEffect(() => {
     const isList = (pathname === "/manage" && params.has("type")) || /^\/manage\/references\/[^/]+$/.test(pathname);
@@ -114,7 +116,7 @@ export default function ManageNav() {
         ? "/settings"
         : value === "reports"
           ? "/manage/reports"
-          : value.startsWith("tv_") || value === "movie"
+          : value.startsWith("tv_") || value === "movie" || value === "album"
             ? `/manage?type=${value}`
             : `/manage/references/${value}`;
   }

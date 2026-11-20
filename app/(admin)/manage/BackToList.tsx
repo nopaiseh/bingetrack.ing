@@ -14,7 +14,9 @@ export default function BackToList({
 }) {
   const router = useRouter();
   const fallback =
-    category === "movie" || category.startsWith("tv_") ? `/manage?type=${category}` : `/manage/references/${category}`;
+    category === "movie" || category === "album" || category.startsWith("tv_")
+      ? `/manage?type=${category === "music" ? "album" : category}`
+      : `/manage/references/${category}`;
   return (
     <Link
       href={fallback}

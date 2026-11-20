@@ -1,0 +1,110 @@
+import { render, screen } from "@testing-library/react";
+import { expect, it, vi } from "vitest";
+import MediaForm from "@/app/(admin)/manage/media/MediaForm";
+
+vi.mock("@/app/(admin)/manage/actions", () => ({
+  saveMedia: vi.fn(async () => ({})),
+  deleteMedia: vi.fn(),
+}));
+vi.mock("@/app/(admin)/manage/reference-actions", () => ({
+  saveReference: vi.fn(),
+  deleteReference: vi.fn(),
+  searchChoices: vi.fn(async () => ({ choices: [] })),
+}));
+
+const blank = {
+  alternate_title: null,
+  summary: null,
+  cover_url: null,
+  release_date: null,
+  runtime: null,
+  parent_id: null,
+  number: null,
+  status: "want_to_watch" as const,
+  rating: null,
+  genres: [] as string[],
+  languages: [] as string[],
+  regions: [] as string[],
+  actors: [],
+  directors: [],
+  artists: [],
+  lyricists: [],
+  composers: [],
+  label: null,
+};
+
+it("专辑表单展示厂牌、艺人选择器与正方形无封面占位", () => {
+  render(
+    <MediaForm
+      initialType="album"
+      lockType
+      item={{
+        id: "a1",
+        type: "album",
+        title: "叶惠美",
+        ...blank,
+        label: "阿尔发音乐",
+        artists: [{ id: "p1", name: "周杰伦", alternate_name: null }],
+      }}
+    />,
+  );
+  expect(screen.getByLabelText("厂牌")).toHaveValue("阿尔发音乐");
+  expect(screen.getByRole("heading", { name: "封面图片" })).toBeInTheDocument();
+  expect(screen.getByText("无封面")).toBeInTheDocument();
+  expect(screen.getByRole("heading", { name: "艺人" })).toBeInTheDocument();
+  expect(screen.getByText("周杰伦")).toBeInTheDocument();
+  expect(screen.getByLabelText("发行日期")).toBeInTheDocument();
+  expect(screen.queryByLabelText("时长（秒）")).not.toBeInTheDocument();
+});
+
+it("曲目表单要求曲序与所属专辑，时长为整数秒，创作人员用人物选择器", () => {
+  render(
+    <MediaForm
+      initialType="music"
+      lockType
+      parent={{ id: "a1", name: "叶惠美", type: "album", detail: "专辑", cover_url: null }}
+      item={{
+        id: "t5",
+        type: "music",
+        title: "东风破",
+        ...blank,
+        parent_id: "a1",
+        number: 5,
+        runtime: 313,
+        artists: [{ id: "p1", name: "周杰伦", alternate_name: null }],
+        lyricists: [
+          { id: "p2", name: "方文山", alternate_name: null },
+          { id: "p1", name: "周杰伦", alternate_name: null },
+        ],
+        composers: [{ id: "p1", name: "周杰伦", alternate_name: null }],
+      }}
+    />,
+  );
+  expect(screen.getByLabelText("曲序")).toHaveValue(5);
+  expect(screen.getByText(/同一专辑内曲序不能重复/)).toBeInTheDocument();
+  expect(screen.getByLabelText("时长（秒）")).toHaveValue(313);
+  expect(screen.getByText("5:13")).toBeInTheDocument();
+  expect(screen.getByRole("heading", { name: "创作人员" })).toBeInTheDocument();
+  expect(screen.getAllByText("演唱艺人").length).toBeGreaterThan(0);
+  expect(screen.getAllByText("作词").length).toBeGreaterThan(0);
+  expect(screen.getAllByText("作曲").length).toBeGreaterThan(0);
+  expect(screen.getByLabelText("评分（0–10，可留空）")).toBeInTheDocument();
+  expect(screen.queryByRole("heading", { name: "封面图片" })).not.toBeInTheDocument();
+  // 隐藏字段提交人物 ID（ChoicePicker 按 ID\\t姓名）
+  const artists = document.querySelector('input[name="artists"]') as HTMLInputElement;
+  expect(artists.value).toContain("p1\t周杰伦");
+  const lyricists = document.querySelector('input[name="lyricists"]') as HTMLInputElement;
+  expect(lyricists.value).toContain("p2\t方文山");
+});
+
+it("专辑删除提示包含下属曲目数量", () => {
+  render(
+    <MediaForm
+      initialType="album"
+      lockType
+      impact={{ seasons: 0, episodes: 0, tracks: 11 }}
+      item={{ id: "a1", type: "album", title: "叶惠美", ...blank }}
+    />,
+  );
+  expect(screen.getAllByText(/本次还会删除 11 首曲目/).length).toBeGreaterThan(0);
+});
