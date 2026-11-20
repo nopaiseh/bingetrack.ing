@@ -30,13 +30,19 @@ type TrackJoinRow = {
         id: string;
         title: string | null;
         runtime: number | null;
-        tracking: { status: string | null; rating: number | null } | Array<{ status: string | null; rating: number | null }> | null;
+        tracking:
+          | { status: string | null; rating: number | null }
+          | Array<{ status: string | null; rating: number | null }>
+          | null;
       }
     | Array<{
         id: string;
         title: string | null;
         runtime: number | null;
-        tracking: { status: string | null; rating: number | null } | Array<{ status: string | null; rating: number | null }> | null;
+        tracking:
+          | { status: string | null; rating: number | null }
+          | Array<{ status: string | null; rating: number | null }>
+          | null;
       }>
     | null;
 };

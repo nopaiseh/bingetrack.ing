@@ -233,9 +233,7 @@ export const mediaTypes = Object.fromEntries(
 ) as { readonly [K in ManagedMediaType]: (typeof MEDIA_TYPE_DEFINITIONS)[K]["label"] };
 
 /** 管理列表顶层类型（不含季／集）：公开目录中且 adminManaged 的类型；专辑进公开目录但不进管理列表。 */
-export const adminMediaListTypes = CATALOG_DB_TYPES.filter(
-  (key) => MEDIA_TYPE_DEFINITIONS[key].adminManaged,
-);
+export const adminMediaListTypes = CATALOG_DB_TYPES.filter((key) => MEDIA_TYPE_DEFINITIONS[key].adminManaged);
 
 /** 参与管理端批量操作的数据库类型。 */
 export const ADMIN_BULK_DB_TYPES = ALL_KEYS.filter(

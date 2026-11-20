@@ -80,7 +80,11 @@ export function SearchMediaCardSkeleton() {
 }
 
 function MusicSearchBody({ item, typeLabel }: { item: MediaCard; typeLabel: string | null }) {
-  const year = item.date ? item.date.substring(0, 4) : item.release_year ? String(item.release_year).slice(0, 4) : "未知";
+  const year = item.date
+    ? item.date.substring(0, 4)
+    : item.release_year
+      ? String(item.release_year).slice(0, 4)
+      : "未知";
   const artist = (item.artists ?? []).filter(Boolean)[0] ?? null;
 
   return (
@@ -113,7 +117,9 @@ export function SearchMediaCard({ item, returnHref }: { item: MediaCard; returnH
   const typeLabel = typeTagLabel(item);
   const href = detailHref(item, returnHref);
   const mediaBodyType = item.type === "shows" ? "shows" : "movies";
-  const showTypeOnFilmCard = typeLabel && (item.type === "albums" || item.type === "music" || item.dbType === "album" || item.dbType === "music");
+  const showTypeOnFilmCard =
+    typeLabel &&
+    (item.type === "albums" || item.type === "music" || item.dbType === "album" || item.dbType === "music");
 
   const cover = (
     <div

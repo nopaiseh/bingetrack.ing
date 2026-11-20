@@ -64,27 +64,24 @@ test(
   },
 );
 
-test(
-  "maps album artists in credit order and keeps music cards out of film routes",
-  () => {
-    const album = mapViewRowToMediaCard({
-      id: "a1",
-      type: "album",
-      title: "Album",
-      artists: ["B", "A"],
-      rating: 7,
-    });
-    assert.equal(album.type, "albums");
-    assert.equal(album.dbType, "album");
-    assert.deepEqual(album.artists, ["B", "A"]);
+test("maps album artists in credit order and keeps music cards out of film routes", () => {
+  const album = mapViewRowToMediaCard({
+    id: "a1",
+    type: "album",
+    title: "Album",
+    artists: ["B", "A"],
+    rating: 7,
+  });
+  assert.equal(album.type, "albums");
+  assert.equal(album.dbType, "album");
+  assert.deepEqual(album.artists, ["B", "A"]);
 
-    const single = mapViewRowToMediaCard({
-      id: "m1",
-      type: "music",
-      title: "Song",
-      artists: ["Singer"],
-    });
-    assert.equal(single.type, "music");
-    assert.equal(single.dbType, "music");
-  },
-);
+  const single = mapViewRowToMediaCard({
+    id: "m1",
+    type: "music",
+    title: "Song",
+    artists: ["Singer"],
+  });
+  assert.equal(single.type, "music");
+  assert.equal(single.dbType, "music");
+});

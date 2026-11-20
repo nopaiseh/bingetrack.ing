@@ -156,8 +156,7 @@ export default function MediaRow({
           {items.map(
             /* 决定卡片详情路由类型，并按索引设置首批图片的加载优先级。 */ (media: MediaCard, index: number) => {
               // 横向海报行只服务影视 2:3 卡片；专辑走封面墙，不进此组件。
-              const mediaType: "movies" | "shows" =
-                type === "shows" || media.type === "shows" ? "shows" : "movies";
+              const mediaType: "movies" | "shows" = type === "shows" || media.type === "shows" ? "shows" : "movies";
               return (
                 <Link
                   href={`/${mediaType}/${media.id}`}

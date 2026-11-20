@@ -62,15 +62,11 @@ export default function AlbumTracklist({ tracks }: { tracks: readonly AlbumTrack
 
             return (
               <tr key={track.id} className="border-b border-[var(--border)] last:border-b-0 hover:bg-white/[0.03]">
-                <td className="px-3 py-3 align-top font-mono text-fg-muted sm:px-4">
-                  {track.trackNumber ?? "—"}
-                </td>
+                <td className="px-3 py-3 align-top font-mono text-fg-muted sm:px-4">{track.trackNumber ?? "—"}</td>
                 <td className="min-w-0 px-3 py-3 align-top sm:px-4">
                   <div className="font-medium text-fg">{track.title}</div>
                   <div className="mt-0.5 text-xs text-fg-muted md:hidden">{joinNames(track.singers)}</div>
-                  {creditsLine ? (
-                    <div className="mt-0.5 text-xs text-fg-subtle lg:hidden">{creditsLine}</div>
-                  ) : null}
+                  {creditsLine ? <div className="mt-0.5 text-xs text-fg-subtle lg:hidden">{creditsLine}</div> : null}
                 </td>
                 <td className="hidden min-w-0 px-3 py-3 align-top text-fg-secondary md:table-cell md:px-4">
                   {joinNames(track.singers)}

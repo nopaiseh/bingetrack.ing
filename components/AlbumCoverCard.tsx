@@ -9,13 +9,7 @@ import { publicMediaDetailPath } from "@/lib/media-types";
 import type { MediaCard } from "@/lib/types";
 
 /** 紧凑封面墙卡片：1:1 封面 + 标题／主艺人 + 可选评分。 */
-export default function AlbumCoverCard({
-  item,
-  eager = false,
-}: {
-  item: MediaCard;
-  eager?: boolean;
-}) {
+export default function AlbumCoverCard({ item, eager = false }: { item: MediaCard; eager?: boolean }) {
   const [failed, setFailed] = useState(false);
   const title = item.title.trim() || "未命名专辑";
   const artist = (item.artists ?? []).filter(Boolean)[0] ?? null;
@@ -49,7 +43,10 @@ export default function AlbumCoverCard({
         ) : null}
       </div>
       <div className="min-w-0 px-0.5">
-        <p className="truncate text-xs font-semibold leading-4 text-fg group-hover:text-[var(--accent-hover)]" title={title}>
+        <p
+          className="truncate text-xs font-semibold leading-4 text-fg group-hover:text-[var(--accent-hover)]"
+          title={title}
+        >
           {title}
         </p>
         {artist ? (
