@@ -111,7 +111,10 @@ describe("manage 写入动作 Sentry 上报", () => {
     expect(reportHandledError).not.toHaveBeenCalled();
 
     vi.mocked(saveBookMedia).mockRejectedValueOnce(new SaveBookMediaError("已存在同名同作者的图书。", "23505"));
-    const duplicate = await saveMedia({}, form({ type: "book", title: "测试图书", status: "want_to_watch", after: "continue" }));
+    const duplicate = await saveMedia(
+      {},
+      form({ type: "book", title: "测试图书", status: "want_to_watch", after: "continue" }),
+    );
     expect(duplicate.error).toBe("已存在同名同作者的图书。");
     expect(reportHandledError).not.toHaveBeenCalled();
 
