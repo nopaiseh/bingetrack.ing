@@ -62,6 +62,14 @@ test("MediaRow 卡片、查看全部与翻页按钮使用 focus-ring", () => {
   expect(screen.getByRole("button", { name: "向右滚动 我已看", hidden: true })).toHaveClass("focus-ring");
 });
 
+test("MediaRow 横向滚动类在 reduced-motion 下不强制 scroll-smooth", () => {
+  const { container } = render(<MediaRow title="我已看" items={series} type="shows" />);
+
+  const scroller = container.querySelector(".motion-safe\\:scroll-smooth");
+  expect(scroller).not.toBeNull();
+  expect(scroller?.className).not.toMatch(/(?:^|\s)scroll-smooth(?:\s|$)/);
+});
+
 test("search cards reuse the catalog card surface, poster badge, and body", () => {
   render(<SearchMediaCard item={series[0]} returnHref="/search?type=tv_show" />);
 

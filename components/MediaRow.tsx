@@ -8,6 +8,7 @@ import LetterTile from "./LetterTile";
 import MediaCardBody from "./MediaCardBody";
 import MediaCardStatusBadge from "./MediaCardStatusBadge";
 import { edgeFadeMask } from "@/lib/edge-fade-mask";
+import { scrollBehavior } from "@/lib/scroll-behavior";
 
 type RowMediaType = "movies" | "shows" | "books";
 
@@ -102,7 +103,7 @@ export default function MediaRow({
     const el = scrollerRef.current;
     if (!el) return;
     const offset = direction === "left" ? -el.clientWidth * 0.75 : el.clientWidth * 0.75;
-    el.scrollBy({ left: offset, behavior: "smooth" });
+    el.scrollBy({ left: offset, behavior: scrollBehavior() });
   };
 
   if (!items || items.length === 0) return null;
@@ -157,7 +158,7 @@ export default function MediaRow({
         <div
           ref={scrollerRef}
           style={edgeFadeMask(canScrollLeft, canScrollRight, "3rem")}
-          className="no-scrollbar -mb-8 flex snap-x snap-mandatory space-x-4 overflow-x-auto scroll-px-1 px-1 pb-12 pt-4 scroll-smooth"
+          className="no-scrollbar -mb-8 flex snap-x snap-mandatory space-x-4 overflow-x-auto scroll-px-1 px-1 pb-12 pt-4 motion-safe:scroll-smooth"
         >
           {items.map(
             /* 决定卡片详情路由类型，并按索引设置首批图片的加载优先级。 */ (media: MediaCard, index: number) => {
