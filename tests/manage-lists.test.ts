@@ -703,7 +703,12 @@ describe("批量删除与状态", () => {
   it("批量删除专辑前先删下属曲目", async () => {
     const { db, queries } = fakeDb((query) => {
       if (query.table === "media_items" && query.calls.some((call) => call.method === "select")) {
-        return { data: [{ id: albumA, title: "专辑甲" }, { id: albumB, title: "专辑乙" }] };
+        return {
+          data: [
+            { id: albumA, title: "专辑甲" },
+            { id: albumB, title: "专辑乙" },
+          ],
+        };
       }
       if (query.table === "music") {
         return { data: [{ media_item_id: trackA }, { media_item_id: trackB }, { media_item_id: trackA }] };
