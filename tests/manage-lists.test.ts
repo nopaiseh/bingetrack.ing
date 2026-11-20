@@ -700,38 +700,53 @@ describe("批量删除与状态", () => {
     expect(from).not.toHaveBeenCalled();
   });
 
-  it("批量删除专辑前先删下属曲目", async () => {
-    const { db, queries } = fakeDb((query) => {
-      if (query.table === "media_items" && query.calls.some((call) => call.method === "select")) {
-        return {
-          data: [
-            { id: albumA, title: "专辑甲" },
-            { id: albumB, title: "专辑乙" },
-          ],
-        };
-      }
-      if (query.table === "music") {
-        return { data: [{ media_item_id: trackA }, { media_item_id: trackB }, { media_item_id: trackA }] };
-      }
-      if (query.table === "media_items" && query.calls.some((call) => call.method === "delete")) {
-        const ids = calls(query, "in")[0]?.args[1] as string[];
-        if (ids?.includes(trackA)) return { data: null };
-        return { data: [{ id: albumA }, { id: albumB }] };
-      }
-      return { data: [] };
+  it("批量删除专辑逐个调用 admin_delete_media，不用分步 DELETE", async () => {
+    const { db, queries, rpc } = fakeDb((query) =>
+      query.table === "media_items"
+        ? {
+            data: [
+              { id: albumA, title: "专辑甲" },
+              { id: albumB, title: "专辑乙" },
+            ],
+          }
+        : {},
+    );
+    rpc.mockImplementation(async (fn, args) => {
+      const error: { code?: string } | null =
+        fn === "admin_delete_media" && (args.p_id === albumA || args.p_id === albumB) ? null : { code: "P0002" };
+      return { data: null, error };
     });
     const result = await bulkDeleteAlbums(db, [albumA, albumB, albumA]);
     expect(result).toEqual({ succeeded: 2, failed: 0 });
-    const deletes = queries.filter((query) => query.table === "media_items" && calls(query, "delete").length > 0);
-    expect(calls(deletes[0], "in")[0].args[1]).toEqual([trackA, trackB]);
+    expect(queries.some((query) => calls(query, "delete").length > 0)).toBe(false);
+    expect(rpc).toHaveBeenCalledTimes(2);
+    expect(rpc).toHaveBeenCalledWith("admin_delete_media", { p_id: albumA, p_confirm_title: "专辑甲" });
+    expect(rpc).toHaveBeenCalledWith("admin_delete_media", { p_id: albumB, p_confirm_title: "专辑乙" });
+    expect(vi.mocked(affectedMediaIds).mock.invocationCallOrder[0]).toBeLessThan(rpc.mock.invocationCallOrder[0]);
     expect(revalidateMediaItems).toHaveBeenCalled();
   });
 
-  it("没有匹配专辑时全部记失败且不删曲目", async () => {
-    const { db, from } = fakeDb(() => ({ data: [] }));
+  it("单个专辑删除失败不影响其余专辑的计数", async () => {
+    const { db, rpc } = fakeDb(() => ({
+      data: [
+        { id: albumA, title: "专辑甲" },
+        { id: albumB, title: "专辑乙" },
+      ],
+    }));
+    rpc.mockImplementation(async (fn, args) => {
+      const error: { code?: string } | null =
+        fn === "admin_delete_media" && args.p_id === albumB ? { code: "22023" } : null;
+      return { data: null, error };
+    });
+    expect(await bulkDeleteAlbums(db, [albumA, albumB])).toEqual({ succeeded: 1, failed: 1 });
+    expect(rpc).toHaveBeenCalledTimes(2);
+  });
+
+  it("没有匹配专辑时全部记失败且不调 RPC", async () => {
+    const { db, from, rpc } = fakeDb(() => ({ data: [] }));
     expect(await bulkDeleteAlbums(db, [albumA])).toEqual({ succeeded: 0, failed: 1 });
     expect(from).toHaveBeenCalledWith("media_items");
-    expect(from).not.toHaveBeenCalledWith("music");
+    expect(rpc).not.toHaveBeenCalled();
   });
 });
 

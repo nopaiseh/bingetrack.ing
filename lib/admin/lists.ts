@@ -562,8 +562,7 @@ export async function bulkDeleteBooks(db: SupabaseClient, ids: unknown): Promise
 }
 
 /**
- * 批量删除专辑及其曲目。music.album_id 无 ON DELETE CASCADE，须先删曲目 media_items 再删专辑。
- * 不调用 admin_delete_media（该 RPC 尚不接受 album）。
+ * 批量删除专辑及其曲目。每个专辑各自调用 admin_delete_media，同事务删掉下属曲目与专辑本身。
  */
 export async function bulkDeleteAlbums(db: SupabaseClient, ids: unknown): Promise<BulkCounts> {
   const targets = parseBulkIds(ids);
@@ -575,21 +574,20 @@ export async function bulkDeleteAlbums(db: SupabaseClient, ids: unknown): Promis
     targets,
   );
   if (albums.length === 0) return { succeeded: 0, failed: targets.length };
-  const albumIds = albums.map((album) => album.id);
-  const affected = await affectedMediaIds(db, albumIds);
-
-  const trackRows = readRows<{ media_item_id: string }>(
-    await db.from("music").select("media_item_id").in("album_id", albumIds),
-    DELETE_ERROR,
+  const affected = await affectedMediaIds(
+    db,
+    albums.map((album) => album.id),
   );
-  const trackIds = [...new Set(trackRows.map((row) => row.media_item_id).filter(Boolean))];
-  if (trackIds.length > 0) {
-    const { error: trackError } = await db.from("media_items").delete().in("id", trackIds);
-    assertWrite(trackError, DELETE_ERROR);
+  let succeeded = 0;
+  for (const album of albums) {
+    const { error } = await db.rpc("admin_delete_media", { p_id: album.id, p_confirm_title: album.title });
+    // 权限错误说明整次请求都不可写；单个专辑被并发删改则只记失败，继续处理其余专辑。
+    if (error?.code === "42501") {
+      if (succeeded > 0) revalidateMediaItems(affected);
+      throw new Error(PERMISSION_ERROR);
+    }
+    if (!error) succeeded += 1;
   }
-  const { data, error } = await db.from("media_items").delete().in("id", albumIds).eq("type", "album").select("id");
-  assertWrite(error, DELETE_ERROR);
-  const succeeded = deletedIds((data ?? []) as { id: string }[]).size;
   if (succeeded > 0) revalidateMediaItems(affected);
   return { succeeded, failed: targets.length - succeeded };
 }
