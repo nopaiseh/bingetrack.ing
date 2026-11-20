@@ -2,6 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import type { MediaCard } from "@/lib/types";
 import { isUpcomingDate } from "@/lib/upcoming";
+import { SEARCH_POSTER_SIZES } from "@/lib/poster-image-sizes";
 import { SkeletonBlock } from "./LoadingSkeletons";
 import LetterTile from "./LetterTile";
 import MediaCardBody from "./MediaCardBody";
@@ -91,12 +92,12 @@ function MusicSearchBody({ item, typeLabel }: { item: MediaCard; typeLabel: stri
 
   return (
     <div className="flex min-w-0 grow flex-col space-y-1.5 px-3 py-2.5">
-      <h3
+      <h2
         className="font-serif-movie line-clamp-2 min-h-10 text-sm font-bold leading-5 text-white transition-colors duration-300 group-hover:text-[var(--accent-hover)]"
         title={item.title}
       >
         {item.title}
-      </h3>
+      </h2>
       {artist ? <p className="truncate text-xs text-fg-muted">{artist}</p> : null}
       <div className="flex min-w-0 items-center justify-between gap-1.5 text-xs">
         <span className="shrink-0 whitespace-nowrap font-medium text-fg-secondary">{year}</span>
@@ -118,7 +119,19 @@ function isBookCard(item: MediaCard): boolean {
 }
 
 /** 搜索网格：影视／图书 2:3、音乐 1:1；专辑／单曲带类型标签。无公开详情的单曲只展示、不可点进详情。 */
-export function SearchMediaCard({ item, returnHref }: { item: MediaCard; returnHref: string }) {
+export function SearchMediaCard({
+  item,
+  returnHref,
+  priority = false,
+  eager = false,
+}: {
+  item: MediaCard;
+  returnHref: string;
+  /** 首屏 LCP 候选：fetchPriority=high 且立即加载。 */
+  priority?: boolean;
+  /** 首屏其余海报：eager，避免懒加载推迟可见图。 */
+  eager?: boolean;
+}) {
   const square = isSquareCover(item);
   const book = isBookCard(item);
   const typeLabel = typeTagLabel(item);
@@ -140,7 +153,9 @@ export function SearchMediaCard({ item, returnHref }: { item: MediaCard; returnH
           alt=""
           fill
           className="object-cover transition-transform duration-500 ease-out group-hover:scale-105"
-          sizes="(max-width: 639px) 46vw, (max-width: 1279px) 30vw, 16vw"
+          sizes={SEARCH_POSTER_SIZES}
+          priority={priority}
+          loading={priority ? undefined : eager ? "eager" : "lazy"}
         />
       ) : square || book ? (
         <LetterTile title={item.title} />
@@ -167,7 +182,7 @@ export function SearchMediaCard({ item, returnHref }: { item: MediaCard; returnH
     item.type === "albums" || item.type === "music" || item.dbType === "album" || item.dbType === "music" ? (
       <MusicSearchBody item={item} typeLabel={null} />
     ) : (
-      <MediaCardBody item={item} type={mediaBodyType} />
+      <MediaCardBody item={item} type={mediaBodyType} headingLevel={2} />
     );
 
   const className =

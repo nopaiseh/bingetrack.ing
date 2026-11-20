@@ -217,14 +217,14 @@ export default function MediaInformation({
           </Fact>
           <Fact label="导演">
             {media.directors && media.directors.length > 0 ? (
-              <span className="inline-flex flex-wrap gap-x-1">
+              <span className="inline-flex flex-wrap items-center gap-x-1">
                 {media.directors.map(
-                  /* 导演名可以搜到此人的作品，视觉上仍是一行文字。 */ (name, index) => (
-                    <span key={name}>
+                  /* 导演名可以搜到此人的作品；扩大点击区域，字重与颜色不变。 */ (name, index) => (
+                    <span key={name} className="inline-flex items-center">
                       {index > 0 ? "、" : ""}
                       <Link
                         href={directorHref(name)}
-                        className="underline-offset-4 hover:text-[var(--accent-hover)] hover:underline"
+                        className="inline-flex min-h-11 min-w-6 items-center underline-offset-4 hover:text-[var(--accent-hover)] hover:underline"
                       >
                         {name}
                       </Link>

@@ -15,17 +15,27 @@ function mediaCardYear(item: MediaCard, type: "movies" | "shows"): string {
 }
 
 /** 卡片标题、年份、评分和标签。标题固定两行高，短标题也不会把同一行的卡片挤矮。 */
-export default function MediaCardBody({ item, type }: { item: MediaCard; type: "movies" | "shows" }) {
+export default function MediaCardBody({
+  item,
+  type,
+  headingLevel = 3,
+}: {
+  item: MediaCard;
+  type: "movies" | "shows";
+  /** 搜索页在 h1 下用 h2；目录行在行标题 h2 下保持 h3。 */
+  headingLevel?: 2 | 3;
+}) {
   const tags = mediaCardTags(item);
+  const Title = headingLevel === 2 ? "h2" : "h3";
 
   return (
     <div className="flex min-w-0 grow flex-col space-y-1.5 px-3 py-2.5">
-      <h3
+      <Title
         className="font-serif-movie line-clamp-2 min-h-10 text-sm font-bold leading-5 text-white transition-colors duration-300 group-hover:text-[var(--accent-hover)]"
         title={item.title}
       >
         {item.title}
-      </h3>
+      </Title>
 
       <div className="flex min-w-0 items-center justify-between gap-1.5 text-xs">
         <span className="shrink-0 whitespace-nowrap font-medium text-fg-secondary">{mediaCardYear(item, type)}</span>

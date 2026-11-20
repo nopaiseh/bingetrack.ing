@@ -117,4 +117,19 @@ describe("详情页窄屏布局", () => {
     expect(screen.getByText("暂无简介。")).toHaveClass("max-w-[70ch]");
     expect(screen.queryByText("展开简介 ▾")).not.toBeInTheDocument();
   });
+
+  it("导演链接触控目标至少 44px 高且仍链到导演搜索", () => {
+    render(
+      <MediaInformation
+        media={{ ...media, type: "shows", directors: ["王家卫"], status: "watched" }}
+        seasons={null}
+        releaseDateLabel="2012-09-28"
+      />,
+    );
+    const link = screen.getByRole("link", { name: "王家卫" });
+    expect(link).toHaveAttribute("href", "/search?q=%E7%8E%8B%E5%AE%B6%E5%8D%AB&type=director");
+    expect(link.className).toContain("min-h-11");
+    expect(link.className).toContain("min-w-6");
+    expect(link.className).toContain("inline-flex");
+  });
 });

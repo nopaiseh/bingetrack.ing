@@ -94,7 +94,7 @@ test("search cards reuse the catalog card surface, poster badge, and body", () =
   expect(badge.className).toContain("right-2");
   expect(badge.className).not.toContain("bg-transparent");
 
-  const title = screen.getByRole("heading", { level: 3 });
+  const title = screen.getByRole("heading", { level: 2 });
   expect(title.className).toContain("line-clamp-2");
   expect(title.className).toContain("min-h-10");
   expect(title.className).not.toContain("truncate");

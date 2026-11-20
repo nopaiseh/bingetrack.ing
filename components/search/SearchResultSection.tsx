@@ -4,6 +4,7 @@ import { SearchMediaCard, SearchMediaCardSkeleton } from "@/components/SearchMed
 import SearchEmptyState from "@/components/search/SearchEmptyState";
 import { sortCaption } from "@/components/search/search-model";
 import { PAGE_SIZE, type SearchFilters } from "@/lib/api/search-state";
+import { SEARCH_ABOVE_FOLD_COUNT } from "@/lib/poster-image-sizes";
 import type { MediaCard } from "@/lib/types";
 import { pageNumbers } from "@/lib/pagination";
 
@@ -82,8 +83,14 @@ export default function SearchResultSection({
           )
         ) : requestError ? null : mediaItems.length > 0 ? (
           mediaItems.map(
-            /* 将搜索结果渲染为卡片，并携带当前地址作为详情页返回路径。 */ (item) => (
-              <SearchMediaCard key={`${item.type}-${item.id}`} item={item} returnHref={returnHref} />
+            /* 将搜索结果渲染为卡片；首屏海报优先／立即加载，其余懒加载。 */ (item, index) => (
+              <SearchMediaCard
+                key={`${item.type}-${item.id}`}
+                item={item}
+                returnHref={returnHref}
+                priority={index === 0}
+                eager={index < SEARCH_ABOVE_FOLD_COUNT}
+              />
             ),
           )
         ) : total === 0 ? (

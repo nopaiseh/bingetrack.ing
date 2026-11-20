@@ -5,6 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import LetterTile from "@/components/LetterTile";
 import { continueWatchingPosterSrc } from "@/components/ContinueWatchingRail";
+import { RAIL_POSTER_SIZES } from "@/lib/poster-image-sizes";
 import { scrollBehavior } from "@/lib/scroll-behavior";
 
 /** 首页「在听」卡片。 */
@@ -67,7 +68,7 @@ function ListeningCover({ item, eager }: { item: ContinueListeningCard; eager: b
         src={src}
         alt={title}
         fill
-        sizes="(max-width: 639px) 42vw, 192px"
+        sizes={RAIL_POSTER_SIZES}
         className="object-cover"
         loading={eager ? "eager" : "lazy"}
         onError={() => setFailed(true)}

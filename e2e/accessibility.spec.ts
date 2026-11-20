@@ -102,3 +102,54 @@ test(
     await expect(tabBar.getByRole("link", { name: "电影" })).toHaveAttribute("aria-current", "page");
   },
 );
+
+test(
+  "搜索页标题层级连续且首屏海报优先加载",
+  /* 验证搜索结果 h1→h2 连续，首张海报 priority，其余首屏 eager，更下方懒加载。 */ async ({ page }) => {
+    await page.goto("/search");
+    await page.waitForLoadState("networkidle");
+
+    const headings = page.getByRole("heading");
+    const levels = await headings.evaluateAll((nodes) =>
+      nodes.map((node) => Number(node.tagName.slice(1))).filter((level) => level >= 1 && level <= 6),
+    );
+    expect(levels.length).toBeGreaterThan(0);
+    expect(levels[0]).toBe(1);
+    for (let index = 1; index < levels.length; index += 1) {
+      expect(levels[index] - levels[index - 1]).toBeLessThanOrEqual(1);
+    }
+
+    const posters = page.locator(".search-media-card img");
+    const count = await posters.count();
+    test.skip(count === 0, "无带海报的搜索结果时跳过图片优先级断言");
+
+    await expect(posters.first()).toHaveAttribute("fetchpriority", "high");
+    if (count > 1) {
+      await expect(posters.nth(1)).toHaveAttribute("loading", "eager");
+    }
+    if (count > 6) {
+      await expect(posters.nth(6)).toHaveAttribute("loading", "lazy");
+    }
+
+    const sizes = await posters.first().getAttribute("sizes");
+    expect(sizes ?? "").toMatch(/\d+px/);
+    expect(sizes ?? "").not.toMatch(/\dvw\b/);
+  },
+);
+
+test(
+  "电视节目详情页导演链接触控目标足够大",
+  /* 验证导演搜索链接至少 24×24 CSS 像素，触控高度接近 44px。 */ async ({ page }) => {
+    await page.goto(`/shows/${SERIES_ID}`);
+    await page.waitForLoadState("networkidle");
+
+    const director = page.locator('a[href*="type=director"]').first();
+    test.skip((await director.count()) === 0, "种子剧集无导演链接时跳过");
+
+    const box = await director.boundingBox();
+    expect(box).not.toBeNull();
+    expect(box!.height).toBeGreaterThanOrEqual(24);
+    expect(box!.width).toBeGreaterThanOrEqual(24);
+    expect(box!.height).toBeGreaterThanOrEqual(44);
+  },
+);

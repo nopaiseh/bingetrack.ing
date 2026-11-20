@@ -4,6 +4,7 @@ import { useLayoutEffect, useRef, useState, type CSSProperties, type KeyboardEve
 import Image from "next/image";
 import Link from "next/link";
 import LetterTile from "@/components/LetterTile";
+import { RAIL_POSTER_SIZES } from "@/lib/poster-image-sizes";
 import { scrollBehavior } from "@/lib/scroll-behavior";
 
 /**
@@ -113,7 +114,7 @@ function ContinueWatchingPoster({ item, eager }: { item: ContinueWatchingCard; e
         src={src}
         alt={title}
         fill
-        sizes="(max-width: 639px) 42vw, 192px"
+        sizes={RAIL_POSTER_SIZES}
         className="object-cover"
         loading={eager ? "eager" : "lazy"}
         onError={() => setFailed(true)}
