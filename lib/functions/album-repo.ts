@@ -4,14 +4,14 @@ import { isMediaId } from "@/lib/functions/media-id";
 import { withRetry } from "@/lib/functions/retry";
 import { MediaRepositoryError } from "@/lib/functions/media-repo";
 import { mapViewRowToMedia } from "@/lib/functions/media-mapper";
-import type { OwnershipStatus } from "@/lib/album-display";
+import { resolveAlbumTrackCount, type OwnershipStatus } from "@/lib/album-display";
 import type { AlbumDetail, AlbumTrack } from "@/lib/types/album";
 import type { ViewAllMediaRow } from "@/lib/types";
 import { reportHandledError } from "@/lib/report-error";
 
 export type { OwnershipStatus } from "@/lib/album-display";
 export type { AlbumDetail, AlbumTrack } from "@/lib/types/album";
-export { formatTrackDuration, ownershipLabel } from "@/lib/album-display";
+export { formatTrackDuration, ownershipLabel, resolveAlbumTrackCount } from "@/lib/album-display";
 
 type MusicAlbumRow = {
   track_count: number | null;
@@ -165,7 +165,7 @@ export async function getAlbumDetail(id: string): Promise<AlbumDetail | null> {
     return {
       media,
       artists,
-      trackCount: albumMeta?.track_count == null ? tracks.length || null : Number(albumMeta.track_count),
+      trackCount: resolveAlbumTrackCount(tracks.length, albumMeta?.track_count),
       label: albumMeta?.label?.trim() || null,
       ratedCount,
       ownership,

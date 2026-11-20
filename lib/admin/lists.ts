@@ -2,6 +2,7 @@ import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { nameOrAliasFilter, titleOrAliasFilter } from "@/lib/admin/catalog";
 import { affectedMediaIds, referenceMediaIds, revalidateMediaItems } from "@/lib/admin/revalidate-media";
+import { resolveAlbumTrackCount } from "@/lib/album-display";
 import {
   type AdminChildListInput,
   type AdminChildListType,
@@ -186,14 +187,23 @@ export async function listAdminMedia(
         );
   const detailById = new Map(details.map((row) => [row.id, row]));
   const trackCountByAlbum = new Map<string, number>();
+  const storedTrackCountByAlbum = new Map<string, number | null>();
   if (mediaType === "album" && ids.length > 0) {
-    const trackRows = readRows<{ album_id: string }>(
-      await db.from("music").select("album_id").in("album_id", ids),
+    const [trackResult, albumMetaResult] = await Promise.all([
+      db.from("music").select("album_id").in("album_id", ids),
+      db.from("music_albums").select("media_item_id,track_count").in("media_item_id", ids),
+    ]);
+    const trackRows = readRows<{ album_id: string }>(trackResult, LIST_READ_ERROR);
+    const albumMetaRows = readRows<{ media_item_id: string; track_count: number | null }>(
+      albumMetaResult,
       LIST_READ_ERROR,
     );
     for (const row of trackRows) {
       if (!row.album_id) continue;
       trackCountByAlbum.set(row.album_id, (trackCountByAlbum.get(row.album_id) ?? 0) + 1);
+    }
+    for (const row of albumMetaRows) {
+      storedTrackCountByAlbum.set(row.media_item_id, row.track_count == null ? null : Number(row.track_count));
     }
   }
   return {
@@ -213,7 +223,10 @@ export async function listAdminMedia(
         rating: toNumber(row.rating),
         season_count: seasons.length,
         episode_count: seasons.reduce((sum, season) => sum + (season.episodes?.[0]?.count ?? 0), 0),
-        track_count: mediaType === "album" ? (trackCountByAlbum.get(row.id) ?? 0) : 0,
+        track_count:
+          mediaType === "album"
+            ? (resolveAlbumTrackCount(trackCountByAlbum.get(row.id) ?? 0, storedTrackCountByAlbum.get(row.id)) ?? 0)
+            : 0,
       };
     }),
     total: page.total,

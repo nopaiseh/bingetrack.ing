@@ -20,7 +20,7 @@ export default function AlbumStrip({
 }) {
   const router = useRouter();
   const strip = useRef<HTMLDivElement>(null);
-  const { tracks, nextTrackNumber } = structure;
+  const { tracks, trackCount, nextTrackNumber } = structure;
 
   useEffect(() => {
     const row = strip.current;
@@ -47,7 +47,7 @@ export default function AlbumStrip({
           >
             {structure.album.title}
           </Link>
-          <p className="font-mono text-xs text-neutral-400">{formatCount(tracks.length)} 首</p>
+          <p className="font-mono text-xs text-neutral-400">{formatCount(trackCount ?? 0)} 首</p>
         </div>
         <button type="button" onClick={onAdd} className="admin-add shrink-0">
           <span className="i-material-symbols-add-rounded size-4.5" aria-hidden="true" />第{" "}

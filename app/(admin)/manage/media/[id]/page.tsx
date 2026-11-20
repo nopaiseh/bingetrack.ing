@@ -86,7 +86,7 @@ export default async function EditMediaPage({
   const season = structure?.seasons.find((entry) => entry.id === structure.expandedSeasonId);
   const facts = albumStructure
     ? item.type === "album"
-      ? `${formatCount(albumStructure.tracks.length)} 首`
+      ? `${formatCount(albumStructure.trackCount ?? 0)} 首`
       : [`第 ${formatCount(item.number ?? 0)} 首`, item.release_date].filter(Boolean).join(" · ")
     : !structure
       ? null

@@ -29,7 +29,7 @@ export default function AlbumRail({
 }) {
   const router = useRouter();
   const scroller = useRef<HTMLDivElement>(null);
-  const { album, tracks, nextTrackNumber } = structure;
+  const { album, tracks, trackCount, nextTrackNumber } = structure;
 
   useEffect(() => {
     const box = scroller.current;
@@ -58,7 +58,7 @@ export default function AlbumRail({
     >
       <div className="flex items-center justify-between px-1">
         <p className="text-xs tracking-wider text-fg-subtle">曲目结构</p>
-        <p className="font-mono text-[11px] text-fg-subtle">{formatCount(tracks.length)} 首</p>
+        <p className="font-mono text-[11px] text-fg-subtle">{formatCount(trackCount ?? 0)} 首</p>
       </div>
       <Link
         href={albumMediaHref("album", album.id)}

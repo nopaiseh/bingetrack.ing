@@ -1,5 +1,6 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { resolveAlbumTrackCount } from "@/lib/album-display";
 import type { ManagedMediaType } from "./media-form";
 import type { WatchStatus } from "./series-structure";
 import { one } from "./series-structure";
@@ -31,6 +32,8 @@ export type AlbumStructure = {
     artists: AlbumArtistRef[];
   };
   tracks: AlbumTrackItem[];
+  /** 展示用曲目数：有实际曲目用实际数，否则回退 music_albums.track_count。 */
+  trackCount: number | null;
   nextTrackNumber: number;
 };
 
@@ -90,7 +93,7 @@ export async function readAlbumStructure(
   const albumId = item.type === "album" ? item.id : item.parent_id;
   if (!albumId) return null;
 
-  const [album, summary, tracks, credits] = await Promise.all([
+  const [album, summary, tracks, credits, albumMeta] = await Promise.all([
     db.from("media_items").select("id,title,alternate_title,cover_url").eq("id", albumId).maybeSingle(),
     db.from("v_all_media").select("status,rating").eq("id", albumId).maybeSingle(),
     readTracks(db, albumId),
@@ -100,8 +103,9 @@ export async function readAlbumStructure(
       .eq("media_item_id", albumId)
       .eq("role", "artist")
       .order("credit_order"),
+    db.from("music_albums").select("track_count").eq("media_item_id", albumId).maybeSingle(),
   ]);
-  if (album.error || summary.error || credits.error) throw new Error("无法读取曲目结构，请重试。");
+  if (album.error || summary.error || credits.error || albumMeta.error) throw new Error("无法读取曲目结构，请重试。");
   if (!album.data) return null;
 
   type CreditRow = {
@@ -132,6 +136,7 @@ export async function readAlbumStructure(
       artists,
     },
     tracks,
+    trackCount: resolveAlbumTrackCount(tracks.length, albumMeta.data?.track_count),
     nextTrackNumber: Math.min(100000, (tracks.at(-1)?.number ?? 0) + 1),
   };
 }

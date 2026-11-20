@@ -59,6 +59,7 @@ describe("readAlbumStructure", () => {
         return {
           data: [{ people: { id: artistId, name: "周杰伦", alternate_name: "Jay Chou" } }],
         };
+      if (query.table === "music_albums") return { data: { track_count: 12 } };
       return { data: null };
     });
     const structure = await readAlbumStructure(db, { id: albumId, type: "album", parent_id: null });
@@ -72,6 +73,7 @@ describe("readAlbumStructure", () => {
         artists: [{ id: artistId, name: "周杰伦", alternateName: "Jay Chou" }],
       },
       nextTrackNumber: 4,
+      trackCount: 1,
       tracks: [{ id: trackId, number: 3, title: "晴天", durationSeconds: 269, listened: true }],
     });
   });
@@ -85,12 +87,14 @@ describe("readAlbumStructure", () => {
       if (query.table === "v_all_media") return { data: { status: "want_to_watch", rating: null } };
       if (query.table === "music") return { data: [] };
       if (query.table === "media_credits") return { data: [] };
+      if (query.table === "music_albums") return { data: { track_count: 10 } };
       return { data: null };
     });
     const structure = await readAlbumStructure(db, { id: trackId, type: "music", parent_id: albumId });
     expect(structure?.album.id).toBe(albumId);
     expect(structure?.album.artists).toEqual([]);
     expect(structure?.tracks).toEqual([]);
+    expect(structure?.trackCount).toBe(10);
     expect(structure?.nextTrackNumber).toBe(1);
   });
 });
