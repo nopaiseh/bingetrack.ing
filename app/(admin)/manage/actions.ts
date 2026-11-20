@@ -13,7 +13,7 @@ import {
 } from "@/lib/admin/revalidate-media";
 import { deleteMusicTree, SaveMusicMediaError, saveMusicMedia } from "@/lib/admin/save-music-media";
 import { SaveBookMediaError, saveBookMedia } from "@/lib/admin/save-book-media";
-import { isExpectedValidationCode, reportHandledError } from "@/lib/report-error";
+import { isExpectedDbError, isExpectedValidationCode, reportHandledError } from "@/lib/report-error";
 
 export type ActionResult = { error?: string; saved?: boolean; id?: string };
 
@@ -34,10 +34,10 @@ function listTypeAfterDelete(type: string | null | undefined) {
   return "tv_show";
 }
 
-/** 应用层校验抛出的 Save* 错误（无库错误码）或确认类 22023，不上报；其余视为数据库／未知错误。 */
+/** 应用层校验抛出的 Save* 错误（无库错误码）、确认类 22023，或可预期唯一／外键冲突，不上报；其余视为数据库／未知错误。 */
 function reportSaveDomainError(operation: string, mediaId: string | null | undefined, error: unknown) {
   if (error instanceof SaveMusicMediaError || error instanceof SaveBookMediaError) {
-    if (!error.code || isExpectedValidationCode(error.code)) return;
+    if (!error.code || isExpectedValidationCode(error.code) || isExpectedDbError(error.code)) return;
     reportHandledError(`${operation} failed for media ${mediaId ?? "new"}:`, error);
     return;
   }
@@ -83,7 +83,7 @@ export async function saveMedia(_previous: ActionResult, form: FormData): Promis
   } else {
     const { data, error } = await db.rpc("manage_save_media", { p_data: payload });
     if (error) {
-      if (!isExpectedValidationCode(error.code)) {
+      if (!isExpectedValidationCode(error.code) && !isExpectedDbError(error.code)) {
         reportHandledError(`manage saveMedia failed for media ${payload.id ?? "new"}:`, error);
       }
       return { error: writeError(error.code) };
@@ -123,7 +123,7 @@ export async function deleteMedia(_previous: ActionResult, form: FormData): Prom
   } else {
     const { error } = await db.rpc("admin_delete_media", { p_id: id, p_confirm_title: title });
     if (error) {
-      if (!isExpectedValidationCode(error.code)) {
+      if (!isExpectedValidationCode(error.code) && !isExpectedDbError(error.code)) {
         reportHandledError(`manage deleteMedia failed for media ${id}:`, error);
       }
       return { error: error.code === "22023" ? "标题不匹配，请输入当前条目的完整标题。" : writeError(error.code) };

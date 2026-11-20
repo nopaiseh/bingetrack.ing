@@ -101,7 +101,7 @@ describe("manage 写入动作 Sentry 上报", () => {
     expect(reportHandledError).not.toHaveBeenCalled();
   });
 
-  it("saveMedia：确认类 22023 与无码应用校验不上报，带库错误码的 Save* 上报", async () => {
+  it("saveMedia：确认类 22023、无码应用校验与唯一冲突 23505 不上报，权限类 42501 仍上报", async () => {
     vi.mocked(saveMusicMedia).mockRejectedValueOnce(new SaveMusicMediaError("标题不匹配", "22023"));
     await saveMedia({}, form({ type: "album", title: "测试专辑", release_date: "2024-01-01", after: "continue" }));
     expect(reportHandledError).not.toHaveBeenCalled();
@@ -111,10 +111,16 @@ describe("manage 写入动作 Sentry 上报", () => {
     expect(reportHandledError).not.toHaveBeenCalled();
 
     vi.mocked(saveBookMedia).mockRejectedValueOnce(new SaveBookMediaError("已存在同名同作者的图书。", "23505"));
-    await saveMedia({}, form({ type: "book", title: "测试图书", status: "want_to_watch", after: "continue" }));
+    const duplicate = await saveMedia({}, form({ type: "book", title: "测试图书", status: "want_to_watch", after: "continue" }));
+    expect(duplicate.error).toBe("已存在同名同作者的图书。");
+    expect(reportHandledError).not.toHaveBeenCalled();
+
+    rpc.mockResolvedValue({ data: null, error: { code: "42501", message: "permission denied" } });
+    const denied = await saveMedia({}, episodeForm({ after: "continue" }));
+    expect(denied.error).toBe("没有写入权限，请检查站长账号配置。");
     expect(reportHandledError).toHaveBeenCalledWith(
       "manage saveMedia failed for media new:",
-      expect.any(SaveBookMediaError),
+      expect.objectContaining({ code: "42501" }),
     );
   });
 
@@ -147,12 +153,18 @@ describe("manage 写入动作 Sentry 上报", () => {
     expect(reportHandledError).toHaveBeenCalledWith("manage manualRevalidateCache failed:", expect.any(Error));
   });
 
-  it("saveReference / deleteReference：库错误上报，名称确认不符不上报", async () => {
+  it("saveReference / deleteReference：唯一／外键冲突不上报，其它库错误上报，名称确认不符不上报", async () => {
     chain.single.mockResolvedValue({ data: null, error: { code: "23505" } });
-    await saveReference({}, form({ kind: "genres", name: "剧情" }));
+    const duplicate = await saveReference({}, form({ kind: "genres", name: "剧情" }));
+    expect(duplicate.error).toBe("此名称已经存在，请选择现有资料或使用其他名称。");
+    expect(reportHandledError).not.toHaveBeenCalled();
+
+    chain.single.mockResolvedValue({ data: null, error: { code: "42501" } });
+    const denied = await saveReference({}, form({ kind: "genres", name: "剧情" }));
+    expect(denied.error).toBe("保存失败，资料可能已被删除或暂无写入权限。");
     expect(reportHandledError).toHaveBeenCalledWith(
       "manage saveReference failed for genres new:",
-      expect.objectContaining({ code: "23505" }),
+      expect.objectContaining({ code: "42501" }),
     );
 
     vi.mocked(reportHandledError).mockClear();
@@ -161,14 +173,12 @@ describe("manage 写入动作 Sentry 上报", () => {
     expect(reportHandledError).not.toHaveBeenCalled();
 
     chain.select.mockResolvedValue({ data: null, error: { code: "23503" } });
-    await deleteReference({}, form({ kind: "people", id: personId, confirm_name: "Jane" }));
-    expect(reportHandledError).toHaveBeenCalledWith(
-      `manage deleteReference failed for people ${personId}:`,
-      expect.objectContaining({ code: "23503" }),
-    );
+    const fk = await deleteReference({}, form({ kind: "people", id: personId, confirm_name: "Jane" }));
+    expect(fk.error).toBe("此资料仍被其他内容引用，请先移除这些关联。");
+    expect(reportHandledError).not.toHaveBeenCalled();
   });
 
-  it("deleteUnused / mergePeople：确认数量不符不上报，库错误上报", async () => {
+  it("deleteUnused / mergePeople：确认数量不符与外键冲突不上报，其它库错误上报", async () => {
     await deleteUnused({}, form({ report: "orphan-people", confirm_count: "2" }));
     expect(reportHandledError).not.toHaveBeenCalled();
 
@@ -184,10 +194,16 @@ describe("manage 写入动作 Sentry 上报", () => {
     const mergeForm = new FormData();
     mergeForm.set("keep", personId);
     mergeForm.append("remove", otherId);
-    await mergePeople({}, mergeForm);
+    const merge = await mergePeople({}, mergeForm);
+    expect(merge.error).toBe("其中有人物仍是专辑艺术家，请先在专辑中更换艺术家。");
+    expect(reportHandledError).not.toHaveBeenCalled();
+
+    rpc.mockResolvedValue({ data: null, error: { code: "42501" } });
+    const denied = await mergePeople({}, mergeForm);
+    expect(denied.error).toBe("合并失败，请重试。");
     expect(reportHandledError).toHaveBeenCalledWith(
       `manage mergePeople failed for keep ${personId}:`,
-      expect.objectContaining({ code: "23503" }),
+      expect.objectContaining({ code: "42501" }),
     );
   });
 });

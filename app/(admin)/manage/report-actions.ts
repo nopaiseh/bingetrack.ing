@@ -3,7 +3,7 @@ import { requireOwner } from "@/lib/auth/server";
 import { isReportKind, reports } from "@/lib/admin/reports";
 import { referenceMediaIds, revalidateMediaItems } from "@/lib/admin/revalidate-media";
 import { isMediaId } from "@/lib/functions/media-id";
-import { reportHandledError } from "@/lib/report-error";
+import { isExpectedDbError, reportHandledError } from "@/lib/report-error";
 import { redirect } from "next/navigation";
 import type { ActionResult } from "./actions";
 
@@ -17,7 +17,9 @@ export async function deleteUnused(_previous: ActionResult, form: FormData): Pro
   const expected = Number(form.get("confirm_count"));
   const { count, error: countError } = await db.from(config.view).select("id", { count: "exact", head: true });
   if (countError) {
-    reportHandledError(`manage deleteUnused count failed for report ${report}:`, countError);
+    if (!isExpectedDbError(countError.code)) {
+      reportHandledError(`manage deleteUnused count failed for report ${report}:`, countError);
+    }
     return { error: "无法读取报告，请重试。" };
   }
   // 确认数量不符是用户可预期的校验，不上报。
@@ -25,7 +27,9 @@ export async function deleteUnused(_previous: ActionResult, form: FormData): Pro
     return { error: `请输入当前数量 ${count ?? 0} 以确认删除；如数量有变化，请刷新后再确认。` };
   const { data, error } = await db.rpc("manage_delete_unused", { p_kind: config.bulkDelete });
   if (error) {
-    reportHandledError(`manage deleteUnused failed for report ${report}:`, error);
+    if (!isExpectedDbError(error.code)) {
+      reportHandledError(`manage deleteUnused failed for report ${report}:`, error);
+    }
     return { error: error.code === "23503" ? "部分资料仍被其他内容引用，请刷新后重试。" : "删除失败，请重试。" };
   }
   // 闲置资料没有被任何作品引用，详情页不受影响；只刷新聚合数据，让筛选选项去掉已删除的项目。
@@ -52,7 +56,9 @@ export async function mergePeople(_previous: ActionResult, form: FormData): Prom
   const affected = await referenceMediaIds(db, "people", [keep, ...remove]);
   const { error } = await db.rpc("manage_merge_people", { p_keep: keep, p_remove: remove });
   if (error) {
-    reportHandledError(`manage mergePeople failed for keep ${keep}:`, error);
+    if (!isExpectedDbError(error.code)) {
+      reportHandledError(`manage mergePeople failed for keep ${keep}:`, error);
+    }
     if (error.code === "23503") return { error: "其中有人物仍是专辑艺术家，请先在专辑中更换艺术家。" };
     if (error.code === "23505") return { error: "保留的人物沿用别名后会与另一位同名同别名的人物重复，请先修改别名。" };
     if (error.code === "P0002") return { error: "人物已不存在，请刷新后重试。" };
@@ -74,7 +80,9 @@ export async function dismissSimilarPeople(_previous: ActionResult, form: FormDa
     .from("people_distinct_pairs")
     .upsert(pairs, { onConflict: "person_a,person_b", ignoreDuplicates: true });
   if (error) {
-    reportHandledError(`manage dismissSimilarPeople failed for ${ids.length} people:`, error);
+    if (!isExpectedDbError(error.code)) {
+      reportHandledError(`manage dismissSimilarPeople failed for ${ids.length} people:`, error);
+    }
     return { error: error.code === "23503" ? "人物已不存在，请刷新后重试。" : "标记失败，请重试。" };
   }
   redirect(`/manage/reports/similar-people?dismissed=1&n=${Date.now()}`);
