@@ -1,11 +1,12 @@
 "use client";
 import { useActionState, useEffect, useId, useRef, useState } from "react";
 import { saveMedia, type ActionResult } from "../../actions";
+import ChoicePicker from "../../ChoicePicker";
 import type { AlbumStructure } from "@/lib/admin/album-structure";
 import { ActionNotice } from "../../StatusModal";
 import { formatCount } from "./shared";
 
-/** 就地新增曲目：曲序预填下一号；连续录入时保存后留在弹窗，侧栏随即刷新。 */
+/** 就地新增曲目：曲序预填下一号；歌手默认带上专辑艺人（人物 ID），可改可清。 */
 export default function QuickAddTrackDialog({
   structure,
   onClose,
@@ -18,10 +19,15 @@ export default function QuickAddTrackDialog({
   const numberId = useId();
   const [keepGoing, setKeepGoing] = useState(true);
   const [lastSaved, setLastSaved] = useState<string | null>(null);
+  const [artistKey, setArtistKey] = useState(0);
   const [state, action, pending] = useActionState(async (previous: ActionResult, form: FormData) => {
     form.set("after", keepGoing ? "continue" : "open");
     const result = await saveMedia(previous, form);
-    if (result.saved) setLastSaved(String(form.get("title") ?? ""));
+    if (result.saved) {
+      setLastSaved(String(form.get("title") ?? ""));
+      // 连续录入时重建艺人选择器，再次预填专辑歌手。
+      setArtistKey((key) => key + 1);
+    }
     if (result.saved && !keepGoing) onClose();
     return result;
   }, {});
@@ -31,6 +37,11 @@ export default function QuickAddTrackDialog({
   }, []);
 
   const nextNumber = structure.nextTrackNumber;
+  const defaultArtists = structure.album.artists.map((person) => ({
+    id: person.id,
+    name: person.name,
+    detail: person.alternateName ?? undefined,
+  }));
 
   return (
     <dialog
@@ -87,7 +98,17 @@ export default function QuickAddTrackDialog({
           曲名
           <input name="title" required maxLength={300} placeholder="曲目标题" autoFocus />
         </label>
-        <p className="edit-hint">歌手、作词、作曲请在保存后于曲目编辑页用人物选择器填写（须带人物 ID）。</p>
+        <ChoicePicker
+          key={`artists-${artistKey}`}
+          kind="people"
+          name="artists"
+          label="演唱艺人"
+          allowCreate
+          sortable
+          rows
+          initial={defaultArtists}
+        />
+        <p className="edit-hint">默认带上专辑艺人（人物 ID）；可增删或清空。作词、作曲请在保存后于曲目编辑页填写。</p>
         <ActionNotice state={state} />
         <label className="flex items-center gap-2 text-sm text-neutral-300">
           <input

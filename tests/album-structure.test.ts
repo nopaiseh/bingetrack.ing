@@ -38,6 +38,7 @@ describe("readAlbumStructure", () => {
   it("读取专辑曲目并计算下一曲序", async () => {
     const albumId = "11111111-1111-4111-8111-111111111111";
     const trackId = "22222222-2222-4222-8222-222222222222";
+    const artistId = "33333333-3333-4333-8333-333333333333";
     const { db } = fakeDb((query) => {
       if (query.table === "media_items")
         return {
@@ -54,11 +55,22 @@ describe("readAlbumStructure", () => {
             },
           ],
         };
+      if (query.table === "media_credits")
+        return {
+          data: [{ people: { id: artistId, name: "周杰伦", alternate_name: "Jay Chou" } }],
+        };
       return { data: null };
     });
     const structure = await readAlbumStructure(db, { id: albumId, type: "album", parent_id: null });
     expect(structure).toMatchObject({
-      album: { id: albumId, title: "叶惠美", coverUrl: null, status: "watching", rating: 8.5 },
+      album: {
+        id: albumId,
+        title: "叶惠美",
+        coverUrl: null,
+        status: "watching",
+        rating: 8.5,
+        artists: [{ id: artistId, name: "周杰伦", alternateName: "Jay Chou" }],
+      },
       nextTrackNumber: 4,
       tracks: [{ id: trackId, number: 3, title: "晴天", durationSeconds: 269, listened: true }],
     });
@@ -72,10 +84,12 @@ describe("readAlbumStructure", () => {
         return { data: { id: albumId, title: "叶惠美", alternate_title: null, cover_url: null } };
       if (query.table === "v_all_media") return { data: { status: "want_to_watch", rating: null } };
       if (query.table === "music") return { data: [] };
+      if (query.table === "media_credits") return { data: [] };
       return { data: null };
     });
     const structure = await readAlbumStructure(db, { id: trackId, type: "music", parent_id: albumId });
     expect(structure?.album.id).toBe(albumId);
+    expect(structure?.album.artists).toEqual([]);
     expect(structure?.tracks).toEqual([]);
     expect(structure?.nextTrackNumber).toBe(1);
   });

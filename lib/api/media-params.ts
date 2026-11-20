@@ -1,5 +1,5 @@
 import type { FetchMediaListOptions } from "@/lib/types";
-import { CATALOG_DB_TYPES, isCatalogDbMediaType, type CatalogDbMediaType } from "@/lib/media-types";
+import { CATALOG_DB_TYPES } from "@/lib/media-types";
 import { MAX_SEARCH_QUERY_LENGTH } from "./search-limits";
 
 export class ApiValidationError extends Error {
@@ -89,15 +89,17 @@ export function parseMediaSearchParams(searchParams: URLSearchParams): FetchMedi
 export const TOP_MEDIA_LIMIT = 10;
 
 /** 只接受电影或电视节目榜单并校验可选年份；条数固定为 TOP_MEDIA_LIMIT。专辑虽已进公开目录，但不走精选榜单接口。 */
-export function parseTopMediaParams(searchParams: URLSearchParams) {
+export function parseTopMediaParams(searchParams: URLSearchParams): {
+  type: "movie" | "tv_show";
+  year: string | null;
+  limit: number;
+} {
   const type = searchParams.get("type");
+  // 精选榜单仅电影／电视；album 已是目录类型，但不能用 isCatalogDbMediaType 代替此白名单。
   if (type !== "movie" && type !== "tv_show") {
-    throw new ApiValidationError("Invalid media type");
-  }
-  if (!isCatalogDbMediaType(type)) {
     throw new ApiValidationError("Invalid media type");
   }
 
   const year = parseYear(searchParams.get("year"), "year") ?? null;
-  return { type: type as Extract<CatalogDbMediaType, "movie" | "tv_show">, year, limit: TOP_MEDIA_LIMIT };
+  return { type, year, limit: TOP_MEDIA_LIMIT };
 }

@@ -12,6 +12,13 @@ export type AlbumTrackItem = {
   listened: boolean;
 };
 
+/** 专辑艺人（人物 ID + 姓名）；供快速加曲目预填演唱艺人。 */
+export type AlbumArtistRef = {
+  id: string;
+  name: string;
+  alternateName: string | null;
+};
+
 export type AlbumStructure = {
   album: {
     id: string;
@@ -20,6 +27,8 @@ export type AlbumStructure = {
     coverUrl: string | null;
     status: WatchStatus;
     rating: number | null;
+    /** 专辑关联艺人（media_credits.role=artist），按 credit_order。 */
+    artists: AlbumArtistRef[];
   };
   tracks: AlbumTrackItem[];
   nextTrackNumber: number;
@@ -81,13 +90,36 @@ export async function readAlbumStructure(
   const albumId = item.type === "album" ? item.id : item.parent_id;
   if (!albumId) return null;
 
-  const [album, summary, tracks] = await Promise.all([
+  const [album, summary, tracks, credits] = await Promise.all([
     db.from("media_items").select("id,title,alternate_title,cover_url").eq("id", albumId).maybeSingle(),
     db.from("v_all_media").select("status,rating").eq("id", albumId).maybeSingle(),
     readTracks(db, albumId),
+    db
+      .from("media_credits")
+      .select("people(id,name,alternate_name)")
+      .eq("media_item_id", albumId)
+      .eq("role", "artist")
+      .order("credit_order"),
   ]);
-  if (album.error || summary.error) throw new Error("无法读取曲目结构，请重试。");
+  if (album.error || summary.error || credits.error) throw new Error("无法读取曲目结构，请重试。");
   if (!album.data) return null;
+
+  type CreditRow = {
+    people:
+      | { id: string; name: string; alternate_name: string | null }
+      | { id: string; name: string; alternate_name: string | null }[]
+      | null;
+  };
+  const artists: AlbumArtistRef[] = [];
+  for (const row of (credits.data ?? []) as unknown as CreditRow[]) {
+    const person = one(row.people);
+    if (!person?.id || !person.name) continue;
+    artists.push({
+      id: person.id,
+      name: person.name,
+      alternateName: person.alternate_name ?? null,
+    });
+  }
 
   return {
     album: {
@@ -97,6 +129,7 @@ export async function readAlbumStructure(
       coverUrl: album.data.cover_url ?? null,
       status: (summary.data?.status as WatchStatus | undefined) ?? "want_to_watch",
       rating: summary.data?.rating != null ? Number(summary.data.rating) : null,
+      artists,
     },
     tracks,
     nextTrackNumber: Math.min(100000, (tracks.at(-1)?.number ?? 0) + 1),
