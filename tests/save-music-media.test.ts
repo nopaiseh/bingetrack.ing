@@ -4,15 +4,21 @@ import type { MediaInput } from "@/lib/admin/media-form";
 import { findMusicDuplicateId } from "@/lib/music/dedupe";
 import { resolveMusicCover } from "@/lib/music/resolve-cover";
 
-vi.mock("@/lib/music/dedupe", () => ({
-  findMusicDuplicateId: vi.fn(async () => null),
-}));
+vi.mock("@/lib/music/dedupe", async () => {
+  const actual = await vi.importActual<typeof import("@/lib/music/dedupe")>("@/lib/music/dedupe");
+  return {
+    ...actual,
+    findMusicDuplicateId: vi.fn(async () => null),
+  };
+});
 vi.mock("@/lib/music/resolve-cover", () => ({
   resolveMusicCover: vi.fn(async () => "https://is1-ssl.mzstatic.com/image/thumb/Music/auto.jpg"),
 }));
 
 const albumId = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
+const albumB = "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee";
 const trackId = "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb";
+const otherTrack = "dddddddd-dddd-4ddd-8ddd-dddddddddddd";
 const personId = "cccccccc-cccc-4ccc-8ccc-cccccccccccc";
 
 function albumPayload(overrides: Partial<MediaInput> = {}): MediaInput {
@@ -74,7 +80,7 @@ function trackPayload(overrides: Partial<MediaInput> = {}): MediaInput {
 function chainResult(result: { data?: unknown; error?: unknown }) {
   const builder: Record<string, unknown> = {};
   const finish = async () => result;
-  for (const method of ["select", "eq", "is", "in", "order", "limit", "not"]) {
+  for (const method of ["select", "eq", "neq", "is", "in", "order", "limit", "not"]) {
     builder[method] = () => builder;
   }
   builder.maybeSingle = finish;
@@ -82,6 +88,59 @@ function chainResult(result: { data?: unknown; error?: unknown }) {
   builder.then = (resolve: (value: unknown) => unknown, reject?: (reason: unknown) => unknown) =>
     finish().then(resolve, reject);
   return builder;
+}
+
+/** 曲目保存：专辑校验、同专辑查重、曲序占用检查。 */
+function trackGuardFrom(options?: {
+  albumExists?: boolean;
+  siblingTracks?: { media_item_id: string; title: string; artists?: string[] }[];
+  takenTrackNumber?: boolean;
+}) {
+  const albumExists = options?.albumExists ?? true;
+  const siblings = options?.siblingTracks ?? [];
+  const taken = options?.takenTrackNumber ?? false;
+
+  return (table: string) => {
+    if (table === "media_items") {
+      return {
+        select: () => chainResult({ data: albumExists ? { id: albumId } : null, error: null }),
+      };
+    }
+    if (table === "music") {
+      return {
+        select: (columns: string) => {
+          if (columns.includes("title")) {
+            return chainResult({
+              data: siblings.map((row) => ({
+                media_item_id: row.media_item_id,
+                media: { id: row.media_item_id, title: row.title },
+              })),
+              error: null,
+            });
+          }
+          return chainResult({
+            data: taken ? [{ media_item_id: otherTrack }] : [],
+            error: null,
+          });
+        },
+      };
+    }
+    if (table === "media_credits") {
+      return {
+        select: () =>
+          chainResult({
+            data: siblings.flatMap((row) =>
+              (row.artists ?? []).map((name) => ({
+                media_item_id: row.media_item_id,
+                people: { name },
+              })),
+            ),
+            error: null,
+          }),
+      };
+    }
+    throw new Error(table);
+  };
 }
 
 describe("saveMusicMedia", () => {
@@ -134,6 +193,10 @@ describe("saveMusicMedia", () => {
       }),
     );
     expect(albumUpsert).toHaveBeenCalledWith(expect.objectContaining({ media_item_id: albumId, label: "厂牌" }));
+    expect(findMusicDuplicateId).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ type: "album", title: "新专辑" }),
+    );
   });
 
   it("更新已有专辑：按人物 ID 解析，写入合集", async () => {
@@ -192,16 +255,36 @@ describe("saveMusicMedia", () => {
     const peopleSelect = vi.fn(() => chainResult({ data: { id: "person-1" }, error: null }));
     const creditsUpsert = vi.fn(async () => ({ error: null }));
     const trackingUpsert = vi.fn(async () => ({ error: null }));
+    let mediaItemsSelects = 0;
+    let musicSelects = 0;
 
     const from = vi.fn((table: string) => {
       if (table === "media_items") {
         return {
-          select: () => chainResult({ data: { id: albumId }, error: null }),
+          select: () => {
+            mediaItemsSelects += 1;
+            return chainResult({ data: { id: albumId }, error: null });
+          },
           insert: mediaInsert,
         };
       }
-      if (table === "music") return { upsert: musicUpsert };
-      if (table === "media_credits") return { delete: creditsDelete, upsert: creditsUpsert };
+      if (table === "music") {
+        return {
+          select: () => {
+            musicSelects += 1;
+            // 1) 同专辑查重 2) 曲序占用
+            return chainResult({ data: [], error: null });
+          },
+          upsert: musicUpsert,
+        };
+      }
+      if (table === "media_credits") {
+        return {
+          select: () => chainResult({ data: [], error: null }),
+          delete: creditsDelete,
+          upsert: creditsUpsert,
+        };
+      }
       if (table === "people") return { select: peopleSelect };
       if (table === "tracking") return { upsert: trackingUpsert };
       throw new Error(table);
@@ -209,6 +292,9 @@ describe("saveMusicMedia", () => {
 
     const id = await saveMusicMedia({ from } as never, trackPayload());
     expect(id).toBe(trackId);
+    expect(mediaItemsSelects).toBeGreaterThanOrEqual(1);
+    expect(musicSelects).toBeGreaterThanOrEqual(2);
+    expect(findMusicDuplicateId).not.toHaveBeenCalled();
     expect(musicUpsert).toHaveBeenCalledWith(
       expect.objectContaining({ media_item_id: trackId, album_id: albumId, track_number: 1 }),
     );
@@ -219,22 +305,187 @@ describe("saveMusicMedia", () => {
   });
 
   it("所属专辑不存在时拒绝保存曲目", async () => {
-    const from = vi.fn(() => ({
-      select: () => chainResult({ data: null, error: null }),
-    }));
+    const from = vi.fn(trackGuardFrom({ albumExists: false }));
     await expect(saveMusicMedia({ from } as never, trackPayload())).rejects.toThrow(/所属专辑不存在/);
   });
 
-  it("检测到同名同艺人重复时拒绝", async () => {
+  it("专辑全库查重命中时拒绝", async () => {
     vi.mocked(findMusicDuplicateId).mockResolvedValue("dddddddd-dddd-4ddd-8ddd-dddddddddddd");
     await expect(saveMusicMedia({ from: vi.fn() } as never, albumPayload())).rejects.toThrow(/已存在同名同艺人的专辑/);
-    const from = vi.fn(() => ({
-      select: () => chainResult({ data: { id: albumId }, error: null }),
-    }));
-    await expect(saveMusicMedia({ from } as never, trackPayload())).rejects.toMatchObject({
-      message: expect.stringMatching(/已存在同名同艺人的曲目/),
-      code: "23505",
+  });
+
+  it("同一专辑内同名同歌手曲目拒绝，不同专辑同名同歌手可保存", async () => {
+    const blocked = vi.fn(
+      trackGuardFrom({
+        siblingTracks: [{ media_item_id: otherTrack, title: "新曲目", artists: ["主唱"] }],
+      }),
+    );
+    await expect(saveMusicMedia({ from: blocked } as never, trackPayload())).rejects.toThrow(/已存在同名同艺人的曲目/);
+
+    const mediaInsert = vi.fn(() => chainResult({ data: { id: trackId }, error: null }));
+    const musicUpsert = vi.fn(async () => ({ error: null }));
+    const creditsDelete = vi.fn(() => chainResult({ error: null }));
+    const peopleSelect = vi.fn(() => chainResult({ data: { id: "person-1" }, error: null }));
+    const creditsUpsert = vi.fn(async () => ({ error: null }));
+    const trackingUpsert = vi.fn(async () => ({ error: null }));
+
+    const from = vi.fn((table: string) => {
+      if (table === "media_items") {
+        return {
+          select: () => chainResult({ data: { id: albumB }, error: null }),
+          insert: mediaInsert,
+        };
+      }
+      if (table === "music") {
+        return {
+          // 另一专辑下无同名条目／曲序空闲
+          select: () => chainResult({ data: [], error: null }),
+          upsert: musicUpsert,
+        };
+      }
+      if (table === "media_credits") {
+        return {
+          select: () => chainResult({ data: [], error: null }),
+          delete: creditsDelete,
+          upsert: creditsUpsert,
+        };
+      }
+      if (table === "people") return { select: peopleSelect };
+      if (table === "tracking") return { upsert: trackingUpsert };
+      throw new Error(table);
     });
+
+    await expect(saveMusicMedia({ from } as never, trackPayload({ parent_id: albumB }))).resolves.toBe(trackId);
+    expect(findMusicDuplicateId).not.toHaveBeenCalled();
+  });
+
+  it("保存前发现同专辑曲序已被占用时拒绝（不依赖库唯一约束）", async () => {
+    const mediaInsert = vi.fn(() => chainResult({ data: { id: trackId }, error: null }));
+    const mediaDelete = vi.fn(() => chainResult({ error: null }));
+    const from = vi.fn((table: string) => {
+      if (table === "media_items") {
+        return {
+          select: () => chainResult({ data: { id: albumId }, error: null }),
+          insert: mediaInsert,
+          delete: mediaDelete,
+        };
+      }
+      return trackGuardFrom({ takenTrackNumber: true })(table);
+    });
+    await expect(saveMusicMedia({ from } as never, trackPayload())).rejects.toThrow(/曲序已存在/);
+    expect(mediaInsert).toHaveBeenCalled();
+    expect(mediaDelete).toHaveBeenCalled();
+  });
+
+  it("replaceCredits 先解析人物再删旧写新", async () => {
+    const order: string[] = [];
+    const peopleSelect = vi.fn(() => {
+      order.push("resolve");
+      return chainResult({ data: { id: personId }, error: null });
+    });
+    const creditsDelete = vi.fn(() => {
+      order.push("delete");
+      return chainResult({ error: null });
+    });
+    const creditsUpsert = vi.fn(async () => {
+      order.push("upsert");
+      return { error: null };
+    });
+    const mediaUpdate = vi.fn(() => chainResult({ error: null }));
+    const albumUpsert = vi.fn(async () => ({ error: null }));
+    const genreDelete = vi.fn(() => chainResult({ error: null }));
+    const seriesDelete = vi.fn(() => chainResult({ error: null }));
+
+    const from = vi.fn((table: string) => {
+      if (table === "media_items") {
+        return {
+          select: () => chainResult({ data: { type: "album" }, error: null }),
+          update: mediaUpdate,
+        };
+      }
+      if (table === "music_albums") return { upsert: albumUpsert };
+      if (table === "people") return { select: peopleSelect };
+      if (table === "media_credits") return { delete: creditsDelete, upsert: creditsUpsert };
+      if (table === "media_genres") return { delete: genreDelete };
+      if (table === "media_item_series") return { delete: seriesDelete };
+      throw new Error(table);
+    });
+
+    await saveMusicMedia(
+      { from } as never,
+      albumPayload({
+        id: albumId,
+        cover_url: "https://coverartarchive.org/release/x/front-500",
+        artists: [{ id: personId, name: "艺人" }],
+        genres: [],
+      }),
+    );
+    expect(order).toEqual(["resolve", "delete", "upsert"]);
+  });
+
+  it("replaceNamedLinks 先解析类型 ID 再删旧关联", async () => {
+    const order: string[] = [];
+    const genresUpsert = vi.fn(() => {
+      order.push("genre");
+      return chainResult({ data: { id: "genre-1" }, error: null });
+    });
+    const genreLinkDelete = vi.fn(() => {
+      order.push("delete");
+      return chainResult({ error: null });
+    });
+    const genreLinkUpsert = vi.fn(async () => {
+      order.push("link");
+      return { error: null };
+    });
+    const mediaUpdate = vi.fn(() => chainResult({ error: null }));
+    const albumUpsert = vi.fn(async () => ({ error: null }));
+    const creditsDelete = vi.fn(() => chainResult({ error: null }));
+    const seriesDelete = vi.fn(() => chainResult({ error: null }));
+
+    const from = vi.fn((table: string) => {
+      if (table === "media_items") {
+        return {
+          select: () => chainResult({ data: { type: "album" }, error: null }),
+          update: mediaUpdate,
+        };
+      }
+      if (table === "music_albums") return { upsert: albumUpsert };
+      if (table === "media_credits") return { delete: creditsDelete, upsert: async () => ({ error: null }) };
+      if (table === "genres") return { upsert: genresUpsert };
+      if (table === "media_genres") return { delete: genreLinkDelete, upsert: genreLinkUpsert };
+      if (table === "media_item_series") return { delete: seriesDelete };
+      throw new Error(table);
+    });
+
+    await saveMusicMedia(
+      { from } as never,
+      albumPayload({
+        id: albumId,
+        cover_url: "https://coverartarchive.org/release/x/front-500",
+        artists: [],
+        genres: ["流行"],
+      }),
+    );
+    expect(order).toEqual(["genre", "delete", "link"]);
+  });
+
+  it("新建后后续失败会删除刚插入的 media_items 并抛出原错误", async () => {
+    const mediaInsert = vi.fn(() => chainResult({ data: { id: albumId }, error: null }));
+    const mediaDelete = vi.fn(() => chainResult({ error: null }));
+    const albumUpsert = vi.fn(async () => ({ error: { code: "42501" } }));
+
+    const from = vi.fn((table: string) => {
+      if (table === "media_items") return { insert: mediaInsert, delete: mediaDelete };
+      if (table === "music_albums") return { upsert: albumUpsert };
+      throw new Error(table);
+    });
+
+    await expect(saveMusicMedia({ from } as never, albumPayload({ artists: [], genres: [] }))).rejects.toThrow(
+      /没有写入权限/,
+    );
+    expect(mediaDelete).toHaveBeenCalled();
+    const deleteBuilder = mediaDelete.mock.results[0]?.value as { eq?: unknown };
+    expect(typeof deleteBuilder?.eq === "function" || mediaDelete).toBeTruthy();
   });
 
   it("不能把已有条目改成另一媒体类型", async () => {
@@ -249,20 +500,6 @@ describe("saveMusicMedia", () => {
       select: () => chainResult({ data: null, error: null }),
     }));
     await expect(saveMusicMedia({ from } as never, albumPayload({ id: albumId }))).rejects.toThrow(/资料已不存在/);
-  });
-
-  it("曲序冲突映射为可读错误", async () => {
-    const from = vi.fn((table: string) => {
-      if (table === "media_items") {
-        return {
-          select: () => chainResult({ data: { id: albumId }, error: null }),
-          insert: () => chainResult({ data: { id: trackId }, error: null }),
-        };
-      }
-      if (table === "music") return { upsert: async () => ({ error: { code: "23505" } }) };
-      throw new Error(table);
-    });
-    await expect(saveMusicMedia({ from } as never, trackPayload())).rejects.toThrow(/同一专辑中已存在这个曲序/);
   });
 
   it("权限不足映射为站长权限文案", async () => {

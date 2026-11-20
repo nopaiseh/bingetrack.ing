@@ -206,6 +206,17 @@ describe("管理媒体输入", () => {
     expect(() =>
       parseMediaForm(
         form({
+          type: "music",
+          title: "小数秒",
+          parent_id: albumId,
+          number: "1",
+          runtime: "3.5",
+        }),
+      ),
+    ).toThrow(/时长、评分或编号超出有效范围/);
+    expect(() =>
+      parseMediaForm(
+        form({
           type: "album",
           title: "坏封面",
           cover_url: "https://evil.example/cover.jpg",

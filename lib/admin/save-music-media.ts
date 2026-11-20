@@ -1,13 +1,14 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { MediaInput, PersonRef } from "@/lib/admin/media-form";
-import { findMusicDuplicateId } from "@/lib/music/dedupe";
+import { findMusicDuplicateId, isDuplicateMusicEntry } from "@/lib/music/dedupe";
 import { resolveMusicCover } from "@/lib/music/resolve-cover";
 
 type CreditRole = "artist" | "lyricist" | "composer";
 
 const WRITE_ERROR = "保存失败，请检查字段或数据库配置后重试。";
 const PERMISSION_ERROR = "没有写入权限，请检查站长账号配置。";
+const TRACK_NUMBER_TAKEN = "曲序已存在。";
 
 function writeError(code?: string) {
   if (code === "23505") return "同一专辑中已存在这个曲序，请更换曲序。";
@@ -28,6 +29,11 @@ export class SaveMusicMediaError extends Error {
     this.name = "SaveMusicMediaError";
     this.code = code;
   }
+}
+
+function relatedOne<T>(value: T | T[] | null | undefined): T | null {
+  if (value == null) return null;
+  return Array.isArray(value) ? (value[0] ?? null) : value;
 }
 
 /** 按 ID 校验人物，或按姓名匹配／新建（无别名；与 admin_save_media 同口径）。 */
@@ -52,21 +58,30 @@ async function resolvePerson(db: SupabaseClient, person: PersonRef): Promise<str
   return data.id;
 }
 
+/**
+ * 先解析全部人物 ID，全部成功后再删旧写新，避免删完一半却因人物解析失败留下空演职员。
+ */
 async function replaceCredits(db: SupabaseClient, mediaId: string, role: CreditRole, people: PersonRef[]) {
+  const personIds: string[] = [];
+  for (const person of people) {
+    personIds.push(await resolvePerson(db, person));
+  }
   const { error: deleteError } = await db.from("media_credits").delete().eq("media_item_id", mediaId).eq("role", role);
   assertOk(deleteError);
-  if (people.length === 0) return;
-  const rows = [];
-  for (let index = 0; index < people.length; index += 1) {
-    const personId = await resolvePerson(db, people[index]);
-    rows.push({ media_item_id: mediaId, person_id: personId, role, credit_order: index });
-  }
+  if (personIds.length === 0) return;
+  const rows = personIds.map((personId, index) => ({
+    media_item_id: mediaId,
+    person_id: personId,
+    role,
+    credit_order: index,
+  }));
   const { error } = await db
     .from("media_credits")
     .upsert(rows, { onConflict: "media_item_id,person_id,role", ignoreDuplicates: true });
   assertOk(error);
 }
 
+/** 先 upsert／解析全部类型 ID，再删旧关联并写入，避免删后半途失败。 */
 async function replaceNamedLinks(
   db: SupabaseClient,
   mediaId: string,
@@ -75,13 +90,17 @@ async function replaceNamedLinks(
   key: "genre_id",
   names: string[],
 ) {
-  const { error: deleteError } = await db.from(link).delete().eq("media_item_id", mediaId);
-  assertOk(deleteError);
+  const ids: string[] = [];
   for (const name of names) {
     const { data, error } = await db.from(table).upsert({ name }, { onConflict: "name" }).select("id").single();
     assertOk(error);
     if (!data?.id) throw new SaveMusicMediaError(WRITE_ERROR);
-    const { error: linkError } = await db.from(link).upsert({ media_item_id: mediaId, [key]: data.id });
+    ids.push(data.id);
+  }
+  const { error: deleteError } = await db.from(link).delete().eq("media_item_id", mediaId);
+  assertOk(deleteError);
+  for (const id of ids) {
+    const { error: linkError } = await db.from(link).upsert({ media_item_id: mediaId, [key]: id });
     assertOk(linkError);
   }
 }
@@ -127,9 +146,122 @@ async function replaceCollections(db: SupabaseClient, mediaId: string, names: st
 }
 
 /**
+ * 同一专辑内按规范化标题 + artist 集合查重（全库 RPC 对曲目过宽）。
+ * 专辑仍走 findMusicDuplicateId。
+ */
+async function findDuplicateTrackInAlbum(
+  db: SupabaseClient,
+  albumId: string,
+  title: string,
+  artists: readonly string[],
+  excludeId: string | null,
+): Promise<string | null> {
+  const { data: rows, error } = await db
+    .from("music")
+    .select("media_item_id, media:media_items!music_media_item_id_fkey(id, title)")
+    .eq("album_id", albumId);
+  assertOk(error);
+  const candidates = (rows ?? [])
+    .map((row) => {
+      const media = relatedOne(row.media as { id: string; title: string } | { id: string; title: string }[] | null);
+      return {
+        id: row.media_item_id as string,
+        title: media?.title ?? "",
+      };
+    })
+    .filter((row) => row.id && row.id !== excludeId);
+  if (candidates.length === 0) return null;
+
+  const { data: creditRows, error: creditError } = await db
+    .from("media_credits")
+    .select("media_item_id, people(name)")
+    .in(
+      "media_item_id",
+      candidates.map((row) => row.id),
+    )
+    .eq("role", "artist");
+  assertOk(creditError);
+
+  const artistsById = new Map<string, string[]>();
+  for (const row of creditRows ?? []) {
+    const mediaId = row.media_item_id as string;
+    const person = relatedOne(row.people as { name: string } | { name: string }[] | null);
+    const name = person?.name;
+    if (!name) continue;
+    const list = artistsById.get(mediaId) ?? [];
+    list.push(name);
+    artistsById.set(mediaId, list);
+  }
+
+  for (const candidate of candidates) {
+    if (
+      isDuplicateMusicEntry({
+        title,
+        artists,
+        existingTitle: candidate.title,
+        existingArtists: artistsById.get(candidate.id) ?? [],
+      })
+    ) {
+      return candidate.id;
+    }
+  }
+  return null;
+}
+
+/** 表上无 (album_id, track_number) 唯一约束，保存前主动拦截占用。 */
+async function assertTrackNumberAvailable(
+  db: SupabaseClient,
+  albumId: string,
+  trackNumber: number,
+  excludeId: string | null,
+) {
+  let query = db.from("music").select("media_item_id").eq("album_id", albumId).eq("track_number", trackNumber).limit(1);
+  if (excludeId) query = query.neq("media_item_id", excludeId);
+  const { data, error } = await query;
+  assertOk(error);
+  if ((data ?? []).length > 0) throw new SaveMusicMediaError(TRACK_NUMBER_TAKEN, "23505");
+}
+
+async function writeAlbumSide(db: SupabaseClient, itemId: string, payload: MediaInput) {
+  const { error } = await db.from("music_albums").upsert({
+    media_item_id: itemId,
+    label: payload.label,
+  });
+  assertOk(error);
+  await replaceCredits(db, itemId, "artist", payload.artists);
+  await replaceNamedLinks(db, itemId, "genres", "media_genres", "genre_id", payload.genres);
+  await replaceCollections(db, itemId, payload.collections ?? []);
+}
+
+async function writeTrackSide(db: SupabaseClient, itemId: string, payload: MediaInput) {
+  if (!payload.parent_id || payload.number == null) {
+    throw new SaveMusicMediaError("请指定所属专辑和曲序。");
+  }
+  await assertTrackNumberAvailable(db, payload.parent_id, payload.number, payload.id);
+  const { error } = await db.from("music").upsert({
+    media_item_id: itemId,
+    album_id: payload.parent_id,
+    track_number: payload.number,
+  });
+  assertOk(error);
+  await replaceCredits(db, itemId, "artist", payload.artists);
+  await replaceCredits(db, itemId, "lyricist", payload.lyricists);
+  await replaceCredits(db, itemId, "composer", payload.composers);
+  const { error: trackingError } = await db.from("tracking").upsert(
+    {
+      media_item_id: itemId,
+      status: payload.status === "watched" ? "watched" : "want_to_watch",
+      rating: payload.rating,
+    },
+    { onConflict: "media_item_id" },
+  );
+  assertOk(trackingError);
+}
+
+/**
  * 保存专辑或曲目。
  * admin_save_media 尚未接受 album／music（需迁移扩展）；此处用站长 RLS 直写既有表，
- * 权限仍经 requireOwner → is_site_owner。多语句非单事务，失败时可能留下半成品，需人工清理或后续迁入 RPC。
+ * 权限仍经 requireOwner → is_site_owner。新建若后续步骤失败会删除刚插入的 media_items（子表级联）。
  */
 export async function saveMusicMedia(db: SupabaseClient, payload: MediaInput): Promise<string> {
   if (payload.type !== "album" && payload.type !== "music") {
@@ -148,16 +280,20 @@ export async function saveMusicMedia(db: SupabaseClient, payload: MediaInput): P
   }
 
   const artistNames = payload.artists.map((person) => person.name);
-  const duplicateId = await findMusicDuplicateId(db, {
-    type: payload.type,
-    title: payload.title,
-    artists: artistNames,
-  }).catch(() => null);
-  if (duplicateId && duplicateId !== payload.id) {
-    throw new SaveMusicMediaError(
-      payload.type === "album" ? "已存在同名同艺人的专辑。" : "已存在同名同艺人的曲目。",
-      "23505",
-    );
+  if (payload.type === "album") {
+    const duplicateId = await findMusicDuplicateId(db, {
+      type: "album",
+      title: payload.title,
+      artists: artistNames,
+    }).catch(() => null);
+    if (duplicateId && duplicateId !== payload.id) {
+      throw new SaveMusicMediaError("已存在同名同艺人的专辑。", "23505");
+    }
+  } else if (payload.parent_id) {
+    const duplicateId = await findDuplicateTrackInAlbum(db, payload.parent_id, payload.title, artistNames, payload.id);
+    if (duplicateId) {
+      throw new SaveMusicMediaError("已存在同名同艺人的曲目。", "23505");
+    }
   }
 
   let coverUrl = payload.cover_url;
@@ -169,8 +305,9 @@ export async function saveMusicMedia(db: SupabaseClient, payload: MediaInput): P
     }).catch(() => null);
   }
 
-  let itemId = payload.id;
-  if (!itemId) {
+  let created = false;
+  let itemId: string;
+  if (!payload.id) {
     const { data, error } = await db
       .from("media_items")
       .insert({
@@ -187,7 +324,9 @@ export async function saveMusicMedia(db: SupabaseClient, payload: MediaInput): P
     assertOk(error);
     if (!data?.id) throw new SaveMusicMediaError(WRITE_ERROR);
     itemId = data.id;
+    created = true;
   } else {
+    itemId = payload.id;
     const { data: existing, error: readError } = await db
       .from("media_items")
       .select("type")
@@ -210,37 +349,14 @@ export async function saveMusicMedia(db: SupabaseClient, payload: MediaInput): P
     assertOk(error);
   }
 
-  if (!itemId) throw new SaveMusicMediaError(WRITE_ERROR);
-
-  if (payload.type === "album") {
-    const { error } = await db.from("music_albums").upsert({
-      media_item_id: itemId,
-      label: payload.label,
-    });
-    assertOk(error);
-    await replaceCredits(db, itemId, "artist", payload.artists);
-    await replaceNamedLinks(db, itemId, "genres", "media_genres", "genre_id", payload.genres);
-    await replaceCollections(db, itemId, payload.collections ?? []);
-  } else {
-    if (!payload.parent_id) throw new SaveMusicMediaError("请指定所属专辑和曲序。");
-    const { error } = await db.from("music").upsert({
-      media_item_id: itemId,
-      album_id: payload.parent_id,
-      track_number: payload.number,
-    });
-    assertOk(error);
-    await replaceCredits(db, itemId, "artist", payload.artists);
-    await replaceCredits(db, itemId, "lyricist", payload.lyricists);
-    await replaceCredits(db, itemId, "composer", payload.composers);
-    const { error: trackingError } = await db.from("tracking").upsert(
-      {
-        media_item_id: itemId,
-        status: payload.status === "watched" ? "watched" : "want_to_watch",
-        rating: payload.rating,
-      },
-      { onConflict: "media_item_id" },
-    );
-    assertOk(trackingError);
+  try {
+    if (payload.type === "album") await writeAlbumSide(db, itemId, payload);
+    else await writeTrackSide(db, itemId, payload);
+  } catch (error) {
+    if (created) {
+      await db.from("media_items").delete().eq("id", itemId);
+    }
+    throw error;
   }
 
   return itemId;

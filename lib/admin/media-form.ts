@@ -175,8 +175,9 @@ export function parseMediaForm(form: FormData): MediaInput {
   const lyricists = isMusicTrack ? credits("lyricists").map(({ id, name }) => ({ id, name })) : [];
   const composers = isMusicTrack ? credits("composers").map(({ id, name }) => ({ id, name })) : [];
   const label = isAlbum ? string("label", 200) : null;
-  // 曲目时长以秒计（存储与展示一致）；影视片长仍为分钟。
-  const runtime = type === "tv_show" || type === "tv_season" || type === "album" ? null : numeric("runtime", 100000);
+  // 曲目时长以秒计（存储与展示一致）；影视片长仍为分钟；一律整数。
+  const runtime =
+    type === "tv_show" || type === "tv_season" || type === "album" ? null : numeric("runtime", 100000, true);
   return {
     id,
     type: type as ManagedMediaType,
