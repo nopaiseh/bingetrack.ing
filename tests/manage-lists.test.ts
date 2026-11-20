@@ -14,6 +14,7 @@ import {
   parseBulkStatus,
 } from "@/lib/admin/list-params";
 import {
+  bulkDeleteAlbums,
   bulkDeleteMovies,
   bulkDeletePeople,
   bulkDeleteTvShows,
@@ -23,7 +24,7 @@ import {
   listAdminMedia,
   listAdminPeople,
 } from "@/lib/admin/lists";
-import { deleteMovies, listPeople, setTvShowStatus } from "@/app/(admin)/manage/list-actions";
+import { deleteAlbums, deleteMovies, listAlbums, listPeople, setTvShowStatus } from "@/app/(admin)/manage/list-actions";
 import { requireOwner } from "@/lib/auth/server";
 import { affectedMediaIds, referenceMediaIds, revalidateMediaItems } from "@/lib/admin/revalidate-media";
 
@@ -42,6 +43,10 @@ const movieB = "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb";
 const showA = "cccccccc-cccc-4ccc-8ccc-cccccccccccc";
 const showB = "dddddddd-dddd-4ddd-8ddd-dddddddddddd";
 const episodeA = "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee";
+const albumA = "ffffffff-ffff-4fff-8fff-ffffffffffff";
+const albumB = "99999999-9999-4999-8999-999999999999";
+const trackA = "10101010-1010-4010-8010-101010101010";
+const trackB = "20202020-2020-4020-8020-202020202020";
 
 type Result = { data?: unknown; error?: unknown; count?: number | null };
 type QueryCall = { method: string; args: unknown[] };
@@ -60,12 +65,13 @@ function fakeDb(handle: (query: Query) => Result) {
     const builder: Record<string, unknown> = {
       then: (resolve: (value: Result) => void) => resolve({ data: [], error: null, ...handle(query) }),
     };
-    for (const method of ["select", "order", "range", "or", "in", "eq", "delete", "upsert"]) {
+    for (const method of ["select", "order", "range", "or", "in", "eq", "delete", "upsert", "not"]) {
       builder[method] = (...args: unknown[]) => {
         query.calls.push({ method, args });
         return builder;
       };
     }
+    builder.maybeSingle = () => Promise.resolve({ data: null, error: null, count: null, ...handle(query) });
     return builder;
   });
   const rpc = vi.fn<(fn: string, args: { p_id: string }) => Promise<{ data: null; error: { code?: string } | null }>>(
@@ -259,6 +265,38 @@ describe("人物与影视列表查询", () => {
     await expect(listAdminMedia(db, "movie", { sort: "music" })).rejects.toThrow(AdminInputError);
     expect(from).not.toHaveBeenCalled();
   });
+
+  it("专辑列表附带曲目数量", async () => {
+    const { db, queries } = fakeDb((query) => {
+      if (query.table === "v_manage_media_order") {
+        return {
+          data: [
+            {
+              id: albumA,
+              title: "专辑甲",
+              alternate_title: null,
+              status: "watched",
+              rating: 9,
+              sort_date: "2024-01-01",
+            },
+          ],
+          count: 1,
+        };
+      }
+      if (query.table === "media_items") {
+        return {
+          data: [{ id: albumA, cover_url: null, release_date: "2024-01-01", runtime: null, seasons: [] }],
+        };
+      }
+      if (query.table === "music") {
+        return { data: [{ album_id: albumA }, { album_id: albumA }, { album_id: null }] };
+      }
+      return {};
+    });
+    const page = await listAdminMedia(db, "album", {});
+    expect(page.items[0]).toMatchObject({ type: "album", track_count: 2, season_count: 0, episode_count: 0 });
+    expect(queries.some((query) => query.table === "music")).toBe(true);
+  });
 });
 
 describe("季与单集列表", () => {
@@ -313,6 +351,12 @@ describe("季与单集列表", () => {
     });
     expect(parseAdminChildQuery("tv_season", showA, { sort: "title", status: "want_to_watch" }).sort).toBe("title");
     expect(parseAdminChildListType("tv_episode")).toBe("tv_episode");
+    expect(parseAdminChildListType("music")).toBe("music");
+    expect(parseAdminChildQuery("music", albumA, { sort: "title", status: "watched" })).toMatchObject({
+      sort: "title",
+      status: "watched",
+      parent: albumA,
+    });
     expect(() => parseAdminChildListType("movie")).toThrow(AdminInputError);
     expect(() => parseAdminChildListType("tv_show")).toThrow(AdminInputError);
   });
@@ -655,6 +699,104 @@ describe("批量删除与状态", () => {
     await expect(bulkSetMovieStatus(db, [movieA], "watching")).rejects.toThrow(AdminInputError);
     expect(from).not.toHaveBeenCalled();
   });
+
+  it("批量删除专辑前先删下属曲目", async () => {
+    const { db, queries } = fakeDb((query) => {
+      if (query.table === "media_items" && query.calls.some((call) => call.method === "select")) {
+        return { data: [{ id: albumA, title: "专辑甲" }, { id: albumB, title: "专辑乙" }] };
+      }
+      if (query.table === "music") {
+        return { data: [{ media_item_id: trackA }, { media_item_id: trackB }, { media_item_id: trackA }] };
+      }
+      if (query.table === "media_items" && query.calls.some((call) => call.method === "delete")) {
+        const ids = calls(query, "in")[0]?.args[1] as string[];
+        if (ids?.includes(trackA)) return { data: null };
+        return { data: [{ id: albumA }, { id: albumB }] };
+      }
+      return { data: [] };
+    });
+    const result = await bulkDeleteAlbums(db, [albumA, albumB, albumA]);
+    expect(result).toEqual({ succeeded: 2, failed: 0 });
+    const deletes = queries.filter((query) => query.table === "media_items" && calls(query, "delete").length > 0);
+    expect(calls(deletes[0], "in")[0].args[1]).toEqual([trackA, trackB]);
+    expect(revalidateMediaItems).toHaveBeenCalled();
+  });
+
+  it("没有匹配专辑时全部记失败且不删曲目", async () => {
+    const { db, from } = fakeDb(() => ({ data: [] }));
+    expect(await bulkDeleteAlbums(db, [albumA])).toEqual({ succeeded: 0, failed: 1 });
+    expect(from).toHaveBeenCalledWith("media_items");
+    expect(from).not.toHaveBeenCalledWith("music");
+  });
+});
+
+describe("专辑曲目列表", () => {
+  it("无上级时返回空页，不查库", async () => {
+    const { db, from } = fakeDb(() => ({}));
+    expect(await listAdminChildren(db, "music", null, {})).toEqual({
+      items: [],
+      total: 0,
+      page: 1,
+      pageSize: 25,
+      q: "",
+      sort: "date",
+      status: "",
+      parent: "",
+    });
+    expect(from).not.toHaveBeenCalled();
+  });
+
+  it("按曲序读取并支持搜索、状态与评分排序", async () => {
+    const { db, queries } = fakeDb((query) => {
+      if (query.table === "media_items") return { data: { title: "所属专辑" } };
+      if (query.table === "music") {
+        return {
+          data: [
+            {
+              media_item_id: trackB,
+              track_number: 2,
+              media: {
+                id: trackB,
+                title: "乙曲",
+                alternate_title: "B",
+                cover_url: null,
+                release_date: "2024-02-01",
+                tracking: { status: "want_to_watch", rating: 6 },
+              },
+            },
+            {
+              media_item_id: trackA,
+              track_number: 1,
+              media: [
+                {
+                  id: trackA,
+                  title: "甲曲",
+                  alternate_title: null,
+                  cover_url: "https://coverartarchive.org/a.jpg",
+                  release_date: "2024-01-01",
+                  tracking: [{ status: "watched", rating: "9" }],
+                },
+              ],
+            },
+          ],
+        };
+      }
+      return {};
+    });
+    const page = await listAdminChildren(db, "music", albumA, { sort: "rating", q: "曲", status: "watched" });
+    expect(page.total).toBe(1);
+    expect(page.items[0]).toMatchObject({
+      id: trackA,
+      type: "music",
+      title: "甲曲",
+      status: "watched",
+      rating: 9,
+      track: { albumTitle: "所属专辑", trackNumber: 1 },
+    });
+    expect(queries[0].table).toBe("media_items");
+    expect(queries[1].table).toBe("music");
+    expect(calls(queries[1], "eq")[0].args).toEqual(["album_id", albumA]);
+  });
 });
 
 describe("管理列表服务端入口", () => {
@@ -667,6 +809,8 @@ describe("管理列表服务端入口", () => {
     await expect(listPeople({ q: "周星驰" })).rejects.toThrow("unauthorized");
     await expect(deleteMovies([movieA])).rejects.toThrow("unauthorized");
     await expect(setTvShowStatus([showA], "watched")).rejects.toThrow("unauthorized");
+    await expect(listAlbums({})).rejects.toThrow("unauthorized");
+    await expect(deleteAlbums([albumA])).rejects.toThrow("unauthorized");
   });
 
   it("身份通过后才查询", async () => {
@@ -676,5 +820,8 @@ describe("管理列表服务端入口", () => {
     expect(from).not.toHaveBeenCalled();
     expect(await listPeople({ q: "" })).toEqual({ items: [], total: 0, page: 1, pageSize: 25 });
     expect(from).toHaveBeenCalledWith("people");
+    from.mockClear();
+    expect(await listAlbums({})).toEqual({ items: [], total: 0, page: 1, pageSize: 25 });
+    expect(from).toHaveBeenCalledWith("v_manage_media_order");
   });
 });
