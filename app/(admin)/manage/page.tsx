@@ -14,7 +14,8 @@ export default async function AdminPage({
   // 不带类型的 /manage 是登录后的管理首页；各列表地址都带 type。
   if (!params.type) return <Overview db={db} />;
   const type = Object.hasOwn(mediaTypes, params.type) ? (params.type as ManagedMediaType) : "movie";
-  if (type === "movie" || type === "tv_show" || type === "album") return <PagedMediaList type={type} search={params} />;
+  if (type === "movie" || type === "tv_show" || type === "album" || type === "book")
+    return <PagedMediaList type={type} search={params} />;
   if (type === "tv_season" || type === "tv_episode") return <PagedChildList db={db} type={type} search={params} />;
   // 曲目挂在专辑工作台下编辑，不提供顶层曲目列表。
   return <Overview db={db} />;

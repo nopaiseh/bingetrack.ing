@@ -362,17 +362,108 @@ export async function getContinueListening(): Promise<ContinueListeningItem[]> {
   });
 }
 
+/** 首页「在读」最多返回的图书数。 */
+export const CURRENTLY_READING_LIMIT = 8;
+
+/**
+ * 首页「在读」的一本图书：tracking.status = in_progress。
+ * 不跟踪页数进度；排序用出版日（release_date），不是真实阅读时间。
+ */
+export type CurrentlyReadingItem = {
+  bookId: string;
+  title: string;
+  posterPath: string | null;
+  href: string;
+  /** 排序用出版日（UTC 零点）；无出版日时为 Unix 纪元。 */
+  releaseAt: string;
+  authors: string[];
+};
+
+type CurrentlyReadingRow = {
+  id: string;
+  title: string | null;
+  cover_url: string | null;
+  release_date: string | null;
+  authors: string[] | null;
+};
+
+/** 把在读查询行收成首页条目；按出版日从新到旧。 */
+export function assembleCurrentlyReading(rows: readonly CurrentlyReadingRow[]): CurrentlyReadingItem[] {
+  const bookRoute = MEDIA_TYPE_DEFINITIONS.book.route;
+  return rows
+    .map((row) => ({
+      bookId: row.id,
+      title: (row.title ?? "").trim(),
+      posterPath: posterPathFromCover(row.cover_url),
+      href: `/${bookRoute}/${encodeURIComponent(row.id)}`,
+      releaseAt: releaseDateToUtc(row.release_date) ?? MISSING_RELEASE_INSTANT,
+      authors: [...(row.authors ?? [])].filter((name) => name.trim().length > 0),
+    }))
+    .sort(
+      (left, right) =>
+        right.releaseAt.localeCompare(left.releaseAt) || left.bookId.localeCompare(right.bookId),
+    )
+    .slice(0, CURRENTLY_READING_LIMIT);
+}
+
+type CurrentlyReadingViewRow = {
+  id: string;
+  title: string | null;
+  cover_url: string | null;
+  sort_date: string | null;
+  authors: string[] | null;
+};
+
+async function fetchCurrentlyReadingRows(): Promise<CurrentlyReadingRow[]> {
+  const db = getSupabasePublicServer();
+  const rows = await eachPage<CurrentlyReadingViewRow>("currently-reading", (offset) =>
+    db
+      .from("v_all_media")
+      .select("id,title,cover_url,sort_date,authors")
+      .eq("type", "book")
+      .eq("status", "in_progress")
+      .order("id", { ascending: true })
+      .range(offset, offset + PAGE_SIZE - 1),
+  );
+  return rows.map((row) => ({
+    id: String(row.id),
+    title: row.title,
+    cover_url: row.cover_url,
+    release_date: row.sort_date,
+    authors: row.authors,
+  }));
+}
+
+/**
+ * 首页「在读」：status=in_progress 的图书，最多 8 条。
+ * book 未启用时直接返回空数组，避免链到未开放的 /books/…。
+ * 供前端首页行单独调用；不强制并入 getHomeContinue，以免破坏现有在看／在听形状。
+ */
+export async function getCurrentlyReading(): Promise<CurrentlyReadingItem[]> {
+  if (!MEDIA_TYPE_DEFINITIONS.book.enabled) return [];
+  return withRetry(async () => {
+    const rows = await fetchCurrentlyReadingRows();
+    return assembleCurrentlyReading(rows);
+  });
+}
+
 /** 首页继续区块：在看（影视）与在听（音乐）分开返回，便于渲染两行。 */
 export type HomeContinueData = {
   watching: ContinueWatchingItem[];
   listening: ContinueListeningItem[];
+  /** 在读图书；可选字段，旧调用方忽略即可。 */
+  reading?: CurrentlyReadingItem[];
 };
 
 /**
- * 并行读取在看与在听。任一侧失败则整次失败，由页面 Promise.allSettled 降级。
- * 形状相对旧版 getContinueWatching() 的数组有破坏性变更；调用方应改读 watching／listening。
+ * 并行读取在看、在听与在读。任一侧失败则整次失败，由页面 Promise.allSettled 降级。
+ * 形状相对旧版 getContinueWatching() 的数组有破坏性变更；调用方应改读 watching／listening／reading。
  */
 export async function getHomeContinue(): Promise<HomeContinueData> {
-  const [watching, listening] = await Promise.all([getContinueWatching(), getContinueListening()]);
-  return { watching, listening };
+  const [watching, listening, reading] = await Promise.all([
+    getContinueWatching(),
+    getContinueListening(),
+    getCurrentlyReading(),
+  ]);
+  return { watching, listening, reading };
 }

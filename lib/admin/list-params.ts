@@ -71,6 +71,10 @@ const episodeStatuses = ["watched", "want_to_watch"] as const;
 export const bulkStatuses = ["watched", "want_to_watch"] as const;
 export type BulkStatus = (typeof bulkStatuses)[number];
 
+/** 图书可写入的状态（含在读）；影视批量接口仍只用 bulkStatuses。 */
+export const bookBulkStatuses = ["watched", "want_to_watch", "in_progress"] as const;
+export type BookBulkStatus = (typeof bookBulkStatuses)[number];
+
 export type AdminListInput = {
   page?: number | string | null;
   pageSize?: number | string | null;
@@ -167,11 +171,11 @@ export type MediaListItem = {
   runtime: number | null;
   /** 电影／专辑等于上映日期；电视节目为最近一集播出日期，与管理列表排序口径一致。 */
   sort_date: string | null;
-  status: "watched" | "watching" | "want_to_watch";
+  status: "watched" | "watching" | "want_to_watch" | "in_progress";
   rating: number | null;
   season_count: number;
   episode_count: number;
-  /** 专辑曲目数；电影／电视节目为 0。 */
+  /** 专辑曲目数；电影／电视节目／图书为 0。 */
   track_count: number;
 };
 
@@ -233,7 +237,7 @@ export function parseAdminMediaQuery(input?: AdminListInput | null) {
 }
 
 /**
- * 只接受配置中 adminBulkOps 为 true 的顶层类型（电影／电视节目／专辑）。
+ * 只接受配置中 adminBulkOps 为 true 的顶层类型（电影／电视节目／专辑／图书）。
  * 曲目（music）挂在专辑下，使用 listAdminChildren。
  * adminBulkOps 类型当前均属启用目录类型，无需再叠 isCatalogDbMediaType。
  */
@@ -307,10 +311,18 @@ export function parseBulkIds(ids: unknown): string[] {
   return unique;
 }
 
-/** 拒绝 watching：数据库枚举只有 watched 与 want_to_watch。 */
+/** 拒绝 watching／in_progress：影视批量只写 watched 与 want_to_watch。 */
 export function parseBulkStatus(status: unknown): BulkStatus {
   if (status === "watched" || status === "want_to_watch") return status;
   throw new AdminInputError(
-    "观看状态只能是已看（watched）或想看（want_to_watch）。在看（watching）由单集汇总，不能直接写入。",
+    "观看状态只能是已看（watched）或想看（want_to_watch）。在看（watching）由单集汇总，不能直接写入；在读（in_progress）仅图书可用。",
+  );
+}
+
+/** 图书批量状态：想读／在读／读过；拒绝 watching。 */
+export function parseBookBulkStatus(status: unknown): BookBulkStatus {
+  if (status === "watched" || status === "want_to_watch" || status === "in_progress") return status;
+  throw new AdminInputError(
+    "阅读状态只能是读过（watched）、在读（in_progress）或想读（want_to_watch）。",
   );
 }

@@ -20,6 +20,7 @@ describe("sitemap", () => {
       `${SITE_URL}/movies`,
       `${SITE_URL}/shows`,
       `${SITE_URL}/albums`,
+      `${SITE_URL}/books`,
       `${SITE_URL}/movies/abc`,
     ]);
   });
@@ -27,6 +28,12 @@ describe("sitemap", () => {
   it("媒体查询失败时退回的固定页面仍不含搜索页", async () => {
     vi.mocked(getSitemapMediaEntries).mockRejectedValue(new Error("db"));
     const urls = (await sitemap()).map(/* 只比较地址。 */ (entry) => entry.url);
-    expect(urls).toEqual([`${SITE_URL}`, `${SITE_URL}/movies`, `${SITE_URL}/shows`, `${SITE_URL}/albums`]);
+    expect(urls).toEqual([
+      `${SITE_URL}`,
+      `${SITE_URL}/movies`,
+      `${SITE_URL}/shows`,
+      `${SITE_URL}/albums`,
+      `${SITE_URL}/books`,
+    ]);
   });
 });

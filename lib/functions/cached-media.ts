@@ -17,7 +17,7 @@ import { parseMediaSearchParams } from "@/lib/api/media-params";
 import { getSupabasePublicServer } from "@/lib/supabase/public-server";
 import { withRetry } from "./retry";
 import { isMediaId } from "./media-id";
-import { getHomeContinue } from "@/lib/continue-watching";
+import { getCurrentlyReading, getHomeContinue } from "@/lib/continue-watching";
 import { MEDIA_LISTS_TAG, MEDIA_TAG, mediaItemTag } from "./media-cache-tags";
 import type { Summary } from "@/lib/types";
 
@@ -114,11 +114,19 @@ export const getCachedMediaDistributionsServer = cache(
   }),
 );
 
-// 首页「继续」长缓存 24 小时，全站一条：{ watching, listening }。
+// 首页「继续」长缓存 24 小时，全站一条：{ watching, listening, reading }。
 // getHomeContinue 只用公开读取客户端，缓存回调里不能读 cookies()、headers() 或当前用户。
-// 观看／收听写入走 revalidateMediaItems，失效 media:lists；全站刷新失效 media。
+// 观看／收听／阅读写入走 revalidateMediaItems，失效 media:lists；全站刷新失效 media。
 export const getCachedHomeContinue = cache(
-  unstable_cache(getHomeContinue, ["public-media-home-continue-v1"], {
+  unstable_cache(getHomeContinue, ["public-media-home-continue-v2"], {
+    revalidate: 86400,
+    tags: [MEDIA_TAG, MEDIA_LISTS_TAG],
+  }),
+);
+
+/** 首页「在读」单独缓存；前端可直接使用，不必改 HomeDashboard 形状。 */
+export const getCachedCurrentlyReading = cache(
+  unstable_cache(getCurrentlyReading, ["public-media-currently-reading-v1"], {
     revalidate: 86400,
     tags: [MEDIA_TAG, MEDIA_LISTS_TAG],
   }),

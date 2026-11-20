@@ -3,15 +3,17 @@
 import { requireOwner } from "@/lib/auth/server";
 import {
   bulkDeleteAlbums,
+  bulkDeleteBooks,
   bulkDeleteMovies,
   bulkDeletePeople,
   bulkDeleteTvShows,
+  bulkSetBookStatus,
   bulkSetMovieStatus,
   bulkSetTvShowStatus,
   listAdminMedia,
   listAdminPeople,
 } from "@/lib/admin/lists";
-import type { AdminListInput, BulkStatus } from "@/lib/admin/list-params";
+import type { AdminListInput, BookBulkStatus, BulkStatus } from "@/lib/admin/list-params";
 
 /** 分页搜索人物。先确认站长身份，再按白名单排序。参数和返回值见 lib/admin/list-params.ts。 */
 export async function listPeople(input: AdminListInput = {}) {
@@ -35,6 +37,12 @@ export async function listTvShows(input: AdminListInput = {}) {
 export async function listAlbums(input: AdminListInput = {}) {
   const { db } = await requireOwner();
   return listAdminMedia(db, "album", input);
+}
+
+/** 分页搜索图书。 */
+export async function listBooks(input: AdminListInput = {}) {
+  const { db } = await requireOwner();
+  return listAdminMedia(db, "book", input);
 }
 
 /** 批量删除人物。返回去重后的成功与失败条数。 */
@@ -61,6 +69,12 @@ export async function deleteAlbums(ids: string[]) {
   return bulkDeleteAlbums(db, ids);
 }
 
+/** 批量删除图书。 */
+export async function deleteBooks(ids: string[]) {
+  const { db } = await requireOwner();
+  return bulkDeleteBooks(db, ids);
+}
+
 /** 批量修改电影观看状态，不改评分。 */
 export async function setMovieStatus(ids: string[], status: BulkStatus) {
   const { db } = await requireOwner();
@@ -71,4 +85,10 @@ export async function setMovieStatus(ids: string[], status: BulkStatus) {
 export async function setTvShowStatus(ids: string[], status: BulkStatus) {
   const { db } = await requireOwner();
   return bulkSetTvShowStatus(db, ids, status);
+}
+
+/** 批量修改图书阅读状态（想读／在读／读过），不改评分；拒绝用于非图书。 */
+export async function setBookStatus(ids: string[], status: BookBulkStatus) {
+  const { db } = await requireOwner();
+  return bulkSetBookStatus(db, ids, status);
 }

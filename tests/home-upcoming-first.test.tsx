@@ -4,9 +4,9 @@ import { render } from "@testing-library/react";
 vi.mock("@/lib/functions/cached-media", () => ({
   getCachedReleaseYearStats: vi.fn(async () => []),
   getCachedTopMediaServer: vi.fn(async () => []),
-  getCachedMediaDistributionsServer: vi.fn(async () => ({ movies: {}, shows: {}, albums: {} })),
+  getCachedMediaDistributionsServer: vi.fn(async () => ({ movies: {}, shows: {}, albums: {}, books: {} })),
   getCachedUpcomingReleasesServer: vi.fn(async () => []),
-  getCachedHomeContinue: vi.fn(async () => ({ watching: [], listening: [] })),
+  getCachedHomeContinue: vi.fn(async () => ({ watching: [], listening: [], reading: [] })),
 }));
 
 vi.mock("@/app/HomeDashboard", () => ({

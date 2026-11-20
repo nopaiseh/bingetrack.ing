@@ -7,6 +7,8 @@ import { useEffect, useId, useRef, useState } from "react";
 import ManagePagination from "../ManagePagination";
 import {
   deleteAlbums,
+  deleteBooks,
+  setBookStatus,
   deleteMovies,
   deletePeople,
   deleteTvShows,
@@ -51,8 +53,8 @@ type AdminListProps = {
   listLabel: string;
   /** 没有对应接口时渲染为禁用，并提示 Coming soon。 */
   actions: AdminBulkAction[];
-  /** 电影、电视节目、专辑、人物走已合并的批量接口。已看与想看只提供给影视。 */
-  wired?: "movie" | "tv_show" | "album" | "people";
+  /** 电影、电视节目、专辑、图书、人物走已合并的批量接口。已看与想看只提供给影视；图书用想读／在读／读过。 */
+  wired?: "movie" | "tv_show" | "album" | "book" | "people";
   showStatus?: boolean;
 };
 
@@ -468,6 +470,14 @@ function liveActions(kind: WiredKind): AdminBulkAction[] {
     destructive: true,
   };
   if (kind === "people" || kind === "album") return [remove];
+  if (kind === "book") {
+    return [
+      { id: "watched", label: "读过", icon: "i-material-symbols-check-circle-outline-rounded" },
+      { id: "reading", label: "在读", icon: "i-material-symbols-menu-book-outline-rounded" },
+      { id: "want", label: "想读", icon: "i-material-symbols-bookmark-outline-rounded" },
+      remove,
+    ];
+  }
   return [
     { id: "watched", label: "已看", icon: "i-material-symbols-check-circle-outline-rounded" },
     { id: "want", label: "想看", icon: "i-material-symbols-bookmark-outline-rounded" },
@@ -480,11 +490,19 @@ function deleteConfirm(kind: WiredKind, count: number, noun: string) {
     return `确定删除所选 ${count} ${noun}电视节目？下属季、集和观看记录会一并删除。此操作无法撤销。`;
   if (kind === "people") return `确定删除所选 ${count} ${noun}人物？演职关联会删除，影视作品会保留。此操作无法撤销。`;
   if (kind === "album") return `确定删除所选 ${count} ${noun}专辑？下属曲目和收听记录会一并删除。此操作无法撤销。`;
+  if (kind === "book") return `确定删除所选 ${count} ${noun}图书？阅读记录和作者关联会一并删除。此操作无法撤销。`;
   return `确定删除所选 ${count} ${noun}电影？观看记录和关联会一并删除。此操作无法撤销。`;
 }
 
 function bulkNotice(actionId: string, result: BulkCounts, noun: string) {
-  const verb = actionId === "delete" ? "删除" : actionId === "want" ? "标为想看" : "标为已看";
+  const verb =
+    actionId === "delete"
+      ? "删除"
+      : actionId === "want"
+        ? "标为想看／想读"
+        : actionId === "reading"
+          ? "标为在读"
+          : "标为已看／读过";
   if (result.succeeded > 0 && result.failed === 0) return `已${verb} ${result.succeeded} ${noun}。`;
   if (result.succeeded === 0) return `未能${verb}。${result.failed} ${noun}失败。`;
   return `已${verb} ${result.succeeded} ${noun}，${result.failed} ${noun}失败。`;
@@ -493,6 +511,12 @@ function bulkNotice(actionId: string, result: BulkCounts, noun: string) {
 async function runBulk(kind: WiredKind, actionId: string, ids: string[]) {
   if (kind === "people") return deletePeople(ids);
   if (kind === "album") return deleteAlbums(ids);
+  if (kind === "book") {
+    if (actionId === "watched") return setBookStatus(ids, "watched");
+    if (actionId === "reading") return setBookStatus(ids, "in_progress");
+    if (actionId === "want") return setBookStatus(ids, "want_to_watch");
+    return deleteBooks(ids);
+  }
   if (kind === "tv_show") {
     if (actionId === "watched") return setTvShowStatus(ids, "watched");
     if (actionId === "want") return setTvShowStatus(ids, "want_to_watch");

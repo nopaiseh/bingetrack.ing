@@ -11,9 +11,9 @@ export class ApiValidationError extends Error {
 }
 
 const MEDIA_TYPES = new Set<string>(CATALOG_DB_TYPES);
-const CREDIT_ROLES = new Set(["director", "actor"]);
-// 与 v_all_media 实际产生的状态一致；视图不会输出 "unwatched"。
-const STATUSES = new Set(["want_to_watch", "watching", "watched"]);
+const CREDIT_ROLES = new Set(["director", "actor", "author", "artist"]);
+// 与 v_all_media 实际产生的状态一致；含图书在读 in_progress；视图不会输出 "unwatched"。
+const STATUSES = new Set(["want_to_watch", "watching", "watched", "in_progress"]);
 const SORTS = new Set(["date_asc", "date_desc", "rating_asc", "rating_desc"]);
 
 // 拒绝非安全整数，并把合法数值限制在允许范围，约束分页请求大小。

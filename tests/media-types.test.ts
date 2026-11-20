@@ -24,9 +24,9 @@ import {
 
 describe("media type config", () => {
   it("round-trips catalog db types and public routes", () => {
-    expect(CATALOG_DB_TYPES).toEqual(["movie", "tv_show", "album"]);
-    expect(PUBLIC_MEDIA_TYPES).toEqual(["movies", "shows", "albums"]);
-    expect(adminMediaListTypes).toEqual(["movie", "tv_show", "album"]);
+    expect(CATALOG_DB_TYPES).toEqual(["movie", "tv_show", "album", "book"]);
+    expect(PUBLIC_MEDIA_TYPES).toEqual(["movies", "shows", "albums", "books"]);
+    expect(adminMediaListTypes).toEqual(["movie", "tv_show", "album", "book"]);
 
     for (const db of CATALOG_DB_TYPES) {
       const route = dbTypeToPublicRoute(db);
@@ -39,25 +39,27 @@ describe("media type config", () => {
     expect(publicPathForDbType("movie", "abc")).toBe("/movies/abc");
     expect(publicPathForDbType("tv_show", "abc")).toBe("/shows/abc");
     expect(publicPathForDbType("album", "abc")).toBe("/albums/abc");
+    expect(publicPathForDbType("book", "abc")).toBe("/books/abc");
     expect(publicPathForDbType("tv_season", "abc")).toBeNull();
   });
 
-  it("enables album catalog while keeping music singles and books disabled", () => {
+  it("enables album and book catalog while keeping music singles disabled", () => {
     expect(MEDIA_TYPE_DEFINITIONS.movie.enabled).toBe(true);
     expect(MEDIA_TYPE_DEFINITIONS.tv_show.enabled).toBe(true);
     expect(MEDIA_TYPE_DEFINITIONS.tv_season.enabled).toBe(true);
     expect(MEDIA_TYPE_DEFINITIONS.tv_episode.enabled).toBe(true);
     expect(MEDIA_TYPE_DEFINITIONS.music.enabled).toBe(false);
     expect(MEDIA_TYPE_DEFINITIONS.album.enabled).toBe(true);
-    expect(MEDIA_TYPE_DEFINITIONS.book.enabled).toBe(false);
+    expect(MEDIA_TYPE_DEFINITIONS.book.enabled).toBe(true);
 
     expect(isCatalogDbMediaType("movie")).toBe(true);
     expect(isCatalogDbMediaType("tv_show")).toBe(true);
     expect(isCatalogDbMediaType("album")).toBe(true);
+    expect(isCatalogDbMediaType("book")).toBe(true);
     expect(isCatalogDbMediaType("music")).toBe(false);
-    expect(isCatalogDbMediaType("book")).toBe(false);
     expect(isPublicMediaType("movies")).toBe(true);
     expect(isPublicMediaType("albums")).toBe(true);
+    expect(isPublicMediaType("books")).toBe(true);
   });
 
   it("keeps zh labels and tracking verbs per type family", () => {
@@ -68,13 +70,16 @@ describe("media type config", () => {
       tv_episode: "单集",
       music: "单曲",
       album: "专辑",
+      book: "图书",
     });
     expect(Object.keys(mediaTypes).every(isManagedMediaType)).toBe(true);
     expect(isManagedMediaType("album")).toBe(true);
     expect(isManagedMediaType("music")).toBe(true);
+    expect(isManagedMediaType("book")).toBe(true);
 
     expect(publicMediaTypeLabel("movies")).toBe("电影");
     expect(publicMediaTypeLabel("shows")).toBe("电视节目");
+    expect(publicMediaTypeLabel("books")).toBe("图书");
 
     expect(MEDIA_TYPE_DEFINITIONS.movie.trackingLabels).toEqual({ done: "看过", want: "想看" });
     expect(MEDIA_TYPE_DEFINITIONS.tv_show.trackingLabels).toEqual({ done: "看过", want: "想看" });
@@ -106,23 +111,28 @@ describe("media type config", () => {
     expect(mediaSchemaType("shows")).toBe("TVSeries");
     expect(mediaSchemaType("music")).toBe("MusicRecording");
     expect(mediaSchemaType("album")).toBe("MusicAlbum");
+    expect(mediaSchemaType("books")).toBe("Book");
     expect(mediaDefaultDescription("测试", "shows")).toBe("查看《测试》的季度、单集与观看记录。");
     expect(mediaDefaultDescription("歌", "music")).toBe("查看《歌》的收听记录与详细信息。");
+    expect(mediaDefaultDescription("书", "books")).toBe("查看《书》的阅读记录与详细信息。");
   });
 
-  it("includes album in admin bulk ops while keeping tracks out", () => {
-    expect(ADMIN_BULK_DB_TYPES).toEqual(["movie", "tv_show", "album"]);
+  it("includes album and book in admin bulk ops while keeping tracks out", () => {
+    expect(ADMIN_BULK_DB_TYPES).toEqual(["movie", "tv_show", "album", "book"]);
     expect(isAdminBulkMediaType("movie")).toBe(true);
     expect(isAdminBulkMediaType("music")).toBe(false);
     expect(isAdminBulkMediaType("album")).toBe(true);
+    expect(isAdminBulkMediaType("book")).toBe(true);
     expect(MEDIA_TYPE_DEFINITIONS.music.adminBulkOps).toBe(false);
     expect(MEDIA_TYPE_DEFINITIONS.album.adminBulkOps).toBe(true);
-    expect(adminBulkOpsLabelList()).toBe("电影和电视节目和专辑");
+    expect(MEDIA_TYPE_DEFINITIONS.book.adminBulkOps).toBe(true);
+    expect(adminBulkOpsLabelList()).toBe("电影和电视节目和专辑和图书");
   });
 
   it("safely converts public routes and derives the season path from config", () => {
     expect(tryPublicRouteToDbType("movies")).toBe("movie");
     expect(tryPublicRouteToDbType("albums")).toBe("album");
+    expect(tryPublicRouteToDbType("books")).toBe("book");
     expect(tryPublicRouteToDbType("music")).toBeNull();
     expect(tryPublicRouteToDbType(undefined)).toBeNull();
     expect("/shows/abc/seasons/def".match(PUBLIC_SEASON_PATH_PATTERN)?.[1]).toBe("def");

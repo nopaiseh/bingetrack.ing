@@ -1,6 +1,6 @@
 /**
  * 媒体类型的单一配置源。公开路由、管理端文案、封面比例、元数据字段与追踪状态文案都从这里派生。
- * 新增类型时优先改本文件；当前启用公开目录：电影、电视节目、专辑。
+ * 新增类型时优先改本文件；当前启用公开目录：电影、电视节目、专辑、图书。
  */
 
 /** 与 public.media_type 枚举对齐（含已改名的 tv_show）。 */
@@ -177,15 +177,15 @@ export const MEDIA_TYPE_DEFINITIONS = {
     trackingLabels: { done: "读过", want: "想读" },
     schemaType: "Book",
     defaultDescription: "查看《{title}》的阅读记录与详细信息。",
-    enabled: false,
-    adminManaged: false,
-    adminBulkOps: false,
+    enabled: true,
+    adminManaged: true,
+    adminBulkOps: true,
   },
 } as const satisfies Record<DbMediaType, MediaTypeDefinition>;
 
 export type MediaTypeKey = keyof typeof MEDIA_TYPE_DEFINITIONS;
 
-/** 有公开顶层路由且当前启用的数据库类型（电影、电视节目、专辑）。 */
+/** 有公开顶层路由且当前启用的数据库类型（电影、电视节目、专辑、图书）。 */
 export type CatalogDbMediaType = {
   [K in MediaTypeKey]: (typeof MEDIA_TYPE_DEFINITIONS)[K]["enabled"] extends true
     ? (typeof MEDIA_TYPE_DEFINITIONS)[K]["route"] extends string
@@ -194,17 +194,17 @@ export type CatalogDbMediaType = {
     : never;
 }[MediaTypeKey];
 
-/** 公开站点使用的路由段联合，当前为 "movies" | "shows" | "albums"。 */
+/** 公开站点使用的路由段联合，当前为 "movies" | "shows" | "albums" | "books"。 */
 export type PublicMediaType = {
   [K in CatalogDbMediaType]: (typeof MEDIA_TYPE_DEFINITIONS)[K]["route"];
 }[CatalogDbMediaType];
 
-/** 管理端可写入的媒体类型（电影／电视节目／季／单集／专辑／曲目）。 */
+/** 管理端可写入的媒体类型（电影／电视节目／季／单集／专辑／曲目／图书）。 */
 export type ManagedMediaType = {
   [K in MediaTypeKey]: (typeof MEDIA_TYPE_DEFINITIONS)[K]["adminManaged"] extends true ? K : never;
 }[MediaTypeKey];
 
-/** 管理端顶层批量操作接受的类型（电影／电视节目／专辑）。 */
+/** 管理端顶层批量操作接受的类型（电影／电视节目／专辑／图书）。 */
 export type AdminBulkMediaType = {
   [K in MediaTypeKey]: (typeof MEDIA_TYPE_DEFINITIONS)[K]["adminBulkOps"] extends true ? K : never;
 }[MediaTypeKey];
@@ -214,7 +214,7 @@ export type MediaType = PublicMediaType;
 
 const ALL_KEYS = Object.keys(MEDIA_TYPE_DEFINITIONS) as MediaTypeKey[];
 
-/** 启用的目录类型（有公开路由）：movie、tv_show、album。 */
+/** 启用的目录类型（有公开路由）：movie、tv_show、album、book。 */
 export const CATALOG_DB_TYPES = ALL_KEYS.filter(
   (key): key is CatalogDbMediaType => MEDIA_TYPE_DEFINITIONS[key].enabled && MEDIA_TYPE_DEFINITIONS[key].route != null,
 ) as readonly CatalogDbMediaType[];
@@ -232,7 +232,7 @@ export const mediaTypes = Object.fromEntries(
   ]),
 ) as { readonly [K in ManagedMediaType]: (typeof MEDIA_TYPE_DEFINITIONS)[K]["label"] };
 
-/** 管理列表顶层类型（不含季／集／曲目）：公开目录中且 adminManaged 的类型（电影、电视节目、专辑）。 */
+/** 管理列表顶层类型（不含季／集／曲目）：公开目录中且 adminManaged 的类型（电影、电视节目、专辑、图书）。 */
 export const adminMediaListTypes = CATALOG_DB_TYPES.filter((key) => MEDIA_TYPE_DEFINITIONS[key].adminManaged);
 
 /** 参与管理端批量操作的数据库类型。 */

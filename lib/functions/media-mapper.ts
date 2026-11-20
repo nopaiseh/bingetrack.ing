@@ -24,6 +24,11 @@ function artistsInOrder(names: string[] | null | undefined): string[] {
   return [...(names ?? [])].filter((name) => name.trim().length > 0);
 }
 
+/** 作者按 credit_order 原序保留。 */
+function authorsInOrder(names: string[] | null | undefined): string[] {
+  return artistsInOrder(names);
+}
+
 /** 公开详情路由段；未启用的 music 保留字面量供搜索标签使用，避免误链到影视页。 */
 function cardPublicType(raw: string | null | undefined): MediaCard["type"] {
   if (!raw) return normalizeToPublicMediaType(raw);
@@ -59,6 +64,7 @@ export function mapViewRowToMedia(
     characters: item.characters ?? [],
     directors: item.directors ?? [],
     artists: artistsInOrder(item.artists),
+    authors: authorsInOrder(item.authors),
     type: mediaType,
     series: sortNames(overrideSeries ?? item.series),
   };
@@ -78,6 +84,7 @@ export function mapViewRowToMediaCard(item: ViewAllMediaRow): MediaCard {
     cover_url: item.cover_url ?? "",
     status: item.status || undefined,
     artists: artistsInOrder(item.artists),
+    authors: authorsInOrder(item.authors),
     type: cardPublicType(item.type),
     dbType,
   };

@@ -109,7 +109,9 @@ export default async function EditMediaPage({
               ? { href: `/albums/${id}`, label: "公开页面" }
               : item.type === "music" && parent
                 ? { href: `/albums/${parent.id}`, label: "公开专辑页面" }
-                : null;
+                : item.type === "book"
+                  ? { href: `/books/${id}`, label: "公开页面" }
+                  : null;
   const header = (
     <nav aria-label="面包屑">
       <ol className="flex flex-wrap items-center gap-1.5 text-sm text-fg-secondary">

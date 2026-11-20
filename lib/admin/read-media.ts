@@ -11,6 +11,7 @@ export async function readEditableMedia(db: SupabaseClient, id: string): Promise
     db.from("tv_episodes").select("season_id,episode_number").eq("id", id).maybeSingle(),
     db.from("music").select("album_id,track_number").eq("media_item_id", id).maybeSingle(),
     db.from("music_albums").select("label").eq("media_item_id", id).maybeSingle(),
+    db.from("books").select("page_count,publisher").eq("media_item_id", id).maybeSingle(),
     db.from("media_genres").select("genres(name)").eq("media_item_id", id),
     db.from("media_languages").select("languages(name)").eq("media_item_id", id),
     db.from("media_regions").select("regions(name)").eq("media_item_id", id),
@@ -23,7 +24,7 @@ export async function readEditableMedia(db: SupabaseClient, id: string): Promise
   ]);
   if (results.some(/* 任一失败均禁止继续编辑。 */ (result) => result.error))
     throw new Error("无法完整读取媒体资料，请重试。");
-  const [media, tracking, season, episode, track, albumMeta, genres, languages, regions, collections, credits] =
+  const [media, tracking, season, episode, track, albumMeta, bookMeta, genres, languages, regions, collections, credits] =
     results;
   if (!media.data) return null;
   /** Supabase 多对一关联在此按数据库外键返回单个对象。 */
@@ -40,7 +41,7 @@ export async function readEditableMedia(db: SupabaseClient, id: string): Promise
   /** 人物连同 ID 和别名读取，重新保存时仍关联原人物，不会被同名人物替换。 */
   function people(
     data: unknown,
-    role: "actor" | "director" | "artist" | "lyricist" | "composer",
+    role: "actor" | "director" | "artist" | "lyricist" | "composer" | "author",
   ): (PersonRef & { character_name?: unknown })[] {
     if (!Array.isArray(data)) return [];
     return data.flatMap(
@@ -66,7 +67,7 @@ export async function readEditableMedia(db: SupabaseClient, id: string): Promise
       character: typeof character_name === "string" && character_name ? character_name : null,
     }));
   }
-  let status: "watched" | "watching" | "want_to_watch" = "want_to_watch";
+  let status: "watched" | "watching" | "want_to_watch" | "in_progress" = "want_to_watch";
   let rating: number | null = null;
   if (media.data.type === "tv_show" || media.data.type === "album") {
     const { data: seriesStatus } = await db.from("v_all_media").select("status,rating").eq("id", id).maybeSingle();
@@ -82,11 +83,18 @@ export async function readEditableMedia(db: SupabaseClient, id: string): Promise
     const watchedCount = Number(seasonSummary?.watched_episode_count ?? 0);
     status =
       episodeCount > 0 && watchedCount === episodeCount ? "watched" : watchedCount > 0 ? "watching" : "want_to_watch";
+  } else if (media.data.type === "book") {
+    const bookStatus = tracking.data?.status;
+    status =
+      bookStatus === "watched" || bookStatus === "want_to_watch" || bookStatus === "in_progress"
+        ? bookStatus
+        : "want_to_watch";
+    rating = tracking.data?.rating ?? null;
   } else {
     status = (tracking.data?.status as "watched" | "want_to_watch") ?? "want_to_watch";
     rating = tracking.data?.rating ?? null;
   }
-  const personOnly = (role: "artist" | "lyricist" | "composer") =>
+  const personOnly = (role: "artist" | "lyricist" | "composer" | "author") =>
     people(credits.data, role).map(({ id, name, alternate_name }) => ({ id, name, alternate_name }));
   return {
     ...media.data,
@@ -103,6 +111,9 @@ export async function readEditableMedia(db: SupabaseClient, id: string): Promise
     artists: personOnly("artist"),
     lyricists: personOnly("lyricist"),
     composers: personOnly("composer"),
+    authors: personOnly("author"),
     label: albumMeta.data?.label ?? null,
+    page_count: bookMeta.data?.page_count != null ? Number(bookMeta.data.page_count) : null,
+    publisher: bookMeta.data?.publisher ?? null,
   } as MediaInput;
 }
