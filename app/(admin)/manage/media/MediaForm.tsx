@@ -58,8 +58,11 @@ function posterPreviewSrc(value: string): string | null {
   return `https://image.tmdb.org/t/p/w500/${encodeURIComponent(file)}`;
 }
 
-/** 专辑封面允许 iTunes／CAA／archive／TMDB 的 HTTPS 地址预览。 */
-function albumCoverPreviewSrc(value: string): string | null {
+/**
+ * 专辑封面允许 iTunes／CAA／archive／TMDB 的 HTTPS 地址预览。
+ * 校验通过后返回 URL 对象规范化的 href，避免把原始输入直接塞进 img.src（CodeQL）。
+ */
+export function albumCoverPreviewSrc(value: string): string | null {
   const trimmed = value.trim();
   if (!trimmed) return null;
   try {
@@ -73,7 +76,7 @@ function albumCoverPreviewSrc(value: string): string | null {
       host.endsWith(".mzstatic.com") ||
       host.endsWith(".archive.org")
     )
-      return trimmed;
+      return url.href;
   } catch {
     return null;
   }

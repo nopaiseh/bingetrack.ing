@@ -1,6 +1,6 @@
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { expect, it, vi } from "vitest";
-import MediaForm from "@/app/(admin)/manage/media/MediaForm";
+import MediaForm, { albumCoverPreviewSrc } from "@/app/(admin)/manage/media/MediaForm";
 
 vi.mock("@/app/(admin)/manage/actions", () => ({
   saveMedia: vi.fn(async () => ({})),
@@ -107,4 +107,46 @@ it("专辑删除提示包含下属曲目数量", () => {
     />,
   );
   expect(screen.getAllByText(/本次还会删除 11 首曲目/).length).toBeGreaterThan(0);
+});
+
+it("albumCoverPreviewSrc 校验通过后返回规范化 href，拒绝危险或不在白名单的地址", () => {
+  const itunes = "https://is1-ssl.mzstatic.com/image/thumb/Music/cover.jpg";
+  expect(albumCoverPreviewSrc(`  ${itunes}  `)).toBe(new URL(itunes).href);
+  expect(albumCoverPreviewSrc("https://coverartarchive.org/release/x/front-500")).toBe(
+    "https://coverartarchive.org/release/x/front-500",
+  );
+  expect(albumCoverPreviewSrc("https://image.tmdb.org/t/p/original/a.jpg")).toBe(
+    "https://image.tmdb.org/t/p/original/a.jpg",
+  );
+  expect(albumCoverPreviewSrc("javascript:alert(1)")).toBeNull();
+  expect(albumCoverPreviewSrc("https://evil.example/cover.jpg")).toBeNull();
+  expect(albumCoverPreviewSrc("https://user:pass@is1-ssl.mzstatic.com/cover.jpg")).toBeNull();
+  expect(albumCoverPreviewSrc("https://is1-ssl.mzstatic.com:8443/cover.jpg")).toBeNull();
+  expect(albumCoverPreviewSrc("http://is1-ssl.mzstatic.com/cover.jpg")).toBeNull();
+  expect(albumCoverPreviewSrc("")).toBeNull();
+});
+
+it("专辑封面预览使用规范化后的白名单 URL，不渲染非法地址", () => {
+  render(
+    <MediaForm
+      initialType="album"
+      lockType
+      item={{
+        id: "a1",
+        type: "album",
+        title: "叶惠美",
+        ...blank,
+        cover_url: "https://is1-ssl.mzstatic.com/image/thumb/Music/cover.jpg",
+      }}
+    />,
+  );
+  expect(screen.getByRole("img", { name: "封面预览" })).toHaveAttribute(
+    "src",
+    "https://is1-ssl.mzstatic.com/image/thumb/Music/cover.jpg",
+  );
+  const cover = screen.getByLabelText("封面图片 URL");
+  fireEvent.change(cover, { target: { value: "javascript:alert(1)" } });
+  expect(screen.queryByRole("img", { name: "封面预览" })).not.toBeInTheDocument();
+  fireEvent.change(cover, { target: { value: "https://evil.example/a.jpg" } });
+  expect(screen.queryByRole("img", { name: "封面预览" })).not.toBeInTheDocument();
 });
