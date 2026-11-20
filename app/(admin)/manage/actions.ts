@@ -20,6 +20,7 @@ function writeError(code?: string) {
   if (code === "23505") return "同一电视节目、季或专辑中已存在这个编号，请更换编号。";
   if (code === "23503" || code === "P0002") return "资料或上级条目已不存在，请刷新后重试。";
   if (code === "42501") return "没有写入权限，请检查站长账号配置。";
+  if (code === "23514") return "曲目时长须为 1–7200 秒的整数，或留空。";
   return "保存失败，请检查字段或数据库配置后重试。";
 }
 
@@ -44,7 +45,7 @@ export async function saveMedia(_previous: ActionResult, form: FormData): Promis
 
   let savedId: string;
   if (payload.type === "album" || payload.type === "music") {
-    // admin_save_media 尚未接受 album／music；在不加迁移前提下走站长 RLS 直写（见 save-music-media）。
+    // 专辑／曲目：查重与封面在 saveMusicMedia，写入走 admin_save_album_with_tracks／admin_save_media。
     try {
       savedId = await saveMusicMedia(db, payload);
     } catch (error) {
