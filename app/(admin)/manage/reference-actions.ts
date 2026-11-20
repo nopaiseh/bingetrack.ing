@@ -12,7 +12,7 @@ import {
 } from "@/lib/admin/catalog";
 import { isMediaId } from "@/lib/functions/media-id";
 import { affectedMediaIds, mergeAffected, referenceMediaIds, revalidateMediaItems } from "@/lib/admin/revalidate-media";
-import { reportHandledError } from "@/lib/report-error";
+import { isExpectedDbError, reportHandledError } from "@/lib/report-error";
 import { redirect } from "next/navigation";
 import type { ActionResult } from "./actions";
 
@@ -75,7 +75,9 @@ export async function saveReference(_previous: ActionResult, form: FormData): Pr
   const query = id ? db.from(config.table).update(payload).eq("id", id) : db.from(config.table).insert(payload);
   const { data, error } = await query.select("id").single();
   if (error) {
-    reportHandledError(`manage saveReference failed for ${kind} ${id || "new"}:`, error);
+    if (!isExpectedDbError(error.code)) {
+      reportHandledError(`manage saveReference failed for ${kind} ${id || "new"}:`, error);
+    }
     return {
       error:
         error.code === "23505"
@@ -102,7 +104,9 @@ export async function deleteReference(_previous: ActionResult, form: FormData): 
   const affected = await referenceMediaIds(db, kind, [id]);
   const { data, error } = await db.from(referenceTypes[kind].table).delete().eq("id", id).eq("name", name).select("id");
   if (error) {
-    reportHandledError(`manage deleteReference failed for ${kind} ${id}:`, error);
+    if (!isExpectedDbError(error.code)) {
+      reportHandledError(`manage deleteReference failed for ${kind} ${id}:`, error);
+    }
     return { error: error.code === "23503" ? "此资料仍被其他内容引用，请先移除这些关联。" : "删除失败，请重试。" };
   }
   // 确认名称不符是用户可预期的校验，不上报。
@@ -134,10 +138,12 @@ export async function saveCollectionMember(_previous: ActionResult, form: FormDa
         .upsert({ series_id: series, media_item_id: media, position }, { onConflict: "media_item_id,series_id" })
         .select("media_item_id");
   if (result.error || !result.data?.length) {
-    reportHandledError(
-      `manage saveCollectionMember failed for media ${media}:`,
-      result.error ?? new Error("no rows affected"),
-    );
+    if (!isExpectedDbError(result.error?.code)) {
+      reportHandledError(
+        `manage saveCollectionMember failed for media ${media}:`,
+        result.error ?? new Error("no rows affected"),
+      );
+    }
     return { error: "关联保存失败，请刷新后重试。" };
   }
   revalidateMediaItems(mergeAffected(before, await affectedMediaIds(db, [media])));
