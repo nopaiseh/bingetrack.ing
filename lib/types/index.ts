@@ -177,6 +177,7 @@ export interface ViewAllMediaRow {
   casts?: string[] | null;
   characters?: (string | null)[] | null;
   directors?: string[] | null;
+  artists?: string[] | null;
   type?: string | null;
   series?: string[] | null;
 }

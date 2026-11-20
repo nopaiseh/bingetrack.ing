@@ -100,12 +100,15 @@ function releaseDateToUtc(value: string | null): string | null {
   return match ? `${match[1]}T00:00:00.000Z` : null;
 }
 
-/** 从完整 TMDB 地址取出尺寸段之后的路径；已经是站内相对路径时原样保留。 */
-function posterPathFromCover(coverUrl: string | null): string | null {
+const MUSIC_COVER_HOST = /^https:\/\/(?:[\w.-]+\.)?(?:mzstatic\.com|coverartarchive\.org|archive\.org)(?:\/|$)/i;
+
+/** 从完整 TMDB 地址取出尺寸段之后的路径；已知音乐封面主机与站内相对路径原样保留。 */
+export function posterPathFromCover(coverUrl: string | null): string | null {
   const cover = coverUrl?.trim();
   if (!cover) return null;
   const tmdbPath = cover.match(TMDB_POSTER_PATH)?.[1];
   if (tmdbPath) return tmdbPath;
+  if (MUSIC_COVER_HOST.test(cover)) return cover;
   if (cover.startsWith("/") && !cover.startsWith("//")) return cover;
   return null;
 }
@@ -271,4 +274,94 @@ export async function getContinueWatching(): Promise<ContinueWatchingItem[]> {
     const episodes = await fetchEpisodes(shows.map((show) => show.id));
     return assembleContinueWatching(groupShows(shows, episodes));
   });
+}
+
+/** 首页「在听」最多返回的专辑数。 */
+export const CONTINUE_LISTENING_LIMIT = 8;
+
+/**
+ * 首页「在听」的一张专辑。
+ * 规则由 v_continue_listening 计算：至少一首曲目 watched，但并非全部曲目都 watched。
+ * 公开专辑路由尚未启用，href 仍按配置中的 albums 段生成，供后续打开。
+ */
+export type ContinueListeningItem = {
+  albumId: string;
+  title: string;
+  posterPath: string | null;
+  href: string;
+  trackProgress: {
+    watched: number;
+    total: number;
+  };
+  lastListenedAt: string;
+};
+
+type ContinueListeningRow = {
+  album_id: string;
+  title: string | null;
+  cover_url: string | null;
+  release_date: string | null;
+  track_total: number | string;
+  track_watched: number | string;
+  last_listened_release_date: string | null;
+};
+
+/** 把在听视图行收成首页条目；按最近听过曲目的上映日从新到旧。 */
+export function assembleContinueListening(rows: readonly ContinueListeningRow[]): ContinueListeningItem[] {
+  return rows
+    .map((row) => {
+      const albumId = row.album_id;
+      const watched = Number(row.track_watched) || 0;
+      const total = Number(row.track_total) || 0;
+      return {
+        albumId,
+        title: (row.title ?? "").trim(),
+        posterPath: posterPathFromCover(row.cover_url),
+        href: `/albums/${encodeURIComponent(albumId)}`,
+        trackProgress: { watched, total },
+        lastListenedAt:
+          releaseDateToUtc(row.last_listened_release_date) ??
+          releaseDateToUtc(row.release_date) ??
+          MISSING_RELEASE_INSTANT,
+      };
+    })
+    .sort(
+      (left, right) =>
+        right.lastListenedAt.localeCompare(left.lastListenedAt) || left.albumId.localeCompare(right.albumId),
+    )
+    .slice(0, CONTINUE_LISTENING_LIMIT);
+}
+
+async function fetchListeningAlbums(): Promise<ContinueListeningRow[]> {
+  const db = getSupabasePublicServer();
+  return eachPage("listening", (offset) =>
+    db
+      .from("v_continue_listening")
+      .select("album_id,title,cover_url,release_date,track_total,track_watched,last_listened_release_date")
+      .order("album_id", { ascending: true })
+      .range(offset, offset + PAGE_SIZE - 1),
+  );
+}
+
+/** 首页「在听」：部分听过但未听完的专辑，最多 8 条。 */
+export async function getContinueListening(): Promise<ContinueListeningItem[]> {
+  return withRetry(async () => {
+    const rows = await fetchListeningAlbums();
+    return assembleContinueListening(rows);
+  });
+}
+
+/** 首页继续区块：在看（影视）与在听（音乐）分开返回，便于渲染两行。 */
+export type HomeContinueData = {
+  watching: ContinueWatchingItem[];
+  listening: ContinueListeningItem[];
+};
+
+/**
+ * 并行读取在看与在听。任一侧失败则整次失败，由页面 Promise.allSettled 降级。
+ * 形状相对旧版 getContinueWatching() 的数组有破坏性变更；调用方应改读 watching／listening。
+ */
+export async function getHomeContinue(): Promise<HomeContinueData> {
+  const [watching, listening] = await Promise.all([getContinueWatching(), getContinueListening()]);
+  return { watching, listening };
 }

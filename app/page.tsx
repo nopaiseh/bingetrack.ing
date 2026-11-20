@@ -1,6 +1,7 @@
 import HomeDashboard from "@/app/HomeDashboard";
+import type { ContinueListeningCard } from "@/components/ContinueListeningRail";
 import type { ContinueWatchingCard } from "@/components/ContinueWatchingRail";
-import type { ContinueWatchingItem } from "@/lib/continue-watching";
+import type { ContinueListeningItem, ContinueWatchingItem, HomeContinueData } from "@/lib/continue-watching";
 import {
   getCachedContinueWatching,
   getCachedReleaseYearStats,
@@ -45,7 +46,18 @@ function continueWatchingCards(items: readonly ContinueWatchingItem[]): Continue
   }));
 }
 
-/** 并行读取年度统计、榜单、分布、即将上映和继续观看；仅构建期失败时降级为空数据，运行期失败保留旧页面。 */
+/** 丢掉 lastListenedAt（上映日代理），只把展示字段交给界面。 */
+function continueListeningCards(items: readonly ContinueListeningItem[]): ContinueListeningCard[] {
+  return items.map((item) => ({
+    albumId: item.albumId,
+    title: item.title,
+    posterPath: item.posterPath,
+    href: item.href,
+    trackProgress: item.trackProgress,
+  }));
+}
+
+/** 并行读取年度统计、榜单、分布、即将上映和继续（在看／在听）；仅构建期失败时降级为空数据，运行期失败保留旧页面。 */
 export default async function HomePage() {
   let summary: Summary[] = [];
   let topMovies: MediaCard[] = [];
@@ -53,6 +65,7 @@ export default async function HomePage() {
   let distributions = EMPTY_DISTRIBUTIONS;
   let upcoming: UpcomingRelease[] = [];
   let continueWatching: ContinueWatchingCard[] = [];
+  let continueListening: ContinueListeningCard[] = [];
 
   const dashboardResult = Promise.all([
     getCachedReleaseYearStats(),
@@ -76,7 +89,9 @@ export default async function HomePage() {
   }
 
   if (watching.status === "fulfilled") {
-    continueWatching = continueWatchingCards(watching.value);
+    const homeContinue = watching.value as HomeContinueData;
+    continueWatching = continueWatchingCards(homeContinue.watching);
+    continueListening = continueListeningCards(homeContinue.listening);
   } else {
     handlePageDataError("continue watching", watching.reason);
   }
@@ -93,6 +108,7 @@ export default async function HomePage() {
         distributions={distributions}
         upcoming={upcoming}
         continueWatching={continueWatching}
+        continueListening={continueListening}
         renderedOn={sgtDateKey(now)}
       />
     </div>

@@ -56,7 +56,14 @@ vi.mock("@/lib/supabase/public-server", () => ({
   }),
 }));
 
-import { assembleContinueWatching, getContinueWatching, type ContinueWatchingShow } from "@/lib/continue-watching";
+import {
+  assembleContinueListening,
+  assembleContinueWatching,
+  getContinueListening,
+  getContinueWatching,
+  getHomeContinue,
+  type ContinueWatchingShow,
+} from "@/lib/continue-watching";
 
 const showId = "11111111-1111-4111-8111-111111111111";
 const otherId = "22222222-2222-4222-8222-222222222222";
@@ -309,5 +316,109 @@ describe("getContinueWatching", () => {
     await expect(getContinueWatching()).resolves.toEqual([]);
     const episodeCalls = state.calls.filter((call) => call.table === "tv_episodes");
     expect(episodeCalls.map((call) => call.ins[0][1].length)).toEqual([100, 1]);
+  });
+});
+
+describe("assembleContinueListening", () => {
+  it("keeps partial albums and sorts by last listened release date", () => {
+    const albumA = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
+    const albumB = "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb";
+    expect(
+      assembleContinueListening([
+        {
+          album_id: albumA,
+          title: "旧专辑",
+          cover_url: "https://is1-ssl.mzstatic.com/image/thumb/a.jpg",
+          release_date: "2020-01-01",
+          track_total: 3,
+          track_watched: 1,
+          last_listened_release_date: "2020-01-01",
+        },
+        {
+          album_id: albumB,
+          title: "新专辑",
+          cover_url: null,
+          release_date: "2024-06-01",
+          track_total: "10",
+          track_watched: "4",
+          last_listened_release_date: "2024-06-01",
+        },
+      ]),
+    ).toEqual([
+      {
+        albumId: albumB,
+        title: "新专辑",
+        posterPath: null,
+        href: `/albums/${albumB}`,
+        trackProgress: { watched: 4, total: 10 },
+        lastListenedAt: "2024-06-01T00:00:00.000Z",
+      },
+      {
+        albumId: albumA,
+        title: "旧专辑",
+        posterPath: "https://is1-ssl.mzstatic.com/image/thumb/a.jpg",
+        href: `/albums/${albumA}`,
+        trackProgress: { watched: 1, total: 3 },
+        lastListenedAt: "2020-01-01T00:00:00.000Z",
+      },
+    ]);
+  });
+
+  it("rejects arbitrary https hosts that are not music cover CDNs", () => {
+    expect(
+      assembleContinueListening([
+        {
+          album_id: "cccccccc-cccc-4ccc-8ccc-cccccccccccc",
+          title: "无封面",
+          cover_url: "https://images.example.com/poster.jpg",
+          release_date: null,
+          track_total: 2,
+          track_watched: 1,
+          last_listened_release_date: null,
+        },
+      ])[0].posterPath,
+    ).toBeNull();
+  });
+});
+
+describe("getContinueListening / getHomeContinue", () => {
+  it("reads v_continue_listening for in-progress albums", async () => {
+    const albumId = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
+    state.results = [
+      {
+        data: [
+          {
+            album_id: albumId,
+            title: "在听专辑",
+            cover_url: "https://coverartarchive.org/release/x/front-500",
+            release_date: "2023-01-01",
+            track_total: 5,
+            track_watched: 2,
+            last_listened_release_date: "2023-02-01",
+          },
+        ],
+        error: null,
+      },
+    ];
+    await expect(getContinueListening()).resolves.toEqual([
+      {
+        albumId,
+        title: "在听专辑",
+        posterPath: "https://coverartarchive.org/release/x/front-500",
+        href: `/albums/${albumId}`,
+        trackProgress: { watched: 2, total: 5 },
+        lastListenedAt: "2023-02-01T00:00:00.000Z",
+      },
+    ]);
+    expect(state.calls[0].table).toBe("v_continue_listening");
+  });
+
+  it("returns watching and listening separately", async () => {
+    state.results = [
+      { data: [], error: null },
+      { data: [], error: null },
+    ];
+    await expect(getHomeContinue()).resolves.toEqual({ watching: [], listening: [] });
+    expect(state.calls.map((call) => call.table)).toEqual(["v_all_media", "v_continue_listening"]);
   });
 });

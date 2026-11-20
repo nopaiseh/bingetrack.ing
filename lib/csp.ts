@@ -35,7 +35,8 @@ export function buildContentSecurityPolicy(options: {
     // React 不输出 onclick 这类内联事件属性；禁止它们可挡住 <img onerror=…> 一类注入，不影响 ISR。
     "script-src-attr 'none'",
     "style-src 'self' 'unsafe-inline'",
-    "img-src 'self' data: blob: https://image.tmdb.org",
+    // TMDB 海报；音乐封面来自 iTunes（*.mzstatic.com）与 Cover Art Archive（常重定向到 archive.org）。
+    "img-src 'self' data: blob: https://image.tmdb.org https://*.mzstatic.com https://coverartarchive.org https://*.archive.org",
     "font-src 'self' data:",
     ["connect-src 'self'", supabaseConnectOrigin(supabaseUrl, isDevelopment), sentryOrigin].filter(Boolean).join(" "),
     "upgrade-insecure-requests",

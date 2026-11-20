@@ -18,12 +18,20 @@ const nextConfig: NextConfig = {
   env: {
     NEXT_PUBLIC_SENTRY_ENVIRONMENT: resolveSentryEnvironment(process.env),
   },
-  // 图片由 TMDB CDN 直接提供，不消耗 Vercel 的图片转换额度；srcset 只列出 TMDB 实际存在的宽度档位。
+  // 图片由 CDN 直接提供，不消耗 Vercel 的图片转换额度；srcset 只列出 TMDB 实际存在的宽度档位。
+  // 音乐封面走自定义 loader 原样返回；remotePatterns 仍声明允许的主机，避免后续改回默认优化器时漏配。
   images: {
     loader: "custom",
     loaderFile: "./lib/tmdb-image-loader.ts",
     imageSizes: TMDB_IMAGE_WIDTHS.slice(0, -1),
     deviceSizes: TMDB_IMAGE_WIDTHS.slice(-1),
+    remotePatterns: [
+      { protocol: "https", hostname: "image.tmdb.org", pathname: "/t/p/**" },
+      { protocol: "https", hostname: "*.mzstatic.com" },
+      { protocol: "https", hostname: "coverartarchive.org" },
+      { protocol: "https", hostname: "*.archive.org" },
+      { protocol: "https", hostname: "archive.org" },
+    ],
   },
   // 图片不再经过 Next 的优化器，sharp 及其原生库不需要打进每个函数包。
   outputFileTracingExcludes: {

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useSyncExternalStore } from "react";
+import ContinueListeningRail, { type ContinueListeningCard } from "@/components/ContinueListeningRail";
 import ContinueWatchingRail, { type ContinueWatchingCard } from "@/components/ContinueWatchingRail";
 import UpcomingHero from "@/components/UpcomingHero";
 import DashboardIntro from "@/components/dashboard/DashboardIntro";
@@ -24,6 +25,7 @@ export default function HomeDashboard({
   distributions,
   upcoming = [],
   continueWatching = [],
+  continueListening = [],
   renderedOn,
 }: {
   summary: Summary[];
@@ -32,6 +34,7 @@ export default function HomeDashboard({
   distributions: MediaDistributions;
   upcoming?: UpcomingRelease[];
   continueWatching?: readonly ContinueWatchingCard[];
+  continueListening?: readonly ContinueListeningCard[];
   renderedOn?: string;
 }) {
   const tabs = TABS;
@@ -101,14 +104,16 @@ export default function HomeDashboard({
   // 请求中途切回全时段时，被取消的请求不会复位加载状态，因此只在选定年份时采用该状态。
   const isTopMediaLoading = topMediaLoading && selectedYear !== "All Time";
 
-  // 放映单固定先倒计时、再继续观看。没有内容的那一块返回 null，这里不包额外节点，避免空区块撑出间距。
+  // 放映单固定先倒计时、再在看、再在听。没有内容的那一块返回 null，这里不包额外节点，避免空区块撑出间距。
   const continueWatchingRail = <ContinueWatchingRail items={continueWatching} />;
+  const continueListeningRail = <ContinueListeningRail items={continueListening} />;
   const upcomingHero = <UpcomingHero items={upcoming} renderedOn={renderedOn} />;
 
   return (
     <div className="container mx-auto flex max-w-7xl flex-col gap-4 px-4 pb-8 pt-20 sm:gap-5 sm:px-6 sm:pt-22 md:pb-12 lg:px-8 lg:pt-24">
       {upcomingHero}
       {continueWatchingRail}
+      {continueListeningRail}
 
       <DashboardIntro
         selectedYear={selectedYear}

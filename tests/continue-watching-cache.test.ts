@@ -4,7 +4,7 @@ import { revalidateTag } from "next/cache";
 import { requireOwner } from "@/lib/auth/server";
 import { deleteMovies, deleteTvShows, setMovieStatus, setTvShowStatus } from "@/app/(admin)/manage/list-actions";
 import { deleteMedia, saveMedia } from "@/app/(admin)/manage/actions";
-import { getContinueWatching } from "@/lib/continue-watching";
+import { getHomeContinue } from "@/lib/continue-watching";
 import { getCachedContinueWatching } from "@/lib/functions/cached-media";
 
 const cacheSpecs = vi.hoisted(() => [] as Array<{ fn: unknown; keys: unknown; options: unknown }>);
@@ -22,7 +22,7 @@ vi.mock("next/cache", () => ({
 vi.mock("next/navigation", () => ({ redirect: vi.fn() }));
 vi.mock("@/lib/auth/server", () => ({ requireOwner: vi.fn() }));
 vi.mock("@/lib/continue-watching", () => ({
-  getContinueWatching: vi.fn(async () => []),
+  getHomeContinue: vi.fn(async () => ({ watching: [], listening: [] })),
 }));
 vi.mock("@/lib/admin/revalidate-media", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@/lib/admin/revalidate-media")>();
@@ -81,29 +81,43 @@ function episodeForm() {
 
 beforeEach(() => {
   vi.mocked(revalidateTag).mockClear();
-  vi.mocked(getContinueWatching).mockClear();
+  vi.mocked(getHomeContinue).mockClear();
 });
 
 describe("继续看数据缓存", () => {
-  it("用 24 小时和 media、media:lists 包住 getContinueWatching，并原样返回它的结果", async () => {
-    const item = {
-      showId: showA,
-      title: "节目",
-      posterPath: "/poster.jpg",
-      href: `/shows/${showA}`,
-      nextEpisode: null,
-      seasonProgress: { seasonNumber: 1, watched: 1, total: 2 },
-      lastWatchedAt: "2024-01-01T00:00:00.000Z",
+  it("用 24 小时和 media、media:lists 包住 getHomeContinue，并原样返回在看／在听", async () => {
+    const payload = {
+      watching: [
+        {
+          showId: showA,
+          title: "节目",
+          posterPath: "/poster.jpg",
+          href: `/shows/${showA}`,
+          nextEpisode: null,
+          seasonProgress: { seasonNumber: 1, watched: 1, total: 2 },
+          lastWatchedAt: "2024-01-01T00:00:00.000Z",
+        },
+      ],
+      listening: [
+        {
+          albumId: movieA,
+          title: "专辑",
+          posterPath: "https://is1-ssl.mzstatic.com/image/thumb/cover.jpg",
+          href: `/albums/${movieA}`,
+          trackProgress: { watched: 1, total: 3 },
+          lastListenedAt: "2024-02-01T00:00:00.000Z",
+        },
+      ],
     };
-    vi.mocked(getContinueWatching).mockResolvedValue([item]);
+    vi.mocked(getHomeContinue).mockResolvedValue(payload);
 
     expect(cacheSpecs).toContainEqual({
-      fn: getContinueWatching,
-      keys: ["public-media-continue-watching-v1"],
+      fn: getHomeContinue,
+      keys: ["public-media-home-continue-v1"],
       options: { revalidate: 86400, tags: ["media", "media:lists"] },
     });
-    await expect(getCachedContinueWatching()).resolves.toEqual([item]);
-    expect(getContinueWatching).toHaveBeenCalledOnce();
+    await expect(getCachedContinueWatching()).resolves.toEqual(payload);
+    expect(getHomeContinue).toHaveBeenCalledOnce();
   });
 });
 

@@ -43,6 +43,8 @@ export function continueWatchingTitle(title: string): string {
  */
 export function continueWatchingPosterSrc(posterPath: string | null): string | null {
   const path = posterPath?.trim() ?? "";
+  // 音乐封面等已是绝对 HTTPS 地址时直接使用。
+  if (/^https:\/\//i.test(path)) return path;
   if (!path.startsWith("/") || path.startsWith("//") || /[#?\\]/.test(path)) return null;
   const file = path.slice(1);
   if (file.includes("/")) return path;
