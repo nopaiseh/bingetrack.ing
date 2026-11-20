@@ -41,3 +41,12 @@ test("详情等子路径按前缀标记所属栏目", () => {
   expect(screen.getByRole("link", { name: "电视" })).toHaveAttribute("aria-current", "page");
   expect(screen.getByRole("link", { name: "首页" })).not.toHaveAttribute("aria-current");
 });
+
+test("底部导航链接统一使用 focus-ring", () => {
+  pathname.value = "/";
+  render(<MobileTabBar />);
+
+  for (const link of screen.getAllByRole("link")) {
+    expect(link).toHaveClass("focus-ring");
+  }
+});

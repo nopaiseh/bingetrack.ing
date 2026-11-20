@@ -51,6 +51,17 @@ test("series cards keep two lines of title instead of a single truncated line", 
   expect(screen.getByText("综艺").className).not.toContain("text-[10px]");
 });
 
+test("MediaRow 卡片、查看全部与翻页按钮使用 focus-ring", () => {
+  render(<MediaRow title="我已看" items={series} type="shows" viewAllLink="/shows" />);
+
+  for (const link of screen.getAllByRole("link")) {
+    expect(link).toHaveClass("focus-ring");
+  }
+  expect(screen.getByRole("link", { name: /查看全部/ })).toHaveAttribute("href", "/shows");
+  expect(screen.getByRole("button", { name: "向左滚动 我已看", hidden: true })).toHaveClass("focus-ring");
+  expect(screen.getByRole("button", { name: "向右滚动 我已看", hidden: true })).toHaveClass("focus-ring");
+});
+
 test("search cards reuse the catalog card surface, poster badge, and body", () => {
   render(<SearchMediaCard item={series[0]} returnHref="/search?type=tv_show" />);
 
