@@ -80,7 +80,7 @@ select ok(
 );
 
 select ok(
-  has_function_privilege('authenticated','public.find_book_by_title_and_authors(text,text[])','EXECUTE'),
+  has_function_privilege('authenticated','public.find_book_by_title_and_authors(text,text[],uuid)','EXECUTE'),
   'authenticated can execute find_book_by_title_and_authors'
 );
 

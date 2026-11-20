@@ -108,7 +108,8 @@ comment on function public.enforce_tracking_status_for_media_type() is
 -- ---------------------------------------------------------------------------
 create or replace function public.find_book_by_title_and_authors(
   p_title text,
-  p_author_names text[] default '{}'
+  p_author_names text[] default '{}',
+  p_exclude_id uuid default null
 )
 returns uuid
 language sql
@@ -139,6 +140,7 @@ as $$
     cross join wanted
     where m.type = 'book'::public.media_type
       and public.normalize_media_title(m.title) = wanted.title_key
+      and (p_exclude_id is null or m.id is distinct from p_exclude_id)
   )
   select c.id
   from candidates c
@@ -148,12 +150,12 @@ as $$
   limit 1;
 $$;
 
-revoke all on function public.find_book_by_title_and_authors(text, text[]) from public;
-grant execute on function public.find_book_by_title_and_authors(text, text[])
+revoke all on function public.find_book_by_title_and_authors(text, text[], uuid) from public;
+grant execute on function public.find_book_by_title_and_authors(text, text[], uuid)
   to authenticated, service_role;
 
-comment on function public.find_book_by_title_and_authors(text, text[]) is
-  '按规范化标题与 author 角色演职员集合查找已有图书；供导入／保存去重，不持久化 ISBN。';
+comment on function public.find_book_by_title_and_authors(text, text[], uuid) is
+  '按规范化标题与 author 角色演职员集合查找已有图书；p_exclude_id 排除自身；供导入／保存去重，不持久化 ISBN。';
 
 -- ---------------------------------------------------------------------------
 -- 4) 扩展 admin_save_media：图书（页数、出版社、作者、在读状态、去重）
@@ -416,8 +418,11 @@ begin
   end loop;
 
   if item_type = 'book' then
-    duplicate_id := public.find_book_by_title_and_authors(btrim(p_data->>'title'), author_names);
-    if duplicate_id is not null and duplicate_id is distinct from item_id then
+    -- 排除刚写入的自身：否则 order by id 可能命中本行，去重失效。
+    duplicate_id := public.find_book_by_title_and_authors(
+      btrim(p_data->>'title'), author_names, item_id
+    );
+    if duplicate_id is not null then
       raise exception 'Duplicate book title and authors' using errcode = '23505';
     end if;
   end if;
