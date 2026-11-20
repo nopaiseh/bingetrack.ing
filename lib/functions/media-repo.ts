@@ -832,6 +832,7 @@ async function fetchMediaList(
 }
 
 // 读取数据库的媒体状态统计，并将可能以字符串返回的计数转换为数字。
+// 影视目录只消费既有五列；in_progress 由 getBookStats 单独映射。
 export async function fetchStatsServer(mediaType: "movie" | "tv_show") {
   return withRetry(async () => {
     const db = getSupabasePublicServer();
@@ -848,6 +849,34 @@ export async function fetchStatsServer(mediaType: "movie" | "tv_show") {
       watching: Number(stats.watching),
       want: Number(stats.want),
       upcoming: Number(stats.upcoming),
+    };
+  });
+}
+
+/** 图书目录四项统计：总量、在读、读过、想读。 */
+export type BookStats = {
+  total: number;
+  inProgress: number;
+  watched: number;
+  wantToWatch: number;
+};
+
+// 一次 RPC 取回图书四项计数；want 列映射为 wantToWatch，in_progress 映射为 inProgress。
+export async function getBookStats(): Promise<BookStats> {
+  return withRetry(async () => {
+    const db = getSupabasePublicServer();
+    const { data, error } = await db.rpc("get_media_stats", { p_media_type: "book" });
+    if (error || !data?.[0]) {
+      if (error) console.error("Failed to fetch book stats:", error);
+      throw new MediaRepositoryError("fetch book stats", error);
+    }
+    const stats = data[0] as Record<"total" | "watched" | "want" | "in_progress", number | string>;
+
+    return {
+      total: Number(stats.total),
+      inProgress: Number(stats.in_progress),
+      watched: Number(stats.watched),
+      wantToWatch: Number(stats.want),
     };
   });
 }

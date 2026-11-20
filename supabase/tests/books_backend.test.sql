@@ -1,6 +1,6 @@
 begin;
 
-select plan(23);
+select plan(25);
 
 -- 虚构站长，事务结束回滚。
 insert into auth.users(id,email) values
@@ -213,6 +213,30 @@ select ok(
     select 1 from public.search_media('在读书') where type = 'book'
   ),
   'search_media finds books by title'
+);
+
+select ok(
+  pg_get_function_result('public.get_media_stats(text)'::regprocedure)
+    ~ 'in_progress',
+  'get_media_stats return type includes in_progress'
+);
+
+select results_eq(
+  $$
+    select total, watched, watching, want, in_progress
+    from public.get_media_stats('book')
+  $$,
+  $$
+    select
+      count(*)::bigint as total,
+      count(*) filter (where media.status = 'watched')::bigint as watched,
+      count(*) filter (where media.status = 'watching')::bigint as watching,
+      count(*) filter (where media.status = 'want_to_watch')::bigint as want,
+      count(*) filter (where media.status = 'in_progress')::bigint as in_progress
+    from public.v_all_media as media
+    where media.type::text = 'book'
+  $$,
+  'get_media_stats book counts cover total/watched/want/in_progress'
 );
 
 select * from finish();
