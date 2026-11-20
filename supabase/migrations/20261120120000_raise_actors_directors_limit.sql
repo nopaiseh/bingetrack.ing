@@ -21,6 +21,7 @@ declare
   chosen_person uuid;
   related_id uuid;
   position integer;
+  related_limit integer;
 begin
   if not public.is_site_owner() then raise insufficient_privilege; end if;
   -- 串行化管理事务，避免删除父条目与新增季集同时执行。
@@ -75,8 +76,8 @@ begin
 
   -- 关联名称一行一个，由数据库唯一约束去重；只替换当前条目的关联。
   foreach field in array array['genres','languages','regions','actors','directors'] loop
-    if jsonb_typeof(p_data->field) is distinct from 'array'
-      or jsonb_array_length(p_data->field) > case when field in ('actors','directors') then 300 else 100 end then
+    related_limit := case when field in ('actors','directors') then 300 else 100 end;
+    if jsonb_typeof(p_data->field) is distinct from 'array' or jsonb_array_length(p_data->field) > related_limit then
       raise exception 'Invalid related names' using errcode = '22023';
     end if;
     case field
