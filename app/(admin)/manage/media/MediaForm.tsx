@@ -412,8 +412,8 @@ export default function MediaForm({
                           id="field-runtime"
                           type="number"
                           name="runtime"
-                          min="0"
-                          max="100000"
+                          min={isMusicTrack ? "1" : "0"}
+                          max={isMusicTrack ? "7200" : "100000"}
                           step={isMusicTrack ? "1" : "any"}
                           {...runtimeField}
                           placeholder={isMusicTrack ? "秒，可留空" : "分钟"}
@@ -421,7 +421,7 @@ export default function MediaForm({
                           aria-describedby="field-runtime-hint"
                         />
                         <span id="field-runtime-hint" className="edit-hint">
-                          {runtimeHint ?? (isMusicTrack ? "整数秒，可留空" : "单位为分钟")}
+                          {runtimeHint ?? (isMusicTrack ? "1–7200 整数秒，可留空" : "单位为分钟")}
                         </span>
                       </div>
                     </div>

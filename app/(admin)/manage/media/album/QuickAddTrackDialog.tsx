@@ -91,7 +91,7 @@ export default function QuickAddTrackDialog({
           </label>
           <label>
             时长（秒，可留空）
-            <input name="runtime" type="number" min="0" max="100000" step="1" placeholder="秒" className="font-mono" />
+            <input name="runtime" type="number" min="1" max="7200" step="1" placeholder="秒" className="font-mono" />
           </label>
         </div>
         <label>

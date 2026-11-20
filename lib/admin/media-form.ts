@@ -207,9 +207,16 @@ export function parseMediaForm(form: FormData): MediaInput {
   const lyricists = isMusicTrack ? credits("lyricists").map(({ id, name }) => ({ id, name })) : [];
   const composers = isMusicTrack ? credits("composers").map(({ id, name }) => ({ id, name })) : [];
   const label = isAlbum ? string("label", 200) : null;
-  // 曲目时长以秒计（存储与展示一致）；影视片长仍为分钟；一律整数。
-  const runtime =
-    type === "tv_show" || type === "tv_season" || type === "album" ? null : numeric("runtime", 100000, true);
+  // 曲目时长以秒计（1–7200，可空）；影视片长仍为分钟（0–100000）；一律整数。
+  let runtime: number | null;
+  if (type === "tv_show" || type === "tv_season" || type === "album") {
+    runtime = null;
+  } else if (type === "music") {
+    runtime = numeric("runtime", 7200, true);
+    if (runtime === 0) throw new Error("曲目时长须为 1–7200 秒的整数，或留空。");
+  } else {
+    runtime = numeric("runtime", 100000, true);
+  }
   return {
     id,
     type: type as ManagedMediaType,

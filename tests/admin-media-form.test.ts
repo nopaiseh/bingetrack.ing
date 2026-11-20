@@ -240,6 +240,59 @@ describe("管理媒体输入", () => {
         }),
       ),
     ).toThrow(/时长、评分或编号超出有效范围/);
+    expect(
+      parseMediaForm(
+        form({
+          type: "music",
+          title: "边界秒",
+          parent_id: albumId,
+          number: "1",
+          runtime: "1",
+        }),
+      ).runtime,
+    ).toBe(1);
+    expect(
+      parseMediaForm(
+        form({
+          type: "music",
+          title: "上限秒",
+          parent_id: albumId,
+          number: "2",
+          runtime: "7200",
+        }),
+      ).runtime,
+    ).toBe(7200);
+    expect(() =>
+      parseMediaForm(
+        form({
+          type: "music",
+          title: "零秒",
+          parent_id: albumId,
+          number: "1",
+          runtime: "0",
+        }),
+      ),
+    ).toThrow(/1–7200/);
+    expect(() =>
+      parseMediaForm(
+        form({
+          type: "music",
+          title: "过长",
+          parent_id: albumId,
+          number: "1",
+          runtime: "7201",
+        }),
+      ),
+    ).toThrow(/时长、评分或编号超出有效范围/);
+    expect(
+      parseMediaForm(
+        form({
+          type: "movie",
+          title: "长片",
+          runtime: "180",
+        }),
+      ).runtime,
+    ).toBe(180);
     expect(() =>
       parseMediaForm(
         form({
