@@ -51,6 +51,14 @@ test("series cards keep two lines of title instead of a single truncated line", 
   expect(screen.getByText("综艺").className).not.toContain("text-[10px]");
 });
 
+test("MediaRow 横向滚动类在 reduced-motion 下不强制 scroll-smooth", () => {
+  const { container } = render(<MediaRow title="我已看" items={series} type="shows" />);
+
+  const scroller = container.querySelector(".motion-safe\\:scroll-smooth");
+  expect(scroller).not.toBeNull();
+  expect(scroller?.className).not.toMatch(/(?:^|\s)scroll-smooth(?:\s|$)/);
+});
+
 test("search cards reuse the catalog card surface, poster badge, and body", () => {
   render(<SearchMediaCard item={series[0]} returnHref="/search?type=tv_show" />);
 

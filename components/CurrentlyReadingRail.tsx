@@ -5,6 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import LetterTile from "@/components/LetterTile";
 import { continueWatchingPosterSrc } from "@/components/ContinueWatchingRail";
+import { scrollBehavior } from "@/lib/scroll-behavior";
 
 /** 首页「在读」卡片。无页数进度。 */
 export type CurrentlyReadingCard = {
@@ -25,11 +26,6 @@ export function currentlyReadingTitle(title: string): string {
 export function currentlyReadingAuthorsLine(authors: readonly string[]): string | null {
   const names = authors.map((name) => name.trim()).filter(Boolean);
   return names.length > 0 ? names.join("、") : null;
-}
-
-function scrollBehavior(): ScrollBehavior {
-  if (typeof window.matchMedia !== "function") return "smooth";
-  return window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth";
 }
 
 function CoverFallback({ title }: { title: string }) {
