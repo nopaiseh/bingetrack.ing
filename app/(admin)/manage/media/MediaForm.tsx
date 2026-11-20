@@ -188,6 +188,8 @@ export default function MediaForm({
           }
         }}
       >
+        {/* 失败提示放在 .edit-frame 外：该 fieldset 有 container-type，会变成 fixed 的包含块。 */}
+        <ActionNotice state={state} />
         <fieldset disabled={pending || deleting} className="edit-frame">
           <legend className="sr-only">媒体资料</legend>
           <input type="hidden" name="id" value={item?.id ?? ""} />
@@ -233,7 +235,6 @@ export default function MediaForm({
               </button>
             </div>
           </div>
-          <ActionNotice state={state} />
 
           <div className="edit-grid">
             <div className="edit-main">

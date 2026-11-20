@@ -22,6 +22,17 @@ it("媒体保存失败后保留已填写资料与未保存提示", async () => {
   expect(screen.getByLabelText("中文标题", { exact: true })).toHaveValue("不能丢失的标题");
   expect(screen.getByText("有未保存的更改")).toBeInTheDocument();
 });
+
+it("媒体保存失败提示不在 .edit-frame 内，避免 fixed 相对容器定位", async () => {
+  const user = userEvent.setup();
+  const { container } = render(<MediaForm />);
+  await user.type(screen.getByLabelText("中文标题", { exact: true }), "触发失败");
+  await user.click(screen.getByRole("button", { name: "保存" }));
+  const alert = await screen.findByRole("alert");
+  const frame = container.querySelector(".edit-frame");
+  expect(frame).toBeTruthy();
+  expect(frame!.contains(alert)).toBe(false);
+});
 it("关联资料命名冲突后保留用户输入", async () => {
   const user = userEvent.setup();
   render(<ReferenceForm kind="genres" />);
