@@ -209,8 +209,7 @@ export function parseMediaForm(form: FormData): MediaInput {
   // 图书可显式提交想读／在读／读过；未提交合法状态时回退为没评分→想读、有评分→读过。
   const isBook = type === "book";
   const submittedStatus = string("status");
-  let effectiveStatus: "watched" | "want_to_watch" | "in_progress" =
-    rating !== null ? "watched" : "want_to_watch";
+  let effectiveStatus: "watched" | "want_to_watch" | "in_progress" = rating !== null ? "watched" : "want_to_watch";
   if (isBook) {
     if (submittedStatus === "watched" || submittedStatus === "want_to_watch" || submittedStatus === "in_progress") {
       effectiveStatus = submittedStatus;
@@ -257,7 +256,8 @@ export function parseMediaForm(form: FormData): MediaInput {
     languages: isTvChild || isMusicTrack || isAlbum ? [] : names("languages"),
     regions: isTvChild || isMusicTrack || isAlbum || isBook ? [] : names("regions"),
     actors: isTvChild || isMusicTrack || isAlbum || isBook ? [] : credits("actors"),
-    directors: isTvChild || isMusicTrack || isAlbum || isBook ? [] : credits("directors").map(({ id, name }) => ({ id, name })),
+    directors:
+      isTvChild || isMusicTrack || isAlbum || isBook ? [] : credits("directors").map(({ id, name }) => ({ id, name })),
     artists,
     lyricists,
     composers,

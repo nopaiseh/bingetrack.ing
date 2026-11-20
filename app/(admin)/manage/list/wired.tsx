@@ -77,8 +77,7 @@ export async function PagedMediaList({
         title={mediaTypes[type]}
         description={
           <>
-            共 {result.total} 个条目 ·{" "}
-            {album ? "管理专辑与曲目" : book ? "管理图书与阅读记录" : "管理影视与观看记录"}
+            共 {result.total} 个条目 · {album ? "管理专辑与曲目" : book ? "管理图书与阅读记录" : "管理影视与观看记录"}
           </>
         }
         actions={
@@ -163,13 +162,7 @@ function mediaRow(item: MediaListItem): AdminListRow {
     {
       key: "date",
       label:
-        item.type === "tv_show"
-          ? "最近播出"
-          : item.type === "album"
-            ? "发行"
-            : item.type === "book"
-              ? "出版"
-              : "上映",
+        item.type === "tv_show" ? "最近播出" : item.type === "album" ? "发行" : item.type === "book" ? "出版" : "上映",
       value: date ?? "—",
     },
     ...(item.type === "movie" ? [{ key: "runtime", label: "片长", value: runtime ?? "—" }] : []),
@@ -195,10 +188,10 @@ function mediaRow(item: MediaListItem): AdminListRow {
     status: {
       label:
         item.type === "album"
-          ? listenLabels[item.status as keyof typeof listenLabels] ?? statusLabels.want_to_watch
+          ? (listenLabels[item.status as keyof typeof listenLabels] ?? statusLabels.want_to_watch)
           : item.type === "book"
             ? (readStatusLabel(item.status) ?? "想读")
-            : statusLabels[item.status as keyof typeof statusLabels] ?? statusLabels.want_to_watch,
+            : (statusLabels[item.status as keyof typeof statusLabels] ?? statusLabels.want_to_watch),
       tone,
     },
     trailing:

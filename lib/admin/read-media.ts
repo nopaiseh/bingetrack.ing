@@ -24,8 +24,20 @@ export async function readEditableMedia(db: SupabaseClient, id: string): Promise
   ]);
   if (results.some(/* 任一失败均禁止继续编辑。 */ (result) => result.error))
     throw new Error("无法完整读取媒体资料，请重试。");
-  const [media, tracking, season, episode, track, albumMeta, bookMeta, genres, languages, regions, collections, credits] =
-    results;
+  const [
+    media,
+    tracking,
+    season,
+    episode,
+    track,
+    albumMeta,
+    bookMeta,
+    genres,
+    languages,
+    regions,
+    collections,
+    credits,
+  ] = results;
   if (!media.data) return null;
   /** Supabase 多对一关联在此按数据库外键返回单个对象。 */
   function names(data: unknown, key: string, role?: string): string[] {

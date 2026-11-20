@@ -399,10 +399,7 @@ export function assembleCurrentlyReading(rows: readonly CurrentlyReadingRow[]): 
       releaseAt: releaseDateToUtc(row.release_date) ?? MISSING_RELEASE_INSTANT,
       authors: [...(row.authors ?? [])].filter((name) => name.trim().length > 0),
     }))
-    .sort(
-      (left, right) =>
-        right.releaseAt.localeCompare(left.releaseAt) || left.bookId.localeCompare(right.bookId),
-    )
+    .sort((left, right) => right.releaseAt.localeCompare(left.releaseAt) || left.bookId.localeCompare(right.bookId))
     .slice(0, CURRENTLY_READING_LIMIT);
 }
 
@@ -411,40 +408,80 @@ type CurrentlyReadingViewRow = {
   title: string | null;
   cover_url: string | null;
   sort_date: string | null;
-  authors: string[] | null;
 };
+
+type AuthorCreditRow = {
+  media_item_id: string;
+  people: Related<{ name: string | null }>;
+};
+
+/** 用已有 media_credits 拉作者名，不依赖迁移后才有的 v_all_media.authors 列。 */
+async function fetchAuthorNamesByBookIds(bookIds: readonly string[]): Promise<Map<string, string[]>> {
+  const authorsByBook = new Map<string, string[]>();
+  if (bookIds.length === 0) return authorsByBook;
+
+  const db = getSupabasePublicServer();
+  for (let index = 0; index < bookIds.length; index += SHOW_ID_CHUNK) {
+    const ids = bookIds.slice(index, index + SHOW_ID_CHUNK);
+    const rows = await eachPage<AuthorCreditRow>("currently-reading-authors", (offset) =>
+      db
+        .from("media_credits")
+        .select("media_item_id,people(name)")
+        .eq("role", "author")
+        .in("media_item_id", [...ids])
+        .order("credit_order", { ascending: true })
+        .range(offset, offset + PAGE_SIZE - 1),
+    );
+    for (const row of rows) {
+      const name = firstRelated(row.people)?.name?.trim();
+      if (!name) continue;
+      const list = authorsByBook.get(row.media_item_id) ?? [];
+      list.push(name);
+      authorsByBook.set(row.media_item_id, list);
+    }
+  }
+  return authorsByBook;
+}
 
 async function fetchCurrentlyReadingRows(): Promise<CurrentlyReadingRow[]> {
   const db = getSupabasePublicServer();
+  // 不选 authors 列：迁移落地前生产视图没有该列。
   const rows = await eachPage<CurrentlyReadingViewRow>("currently-reading", (offset) =>
     db
       .from("v_all_media")
-      .select("id,title,cover_url,sort_date,authors")
+      .select("id,title,cover_url,sort_date")
       .eq("type", "book")
       .eq("status", "in_progress")
       .order("id", { ascending: true })
       .range(offset, offset + PAGE_SIZE - 1),
   );
+  const authorsByBook = await fetchAuthorNamesByBookIds(rows.map((row) => String(row.id)));
   return rows.map((row) => ({
     id: String(row.id),
     title: row.title,
     cover_url: row.cover_url,
     release_date: row.sort_date,
-    authors: row.authors,
+    authors: authorsByBook.get(String(row.id)) ?? [],
   }));
 }
 
 /**
  * 首页「在读」：status=in_progress 的图书，最多 8 条。
  * book 未启用时直接返回空数组，避免链到未开放的 /books/…。
+ * 迁移未应用（尚无 in_progress 枚举值）时降级为空数组，避免首页整页失败。
  * 供前端首页行单独调用；不强制并入 getHomeContinue，以免破坏现有在看／在听形状。
  */
 export async function getCurrentlyReading(): Promise<CurrentlyReadingItem[]> {
   if (!MEDIA_TYPE_DEFINITIONS.book.enabled) return [];
-  return withRetry(async () => {
-    const rows = await fetchCurrentlyReadingRows();
-    return assembleCurrentlyReading(rows);
-  });
+  try {
+    return await withRetry(async () => {
+      const rows = await fetchCurrentlyReadingRows();
+      return assembleCurrentlyReading(rows);
+    });
+  } catch (error) {
+    console.error("Failed to fetch currently reading (schema may be pending migration):", error);
+    return [];
+  }
 }
 
 /** 首页继续区块：在看（影视）与在听（音乐）分开返回，便于渲染两行。 */

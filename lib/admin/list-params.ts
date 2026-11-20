@@ -322,7 +322,5 @@ export function parseBulkStatus(status: unknown): BulkStatus {
 /** 图书批量状态：想读／在读／读过；拒绝 watching。 */
 export function parseBookBulkStatus(status: unknown): BookBulkStatus {
   if (status === "watched" || status === "want_to_watch" || status === "in_progress") return status;
-  throw new AdminInputError(
-    "阅读状态只能是读过（watched）、在读（in_progress）或想读（want_to_watch）。",
-  );
+  throw new AdminInputError("阅读状态只能是读过（watched）、在读（in_progress）或想读（want_to_watch）。");
 }
