@@ -10,6 +10,7 @@ import {
   fetchTopMediaServer,
   fetchMediaDistributionsServer,
   fetchUpcomingReleasesServer,
+  getBookStats,
 } from "./media-repo";
 import { getAlbumDetail } from "./album-repo";
 import { reportHandledError } from "@/lib/report-error";
@@ -152,4 +153,12 @@ export const getCachedReleaseYearStats = cache(
     ["public-media-release-year-stats-v2"],
     { revalidate: 86400, tags: [MEDIA_TAG, MEDIA_LISTS_TAG] },
   ),
+);
+
+/** 图书目录统计长缓存 24 小时；写入走 media:lists 失效。 */
+export const getCachedBookStats = cache(
+  unstable_cache(getBookStats, ["public-book-stats-v1"], {
+    revalidate: 86400,
+    tags: [MEDIA_TAG, MEDIA_LISTS_TAG],
+  }),
 );

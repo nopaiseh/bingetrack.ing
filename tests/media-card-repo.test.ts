@@ -84,6 +84,7 @@ import {
   searchMediaServer,
   getSeasonsBySeriesId,
   fetchStatsServer,
+  getBookStats,
   fetchUpcomingReleasesServer,
   MediaRepositoryError,
 } from "@/lib/functions/media-repo";
@@ -188,7 +189,7 @@ test(
   "fetchStatsServer converts string counts to numbers including upcoming",
   /* 验证统计函数正确转换各种计数为数字（包括 upcoming）。 */ async () => {
     state.results["rpc:get_media_stats"] = {
-      data: [{ total: "10", watched: "5", watching: "2", want: "3", upcoming: "1" }],
+      data: [{ total: "10", watched: "5", watching: "2", want: "3", upcoming: "1", in_progress: "0" }],
       error: null,
     };
     const stats = await fetchStatsServer("tv_show");
@@ -204,6 +205,49 @@ test(
     ]);
   },
 );
+
+test(
+  "getBookStats maps book RPC counts including in_progress",
+  /* 验证图书统计助手映射 total／inProgress／watched／wantToWatch。 */ async () => {
+    state.results["rpc:get_media_stats"] = {
+      data: [
+        {
+          total: "8",
+          watched: "3",
+          watching: "0",
+          want: "2",
+          upcoming: "0",
+          in_progress: "3",
+        },
+      ],
+      error: null,
+    };
+    const stats = await getBookStats();
+    expect(stats).toEqual({
+      total: 8,
+      inProgress: 3,
+      watched: 3,
+      wantToWatch: 2,
+    });
+    expect(state.executed).toEqual([
+      expect.objectContaining({
+        table: "rpc:get_media_stats",
+        args: { p_media_type: "book" },
+      }),
+    ]);
+  },
+);
+
+test("getBookStats throws MediaRepositoryError when RPC fails", async () => {
+  state.results["rpc:get_media_stats"] = {
+    data: null,
+    error: { code: "42883" },
+  };
+  await expect(getBookStats()).rejects.toMatchObject({
+    name: "MediaRepositoryError",
+    message: "Media repository operation failed: fetch book stats",
+  });
+});
 
 test("fetchMediaCardsServer retries on transient gateway timeout and succeeds on retry", async () => {
   let attempt = 0;

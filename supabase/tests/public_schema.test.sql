@@ -1,6 +1,6 @@
 begin;
 
-select plan(16);
+select plan(17);
 
 select is(
   (
@@ -137,7 +137,8 @@ select results_eq(
       count(*) filter (where media.status = 'watched') as watched,
       count(*) filter (where media.status = 'watching') as watching,
       count(*) filter (where media.status = 'want_to_watch') as want,
-      count(*) filter (where media.sort_date >= current_date) as upcoming
+      count(*) filter (where media.sort_date >= current_date) as upcoming,
+      count(*) filter (where media.status = 'in_progress') as in_progress
     from public.v_all_media as media
     where media.type::text = 'movie'
   $$,
@@ -164,12 +165,29 @@ select results_eq(
       count(*) filter (
         where media.status is distinct from 'watched'
           and u.series_id is not null
-      ) as upcoming
+      ) as upcoming,
+      count(*) filter (where media.status = 'in_progress') as in_progress
     from public.v_all_media as media
     left join upcoming_series as u on u.series_id = media.id
     where media.type::text = 'tv_show'
   $$,
   'anonymous tv series stats match the equivalent direct read query'
+);
+
+select results_eq(
+  $$select * from public.get_media_stats('book')$$,
+  $$
+    select
+      count(*) as total,
+      count(*) filter (where media.status = 'watched') as watched,
+      count(*) filter (where media.status = 'watching') as watching,
+      count(*) filter (where media.status = 'want_to_watch') as want,
+      count(*) filter (where media.sort_date >= current_date) as upcoming,
+      count(*) filter (where media.status = 'in_progress') as in_progress
+    from public.v_all_media as media
+    where media.type::text = 'book'
+  $$,
+  'anonymous book stats include in_progress and match the equivalent direct read query'
 );
 
 reset role;
