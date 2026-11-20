@@ -14,7 +14,7 @@ export default function BackToList({
 }) {
   const router = useRouter();
   const fallback =
-    category === "movie" || category === "album" || category.startsWith("tv_")
+    category === "movie" || category === "album" || category === "book" || category.startsWith("tv_")
       ? `/manage?type=${category === "music" ? "album" : category}`
       : `/manage/references/${category}`;
   return (

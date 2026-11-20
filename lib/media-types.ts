@@ -1,6 +1,6 @@
 /**
  * 媒体类型的单一配置源。公开路由、管理端文案、封面比例、元数据字段与追踪状态文案都从这里派生。
- * 新增类型时优先改本文件；当前启用公开目录：电影、电视节目、专辑。
+ * 新增类型时优先改本文件；当前启用公开目录：电影、电视节目、专辑（图书管理端已开、公开路由尚未启用）。
  */
 
 /** 与 public.media_type 枚举对齐（含已改名的 tv_show）。 */
@@ -23,10 +23,12 @@ export type MediaMetadataField =
   | "authors"
   | "summary";
 
-/** 追踪状态的中文动词（完成／想要）；在看等中间态仍由公开页的 WATCH_STATUSES 负责。 */
+/** 追踪状态的中文动词（完成／想要／进行中）；在看等中间态仍由公开页的 WATCH_STATUSES 负责。 */
 export type TrackingStatusLabels = {
   done: string;
   want: string;
+  /** 进行中（如图书「在读」）；无此中间态的类型省略。 */
+  inProgress?: string;
 };
 
 export type MediaTypeDefinition = {
@@ -174,12 +176,13 @@ export const MEDIA_TYPE_DEFINITIONS = {
       "authors",
       "summary",
     ] as const satisfies readonly MediaMetadataField[],
-    trackingLabels: { done: "读过", want: "想读" },
+    trackingLabels: { done: "读过", want: "想读", inProgress: "在读" },
     schemaType: "Book",
     defaultDescription: "查看《{title}》的阅读记录与详细信息。",
+    // 尚无 /books 公开页；管理端可写，站点地图／搜索／导航不挂图书目录。
     enabled: false,
-    adminManaged: false,
-    adminBulkOps: false,
+    adminManaged: true,
+    adminBulkOps: true,
   },
 } as const satisfies Record<DbMediaType, MediaTypeDefinition>;
 
@@ -199,12 +202,12 @@ export type PublicMediaType = {
   [K in CatalogDbMediaType]: (typeof MEDIA_TYPE_DEFINITIONS)[K]["route"];
 }[CatalogDbMediaType];
 
-/** 管理端可写入的媒体类型（电影／电视节目／季／单集／专辑／曲目）。 */
+/** 管理端可写入的媒体类型（电影／电视节目／季／单集／专辑／曲目／图书）。 */
 export type ManagedMediaType = {
   [K in MediaTypeKey]: (typeof MEDIA_TYPE_DEFINITIONS)[K]["adminManaged"] extends true ? K : never;
 }[MediaTypeKey];
 
-/** 管理端顶层批量操作接受的类型（电影／电视节目／专辑）。 */
+/** 管理端顶层批量操作接受的类型（电影／电视节目／专辑／图书）。 */
 export type AdminBulkMediaType = {
   [K in MediaTypeKey]: (typeof MEDIA_TYPE_DEFINITIONS)[K]["adminBulkOps"] extends true ? K : never;
 }[MediaTypeKey];
@@ -232,13 +235,16 @@ export const mediaTypes = Object.fromEntries(
   ]),
 ) as { readonly [K in ManagedMediaType]: (typeof MEDIA_TYPE_DEFINITIONS)[K]["label"] };
 
-/** 管理列表顶层类型（不含季／集／曲目）：公开目录中且 adminManaged 的类型（电影、电视节目、专辑）。 */
-export const adminMediaListTypes = CATALOG_DB_TYPES.filter((key) => MEDIA_TYPE_DEFINITIONS[key].adminManaged);
-
 /** 参与管理端批量操作的数据库类型。 */
 export const ADMIN_BULK_DB_TYPES = ALL_KEYS.filter(
   (key): key is AdminBulkMediaType => MEDIA_TYPE_DEFINITIONS[key].adminBulkOps,
 ) as readonly AdminBulkMediaType[];
+
+/**
+ * 管理列表顶层类型（不含季／集／曲目）。
+ * 按 adminBulkOps，不依赖公开 enabled，以便图书在路由未开放时仍可在管理端列出。
+ */
+export const adminMediaListTypes = ADMIN_BULK_DB_TYPES;
 
 /** 启用类型的公开目录路径，如 /movies、/shows。 */
 export const ENABLED_PUBLIC_CATALOG_PATHS = PUBLIC_MEDIA_TYPES.map((route) => `/${route}`);

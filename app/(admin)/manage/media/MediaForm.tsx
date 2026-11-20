@@ -18,6 +18,7 @@ const deleteLabels: Record<ManagedMediaType, string> = {
   tv_season: "删除这一季…",
   tv_episode: "删除这一集…",
   album: "删除这张专辑…",
+  book: "删除这本图书…",
   music: "删除这首曲目…",
 };
 
@@ -28,6 +29,7 @@ const deleteHints: Record<ManagedMediaType, string> = {
   tv_episode: "删除后会同时移除观看记录，且无法恢复。",
   album: "删除后会同时移除下属曲目、收听记录和艺人关联，且无法恢复。",
   music: "删除后会同时移除收听记录和作词作曲关联，且无法恢复。",
+  book: "删除后会同时移除阅读记录和作者关联，且无法恢复。",
 };
 
 /** 影视路径补成 TMDB 原图；专辑／曲目只保留完整 HTTPS，不擅自加 TMDB 前缀。 */
@@ -181,10 +183,24 @@ export default function MediaForm({
         : formatRuntime(Number(runtimeField.value))
       : null;
   const heading = titleField.value.trim() || (item ? item.title : `新增${mediaTypes[type]}`);
-  const dateLabel = type === "tv_episode" ? "播出日期" : isAlbum || isMusicTrack ? "发行日期" : "上映日期";
+  const dateLabel =
+    type === "tv_episode"
+      ? "播出日期"
+      : isAlbum || isMusicTrack
+        ? "发行日期"
+        : type === "book"
+          ? "出版日期"
+          : "上映日期";
   const listBackHref =
-    type === "movie" ? "/manage?type=movie" : isAlbum || isMusicTrack ? "/manage?type=album" : "/manage?type=tv_show";
-  const listBackLabel = type === "movie" ? "电影" : isAlbum || isMusicTrack ? "专辑" : "电视节目";
+    type === "movie"
+      ? "/manage?type=movie"
+      : isAlbum || isMusicTrack
+        ? "/manage?type=album"
+        : type === "book"
+          ? "/manage?type=book"
+          : "/manage?type=tv_show";
+  const listBackLabel =
+    type === "movie" ? "电影" : isAlbum || isMusicTrack ? "专辑" : type === "book" ? "图书" : "电视节目";
 
   useEffect(() => {
     function onKey(event: KeyboardEvent) {

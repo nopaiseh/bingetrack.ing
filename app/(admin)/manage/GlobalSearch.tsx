@@ -13,8 +13,18 @@ const badges: Record<ManagedMediaType, string> = {
   tv_episode: "border-emerald-500/25 bg-emerald-500/10 text-emerald-300",
   album: "border-violet-500/25 bg-violet-500/10 text-violet-300",
   music: "border-fuchsia-500/25 bg-fuchsia-500/10 text-fuchsia-300",
+  book: "border-orange-500/25 bg-orange-500/10 text-orange-300",
 };
-const filters: (ManagedMediaType | "all")[] = ["all", "movie", "tv_show", "tv_season", "tv_episode", "album", "music"];
+const filters: (ManagedMediaType | "all")[] = [
+  "all",
+  "movie",
+  "tv_show",
+  "tv_season",
+  "tv_episode",
+  "album",
+  "music",
+  "book",
+];
 
 /** 概览页的全局搜索：同时搜电影、电视节目、季与单集，可按类型缩小；方向键选择，回车打开。 */
 export default function GlobalSearch() {

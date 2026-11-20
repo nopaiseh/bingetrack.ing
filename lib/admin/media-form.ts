@@ -46,7 +46,7 @@ export type MediaInput = {
   runtime: number | null;
   parent_id: string | null;
   number: number | null;
-  status: "watched" | "watching" | "want_to_watch";
+  status: "watched" | "watching" | "want_to_watch" | "in_progress";
   rating: number | null;
   genres: string[];
   languages: string[];
@@ -59,8 +59,14 @@ export type MediaInput = {
   lyricists: PersonRef[];
   /** 曲目作曲（media_credits.role=composer）。 */
   composers: PersonRef[];
+  /** 图书作者（media_credits.role=author）。 */
+  authors: PersonRef[];
   /** 唱片公司；仅专辑写入 music_albums.label。 */
   label: string | null;
+  /** 页数；仅图书写入 books.page_count（1–20000 或空）。 */
+  page_count: number | null;
+  /** 出版社；仅图书写入 books.publisher。 */
+  publisher: string | null;
   collections?: string[];
 };
 
@@ -77,6 +83,7 @@ const creditFieldLabels: Record<string, string> = {
   artists: "艺人",
   lyricists: "作词",
   composers: "作曲",
+  authors: "作者",
 };
 
 /** 校验封面 URL：影视限 TMDB；音乐另接受 iTunes／CAA／archive.org（与 CSP 一致）。 */
@@ -199,17 +206,32 @@ export function parseMediaForm(form: FormData): MediaInput {
     throw new Error("评分最多保留一位小数。");
   // 有评分即看过、没有评分即没看过，不再单独选择观看状态；忽略提交的 status，旧页面也不会写出不一致的记录。
   // 电视节目、季与专辑没有评分，状态恒为 want_to_watch，仅用于通过校验，数据库不为它们保存 tracking。
-  const effectiveStatus: "watched" | "want_to_watch" = rating !== null ? "watched" : "want_to_watch";
+  // 图书可显式提交想读／在读／读过；未提交合法状态时回退为没评分→想读、有评分→读过。
+  const isBook = type === "book";
+  const submittedStatus = string("status");
+  let effectiveStatus: "watched" | "want_to_watch" | "in_progress" = rating !== null ? "watched" : "want_to_watch";
+  if (isBook) {
+    if (submittedStatus === "watched" || submittedStatus === "want_to_watch" || submittedStatus === "in_progress") {
+      effectiveStatus = submittedStatus;
+    }
+  }
   const isTvChild = type === "tv_season" || type === "tv_episode";
   const isMusicTrack = type === "music";
   const isAlbum = type === "album";
   const artists = isAlbum || isMusicTrack ? credits("artists").map(({ id, name }) => ({ id, name })) : [];
   const lyricists = isMusicTrack ? credits("lyricists").map(({ id, name }) => ({ id, name })) : [];
   const composers = isMusicTrack ? credits("composers").map(({ id, name }) => ({ id, name })) : [];
+  const authors = isBook ? credits("authors").map(({ id, name }) => ({ id, name })) : [];
   const label = isAlbum ? string("label", 200) : null;
-  // 曲目时长以秒计（1–7200，可空）；影视片长仍为分钟（0–100000）；一律整数。
+  const publisher = isBook ? string("publisher", 200) : null;
+  let page_count: number | null = null;
+  if (isBook) {
+    page_count = numeric("page_count", 20000, true);
+    if (page_count === 0) throw new Error("页数须为 1–20000 的整数，或留空。");
+  }
+  // 曲目时长以秒计（1–7200，可空）；影视片长仍为分钟（0–100000）；图书不写 runtime。
   let runtime: number | null;
-  if (type === "tv_show" || type === "tv_season" || type === "album") {
+  if (type === "tv_show" || type === "tv_season" || type === "album" || isBook) {
     runtime = null;
   } else if (type === "music") {
     runtime = numeric("runtime", 7200, true);
@@ -232,13 +254,17 @@ export function parseMediaForm(form: FormData): MediaInput {
     rating,
     genres: isTvChild || isMusicTrack ? [] : names("genres"),
     languages: isTvChild || isMusicTrack || isAlbum ? [] : names("languages"),
-    regions: isTvChild || isMusicTrack || isAlbum ? [] : names("regions"),
-    actors: isTvChild || isMusicTrack || isAlbum ? [] : credits("actors"),
-    directors: isTvChild || isMusicTrack || isAlbum ? [] : credits("directors").map(({ id, name }) => ({ id, name })),
+    regions: isTvChild || isMusicTrack || isAlbum || isBook ? [] : names("regions"),
+    actors: isTvChild || isMusicTrack || isAlbum || isBook ? [] : credits("actors"),
+    directors:
+      isTvChild || isMusicTrack || isAlbum || isBook ? [] : credits("directors").map(({ id, name }) => ({ id, name })),
     artists,
     lyricists,
     composers,
+    authors,
     label,
+    page_count,
+    publisher,
     collections: isTvChild || isMusicTrack ? [] : names("collections"),
   };
 }

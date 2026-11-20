@@ -22,7 +22,8 @@ vi.mock("next/cache", () => ({
 vi.mock("next/navigation", () => ({ redirect: vi.fn() }));
 vi.mock("@/lib/auth/server", () => ({ requireOwner: vi.fn() }));
 vi.mock("@/lib/continue-watching", () => ({
-  getHomeContinue: vi.fn(async () => ({ watching: [], listening: [] })),
+  getHomeContinue: vi.fn(async () => ({ watching: [], listening: [], reading: [] })),
+  getCurrentlyReading: vi.fn(async () => []),
 }));
 vi.mock("@/lib/admin/revalidate-media", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@/lib/admin/revalidate-media")>();
@@ -113,7 +114,7 @@ describe("继续看数据缓存", () => {
 
     expect(cacheSpecs).toContainEqual({
       fn: getHomeContinue,
-      keys: ["public-media-home-continue-v1"],
+      keys: ["public-media-home-continue-v2"],
       options: { revalidate: 86400, tags: ["media", "media:lists"] },
     });
     await expect(getCachedHomeContinue()).resolves.toEqual(payload);

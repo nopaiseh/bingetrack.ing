@@ -12,22 +12,24 @@ import {
   revalidateMediaItems,
 } from "@/lib/admin/revalidate-media";
 import { deleteMusicTree, SaveMusicMediaError, saveMusicMedia } from "@/lib/admin/save-music-media";
+import { SaveBookMediaError, saveBookMedia } from "@/lib/admin/save-book-media";
 
 export type ActionResult = { error?: string; saved?: boolean; id?: string };
 
 /** 将数据库错误转换成可以采取行动的提示，不暴露 SQL 细节。 */
 function writeError(code?: string) {
-  if (code === "23505") return "同一电视节目、季或专辑中已存在这个编号，请更换编号。";
+  if (code === "23505") return "同一电视节目、季或专辑中已存在这个编号，或已存在同名同作者图书。";
   if (code === "23503" || code === "P0002") return "资料或上级条目已不存在，请刷新后重试。";
   if (code === "42501") return "没有写入权限，请检查站长账号配置。";
-  if (code === "23514") return "曲目时长须为 1–7200 秒的整数，或留空。";
+  if (code === "23514") return "曲目时长须为 1–7200 秒的整数，或留空；图书页数须为 1–20000。";
   return "保存失败，请检查字段或数据库配置后重试。";
 }
 
-/** 删除后回到所属顶层列表：电影／专辑各自列表，季集归电视节目，曲目归专辑。 */
+/** 删除后回到所属顶层列表：电影／专辑／图书各自列表，季集归电视节目，曲目归专辑。 */
 function listTypeAfterDelete(type: string | null | undefined) {
   if (type === "album" || type === "music") return "album";
   if (type === "movie") return "movie";
+  if (type === "book") return "book";
   return "tv_show";
 }
 
@@ -50,6 +52,13 @@ export async function saveMedia(_previous: ActionResult, form: FormData): Promis
       savedId = await saveMusicMedia(db, payload);
     } catch (error) {
       if (error instanceof SaveMusicMediaError) return { error: error.message };
+      return { error: writeError() };
+    }
+  } else if (payload.type === "book") {
+    try {
+      savedId = await saveBookMedia(db, payload);
+    } catch (error) {
+      if (error instanceof SaveBookMediaError) return { error: error.message };
       return { error: writeError() };
     }
   } else {

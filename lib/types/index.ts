@@ -29,6 +29,8 @@ export interface Media {
   directors?: string[];
   /** 专辑／单曲艺人（media_credits role=artist，按 credit_order）。 */
   artists?: string[];
+  /** 图书作者（media_credits role=author，按 credit_order）。 */
+  authors?: string[];
   type?: MediaType;
 }
 
@@ -44,6 +46,7 @@ export type MediaCard = Omit<
   type?: MediaType | "music";
   summary?: string;
   artists?: string[];
+  authors?: string[];
   /** 数据库 media_type；搜索类型标签优先用它，避免未启用路由被归一成影视段。 */
   dbType?: string;
 };
@@ -188,6 +191,7 @@ export interface ViewAllMediaRow {
   characters?: (string | null)[] | null;
   directors?: string[] | null;
   artists?: string[] | null;
+  authors?: string[] | null;
   type?: string | null;
   series?: string[] | null;
 }

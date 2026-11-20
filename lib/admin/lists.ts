@@ -24,6 +24,7 @@ import {
   parseAdminPeopleQuery,
   parseBulkIds,
   parseBulkStatus,
+  parseBookBulkStatus,
 } from "@/lib/admin/list-params";
 
 const LIST_READ_ERROR = "无法读取管理列表，请重试。";
@@ -66,7 +67,14 @@ function toNumber(value: number | string | null | undefined) {
   return Number.isFinite(parsed) ? parsed : null;
 }
 
-function watchStatus(value: string | null | undefined): MediaListItem["status"] {
+function mediaListStatus(value: string | null | undefined): MediaListItem["status"] {
+  if (value === "watched" || value === "watching" || value === "want_to_watch" || value === "in_progress") {
+    return value;
+  }
+  return "want_to_watch";
+}
+
+function childWatchStatus(value: string | null | undefined): ChildListItem["status"] {
   if (value === "watched" || value === "watching" || value === "want_to_watch") return value;
   return "want_to_watch";
 }
@@ -201,7 +209,7 @@ export async function listAdminMedia(
         release_date: detail?.release_date ?? null,
         runtime: toNumber(detail?.runtime),
         sort_date: row.sort_date,
-        status: watchStatus(row.status),
+        status: mediaListStatus(row.status),
         rating: toNumber(row.rating),
         season_count: seasons.length,
         episode_count: seasons.reduce((sum, season) => sum + (season.episodes?.[0]?.count ?? 0), 0),
@@ -356,7 +364,7 @@ export async function listAdminChildren(
         alternate_title: detail.alternate_title,
         cover_url: detail.cover_url,
         display_date: season ? order?.sort_date || null : detail.release_date,
-        status: watchStatus(season ? order?.status : tracking?.status),
+        status: childWatchStatus(season ? order?.status : tracking?.status),
         rating: season || tracking?.rating == null ? null : Number(tracking.rating),
         season: detail.tv_seasons ? seasonContext(detail.tv_seasons) : null,
         episode: !detail.tv_seasons && detail.tv_episodes ? episodeContext(detail.tv_episodes) : null,
@@ -440,7 +448,7 @@ export async function listAdminTracks(
       alternate_title: media?.alternate_title ?? null,
       cover_url: media?.cover_url ?? null,
       display_date: media?.release_date ?? null,
-      status: watchStatus(tracking?.status),
+      status: childWatchStatus(tracking?.status),
       rating: tracking?.rating == null ? null : Number(tracking.rating),
       season: null,
       episode: null,
@@ -532,6 +540,20 @@ export async function bulkDeleteMovies(db: SupabaseClient, ids: unknown): Promis
   const targets = parseBulkIds(ids);
   const affected = await affectedMediaIds(db, targets);
   const { data, error } = await db.from("media_items").delete().in("id", targets).eq("type", "movie").select("id");
+  if (error?.code === "23503") return { succeeded: 0, failed: targets.length };
+  assertWrite(error, DELETE_ERROR);
+  const succeeded = deletedIds((data ?? []) as { id: string }[]).size;
+  if (succeeded > 0) revalidateMediaItems(affected);
+  return { succeeded, failed: targets.length - succeeded };
+}
+
+/**
+ * 删除图书。books 行、阅读记录与作者关联随 media_items 外键级联删除。
+ */
+export async function bulkDeleteBooks(db: SupabaseClient, ids: unknown): Promise<BulkCounts> {
+  const targets = parseBulkIds(ids);
+  const affected = await affectedMediaIds(db, targets);
+  const { data, error } = await db.from("media_items").delete().in("id", targets).eq("type", "book").select("id");
   if (error?.code === "23503") return { succeeded: 0, failed: targets.length };
   assertWrite(error, DELETE_ERROR);
   const succeeded = deletedIds((data ?? []) as { id: string }[]).size;
@@ -662,6 +684,33 @@ export async function bulkSetMovieStatus(db: SupabaseClient, ids: unknown, statu
   assertWrite(error, STATUS_ERROR);
   revalidateMediaItems(await affectedMediaIds(db, movieIds));
   return { succeeded: movieIds.length, failed: targets.length - movieIds.length };
+}
+
+/**
+ * 更新图书阅读状态。接受 want_to_watch／in_progress／watched；只写 status，保留评分。
+ * in_progress 仅图书合法（数据库触发器也会拒绝非图书）。
+ */
+export async function bulkSetBookStatus(db: SupabaseClient, ids: unknown, status: unknown): Promise<BulkCounts> {
+  const targets = parseBulkIds(ids);
+  const nextStatus = parseBookBulkStatus(status);
+  const bookIds = rowsIn(
+    readRows<{ id: string }>(
+      await db.from("media_items").select("id").in("id", targets).eq("type", "book"),
+      STATUS_ERROR,
+    ),
+    targets,
+  ).map((row) => row.id);
+  if (bookIds.length === 0) return { succeeded: 0, failed: targets.length };
+  const { error } = await db
+    .from("tracking")
+    .upsert(
+      bookIds.map((media_item_id) => ({ media_item_id, status: nextStatus })),
+      { onConflict: "media_item_id", defaultToNull: false },
+    )
+    .select("media_item_id");
+  assertWrite(error, STATUS_ERROR);
+  revalidateMediaItems(await affectedMediaIds(db, bookIds));
+  return { succeeded: bookIds.length, failed: targets.length - bookIds.length };
 }
 
 /**

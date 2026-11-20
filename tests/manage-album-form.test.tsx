@@ -30,6 +30,9 @@ const blank = {
   artists: [],
   lyricists: [],
   composers: [],
+  authors: [],
+  page_count: null,
+  publisher: null,
   label: null,
 };
 

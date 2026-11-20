@@ -10,9 +10,10 @@ const typeOrder: Record<ManagedMediaType, number> = {
   tv_show: 0,
   movie: 1,
   album: 2,
-  tv_season: 3,
-  tv_episode: 4,
-  music: 5,
+  book: 3,
+  tv_season: 4,
+  tv_episode: 5,
+  music: 6,
 };
 
 type Row = {
@@ -51,6 +52,7 @@ function context(row: Row) {
   if (row.type === "tv_show")
     return [row.alternate_title, `${count(row.seasons?.[0]?.count ?? 0)} 季`].filter(Boolean).join(" · ");
   if (row.type === "album") return [row.alternate_title, row.release_date, "专辑"].filter(Boolean).join(" · ");
+  if (row.type === "book") return [row.alternate_title, row.release_date, "图书"].filter(Boolean).join(" · ");
   if (row.type === "music") return [row.alternate_title, row.release_date, "曲目"].filter(Boolean).join(" · ");
   return [row.alternate_title, row.release_date].filter(Boolean).join(" · ");
 }
@@ -65,7 +67,7 @@ export async function searchMedia(term: string): Promise<{ hits: MediaHit[]; err
     .select(
       "id,type,title,alternate_title,release_date,cover_url,season:tv_seasons!tv_seasons_id_fkey(season_number,parent:media_items!tv_seasons_series_id_fkey(title)),episode:tv_episodes!tv_episodes_id_fkey(episode_number,season:tv_seasons!tv_episodes_season_id_fkey(season_number,series:media_items!tv_seasons_series_id_fkey(title))),seasons:tv_seasons!tv_seasons_series_id_fkey(count)",
     )
-    .in("type", ["movie", "tv_show", "tv_season", "tv_episode", "album", "music"])
+    .in("type", ["movie", "tv_show", "tv_season", "tv_episode", "album", "music", "book"])
     .or(titleOrAliasFilter(search))
     .order("title")
     .order("id")

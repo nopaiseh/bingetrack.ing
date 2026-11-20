@@ -8,6 +8,7 @@ import { mediaTypes } from "@/lib/admin/media-form";
 import { readParent, readImpact, readSiblings, type Sibling } from "@/lib/admin/media-context";
 import { readSeriesStructure } from "@/lib/admin/series-structure";
 import { readAlbumStructure } from "@/lib/admin/album-structure";
+import { MEDIA_TYPE_DEFINITIONS } from "@/lib/media-types";
 import MediaForm from "../MediaForm";
 import StatusModal from "../../StatusModal";
 import SeriesWorkspace from "../series/SeriesWorkspace";
@@ -109,7 +110,9 @@ export default async function EditMediaPage({
               ? { href: `/albums/${id}`, label: "公开页面" }
               : item.type === "music" && parent
                 ? { href: `/albums/${parent.id}`, label: "公开专辑页面" }
-                : null;
+                : item.type === "book" && MEDIA_TYPE_DEFINITIONS.book.enabled
+                  ? { href: `/books/${id}`, label: "公开页面" }
+                  : null;
   const header = (
     <nav aria-label="面包屑">
       <ol className="flex flex-wrap items-center gap-1.5 text-sm text-fg-secondary">

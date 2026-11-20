@@ -388,12 +388,13 @@ describe("getContinueListening / getHomeContinue", () => {
     expect(state.calls.map((call) => call.table)).toEqual(["v_continue_listening"]);
   });
 
-  it("returns watching and listening lists in parallel", async () => {
+  it("returns watching, listening and reading lists in parallel", async () => {
+    // book.enabled=false 时 getCurrentlyReading 不查库，直接空数组。
     state.results = [
       { data: [], error: null },
       { data: [], error: null },
     ];
-    await expect(getHomeContinue()).resolves.toEqual({ watching: [], listening: [] });
+    await expect(getHomeContinue()).resolves.toEqual({ watching: [], listening: [], reading: [] });
     expect(state.calls.map((call) => call.table).sort()).toEqual(["v_all_media", "v_continue_listening"]);
   });
 });

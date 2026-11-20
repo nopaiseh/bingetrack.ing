@@ -9,6 +9,7 @@ const options = [
   { type: "movie", icon: "i-material-symbols-movie-rounded" },
   { type: "tv_show", icon: "i-material-symbols-tv-rounded" },
   { type: "album", icon: "i-material-symbols-library-music-rounded" },
+  { type: "book", icon: "i-material-symbols-menu-book-rounded" },
 ] as const;
 
 /** 管理首页的「新增」按钮：展开菜单后选择要新增的媒体类型，类型再多也只占一个按钮。 */

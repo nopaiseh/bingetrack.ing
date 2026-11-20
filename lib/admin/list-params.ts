@@ -1,10 +1,9 @@
 import { isMediaId } from "@/lib/functions/media-id";
 import {
   adminBulkOpsLabelList,
-  adminMediaListTypes as catalogDbTypes,
+  adminMediaListTypes as listTypes,
   isAdminBulkMediaType,
   type AdminBulkMediaType,
-  type CatalogDbMediaType,
 } from "@/lib/media-types";
 
 /** 管理列表校验失败。消息不含 SQL，调用方可以直接展示。 */
@@ -40,9 +39,10 @@ export const mediaSorts = {
 } as const satisfies Record<string, SortDirection>;
 export type MediaSortKey = keyof typeof mediaSorts;
 
-export const adminMediaListTypes = catalogDbTypes;
-export type AdminMediaListType = CatalogDbMediaType;
-/** 管理端顶层批量操作类型；与 MEDIA_TYPE_DEFINITIONS.adminBulkOps 对齐（电影／电视节目／专辑）。 */
+export const adminMediaListTypes = listTypes;
+/** 管理列表顶层类型；与 adminBulkOps 对齐（电影／电视节目／专辑／图书），不要求公开 enabled。 */
+export type AdminMediaListType = AdminBulkMediaType;
+/** 管理端顶层批量操作类型；与 MEDIA_TYPE_DEFINITIONS.adminBulkOps 对齐。 */
 export type AdminBulkListType = AdminBulkMediaType;
 
 /** 管理页里仍按上级条目浏览的类型。电影、电视节目、专辑走 parseAdminMediaQuery。 */
@@ -70,6 +70,10 @@ const episodeStatuses = ["watched", "want_to_watch"] as const;
 /** 可以写入 tracking 的状态。watching 只由单集汇总产生，不能直接保存。 */
 export const bulkStatuses = ["watched", "want_to_watch"] as const;
 export type BulkStatus = (typeof bulkStatuses)[number];
+
+/** 图书可写入的状态（含在读）；影视批量接口仍只用 bulkStatuses。 */
+export const bookBulkStatuses = ["watched", "want_to_watch", "in_progress"] as const;
+export type BookBulkStatus = (typeof bookBulkStatuses)[number];
 
 export type AdminListInput = {
   page?: number | string | null;
@@ -167,11 +171,11 @@ export type MediaListItem = {
   runtime: number | null;
   /** 电影／专辑等于上映日期；电视节目为最近一集播出日期，与管理列表排序口径一致。 */
   sort_date: string | null;
-  status: "watched" | "watching" | "want_to_watch";
+  status: "watched" | "watching" | "want_to_watch" | "in_progress";
   rating: number | null;
   season_count: number;
   episode_count: number;
-  /** 专辑曲目数；电影／电视节目为 0。 */
+  /** 专辑曲目数；电影／电视节目／图书为 0。 */
   track_count: number;
 };
 
@@ -233,9 +237,9 @@ export function parseAdminMediaQuery(input?: AdminListInput | null) {
 }
 
 /**
- * 只接受配置中 adminBulkOps 为 true 的顶层类型（电影／电视节目／专辑）。
+ * 只接受配置中 adminBulkOps 为 true 的顶层类型（电影／电视节目／专辑／图书）。
  * 曲目（music）挂在专辑下，使用 listAdminChildren。
- * adminBulkOps 类型当前均属启用目录类型，无需再叠 isCatalogDbMediaType。
+ * 图书公开路由未启用时仍可出现在管理列表（adminBulkOps）。
  */
 export function parseAdminMediaListType(value: unknown): AdminMediaListType {
   if (typeof value === "string" && isAdminBulkMediaType(value)) return value;
@@ -307,10 +311,16 @@ export function parseBulkIds(ids: unknown): string[] {
   return unique;
 }
 
-/** 拒绝 watching：数据库枚举只有 watched 与 want_to_watch。 */
+/** 拒绝 watching／in_progress：影视批量只写 watched 与 want_to_watch。 */
 export function parseBulkStatus(status: unknown): BulkStatus {
   if (status === "watched" || status === "want_to_watch") return status;
   throw new AdminInputError(
-    "观看状态只能是已看（watched）或想看（want_to_watch）。在看（watching）由单集汇总，不能直接写入。",
+    "观看状态只能是已看（watched）或想看（want_to_watch）。在看（watching）由单集汇总，不能直接写入；在读（in_progress）仅图书可用。",
   );
+}
+
+/** 图书批量状态：想读／在读／读过；拒绝 watching。 */
+export function parseBookBulkStatus(status: unknown): BookBulkStatus {
+  if (status === "watched" || status === "want_to_watch" || status === "in_progress") return status;
+  throw new AdminInputError("阅读状态只能是读过（watched）、在读（in_progress）或想读（want_to_watch）。");
 }
