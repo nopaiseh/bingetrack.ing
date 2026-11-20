@@ -20,10 +20,12 @@
 ```sh
 supabase start   # 启动并自动应用 migrations/
 psql postgresql://postgres:postgres@127.0.0.1:54322/postgres -v ON_ERROR_STOP=1 -f supabase/fixtures/e2e_seed.sql
-# 跑含专辑详情的浏览器测试前，再载入专辑夹具（生产构建之后载入可保留目录空状态）：
+# 跑含专辑详情的浏览器测试前，再载入专辑夹具（须在生产构建之后，以保留目录空状态）：
 psql postgresql://postgres:postgres@127.0.0.1:54322/postgres -v ON_ERROR_STOP=1 -f supabase/fixtures/e2e_album_seed.sql
 supabase test db
 ```
+
+`/albums` 空状态 Playwright 用例只在 CI（或按「先构建、再载入专辑夹具、再用 `npm start`」复现 CI 顺序）下通过；本地 `npm run dev` 会读到已载入的专辑数据，空状态断言会失败。详见根目录 [README](../README.md) 测试说明。
 
 需要从头重建时运行 `supabase db reset`，然后重新载入测试数据。`supabase status` 会显示本地的 URL 和 anon key，填进根目录的 `.env.local`；跑管理端 E2E 还需要本地的 service-role key。
 

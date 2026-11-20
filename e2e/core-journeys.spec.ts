@@ -24,8 +24,10 @@ test(
   "type and year filters update the URL and results",
   /* 验证媒体分类和年份筛选同时更新地址与结果。 */ async ({ page }) => {
     await page.goto("/search");
-    // 构建后专辑夹具已载入：电影、剧集、三本图书、一张专辑与两首曲目。
-    await expect(page.getByText("找到 8 部作品")).toBeVisible();
+    // 不绑定种子条目总数（夹具会随图书／专辑扩展）；只确认结果区已加载且含固定影视种子。
+    await expect(page.getByText(/找到 \d+ 部作品/)).toBeVisible();
+    await expect(page.getByRole("link", { name: /测试电影：星光档案/ })).toBeVisible();
+    await expect(page.getByRole("link", { name: /测试剧集：城市信号/ })).toBeVisible();
 
     const filtersToggle = page.getByRole("button", { name: /^筛选(\s\(\d+\))?$/ });
     if (await filtersToggle.isVisible()) await filtersToggle.click();

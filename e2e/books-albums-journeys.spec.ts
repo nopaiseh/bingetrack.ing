@@ -143,12 +143,15 @@ test(
     await page.goto(`/albums/${ALBUM_ID}`);
     await expect(page.getByRole("heading", { level: 1, name: "测试专辑：夜航电台" })).toBeVisible();
     await expect(page.getByRole("heading", { level: 2, name: "曲目" })).toBeVisible();
-    await expect(page.getByRole("table", { name: "曲目列表" })).toBeVisible();
-    await expect(page.getByText("夜航序曲")).toBeVisible();
-    await expect(page.getByText("回港信号")).toBeVisible();
-    await expect(page.getByText("听过")).toBeVisible();
-    await expect(page.getByText("想听")).toBeVisible();
-    await expect(page.getByText("3:30")).toBeVisible();
-    await expect(page.getByText("3:05")).toBeVisible();
+
+    const tracklist = page.getByRole("table", { name: "曲目列表" });
+    await expect(tracklist).toBeVisible();
+    await expect(tracklist.getByText("夜航序曲", { exact: true })).toBeVisible();
+    await expect(tracklist.getByText("回港信号", { exact: true })).toBeVisible();
+    // 收听状态可能与页头文案重复，限定在曲目表内用 exact 断言。
+    await expect(tracklist.getByText("听过", { exact: true })).toBeVisible();
+    await expect(tracklist.getByText("想听", { exact: true })).toBeVisible();
+    await expect(tracklist.getByText("3:30", { exact: true })).toBeVisible();
+    await expect(tracklist.getByText("3:05", { exact: true })).toBeVisible();
   },
 );
