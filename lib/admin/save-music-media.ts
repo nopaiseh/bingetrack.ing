@@ -260,7 +260,7 @@ export async function saveAlbumWithTracks(
   return String(data);
 }
 
-/** 删除曲目或其所属专辑（先删曲目 media_items，再删专辑，避开 music.album_id 无级联）。 */
+/** 删除曲目或专辑。经 admin_delete_media 同事务处理：专辑会连同下属曲目一起删。 */
 export async function deleteMusicTree(
   db: SupabaseClient,
   id: string,
@@ -274,20 +274,10 @@ export async function deleteMusicTree(
   }
   if (target.title !== confirmTitle) throw new SaveMusicMediaError("标题不匹配，请输入当前条目的完整标题。", "22023");
 
-  if (target.type === "music") {
-    const { error: deleteError } = await db.from("media_items").delete().eq("id", id);
-    assertOk(deleteError);
-    return "music";
-  }
-
-  const { data: tracks, error: trackError } = await db.from("music").select("media_item_id").eq("album_id", id);
-  assertOk(trackError);
-  const trackIds = (tracks ?? []).map((row) => row.media_item_id).filter(Boolean);
-  if (trackIds.length > 0) {
-    const { error: deleteTracks } = await db.from("media_items").delete().in("id", trackIds);
-    assertOk(deleteTracks);
-  }
-  const { error: deleteAlbum } = await db.from("media_items").delete().eq("id", id);
-  assertOk(deleteAlbum);
-  return "album";
+  const { error: deleteError } = await db.rpc("admin_delete_media", {
+    p_id: id,
+    p_confirm_title: confirmTitle,
+  });
+  assertOk(deleteError);
+  return target.type;
 }

@@ -329,15 +329,11 @@ describe("saveAlbumWithTracks", () => {
 });
 
 describe("deleteMusicTree", () => {
-  it("删除专辑前先删下属曲目 media_items", async () => {
+  it("删除专辑经 admin_delete_media 原子处理", async () => {
     const selectMaybe = vi.fn(async () => ({
       data: { id: albumId, title: "要删的专辑", type: "album" },
       error: null,
     }));
-    const trackSelect = vi.fn(() => chainResult({ data: [{ media_item_id: trackId }], error: null }));
-    const deleteIn = vi.fn(async () => ({ error: null }));
-    const deleteEq = vi.fn(async () => ({ error: null }));
-
     const from = vi.fn((table: string) => {
       if (table === "media_items") {
         return {
@@ -346,36 +342,36 @@ describe("deleteMusicTree", () => {
               maybeSingle: selectMaybe,
             }),
           }),
-          delete: () => ({
-            in: deleteIn,
-            eq: deleteEq,
-          }),
         };
       }
-      if (table === "music") return { select: trackSelect };
       throw new Error(table);
     });
+    const rpc = vi.fn(async () => ({ data: null, error: null }));
 
-    await expect(deleteMusicTree({ from } as never, albumId, "要删的专辑")).resolves.toBe("album");
-    expect(deleteIn).toHaveBeenCalledWith("id", [trackId]);
-    expect(deleteEq).toHaveBeenCalledWith("id", albumId);
+    await expect(deleteMusicTree({ from, rpc } as never, albumId, "要删的专辑")).resolves.toBe("album");
+    expect(rpc).toHaveBeenCalledWith("admin_delete_media", {
+      p_id: albumId,
+      p_confirm_title: "要删的专辑",
+    });
   });
 
-  it("删除单曲目只删自身", async () => {
-    const deleteEq = vi.fn(async () => ({ error: null }));
+  it("删除单曲目也经 admin_delete_media", async () => {
     const from = vi.fn(() => ({
       select: () => ({
         eq: () => ({
           maybeSingle: async () => ({ data: { id: trackId, title: "单曲", type: "music" }, error: null }),
         }),
       }),
-      delete: () => ({ eq: deleteEq }),
     }));
-    await expect(deleteMusicTree({ from } as never, trackId, "单曲")).resolves.toBe("music");
-    expect(deleteEq).toHaveBeenCalledWith("id", trackId);
+    const rpc = vi.fn(async () => ({ data: null, error: null }));
+    await expect(deleteMusicTree({ from, rpc } as never, trackId, "单曲")).resolves.toBe("music");
+    expect(rpc).toHaveBeenCalledWith("admin_delete_media", {
+      p_id: trackId,
+      p_confirm_title: "单曲",
+    });
   });
 
-  it("标题不匹配时拒绝删除", async () => {
+  it("标题不匹配时拒绝删除且不调 RPC", async () => {
     const from = vi.fn(() => ({
       select: () => ({
         eq: () => ({
@@ -383,7 +379,9 @@ describe("deleteMusicTree", () => {
         }),
       }),
     }));
-    await expect(deleteMusicTree({ from } as never, trackId, "错标题")).rejects.toThrow(/标题不匹配/);
+    const rpc = vi.fn();
+    await expect(deleteMusicTree({ from, rpc } as never, trackId, "错标题")).rejects.toThrow(/标题不匹配/);
+    expect(rpc).not.toHaveBeenCalled();
   });
 
   it("拒绝删除非音乐类型", async () => {
@@ -394,7 +392,9 @@ describe("deleteMusicTree", () => {
         }),
       }),
     }));
-    await expect(deleteMusicTree({ from } as never, albumId, "电影")).rejects.toThrow(/只支持删除专辑与曲目/);
+    const rpc = vi.fn();
+    await expect(deleteMusicTree({ from, rpc } as never, albumId, "电影")).rejects.toThrow(/只支持删除专辑与曲目/);
+    expect(rpc).not.toHaveBeenCalled();
   });
 
   it("目标不存在时抛出 SaveMusicMediaError", async () => {
@@ -405,6 +405,20 @@ describe("deleteMusicTree", () => {
         }),
       }),
     }));
-    await expect(deleteMusicTree({ from } as never, albumId, "x")).rejects.toBeInstanceOf(SaveMusicMediaError);
+    await expect(deleteMusicTree({ from, rpc: vi.fn() } as never, albumId, "x")).rejects.toBeInstanceOf(
+      SaveMusicMediaError,
+    );
+  });
+
+  it("RPC 权限错误映射为站长提示", async () => {
+    const from = vi.fn(() => ({
+      select: () => ({
+        eq: () => ({
+          maybeSingle: async () => ({ data: { id: albumId, title: "专辑", type: "album" }, error: null }),
+        }),
+      }),
+    }));
+    const rpc = vi.fn(async () => ({ data: null, error: { code: "42501" } }));
+    await expect(deleteMusicTree({ from, rpc } as never, albumId, "专辑")).rejects.toThrow(/没有写入权限/);
   });
 });
