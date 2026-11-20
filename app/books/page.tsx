@@ -1,5 +1,6 @@
 import BooksCatalog from "./BooksCatalog";
-import { fetchMediaCardsServer, searchMediaServer } from "@/lib/functions/media-repo";
+import { getCachedBookStats } from "@/lib/functions/cached-media";
+import { fetchMediaCardsServer } from "@/lib/functions/media-repo";
 import { handlePageDataError } from "@/lib/functions/page-data";
 import type { MediaCard } from "@/lib/types";
 import { buildPageSocialMetadata } from "@/lib/seo/page";
@@ -22,20 +23,17 @@ export default async function BooksPage() {
   let want: MediaCard[] = [];
 
   try {
-    const [totalRes, readingRes, readRes, wantRes, readingCards, readCards, wantCards] = await Promise.all([
-      searchMediaServer({ type: "book", limit: 1, offset: 0 }),
-      searchMediaServer({ type: "book", status: "in_progress", limit: 1, offset: 0 }),
-      searchMediaServer({ type: "book", status: "watched", limit: 1, offset: 0 }),
-      searchMediaServer({ type: "book", status: "want_to_watch", limit: 1, offset: 0 }),
+    const [bookStats, readingCards, readCards, wantCards] = await Promise.all([
+      getCachedBookStats(),
       fetchMediaCardsServer({ type: "book", status: "in_progress", limit: 10, offset: 0, sort: "date_desc" }),
       fetchMediaCardsServer({ type: "book", status: "watched", limit: 10, offset: 0, sort: "date_desc" }),
       fetchMediaCardsServer({ type: "book", status: "want_to_watch", limit: 10, offset: 0, sort: "date_desc" }),
     ]);
     stats = {
-      total: totalRes.total,
-      reading: readingRes.total,
-      read: readRes.total,
-      want: wantRes.total,
+      total: bookStats.total,
+      reading: bookStats.inProgress,
+      read: bookStats.watched,
+      want: bookStats.wantToWatch,
     };
     reading = readingCards;
     read = readCards;
