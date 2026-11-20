@@ -13,6 +13,7 @@ import {
 } from "@/lib/admin/revalidate-media";
 import { deleteMusicTree, SaveMusicMediaError, saveMusicMedia } from "@/lib/admin/save-music-media";
 import { SaveBookMediaError, saveBookMedia } from "@/lib/admin/save-book-media";
+import { isExpectedValidationCode, reportHandledError } from "@/lib/report-error";
 
 export type ActionResult = { error?: string; saved?: boolean; id?: string };
 
@@ -33,6 +34,16 @@ function listTypeAfterDelete(type: string | null | undefined) {
   return "tv_show";
 }
 
+/** 应用层校验抛出的 Save* 错误（无库错误码）或确认类 22023，不上报；其余视为数据库／未知错误。 */
+function reportSaveDomainError(operation: string, mediaId: string | null | undefined, error: unknown) {
+  if (error instanceof SaveMusicMediaError || error instanceof SaveBookMediaError) {
+    if (!error.code || isExpectedValidationCode(error.code)) return;
+    reportHandledError(`${operation} failed for media ${mediaId ?? "new"}:`, error);
+    return;
+  }
+  reportHandledError(`${operation} failed for media ${mediaId ?? "new"}:`, error);
+}
+
 /** 保存媒体及关联资料；事务失败时不刷新公开缓存。快速新增选择连续录入时留在当前页，只刷新侧栏数据。 */
 export async function saveMedia(_previous: ActionResult, form: FormData): Promise<ActionResult> {
   const { db } = await requireOwner();
@@ -51,19 +62,32 @@ export async function saveMedia(_previous: ActionResult, form: FormData): Promis
     try {
       savedId = await saveMusicMedia(db, payload);
     } catch (error) {
-      if (error instanceof SaveMusicMediaError) return { error: error.message };
+      if (error instanceof SaveMusicMediaError) {
+        reportSaveDomainError("manage saveMedia", payload.id, error);
+        return { error: error.message };
+      }
+      reportSaveDomainError("manage saveMedia", payload.id, error);
       return { error: writeError() };
     }
   } else if (payload.type === "book") {
     try {
       savedId = await saveBookMedia(db, payload);
     } catch (error) {
-      if (error instanceof SaveBookMediaError) return { error: error.message };
+      if (error instanceof SaveBookMediaError) {
+        reportSaveDomainError("manage saveMedia", payload.id, error);
+        return { error: error.message };
+      }
+      reportSaveDomainError("manage saveMedia", payload.id, error);
       return { error: writeError() };
     }
   } else {
     const { data, error } = await db.rpc("manage_save_media", { p_data: payload });
-    if (error) return { error: writeError(error.code) };
+    if (error) {
+      if (!isExpectedValidationCode(error.code)) {
+        reportHandledError(`manage saveMedia failed for media ${payload.id ?? "new"}:`, error);
+      }
+      return { error: writeError(error.code) };
+    }
     savedId = String(data);
   }
 
@@ -90,14 +114,20 @@ export async function deleteMedia(_previous: ActionResult, form: FormData): Prom
       await deleteMusicTree(db, id, title);
     } catch (error) {
       if (error instanceof SaveMusicMediaError) {
+        reportSaveDomainError("manage deleteMedia", id, error);
         return { error: error.code === "22023" ? error.message : writeError(error.code) };
       }
+      reportSaveDomainError("manage deleteMedia", id, error);
       return { error: writeError() };
     }
   } else {
     const { error } = await db.rpc("admin_delete_media", { p_id: id, p_confirm_title: title });
-    if (error)
+    if (error) {
+      if (!isExpectedValidationCode(error.code)) {
+        reportHandledError(`manage deleteMedia failed for media ${id}:`, error);
+      }
       return { error: error.code === "22023" ? "标题不匹配，请输入当前条目的完整标题。" : writeError(error.code) };
+    }
   }
 
   revalidateMediaItems(affected);
@@ -112,6 +142,7 @@ export async function manualRevalidateCache(): Promise<ActionResult> {
     revalidateAllMedia();
     return { saved: true };
   } catch (error) {
+    reportHandledError("manage manualRevalidateCache failed:", error);
     return { error: error instanceof Error ? error.message : "刷新缓存失败。" };
   }
 }
