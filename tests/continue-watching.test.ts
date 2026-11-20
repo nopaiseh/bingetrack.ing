@@ -382,14 +382,18 @@ describe("assembleContinueListening", () => {
 });
 
 describe("getContinueListening / getHomeContinue", () => {
-  it("skips listening queries while the album public type is disabled", async () => {
+  it("queries v_continue_listening when albums are enabled", async () => {
+    state.results = [{ data: [], error: null }];
     await expect(getContinueListening()).resolves.toEqual([]);
-    expect(state.calls).toHaveLength(0);
+    expect(state.calls.map((call) => call.table)).toEqual(["v_continue_listening"]);
   });
 
-  it("returns watching and an empty listening list while albums are disabled", async () => {
-    state.results = [{ data: [], error: null }];
+  it("returns watching and listening lists in parallel", async () => {
+    state.results = [
+      { data: [], error: null },
+      { data: [], error: null },
+    ];
     await expect(getHomeContinue()).resolves.toEqual({ watching: [], listening: [] });
-    expect(state.calls.map((call) => call.table)).toEqual(["v_all_media"]);
+    expect(state.calls.map((call) => call.table).sort()).toEqual(["v_all_media", "v_continue_listening"]);
   });
 });

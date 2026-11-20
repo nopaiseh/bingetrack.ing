@@ -19,20 +19,22 @@ function column<K extends string>(
 }
 
 /**
- * 找出条目变更会波及的公开详情页：条目本身、季或单集所属的电视节目，以及这些条目所在作品系列的其他成员（详情页内嵌相关作品卡片）。
+ * 找出条目变更会波及的公开详情页：条目本身、季或单集所属的电视节目、单曲所属的专辑，以及这些条目所在作品系列的其他成员（详情页内嵌相关作品卡片）。
  * 保存前后各调用一次，才能覆盖移出系列或改换上级的情况。查询失败时返回 null，由调用方退回全站失效。
  */
 export async function affectedMediaIds(db: SupabaseClient, ids: string[]): Promise<string[] | null> {
   const targets = ids.filter(isMediaId);
   if (targets.length === 0) return [];
 
-  const [episodeRows, seasonRows] = await Promise.all([
+  const [episodeRows, seasonRows, trackRows] = await Promise.all([
     db.from("tv_episodes").select("season_id").in("id", targets),
     db.from("tv_seasons").select("series_id").in("id", targets),
+    db.from("music").select("album_id").in("media_item_id", targets),
   ]);
   const episodeSeasons = column(episodeRows, "season_id");
   const seasonShows = column(seasonRows, "series_id");
-  if (!episodeSeasons || !seasonShows) return null;
+  const trackAlbums = column(trackRows, "album_id");
+  if (!episodeSeasons || !seasonShows || !trackAlbums) return null;
 
   const episodeShows =
     episodeSeasons.length > 0
@@ -40,7 +42,7 @@ export async function affectedMediaIds(db: SupabaseClient, ids: string[]): Promi
       : [];
   if (!episodeShows) return null;
 
-  const pages = [...new Set([...targets, ...seasonShows, ...episodeShows])];
+  const pages = [...new Set([...targets, ...seasonShows, ...episodeShows, ...trackAlbums])];
   const collections = column(
     await db.from("media_item_series").select("series_id").in("media_item_id", pages),
     "series_id",
@@ -63,7 +65,7 @@ export async function affectedMediaIds(db: SupabaseClient, ids: string[]): Promi
 }
 
 /**
- * 找出引用指定资料（人物、系列、类型、地区、语言）的公开详情页，再按 affectedMediaIds 扩展到所属电视节目与系列成员。
+ * 找出引用指定资料（人物、系列、类型、地区、语言）的公开详情页，再按 affectedMediaIds 扩展到所属电视节目、专辑与系列成员。
  * 删除或合并前调用，级联删除会先移除关联行。查询失败时返回 null，由调用方退回全站失效。
  */
 export async function referenceMediaIds(

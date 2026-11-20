@@ -27,15 +27,25 @@ export interface Media {
   // 与 casts 按位置对应的饰演角色，未填写时为 null。
   characters?: (string | null)[];
   directors?: string[];
+  /** 专辑／单曲艺人（media_credits role=artist，按 credit_order）。 */
+  artists?: string[];
   type?: MediaType;
 }
 
 // 服务端传给浏览器的卡片字段集合，不包含详情页专用数据；可按需携带精选摘要。
-export type MediaCard = Pick<
-  Media,
-  "id" | "title" | "date" | "release_year" | "rating" | "genres" | "languages" | "cover_url" | "type" | "status"
+// type 在公开目录段之外还可为 "music"：单曲会出现在搜索结果里，但尚无公开详情页。
+export type MediaCard = Omit<
+  Pick<
+    Media,
+    "id" | "title" | "date" | "release_year" | "rating" | "genres" | "languages" | "cover_url" | "type" | "status"
+  >,
+  "type"
 > & {
+  type?: MediaType | "music";
   summary?: string;
+  artists?: string[];
+  /** 数据库 media_type；搜索类型标签优先用它，避免未启用路由被归一成影视段。 */
+  dbType?: string;
 };
 
 // 首页倒计时展台的统一条目；以后新增音乐、书籍时只需扩展 kind 并补充对应查询。

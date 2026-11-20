@@ -34,7 +34,7 @@ const { watching, listening, getCachedHomeContinue } = vi.hoisted(() => {
 vi.mock("@/lib/functions/cached-media", () => ({
   getCachedReleaseYearStats: vi.fn(async () => []),
   getCachedTopMediaServer: vi.fn(async () => []),
-  getCachedMediaDistributionsServer: vi.fn(async () => ({ movies: {}, shows: {} })),
+  getCachedMediaDistributionsServer: vi.fn(async () => ({ movies: {}, shows: {}, albums: {} })),
   getCachedUpcomingReleasesServer: vi.fn(async () => []),
   getCachedHomeContinue,
 }));

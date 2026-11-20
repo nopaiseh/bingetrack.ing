@@ -11,12 +11,15 @@ const episode = "33333333-3333-4333-8333-333333333333";
 const sequel = "44444444-4444-4444-8444-444444444444";
 const collection = "55555555-5555-4555-8555-555555555555";
 const person = "66666666-6666-4666-8666-666666666666";
+const album = "77777777-7777-4777-8777-777777777777";
+const track = "88888888-8888-4888-8888-888888888888";
 
 type Row = Record<string, string>;
 // 一部电视节目及其季、单集，和同一作品系列中的另一部作品；人物出演单集两次。
 const tables: Record<string, Row[]> = {
   tv_seasons: [{ id: season, series_id: show }],
   tv_episodes: [{ id: episode, season_id: season }],
+  music: [{ media_item_id: track, album_id: album }],
   media_item_series: [
     { media_item_id: show, series_id: collection },
     { media_item_id: sequel, series_id: collection },
@@ -24,6 +27,7 @@ const tables: Record<string, Row[]> = {
   media_credits: [
     { media_item_id: episode, person_id: person },
     { media_item_id: episode, person_id: person },
+    { media_item_id: track, person_id: person },
   ],
   media_genres: [],
 };
@@ -56,6 +60,12 @@ describe("按条目失效公开缓存", () => {
   it("季变更包含所属电视节目", async () => {
     expect(await affectedMediaIds(fakeDb(), [season])).toEqual(expect.arrayContaining([season, show]));
   });
+  it("单曲变更包含所属专辑", async () => {
+    expect(new Set(await affectedMediaIds(fakeDb(), [track]))).toEqual(new Set([track, album]));
+  });
+  it("单曲查询失败时返回 null", async () => {
+    expect(await affectedMediaIds(fakeDb("music"), [track])).toBeNull();
+  });
   it("忽略非法 ID，不发起查询", async () => {
     expect(await affectedMediaIds(fakeDb("tv_episodes"), ["not-a-uuid"])).toEqual([]);
   });
@@ -67,7 +77,9 @@ describe("按条目失效公开缓存", () => {
     expect(revalidatePath).toHaveBeenCalledWith("/", "layout");
   });
   it("引用资料变更沿关联表找到条目，再扩展到所属电视节目与系列成员", async () => {
-    expect(new Set(await referenceMediaIds(fakeDb(), "people", [person]))).toEqual(new Set([episode, show, sequel]));
+    expect(new Set(await referenceMediaIds(fakeDb(), "people", [person]))).toEqual(
+      new Set([episode, show, sequel, track, album]),
+    );
   });
   it("未被引用的资料不波及任何详情页", async () => {
     expect(await referenceMediaIds(fakeDb(), "genres", [person])).toEqual([]);
@@ -82,6 +94,12 @@ describe("按条目失效公开缓存", () => {
       [`media:item:${sequel}`, { expire: 0 }],
       ["media:lists", { expire: 0 }],
     ]);
-    expect(vi.mocked(revalidatePath).mock.calls).toEqual([["/"], ["/movies"], ["/shows"], ["/sitemap.xml"]]);
+    expect(vi.mocked(revalidatePath).mock.calls).toEqual([
+      ["/"],
+      ["/movies"],
+      ["/shows"],
+      ["/albums"],
+      ["/sitemap.xml"],
+    ]);
   });
 });

@@ -123,7 +123,7 @@ describe("作品详情与相关作品", () => {
     expect(args(membership, "neq")).toEqual(["media_item_id", "current"]);
     const cardsQuery = state.queries[1];
     expect(args(cardsQuery, "select")).toEqual([
-      "id,type,title,sort_date,first_air_date,last_air_date,release_year,rating,genres,languages,cover_url,status",
+      "id,type,title,sort_date,first_air_date,last_air_date,release_year,rating,genres,languages,cover_url,status,artists",
     ]);
     expect(args(cardsQuery, "in")).toEqual(["id", [otherId, mediaId]]);
     expect(String(args(cardsQuery, "select")?.[0])).not.toMatch(/summary|casts|directors|runtime/);

@@ -50,7 +50,7 @@ describe("ContinueWatchingRail", () => {
   it("hides the whole section when there is nothing to continue", () => {
     const { container } = render(<ContinueWatchingRail items={[]} />);
     expect(container).toBeEmptyDOMElement();
-    expect(screen.queryByRole("heading", { name: "继续观看" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "在看" })).not.toBeInTheDocument();
   });
 
   it("links to the season page and shows the episode, progress, and poster", () => {
@@ -71,7 +71,7 @@ describe("ContinueWatchingRail", () => {
       "33",
     );
     expect(screen.getByRole("heading", { level: 3, name: "跑男" }).className).toContain("line-clamp-2");
-    expect(screen.getByRole("heading", { name: "继续观看" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "在看" })).toBeInTheDocument();
   });
 
   it("uses the show page and a finished-season line when there is no next episode", () => {
@@ -124,12 +124,12 @@ describe("ContinueWatchingRail", () => {
         />,
       );
       expect(screen.getByRole("img", { name: "爱情公寓" })).toHaveAttribute("loading", "lazy");
-      const scroller = screen.getByLabelText("继续观看列表");
+      const scroller = screen.getByLabelText("在看列表");
       expect(scroller).toHaveAttribute("tabindex", "0");
 
-      const next = screen.getByRole("button", { name: "向右滚动继续观看" });
+      const next = screen.getByRole("button", { name: "向右滚动在看" });
       expect(next.className).toContain("md:flex");
-      expect(screen.getByRole("button", { name: "向左滚动继续观看" }).className).not.toContain("md:flex");
+      expect(screen.getByRole("button", { name: "向左滚动在看" }).className).not.toContain("md:flex");
 
       fireEvent.keyDown(scroller, { key: "ArrowRight" });
       expect(scrollBy).toHaveBeenCalledWith(expect.objectContaining({ left: expect.any(Number) }));

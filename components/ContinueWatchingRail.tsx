@@ -239,14 +239,14 @@ export default function ContinueWatchingRail({ items }: { items: readonly Contin
     <section aria-labelledby="continue-watching-heading" className="min-w-0">
       <div className="mb-4 border-b border-[var(--border,rgba(255,255,255,0.1))] pb-3">
         <h2 id="continue-watching-heading" className="text-xl font-bold tracking-wide text-fg">
-          继续观看
+          在看
         </h2>
       </div>
       <div className="relative min-w-0">
         <button
           type="button"
           onClick={() => scrollByCard("left")}
-          aria-label="向左滚动继续观看"
+          aria-label="向左滚动在看"
           aria-controls="continue-watching-scroller"
           className={`${buttonClass} left-0 top-[6.5rem] focus-ring ${canScrollLeft ? "hidden md:flex" : "hidden"}`}
         >
@@ -258,7 +258,7 @@ export default function ContinueWatchingRail({ items }: { items: readonly Contin
         <button
           type="button"
           onClick={() => scrollByCard("right")}
-          aria-label="向右滚动继续观看"
+          aria-label="向右滚动在看"
           aria-controls="continue-watching-scroller"
           className={`${buttonClass} right-0 top-[6.5rem] focus-ring ${canScrollRight ? "hidden md:flex" : "hidden"}`}
         >
@@ -271,7 +271,7 @@ export default function ContinueWatchingRail({ items }: { items: readonly Contin
           id="continue-watching-scroller"
           ref={scrollerRef}
           tabIndex={0}
-          aria-label="继续观看列表"
+          aria-label="在看列表"
           onKeyDown={onKeyDown}
           style={{ "--cw-gap": SCROLL_GAP } as CSSProperties}
           className="no-scrollbar flex snap-x snap-mandatory gap-[var(--cw-gap)] overflow-x-auto overscroll-x-contain scroll-px-1 px-1 pb-4 pt-3 focus-ring"

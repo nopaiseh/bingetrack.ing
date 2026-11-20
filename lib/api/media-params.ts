@@ -88,13 +88,16 @@ export function parseMediaSearchParams(searchParams: URLSearchParams): FetchMedi
 // 榜单条数固定，不接受请求参数，数据缓存的键只随类型和年份变化。
 export const TOP_MEDIA_LIMIT = 10;
 
-/** 只接受电影或电视节目榜单并校验可选年份；条数固定为 TOP_MEDIA_LIMIT。 */
+/** 只接受电影或电视节目榜单并校验可选年份；条数固定为 TOP_MEDIA_LIMIT。专辑虽已进公开目录，但不走精选榜单接口。 */
 export function parseTopMediaParams(searchParams: URLSearchParams) {
   const type = searchParams.get("type");
-  if (!type || !isCatalogDbMediaType(type)) {
+  if (type !== "movie" && type !== "tv_show") {
+    throw new ApiValidationError("Invalid media type");
+  }
+  if (!isCatalogDbMediaType(type)) {
     throw new ApiValidationError("Invalid media type");
   }
 
   const year = parseYear(searchParams.get("year"), "year") ?? null;
-  return { type: type as CatalogDbMediaType, year, limit: TOP_MEDIA_LIMIT };
+  return { type: type as Extract<CatalogDbMediaType, "movie" | "tv_show">, year, limit: TOP_MEDIA_LIMIT };
 }

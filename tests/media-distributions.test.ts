@@ -33,5 +33,6 @@ test(
     const distributions = buildMediaDistributions([]);
     assert.deepEqual(distributions.movies["All Time"], { regions: [], languages: [], genres: [] });
     assert.deepEqual(distributions.shows["All Time"], { regions: [], languages: [], genres: [] });
+    assert.deepEqual(distributions.albums["All Time"], { regions: [], languages: [], genres: [] });
   },
 );

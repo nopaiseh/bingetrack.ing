@@ -24,8 +24,8 @@ import {
 
 describe("media type config", () => {
   it("round-trips catalog db types and public routes", () => {
-    expect(CATALOG_DB_TYPES).toEqual(["movie", "tv_show"]);
-    expect(PUBLIC_MEDIA_TYPES).toEqual(["movies", "shows"]);
+    expect(CATALOG_DB_TYPES).toEqual(["movie", "tv_show", "album"]);
+    expect(PUBLIC_MEDIA_TYPES).toEqual(["movies", "shows", "albums"]);
     expect(adminMediaListTypes).toEqual(["movie", "tv_show"]);
 
     for (const db of CATALOG_DB_TYPES) {
@@ -38,25 +38,26 @@ describe("media type config", () => {
 
     expect(publicPathForDbType("movie", "abc")).toBe("/movies/abc");
     expect(publicPathForDbType("tv_show", "abc")).toBe("/shows/abc");
+    expect(publicPathForDbType("album", "abc")).toBe("/albums/abc");
     expect(publicPathForDbType("tv_season", "abc")).toBeNull();
   });
 
-  it("exposes only enabled catalog types and keeps future types disabled", () => {
+  it("enables album catalog while keeping music singles and books disabled", () => {
     expect(MEDIA_TYPE_DEFINITIONS.movie.enabled).toBe(true);
     expect(MEDIA_TYPE_DEFINITIONS.tv_show.enabled).toBe(true);
     expect(MEDIA_TYPE_DEFINITIONS.tv_season.enabled).toBe(true);
     expect(MEDIA_TYPE_DEFINITIONS.tv_episode.enabled).toBe(true);
     expect(MEDIA_TYPE_DEFINITIONS.music.enabled).toBe(false);
-    expect(MEDIA_TYPE_DEFINITIONS.album.enabled).toBe(false);
+    expect(MEDIA_TYPE_DEFINITIONS.album.enabled).toBe(true);
     expect(MEDIA_TYPE_DEFINITIONS.book.enabled).toBe(false);
 
     expect(isCatalogDbMediaType("movie")).toBe(true);
     expect(isCatalogDbMediaType("tv_show")).toBe(true);
-    expect(isCatalogDbMediaType("album")).toBe(false);
+    expect(isCatalogDbMediaType("album")).toBe(true);
     expect(isCatalogDbMediaType("music")).toBe(false);
     expect(isCatalogDbMediaType("book")).toBe(false);
     expect(isPublicMediaType("movies")).toBe(true);
-    expect(isPublicMediaType("albums")).toBe(false);
+    expect(isPublicMediaType("albums")).toBe(true);
   });
 
   it("keeps zh labels and tracking verbs per type family", () => {
@@ -117,7 +118,7 @@ describe("media type config", () => {
 
   it("safely converts public routes and derives the season path from config", () => {
     expect(tryPublicRouteToDbType("movies")).toBe("movie");
-    expect(tryPublicRouteToDbType("albums")).toBeNull();
+    expect(tryPublicRouteToDbType("albums")).toBe("album");
     expect(tryPublicRouteToDbType("music")).toBeNull();
     expect(tryPublicRouteToDbType(undefined)).toBeNull();
     expect("/shows/abc/seasons/def".match(PUBLIC_SEASON_PATH_PATTERN)?.[1]).toBe("def");
