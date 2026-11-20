@@ -191,13 +191,7 @@ export default function MediaForm({
       : null;
   const heading = titleField.value.trim() || (item ? item.title : `新增${mediaTypes[type]}`);
   const dateLabel =
-    type === "tv_episode"
-      ? "播出日期"
-      : isAlbum || isMusicTrack
-        ? "发行日期"
-        : isBook
-          ? "出版日期"
-          : "上映日期";
+    type === "tv_episode" ? "播出日期" : isAlbum || isMusicTrack ? "发行日期" : isBook ? "出版日期" : "上映日期";
   const listBackHref =
     type === "movie"
       ? "/manage?type=movie"

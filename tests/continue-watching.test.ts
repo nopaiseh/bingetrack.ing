@@ -396,6 +396,10 @@ describe("getContinueListening / getHomeContinue", () => {
       { data: [], error: null },
     ];
     await expect(getHomeContinue()).resolves.toEqual({ watching: [], listening: [], reading: [] });
-    expect(state.calls.map((call) => call.table).sort()).toEqual(["v_all_media", "v_all_media", "v_continue_listening"]);
+    expect(state.calls.map((call) => call.table).sort()).toEqual([
+      "v_all_media",
+      "v_all_media",
+      "v_continue_listening",
+    ]);
   });
 });
