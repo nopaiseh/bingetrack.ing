@@ -35,7 +35,7 @@ export default function MobileTabBar() {
                 key={tab.href}
                 href={tab.href}
                 aria-current={active ? "page" : undefined}
-                className={`flex flex-col items-center justify-center gap-0.5 rounded-full text-[11px] transition-colors duration-200 ${
+                className={`focus-ring flex flex-col items-center justify-center gap-0.5 rounded-full text-[11px] transition-colors duration-200 ${
                   active
                     ? "bg-white/14 font-bold text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.28)]"
                     : "text-fg-secondary hover:text-white"

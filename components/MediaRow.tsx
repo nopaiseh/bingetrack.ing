@@ -115,7 +115,7 @@ export default function MediaRow({
         {viewAllLink && (
           <Link
             href={viewAllLink}
-            className="text-sm text-fg-secondary hover:text-[var(--accent-hover)] transition-all duration-300 uppercase tracking-wider"
+            className="focus-ring rounded-sm text-sm text-fg-secondary uppercase tracking-wider transition-all duration-300 hover:text-[var(--accent-hover)]"
           >
             查看全部 &rarr;
           </Link>
@@ -129,7 +129,7 @@ export default function MediaRow({
           onClick={() => handleScroll("left")}
           aria-label={`向左滚动 ${title}`}
           disabled={!canScrollLeft}
-          className={`surface-panel absolute left-0 top-[8.5rem] z-20 size-10 -translate-y-1/2 items-center justify-center rounded-full text-fg-secondary shadow-lg shadow-black/40 transition-colors duration-200 hover:border-white/30 hover:bg-white/15 hover:text-white active:scale-95 sm:top-[10rem] ${
+          className={`surface-panel focus-ring absolute left-0 top-[8.5rem] z-20 size-10 -translate-y-1/2 items-center justify-center rounded-full text-fg-secondary shadow-lg shadow-black/40 transition-colors duration-200 hover:border-white/30 hover:bg-white/15 hover:text-white active:scale-95 sm:top-[10rem] ${
             canScrollLeft ? "flex" : "hidden"
           }`}
         >
@@ -144,7 +144,7 @@ export default function MediaRow({
           onClick={() => handleScroll("right")}
           aria-label={`向右滚动 ${title}`}
           disabled={!canScrollRight}
-          className={`surface-panel absolute right-0 top-[8.5rem] z-20 size-10 -translate-y-1/2 items-center justify-center rounded-full text-fg-secondary shadow-lg shadow-black/40 transition-colors duration-200 hover:border-white/30 hover:bg-white/15 hover:text-white active:scale-95 sm:top-[10rem] ${
+          className={`surface-panel focus-ring absolute right-0 top-[8.5rem] z-20 size-10 -translate-y-1/2 items-center justify-center rounded-full text-fg-secondary shadow-lg shadow-black/40 transition-colors duration-200 hover:border-white/30 hover:bg-white/15 hover:text-white active:scale-95 sm:top-[10rem] ${
             canScrollRight ? "flex" : "hidden"
           }`}
         >
