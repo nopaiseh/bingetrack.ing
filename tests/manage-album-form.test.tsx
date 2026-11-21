@@ -33,6 +33,7 @@ const blank = {
   authors: [],
   page_count: null,
   publisher: null,
+  isbn: null,
   label: null,
 };
 
@@ -118,6 +119,12 @@ it("albumCoverPreviewSrc 校验通过后返回规范化 href，拒绝危险或�
   expect(albumCoverPreviewSrc("https://coverartarchive.org/release/x/front-500")).toBe(
     "https://coverartarchive.org/release/x/front-500",
   );
+  expect(albumCoverPreviewSrc("https://covers.openlibrary.org/b/isbn/9780306406157-L.jpg")).toContain(
+    "covers.openlibrary.org",
+  );
+  expect(
+    albumCoverPreviewSrc("https://books.google.com/books/content?id=abc&printsec=frontcover&img=1&zoom=1"),
+  ).toContain("books.google.com");
   expect(albumCoverPreviewSrc("https://image.tmdb.org/t/p/original/a.jpg")).toBe(
     "https://image.tmdb.org/t/p/original/a.jpg",
   );

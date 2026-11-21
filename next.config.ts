@@ -31,6 +31,9 @@ const nextConfig: NextConfig = {
       { protocol: "https", hostname: "coverartarchive.org" },
       { protocol: "https", hostname: "*.archive.org" },
       { protocol: "https", hostname: "archive.org" },
+      { protocol: "https", hostname: "covers.openlibrary.org" },
+      { protocol: "https", hostname: "books.google.com" },
+      { protocol: "https", hostname: "books.googleusercontent.com" },
     ],
   },
   // 图片不再经过 Next 的优化器，sharp 及其原生库不需要打进每个函数包。

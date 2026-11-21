@@ -2,11 +2,13 @@ import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { MediaInput, PersonRef } from "@/lib/admin/media-form";
 import { findBookDuplicateId } from "@/lib/books/dedupe";
+import { normalizeIsbn, resolveBookCover } from "@/lib/books/resolve-cover";
 import { isBookTrackingStatus } from "@/lib/read-status";
 
 const WRITE_ERROR = "保存失败，请检查字段或数据库配置后重试。";
 const PERMISSION_ERROR = "没有写入权限，请检查站长账号配置。";
 const PAGE_COUNT_ERROR = "页数须为 1–20000 的整数，或留空。";
+const ISBN_ERROR = "ISBN 须为 10 位（末位可 X）或 13 位数字，可含空格或连字符。";
 const DUPLICATE_ERROR = "已存在同名同作者的图书。";
 
 function writeError(code?: string, message?: string) {
@@ -14,6 +16,7 @@ function writeError(code?: string, message?: string) {
   if (code === "23503" || code === "P0002") return "资料已不存在，请刷新后重试。";
   if (code === "42501") return PERMISSION_ERROR;
   if (code === "23514" || (message && /page_count|Invalid page_count/i.test(message))) return PAGE_COUNT_ERROR;
+  if (message && /isbn|Invalid isbn/i.test(message)) return ISBN_ERROR;
   return WRITE_ERROR;
 }
 
@@ -54,6 +57,7 @@ function bookRpcPayload(payload: MediaInput) {
     authors: creditPayload(payload.authors),
     page_count: payload.page_count,
     publisher: payload.publisher,
+    isbn: payload.isbn,
     collections: payload.collections ?? [],
   };
 }
@@ -66,13 +70,37 @@ export function assertBookPageCount(pageCount: number | null | undefined) {
   }
 }
 
+/** 服务端校验 ISBN；与 books_isbn_format_check／normalize_book_isbn 对齐。 */
+export function assertBookIsbn(isbn: string | null | undefined) {
+  if (isbn == null || isbn === "") return;
+  const normalized = normalizeIsbn(isbn);
+  if (normalized !== isbn) {
+    throw new SaveBookMediaError(ISBN_ERROR, "22023");
+  }
+}
+
 /**
- * 保存图书：应用层先查重与校验页数，再经 manage_save_media（含系列）一次事务写入。
+ * 封面留空且有 ISBN 时尝试自动匹配；用户已填封面不覆盖。
+ * 外部失败吞掉，保持 cover_url 为空。
+ */
+export async function prepareBookPayload(payload: MediaInput): Promise<MediaInput> {
+  if (payload.type !== "book") throw new SaveBookMediaError("只支持图书。");
+  let coverUrl = payload.cover_url;
+  if (!coverUrl && payload.isbn) {
+    coverUrl = await resolveBookCover({ isbn: payload.isbn }).catch(() => null);
+  }
+  return { ...payload, cover_url: coverUrl };
+}
+
+/**
+ * 保存图书：应用层先查重、校验页数／ISBN，并在封面留空时按 ISBN 解析封面，
+ * 再经 manage_save_media（含系列）一次事务写入。
  * RPC 内仍会校验作者上限与标题＋作者去重。
  */
 export async function saveBookMedia(db: SupabaseClient, payload: MediaInput): Promise<string> {
   if (payload.type !== "book") throw new SaveBookMediaError("只支持图书。");
   assertBookPageCount(payload.page_count);
+  assertBookIsbn(payload.isbn);
   if (payload.publisher != null && payload.publisher.length > 200) {
     throw new SaveBookMediaError("出版社最多 200 字。", "22023");
   }
@@ -89,7 +117,8 @@ export async function saveBookMedia(db: SupabaseClient, payload: MediaInput): Pr
     throw new SaveBookMediaError(DUPLICATE_ERROR, "23505");
   }
 
-  const { data, error } = await db.rpc("manage_save_media", { p_data: bookRpcPayload(payload) });
+  const prepared = await prepareBookPayload(payload);
+  const { data, error } = await db.rpc("manage_save_media", { p_data: bookRpcPayload(prepared) });
   assertOk(error);
   if (!data) throw new SaveBookMediaError(WRITE_ERROR);
   return String(data);

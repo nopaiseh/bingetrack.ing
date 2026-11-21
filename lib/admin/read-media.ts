@@ -11,7 +11,7 @@ export async function readEditableMedia(db: SupabaseClient, id: string): Promise
     db.from("tv_episodes").select("season_id,episode_number").eq("id", id).maybeSingle(),
     db.from("music").select("album_id,track_number").eq("media_item_id", id).maybeSingle(),
     db.from("music_albums").select("label").eq("media_item_id", id).maybeSingle(),
-    db.from("books").select("page_count,publisher").eq("media_item_id", id).maybeSingle(),
+    db.from("books").select("page_count,publisher,isbn").eq("media_item_id", id).maybeSingle(),
     db.from("media_genres").select("genres(name)").eq("media_item_id", id),
     db.from("media_languages").select("languages(name)").eq("media_item_id", id),
     db.from("media_regions").select("regions(name)").eq("media_item_id", id),
@@ -127,5 +127,6 @@ export async function readEditableMedia(db: SupabaseClient, id: string): Promise
     label: albumMeta.data?.label ?? null,
     page_count: bookMeta.data?.page_count != null ? Number(bookMeta.data.page_count) : null,
     publisher: bookMeta.data?.publisher ?? null,
+    isbn: bookMeta.data?.isbn ?? null,
   } as MediaInput;
 }

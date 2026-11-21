@@ -101,15 +101,16 @@ function releaseDateToUtc(value: string | null): string | null {
   return match ? `${match[1]}T00:00:00.000Z` : null;
 }
 
-const MUSIC_COVER_HOST = /^https:\/\/(?:[\w.-]+\.)?(?:mzstatic\.com|coverartarchive\.org|archive\.org)(?:\/|$)/i;
+const EXTERNAL_COVER_HOST =
+  /^https:\/\/(?:(?:[\w.-]+\.)?(?:mzstatic\.com|archive\.org)|coverartarchive\.org|covers\.openlibrary\.org|books\.google\.com|books\.googleusercontent\.com)(?:\/|$)/i;
 
-/** 从完整 TMDB 地址取出尺寸段之后的路径；已知音乐封面主机与站内相对路径原样保留。 */
+/** 从完整 TMDB 地址取出尺寸段之后的路径；已知音乐／图书封面主机与站内相对路径原样保留。 */
 export function posterPathFromCover(coverUrl: string | null): string | null {
   const cover = coverUrl?.trim();
   if (!cover) return null;
   const tmdbPath = cover.match(TMDB_POSTER_PATH)?.[1];
   if (tmdbPath) return tmdbPath;
-  if (MUSIC_COVER_HOST.test(cover)) return cover;
+  if (EXTERNAL_COVER_HOST.test(cover)) return cover;
   if (cover.startsWith("/") && !cover.startsWith("//")) return cover;
   return null;
 }

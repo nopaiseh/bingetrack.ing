@@ -29,11 +29,11 @@ describe("buildContentSecurityPolicy", () => {
     expect(csp).not.toContain("unsafe-eval");
   });
 
-  it("禁止内联事件属性，图片允许 TMDB 与音乐封面域名", () => {
+  it("禁止内联事件属性，图片允许 TMDB、音乐与图书封面域名", () => {
     const csp = buildContentSecurityPolicy({ isDevelopment: false });
     expect(csp).toContain("script-src-attr 'none';");
     expect(csp).toContain(
-      "img-src 'self' data: blob: https://image.tmdb.org https://*.mzstatic.com https://coverartarchive.org https://archive.org https://*.archive.org;",
+      "img-src 'self' data: blob: https://image.tmdb.org https://*.mzstatic.com https://coverartarchive.org https://archive.org https://*.archive.org https://covers.openlibrary.org https://books.google.com https://books.googleusercontent.com;",
     );
   });
 

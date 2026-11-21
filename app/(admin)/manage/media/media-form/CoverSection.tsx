@@ -43,7 +43,7 @@ export function CoverSection({
           title={titleValue || item?.title || mediaTypes[type]}
           src={coverUrl}
           square={isAlbum}
-          musicCover={isAlbum}
+          musicCover={isAlbum || isBook}
         />
         <div className="min-w-0">
           {normalizeCover(coverUrl, type) ? (

@@ -17,12 +17,13 @@ vi.mock("@/app/(admin)/manage/ChoicePicker", () => ({
 }));
 
 describe("图书管理表单", () => {
-  it("有封面、作者、出版社、页数与三态阅读状态，没有 ISBN／译者／页数进度", () => {
+  it("有封面、作者、出版社、ISBN、页数与三态阅读状态，没有译者／页数进度", () => {
     render(<MediaForm initialType="book" />);
 
     expect(screen.getByLabelText("封面图片 URL")).toBeInTheDocument();
     expect(screen.getByLabelText("出版日期")).toBeInTheDocument();
     expect(screen.getByLabelText("出版社")).toBeInTheDocument();
+    expect(screen.getByLabelText("ISBN")).toBeInTheDocument();
     expect(screen.getByLabelText("页数")).toBeInTheDocument();
     expect(screen.getByText("只记录总页数，不跟踪阅读进度。")).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "作者" })).toBeInTheDocument();
@@ -31,7 +32,6 @@ describe("图书管理表单", () => {
     expect(screen.getByRole("button", { name: "在读" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "读过" })).toBeInTheDocument();
 
-    expect(screen.queryByLabelText(/ISBN/i)).not.toBeInTheDocument();
     expect(screen.queryByLabelText(/译者/)).not.toBeInTheDocument();
     expect(screen.queryByLabelText(/阅读进度/)).not.toBeInTheDocument();
     expect(screen.queryByLabelText(/已读页/)).not.toBeInTheDocument();
