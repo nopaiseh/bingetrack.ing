@@ -100,6 +100,36 @@ describe("卡片只认数据库类型", () => {
     expect(screen.getByRole("link", { name: /图书丙/ })).toHaveAttribute("href", "/books/b1");
   });
 
+  it("MediaRow：专辑用 1:1 封面与艺人正文，并映射到 /albums", () => {
+    const { container } = render(
+      <MediaRow
+        title="我已听"
+        type="album"
+        hideStatusBadge
+        viewAllLink="/search?type=album&status=watched"
+        items={[
+          card({
+            id: "a1",
+            title: "范特西",
+            dbType: "album",
+            type: "albums",
+            artists: ["周杰伦"],
+            rating: 9.2,
+            cover_url: "",
+          }),
+        ]}
+      />,
+    );
+
+    expect(container.querySelector("[class*='aspect-square']")).toBeTruthy();
+    expect(container.querySelector("[class*='aspect-2/3']")).toBeNull();
+    expect(screen.getByRole("link", { name: /范特西/ })).toHaveAttribute("href", "/albums/a1");
+    expect(screen.getByText("周杰伦")).toBeInTheDocument();
+    expect(screen.getByText("9.2")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /查看全部/ })).toHaveAttribute("href", "/search?type=album&status=watched");
+    expect(container.querySelector("[data-initial]")).toBeTruthy();
+  });
+
   it("AlbumCoverCard：由数据库类型 album 映射到 /albums", () => {
     render(
       <AlbumCoverCard

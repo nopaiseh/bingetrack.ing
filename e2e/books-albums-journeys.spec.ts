@@ -39,22 +39,19 @@ test(
 );
 
 test(
-  "books catalog shows stats, status filters, and reading sections",
-  /* 验证图书目录的统计卡、状态筛选标签与在读／已读／想读分栏。 */ async ({ page }) => {
+  "books catalog shows stats and reading sections without filter chips",
+  /* 验证图书目录的统计卡与在读／已读／想读分栏；方案 A 已去掉筛选标签。 */ async ({ page }) => {
     await page.goto("/books");
     await expect(page.getByRole("heading", { name: "图书", exact: true })).toBeVisible();
 
     await expect(page.getByRole("link", { name: /图书总数量/ })).toBeVisible();
-    await expect(page.getByRole("link", { name: /^在读/ })).toBeVisible();
     await expect(page.getByRole("link", { name: /读过的书/ })).toBeVisible();
-    await expect(page.getByRole("link", { name: /^想读/ })).toBeVisible();
+    await expect(page.getByRole("link", { name: /在读的书/ })).toBeVisible();
+    await expect(page.getByRole("link", { name: /想读的书/ })).toBeVisible();
     await expect(page.getByRole("link", { name: /图书总数量/ })).toContainText("3");
 
-    const filters = page.getByRole("tablist", { name: "阅读状态筛选" });
-    await expect(filters.getByRole("tab", { name: "全部" })).toHaveAttribute("aria-selected", "true");
-    await expect(filters.getByRole("tab", { name: "想读" })).toBeVisible();
-    await expect(filters.getByRole("tab", { name: "在读" })).toBeVisible();
-    await expect(filters.getByRole("tab", { name: "读过" })).toBeVisible();
+    await expect(page.getByRole("tablist", { name: "阅读状态筛选" })).toHaveCount(0);
+    await expect(page.getByRole("tab")).toHaveCount(0);
 
     await expect(sectionHeading(page, "在读")).toBeVisible();
     await expect(sectionHeading(page, "我已读")).toBeVisible();
@@ -62,30 +59,6 @@ test(
     await expect(page.getByRole("link", { name: /测试图书：在读笔记/ })).toBeVisible();
     await expect(page.getByRole("link", { name: /测试图书：读过篇章/ })).toBeVisible();
     await expect(page.getByRole("link", { name: /测试图书：想读清单/ })).toBeVisible();
-  },
-);
-
-test(
-  "books status filter narrows sections and hides empty columns",
-  /* 筛选到单一状态只保留对应分栏；其他分栏不渲染，形成该筛选下的空状态。 */ async ({ page }) => {
-    await page.goto("/books");
-
-    await page.getByRole("tab", { name: "在读" }).click();
-    await expect(page.getByRole("tab", { name: "在读" })).toHaveAttribute("aria-selected", "true");
-    await expect(sectionHeading(page, "在读")).toBeVisible();
-    await expect(page.getByRole("link", { name: /测试图书：在读笔记/ })).toBeVisible();
-    await expect(sectionHeading(page, "我已读")).toHaveCount(0);
-    await expect(sectionHeading(page, "我想读")).toHaveCount(0);
-    await expect(page.getByRole("link", { name: /测试图书：读过篇章/ })).toHaveCount(0);
-
-    await page.getByRole("tab", { name: "读过" }).click();
-    await expect(page.getByRole("link", { name: /测试图书：读过篇章/ })).toBeVisible();
-    await expect(page.getByRole("link", { name: /测试图书：在读笔记/ })).toHaveCount(0);
-
-    await page.getByRole("tab", { name: "想读" }).click();
-    await expect(page.getByRole("link", { name: /测试图书：想读清单/ })).toBeVisible();
-    await expect(sectionHeading(page, "在读")).toHaveCount(0);
-    await expect(sectionHeading(page, "我已读")).toHaveCount(0);
   },
 );
 
@@ -129,12 +102,15 @@ test(
 
 test(
   "albums catalog empty state shows 还没有专辑。",
-  /* 专辑夹具在构建后载入，目录 ISR 仍烘焙空状态文案。 */ async ({ page }) => {
+  /* 专辑夹具在构建后载入，目录 ISR 仍烘焙空状态文案；方案 A 不再渲染封面墙。 */ async ({ page }) => {
     await page.goto("/albums");
     await expect(page.getByRole("heading", { name: "专辑", exact: true })).toBeVisible();
     await expect(page.getByText("还没有专辑。")).toBeVisible();
     await expect(page.getByRole("link", { name: "去搜索" })).toHaveCount(0);
     await expect(page.getByRole("list", { name: "专辑封面墙" })).toHaveCount(0);
+    await expect(sectionHeading(page, "我已听")).toHaveCount(0);
+    await expect(sectionHeading(page, "我在听")).toHaveCount(0);
+    await expect(sectionHeading(page, "我想听")).toHaveCount(0);
   },
 );
 

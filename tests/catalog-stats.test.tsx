@@ -65,10 +65,12 @@ test("upcoming-only catalogs keep stats and skip the empty-state panel", () => {
   expect(screen.queryByRole("heading", { name: "还没有电影" })).not.toBeInTheDocument();
 });
 
-test("album scheme C links five independent stats including music track total", () => {
+test("album scheme A links five independent stats including music track total", () => {
   render(
     <AlbumsCatalog
-      albums={[{ ...placeholderCard, type: "albums", title: "示例专辑" }]}
+      watched={[{ ...placeholderCard, type: "albums", dbType: "album", title: "示例专辑", artists: ["示例艺人"] }]}
+      watching={[]}
+      want={[]}
       stats={{ total: 12, watched: 5, watching: 2, want: 3, trackTotal: 48 }}
     />,
   );
@@ -84,10 +86,19 @@ test("album scheme C links five independent stats including music track total", 
     "href",
     "/search?type=album&status=want_to_watch",
   );
+  expect(screen.getByRole("heading", { name: "我已听" })).toBeInTheDocument();
+  expect(screen.getByRole("link", { name: /查看全部/ })).toHaveAttribute("href", "/search?type=album&status=watched");
 });
 
 test("an empty album catalog keeps the muted total and hides zero-value cards", () => {
-  render(<AlbumsCatalog albums={[]} stats={{ total: 0, watched: 0, watching: 0, want: 0, trackTotal: 0 }} />);
+  render(
+    <AlbumsCatalog
+      watched={[]}
+      watching={[]}
+      want={[]}
+      stats={{ total: 0, watched: 0, watching: 0, want: 0, trackTotal: 0 }}
+    />,
+  );
 
   expect(screen.getByRole("heading", { name: "专辑总数量" })).toBeInTheDocument();
   expect(screen.queryByRole("link", { name: /专辑总数量/ })).not.toBeInTheDocument();
