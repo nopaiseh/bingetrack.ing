@@ -1,6 +1,7 @@
 "use client";
-import { useEffect, useState, type ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import type { SeriesStructure } from "@/lib/admin/series-structure";
+import { StructureWorkspaceShell } from "../structure-shared";
 import QuickAddDialog from "./QuickAddDialog";
 import SeriesRail from "./SeriesRail";
 import SeriesStrip from "./SeriesStrip";
@@ -24,23 +25,19 @@ export default function SeriesWorkspace({
     kind === "season" || (kind === "episode" && Boolean(structure.expandedSeasonId));
   const [adding, setAdding] = useState<QuickAddKind | null>(canAdd(initialAdd) ? initialAdd! : null);
 
-  // 列表页的「新增季」经 ?add= 打开弹窗；打开后去掉参数，刷新页面不会再次弹出。
-  useEffect(() => {
-    if (!initialAdd) return;
-    const url = new URL(window.location.href);
-    url.searchParams.delete("add");
-    window.history.replaceState(window.history.state, "", `${url.pathname}${url.search}`);
-  }, [initialAdd]);
-
   return (
-    <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_20rem] lg:items-start">
-      <div className="min-w-0 space-y-6">
-        {header}
-        <SeriesStrip structure={structure} current={current} onAdd={setAdding} />
-        {children}
-      </div>
-      <SeriesRail structure={structure} current={current} onAdd={setAdding} />
-      {adding && <QuickAddDialog key={adding} kind={adding} structure={structure} onClose={() => setAdding(null)} />}
-    </div>
+    <StructureWorkspaceShell
+      header={header}
+      clearAddParam={Boolean(initialAdd)}
+      strip={<SeriesStrip structure={structure} current={current} onAdd={setAdding} />}
+      rail={<SeriesRail structure={structure} current={current} onAdd={setAdding} />}
+      dialog={
+        adding ? (
+          <QuickAddDialog key={adding} kind={adding} structure={structure} onClose={() => setAdding(null)} />
+        ) : null
+      }
+    >
+      {children}
+    </StructureWorkspaceShell>
   );
 }

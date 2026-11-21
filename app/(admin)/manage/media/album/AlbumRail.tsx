@@ -1,11 +1,15 @@
 "use client";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useEffect, useRef } from "react";
 import LetterTile from "@/components/LetterTile";
-import { mayLeaveEditor } from "@/lib/admin/navigation";
 import type { AlbumStructure } from "@/lib/admin/album-structure";
-import { centerInside, StatusDot } from "../series/SeriesRail";
+import {
+  JUMP_THRESHOLD,
+  StatusDot,
+  centerInside,
+  JumpNumberField,
+  useCenterCurrent,
+  useSafeNavigate,
+} from "../structure-shared";
 import {
   albumMediaHref,
   formatCount,
@@ -15,7 +19,8 @@ import {
   type AlbumCurrentItem,
 } from "./shared";
 
-export const TRACK_JUMP_THRESHOLD = 20;
+/** 与剧集轨共用跳转阈值；保留别名避免专辑侧引用断裂。 */
+export const TRACK_JUMP_THRESHOLD = JUMP_THRESHOLD;
 
 /** 桌面编辑页右侧曲目结构栏：贴在页头下跟随滚动，是新增曲目的入口。 */
 export default function AlbumRail({
@@ -27,18 +32,9 @@ export default function AlbumRail({
   current: AlbumCurrentItem;
   onAdd: () => void;
 }) {
-  const router = useRouter();
-  const scroller = useRef<HTMLDivElement>(null);
+  const go = useSafeNavigate();
+  const scroller = useCenterCurrent("y", current.id);
   const { album, tracks, trackCount, nextTrackNumber } = structure;
-
-  useEffect(() => {
-    const box = scroller.current;
-    centerInside(box, box?.querySelector<HTMLElement>('[aria-current="page"]') ?? null, "y");
-  }, [current.id]);
-
-  function go(href: string) {
-    if (mayLeaveEditor()) router.push(href);
-  }
 
   function jump(value: string, open: boolean) {
     const target = tracks.find((track) => track.number === Number(value));
@@ -88,27 +84,13 @@ export default function AlbumRail({
       </Link>
 
       {tracks.length > TRACK_JUMP_THRESHOLD && (
-        <label className="relative">
-          <span className="sr-only">跳到曲序，按回车打开</span>
-          <span
-            className="i-material-symbols-search-rounded pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-fg-subtle"
-            aria-hidden="true"
-          />
-          <input
-            type="number"
-            inputMode="numeric"
-            min="0"
-            placeholder="跳到曲序"
-            onChange={(event) => jump(event.target.value, false)}
-            onKeyDown={(event) => {
-              if (event.key === "Enter") {
-                event.preventDefault();
-                jump(event.currentTarget.value, true);
-              }
-            }}
-            className="!min-h-10 !py-2 !pl-9 font-mono !text-[13px]"
-          />
-        </label>
+        <JumpNumberField
+          label="跳到曲序，按回车打开"
+          placeholder="跳到曲序"
+          onJump={jump}
+          scrollOnChange
+          withSearchIcon
+        />
       )}
 
       <div ref={scroller} className="relative min-h-0 flex-1 overflow-y-auto">

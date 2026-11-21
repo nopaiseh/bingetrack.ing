@@ -1,29 +1,22 @@
 "use client";
 import Image from "next/image";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useEffect, useRef } from "react";
 import LetterTile from "@/components/LetterTile";
-import { mayLeaveEditor } from "@/lib/admin/navigation";
-import type { SeriesStructure, WatchStatus } from "@/lib/admin/series-structure";
+import type { SeriesStructure } from "@/lib/admin/series-structure";
+import {
+  JUMP_THRESHOLD,
+  StatusDot,
+  centerInside,
+  JumpNumberField,
+  useCenterCurrent,
+  useSafeNavigate,
+} from "../structure-shared";
 import { episodeLabel, formatCount, mediaHref, statusLabels, type CurrentItem, type QuickAddKind } from "./shared";
 
 /** 季数不多时以树形展开，超过后改用下拉选择，避免季列表把单集挤出视野。 */
 const TREE_LIMIT = 8;
-/** 单集较多时提供跳到集号。 */
-export const JUMP_THRESHOLD = 20;
 
-/** 观看状态圆点：看过实心、在看半满、没看过空心，形状不同，不只靠颜色区分。 */
-export function StatusDot({ status }: { status: WatchStatus }) {
-  return <span className={`status-dot status-dot-${status}`} role="img" aria-label={statusLabels[status]} />;
-}
-
-/** 把列表内的元素滚到容器中部，不牵动整页滚动。 */
-export function centerInside(container: HTMLElement | null, element: HTMLElement | null, axis: "x" | "y") {
-  if (!container || !element) return;
-  if (axis === "y") container.scrollTop = element.offsetTop - container.clientHeight / 2 + element.offsetHeight / 2;
-  else container.scrollLeft = element.offsetLeft - container.clientWidth / 2 + element.offsetWidth / 2;
-}
+export { JUMP_THRESHOLD, StatusDot, centerInside };
 
 /** 桌面编辑页右侧的剧集结构栏：贴在页头下并跟随滚动，是新增季与单集的唯一入口。 */
 export default function SeriesRail({
@@ -35,21 +28,12 @@ export default function SeriesRail({
   current: CurrentItem;
   onAdd: (kind: QuickAddKind) => void;
 }) {
-  const router = useRouter();
-  const scroller = useRef<HTMLDivElement>(null);
+  const go = useSafeNavigate();
+  const scroller = useCenterCurrent("y", current.id);
   const { show, seasons, episodes, expandedSeasonId, nextEpisode } = structure;
   const expanded = seasons.find((season) => season.id === expandedSeasonId);
   const tree = seasons.length <= TREE_LIMIT;
 
-  useEffect(() => {
-    const box = scroller.current;
-    centerInside(box, box?.querySelector<HTMLElement>('[aria-current="page"]') ?? null, "y");
-  }, [current.id]);
-
-  /** 下拉与跳转不是原生链接，离开前复用未保存检查。 */
-  function go(href: string) {
-    if (mayLeaveEditor()) router.push(href);
-  }
   /** 输入时滚到对应集，按回车打开。 */
   function jump(value: string, open: boolean) {
     const target = episodes.find((episode) => episode.number === Number(value));
@@ -160,27 +144,13 @@ export default function SeriesRail({
         </div>
       )}
       {episodes.length > JUMP_THRESHOLD && (
-        <label className="relative">
-          <span className="sr-only">跳到集号，按回车打开</span>
-          <span
-            className="i-material-symbols-search-rounded pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-fg-subtle"
-            aria-hidden="true"
-          />
-          <input
-            type="number"
-            inputMode="numeric"
-            min="0"
-            placeholder="跳到集号"
-            onChange={(event) => jump(event.target.value, false)}
-            onKeyDown={(event) => {
-              if (event.key === "Enter") {
-                event.preventDefault();
-                jump(event.currentTarget.value, true);
-              }
-            }}
-            className="!min-h-10 !py-2 !pl-9 font-mono !text-[13px]"
-          />
-        </label>
+        <JumpNumberField
+          label="跳到集号，按回车打开"
+          placeholder="跳到集号"
+          onJump={jump}
+          scrollOnChange
+          withSearchIcon
+        />
       )}
 
       <div ref={scroller} className="relative min-h-0 flex-1 overflow-y-auto">
