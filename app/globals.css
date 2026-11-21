@@ -1139,10 +1139,40 @@ select:is(.filter-option, .filter-option-active):focus-visible {
   backdrop-filter: none;
 }
 
-/* 离屏搜索卡跳过渲染；contain-intrinsic-size 锁住预估高度，避免翻页/滚动 CLS。 */
+/* 离屏搜索卡跳过渲染；contain-intrinsic-size 锁住预估高度，避免翻页/滚动 CLS。
+   `auto` 记住已渲染高度；各断点估值为搜索网格实测高度（海报 2:3 + 文案区）。 */
 .search-media-card {
   content-visibility: auto;
-  contain-intrinsic-size: auto 380px;
+  /* 390×844：2 列，实测 376.5px */
+  contain-intrinsic-size: auto 377px;
+}
+
+@media (min-width: 640px) {
+  .search-media-card {
+    /* 640×800：3 列，实测 397px */
+    contain-intrinsic-size: auto 397px;
+  }
+}
+
+@media (min-width: 768px) {
+  .search-media-card {
+    /* 768×900：3 列加宽，实测 457px */
+    contain-intrinsic-size: auto 457px;
+  }
+}
+
+@media (min-width: 1024px) {
+  .search-media-card {
+    /* 1024×900：4 列，实测 454.5px */
+    contain-intrinsic-size: auto 455px;
+  }
+}
+
+@media (min-width: 1280px) {
+  .search-media-card {
+    /* 1440×900（及 1280）：6 列，实测 396px */
+    contain-intrinsic-size: auto 396px;
+  }
 }
 
 /* 分页按钮在搜索、季列表和管理页是同一套标记。拉到 40px，避免 38px 的翻页热区。 */
