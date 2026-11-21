@@ -42,9 +42,12 @@ select is(
     'read_books',
     'reading_books',
     'want_albums',
-    'want_books'
+    'want_books',
+    'total_tracks',
+    'listened_tracks',
+    'want_tracks'
   ]::text[],
-  'release_year_stats keeps legacy columns and appends album/book counts'
+  'release_year_stats keeps legacy columns and appends album/book/track counts'
 );
 
 select ok(

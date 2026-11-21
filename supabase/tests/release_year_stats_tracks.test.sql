@@ -1,6 +1,6 @@
 begin;
 
-select plan(15);
+select plan(14);
 
 -- 新列存在且类型为 bigint；原有列顺序未变（新列排在末尾）。
 select is(
