@@ -20,4 +20,11 @@ describe("dashboard search links", () => {
       "/search?type=tv_show&sort=rating_desc&startYear=1999&endYear=1999",
     );
   });
+
+  it("supports book reading statuses including in_progress", () => {
+    expect(getStatusSearchLink("book", "in_progress", "All Time")).toBe("/search?type=book&status=in_progress");
+    expect(getStatusSearchLink("book", "want_to_watch", "2024")).toBe(
+      "/search?type=book&status=want_to_watch&startYear=2024&endYear=2024",
+    );
+  });
 });

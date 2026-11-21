@@ -207,6 +207,9 @@ describe("HomeDashboard", () => {
     const intro = screen.getByRole("region", { name: "媒体全景" });
     expect(intro).toHaveTextContent("全时段档案");
     expect(intro).toHaveTextContent("67");
+    expect(intro).toHaveTextContent("电影总计");
+    expect(intro).toHaveTextContent("音乐总计");
+    expect(intro).toHaveTextContent("图书总计");
 
     await act(async () => {
       fireEvent.click(screen.getByText("year-2024"));

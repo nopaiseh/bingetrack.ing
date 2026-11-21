@@ -21,52 +21,54 @@ export function deriveDashboardStats(summary: Summary[], selectedYear: string, d
   const movieDistribution = distributions.movies[selectedYear] ?? EMPTY_MEDIA_DISTRIBUTION;
   const seriesDistribution = distributions.shows[selectedYear] ?? EMPTY_MEDIA_DISTRIBUTION;
 
-  // 电影总数采用已看与未看之和；进度按已看数量占比计算。
-  const watchedMovies = currentYearData?.watched_movies || 0;
-  const unwatchedMovies = currentYearData?.unwatched_movies || 0;
+  // 电影总数采用已看与未看之和；进度按已看数量占比计算。缺行时全部为 0（某年仅有音乐／图书时影视看板不炸）。
+  const watchedMovies = Number(currentYearData?.watched_movies) || 0;
+  const unwatchedMovies = Number(currentYearData?.unwatched_movies) || 0;
   const totalMovies = watchedMovies + unwatchedMovies;
   const moviesPercent = percent(watchedMovies, totalMovies);
 
-  const avgMoviesRating = currentYearData?.movie_avg_rating || 0;
-  const avgMoviesRatingPercent = percent(avgMoviesRating, 10);
-  const moviesWatchedRuntime = currentYearData?.movies_watched_runtime ?? 0;
-  const moviesUnwatchedRuntime = currentYearData?.movies_unwatched_runtime ?? 0;
-  const totalMoviesRuntime = currentYearData?.total_movies_runtime ?? 0;
+  const avgMoviesRating = readNullableRating(currentYearData?.movie_avg_rating);
+  const avgMoviesRatingPercent = avgMoviesRating == null ? 0 : percent(avgMoviesRating, 10);
+  const moviesWatchedRuntime = Number(currentYearData?.movies_watched_runtime) || 0;
+  const moviesUnwatchedRuntime = Number(currentYearData?.movies_unwatched_runtime) || 0;
+  const totalMoviesRuntime = Number(currentYearData?.total_movies_runtime) || 0;
 
   // 电视节目总数包含已看、在看和未看三种状态，在看不计入已看进度。
-  const watchedSeries = currentYearData?.watched_series || 0;
-  const watchingSeries = currentYearData?.watching_series || 0;
-  const unwatchedSeries = currentYearData?.unwatched_series || 0;
+  const watchedSeries = Number(currentYearData?.watched_series) || 0;
+  const watchingSeries = Number(currentYearData?.watching_series) || 0;
+  const unwatchedSeries = Number(currentYearData?.unwatched_series) || 0;
   const totalSeries = watchedSeries + watchingSeries + unwatchedSeries;
   const seriesPercent = percent(watchedSeries, totalSeries);
 
   // 电视节目进度按已看集数占比计算，真实反映追剧进展并避免全 0% 空白条。
-  const watchedEpisodes = currentYearData?.watched_series_episodes ?? 0;
-  const unwatchedEpisodes = currentYearData?.unwatched_episodes ?? 0;
-  const totalEpisodes = currentYearData?.total_series_episodes ?? watchedEpisodes + unwatchedEpisodes;
+  const watchedEpisodes = Number(currentYearData?.watched_series_episodes) || 0;
+  const unwatchedEpisodes = Number(currentYearData?.unwatched_episodes) || 0;
+  const totalEpisodes = Number(currentYearData?.total_series_episodes) || watchedEpisodes + unwatchedEpisodes;
   const seriesEpisodesPercent = percent(watchedEpisodes, totalEpisodes);
 
-  const avgSeriesRating = currentYearData?.series_avg_rating || 0;
-  const avgSeriesRatingPercent = percent(avgSeriesRating, 10);
+  const avgSeriesRating = readNullableRating(currentYearData?.series_avg_rating);
+  const avgSeriesRatingPercent = avgSeriesRating == null ? 0 : percent(avgSeriesRating, 10);
   const seriesWatchedRuntime = currentYearData?.series_watched_runtime ?? 0;
   const seriesUnwatchedRuntime = currentYearData?.series_unwatched_runtime ?? 0;
   const totalSeriesRuntime = currentYearData?.total_series_runtime ?? 0;
 
-  const watchedRuntime = currentYearData?.total_watched_runtime ?? 0;
-  const totalRuntime = currentYearData?.total_runtime ?? 0;
+  const watchedRuntime = Number(currentYearData?.total_watched_runtime) || 0;
+  const totalRuntime = Number(currentYearData?.total_runtime) || 0;
   const runtimePercent = percent(watchedRuntime, totalRuntime);
 
-  // 专辑／图书／曲目仅做数据派生，进度与时长仍只来自影视列。
-  const totalAlbums = currentYearData?.total_albums || 0;
-  const listenedAlbums = currentYearData?.listened_albums || 0;
-  const wantAlbums = currentYearData?.want_albums || 0;
-  const totalBooks = currentYearData?.total_books || 0;
-  const readBooks = currentYearData?.read_books || 0;
-  const readingBooks = currentYearData?.reading_books || 0;
-  const wantBooks = currentYearData?.want_books || 0;
-  const totalTracks = currentYearData?.total_tracks || 0;
-  const listenedTracks = currentYearData?.listened_tracks || 0;
-  const wantTracks = currentYearData?.want_tracks || 0;
+  // 专辑／图书／曲目仅做数据派生；全景音乐看板用曲目三列，时长仍只来自影视。
+  const totalAlbums = Number(currentYearData?.total_albums) || 0;
+  const listenedAlbums = Number(currentYearData?.listened_albums) || 0;
+  const wantAlbums = Number(currentYearData?.want_albums) || 0;
+  const totalBooks = Number(currentYearData?.total_books) || 0;
+  const readBooks = Number(currentYearData?.read_books) || 0;
+  const readingBooks = Number(currentYearData?.reading_books) || 0;
+  const wantBooks = Number(currentYearData?.want_books) || 0;
+  const totalTracks = Number(currentYearData?.total_tracks) || 0;
+  const listenedTracks = Number(currentYearData?.listened_tracks) || 0;
+  const wantTracks = Number(currentYearData?.want_tracks) || 0;
+  const tracksPercent = percent(listenedTracks, totalTracks);
+  const booksPercent = percent(readBooks, totalBooks);
 
   return {
     currentYearData,
@@ -106,7 +108,16 @@ export function deriveDashboardStats(summary: Summary[], selectedYear: string, d
     totalTracks,
     listenedTracks,
     wantTracks,
+    tracksPercent,
+    booksPercent,
   };
+}
+
+/** 把视图里的评分读成数字；null／undefined／NaN 视为暂无评分。 */
+function readNullableRating(value: number | string | null | undefined): number | null {
+  if (value == null || value === "") return null;
+  const numeric = typeof value === "number" ? value : Number(value);
+  return Number.isFinite(numeric) ? numeric : null;
 }
 
 export type DashboardStats = ReturnType<typeof deriveDashboardStats>;

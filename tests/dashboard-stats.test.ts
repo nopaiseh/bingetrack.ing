@@ -132,5 +132,53 @@ describe("deriveDashboardStats", () => {
     expect(stats.totalTracks).toBe(12);
     expect(stats.listenedTracks).toBe(4);
     expect(stats.wantTracks).toBe(3);
+    expect(stats.tracksPercent).toBe(33);
+    expect(stats.booksPercent).toBe(43);
+  });
+
+  it("keeps movie/TV zeros when a year only has tracks or books", () => {
+    const summary = [
+      {
+        release_year: "2099",
+        total_tracks: 10,
+        listened_tracks: 4,
+        want_tracks: 2,
+        total_books: 3,
+        read_books: 1,
+        reading_books: 1,
+        want_books: 1,
+      } as Summary,
+    ];
+
+    const stats = deriveDashboardStats(summary, "2099", emptyDistributions);
+
+    expect(stats.totalMovies).toBe(0);
+    expect(stats.totalSeries).toBe(0);
+    expect(stats.moviesPercent).toBe(0);
+    expect(stats.seriesEpisodesPercent).toBe(0);
+    expect(stats.runtimePercent).toBe(0);
+    expect(stats.avgMoviesRating).toBeNull();
+    expect(stats.avgSeriesRating).toBeNull();
+    expect(stats.totalTracks).toBe(10);
+    expect(stats.tracksPercent).toBe(40);
+    expect(stats.totalBooks).toBe(3);
+    expect(stats.booksPercent).toBe(33);
+  });
+
+  it("treats null and NaN ratings as missing", () => {
+    const summary = [
+      {
+        release_year: "All Time",
+        movie_avg_rating: null,
+        series_avg_rating: Number.NaN,
+      } as unknown as Summary,
+    ];
+
+    const stats = deriveDashboardStats(summary, "All Time", emptyDistributions);
+
+    expect(stats.avgMoviesRating).toBeNull();
+    expect(stats.avgMoviesRatingPercent).toBe(0);
+    expect(stats.avgSeriesRating).toBeNull();
+    expect(stats.avgSeriesRatingPercent).toBe(0);
   });
 });
