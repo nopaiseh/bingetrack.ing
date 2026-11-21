@@ -53,7 +53,7 @@ export default function SearchBar({
             <button
               type="button"
               onClick={/* 清空搜索词，后续由防抖逻辑同步到 URL。 */ onClearQuery}
-              className="pointer-events-auto text-fg-subtle transition-all duration-300 hover:text-[var(--accent-hover)]"
+              className="tap-target-expand pointer-events-auto inline-flex items-center justify-center text-fg-subtle transition-all duration-300 hover:text-[var(--accent-hover)]"
               aria-label="清除搜索"
             >
               <span className="i-material-symbols-close-rounded inline-block size-5" aria-hidden="true" />
