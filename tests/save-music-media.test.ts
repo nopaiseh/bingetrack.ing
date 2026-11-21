@@ -237,6 +237,31 @@ describe("saveMusicMedia", () => {
     );
   });
 
+  it("曲目不调用 resolveMusicCover；无封面时保持 null，有提交值则原样保留", async () => {
+    const from = vi.fn(trackGuardFrom());
+    const db = dbWithRpc(async () => ({ data: trackId, error: null }), from);
+    await saveMusicMedia(db as never, trackPayload({ cover_url: null }));
+    expect(resolveMusicCover).not.toHaveBeenCalled();
+    expect(db.rpc).toHaveBeenCalledWith(
+      "admin_save_media",
+      expect.objectContaining({
+        p_data: expect.objectContaining({ type: "music", cover_url: null }),
+      }),
+    );
+
+    vi.mocked(resolveMusicCover).mockClear();
+    const db2 = dbWithRpc(async () => ({ data: trackId, error: null }), vi.fn(trackGuardFrom()));
+    const kept = "https://coverartarchive.org/release/x/front-500";
+    await saveMusicMedia(db2 as never, trackPayload({ cover_url: kept }));
+    expect(resolveMusicCover).not.toHaveBeenCalled();
+    expect(db2.rpc).toHaveBeenCalledWith(
+      "admin_save_media",
+      expect.objectContaining({
+        p_data: expect.objectContaining({ type: "music", cover_url: kept }),
+      }),
+    );
+  });
+
   it("所属专辑不存在时拒绝保存曲目", async () => {
     const from = vi.fn(trackGuardFrom({ albumExists: false }));
     await expect(saveMusicMedia({ from, rpc: vi.fn() } as never, trackPayload())).rejects.toThrow(/所属专辑不存在/);
@@ -305,16 +330,19 @@ describe("saveAlbumWithTracks", () => {
   it("新建专辑时跳过曲目所属专辑存在检查，一次 RPC 提交全部曲目", async () => {
     const db = dbWithRpc(async () => ({ data: albumId, error: null }));
     const id = await saveAlbumWithTracks(db as never, albumPayload(), [
-      trackPayload({ number: 1, parent_id: null }),
-      trackPayload({ number: 2, title: "第二首", parent_id: null, runtime: 7200 }),
+      trackPayload({ number: 1, parent_id: null, cover_url: null }),
+      trackPayload({ number: 2, title: "第二首", parent_id: null, runtime: 7200, cover_url: null }),
     ]);
     expect(id).toBe(albumId);
+    // 专辑解析封面；曲目不调用 resolveMusicCover
+    expect(resolveMusicCover).toHaveBeenCalledTimes(1);
+    expect(resolveMusicCover).toHaveBeenCalledWith(expect.objectContaining({ entity: "album", title: "新专辑" }));
     expect(db.rpc).toHaveBeenCalledWith(
       "admin_save_album_with_tracks",
       expect.objectContaining({
         p_tracks: expect.arrayContaining([
-          expect.objectContaining({ type: "music", number: 1 }),
-          expect.objectContaining({ type: "music", number: 2, runtime: 7200 }),
+          expect.objectContaining({ type: "music", number: 1, cover_url: null }),
+          expect.objectContaining({ type: "music", number: 2, runtime: 7200, cover_url: null }),
         ]),
       }),
     );

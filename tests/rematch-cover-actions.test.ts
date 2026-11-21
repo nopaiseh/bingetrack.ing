@@ -84,7 +84,7 @@ describe("rematch cover actions auth", () => {
   it("preview keeps afterId when the whole batch is skipped by deadline", async () => {
     vi.mocked(requireOwner).mockResolvedValue({ db: {} as never, user: { id: "owner" } as never });
     vi.mocked(listMzstaticMusicItems).mockResolvedValue({
-      items: [{ id: trackId, type: "music", title: "晴天", cover_url: mz, artist: null }],
+      items: [{ id: trackId, type: "album", title: "叶惠美", cover_url: mz, artist: null }],
       nextCursor: trackId,
       hasMore: true,
     });
@@ -92,8 +92,8 @@ describe("rematch cover actions auth", () => {
       rows: [
         {
           id: trackId,
-          type: "music",
-          title: "晴天",
+          type: "album",
+          title: "叶惠美",
           artist: null,
           oldCover: mz,
           newCover: null,

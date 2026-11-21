@@ -109,7 +109,7 @@ describe("rowsWithNewCover", () => {
         },
         {
           id: trackId,
-          type: "music",
+          type: "album",
           title: "b",
           artist: null,
           oldCover: mz,
@@ -119,7 +119,7 @@ describe("rowsWithNewCover", () => {
         },
         {
           id: otherId,
-          type: "music",
+          type: "album",
           title: "c",
           artist: null,
           oldCover: mz,
@@ -168,15 +168,17 @@ describe("mapWithConcurrencyUntilDeadline", () => {
 });
 
 describe("listMzstaticMusicItems", () => {
-  it("only returns album/music rows with mzstatic covers and supports afterId cursor", async () => {
+  it("only returns album rows with mzstatic covers（排除曲目）and supports afterId cursor", async () => {
     const db = fakeDb((query) => {
       if (query.table === "media_credits") {
         return {
-          data: [{ media_item_id: trackId, people: { name: "周杰伦" } }],
+          data: [{ media_item_id: albumId, people: { name: "周杰伦" } }],
           error: null,
         };
       }
       if (query.table !== "media_items") return { data: [], error: null };
+      const typeFilter = query.calls.find((call) => call.method === "eq" && call.args[0] === "type");
+      expect(typeFilter?.args[1]).toBe("album");
       const gt = query.calls.find((call) => call.method === "gt");
       const after = gt ? String(gt.args[1]) : null;
       const all = [
@@ -184,7 +186,7 @@ describe("listMzstaticMusicItems", () => {
         { id: trackId, type: "music", title: "晴天", cover_url: mz },
         { id: otherId, type: "music", title: "错", cover_url: caa },
         { id: fourthId, type: "album", title: "下一张", cover_url: mzOther },
-      ];
+      ].filter((row) => row.type === "album");
       const filtered = after ? all.filter((row) => row.id > after) : all;
       const limitCall = query.calls.find((call) => call.method === "limit");
       const limit = Number(limitCall?.args[0] ?? 20);
@@ -193,12 +195,13 @@ describe("listMzstaticMusicItems", () => {
 
     const first = await listMzstaticMusicItems(db, { limit: 1 });
     expect(first.items.map((row) => row.id)).toEqual([albumId]);
+    expect(first.items.every((row) => row.type === "album")).toBe(true);
     expect(first.nextCursor).toBe(albumId);
     expect(first.hasMore).toBe(true);
 
     const second = await listMzstaticMusicItems(db, { limit: 2, afterId: albumId });
-    expect(second.items.map((row) => row.id)).toEqual([trackId, fourthId]);
-    expect(second.items[0]?.artist).toBe("周杰伦");
+    expect(second.items.map((row) => row.id)).toEqual([fourthId]);
+    expect(second.items[0]?.artist).toBeNull();
     expect(second.hasMore).toBe(false);
   });
 });
@@ -212,9 +215,10 @@ describe("previewMusicCoverRematch", () => {
     vi.mocked(resolveMusicCover).mockResolvedValueOnce(mzNew).mockResolvedValueOnce(null);
     const result = await previewMusicCoverRematch([
       { id: albumId, type: "album", title: "叶惠美", cover_url: mz, artist: "周杰伦" },
-      { id: trackId, type: "music", title: "错图", cover_url: mz, artist: "某人" },
+      { id: fourthId, type: "album", title: "下一张", cover_url: mz, artist: "某人" },
     ]);
     expect(result.skipped).toBe(0);
+    expect(resolveMusicCover).toHaveBeenCalledWith(expect.objectContaining({ entity: "album" }), expect.anything());
     expect(result.rows).toEqual([
       {
         id: albumId,
@@ -227,9 +231,9 @@ describe("previewMusicCoverRematch", () => {
         skipped: false,
       },
       {
-        id: trackId,
-        type: "music",
-        title: "错图",
+        id: fourthId,
+        type: "album",
+        title: "下一张",
         artist: "某人",
         oldCover: mz,
         newCover: null,
@@ -248,8 +252,8 @@ describe("previewMusicCoverRematch", () => {
     const result = await previewMusicCoverRematch(
       [
         { id: albumId, type: "album", title: "一", cover_url: mz, artist: null },
-        { id: trackId, type: "music", title: "二", cover_url: mz, artist: null },
-        { id: otherId, type: "music", title: "三", cover_url: mz, artist: null },
+        { id: trackId, type: "album", title: "二", cover_url: mz, artist: null },
+        { id: otherId, type: "album", title: "三", cover_url: mz, artist: null },
       ],
       { deadlineAt: 15, now: () => now },
     );
@@ -266,7 +270,7 @@ describe("applyMusicCoverRematch", () => {
     vi.mocked(revalidateMediaItems).mockClear();
   });
 
-  it("updates only selected mzstatic music items", async () => {
+  it("updates only selected mzstatic albums（曲目 id 视为失败）", async () => {
     const updated: Array<{ id: string; cover_url: string | null; expected?: string }> = [];
     const db = fakeDb((query) => {
       if (query.table !== "media_items") return { data: [], error: null };
@@ -275,8 +279,7 @@ describe("applyMusicCoverRematch", () => {
         return {
           data: [
             { id: albumId, type: "album", cover_url: mz },
-            { id: trackId, type: "music", cover_url: mz },
-            { id: otherId, type: "music", cover_url: caa },
+            { id: fourthId, type: "album", cover_url: mz },
           ],
           error: null,
         };
@@ -293,14 +296,14 @@ describe("applyMusicCoverRematch", () => {
     const result = await applyMusicCoverRematch(db, [
       { id: albumId, cover_url: mzNew, expected_cover_url: mz },
       { id: trackId, cover_url: null, expected_cover_url: mz },
-      { id: otherId, cover_url: mzNew, expected_cover_url: mz },
+      { id: fourthId, cover_url: null, expected_cover_url: mz },
     ]);
 
     expect(result).toMatchObject({ succeeded: 2, failed: 1, cleared: 1, conflicted: 0 });
-    expect(result.succeededIds).toEqual([albumId, trackId]);
+    expect(result.succeededIds).toEqual([albumId, fourthId]);
     expect(updated).toEqual([
       { id: albumId, cover_url: mzNew, expected: mz },
-      { id: trackId, cover_url: null, expected: mz },
+      { id: fourthId, cover_url: null, expected: mz },
     ]);
     expect(revalidateMediaItems).toHaveBeenCalledOnce();
   });
@@ -313,7 +316,7 @@ describe("applyMusicCoverRematch", () => {
         return {
           data: [
             { id: albumId, type: "album", cover_url: mzOther },
-            { id: trackId, type: "music", cover_url: mz },
+            { id: fourthId, type: "album", cover_url: mz },
           ],
           error: null,
         };
@@ -325,12 +328,12 @@ describe("applyMusicCoverRematch", () => {
 
     const result = await applyMusicCoverRematch(db, [
       { id: albumId, cover_url: mzNew, expected_cover_url: mz },
-      { id: trackId, cover_url: mzNew, expected_cover_url: mz },
+      { id: fourthId, cover_url: mzNew, expected_cover_url: mz },
     ]);
 
     expect(result.succeeded).toBe(1);
     expect(result.conflicted).toBe(1);
     expect(result.conflictIds).toEqual([albumId]);
-    expect(result.succeededIds).toEqual([trackId]);
+    expect(result.succeededIds).toEqual([fourthId]);
   });
 });

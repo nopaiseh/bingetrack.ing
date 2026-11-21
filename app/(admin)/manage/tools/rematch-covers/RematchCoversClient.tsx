@@ -92,7 +92,7 @@ export default function RematchCoversClient() {
       }
       applyPreviewResult(result);
       if (result.rows.length === 0) {
-        showSuccess(mode === "next" ? "没有更多 mzstatic 封面了。" : "当前没有主机为 mzstatic.com 的音乐封面。");
+        showSuccess(mode === "next" ? "没有更多 mzstatic 封面了。" : "当前没有主机为 mzstatic.com 的专辑封面。");
         return;
       }
       if (result.skipped > 0) {
@@ -215,7 +215,7 @@ export default function RematchCoversClient() {
                   <td className="px-3 py-2 align-middle">
                     <div className="font-medium text-fg">{row.title}</div>
                     <div className="text-xs text-fg-subtle">
-                      {row.type === "album" ? "专辑" : "曲目"}
+                      专辑
                       {row.artist ? ` · ${row.artist}` : ""}
                       {rowHint(row)}
                     </div>

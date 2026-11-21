@@ -180,12 +180,17 @@ async function prepareMusicPayload(
     }
   }
 
+  // 曲目不再解析／写入展示用封面（展示一律用所属专辑封面）；保留提交值或 null。
+  if (payload.type === "music") {
+    return { ...payload, cover_url: payload.cover_url };
+  }
+
   let coverUrl = payload.cover_url;
   if (!coverUrl) {
     coverUrl = await resolveMusicCover({
       title: payload.title,
       artist: artistNames[0] ?? null,
-      entity: payload.type === "album" ? "album" : "song",
+      entity: "album",
     }).catch(() => null);
   }
 

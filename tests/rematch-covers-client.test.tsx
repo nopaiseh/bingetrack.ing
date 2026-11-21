@@ -49,7 +49,7 @@ describe("RematchCoversClient selection defaults", () => {
         },
         {
           id: trackId,
-          type: "music",
+          type: "album",
           title: "错图",
           artist: "某人",
           oldCover: mz,

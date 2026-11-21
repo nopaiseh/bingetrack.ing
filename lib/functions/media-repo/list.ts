@@ -2,6 +2,7 @@ import { getSupabasePublicServer } from "@/lib/supabase/public-server";
 import { mapViewRowToMediaCard } from "@/lib/functions/media-mapper";
 import { buildMediaDistributions, type DistributionCountRow } from "@/lib/functions/media-distributions";
 import { withRetry } from "@/lib/functions/retry";
+import { withAlbumCoversForTracks } from "@/lib/music/track-display-cover";
 import { MediaCard, MediaDistributions, UpcomingRelease, ViewAllMediaRow, FetchMediaListOptions } from "@/lib/types";
 import { CATALOG_DB_TYPES, publicMediaDetailPath, publicPathForDbType } from "@/lib/media-types";
 import type { AlbumStats, BookStats } from "./types";
@@ -500,7 +501,15 @@ async function fetchMediaList(
   const mappedResults: MediaCard[] = (data as unknown as ViewAllMediaRow[]).map(
     /* 将分页查询结果转换为卡片对象。 */ (item) => mapViewRowToMediaCard(item),
   );
-  const results = await addSeriesReleaseYearRanges(db, mappedResults);
+  let withTrackCovers: MediaCard[];
+  try {
+    // 曲目卡片展示所属专辑封面；专辑无图时为空串，走色块首字。
+    const covered = await withAlbumCoversForTracks(db, mappedResults);
+    withTrackCovers = covered.map((card) => ({ ...card, cover_url: card.cover_url ?? "" }));
+  } catch (error) {
+    throw new MediaRepositoryError("fetch track album covers", error);
+  }
+  const results = await addSeriesReleaseYearRanges(db, withTrackCovers);
 
   return { rows: results, total };
 }
