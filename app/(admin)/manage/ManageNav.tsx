@@ -30,7 +30,14 @@ const groups = [
   },
   {
     label: "数据检查",
-    items: [{ label: "报告", value: "reports", icon: "i-material-symbols-fact-check-outline-rounded" }],
+    items: [
+      { label: "报告", value: "reports", icon: "i-material-symbols-fact-check-outline-rounded" },
+      {
+        label: "重配封面",
+        value: "rematch-covers",
+        icon: "i-material-symbols-image-search-rounded",
+      },
+    ],
   },
 ];
 const settings = { label: "账号安全", value: "settings", icon: "i-material-symbols-shield-person-rounded" };
@@ -46,11 +53,13 @@ export default function ManageNav() {
   const iconOnly = collapsed && isDesktop;
   const active = pathname.startsWith("/settings")
     ? "settings"
-    : pathname.startsWith("/manage/reports")
-      ? "reports"
-      : pathname.startsWith("/manage/references/")
-        ? pathname.split("/")[3]
-        : (params.get("type") ?? (pathname === "/manage" ? "home" : ""));
+    : pathname.startsWith("/manage/tools/rematch-covers")
+      ? "rematch-covers"
+      : pathname.startsWith("/manage/reports")
+        ? "reports"
+        : pathname.startsWith("/manage/references/")
+          ? pathname.split("/")[3]
+          : (params.get("type") ?? (pathname === "/manage" ? "home" : ""));
   const highlighted =
     active === "tv_season" || active === "tv_episode" ? "tv_show" : active === "music" ? "album" : active;
 
@@ -117,9 +126,11 @@ export default function ManageNav() {
         ? "/settings"
         : value === "reports"
           ? "/manage/reports"
-          : value.startsWith("tv_") || value === "movie" || value === "album" || value === "book"
-            ? `/manage?type=${value}`
-            : `/manage/references/${value}`;
+          : value === "rematch-covers"
+            ? "/manage/tools/rematch-covers"
+            : value.startsWith("tv_") || value === "movie" || value === "album" || value === "book"
+              ? `/manage?type=${value}`
+              : `/manage/references/${value}`;
   }
 
   /** 切换分类进入该类别第一页。未保存确认已由 UnsavedGuard 在捕获阶段处理，取消时事件不会传到这里。 */

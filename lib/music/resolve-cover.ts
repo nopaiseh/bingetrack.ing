@@ -1,9 +1,11 @@
 /**
  * 服务端封面解析：只返回可写入 cover_url 的绝对 URL，不持久化 MusicBrainz／iTunes 等外部 ID。
- * 顺序：iTunes Search →（临时查 MusicBrainz 取 release MBID）Cover Art Archive → null。
+ * 顺序：iTunes Search（us→tw→hk，严格匹配）→（临时查 MusicBrainz 取 release MBID）Cover Art Archive → null。
  * CAA 依赖 MusicBrainz 检索；MBID 仅在本次请求内存中使用，绝不写入数据库。
  * CAA 封面存规范 URL（coverartarchive.org/.../front-500），不跟随重定向去写 archive.org 镜像。
  */
+
+import { artistMatches, titlesMatch } from "@/lib/music/normalize-match";
 
 export type MusicCoverEntity = "album" | "song";
 
@@ -22,6 +24,10 @@ const MUSICBRAINZ_SEARCH = "https://musicbrainz.org/ws/2/release";
 const COVER_ART_ARCHIVE = "https://coverartarchive.org/release";
 /** MusicBrainz 搜索分低于此阈值时视为不可靠，不采用该 release。 */
 const MUSICBRAINZ_MIN_SCORE = 90;
+/** 按区依次查询；严格命中封面后即停。 */
+export const ITUNES_COUNTRIES = ["us", "tw", "hk"] as const;
+const ITUNES_TIMEOUT_MS = 4_000;
+const FALLBACK_TIMEOUT_MS = 8_000;
 
 /** iTunes 默认封面多为 100x100；替换为更大尺寸供站点展示。 */
 export function upscaleItunesArtworkUrl(url: string, size = 600): string {
@@ -33,42 +39,61 @@ type ItunesResult = {
   artworkUrl60?: string;
   collectionName?: string;
   trackName?: string;
+  artistName?: string;
 };
 
 type ItunesResponse = { results?: ItunesResult[] };
 
-function buildItunesQuery(input: ResolveMusicCoverInput): URL {
+function buildItunesQuery(input: ResolveMusicCoverInput, country: string): URL {
   const term = [input.artist?.trim(), input.title.trim()].filter(Boolean).join(" ");
   const url = new URL(ITUNES_SEARCH);
   url.searchParams.set("term", term);
   url.searchParams.set("entity", input.entity === "song" ? "song" : "album");
+  url.searchParams.set("country", country);
   url.searchParams.set("limit", "5");
   return url;
 }
 
-function pickItunesArtwork(results: ItunesResult[] | undefined, input: ResolveMusicCoverInput): string | null {
+/**
+ * 严格挑选 iTunes 封面：歌名／专辑名规范化相等，且有歌手时艺人须匹配。
+ * 无一命中则返回 null，不再兜底取第一条。
+ */
+export function pickItunesArtwork(results: ItunesResult[] | undefined, input: ResolveMusicCoverInput): string | null {
   if (!results?.length) return null;
-  const titleKey = input.title.trim().toLowerCase();
-  const ranked = [...results].sort((left, right) => {
-    const leftName = (input.entity === "song" ? left.trackName : left.collectionName)?.toLowerCase() ?? "";
-    const rightName = (input.entity === "song" ? right.trackName : right.collectionName)?.toLowerCase() ?? "";
-    return Number(rightName === titleKey) - Number(leftName === titleKey);
-  });
-  for (const row of ranked) {
+  for (const row of results) {
+    const name = input.entity === "song" ? row.trackName : row.collectionName;
+    if (!titlesMatch(name, input.title)) continue;
+    if (!artistMatches(input.artist, row.artistName)) continue;
     const art = row.artworkUrl100 ?? row.artworkUrl60;
     if (art) return upscaleItunesArtworkUrl(art);
   }
   return null;
 }
 
-async function resolveFromItunes(input: ResolveMusicCoverInput, fetchImpl: typeof fetch): Promise<string | null> {
-  const response = await fetchImpl(buildItunesQuery(input), {
+async function searchItunesCountry(
+  input: ResolveMusicCoverInput,
+  country: string,
+  fetchImpl: typeof fetch,
+): Promise<string | null> {
+  const response = await fetchImpl(buildItunesQuery(input, country), {
     headers: { Accept: "application/json" },
-    signal: AbortSignal.timeout(8_000),
+    signal: AbortSignal.timeout(ITUNES_TIMEOUT_MS),
   });
   if (!response.ok) return null;
   const body = (await response.json()) as ItunesResponse;
   return pickItunesArtwork(body.results, input);
+}
+
+async function resolveFromItunes(input: ResolveMusicCoverInput, fetchImpl: typeof fetch): Promise<string | null> {
+  for (const country of ITUNES_COUNTRIES) {
+    try {
+      const art = await searchItunesCountry(input, country, fetchImpl);
+      if (art) return art;
+    } catch {
+      /* 该区超时或失败则试下一区 */
+    }
+  }
+  return null;
 }
 
 type MusicBrainzReleaseList = {
@@ -77,7 +102,7 @@ type MusicBrainzReleaseList = {
 
 /**
  * 临时向 MusicBrainz 查询 release MBID，仅用于随后请求 Cover Art Archive。
- * 只接受 score ≥ 90 的命中；返回的 ID 不落库。
+ * 只接受 score ≥ 90 且标题规范化相等的命中；返回的 ID 不落库。
  * CAA 探测使用 redirect:manual，成功时仍返回规范 coverartarchive.org URL。
  */
 async function resolveFromCoverArtArchive(
@@ -97,12 +122,16 @@ async function resolveFromCoverArtArchive(
       // MusicBrainz 要求可识别的 User-Agent。
       "User-Agent": "bingetrack.ing/music-cover (https://bingetrack.ing)",
     },
-    signal: AbortSignal.timeout(8_000),
+    signal: AbortSignal.timeout(FALLBACK_TIMEOUT_MS),
   });
   if (!mbResponse.ok) return null;
   const mbBody = (await mbResponse.json()) as MusicBrainzReleaseList;
   const releaseId = mbBody.releases?.find(
-    (row) => row.id && typeof row.score === "number" && row.score >= MUSICBRAINZ_MIN_SCORE,
+    (row) =>
+      row.id &&
+      typeof row.score === "number" &&
+      row.score >= MUSICBRAINZ_MIN_SCORE &&
+      titlesMatch(row.title, input.title),
   )?.id;
   if (!releaseId) return null;
 
@@ -111,14 +140,14 @@ async function resolveFromCoverArtArchive(
     method: "HEAD",
     // 不跟随到 ia*.us.archive.org；只确认封面存在，cover_url 始终写规范 CAA 地址。
     redirect: "manual",
-    signal: AbortSignal.timeout(8_000),
+    signal: AbortSignal.timeout(FALLBACK_TIMEOUT_MS),
   });
   if (caaResponse.status < 200 || caaResponse.status >= 400) return null;
   return caaUrl;
 }
 
 /**
- * 解析专辑／单曲封面 URL。全部外部调用失败时返回 null，前端用首字母字块占位。
+ * 解析专辑／单曲封面 URL。全部外部调用失败或无一严格命中时返回 null，前端用首字母字块占位。
  */
 export async function resolveMusicCover(
   input: ResolveMusicCoverInput,
