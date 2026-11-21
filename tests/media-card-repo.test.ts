@@ -459,6 +459,22 @@ test("keyword search matches inside the database function without ID round-trips
   expect(state.executed.filter((query) => query.head)).toHaveLength(1);
 });
 
+test("keyword search forwards book and music credit roles to search_media", async () => {
+  state.results["rpc:search_media"] = { data: [], error: null, count: 0 };
+  await searchMediaServer({
+    q: "方文山",
+    type: "music",
+    creditRole: "author,artist,lyricist,composer,producer",
+    limit: 30,
+  });
+  expect(state.executed[0].args).toEqual({
+    p_query: "方文山",
+    p_types: ["music"],
+    p_series_only: false,
+    p_credit_roles: ["author", "artist", "lyricist", "composer"],
+  });
+});
+
 test("series-only browsing uses the database function; plain catalogs keep the view", async () => {
   await searchMediaServer({ seriesOnly: true, type: "movie" });
   expect(state.executed.every((query) => query.table === "rpc:search_media")).toBe(true);

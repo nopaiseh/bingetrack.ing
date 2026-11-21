@@ -83,3 +83,11 @@ test("accepts type=music for singles search without enabling top-media", () => {
   assert.equal(parseMediaSearchParams(new URLSearchParams({ type: "music" })).type, "music");
   assert.throws(() => parseTopMediaParams(new URLSearchParams({ type: "music" })), /Invalid media type/);
 });
+
+test("accepts book and music person credit roles including lyricist and composer", () => {
+  assert.equal(
+    parseMediaSearchParams(new URLSearchParams({ creditRole: "author,artist,lyricist,composer" })).creditRole,
+    "author,artist,lyricist,composer",
+  );
+  assert.throws(() => parseMediaSearchParams(new URLSearchParams({ creditRole: "producer" })), ApiValidationError);
+});
