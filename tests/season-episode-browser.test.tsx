@@ -87,7 +87,13 @@ describe("SeasonEpisodeBrowser", () => {
     expect(screen.getByRole("heading", { level: 2, name: "回声" })).toBeInTheDocument();
     expect(screen.getByText("25 集")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "未看" })).toHaveAttribute("href", `${basePath}?status=unwatched`);
-    expect(screen.getByRole("link", { name: "升序 ↑" })).toHaveAttribute("href", `${basePath}?order=desc`);
+    const sort = screen.getByRole("link", { name: "升序 ↑" });
+    expect(sort).toHaveAttribute("href", `${basePath}?order=desc`);
+    // 排序与筛选共用未选中芯片样式，不能一直粉红选中态。
+    expect(sort.className).toContain("surface-muted");
+    expect(sort.className).not.toContain("surface-active");
+    expect(sort.className).toContain("tap-target-expand");
+    expect(screen.getByRole("link", { name: "全部" }).className).toContain("tap-target-expand");
     expect(screen.getByRole("link", { name: "2" })).toHaveAttribute("href", `${basePath}?page=2`);
     expect(screen.getByRole("link", { name: "2" })).toHaveAttribute("data-scroll", "false");
     await waitFor(() => {

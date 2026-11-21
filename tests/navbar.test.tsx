@@ -72,9 +72,14 @@ test("导航链接与按钮统一使用 focus-ring", () => {
   }
   expect(screen.getByRole("button", { name: "搜索" })).toHaveClass("focus-ring");
   expect(screen.getByRole("button", { name: "退出" })).toHaveClass("focus-ring");
+  expect(screen.getByRole("button", { name: "退出" })).toHaveClass("tap-target-expand");
   for (const link of screen.getAllByRole("link", { name: "管理" })) {
     expect(link).toHaveClass("focus-ring");
   }
+  // 手机顶栏管理图标入口带隐形热区类（桌面文字链路由 md:hidden 隐藏，但 DOM 仍在）。
+  const manageIcon = screen.getAllByRole("link", { name: "管理" }).find((link) => link.className.includes("size-9"));
+  expect(manageIcon).toBeTruthy();
+  expect(manageIcon).toHaveClass("tap-target-expand");
 });
 
 test(
