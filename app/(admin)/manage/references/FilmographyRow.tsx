@@ -1,5 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
+import LetterTile from "@/components/LetterTile";
 import { roleLabel, type RelatedMedia } from "@/lib/admin/credits";
 
 /** 关联作品按年表逐行排列：年份、封面、标题与所属节目、角色。同一年的连续作品只在第一行显示年份。
@@ -42,7 +43,9 @@ export default function FilmographyRow({
       {media.cover_url ? (
         <Image src={media.cover_url} alt="" width={32} height={48} className="h-12 w-8 rounded object-cover" />
       ) : (
-        <span className="surface-muted h-12 w-8 rounded" aria-hidden="true" />
+        <span className="relative h-12 w-8 overflow-hidden rounded">
+          <LetterTile title={media.title} decorative />
+        </span>
       )}
       <div className="min-w-0">
         <Link

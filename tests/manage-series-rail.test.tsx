@@ -46,6 +46,9 @@ describe("剧集结构栏", () => {
     await userEvent.click(within(rail).getByRole("button", { name: "新增第 3 季" }));
     expect(onAdd.mock.calls).toEqual([["episode"], ["season"]]);
     expect(within(rail).getByText("在看 · 9.1")).toBeInTheDocument();
+    const tile = rail.querySelector(".letter-tile");
+    expect(tile).toHaveAttribute("data-initial", "人");
+    expect(tile).toHaveAttribute("aria-hidden", "true");
   });
 
   it("超过 8 季改用下拉选择季，单集较多时提供跳到集号，编号使用千位分隔", () => {

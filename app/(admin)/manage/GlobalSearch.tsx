@@ -3,6 +3,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useId, useRef, useState } from "react";
+import LetterTile from "@/components/LetterTile";
 import { mediaTypes, type ManagedMediaType } from "@/lib/admin/media-form";
 import { searchMedia, type MediaHit } from "./search-actions";
 
@@ -149,10 +150,9 @@ export default function GlobalSearch() {
                       className="h-[45px] w-[30px] shrink-0 rounded object-cover"
                     />
                   ) : (
-                    <span
-                      className="surface-muted h-[45px] w-[30px] shrink-0 rounded border border-white/10"
-                      aria-hidden="true"
-                    />
+                    <span className="relative h-[45px] w-[30px] shrink-0 overflow-hidden rounded border border-white/10">
+                      <LetterTile title={hit.title} decorative />
+                    </span>
                   )}
                   <span className="min-w-0 flex-1">
                     <span className="block truncate font-medium text-white">{hit.title}</span>

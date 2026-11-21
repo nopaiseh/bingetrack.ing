@@ -161,13 +161,8 @@ export function SearchMediaCard({
           preload={preload}
           eager={eager}
         />
-      ) : square || book ? (
-        <LetterTile title={item.title} decorative />
       ) : (
-        <span
-          className="i-material-symbols-image-outline-rounded inline-block size-10 text-fg-muted"
-          aria-hidden="true"
-        />
+        <LetterTile title={item.title} decorative />
       )}
       {showUpcoming(item) ? (
         <UpcomingPosterBadge />

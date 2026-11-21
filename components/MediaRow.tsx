@@ -41,13 +41,8 @@ function ItemCard({
             fetchPriority={preload ? "high" : undefined}
             loading={preload ? undefined : eager ? "eager" : "lazy"}
           />
-        ) : type === "books" ? (
-          <LetterTile title={item.title} decorative />
         ) : (
-          <span
-            className="i-material-symbols-image-outline-rounded inline-block size-10 text-fg-muted"
-            aria-hidden="true"
-          />
+          <LetterTile title={item.title} decorative />
         )}
         {!hideStatusBadge && <MediaCardStatusBadge status={item.status} kind={type === "books" ? "book" : "watch"} />}
       </div>
