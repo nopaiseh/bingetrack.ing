@@ -327,7 +327,7 @@ test("无结果建议会换成对应筛选并清掉关键词", async () => {
   });
 });
 
-test("筛选按钮展开类型和年份，收起后高级条件离开页面", () => {
+test("筛选按钮展开类型和年份，收起后高级条件对读屏隐藏", () => {
   window.history.replaceState(null, "", "/search");
   render(<SearchClient initialOptions={options} initialResult={resultFor("")} />);
   const toggle = screen.getByRole("button", { name: "筛选" });
@@ -339,6 +339,29 @@ test("筛选按钮展开类型和年份，收起后高级条件离开页面", ()
   expect(screen.getByRole("combobox", { name: "开始年份" })).toBeInTheDocument();
   fireEvent.click(screen.getByRole("button", { name: "收起筛选" }));
   expect(screen.queryByRole("combobox", { name: "开始年份" })).not.toBeInTheDocument();
+});
+
+test("筛选按钮的 aria-controls 在收起和展开时都指向存在的元素", () => {
+  window.history.replaceState(null, "", "/search");
+  render(<SearchClient initialOptions={options} initialResult={resultFor("")} />);
+
+  const collapsed = screen.getByRole("button", { name: "筛选" });
+  expect(collapsed).toHaveAttribute("aria-expanded", "false");
+  const collapsedControls = collapsed.getAttribute("aria-controls");
+  expect(collapsedControls).toBeTruthy();
+  expect(document.getElementById(collapsedControls!)).not.toBeNull();
+
+  fireEvent.click(collapsed);
+  const expanded = screen.getByRole("button", { name: "收起筛选" });
+  expect(expanded).toHaveAttribute("aria-expanded", "true");
+  const expandedControls = expanded.getAttribute("aria-controls");
+  expect(expandedControls).toBe(collapsedControls);
+  expect(document.getElementById(expandedControls!)).not.toBeNull();
+
+  fireEvent.click(expanded);
+  const collapsedAgain = screen.getByRole("button", { name: "筛选" });
+  expect(collapsedAgain).toHaveAttribute("aria-expanded", "false");
+  expect(document.getElementById(collapsedAgain.getAttribute("aria-controls")!)).not.toBeNull();
 });
 
 test("the hidden back-to-top button is removed from keyboard focus", () => {

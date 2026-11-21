@@ -41,6 +41,24 @@ test(
 );
 
 test(
+  "aria-controls only points at the year list while it is open",
+  /* 收起时不写 aria-controls，避免指向不在 DOM 中的 id；展开时关联存在的列表。 */ async () => {
+    const user = userEvent.setup();
+    render(<DashboardYearPicker years={[2025, 2024]} selectedYear="2025" onSelect={vi.fn()} />);
+
+    const picker = screen.getByRole("combobox", { name: "筛选年份" });
+    expect(picker).toHaveAttribute("aria-expanded", "false");
+    expect(picker).not.toHaveAttribute("aria-controls");
+
+    await user.click(picker);
+    expect(picker).toHaveAttribute("aria-expanded", "true");
+    const controls = picker.getAttribute("aria-controls");
+    expect(controls).toBeTruthy();
+    expect(document.getElementById(controls!)).not.toBeNull();
+  },
+);
+
+test(
   "displays '全时段' when 'All Time' is selected",
   /* 验证选中 All Time 时输入框显示为全时段 */ () => {
     render(<DashboardYearPicker years={["All Time", 2025, 2024]} selectedYear="All Time" onSelect={vi.fn()} />);
