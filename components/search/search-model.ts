@@ -1,9 +1,9 @@
 import { WATCH_STATUSES } from "@/components/watch-status";
 import { PAGE_SIZE, type SearchFilters } from "@/lib/api/search-state";
-import { CATALOG_DB_TYPES, MEDIA_TYPE_DEFINITIONS } from "@/lib/media-types";
+import { MEDIA_TYPE_DEFINITIONS, SEARCH_DB_TYPES, isSearchDbMediaType } from "@/lib/media-types";
 
 export const TYPE_OPTIONS = [
-  ...CATALOG_DB_TYPES.map((value) => ({ value, label: MEDIA_TYPE_DEFINITIONS[value].label })),
+  ...SEARCH_DB_TYPES.map((value) => ({ value, label: MEDIA_TYPE_DEFINITIONS[value].label })),
   { value: "series", label: "系列" },
   { value: "director", label: "导演" },
   { value: "actor", label: "演员" },
@@ -16,6 +16,24 @@ export const STATUS_OPTIONS = [
   { value: "watched", label: WATCH_STATUSES.watched.label },
   { value: "upcoming", label: "即将上映" },
 ];
+
+/** 仅筛选单曲时，状态用「已听／想听」；与媒体全景看板文案一致。 */
+export function statusFilterLabel(value: string, selectedTypes: readonly string[] = []): string {
+  const mediaTypes = selectedTypes.filter((type) => isSearchDbMediaType(type));
+  if (mediaTypes.length === 1 && mediaTypes[0] === "music") {
+    if (value === "watched") return "已听";
+    if (value === "want_to_watch") return "想听";
+  }
+  return optionLabel(STATUS_OPTIONS, value);
+}
+
+/** 状态筛选项：单曲场景下替换想看／已看文案，其余保持影视／图书默认。 */
+export function statusFilterOptions(selectedTypes: readonly string[] = []) {
+  return STATUS_OPTIONS.map((option) => ({
+    ...option,
+    label: statusFilterLabel(option.value, selectedTypes),
+  }));
+}
 
 export const PRIMARY_CATEGORIES = [
   { id: "type", label: "分类", options: TYPE_OPTIONS, multiSelect: true },

@@ -1,10 +1,13 @@
 import { describe, expect, it } from "vitest";
 import {
+  TYPE_OPTIONS,
   countActiveFilters,
   optionLabel,
   resultRange,
   resultsHeading,
   sortCaption,
+  statusFilterLabel,
+  statusFilterOptions,
 } from "@/components/search/search-model";
 import { EMPTY_FILTERS } from "@/components/search/search-model";
 
@@ -13,6 +16,15 @@ describe("search model helpers", () => {
     expect(optionLabel([{ value: "movie", label: "电影" }], "movie")).toBe("电影");
     expect(optionLabel([{ value: "movie", label: "电影" }], "unknown")).toBe("unknown");
     expect(optionLabel([], "")).toBe("");
+  });
+
+  it("lists 单曲 in type filters and uses 已听／想听 when only music is selected", () => {
+    expect(TYPE_OPTIONS.some((option) => option.value === "music" && option.label === "单曲")).toBe(true);
+    expect(statusFilterLabel("watched", ["music"])).toBe("已听");
+    expect(statusFilterLabel("want_to_watch", ["music"])).toBe("想听");
+    expect(statusFilterLabel("watched", ["movie"])).toBe("已看");
+    expect(statusFilterLabel("watched", ["music", "movie"])).toBe("已看");
+    expect(statusFilterOptions(["music"]).find((option) => option.value === "watched")?.label).toBe("已听");
   });
 
   it("freezes the default filters and their lists", () => {

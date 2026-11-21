@@ -90,6 +90,22 @@ describe("OverviewBoards", () => {
       screen
         .getAllByRole("link")
         .some(
+          (link) =>
+            link.getAttribute("href") === "/search?type=music&status=watched&startYear=2024&endYear=2024",
+        ),
+    ).toBe(true);
+    expect(
+      screen
+        .getAllByRole("link")
+        .some(
+          (link) =>
+            link.getAttribute("href") === "/search?type=music&status=want_to_watch&startYear=2024&endYear=2024",
+        ),
+    ).toBe(true);
+    expect(
+      screen
+        .getAllByRole("link")
+        .some(
           (link) => link.getAttribute("href") === "/search?type=book&status=in_progress&startYear=2024&endYear=2024",
         ),
     ).toBe(true);
