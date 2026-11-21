@@ -5,8 +5,9 @@ import { describe, expect, it } from "vitest";
 describe("search media card content-visibility", () => {
   it("locks card height with content-visibility and contain-intrinsic-size", () => {
     const css = readFileSync(resolve(process.cwd(), "app/globals.css"), "utf8");
-    expect(css).toMatch(
-      /\.search-media-card\s*\{[^}]*content-visibility:\s*auto;[^}]*contain-intrinsic-size:\s*auto 380px;/s,
-    );
+    const block = css.match(/\.search-media-card\s*\{[^}]*\}/);
+    expect(block?.[0]).toBeTruthy();
+    expect(block![0]).toContain("content-visibility: auto");
+    expect(block![0]).toContain("contain-intrinsic-size: auto 380px");
   });
 });
