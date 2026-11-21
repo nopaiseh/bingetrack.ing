@@ -179,20 +179,18 @@ export function AdminLoadingSkeleton() {
   );
 }
 
-/** 为电视节目分季详情页面提供海报、统计与分集列表骨架。 */
+/** 为电视节目分季详情页面提供无海报头部、统计与分集列表骨架。 */
 export function SeasonDetailLoadingSkeleton() {
   return (
     <div className="min-h-screen pb-16 pt-24">
       <section className="container mx-auto max-w-7xl space-y-6 px-4 sm:px-6 lg:px-8" aria-label="正在加载本季单集">
         <SkeletonBlock className="h-10 w-44" />
-        <div className="surface-panel flex flex-col gap-6 rounded-3xl p-5 sm:p-6 lg:flex-row lg:p-8">
-          <SkeletonBlock className="aspect-2/3 w-full max-w-72 shrink-0 self-center lg:w-72 lg:self-start" />
-          <div className="flex-1 space-y-4 py-2">
-            <SkeletonBlock className="h-4 w-40" />
-            <SkeletonBlock className="h-12 w-64 max-w-full" />
-            <SkeletonBlock className="h-4 w-44" />
-            <SkeletonBlock className="mt-6 h-20 w-full" />
-          </div>
+        <div className="surface-panel min-w-0 space-y-4 rounded-3xl px-5 pt-5 pb-6 sm:p-6 lg:p-8">
+          <SkeletonBlock className="h-4 w-40" />
+          <SkeletonBlock className="h-12 w-64 max-w-full" />
+          <SkeletonBlock className="h-4 w-44" />
+          <SkeletonBlock className="h-11 w-full" />
+          <SkeletonBlock className="mt-2 h-20 w-full" />
         </div>
         <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
           {Array.from({ length: 4 }, (_, index) => (
