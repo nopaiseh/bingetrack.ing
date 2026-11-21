@@ -28,10 +28,14 @@ describe("MediaCardStatusBadge", () => {
     expect(config?.dotClass).toContain("var(--accent)");
   });
 
-  it("supports Chinese status labels like 已看, 在看, 想看", () => {
-    expect(getStatusBadgeConfig("已看")?.label).toBe("已看");
-    expect(getStatusBadgeConfig("在看")?.label).toBe("在看");
-    expect(getStatusBadgeConfig("想看")?.label).toBe("想看");
+  it("rejects Chinese and other non-enum status strings", () => {
+    expect(getStatusBadgeConfig("已看")).toBeNull();
+    expect(getStatusBadgeConfig("在看")).toBeNull();
+    expect(getStatusBadgeConfig("想看")).toBeNull();
+    expect(getStatusBadgeConfig("已观看")).toBeNull();
+    expect(getStatusBadgeConfig("正在看")).toBeNull();
+    expect(getStatusBadgeConfig("想要看")).toBeNull();
+    expect(getStatusBadgeConfig("读过")).toBeNull();
   });
 
   it("returns null for untracked, empty or unknown status", () => {

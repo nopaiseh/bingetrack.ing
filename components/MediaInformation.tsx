@@ -148,6 +148,7 @@ export default function MediaInformation({
   const yearLabel = releaseYearLabel(media, releaseDateLabel);
   const runtimeLabel = heroRuntime(media.runtime);
   const publicType = normalizeToPublicMediaType(media.type);
+  if (!publicType) throw new Error(`Unknown media type for detail: ${media.type ?? "(empty)"}`);
   const typeLabel = publicMediaTypeLabel(publicType);
   const status = displayStatus ?? media.status;
   const statusConfig = resolveWatchStatus(status) ?? WATCH_STATUSES.want_to_watch;

@@ -51,10 +51,10 @@ test("switches theme on click and persists to document and localStorage", async 
   expect(defaultButton).toHaveAttribute("aria-pressed", "true");
 });
 
-test("首帧脚本忽略已下线的旧主题并保留默认主题", async () => {
+test("首帧脚本忽略未知主题 id 并保留默认主题", async () => {
   const { THEME_INIT_SCRIPT } = await import("@/lib/themes");
-  for (const retired of ["cyber", "sepia", "noir"]) {
-    storage.set("bingetrack-theme", retired);
+  for (const unknown of ["not-a-theme", "legacy-theme"]) {
+    storage.set("bingetrack-theme", unknown);
     new Function(THEME_INIT_SCRIPT)();
     expect(document.documentElement.getAttribute("data-theme")).toBeNull();
   }
