@@ -1,11 +1,9 @@
-import Image from "next/image";
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { BackLink } from "@/components/MediaBackLink";
 import ClampedCopy from "@/components/ClampedCopy";
-import LetterTile from "@/components/LetterTile";
 import SeasonEpisodeBrowser from "@/components/SeasonEpisodeBrowser";
+import SeasonTabList from "@/components/SeasonTabList";
 import { formatRuntime, parseRuntimeParts } from "@/lib/format-runtime";
 import {
   getCachedMediaById,
@@ -15,7 +13,7 @@ import {
 } from "@/lib/functions/cached-media";
 import { buildSeasonJsonLd, buildSeasonMetadata, serializeJsonLd } from "@/lib/seo/media";
 import { SEASON_EPISODE_PAGE_SIZE } from "@/lib/season-browse";
-import type { EpisodeInfo, SeasonEpisodePage, SeasonInfo } from "@/lib/types";
+import type { EpisodeInfo, SeasonEpisodePage } from "@/lib/types";
 
 // 单集分页接口单次最多 100 条。结构化数据按这个上限取未筛选升序结果，页数封顶以免异常集数连续查询。
 const JSON_LD_EPISODE_PAGE_SIZE = 100;
@@ -73,58 +71,7 @@ function compactRuntime(runtime: number): string {
   return `${minutes}分钟`;
 }
 
-/** 季与季之间的切换。窄屏单独占一整行，宽屏靠在标题右侧。 */
-function SeasonSwitcher({
-  seriesId,
-  seasonId,
-  seasons,
-  previousSeason,
-  nextSeason,
-}: {
-  seriesId: string;
-  seasonId: string;
-  seasons: SeasonInfo[];
-  previousSeason: SeasonInfo | null;
-  nextSeason: SeasonInfo | null;
-}) {
-  return (
-    <div className="flex min-w-0 items-center gap-2">
-      {previousSeason ? (
-        <Link
-          href={`/shows/${seriesId}/seasons/${previousSeason.id}`}
-          className="surface-recessed interactive-control rounded-xl border border-white/10 p-2.5 text-fg-muted"
-          aria-label={`上一季：第 ${previousSeason.seasonNumber} 季`}
-        >
-          <span className="i-material-symbols-chevron-left-rounded inline-block size-4" aria-hidden="true" />
-        </Link>
-      ) : null}
-      <div className="surface-recessed flex max-w-full gap-1 overflow-x-auto rounded-xl border border-white/10 p-1 lg:max-w-72">
-        {seasons.map(
-          /* 为一个季渲染切换链接，并突出当前季。 */ (season) => (
-            <Link
-              key={season.id}
-              href={`/shows/${seriesId}/seasons/${season.id}`}
-              className={`shrink-0 whitespace-nowrap rounded-lg px-3 py-1.5 text-xs transition-colors ${season.id === seasonId ? "surface-active border border-[var(--accent-border)] font-bold text-[var(--accent-hover)] shadow-[0_4px_10px_var(--accent-glow-soft)]" : "text-fg-muted hover:bg-white/10 hover:text-white"}`}
-            >
-              第 {season.seasonNumber} 季
-            </Link>
-          ),
-        )}
-      </div>
-      {nextSeason ? (
-        <Link
-          href={`/shows/${seriesId}/seasons/${nextSeason.id}`}
-          className="surface-recessed interactive-control rounded-xl border border-white/10 p-2.5 text-fg-muted"
-          aria-label={`下一季：第 ${nextSeason.seasonNumber} 季`}
-        >
-          <span className="i-material-symbols-chevron-right-rounded inline-block size-4" aria-hidden="true" />
-        </Link>
-      ) : null}
-    </div>
-  );
-}
-
-/** 加载默认单集页、季摘要和相邻季，渲染海报、统计，并把筛选与翻页交给客户端。 */
+/** 加载默认单集页、季摘要和相邻季，渲染无海报头部、统计，并把筛选与翻页交给客户端。 */
 export default async function SeasonPage({ params }: { params: Promise<{ id: string; seasonId: string }> }) {
   const { id, seasonId } = await params;
   const [series, seasonData, seasons, nextEpisodeNumber] = await Promise.all([
@@ -136,12 +83,6 @@ export default async function SeasonPage({ params }: { params: Promise<{ id: str
 
   if (!series || !seasonData) notFound();
 
-  const currentSeasonIndex = seasons.findIndex(
-    /* 查找当前季在季列表中的位置，供相邻季导航使用。 */ (season) => season.id === seasonId,
-  );
-  const previousSeason = currentSeasonIndex > 0 ? seasons[currentSeasonIndex - 1] : null;
-  const nextSeason =
-    currentSeasonIndex >= 0 && currentSeasonIndex < seasons.length - 1 ? seasons[currentSeasonIndex + 1] : null;
   const watchedPercent =
     seasonData.season.episodeCount > 0
       ? Math.round((seasonData.watchedCount / seasonData.season.episodeCount) * 100)
@@ -157,58 +98,39 @@ export default async function SeasonPage({ params }: { params: Promise<{ id: str
       <div className="container mx-auto w-full min-w-0 max-w-7xl px-4 sm:px-6 lg:px-8">
         <BackLink href={`/shows/${id}`} label={`返回《${series.title}》`} />
 
-        <header className="surface-panel relative mb-6 grid grid-cols-[5rem_minmax(0,1fr)] items-start gap-x-3.5 gap-y-3 overflow-hidden rounded-3xl p-5 sm:p-6 lg:grid-cols-[18rem_minmax(0,1fr)_auto] lg:gap-x-8 lg:p-8">
-          <div
-            className={`image-overlay relative col-start-1 row-start-1 aspect-2/3 w-full self-start overflow-hidden rounded-xl border border-white/15 shadow-[0_12px_35px_rgba(0,0,0,0.35)] lg:rounded-2xl ${seasonData.season.summary ? "lg:row-span-2" : ""}`}
-            data-poster
-          >
-            {seasonData.season.coverUrl ? (
-              <Image
-                src={seasonData.season.coverUrl}
-                alt=""
-                fill
-                preload
-                fetchPriority="high"
-                className="object-cover"
-                sizes="(max-width: 1023px) 80px, 288px"
-              />
-            ) : (
-              <LetterTile title={seasonData.season.title} decorative />
-            )}
-          </div>
-          <div className="col-start-2 row-start-1 min-w-0 self-start">
-            <p className="mb-1.5 text-xs font-medium tracking-widest text-[var(--accent-hover)] lg:mb-2 lg:text-sm">
-              {series.title} · 第 {seasonData.season.seasonNumber} 季
-            </p>
-            <h1 className="font-display break-words bg-linear-to-b from-white via-white/95 to-white/75 bg-clip-text text-2xl font-bold tracking-tight text-balance text-transparent sm:text-4xl lg:text-5xl">
-              {seasonData.season.title}
-            </h1>
-            <p className="mt-1.5 text-sm text-fg-subtle lg:mt-3">
-              {seasonData.season.releaseYearRange ? `${seasonData.season.releaseYearRange} · ` : ""}
-              {seasonData.season.episodeCount} 集
-            </p>
-          </div>
-          <div className="col-span-2 row-start-2 min-w-0 lg:col-span-1 lg:col-start-3 lg:row-start-1 lg:self-end">
-            <SeasonSwitcher
-              seriesId={id}
-              seasonId={seasonId}
-              seasons={seasons}
-              previousSeason={previousSeason}
-              nextSeason={nextSeason}
-            />
-          </div>
+        <header className="surface-panel relative mb-6 min-w-0 overflow-hidden rounded-3xl px-5 pt-5 pb-6 sm:p-6 lg:p-8">
+          <p className="mb-1.5 text-sm font-medium tracking-widest text-[var(--accent-hover)]">
+            {series.title} · 第 {seasonData.season.seasonNumber} 季
+          </p>
+          <h1 className="font-display min-w-0 break-words bg-linear-to-b from-white via-white/95 to-white/75 bg-clip-text text-2xl font-bold tracking-tight text-balance text-transparent sm:text-4xl lg:text-5xl">
+            {seasonData.season.title}
+          </h1>
+          <p className="mt-1.5 text-sm text-fg-subtle">
+            {seasonData.season.releaseYearRange ? `${seasonData.season.releaseYearRange} · ` : ""}
+            {seasonData.season.episodeCount} 集
+          </p>
+
+          <SeasonTabList seriesId={id} seasonId={seasonId} seasons={seasons} />
+
           {seasonData.season.summary ? (
-            <div className="col-span-2 row-start-3 border-t border-white/10 pt-4 lg:col-span-2 lg:col-start-2 lg:row-start-2 lg:pt-5">
-              <h2 className="text-xs font-semibold uppercase tracking-widest text-fg-muted">本季简介</h2>
+            <div className={seasons.length > 1 ? "mt-5 min-w-0" : "mt-5 min-w-0 border-t border-white/10 pt-4"}>
+              <h2 className="text-sm font-semibold tracking-widest text-fg-muted">本季简介</h2>
               <div className="mt-2">
-                <ClampedCopy text={seasonData.season.summary} />
+                <ClampedCopy
+                  text={seasonData.season.summary}
+                  persistClamp
+                  lines={4}
+                  fullWidth
+                  expandLabel="展开"
+                  collapseLabel="收起"
+                />
               </div>
             </div>
           ) : null}
         </header>
 
         <section
-          className="mb-6 flex items-baseline gap-x-3 overflow-x-auto text-sm whitespace-nowrap lg:grid lg:grid-cols-4 lg:gap-3 lg:overflow-visible lg:whitespace-normal"
+          className="mb-6 flex min-w-0 items-baseline gap-x-3 overflow-x-auto text-sm whitespace-nowrap lg:grid lg:grid-cols-4 lg:gap-3 lg:overflow-visible lg:whitespace-normal"
           aria-label="本季统计"
         >
           {(

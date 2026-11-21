@@ -1,6 +1,6 @@
 import { render, screen } from "@testing-library/react";
 import type { ReactNode } from "react";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { EpisodeInfo, Media, SeasonInfo } from "@/lib/types";
 
 vi.mock("next/link", () => ({
@@ -39,6 +39,7 @@ import { SITE_URL } from "@/lib/site";
 
 const seriesId = "50000000-0000-4000-8000-000000000002";
 const seasonId = "50000000-0000-4000-8000-000000000003";
+const seasonTwoId = "50000000-0000-4000-8000-000000000004";
 const season: SeasonInfo = {
   id: seasonId,
   seasonNumber: 1,
@@ -48,16 +49,25 @@ const season: SeasonInfo = {
   watchedEpisodeCount: 1,
   summary: "第一季简介",
 };
+const seasonTwo: SeasonInfo = {
+  id: seasonTwoId,
+  seasonNumber: 2,
+  title: "城市信号 第二季",
+  coverUrl: "",
+  episodeCount: 3,
+  watchedEpisodeCount: 0,
+  summary: "",
+};
 
 /** 准备一季的默认数据，供页面只读取第 1 页。 */
-function mockSeason() {
+function mockSeason(seasons: SeasonInfo[] = [season]) {
   vi.mocked(getCachedMediaById).mockResolvedValue({
     id: seriesId,
     title: "城市信号",
     type: "shows",
     cover_url: "",
   } as Media);
-  vi.mocked(getCachedSeasonsBySeriesId).mockResolvedValue([season]);
+  vi.mocked(getCachedSeasonsBySeriesId).mockResolvedValue(seasons);
   vi.mocked(getCachedSeasonEpisodes).mockResolvedValue({
     season,
     episodes: [
@@ -92,12 +102,24 @@ function mockSeason() {
 
 describe("SeasonPage", () => {
   beforeEach(() => {
+    vi.stubGlobal(
+      "ResizeObserver",
+      class {
+        observe() {}
+        unobserve() {}
+        disconnect() {}
+      },
+    );
     vi.mocked(getCachedMediaById).mockReset();
     vi.mocked(getCachedSeasonsBySeriesId).mockReset();
     vi.mocked(getCachedSeasonEpisodes).mockReset();
     vi.mocked(getCachedSeasonNextEpisodeNumber).mockReset();
     season.summary = "第一季简介";
     mockSeason();
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
   });
 
   it("按需静态生成且不定时重建，构建时不枚举季", () => {
@@ -181,25 +203,51 @@ describe("SeasonPage", () => {
     expect(getCachedSeasonEpisodes).toHaveBeenCalledWith(seriesId, seasonId, 2, 100, "all", "asc");
   });
 
-  it("窄屏把海报收在标题旁，统计收成一行，长简介可以展开", async () => {
+  it("无海报头部占满宽度，统计收成一行，长简介可展开", async () => {
     season.summary = "本季从摸索走到定型。".repeat(10);
     const { container } = render(await SeasonPage({ params: Promise.resolve({ id: seriesId, seasonId }) }));
-    expect(container.querySelector("header")).toHaveClass(
-      "grid-cols-[5rem_minmax(0,1fr)]",
-      "lg:grid-cols-[18rem_minmax(0,1fr)_auto]",
+    expect(container.querySelector("header")).toHaveClass("rounded-3xl", "min-w-0", "px-5");
+    expect(container.querySelector("[data-poster]")).toBeNull();
+    expect(screen.getByRole("heading", { level: 1, name: "城市信号 第一季" })).toHaveClass(
+      "text-2xl",
+      "sm:text-4xl",
+      "lg:text-5xl",
     );
-    expect(screen.getByRole("heading", { level: 1, name: "城市信号 第一季" })).toHaveClass("text-2xl", "lg:text-5xl");
     expect(screen.getByRole("region", { name: "本季统计" })).toHaveClass("whitespace-nowrap", "lg:grid");
-    expect(screen.getByText(/本季从摸索走到定型/)).toHaveClass("max-w-[70ch]");
-    expect(screen.getByText("展开简介 ▾")).toBeInTheDocument();
+    expect(screen.getByText(/本季从摸索走到定型/)).toHaveClass("min-w-0", "line-clamp-4");
+    expect(screen.getByText(/本季从摸索走到定型/)).not.toHaveClass("max-w-[70ch]");
+    expect(screen.getByRole("heading", { level: 2, name: "本季简介" })).toBeInTheDocument();
   });
 
-  it("无季海报时用首字块，与可见标题配套时 aria-hidden", async () => {
-    const { container } = render(await SeasonPage({ params: Promise.resolve({ id: seriesId, seasonId }) }));
-    const tile = container.querySelector("[data-poster] .letter-tile");
-    expect(tile).toHaveAttribute("data-initial", "城");
-    expect(tile).toHaveAttribute("aria-hidden", "true");
-    expect(container.querySelector(".i-material-symbols-image-outline-rounded")).toBeNull();
+  it("多季时渲染全宽季度导航，单季不显示；有导航时简介区不加 border-top", async () => {
+    mockSeason([season, seasonTwo]);
+    const { container, rerender } = render(await SeasonPage({ params: Promise.resolve({ id: seriesId, seasonId }) }));
+    expect(screen.getByRole("navigation", { name: "选择季度" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "第 1 季", current: "page" })).toHaveAttribute(
+      "href",
+      `/shows/${seriesId}/seasons/${seasonId}`,
+    );
+    expect(screen.getByRole("link", { name: "第 2 季" })).toHaveAttribute(
+      "href",
+      `/shows/${seriesId}/seasons/${seasonTwoId}`,
+    );
+    expect(screen.queryByRole("tablist")).not.toBeInTheDocument();
+    const overviewWithNav = screen.getByRole("heading", { level: 2, name: "本季简介" }).parentElement;
+    expect(overviewWithNav).toHaveClass("mt-5");
+    expect(overviewWithNav).not.toHaveClass("border-t", "pt-4");
+
+    mockSeason([season]);
+    rerender(await SeasonPage({ params: Promise.resolve({ id: seriesId, seasonId }) }));
+    expect(screen.queryByRole("navigation", { name: "选择季度" })).not.toBeInTheDocument();
+    const overviewAlone = screen.getByRole("heading", { level: 2, name: "本季简介" }).parentElement;
+    expect(overviewAlone).toHaveClass("border-t", "border-white/10", "pt-4");
+    expect(container.querySelector("header")).toBeInTheDocument();
+  });
+
+  it("没有简介时不渲染简介区", async () => {
+    season.summary = "";
+    render(await SeasonPage({ params: Promise.resolve({ id: seriesId, seasonId }) }));
+    expect(screen.queryByRole("heading", { level: 2, name: "本季简介" })).not.toBeInTheDocument();
   });
 
   it("季不存在时返回未找到", async () => {

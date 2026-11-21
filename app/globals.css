@@ -308,9 +308,6 @@
   --danger: #f87171;
   --danger-bg: #b91c1c;
   --danger-soft: rgba(248, 113, 113, 0.12);
-  --aurora-1: rgba(255, 92, 157, 0.16);
-  --aurora-2: rgba(167, 139, 250, 0.12);
-  --aurora-3: rgba(255, 92, 157, 0.05);
   --image-overlay: rgba(0, 0, 0, 0.45);
   --image-placeholder: var(--surface-2);
   --image-label: rgba(14, 10, 18, 0.88);
@@ -349,9 +346,6 @@
   --accent-soft: rgba(46, 230, 214, 0.16);
   --accent-border: rgba(46, 230, 214, 0.5);
   --accent-border-hover: #5eead4;
-  --aurora-1: rgba(46, 230, 214, 0.14);
-  --aurora-2: rgba(47, 107, 255, 0.1);
-  --aurora-3: rgba(139, 92, 246, 0.08);
   --image-placeholder: #0c222c;
   --image-label: rgba(2, 17, 27, 0.88);
 }
@@ -375,9 +369,6 @@
   --accent-soft: rgba(255, 182, 39, 0.16);
   --accent-border: rgba(255, 182, 39, 0.5);
   --accent-border-hover: #ffc95a;
-  --aurora-1: rgba(255, 182, 39, 0.14);
-  --aurora-2: rgba(255, 120, 70, 0.1);
-  --aurora-3: rgba(167, 139, 250, 0.06);
   --image-placeholder: #271810;
   --image-label: rgba(22, 10, 5, 0.88);
 }
@@ -477,24 +468,9 @@
   }
 }
 
-/* 薄雾固定在视口上，并淡入同一块画布色。长页滚动时色带不会在某一屏高度截断。 */
 html {
   background-color: var(--canvas);
   min-height: 100%;
-}
-
-body::before {
-  content: "";
-  position: fixed;
-  inset: 0;
-  height: 100vh;
-  height: 100dvh;
-  background:
-    radial-gradient(ellipse 90vmax 56vmax at 0% -8%, var(--aurora-1), var(--canvas) 64%),
-    radial-gradient(ellipse 70vmax 48vmax at 100% 0%, var(--aurora-2), var(--canvas) 60%),
-    radial-gradient(ellipse 80vmax 42vmax at 50% 115%, var(--aurora-3), var(--canvas) 62%);
-  pointer-events: none;
-  z-index: 0;
 }
 
 @layer components {
@@ -820,58 +796,6 @@ body::before {
     box-shadow: inset 3px 0 0 var(--accent);
   }
 
-  /* 详情和季简介：窄屏收成三行，点按 summary 展开。宽屏不限行数，行宽由 70ch 控制。 */
-  .overview-clamp > summary {
-    display: block;
-    list-style: none;
-    cursor: pointer;
-  }
-
-  .overview-clamp > summary::-webkit-details-marker {
-    display: none;
-  }
-
-  .overview-clamp-text {
-    display: -webkit-box;
-    -webkit-box-orient: vertical;
-    -webkit-line-clamp: 3;
-    overflow: hidden;
-  }
-
-  .overview-clamp[open] .overview-clamp-text {
-    display: block;
-    -webkit-line-clamp: unset;
-    overflow: visible;
-  }
-
-  .overview-expand-open {
-    display: none;
-  }
-
-  .overview-clamp[open] .overview-expand-closed {
-    display: none;
-  }
-
-  .overview-clamp[open] .overview-expand-open {
-    display: inline;
-  }
-
-  @media (min-width: 1024px) {
-    .overview-clamp:not(.overview-clamp-persist) > summary {
-      cursor: text;
-    }
-
-    .overview-clamp:not(.overview-clamp-persist) .overview-clamp-text {
-      display: block;
-      -webkit-line-clamp: unset;
-      overflow: visible;
-    }
-  }
-
-  .overview-clamp-persist .overview-clamp-text {
-    -webkit-line-clamp: 4;
-  }
-
   .mobile-tab-bar {
     background: var(--surface-panel);
     border: 1px solid var(--border-strong);
@@ -1055,6 +979,35 @@ select:is(.filter-option, .filter-option-active):focus-visible {
 .no-scrollbar {
   -ms-overflow-style: none;
   scrollbar-width: none;
+}
+
+/* 季切换条：窄屏两端渐变遮罩提示可横向滚动，与头部卡片同色。 */
+.season-tab-scroller::before,
+.season-tab-scroller::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 1px;
+  width: 1.5rem;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.season-tab-scroller::before {
+  left: 0;
+  background: linear-gradient(to right, var(--surface-panel), transparent);
+}
+
+.season-tab-scroller::after {
+  right: 0;
+  background: linear-gradient(to left, var(--surface-panel), transparent);
+}
+
+@media (min-width: 1024px) {
+  .season-tab-scroller::before,
+  .season-tab-scroller::after {
+    display: none;
+  }
 }
 
 .custom-scrollbar::-webkit-scrollbar {
