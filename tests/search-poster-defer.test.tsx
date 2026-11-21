@@ -13,23 +13,26 @@ vi.mock("next/image", () => ({
     alt,
     src,
     sizes,
-    priority,
+    preload,
     loading,
+    fetchPriority,
   }: {
     alt: string;
     src?: string;
     sizes?: string;
     fill?: boolean;
-    priority?: boolean;
+    preload?: boolean;
     loading?: "eager" | "lazy";
+    fetchPriority?: "high" | "low" | "auto";
   }) => (
     // eslint-disable-next-line @next/next/no-img-element
     <img
       alt={alt}
       src={src}
       sizes={sizes}
-      loading={priority ? undefined : loading}
-      fetchPriority={priority ? "high" : undefined}
+      data-preload={preload ? "true" : undefined}
+      loading={preload ? undefined : loading}
+      fetchPriority={fetchPriority}
       data-testid="search-poster-img"
     />
   ),
