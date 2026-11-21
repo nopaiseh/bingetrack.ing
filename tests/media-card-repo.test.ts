@@ -10,6 +10,7 @@ const state = vi.hoisted(
       orders?: Array<{ column: string; ascending?: boolean; nullsFirst?: boolean }>;
       gtes?: Array<{ column: string; value: unknown }>;
       ltes?: Array<{ column: string; value: unknown }>;
+      ins?: Array<{ column: string; value: unknown }>;
       ors?: string[];
     }>,
     results: {} as Record<string, { data: unknown; error: null | { code: string }; count?: number }>,
@@ -29,8 +30,9 @@ vi.mock(
           orders: Array<{ column: string; ascending?: boolean; nullsFirst?: boolean }>;
           gtes: Array<{ column: string; value: unknown }>;
           ltes: Array<{ column: string; value: unknown }>;
+          ins: Array<{ column: string; value: unknown }>;
           ors: string[];
-        } = { table, args: rpcArgs, head: rpcOptions?.head, orders: [], gtes: [], ltes: [], ors: [] };
+        } = { table, args: rpcArgs, head: rpcOptions?.head, orders: [], gtes: [], ltes: [], ins: [], ors: [] };
         const chain = {
           /** 记录所选字段及是否仅查询计数，并返回链对象继续调用。 */
           select(columns: string, options?: { head?: boolean }) {
@@ -39,7 +41,10 @@ vi.mock(
             return chain;
           },
           eq: /* 忽略等值筛选并返回同一模拟查询链。 */ () => chain,
-          in: /* 忽略集合筛选并返回同一模拟查询链。 */ () => chain,
+          in: /* 记录集合筛选并返回同一模拟查询链。 */ (column: string, value: unknown) => {
+            request.ins.push({ column, value });
+            return chain;
+          },
           order: /* 记录排序参数并返回同一模拟查询链。 */ (
             column: string,
             opts?: { ascending?: boolean; nullsFirst?: boolean },
@@ -283,6 +288,37 @@ test("fetchMediaCardsServer applies decoupled year interval filter on last_air_d
   const query = state.executed.find((req) => req.table === "v_all_media");
   expect(query?.gtes).toEqual([{ column: "last_air_date", value: "2010-01-01" }]);
   expect(query?.ltes).toEqual([{ column: "first_air_date", value: "2015-12-31" }]);
+});
+
+test("searchMediaServer filters music singles by type, year, and listened/want status", async () => {
+  state.results.v_all_media = { data: [{ id: "t1", type: "music", title: "单曲" }], error: null, count: 1 };
+  await searchMediaServer({
+    type: "music",
+    status: "watched",
+    startYear: "2082",
+    endYear: "2082",
+    limit: 30,
+  });
+  const query = state.executed.find((req) => req.table === "v_all_media" && !req.head);
+  expect(query?.ins).toEqual([
+    { column: "type", value: ["music"] },
+    { column: "status", value: ["watched"] },
+  ]);
+  expect(query?.gtes).toEqual([{ column: "last_air_date", value: "2082-01-01" }]);
+  expect(query?.ltes).toEqual([{ column: "first_air_date", value: "2082-12-31" }]);
+
+  state.executed = [];
+  await searchMediaServer({
+    type: "music",
+    status: "want_to_watch",
+    startYear: "2082",
+    endYear: "2082",
+  });
+  const wantQuery = state.executed.find((req) => req.table === "v_all_media" && !req.head);
+  expect(wantQuery?.ins).toEqual([
+    { column: "type", value: ["music"] },
+    { column: "status", value: ["want_to_watch"] },
+  ]);
 });
 
 test("keyword search matches inside the database function without ID round-trips", async () => {

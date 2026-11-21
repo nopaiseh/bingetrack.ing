@@ -139,7 +139,7 @@ export const MEDIA_TYPE_DEFINITIONS = {
     trackingLabels: { done: "听过", want: "想听" },
     schemaType: "MusicRecording",
     defaultDescription: "查看《{title}》的收听记录与详细信息。",
-    // 单曲暂无公开详情路由；管理端挂在专辑下编辑，搜索可展示类型标签。
+    // 单曲暂无公开详情路由；管理端挂在专辑下编辑。公开搜索经 SEARCH_DB_TYPES 接受 type=music。
     enabled: false,
     adminManaged: true,
     adminBulkOps: false,
@@ -221,6 +221,15 @@ export const CATALOG_DB_TYPES = ALL_KEYS.filter(
   (key): key is CatalogDbMediaType => MEDIA_TYPE_DEFINITIONS[key].enabled && MEDIA_TYPE_DEFINITIONS[key].route != null,
 ) as readonly CatalogDbMediaType[];
 
+/**
+ * 公开搜索 `type=` 可接受的数据库类型。
+ * 含目录类型，以及尚无公开详情路由、但可按 type=music 筛选的单曲。
+ */
+export type SearchDbMediaType = CatalogDbMediaType | "music";
+
+/** 搜索筛选白名单：目录类型 + music（单曲）。不把 music 推进公开目录路由。 */
+export const SEARCH_DB_TYPES = [...CATALOG_DB_TYPES, "music"] as const satisfies readonly SearchDbMediaType[];
+
 /** 公开路由段列表，顺序与 CATALOG_DB_TYPES 一致。 */
 export const PUBLIC_MEDIA_TYPES = CATALOG_DB_TYPES.map(
   (key) => MEDIA_TYPE_DEFINITIONS[key].route as PublicMediaType,
@@ -270,6 +279,7 @@ const dbToRoute = new Map<string, PublicMediaType>(
 );
 
 const catalogDbTypeSet = new Set<string>(CATALOG_DB_TYPES);
+const searchDbTypeSet = new Set<string>(SEARCH_DB_TYPES);
 const adminBulkDbTypeSet = new Set<string>(ADMIN_BULK_DB_TYPES);
 
 /** 判断是否为已知数据库媒体类型。 */
@@ -280,6 +290,11 @@ export function isDbMediaType(value: string): value is DbMediaType {
 /** 判断是否为当前启用的目录数据库类型。 */
 export function isCatalogDbMediaType(value: string): value is CatalogDbMediaType {
   return catalogDbTypeSet.has(value);
+}
+
+/** 判断是否为公开搜索可筛选的数据库类型（含单曲 music）。 */
+export function isSearchDbMediaType(value: string): value is SearchDbMediaType {
+  return searchDbTypeSet.has(value);
 }
 
 /** 判断是否为公开路由段（movies / shows / albums / books）。 */

@@ -81,3 +81,21 @@ test(
     ).toBe(true);
   },
 );
+
+test(
+  "type=music is a known search filter and reaches the API query",
+  /* 验证单曲可经 URL 筛选进入构建后的 API 参数。 */ () => {
+    expect(hasOnlyKnownFilterValues(new URLSearchParams({ type: "music", status: "want_to_watch" }))).toBe(true);
+    const query = buildMediaSearchQuery(
+      new URLSearchParams({ type: "music", status: "watched", startYear: "2020", endYear: "2020" }),
+    );
+    expect(parseMediaSearchParams(new URLSearchParams(query))).toEqual(
+      expect.objectContaining({
+        type: "music",
+        status: "watched",
+        startYear: "2020",
+        endYear: "2020",
+      }),
+    );
+  },
+);
