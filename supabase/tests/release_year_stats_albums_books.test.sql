@@ -1,6 +1,6 @@
 begin;
 
-select plan(16);
+select plan(18);
 
 -- 新列存在且类型为 bigint；原有列顺序未变（新列排在末尾）。
 select is(
@@ -40,7 +40,9 @@ select is(
     'listened_albums',
     'total_books',
     'read_books',
-    'reading_books'
+    'reading_books',
+    'want_albums',
+    'want_books'
   ]::text[],
   'release_year_stats keeps legacy columns and appends album/book counts'
 );
@@ -52,7 +54,8 @@ select ok(
     where table_schema = 'public'
       and table_name = 'release_year_stats'
       and column_name in (
-        'total_albums', 'listened_albums', 'total_books', 'read_books', 'reading_books'
+        'total_albums', 'listened_albums', 'total_books', 'read_books', 'reading_books',
+        'want_albums', 'want_books'
       )
   ),
   'new album/book count columns are bigint'
@@ -93,7 +96,9 @@ select
   coalesce(s.listened_albums, 0)::bigint as listened_albums,
   coalesce(s.total_books, 0)::bigint as total_books,
   coalesce(s.read_books, 0)::bigint as read_books,
-  coalesce(s.reading_books, 0)::bigint as reading_books
+  coalesce(s.reading_books, 0)::bigint as reading_books,
+  coalesce(s.want_albums, 0)::bigint as want_albums,
+  coalesce(s.want_books, 0)::bigint as want_books
 from (select 1) as _
 left join public.release_year_stats s on s.release_year = 'All Time';
 
@@ -123,25 +128,27 @@ insert into public.tracking (media_item_id, status, rating) values
   ('d1000000-0000-4000-8000-000000000032', 'want_to_watch', null);
 -- 000011（专辑）与 000033（图书）故意无 tracking，视为未完成。
 
--- 2091：1 专辑已听、1 图书已读；单曲与无日期不计。
+-- 2091：1 专辑已听、1 图书已读；无想听／想读；单曲与无日期不计。
 select results_eq(
   $$
-    select total_albums, listened_albums, total_books, read_books, reading_books
+    select total_albums, listened_albums, want_albums,
+           total_books, read_books, reading_books, want_books
     from public.release_year_stats
     where release_year = '2091'
   $$,
-  $$ values (1::bigint, 1::bigint, 1::bigint, 1::bigint, 0::bigint) $$,
+  $$ values (1::bigint, 1::bigint, 0::bigint, 1::bigint, 1::bigint, 0::bigint, 0::bigint) $$,
   '2091 album/book counts'
 );
 
--- 2092：2 专辑（均未听）、3 图书（1 在读 + 1 想读 + 1 无 tracking）。
+-- 2092：2 专辑（1 无 tracking + 1 想听）、3 图书（1 在读 + 1 想读 + 1 无 tracking）。
 select results_eq(
   $$
-    select total_albums, listened_albums, total_books, read_books, reading_books
+    select total_albums, listened_albums, want_albums,
+           total_books, read_books, reading_books, want_books
     from public.release_year_stats
     where release_year = '2092'
   $$,
-  $$ values (2::bigint, 0::bigint, 3::bigint, 0::bigint, 1::bigint) $$,
+  $$ values (2::bigint, 0::bigint, 1::bigint, 3::bigint, 0::bigint, 1::bigint, 1::bigint) $$,
   '2092 album/book counts'
 );
 
@@ -178,20 +185,22 @@ select results_eq(
   '2092 movie columns and runtimes ignore album/book/music'
 );
 
--- All Time：相对基线只增加夹具贡献（3 专辑、1 已听；4 图书、1 已读、1 在读；2 电影、时长 +210）。
+-- All Time：相对基线只增加夹具贡献（3 专辑、1 已听、1 想听；4 图书、1 已读、1 在读、1 想读；2 电影、时长 +210）。
 select results_eq(
   $$
     select
       (a.total_albums - b.total_albums),
       (a.listened_albums - b.listened_albums),
+      (a.want_albums - b.want_albums),
       (a.total_books - b.total_books),
       (a.read_books - b.read_books),
-      (a.reading_books - b.reading_books)
+      (a.reading_books - b.reading_books),
+      (a.want_books - b.want_books)
     from public.release_year_stats a
     cross join rys_all_time_before b
     where a.release_year = 'All Time'
   $$,
-  $$ values (3::bigint, 1::bigint, 4::bigint, 1::bigint, 1::bigint) $$,
+  $$ values (3::bigint, 1::bigint, 1::bigint, 4::bigint, 1::bigint, 1::bigint, 1::bigint) $$,
   'All Time album/book deltas match fixtures'
 );
 
@@ -274,6 +283,26 @@ select is(
   ),
   2::bigint,
   '2092 total_albums includes untracked album as incomplete'
+);
+
+select is(
+  (
+    select want_albums
+    from public.release_year_stats
+    where release_year = '2092'
+  ),
+  1::bigint,
+  '2092 want_albums counts want_to_watch only; untracked album excluded'
+);
+
+select is(
+  (
+    select want_books
+    from public.release_year_stats
+    where release_year = '2092'
+  ),
+  1::bigint,
+  '2092 want_books counts want_to_watch only; untracked book excluded'
 );
 
 select * from finish();

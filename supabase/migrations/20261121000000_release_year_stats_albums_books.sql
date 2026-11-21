@@ -1,6 +1,6 @@
 -- 媒体全景年度统计：在 release_year_stats 末尾追加专辑／图书计数。
 -- 现有列名、类型、顺序与计算结果保持不变；时长列仍只含影视。
--- 单曲（music）不计；无 tracking 视为未完成；口径与电影一致（须有 release_date）。
+-- 单曲（music）不计；无 tracking 视为未完成（也不算想听／想读）；口径与电影一致（须有 release_date）。
 
 create or replace view public.release_year_stats
 with (security_invoker = true)
@@ -120,10 +120,14 @@ with ep_raw as (
     unwatched_episodes, total_seasons, watched_seasons, watching_seasons, unwatched_seasons
   from movie_base
 ), album_base as (
-  -- 专辑时长强制为 0，不进入 total_runtime 等时长列；无 tracking 视为未听完。
+  -- 专辑时长强制为 0；无 tracking 不算想听，仅 want_to_watch 计入 want_albums。
   select m.id, extract(year from m.release_date)::integer as release_year,
     'album'::text as media_type,
-    case when t.status = 'watched'::public.tracking_status then 'watched' else 'unwatched' end as status,
+    case
+      when t.status = 'watched'::public.tracking_status then 'watched'
+      when t.status = 'want_to_watch'::public.tracking_status then 'want_to_watch'
+      else 'unwatched'
+    end as status,
     t.rating,
     0::numeric as total_runtime,
     0::numeric as watched_runtime,
@@ -141,12 +145,13 @@ with ep_raw as (
     unwatched_episodes, total_seasons, watched_seasons, watching_seasons, unwatched_seasons
   from album_base
 ), book_base as (
-  -- 图书不计入时长；in_progress 单独计为 reading_books。
+  -- 图书不计入时长；in_progress → reading_books；want_to_watch → want_books；无 tracking 不算想读。
   select m.id, extract(year from m.release_date)::integer as release_year,
     'book'::text as media_type,
     case
       when t.status = 'watched'::public.tracking_status then 'watched'
       when t.status = 'in_progress'::public.tracking_status then 'in_progress'
+      when t.status = 'want_to_watch'::public.tracking_status then 'want_to_watch'
       else 'unwatched'
     end as status,
     t.rating,
@@ -203,7 +208,9 @@ select
   count(id) filter (where media_type = 'album' and status = 'watched') as listened_albums,
   count(id) filter (where media_type = 'book') as total_books,
   count(id) filter (where media_type = 'book' and status = 'watched') as read_books,
-  count(id) filter (where media_type = 'book' and status = 'in_progress') as reading_books
+  count(id) filter (where media_type = 'book' and status = 'in_progress') as reading_books,
+  count(id) filter (where media_type = 'album' and status = 'want_to_watch') as want_albums,
+  count(id) filter (where media_type = 'book' and status = 'want_to_watch') as want_books
 from combined_stats
 group by release_year
 order by (release_year is null) desc, coalesce(release_year::text, 'All Time') desc;

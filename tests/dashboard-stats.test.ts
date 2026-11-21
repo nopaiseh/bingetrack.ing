@@ -29,9 +29,11 @@ describe("deriveDashboardStats", () => {
     expect(stats.totalSeries).toBe(0);
     expect(stats.totalAlbums).toBe(0);
     expect(stats.listenedAlbums).toBe(0);
+    expect(stats.wantAlbums).toBe(0);
     expect(stats.totalBooks).toBe(0);
     expect(stats.readBooks).toBe(0);
     expect(stats.readingBooks).toBe(0);
+    expect(stats.wantBooks).toBe(0);
     expect(stats.moviesPercent).toBe(0);
     expect(stats.seriesPercent).toBe(0);
     expect(stats.seriesEpisodesPercent).toBe(0);
@@ -88,9 +90,11 @@ describe("deriveDashboardStats", () => {
     expect(stats.currentYearData?.watched_seasons).toBe(2);
     expect(stats.totalAlbums).toBe(0);
     expect(stats.listenedAlbums).toBe(0);
+    expect(stats.wantAlbums).toBe(0);
     expect(stats.totalBooks).toBe(0);
     expect(stats.readBooks).toBe(0);
     expect(stats.readingBooks).toBe(0);
+    expect(stats.wantBooks).toBe(0);
   });
 
   it("derives album and book counts from the summary row", () => {
@@ -99,9 +103,11 @@ describe("deriveDashboardStats", () => {
         release_year: "All Time",
         total_albums: 5,
         listened_albums: 2,
+        want_albums: 1,
         total_books: 7,
         read_books: 3,
         reading_books: 1,
+        want_books: 2,
       } as Summary,
     ];
 
@@ -109,8 +115,10 @@ describe("deriveDashboardStats", () => {
 
     expect(stats.totalAlbums).toBe(5);
     expect(stats.listenedAlbums).toBe(2);
+    expect(stats.wantAlbums).toBe(1);
     expect(stats.totalBooks).toBe(7);
     expect(stats.readBooks).toBe(3);
     expect(stats.readingBooks).toBe(1);
+    expect(stats.wantBooks).toBe(2);
   });
 });
