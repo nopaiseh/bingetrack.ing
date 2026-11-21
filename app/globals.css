@@ -980,15 +980,7 @@ select:is(.filter-option, .filter-option-active):focus-visible {
     var(--shadow-1);
 }
 
-/* 不支持背景模糊或用户要求降低透明度时，玻璃退化为稳定的不透明面板，保证文字可读。 */
-@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
-  .surface-panel,
-  .surface-overlay,
-  .surface-card {
-    background: var(--surface-recessed);
-  }
-}
-
+/* 用户要求降低透明度时，面板退化为稳定的不透明底色，保证文字可读。 */
 @media (prefers-reduced-transparency: reduce) {
   .surface-panel,
   .surface-overlay,
