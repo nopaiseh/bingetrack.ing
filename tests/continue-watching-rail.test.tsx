@@ -63,9 +63,11 @@ describe("ContinueWatchingRail", () => {
     expect(link).toHaveTextContent("打开第 2 季");
     expect(link).toHaveTextContent("第 2 季 33/51");
     expect(link).not.toHaveTextContent("天前");
-    const poster = screen.getByRole("img", { name: "跑男" });
+    const poster = screen.getByRole("presentation");
+    expect(poster).toHaveAttribute("alt", "");
     expect(decodeURIComponent(poster.getAttribute("src") ?? "")).toContain("https://image.tmdb.org/t/p/w342/abc.jpg");
     expect(poster).toHaveAttribute("loading", "eager");
+    expect(link).toHaveAccessibleName(/跑男/);
     expect(screen.getByRole("progressbar", { name: "第 2 季已看 33 集，共 51 集" })).toHaveAttribute(
       "aria-valuenow",
       "33",
@@ -123,7 +125,10 @@ describe("ContinueWatchingRail", () => {
           items={[card(), card({ showId: "show-2", title: "爱情公寓", posterPath: "/love.jpg" })]}
         />,
       );
-      expect(screen.getByRole("img", { name: "爱情公寓" })).toHaveAttribute("loading", "lazy");
+      const posters = screen.getAllByRole("presentation");
+      expect(posters).toHaveLength(2);
+      expect(posters[1]).toHaveAttribute("alt", "");
+      expect(posters[1]).toHaveAttribute("loading", "lazy");
       const scroller = screen.getByLabelText("在看列表");
       expect(scroller).toHaveAttribute("tabindex", "0");
 
