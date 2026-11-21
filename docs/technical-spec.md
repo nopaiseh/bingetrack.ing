@@ -114,8 +114,9 @@
 5. **破坏性改动**（`DROP`、改列类型、删／改业务数据、收紧约束可能导致失败）：在 PR 说明里**单独标出**，附验证步骤与回滚方案；破坏前先备份受影响数据。
 6. **依赖生产数据的约束**（如唯一约束）：迁移内先查重／预检，有违规则 `RAISE` 并给出样例，**禁止静默跳过**（参见 `20261120140000_music_atomic_save_and_constraints.sql` 对曲序重复的预检）。
 7. **本地验证**：`supabase db reset` → 载入 `supabase/fixtures/` → `supabase test db`；PR 写明结果与回滚方案。
+8. **CI 也会从零应用迁移**：`supabase start` 按文件名顺序跑完全部 `migrations/`，迁移无法重建时质量检查失败，不得请求审查。
 
-基线：`20260925000000_initial_schema.sql`。查询视图约定（`v_all_media`、`v_manage_media_order` 等）见 [supabase/README.md](../supabase/README.md)。
+基线：`20260925000000_initial_schema.sql`。查询视图约定（`v_all_media`、`v_manage_media_order`、`v_media_series_years` 等）与管理 RPC 一览见 [supabase/README.md](../supabase/README.md)。`seed.sql` 有意留空；业务测试数据只用 fixtures，且勿导入生产。
 
 ## 5. 测试要求
 
@@ -141,3 +142,5 @@ CI：`.github/workflows/test.yml`（工作流名 `Application quality checks`，
 6. **发布**：应用经 Vercel 在合并 `main` 后发布生产；数据库随迁移合并上线（见第 4 节）。事后 smoke、域名核对与回滚步骤见 [deployment.md](deployment.md)。
 
 站长 Passkey、空闲登出、Agent／开发登录与本地 `npm run owner:login` 见 [single-owner-admin.md](single-owner-admin.md)。管理工作台路由与表单行为见 [manage-workspace.md](manage-workspace.md)。
+
+日常命令速查（完整表见 README）：`npm run lint`、`npx tsc --noEmit`、`npm test`、`npm run test:e2e`、`supabase test db`、`DEPLOYMENT_URL=<地址> npm run smoke`。格式化用 Prettier（`npm run format`／`format:check`）；CI 会检查格式。
