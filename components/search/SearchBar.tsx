@@ -45,7 +45,7 @@ export default function SearchBar({
               onQueryChange(e.target.value);
             }
           }
-          placeholder="搜索电影、电视节目、专辑、图书、导演或演员..."
+          placeholder="搜索电影、电视节目、音乐、图书、导演或演员..."
           className="search-bar-control surface-control relative z-0 w-full border border-[var(--accent-border)] py-4 pl-12 pr-12 text-base text-white outline-none transition-all duration-300 placeholder:text-fg-subtle"
         />
         <div className="pointer-events-none absolute inset-y-0 right-0 z-10 flex items-center pr-3">

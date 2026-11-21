@@ -2,7 +2,7 @@
 
 import type { SearchFilters } from "@/lib/api/search-state";
 
-/** 无结果时给出说明、对比度足够的清除按钮，以及电影 / 电视节目 / 即将上映三个起步方向。 */
+/** 无结果时给出说明、对比度足够的清除按钮，以及电影 / 电视节目 / 音乐 / 即将上映四个起步方向。 */
 export default function SearchEmptyState({
   query,
   canReset,
@@ -22,8 +22,8 @@ export default function SearchEmptyState({
       <p className="text-lg font-semibold text-fg">没有匹配的作品</p>
       <p className="mt-2 max-w-md text-sm leading-relaxed text-fg-secondary">
         {query
-          ? "没有与这个关键词匹配的电影、电视节目、图书或人物。可以换一个词，或清除目前的筛选后再试。"
-          : "没有作品符合当前筛选。可以放宽条件，或从下面的方向开始。"}
+          ? "没有与这个关键词匹配的电影、电视节目、音乐、图书或人物。可以换一个词，或清除目前的筛选后再试。"
+          : "没有作品符合当前筛选。可搜索电影、电视节目、音乐或图书；也可以放宽条件，或从下面的方向开始。"}
       </p>
       {canReset && (
         <button
@@ -51,6 +51,13 @@ export default function SearchEmptyState({
             className="filter-option min-h-10 rounded-full px-4 py-1.5 text-sm"
           >
             电视节目
+          </button>
+          <button
+            type="button"
+            onClick={() => onSuggest({ type: ["album"] })}
+            className="filter-option min-h-10 rounded-full px-4 py-1.5 text-sm"
+          >
+            音乐
           </button>
           <button
             type="button"

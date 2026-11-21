@@ -25,7 +25,7 @@ export const reports = {
     view: "v_report_suspicious_names",
     icon: "i-material-symbols-spellcheck-rounded",
     description:
-      "按写法规则找出可疑的人物名与角色名；人物名中的括号备注会标出，角色名中的括号备注不计。仅供参考，请逐一确认。",
+      "按写法规则找出可疑的人物名与角色名；人物名中的括号备注会标出，角色名中的括号备注不计。可标记确认无误；改名后会重新出现。",
     unit: "项",
   },
   "similar-people": {

@@ -87,3 +87,35 @@ export async function dismissSimilarPeople(_previous: ActionResult, form: FormDa
   }
   redirect(`/manage/reports/similar-people?dismissed=1&n=${Date.now()}`);
 }
+
+/** 报告行 id：people:<uuid> 或 credit:<media_item_id>:<person_id>。 */
+const SUSPICIOUS_NAME_ITEM_ID =
+  /^(people:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|credit:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$/i;
+
+/** 确认疑似名字错误无误：记下确认时的名字；名字未改前不再出现在报告中。 */
+export async function confirmSuspiciousName(_previous: ActionResult, form: FormData): Promise<ActionResult> {
+  const { db } = await requireOwner();
+  const itemId = String(form.get("item_id") ?? "").toLowerCase();
+  const confirmedName = String(form.get("confirmed_name") ?? "");
+  if (!SUSPICIOUS_NAME_ITEM_ID.test(itemId) || !confirmedName || confirmedName.length > 200) {
+    return { error: "无法确认该条目，请刷新后重试。" };
+  }
+  // 表权限与 people_distinct_pairs 一致（无 update）；先删后插，等价于按 item_id upsert。
+  const { error: clearError } = await db.from("name_issue_confirmations").delete().eq("item_id", itemId);
+  if (clearError) {
+    if (!isExpectedDbError(clearError.code)) {
+      reportHandledError(`manage confirmSuspiciousName clear failed for ${itemId}:`, clearError);
+    }
+    return { error: "确认失败，请重试。" };
+  }
+  const { error } = await db
+    .from("name_issue_confirmations")
+    .upsert({ item_id: itemId, confirmed_name: confirmedName }, { onConflict: "item_id", ignoreDuplicates: true });
+  if (error) {
+    if (!isExpectedDbError(error.code)) {
+      reportHandledError(`manage confirmSuspiciousName failed for ${itemId}:`, error);
+    }
+    return { error: "确认失败，请重试。" };
+  }
+  redirect(`/manage/reports/suspicious-names?confirmed=1&n=${Date.now()}`);
+}

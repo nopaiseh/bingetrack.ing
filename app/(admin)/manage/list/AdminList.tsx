@@ -244,7 +244,7 @@ export default function AdminList({
   }
 
   const columnClass = new Map(columns.map((column) => [column.key, column.className ?? ""]));
-  const hasTrailing = rows.some((row) => row.trailing);
+  const hasTrailing = rows.some((row) => row.trailing || row.action);
 
   return (
     <div className="admin-list">
@@ -428,6 +428,7 @@ export default function AdminList({
                         </span>
                       ) : null}
                     </Link>
+                    {row.action ? <span className="admin-list-row-action shrink-0">{row.action}</span> : null}
                     {row.trailing ? (
                       <Link
                         href={row.trailing.href}

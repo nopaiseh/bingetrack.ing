@@ -12,6 +12,7 @@ import {
 } from "@/lib/admin/reports";
 import StatusModal from "../../StatusModal";
 import BulkDelete from "../BulkDelete";
+import ConfirmSuspiciousName from "../ConfirmSuspiciousName";
 import SimilarPeopleReport from "../SimilarPeopleReport";
 import PageHeader from "../../../PageHeader";
 import AdminList from "../../list/AdminList";
@@ -51,6 +52,7 @@ export default async function ReportPage({
     deleted?: string;
     merged?: string;
     dismissed?: string;
+    confirmed?: string;
     n?: string;
   }>;
 }) {
@@ -84,6 +86,7 @@ export default async function ReportPage({
   const totalPages = Math.max(1, Math.ceil((count ?? 0) / PAGE_SIZE));
   if (page > totalPages) redirect(reportPageHref(report, q, totalPages));
   const rows = (data ?? []) as ReportRow[];
+  const confirmNames = report === "suspicious-names";
   return (
     <section>
       <PageHeader
@@ -102,6 +105,7 @@ export default async function ReportPage({
       {search.deleted && (
         <StatusModal key={search.n} message={`已删除 ${Number(search.deleted) || 0} ${config.unit}。`} />
       )}
+      {search.confirmed && <StatusModal key={search.n} message="已标记为确认无误。" />}
       <AdminList
         basePath={`/manage/reports/${report}`}
         preserved={{}}
@@ -117,6 +121,7 @@ export default async function ReportPage({
               subtitle: [reportRowType(row.link_type), row.detail].filter(Boolean).join(" · "),
               meta: tags.length ? tags.join(" · ") : null,
               cells: [],
+              action: confirmNames ? <ConfirmSuspiciousName itemId={row.id} confirmedName={row.title} /> : undefined,
             };
           },
         )}
