@@ -30,6 +30,12 @@ describe("SearchFilterPanel", () => {
     expect(screen.getByText("状态")).toBeInTheDocument();
     expect(screen.getByText("排序")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "电影" })).toHaveAttribute("aria-pressed", "false");
+    expect(screen.getByRole("button", { name: "专辑" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "音乐" })).not.toBeInTheDocument();
+    const typeRow = screen.getByText("分类").parentElement;
+    expect(typeRow).not.toBeNull();
+    const typeLabels = Array.from(typeRow!.querySelectorAll("button")).map((button) => button.textContent?.trim());
+    expect(typeLabels).toEqual(["全部", "电影", "电视节目", "专辑", "单曲", "图书", "系列", "导演", "演员"]);
     expect(screen.getByRole("button", { name: "日期，降序" })).toHaveAttribute("aria-pressed", "true");
     expect(screen.queryByRole("combobox", { name: "开始年份" })).not.toBeInTheDocument();
     const collapsed = document.getElementById("search-filters");
