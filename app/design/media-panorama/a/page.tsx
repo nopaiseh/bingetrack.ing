@@ -8,7 +8,7 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
-/** 方案 A：四类等权；音书字段对齐 release_year_stats 扩展列。 */
+/** 方案 A：四格并列；专辑已听／想听，图书已读／在读／想读。 */
 export default function PanoramaSchemeAPage() {
   const runtimePercent = avRuntimePercent();
 
@@ -16,7 +16,7 @@ export default function PanoramaSchemeAPage() {
     <PrototypeChrome
       scheme="a"
       title="四格并列"
-      blurb="标题区四类总数 + 影视完成进度。音乐只展示已听（及总数），图书展示已读／在读；完成进度仍只算影视片长。"
+      blurb="专辑看板：总数＋已听＋想听。图书看板：总数＋已读＋在读＋想读。完成进度仍只算影视片长。"
     >
       <PanoramaIntro
         stats={[
@@ -26,7 +26,7 @@ export default function PanoramaSchemeAPage() {
           })),
           { label: "完成进度", value: runtimePercent, accent: true },
         ]}
-        footnote="完成进度 = 影视已看片长／总片长；专辑与图书不并入"
+        footnote="完成进度 = 影视片长；专辑／图书不并入。现网确有想听／想读状态（见报告）。"
       />
 
       <div className="grid grid-cols-1 gap-4 md:gap-6 xl:grid-cols-2">

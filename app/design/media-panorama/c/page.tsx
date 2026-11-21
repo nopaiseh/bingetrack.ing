@@ -8,7 +8,7 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
-/** 方案 C：密度行；每行只渲染后端实际提供的状态列。 */
+/** 方案 C：密度行；音乐已听｜想听，图书已读｜在读｜想读。 */
 export default function PanoramaSchemeCPage() {
   const runtimePercent = avRuntimePercent();
   const catalogTotal = MOCK_TYPES.reduce((sum, type) => sum + type.total, 0);
@@ -17,7 +17,7 @@ export default function PanoramaSchemeCPage() {
     <PrototypeChrome
       scheme="c"
       title="密度行"
-      blurb="四类各一行。音乐行：已听＋总计；图书行：已读＋在读。标题完成进度仍只算影视片长，音书不并入。"
+      blurb="音乐行展示已听／想听；图书行展示已读／在读／想读。标题完成进度仍只算影视。"
     >
       <PanoramaIntro
         stats={[

@@ -1,18 +1,17 @@
 /**
- * 设计原型 mock：对齐已定后端 `release_year_stats` 扩展形状（另开 PR，本分支不实现）。
+ * 设计原型 mock（站长补充：要看想听／想读）。
  *
- * 专辑列：total_albums、listened_albums（已听）
- * 图书列：total_books、read_books（已读）、reading_books（在读）
- * 年份：专辑发行日／书出版日；「All Time」汇总
+ * 专辑：总数 / 已听 / 想听
+ * 图书：总数 / 已读 / 在读 / 想读
  * 完成进度：仍只用影视片长，音书不并入
  *
- * 图书全 0 用于验收空态。不连数据库。
+ * 现网数据确有这些状态（见报告）；release_year_stats 是否出列归后端另 PR。
+ * 图书全 0 验收空态。不连数据库。
  */
 
-/** 与即将扩展的 Summary／release_year_stats 行对齐的模拟字段。 */
+/** 原型用的年统计行；含站长要看的想听／想读列。 */
 export type ReleaseYearStatsRow = {
   release_year: string;
-  // 既有影视（节选，够原型用）
   watched_movies: number;
   unwatched_movies: number;
   watched_series: number;
@@ -26,17 +25,24 @@ export type ReleaseYearStatsRow = {
   total_series_episodes: number;
   total_watched_runtime: number;
   total_runtime: number;
-  // 已定新增
+  // 专辑（站长要看：总数／已听／想听）
   total_albums: number;
   listened_albums: number;
+  want_albums: number;
+  // 图书（站长要看：总数／已读／在读／想读）
   total_books: number;
   read_books: number;
   reading_books: number;
+  want_books: number;
 };
 
 export const MOCK_YEAR = "全时段档案";
 
-/** 全时段一行；字段名即后端将提供的列。 */
+/**
+ * 全时段 mock。
+ * 专辑：28 = 已听 14 + 想听 8 +（现网还有「在听」6，本全景字段集未展示，见报告）。
+ * 图书：全 0 空态。
+ */
 export const MOCK_SUMMARY: ReleaseYearStatsRow = {
   release_year: "All Time",
   watched_movies: 60,
@@ -54,9 +60,11 @@ export const MOCK_SUMMARY: ReleaseYearStatsRow = {
   total_runtime: 100,
   total_albums: 28,
   listened_albums: 14,
+  want_albums: 8,
   total_books: 0,
   read_books: 0,
   reading_books: 0,
+  want_books: 0,
 };
 
 export type PanoramaTypeStats = {
@@ -65,10 +73,8 @@ export type PanoramaTypeStats = {
   unit: "部" | "张" | "本";
   icon: string;
   total: number;
-  /** 看板内进度条分子（音书用已听／已读；不参与标题「完成进度」） */
   done: number;
   doneTotal: number;
-  /** 无则不画看板内进度条（图书空态可省略百分比文案） */
   progressLabel: string | null;
   statuses: Array<{
     id: string;
@@ -155,7 +161,6 @@ function buildTypes(row: ReleaseYearStatsRow): PanoramaTypeStats[] {
       total: row.total_albums,
       done: row.listened_albums,
       doneTotal: row.total_albums,
-      // 看板内可用已听／总数；不并入标题「完成进度」
       progressLabel: "已听占比",
       statuses: [
         {
@@ -164,6 +169,13 @@ function buildTypes(row: ReleaseYearStatsRow): PanoramaTypeStats[] {
           icon: "i-material-symbols-check-circle-outline-rounded",
           toneClass: "text-[var(--ok)]",
           count: row.listened_albums,
+        },
+        {
+          id: "want",
+          label: "想听",
+          icon: "i-material-symbols-bookmark-outline-rounded",
+          toneClass: "text-[var(--accent-hover)]",
+          count: row.want_albums,
         },
       ],
     },
@@ -191,6 +203,13 @@ function buildTypes(row: ReleaseYearStatsRow): PanoramaTypeStats[] {
           toneClass: "text-[var(--warn)]",
           count: row.reading_books,
         },
+        {
+          id: "want",
+          label: "想读",
+          icon: "i-material-symbols-bookmark-outline-rounded",
+          toneClass: "text-[var(--accent-hover)]",
+          count: row.want_books,
+        },
       ],
     },
   ];
@@ -198,7 +217,6 @@ function buildTypes(row: ReleaseYearStatsRow): PanoramaTypeStats[] {
 
 export const MOCK_TYPES = buildTypes(MOCK_SUMMARY);
 
-/** 标题区「完成进度」：仅影视片长，与现网／已定口径一致。 */
 export function avRuntimePercent(row: ReleaseYearStatsRow = MOCK_SUMMARY) {
   return percent(row.total_watched_runtime, row.total_runtime);
 }

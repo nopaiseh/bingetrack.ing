@@ -275,19 +275,6 @@ export function DensityRow({ type }: { type: PanoramaTypeStats }) {
             </p>
           </div>
         ))}
-        {/* 专辑仅有「已听」列时，右侧补总数，避免单格过空 */}
-        {type.id === "album" && type.statuses.length === 1 ? (
-          <div className={`surface-inline rounded-2xl px-3 py-3 ${empty ? "opacity-55" : ""}`}>
-            <div className="flex items-center gap-1.5 text-xs font-semibold text-fg-secondary">
-              <span className={`${type.icon} size-3.5 inline-block`} aria-hidden="true" />
-              总计
-            </div>
-            <p className="mt-1.5 font-mono text-xl text-white sm:text-2xl">
-              <AnimatedNumber value={type.total} />
-              <span className="ml-1 text-sm font-sans text-fg-secondary">{type.unit}</span>
-            </p>
-          </div>
-        ) : null}
       </div>
 
       {type.progressLabel ? (
