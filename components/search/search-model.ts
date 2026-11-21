@@ -5,8 +5,9 @@ import { MEDIA_TYPE_DEFINITIONS, isSearchDbMediaType, type SearchDbMediaType } f
 /**
  * 分类筛选项顺序与文案（仅搜索面板／已选条件条）。
  * value 与 URL `type=` 及 MEDIA_TYPE_DEFINITIONS 对齐；album 显示为「专辑」以区别于顶栏等处的「音乐」。
+ * 集合须与 SEARCH_DB_TYPES 一致（顺序可不同）；见 tests/search-model.test.ts。
  */
-const TYPE_FILTER_ORDER = [
+export const TYPE_FILTER_ORDER = [
   "movie",
   "tv_show",
   "album",
