@@ -1,9 +1,24 @@
 import { WATCH_STATUSES } from "@/components/watch-status";
 import { PAGE_SIZE, type SearchFilters } from "@/lib/api/search-state";
-import { MEDIA_TYPE_DEFINITIONS, SEARCH_DB_TYPES, isSearchDbMediaType } from "@/lib/media-types";
+import { MEDIA_TYPE_DEFINITIONS, isSearchDbMediaType, type SearchDbMediaType } from "@/lib/media-types";
+
+/**
+ * 分类筛选项顺序与文案（仅搜索面板／已选条件条）。
+ * value 与 URL `type=` 及 MEDIA_TYPE_DEFINITIONS 对齐；album 显示为「专辑」以区别于顶栏等处的「音乐」。
+ */
+const TYPE_FILTER_ORDER = [
+  "movie",
+  "tv_show",
+  "album",
+  "music",
+  "book",
+] as const satisfies readonly SearchDbMediaType[];
 
 export const TYPE_OPTIONS = [
-  ...SEARCH_DB_TYPES.map((value) => ({ value, label: MEDIA_TYPE_DEFINITIONS[value].label })),
+  ...TYPE_FILTER_ORDER.map((value) => ({
+    value,
+    label: value === "album" ? "专辑" : MEDIA_TYPE_DEFINITIONS[value].label,
+  })),
   { value: "series", label: "系列" },
   { value: "director", label: "导演" },
   { value: "actor", label: "演员" },

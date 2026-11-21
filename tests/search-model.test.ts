@@ -19,7 +19,28 @@ describe("search model helpers", () => {
     expect(optionLabel([], "")).toBe("");
   });
 
-  it("lists 单曲 in type filters and uses 已听／想听 when only music is selected", () => {
+  it("lists 专辑／单曲 in type filters and uses 已听／想听 when only music is selected", () => {
+    expect(TYPE_OPTIONS.map((option) => option.value)).toEqual([
+      "movie",
+      "tv_show",
+      "album",
+      "music",
+      "book",
+      "series",
+      "director",
+      "actor",
+    ]);
+    expect(TYPE_OPTIONS.map((option) => option.label)).toEqual([
+      "电影",
+      "电视节目",
+      "专辑",
+      "单曲",
+      "图书",
+      "系列",
+      "导演",
+      "演员",
+    ]);
+    expect(TYPE_OPTIONS.some((option) => option.value === "album" && option.label === "专辑")).toBe(true);
     expect(TYPE_OPTIONS.some((option) => option.value === "music" && option.label === "单曲")).toBe(true);
     expect(statusFilterLabel("watched", ["music"])).toBe("已听");
     expect(statusFilterLabel("want_to_watch", ["music"])).toBe("想听");
