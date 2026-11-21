@@ -1,6 +1,6 @@
 begin;
 
-select plan(18);
+select plan(19);
 
 -- Constraints exist after migration.
 select ok(
@@ -149,6 +149,13 @@ select lives_ok(
       'https://is1-ssl.mzstatic.com/image/thumb/Music/cover.jpg'
     )$$,
   'https mzstatic cover_url is accepted'
+);
+
+-- new URL() lowercases the scheme; uppercase HTTPS must also pass the DB check.
+select lives_ok(
+  $$insert into public.media_items(type, title, cover_url)
+    values ('movie', 'Check uppercase https cover', 'HTTPS://example.com/a.jpg')$$,
+  'uppercase HTTPS cover_url is accepted'
 );
 
 select * from finish();

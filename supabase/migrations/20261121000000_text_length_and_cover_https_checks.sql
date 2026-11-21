@@ -64,7 +64,7 @@ declare
 begin
   select count(*)::integer into bad_count
   from public.media_items
-  where cover_url is not null and cover_url !~ '^https://';
+  where cover_url is not null and cover_url !~* '^https://';
 
   if coalesce(bad_count, 0) > 0 then
     raise exception
@@ -75,10 +75,10 @@ end $$;
 
 alter table public.media_items
   add constraint media_items_cover_url_https_check
-  check (cover_url is null or cover_url ~ '^https://');
+  check (cover_url is null or cover_url ~* '^https://');
 
 comment on constraint media_items_cover_url_https_check on public.media_items is
-  '封面须为 HTTPS 地址或空；与 assertCoverUrl 的 protocol === https: 一致。';
+  '封面须为 HTTPS 地址或空（大小写不敏感）；与 new URL() 规范化后的 protocol === https: 一致。';
 
 -- ---------------------------------------------------------------------------
 -- 4) people.alternate_name ≤ 300（人物别名）
