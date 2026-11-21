@@ -28,6 +28,7 @@ import {
 } from "@/lib/season-browse";
 import type { EpisodeInfo } from "@/lib/types";
 import { WatchStatusBadge } from "@/components/watch-status";
+import SeasonFilterBar from "@/components/SeasonFilterBar";
 
 const STATUS_LABELS: Record<SeasonStatusFilter, string> = { all: "全部", watched: "已看", unwatched: "未看" };
 
@@ -361,39 +362,35 @@ export default function SeasonEpisodeBrowser({
       </Suspense>
 
       <div ref={anchorRef} data-testid="episode-list-anchor" />
-      <div
-        className="surface-overlay sticky top-20 z-20 mb-6 flex items-center gap-2 overflow-x-auto rounded-2xl p-3"
-        data-testid="season-filter-bar"
-      >
-        <span
-          className="i-material-symbols-filter-list-rounded ml-1 size-4 shrink-0 text-fg-muted inline-block"
-          aria-hidden="true"
-        />
-        {(["all", "watched", "unwatched"] as const).map(
-          /* 生成观看状态筛选链接，切换状态时回到第一页。 */ (value) => (
+      <SeasonFilterBar
+        measureKey={`${pending ? "loading" : total}-${query.status}-${query.order}`}
+        chips={
+          <>
+            {(["all", "watched", "unwatched"] as const).map(
+              /* 生成观看状态筛选链接，切换状态时回到第一页。 */ (value) => (
+                <BrowseLink
+                  key={value}
+                  href={hrefFor({ page: 1, status: value })}
+                  onBrowse={onBrowseClick}
+                  className={`${SEASON_CHIP} ${query.status === value ? SEASON_CHIP_ACTIVE : SEASON_CHIP_INACTIVE}`}
+                >
+                  {STATUS_LABELS[value]}
+                </BrowseLink>
+              ),
+            )}
+            <span className="ml-1 shrink-0 text-[13px] text-fg-muted">集数</span>
             <BrowseLink
-              key={value}
-              href={hrefFor({ page: 1, status: value })}
+              href={hrefFor({ page: 1, order: query.order === "asc" ? "desc" : "asc" })}
               onBrowse={onBrowseClick}
-              className={`${SEASON_CHIP} ${query.status === value ? SEASON_CHIP_ACTIVE : SEASON_CHIP_INACTIVE}`}
+              className={`${SEASON_CHIP} ${SEASON_CHIP_INACTIVE}`}
+              data-testid="season-sort-toggle"
             >
-              {STATUS_LABELS[value]}
+              {query.order === "asc" ? "升序 ↑" : "降序 ↓"}
             </BrowseLink>
-          ),
-        )}
-        <span className="ml-1 shrink-0 text-[13px] text-fg-muted">集数</span>
-        <BrowseLink
-          href={hrefFor({ page: 1, order: query.order === "asc" ? "desc" : "asc" })}
-          onBrowse={onBrowseClick}
-          className={`${SEASON_CHIP} ${SEASON_CHIP_INACTIVE}`}
-          data-testid="season-sort-toggle"
-        >
-          {query.order === "asc" ? "升序 ↑" : "降序 ↓"}
-        </BrowseLink>
-        <span className="ml-auto shrink-0 whitespace-nowrap text-[13px] text-fg-muted">
-          {pending ? "加载中" : `${total} 集`}
-        </span>
-      </div>
+          </>
+        }
+        trailing={pending ? "加载中" : `${total} 集`}
+      />
 
       <div
         ref={listRef}

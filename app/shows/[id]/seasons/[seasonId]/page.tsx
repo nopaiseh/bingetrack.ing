@@ -154,7 +154,7 @@ export default async function SeasonPage({ params }: { params: Promise<{ id: str
   return (
     <div className="pb-8 pt-24 md:pb-16 text-fg">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: serializeJsonLd(jsonLd) }} />
-      <div className="container mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+      <div className="container mx-auto w-full min-w-0 max-w-7xl px-4 sm:px-6 lg:px-8">
         <BackLink href={`/shows/${id}`} label={`返回《${series.title}》`} />
 
         <header className="surface-panel relative mb-6 grid grid-cols-[5rem_minmax(0,1fr)] items-start gap-x-3.5 gap-y-3 overflow-hidden rounded-3xl p-5 sm:p-6 lg:grid-cols-[18rem_minmax(0,1fr)_auto] lg:gap-x-8 lg:p-8">
