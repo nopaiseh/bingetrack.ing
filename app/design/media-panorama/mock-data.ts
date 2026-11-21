@@ -1,15 +1,14 @@
 /**
  * 设计原型 mock（站长补充：要看想听／想读）。
  *
- * 专辑：总数 / 已听 / 想听
- * 图书：总数 / 已读 / 在读 / 想读
+ * 专辑：total_albums / listened_albums / want_albums
+ * 图书：total_books / read_books / reading_books / want_books
  * 完成进度：仍只用影视片长，音书不并入
  *
- * 现网数据确有这些状态（见报告）；release_year_stats 是否出列归后端另 PR。
- * 图书全 0 验收空态。不连数据库。
+ * want_albums／want_books 字段名已由后端确认。图书全 0 验收空态。不连数据库。
  */
 
-/** 原型用的年统计行；含站长要看的想听／想读列。 */
+/** 对齐已定 release_year_stats 扩展列（含 want_albums／want_books）。 */
 export type ReleaseYearStatsRow = {
   release_year: string;
   watched_movies: number;
@@ -25,14 +24,14 @@ export type ReleaseYearStatsRow = {
   total_series_episodes: number;
   total_watched_runtime: number;
   total_runtime: number;
-  // 专辑（站长要看：总数／已听／想听）
   total_albums: number;
   listened_albums: number;
+  /** 想听；后端确认列名 */
   want_albums: number;
-  // 图书（站长要看：总数／已读／在读／想读）
   total_books: number;
   read_books: number;
   reading_books: number;
+  /** 想读；后端确认列名 */
   want_books: number;
 };
 
