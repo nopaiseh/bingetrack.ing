@@ -228,8 +228,7 @@ describe("专辑详情查询 getAlbumDetail", () => {
     const log = vi.spyOn(console, "error").mockImplementation(() => {});
     try {
       const viewError = { code: "42501", message: "permission denied" };
-      state.handle = (query) =>
-        query.table === "v_all_media" ? { data: null, error: viewError } : { data: null };
+      state.handle = (query) => (query.table === "v_all_media" ? { data: null, error: viewError } : { data: null });
       await expect(getAlbumDetail(albumId)).rejects.toMatchObject({
         name: "MediaRepositoryError",
         message: "Media repository operation failed: fetch album view",

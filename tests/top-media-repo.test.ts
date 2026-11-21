@@ -152,8 +152,7 @@ describe("热门榜查询 fetchTopMediaServer", () => {
     expect(args(state.queries[0], "rpc")).toEqual([{ p_year: 2024, p_limit: 3 }]);
 
     state.queries = [];
-    state.handle = (query) =>
-      query.table === "rpc:get_top_tv_shows_by_year" ? { data: [] } : { data: [] };
+    state.handle = (query) => (query.table === "rpc:get_top_tv_shows_by_year" ? { data: [] } : { data: [] });
     expect(await fetchTopMediaServer("tv_show", "2024", 3)).toEqual([]);
     expect(state.queries.map((query) => query.table)).toEqual(["rpc:get_top_tv_shows_by_year"]);
   });
@@ -162,9 +161,7 @@ describe("热门榜查询 fetchTopMediaServer", () => {
     const log = vi.spyOn(console, "error").mockImplementation(() => {});
     try {
       state.handle = (query) =>
-        query.table === "rpc:get_top_tv_shows_by_year"
-          ? { data: null, error: { message: "rpc down" } }
-          : { data: [] };
+        query.table === "rpc:get_top_tv_shows_by_year" ? { data: null, error: { message: "rpc down" } } : { data: [] };
       await expect(fetchTopMediaServer("tv_show", "2024")).rejects.toMatchObject({
         message: "Media repository operation failed: rank year-specific TV series",
       });
