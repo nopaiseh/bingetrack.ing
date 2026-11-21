@@ -1,5 +1,11 @@
 import { expect, test } from "vitest";
-import { buildMediaSearchQuery, hasOnlyKnownFilterValues, readFilters, writeFilters } from "@/lib/api/search-state";
+import {
+  buildMediaSearchQuery,
+  hasOnlyKnownFilterValues,
+  migrateLegacyCreditRolesFromType,
+  readFilters,
+  writeFilters,
+} from "@/lib/api/search-state";
 import { parseMediaSearchParams } from "@/lib/api/media-params";
 import { EMPTY_FILTERS } from "@/components/search/search-model";
 
@@ -77,6 +83,24 @@ test(
 
     const allPeople = new URLSearchParams(buildMediaSearchQuery(new URLSearchParams({ q: "诺兰" })));
     expect(allPeople.get("creditRole")).toBeNull();
+  },
+);
+
+test.each(["director", "actor"] as const)(
+  "migrateLegacyCreditRolesFromType moves type=%s into creditRole and keeps other params",
+  /* 旧分类人物角色迁到 creditRole；可与媒体 type／已有 creditRole 合并。 */ (role) => {
+    const params = new URLSearchParams({
+      q: "测试",
+      type: `movie,${role}`,
+      creditRole: "author",
+      status: "watched",
+    });
+    expect(migrateLegacyCreditRolesFromType(params)).toBe(true);
+    expect(params.get("type")).toBe("movie");
+    expect(params.get("creditRole")?.split(",").sort()).toEqual(["author", role].sort());
+    expect(params.get("q")).toBe("测试");
+    expect(params.get("status")).toBe("watched");
+    expect(migrateLegacyCreditRolesFromType(params)).toBe(false);
   },
 );
 

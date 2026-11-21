@@ -1,11 +1,15 @@
-import { notFound } from "next/navigation";
+import { notFound, permanentRedirect } from "next/navigation";
 import type { Metadata } from "next";
 import SearchClient from "./SearchClient";
 import { fetchSearchOptionsServer, hasOnlyKnownTagFilters } from "@/lib/functions/search-options";
 import { searchCachedMedia } from "@/lib/functions/cached-media";
 import { searchMediaServer } from "@/lib/functions/media-repo";
 import { ApiValidationError, parseMediaSearchParams } from "@/lib/api/media-params";
-import { buildMediaSearchQuery, hasOnlyKnownFilterValues } from "@/lib/api/search-state";
+import {
+  buildMediaSearchQuery,
+  hasOnlyKnownFilterValues,
+  migrateLegacyCreditRolesFromType,
+} from "@/lib/api/search-state";
 import { reportHandledError } from "@/lib/report-error";
 import type { FetchMediaListOptions, MediaCard } from "@/lib/types";
 
@@ -51,6 +55,11 @@ export default async function SearchPage({
   for (const [key, value] of Object.entries(query)) {
     const first = Array.isArray(value) ? value[0] : value;
     if (first !== undefined) params.set(key, first);
+  }
+  // 旧链接 type=director|actor → creditRole，308 永久重定向到新参数名。
+  if (migrateLegacyCreditRolesFromType(params)) {
+    const qs = params.toString();
+    permanentRedirect(qs ? `/search?${qs}` : "/search");
   }
   if (!hasOnlyKnownFilterValues(params)) notFound();
   const key = buildMediaSearchQuery(params);

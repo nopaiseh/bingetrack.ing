@@ -11,6 +11,11 @@ vi.mock("next/navigation", () => ({
   notFound: () => {
     throw new Error("NOT_FOUND");
   },
+  permanentRedirect: (url: string) => {
+    const error = new Error("NEXT_REDIRECT");
+    (error as Error & { url: string }).url = url;
+    throw error;
+  },
 }));
 vi.mock("@/lib/functions/cached-media", () => ({ searchCachedMedia: vi.fn() }));
 vi.mock("@/lib/functions/media-repo", () => ({ searchMediaServer: vi.fn() }));
@@ -63,6 +68,29 @@ describe("SearchPage", () => {
     expect(searchCachedMedia).not.toHaveBeenCalled();
     expect(searchMediaServer).not.toHaveBeenCalled();
   });
+
+  it.each<[string, Record<string, string>, string]>([
+    [
+      "director",
+      { q: "王家卫", type: "director", status: "watched" },
+      "/search?q=%E7%8E%8B%E5%AE%B6%E5%8D%AB&status=watched&creditRole=director",
+    ],
+    [
+      "actor",
+      { q: "梁朝伟", type: "actor", genre: "剧情" },
+      "/search?q=%E6%A2%81%E6%9C%9D%E4%BC%9F&genre=%E5%89%A7%E6%83%85&creditRole=actor",
+    ],
+  ])(
+    "旧 type=%s 永久重定向到 creditRole，并保留其它参数",
+    /* 兼容旧导演／演员分类链接，避免 hasOnlyKnownFilterValues 判 404。 */ async (_role, query, href) => {
+      await expect(initialResultFor(query)).rejects.toMatchObject({
+        message: "NEXT_REDIRECT",
+        url: href,
+      });
+      expect(searchCachedMedia).not.toHaveBeenCalled();
+      expect(searchMediaServer).not.toHaveBeenCalled();
+    },
+  );
 
   it("翻页、年份范围与多选组合绕过数据缓存，缓存键数量保持有界", async () => {
     const queries: Record<string, string>[] = [
