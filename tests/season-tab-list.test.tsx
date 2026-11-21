@@ -33,9 +33,7 @@ const seasons: SeasonInfo[] = [
 
 describe("SeasonTabList", () => {
   it("单季不渲染", () => {
-    const { container } = render(
-      <SeasonTabList seriesId="show" seasonId="s1" seasons={seasons.slice(0, 1)} />,
-    );
+    const { container } = render(<SeasonTabList seriesId="show" seasonId="s1" seasons={seasons.slice(0, 1)} />);
     expect(container).toBeEmptyDOMElement();
   });
 
