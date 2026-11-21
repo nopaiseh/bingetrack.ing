@@ -103,6 +103,7 @@ docs/                   运维与设计说明
 
 ## 相关文档
 
+- [技术规范](docs/technical-spec.md)：目录、命名、接口、迁移、测试与协作流程
 - [缓存与 Vercel 写入用量](docs/caching.md)：改公开页面或管理端写入逻辑前必读
 - [部署与回滚](docs/deployment.md)
 - [内容管理工作台](docs/manage-workspace.md)
