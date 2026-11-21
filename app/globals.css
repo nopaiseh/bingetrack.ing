@@ -410,8 +410,6 @@
     textarea
   ) {
     background-color: var(--control-bg);
-    -webkit-backdrop-filter: none;
-    backdrop-filter: none;
     border: 1px solid var(--control-border);
     border-radius: 0.75rem;
     color: var(--fg);
@@ -509,8 +507,6 @@ body::before {
     height: 5.5rem;
     pointer-events: none;
     z-index: -1;
-    -webkit-backdrop-filter: none;
-    backdrop-filter: none;
     background: linear-gradient(
       to bottom,
       var(--canvas) 0%,
@@ -533,8 +529,6 @@ body::before {
     background: var(--surface-panel);
     border: 1px solid var(--border);
     box-shadow: var(--shadow-1);
-    -webkit-backdrop-filter: none;
-    backdrop-filter: none;
   }
 
   .surface-overlay {
@@ -554,8 +548,6 @@ body::before {
 
   .surface-control {
     background: var(--control-bg);
-    -webkit-backdrop-filter: none;
-    backdrop-filter: none;
     border: 1px solid var(--control-border);
     box-shadow: none;
     transition:
@@ -700,8 +692,6 @@ body::before {
     min-height: var(--hit-target);
     border: 1px solid var(--border);
     background: var(--surface-2);
-    -webkit-backdrop-filter: none;
-    backdrop-filter: none;
     color: var(--fg-2);
     box-shadow: none;
     color-scheme: dark;
@@ -728,8 +718,6 @@ body::before {
     min-height: var(--hit-target);
     border: 1px solid var(--accent-border);
     background: var(--accent-soft);
-    -webkit-backdrop-filter: none;
-    backdrop-filter: none;
     color: var(--accent-hover);
     font-weight: 700;
     box-shadow: none;
@@ -886,8 +874,6 @@ body::before {
 
   .mobile-tab-bar {
     background: var(--surface-panel);
-    -webkit-backdrop-filter: none;
-    backdrop-filter: none;
     border: 1px solid var(--border-strong);
     box-shadow: var(--shadow-pop);
   }
@@ -1008,8 +994,6 @@ select:is(.filter-option, .filter-option-active):focus-visible {
   .surface-overlay,
   .surface-card {
     background: var(--surface-recessed);
-    -webkit-backdrop-filter: none;
-    backdrop-filter: none;
   }
 }
 
@@ -1095,11 +1079,6 @@ select:is(.filter-option, .filter-option-active):focus-visible {
   background: rgba(255, 255, 255, 0.3);
 }
 
-.font-display {
-  font-family: var(--font-display);
-  font-weight: 700;
-}
-
 /* 说明、徽标、表头和任意小字号工具类不低于 14px。写在 UnoCSS 工具类之后。 */
 :is(.text-xs, .text-\[10px\], .text-\[11px\], .text-\[12px\], .text-\[12\.5px\], .text-\[13px\]) {
   font-size: var(--type-min);
@@ -1111,13 +1090,6 @@ select:is(.filter-option, .filter-option-active):focus-visible {
 
 .text-rose-400\/80 {
   color: var(--danger);
-}
-
-/* 搜索网格包含大量卡片；避免卡片与徽标的嵌套背景模糊产生额外合成层。 */
-.search-media-card,
-.search-media-card * {
-  -webkit-backdrop-filter: none;
-  backdrop-filter: none;
 }
 
 /* 离屏搜索卡跳过渲染；contain-intrinsic-size 锁住预估高度，避免翻页/滚动 CLS。
