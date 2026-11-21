@@ -11,8 +11,8 @@ select is(
       and c.relkind in ('r', 'p')
       and c.relrowsecurity
   ),
-  -- 含 people_distinct_pairs、ownership 与 20261120150100 的 books。
-  20,
+  -- 含 people_distinct_pairs、name_issue_confirmations、ownership 与 books。
+  21,
   'all public tables have RLS enabled'
 );
 

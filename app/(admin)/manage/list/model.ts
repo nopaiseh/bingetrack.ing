@@ -1,3 +1,5 @@
+import type { ReactNode } from "react";
+
 /** 管理列表每页条数。三个列表页的 .range() 已按 25 条取数，这里只把同一个窗口显示出来。 */
 export const ADMIN_LIST_PAGE_SIZE = 25;
 
@@ -31,6 +33,8 @@ export type AdminListRow = {
   cells: AdminListCell[];
   status?: AdminListStatus | null;
   trailing?: AdminListTrailing | null;
+  /** 行尾操作（如表单按钮），与 trailing 图标链并存。 */
+  action?: ReactNode;
 };
 
 export type AdminBulkAction = {
