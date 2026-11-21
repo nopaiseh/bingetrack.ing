@@ -1,8 +1,8 @@
-import Image from "next/image";
 import Link from "next/link";
 import type { MediaCard } from "@/lib/types";
 import { isUpcomingDate } from "@/lib/upcoming";
 import { SEARCH_POSTER_SIZES } from "@/lib/poster-image-sizes";
+import DeferredSearchPoster from "@/components/search/DeferredSearchPoster";
 import { SkeletonBlock } from "./LoadingSkeletons";
 import LetterTile from "./LetterTile";
 import MediaCardBody from "./MediaCardBody";
@@ -124,6 +124,7 @@ export function SearchMediaCard({
   returnHref,
   preload = false,
   eager = false,
+  deferPoster = false,
 }: {
   item: MediaCard;
   returnHref: string;
@@ -131,6 +132,11 @@ export function SearchMediaCard({
   preload?: boolean;
   /** 首屏其余海报：eager，避免懒加载推迟可见图。 */
   eager?: boolean;
+  /**
+   * When true, hold the poster src until near the viewport.
+   * First ~6 above-the-fold cards should pass false so images render immediately.
+   */
+  deferPoster?: boolean;
 }) {
   const square = isSquareCover(item);
   const book = isBookCard(item);
@@ -148,15 +154,12 @@ export function SearchMediaCard({
       }`}
     >
       {item.cover_url ? (
-        <Image
+        <DeferredSearchPoster
           src={item.cover_url}
-          alt=""
-          fill
-          className="object-cover transition-transform duration-500 ease-out group-hover:scale-105"
+          defer={deferPoster}
           sizes={SEARCH_POSTER_SIZES}
           preload={preload}
-          fetchPriority={preload ? "high" : undefined}
-          loading={preload ? undefined : eager ? "eager" : "lazy"}
+          eager={eager}
         />
       ) : square || book ? (
         <LetterTile title={item.title} />

@@ -1139,6 +1139,12 @@ select:is(.filter-option, .filter-option-active):focus-visible {
   backdrop-filter: none;
 }
 
+/* 离屏搜索卡跳过渲染；contain-intrinsic-size 锁住预估高度，避免翻页/滚动 CLS。 */
+.search-media-card {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 380px;
+}
+
 /* 分页按钮在搜索、季列表和管理页是同一套标记。拉到 40px，避免 38px 的翻页热区。 */
 nav[aria-label$="分页"] :is(a, button, span.surface-control) {
   display: inline-flex;

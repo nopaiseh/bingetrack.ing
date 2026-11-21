@@ -129,8 +129,14 @@ test(
     if (count > 1) {
       await expect(posters.nth(1)).toHaveAttribute("loading", "eager");
     }
-    if (count > 6) {
-      await expect(posters.nth(6)).toHaveAttribute("loading", "lazy");
+
+    // Cards past the above-the-fold window defer the img node until near the
+    // viewport; assert the deferred marker instead of loading=lazy on a missing img.
+    const cards = page.locator(".search-media-card");
+    const cardCount = await cards.count();
+    if (cardCount > 6) {
+      await expect(cards.nth(6).locator("[data-poster-deferred='true']")).toHaveCount(1);
+      await expect(cards.nth(6).locator("img")).toHaveCount(0);
     }
 
     const sizes = await posters.first().getAttribute("sizes");
