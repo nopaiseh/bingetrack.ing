@@ -17,26 +17,6 @@ function readList(value: string | null): string[] {
   return [...new Set(value?.split(",").filter(Boolean) ?? [])];
 }
 
-const LEGACY_TYPE_CREDIT_ROLES = new Set(["director", "actor"]);
-
-/**
- * 兼容旧搜索链接：把 `type=director`／`type=actor`（可与其他 type 混写）迁到 `creditRole`，
- * 并从 `type` 中去掉；已有 `creditRole` 与其它参数原样保留。有迁移时返回 true（params 已原地改写）。
- */
-export function migrateLegacyCreditRolesFromType(params: URLSearchParams): boolean {
-  const types = readList(params.get("type"));
-  const legacyRoles = types.filter(/* 旧分类行里的人物角色。 */ (value) => LEGACY_TYPE_CREDIT_ROLES.has(value));
-  if (legacyRoles.length === 0) return false;
-
-  const remainingTypes = types.filter(/* 留下真正的媒体／系列分类。 */ (value) => !LEGACY_TYPE_CREDIT_ROLES.has(value));
-  const creditRoles = [...new Set([...readList(params.get("creditRole")), ...legacyRoles])];
-
-  if (remainingTypes.length > 0) params.set("type", remainingTypes.join(","));
-  else params.delete("type");
-  params.set("creditRole", creditRoles.join(","));
-  return true;
-}
-
 /** 分类、人物角色、状态和排序只接受规范值，出现任何未知值都视为无效地址。 */
 export function hasOnlyKnownFilterValues(searchParams: URLSearchParams): boolean {
   const within = (key: string, allowed: Set<string>) =>

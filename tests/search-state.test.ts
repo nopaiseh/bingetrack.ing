@@ -1,11 +1,5 @@
 import { expect, test } from "vitest";
-import {
-  buildMediaSearchQuery,
-  hasOnlyKnownFilterValues,
-  migrateLegacyCreditRolesFromType,
-  readFilters,
-  writeFilters,
-} from "@/lib/api/search-state";
+import { buildMediaSearchQuery, hasOnlyKnownFilterValues, readFilters, writeFilters } from "@/lib/api/search-state";
 import { parseMediaSearchParams } from "@/lib/api/media-params";
 import { EMPTY_FILTERS } from "@/components/search/search-model";
 
@@ -86,24 +80,6 @@ test(
   },
 );
 
-test.each(["director", "actor"] as const)(
-  "migrateLegacyCreditRolesFromType moves type=%s into creditRole and keeps other params",
-  /* 旧分类人物角色迁到 creditRole；可与媒体 type／已有 creditRole 合并。 */ (role) => {
-    const params = new URLSearchParams({
-      q: "测试",
-      type: `movie,${role}`,
-      creditRole: "author",
-      status: "watched",
-    });
-    expect(migrateLegacyCreditRolesFromType(params)).toBe(true);
-    expect(params.get("type")).toBe("movie");
-    expect(params.get("creditRole")?.split(",").sort()).toEqual(["author", role].sort());
-    expect(params.get("q")).toBe("测试");
-    expect(params.get("status")).toBe("watched");
-    expect(migrateLegacyCreditRolesFromType(params)).toBe(false);
-  },
-);
-
 test(
   "the upcoming status option becomes a separate API flag",
   /* 验证“即将上映”状态选项转换为独立的 upcoming 参数，不混入观看状态。 */ () => {
@@ -127,12 +103,13 @@ test.each<Record<string, string>>([
   { type: "电影" },
   { type: "tv_series" },
   { type: "director" },
+  { type: "actor" },
   { creditRole: "producer" },
   { status: "已看" },
   { sort: "评分" },
 ])(
   "unknown filter values %o are rejected",
-  /* 验证分类、人物、状态和排序中的旧版中文值与未知值都判定为无效地址。 */ (params) => {
+  /* 验证分类、人物、状态和排序中的旧版中文值与未知值都判定为无效地址；type=director/actor 已迁出分类。 */ (params) => {
     expect(hasOnlyKnownFilterValues(new URLSearchParams(params))).toBe(false);
   },
 );
