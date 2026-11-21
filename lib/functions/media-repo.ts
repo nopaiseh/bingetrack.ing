@@ -922,8 +922,7 @@ export async function getAlbumStats(): Promise<AlbumStats> {
     }
 
     const album = albumResult.data?.[0] as
-      | Record<"total" | "watched" | "watching" | "want", number | string>
-      | undefined;
+      Record<"total" | "watched" | "watching" | "want", number | string> | undefined;
     const music = musicResult.data?.[0] as Record<"total", number | string> | undefined;
 
     if (!album && !music) return EMPTY_ALBUM_STATS;
