@@ -18,7 +18,7 @@ export default function PanoramaSchemeBPage() {
     <PrototypeChrome
       scheme="b"
       title="主次两层"
-      blurb="次层读 PR #229 七列：listened_albums／want_albums；read_books／reading_books／want_books。完成进度仍只算影视。"
+      blurb="（非定稿）次层示意；定稿见方案 A。音乐已改为歌曲列 total_tracks／listened_tracks／want_tracks。"
     >
       <PanoramaIntro
         stats={[
@@ -26,7 +26,7 @@ export default function PanoramaSchemeBPage() {
           { label: "电视节目总计", value: series.total },
           { label: "完成进度", value: runtimePercent, accent: true },
         ]}
-        footnote={`次层：音乐 total_albums=${MOCK_SUMMARY.total_albums}（listened=${MOCK_SUMMARY.listened_albums} · want_albums=${MOCK_SUMMARY.want_albums}）· 图书 total_books=${MOCK_SUMMARY.total_books}`}
+        footnote={`次层：音乐 total_tracks=${MOCK_SUMMARY.total_tracks}（listened=${MOCK_SUMMARY.listened_tracks} · want_tracks=${MOCK_SUMMARY.want_tracks}）· 图书 total_books=${MOCK_SUMMARY.total_books}`}
       />
 
       <div className="flex flex-col gap-4 md:gap-6">

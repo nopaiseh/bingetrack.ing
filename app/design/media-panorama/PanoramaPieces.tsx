@@ -3,7 +3,7 @@
 import AnimatedNumber from "@/components/AnimatedNumber";
 import { MOCK_TYPES, MOCK_YEAR, percent, type PanoramaTypeStats } from "./mock-data";
 
-/** 状态小卡；允许 0 计数与自定义量词（部／张／本）。 */
+/** 状态小卡；允许 0 计数与自定义量词（部／首／本）。 */
 export function StatusTile({
   title,
   icon,

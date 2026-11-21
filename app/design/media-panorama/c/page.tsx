@@ -17,7 +17,7 @@ export default function PanoramaSchemeCPage() {
     <PrototypeChrome
       scheme="c"
       title="密度行"
-      blurb="密度行按 PR #229 七列渲染：音乐 listened／want_albums；图书 read／reading／want_books。完成进度仍只算影视。"
+      blurb="（非定稿）密度行示意；定稿见方案 A。音乐已改为歌曲列 total_tracks／listened_tracks／want_tracks。"
     >
       <PanoramaIntro
         stats={[

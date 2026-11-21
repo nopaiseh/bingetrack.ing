@@ -1,19 +1,16 @@
 /**
- * 设计原型 mock：字段名与列序对齐后端 PR #229
- *（`release_year_stats` 末尾追加的七列）。
+ * 设计原型 mock（方案 A 定稿）。
  *
- *   total_albums, listened_albums, total_books, read_books,
- *   reading_books, want_albums, want_books
+ * 音乐按歌曲数（凝霜即将新增列，非 #229 专辑列）：
+ *   total_tracks / listened_tracks / want_tracks · 单位「首」
+ *   （含专辑内曲目与单曲；不再用 total_albums／listened_albums／want_albums）
  *
- * 口径（同 #229）：专辑／图书按 media_items.release_date 年份；
- * listened/read = tracking.watched；reading = in_progress；
- * want_* = want_to_watch（**无 tracking 不计想听／想读**）；
- * 单曲不计；时长列仍只含影视。
+ * 图书仍用 #229：
+ *   total_books / read_books / reading_books / want_books · 单位「本」
  *
- * 图书全 0 验收空态。不连数据库。
+ * 完成进度仍只算影视片长。图书全 0 验收空态。不连数据库。
  */
 
-/** 与 PR #229 `Summary`／视图末尾七列对齐（影视字段仅原型够用子集）。 */
 export type ReleaseYearStatsRow = {
   release_year: string;
   watched_movies: number;
@@ -29,13 +26,14 @@ export type ReleaseYearStatsRow = {
   total_series_episodes: number;
   total_watched_runtime: number;
   total_runtime: number;
-  // —— PR #229 追加（顺序与视图／Summary 一致）——
-  total_albums: number;
-  listened_albums: number;
+  // 音乐：按歌曲（即将新增）
+  total_tracks: number;
+  listened_tracks: number;
+  want_tracks: number;
+  // 图书：PR #229
   total_books: number;
   read_books: number;
   reading_books: number;
-  want_albums: number;
   want_books: number;
 };
 
@@ -43,7 +41,7 @@ export const MOCK_YEAR = "全时段档案";
 
 /**
  * 全时段 mock。
- * 专辑：total 28＝listened 14＋want 8＋其余 6（无 tracking／未完成，不算想听）。
+ * 歌曲：total 320＝listened 186＋want 91＋其余 43（无 tracking 等，不算想听）。
  * 图书：全 0 空态。
  */
 export const MOCK_SUMMARY: ReleaseYearStatsRow = {
@@ -61,30 +59,30 @@ export const MOCK_SUMMARY: ReleaseYearStatsRow = {
   total_series_episodes: 245,
   total_watched_runtime: 66,
   total_runtime: 100,
-  total_albums: 28,
-  listened_albums: 14,
+  total_tracks: 320,
+  listened_tracks: 186,
+  want_tracks: 91,
   total_books: 0,
   read_books: 0,
   reading_books: 0,
-  want_albums: 8,
   want_books: 0,
 };
 
-/** PR #229 七列的只读快照，便于方案页／报告引用。 */
-export const PR229_ALBUM_BOOK_FIELDS = [
-  "total_albums",
-  "listened_albums",
+/** 方案 A 音乐／图书依赖的计数字段。 */
+export const SCHEME_A_MUSIC_BOOK_FIELDS = [
+  "total_tracks",
+  "listened_tracks",
+  "want_tracks",
   "total_books",
   "read_books",
   "reading_books",
-  "want_albums",
   "want_books",
 ] as const;
 
 export type PanoramaTypeStats = {
-  id: "movie" | "tv_show" | "album" | "book";
+  id: "movie" | "tv_show" | "music" | "book";
   label: string;
-  unit: "部" | "张" | "本";
+  unit: "部" | "首" | "本";
   icon: string;
   total: number;
   done: number;
@@ -168,13 +166,13 @@ function buildTypes(row: ReleaseYearStatsRow): PanoramaTypeStats[] {
       ],
     },
     {
-      id: "album",
+      id: "music",
       label: "音乐",
-      unit: "张",
-      icon: "i-material-symbols-album-rounded",
-      total: row.total_albums,
-      done: row.listened_albums,
-      doneTotal: row.total_albums,
+      unit: "首",
+      icon: "i-material-symbols-music-note-rounded",
+      total: row.total_tracks,
+      done: row.listened_tracks,
+      doneTotal: row.total_tracks,
       progressLabel: "已听占比",
       statuses: [
         {
@@ -182,14 +180,14 @@ function buildTypes(row: ReleaseYearStatsRow): PanoramaTypeStats[] {
           label: "已听",
           icon: "i-material-symbols-check-circle-outline-rounded",
           toneClass: "text-[var(--ok)]",
-          count: row.listened_albums,
+          count: row.listened_tracks,
         },
         {
           id: "want",
           label: "想听",
           icon: "i-material-symbols-bookmark-outline-rounded",
           toneClass: "text-[var(--accent-hover)]",
-          count: row.want_albums,
+          count: row.want_tracks,
         },
       ],
     },
@@ -245,5 +243,5 @@ export function primaryTypes() {
 }
 
 export function secondaryTypes() {
-  return MOCK_TYPES.filter((type) => type.id === "album" || type.id === "book");
+  return MOCK_TYPES.filter((type) => type.id === "music" || type.id === "book");
 }

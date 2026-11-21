@@ -1,106 +1,72 @@
-# 媒体全景：音乐／图书纳入 — 设计调研
+# 媒体全景：音乐／图书纳入 — 设计调研（定稿）
 
-> 临时分支 `cursor/media-panorama-design-bf63` · 仅调研与原型 · **不开 PR** · 不改 `main` · 不碰生产库／环境变量  
-> 后端字段以 **[PR #229](https://github.com/nopaiseh/bingetrack.ing/pull/229)** 为准
+> 临时分支 `cursor/media-panorama-design-bf63` · **不开 PR** · 不改 `main` · 不碰生产库／环境变量  
+> **站长选定方案 A（四格并列）**
 
-原型：`/design/media-panorama/{a,b,c}`  
-截图：`panorama_want_{a|b|c}_{1440|390}.png`（已含想听／想读；字段名与 #229 一致，未重截）
+定稿原型：`/design/media-panorama/a`  
+定稿截图：`panorama_final_a_1440.png` · `panorama_final_a_390.png`
 
 ---
 
-## 1. 现网全景怎么取数
+## 1. 现网
 
-| 层 | 位置 | 作用 |
+标题区＋总览读 `release_year_stats`（经 `getCachedReleaseYearStats` → `deriveDashboardStats`）。现网仅电影／电视；完成进度只算影视片长。
+
+---
+
+## 2. 定稿数据形状
+
+### 音乐（按歌曲 · 凝霜即将新增）
+
+| 列名 | 含义 | 单位 |
 | --- | --- | --- |
-| 页面 | `app/page.tsx` | `getCachedReleaseYearStats()` → `summary` |
-| 看板 | `HomeDashboard` + `deriveDashboardStats` | 按年取行 |
-| 标题区 | `DashboardIntro` | 电影总计／电视总计／完成进度 |
-| 总览 | `OverviewBoards` | 电影已看／想看；电视已看／在看／想看 |
-| 数据源 | `public.release_year_stats` | 现网仅 movie + tv_show；**#229 末尾追加专辑／图书七列** |
+| `total_tracks` | 全部歌曲（**含专辑内曲目与单曲**） | 首 |
+| `listened_tracks` | 已听 | 首 |
+| `want_tracks` | 想听 | 首 |
 
-完成进度：`total_watched_runtime / total_runtime`（**仅影视**；#229 不改时长列）。
+**不再使用** `#229` 的 `total_albums`／`listened_albums`／`want_albums` 做全景音乐格。
 
----
+### 图书（PR [#229](https://github.com/nopaiseh/bingetrack.ing/pull/229)）
 
-## 2. 想听／想读：现有数据里有没有？
-
-**有**（写入侧／目录／`get_media_stats` 已用）。年统计侧由 #229 落列。
-
-| 展示 | DB | #229 列 |
+| 列名 | 含义 | 单位 |
 | --- | --- | --- |
-| 已听 | 专辑 `tracking.status = watched` | `listened_albums` |
-| 想听 | 专辑 `tracking.status = want_to_watch` | `want_albums` |
-| 已读 | 图书 `watched` | `read_books` |
-| 在读 | 图书 `in_progress` | `reading_books` |
-| 想读 | 图书 `want_to_watch` | `want_books` |
+| `total_books` | 总数 | 本 |
+| `read_books` | 已读 | 本 |
+| `reading_books` | 在读 | 本 |
+| `want_books` | 想读 | 本 |
 
-口径要点（#229）：
+### 完成进度
 
-- **无 tracking 不计想听／想读**（计入 `total_*`，但不进 `want_*`）
-- 单曲（`music`）不计
-- 须有 `release_date`；年份按发行／出版日；`All Time` 与电影一致
-- #229 **不**把曲目汇总的「在听」写进年统计；全景这七列没有「在听」
+仍只算影视片长；音乐／图书不并入。
 
-因此：`total_albums` 可以大于 `listened_albums + want_albums`（差额＝无 tracking 等未完成）。
+### 想听／想读是否已有？
 
----
-
-## 3. PR #229 七列（视图末尾顺序）
-
-```
-total_albums
-listened_albums
-total_books
-read_books
-reading_books
-want_albums
-want_books
-```
-
-| 列名 | 含义 |
-| --- | --- |
-| `total_albums` | 专辑总数 |
-| `listened_albums` | 已听 |
-| `total_books` | 图书总数 |
-| `read_books` | 已读 |
-| `reading_books` | 在读 |
-| `want_albums` | 想听 |
-| `want_books` | 想读 |
-
-应用侧 #229 已在 `Summary` 与 `deriveDashboardStats` 派生：`totalAlbums`／`listenedAlbums`／`wantAlbums`／`totalBooks`／`readBooks`／`readingBooks`／`wantBooks`（**未改 UI**）。
+- 曲目／图书 `tracking.want_to_watch` 现网已有；文案为想听／想读。
+- 年统计歌曲三列由凝霜新增；图书四列见 #229（`want_*` 仅计显式 `want_to_watch`，无 tracking 不计）。
 
 ---
 
-## 4. 原型
+## 3. 方案 A（定稿）
 
-`MOCK_SUMMARY` 使用上表七字段（顺序与 #229 一致）驱动 A／B／C。
+- 标题区：电影／电视／音乐／图书总计 + 影视完成进度  
+- 总览 2×2：  
+  - 电影：已看／想看（部）  
+  - 电视：已看／在看／想看（部 + 季集）  
+  - **音乐：已听／想听（首）**  
+  - 图书：已读／在读／想读（本；0 时「暂无收录」）
 
-| 媒体 | 展示 |
-| --- | --- |
-| 专辑 | 总数（`total_albums`）· 已听（`listened_albums`）· 想听（`want_albums`） |
-| 图书 | 总数 · 已读 · 在读 · 想读 |
-| 标题完成进度 | 仅影视 |
-
-空态：图书全 0 +「暂无收录」。
-
----
-
-## 5. 三方案
-
-| 方案 | 布局 | 优点 | 缺点 |
-| --- | --- | --- | --- |
-| **A 四格并列** | 2×2 等权 | 四类对等 | 空类占大卡 |
-| **B 主次两层** | 影视主 + 音书次 | 改动小 | 音书偏次 |
-| **C 密度行（推荐）** | 每类一行 | 贴合七列、空态轻、手机好扫 | 与现网大卡略有落差 |
-
-**推荐 C。** 前端落地可直接读 `summary`／`deriveDashboardStats` 新字段，无需再调 `get_media_stats`。
+曾对比过 B（主次两层）、C（密度行）；站长选定 **A**。
 
 ---
 
-## 6. 分工
+## 4. 前端落地提示（本分支不做）
 
-| 项 | 谁 |
-| --- | --- |
-| `release_year_stats` 七列 + `Summary`／stats 派生 | **后端 PR #229** |
-| 标题区／总览 UI | 前端另开（本分支不做） |
-| 本分支 | 原型 + 报告 + 截图 · **不开 PR** |
+1. 等凝霜落地 `total_tracks`／`listened_tracks`／`want_tracks` 后，与 #229 图书列一并读入 `summary`。  
+2. `DashboardIntro` 加音乐／图书总计；`OverviewBoards` 扩为四格；音乐量词「首」。  
+3. 勿再用专辑三列驱动全景音乐格。
+
+---
+
+## 5. 本分支范围
+
+仅方案 A 原型 mock＋报告＋定稿截图；**不开 PR**。
