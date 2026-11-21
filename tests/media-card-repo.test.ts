@@ -90,6 +90,7 @@ import {
   getSeasonsBySeriesId,
   fetchStatsServer,
   getBookStats,
+  getAlbumStats,
   fetchUpcomingReleasesServer,
   MediaRepositoryError,
 } from "@/lib/functions/media-repo";
@@ -251,6 +252,129 @@ test("getBookStats throws MediaRepositoryError when RPC fails", async () => {
   await expect(getBookStats()).rejects.toMatchObject({
     name: "MediaRepositoryError",
     message: "Media repository operation failed: fetch book stats",
+  });
+});
+
+test(
+  "getAlbumStats maps album RPC counts and music trackTotal",
+  /* 验证专辑统计：album 四项状态 + music.total → trackTotal。 */ async () => {
+    // @ts-expect-error test dynamic mock function
+    state.results["rpc:get_media_stats"] = (req: { args?: Record<string, unknown> }) => {
+      if (req.args?.p_media_type === "album") {
+        return {
+          data: [
+            {
+              total: "6",
+              watched: "3",
+              watching: "1",
+              want: "2",
+              upcoming: "0",
+              in_progress: "0",
+            },
+          ],
+          error: null,
+        };
+      }
+      if (req.args?.p_media_type === "music") {
+        return {
+          data: [{ total: "42", watched: "10", watching: "0", want: "5", upcoming: "0", in_progress: "0" }],
+          error: null,
+        };
+      }
+      return { data: [], error: null };
+    };
+    const stats = await getAlbumStats();
+    expect(stats).toEqual({
+      total: 6,
+      watched: 3,
+      watching: 1,
+      want: 2,
+      trackTotal: 42,
+    });
+    expect(state.executed).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          table: "rpc:get_media_stats",
+          args: { p_media_type: "album" },
+        }),
+        expect.objectContaining({
+          table: "rpc:get_media_stats",
+          args: { p_media_type: "music" },
+        }),
+      ]),
+    );
+  },
+);
+
+test("getAlbumStats counts only album type for status fields", async () => {
+  // @ts-expect-error test dynamic mock function
+  state.results["rpc:get_media_stats"] = (req: { args?: Record<string, unknown> }) => {
+    // music 行带非零 watched／want，确认不会渗进 album 状态字段。
+    if (req.args?.p_media_type === "album") {
+      return {
+        data: [{ total: "2", watched: "1", watching: "0", want: "1", upcoming: "0", in_progress: "0" }],
+        error: null,
+      };
+    }
+    return {
+      data: [{ total: "99", watched: "50", watching: "20", want: "29", upcoming: "0", in_progress: "0" }],
+      error: null,
+    };
+  };
+  await expect(getAlbumStats()).resolves.toEqual({
+    total: 2,
+    watched: 1,
+    watching: 0,
+    want: 1,
+    trackTotal: 99,
+  });
+});
+
+test("getAlbumStats returns zeros when library is empty", async () => {
+  // @ts-expect-error test dynamic mock function
+  state.results["rpc:get_media_stats"] = (req: { args?: Record<string, unknown> }) => {
+    if (req.args?.p_media_type === "album" || req.args?.p_media_type === "music") {
+      return {
+        data: [{ total: "0", watched: "0", watching: "0", want: "0", upcoming: "0", in_progress: "0" }],
+        error: null,
+      };
+    }
+    return { data: [], error: null };
+  };
+  await expect(getAlbumStats()).resolves.toEqual({
+    total: 0,
+    watched: 0,
+    watching: 0,
+    want: 0,
+    trackTotal: 0,
+  });
+});
+
+test("getAlbumStats returns zeros when RPC rows are missing", async () => {
+  state.results["rpc:get_media_stats"] = { data: [], error: null };
+  await expect(getAlbumStats()).resolves.toEqual({
+    total: 0,
+    watched: 0,
+    watching: 0,
+    want: 0,
+    trackTotal: 0,
+  });
+});
+
+test("getAlbumStats throws MediaRepositoryError when album RPC fails", async () => {
+  // @ts-expect-error test dynamic mock function
+  state.results["rpc:get_media_stats"] = (req: { args?: Record<string, unknown> }) => {
+    if (req.args?.p_media_type === "album") {
+      return { data: null, error: { code: "42883" } };
+    }
+    return {
+      data: [{ total: "1", watched: "0", watching: "0", want: "0", upcoming: "0", in_progress: "0" }],
+      error: null,
+    };
+  };
+  await expect(getAlbumStats()).rejects.toMatchObject({
+    name: "MediaRepositoryError",
+    message: "Media repository operation failed: fetch album stats",
   });
 });
 

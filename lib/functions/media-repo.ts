@@ -884,3 +884,55 @@ export async function getBookStats(): Promise<BookStats> {
     };
   });
 }
+
+/** 专辑目录五项统计：专辑总量／已听／在听／想听，以及单曲（music）总量。 */
+export type AlbumStats = {
+  total: number;
+  watched: number;
+  watching: number;
+  want: number;
+  trackTotal: number;
+};
+
+const EMPTY_ALBUM_STATS: AlbumStats = {
+  total: 0,
+  watched: 0,
+  watching: 0,
+  want: 0,
+  trackTotal: 0,
+};
+
+// 两次 get_media_stats：album 取四项状态计数，music 只取 total 作为 trackTotal。
+// 空库时 RPC 聚合仍返回一行 0；若行缺失也回退为零，不抛错。
+export async function getAlbumStats(): Promise<AlbumStats> {
+  return withRetry(async () => {
+    const db = getSupabasePublicServer();
+    const [albumResult, musicResult] = await Promise.all([
+      db.rpc("get_media_stats", { p_media_type: "album" }),
+      db.rpc("get_media_stats", { p_media_type: "music" }),
+    ]);
+
+    if (albumResult.error) {
+      console.error("Failed to fetch album stats:", albumResult.error);
+      throw new MediaRepositoryError("fetch album stats", albumResult.error);
+    }
+    if (musicResult.error) {
+      console.error("Failed to fetch album track stats:", musicResult.error);
+      throw new MediaRepositoryError("fetch album stats", musicResult.error);
+    }
+
+    const album = albumResult.data?.[0] as
+      Record<"total" | "watched" | "watching" | "want", number | string> | undefined;
+    const music = musicResult.data?.[0] as Record<"total", number | string> | undefined;
+
+    if (!album && !music) return EMPTY_ALBUM_STATS;
+
+    return {
+      total: Number(album?.total ?? 0),
+      watched: Number(album?.watched ?? 0),
+      watching: Number(album?.watching ?? 0),
+      want: Number(album?.want ?? 0),
+      trackTotal: Number(music?.total ?? 0),
+    };
+  });
+}
