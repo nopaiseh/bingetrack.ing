@@ -180,7 +180,7 @@ export default async function SeasonPage({ params }: { params: Promise<{ id: str
             <p className="mb-1.5 text-xs font-medium tracking-widest text-[var(--accent-hover)] lg:mb-2 lg:text-sm">
               {series.title} · 第 {seasonData.season.seasonNumber} 季
             </p>
-            <h1 className="font-serif-movie break-words bg-linear-to-b from-white via-white/95 to-white/75 bg-clip-text text-2xl font-bold tracking-tight text-balance text-transparent sm:text-4xl lg:text-5xl">
+            <h1 className="font-display break-words bg-linear-to-b from-white via-white/95 to-white/75 bg-clip-text text-2xl font-bold tracking-tight text-balance text-transparent sm:text-4xl lg:text-5xl">
               {seasonData.season.title}
             </h1>
             <p className="mt-1.5 text-sm text-fg-subtle lg:mt-3">
@@ -237,7 +237,7 @@ export default async function SeasonPage({ params }: { params: Promise<{ id: str
             /* 窄屏用短标签排成一行，宽屏保持四张统计卡片。 */ ([label, shortLabel, value, compactValue]) => (
               <div
                 key={label}
-                className="inline-flex shrink-0 items-baseline gap-1.5 lg:surface-muted lg:block lg:rounded-2xl lg:border lg:border-white/10 lg:p-4 lg:backdrop-blur-xl"
+                className="inline-flex shrink-0 items-baseline gap-1.5 lg:surface-muted lg:block lg:rounded-2xl lg:border lg:border-white/10 lg:p-4"
               >
                 <p className="text-xs text-fg-muted">
                   <span className="lg:hidden">{shortLabel}</span>

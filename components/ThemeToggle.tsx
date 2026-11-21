@@ -42,7 +42,7 @@ export default function ThemeToggle() {
     <div
       role="group"
       aria-label="影院氛围主题"
-      className="surface-control flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs backdrop-blur-md"
+      className="surface-control flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs"
     >
       <span className="text-xs font-medium text-fg-secondary">氛围</span>
       <div className="flex items-center gap-1">

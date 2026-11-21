@@ -111,7 +111,7 @@ export default function PasskeySettings({ initialKeys, initialError }: { initial
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <h2 className="admin-section-title text-xl font-semibold text-white">
-          已绑定凭证 <span className="text-sm font-normal text-neutral-400">{keys.length}</span>
+          已绑定凭证 <span className="text-sm font-normal text-fg-muted">{keys.length}</span>
         </h2>
         <button type="button" onClick={add} disabled={busy} className="admin-primary">
           {busy ? "处理中…" : "添加 Passkey"}
@@ -119,7 +119,7 @@ export default function PasskeySettings({ initialKeys, initialError }: { initial
       </div>
       {message.text && <StatusModal key={message.id} tone={message.tone} message={message.text} />}
       {!keys.length && (
-        <p className="surface-panel rounded-2xl px-6 py-16 text-center text-sm text-neutral-300">
+        <p className="surface-panel rounded-2xl px-6 py-16 text-center text-sm text-fg-secondary">
           尚未绑定凭证。添加后即可使用 Passkey 登录。
         </p>
       )}
@@ -133,7 +133,7 @@ export default function PasskeySettings({ initialKeys, initialError }: { initial
                 </span>
                 <div className="min-w-0">
                   <p className="truncate font-medium text-white">{key.friendly_name || "Passkey"}</p>
-                  <p className="font-mono text-xs text-neutral-400">
+                  <p className="font-mono text-xs text-fg-muted">
                     创建于 {key.created_at.slice(0, 10)}
                     {key.last_used_at ? ` · 最后使用 ${key.last_used_at.slice(0, 10)}` : " · 尚未使用"}
                   </p>
@@ -157,7 +157,7 @@ export default function PasskeySettings({ initialKeys, initialError }: { initial
                   移除
                 </button>
               </form>
-              {keys.length < 2 && <p className="text-xs text-neutral-400">请先添加备用凭证，再移除这个凭证。</p>}
+              {keys.length < 2 && <p className="text-xs text-fg-muted">请先添加备用凭证，再移除这个凭证。</p>}
             </li>
           ),
         )}
@@ -166,7 +166,7 @@ export default function PasskeySettings({ initialKeys, initialError }: { initial
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div className="space-y-1">
             <h2 className="admin-section-title text-xl font-semibold text-white">Agent 临时登录链接</h2>
-            <p className="text-sm text-neutral-400">
+            <p className="text-sm text-fg-muted">
               供 Muse / Grok Bot 等无法调用本地硬件 Passkey 的云端浏览器 Agent 登录。每次生成的链接只能验证 1 次（1
               小时内有效）。打开后要点击「Continue / 继续登录」才会进入管理台，闲置 30 分钟自动登出。
             </p>

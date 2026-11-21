@@ -54,7 +54,7 @@ export default function DashboardIntro({
           <div className="max-w-3xl">
             <h1
               id="dashboard-title"
-              className="font-serif-movie text-3xl font-black leading-none text-white sm:text-4xl lg:text-5xl"
+              className="font-display text-3xl font-black leading-none text-white sm:text-4xl lg:text-5xl"
             >
               媒体全景
             </h1>

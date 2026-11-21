@@ -92,7 +92,7 @@ export default function SearchFilterPanel({
                       isSelected ? `${option.label}，${currentOrder === "desc" ? "降序" : "升序"}` : option.label
                     }
                     onClick={/* 切换排序方向。 */ () => setFilters((prev) => toggleSearchSort(prev, option.id))}
-                    className={`group flex min-h-10 items-center gap-2 rounded-full px-4 py-1.5 text-sm transition-all duration-300 backdrop-blur-2xl ${
+                    className={`group flex min-h-10 items-center gap-2 rounded-full px-4 py-1.5 text-sm transition-all duration-300 ${
                       isSelected ? "filter-option-active" : "filter-option"
                     }`}
                   >

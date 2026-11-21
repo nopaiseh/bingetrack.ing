@@ -88,7 +88,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         />
       </head>
       <body className="bg-[var(--canvas)] text-fg font-sans leading-normal tracking-normal selection:bg-[var(--accent-soft)] selection:text-white flex flex-col min-h-screen relative transition-colors duration-500">
-        <div aria-hidden="true" className="film-grain-overlay" />
         <Suspense fallback={null}>
           <NavigationProgressBar />
         </Suspense>

@@ -27,7 +27,7 @@ export default function ActiveFilterBar({
 }) {
   const selectedTypes = filters.type ?? [];
   return (
-    <div className="mt-3 flex flex-wrap items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 backdrop-blur-xl">
+    <div className="mt-3 flex flex-wrap items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-2.5">
       <span className="flex items-center gap-1.5 text-xs font-semibold tracking-wider text-fg-subtle mr-1">
         <span
           className="i-material-symbols-filter-alt-outline-rounded size-3.5 inline-block text-[var(--accent)]"

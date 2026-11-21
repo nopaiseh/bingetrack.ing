@@ -74,11 +74,11 @@ export default async function SimilarPeopleReport({
             className="i-material-symbols-check-circle-outline-rounded mx-auto mb-3 block size-8 text-[var(--accent)]"
             aria-hidden="true"
           />
-          <p className="text-neutral-400">没有疑似重复的人物。</p>
+          <p className="text-fg-muted">没有疑似重复的人物。</p>
         </div>
       )}
       {(count ?? 0) > LIMIT && (
-        <p className="mt-6 text-sm text-neutral-400">只显示前 {LIMIT} 位人物，处理后刷新即可看到其余的。</p>
+        <p className="mt-6 text-sm text-fg-muted">只显示前 {LIMIT} 位人物，处理后刷新即可看到其余的。</p>
       )}
     </section>
   );

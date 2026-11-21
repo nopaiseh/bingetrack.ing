@@ -47,7 +47,7 @@ export default function AlbumStrip({
           >
             {structure.album.title}
           </Link>
-          <p className="font-mono text-xs text-neutral-400">{formatCount(trackCount ?? 0)} 首</p>
+          <p className="font-mono text-xs text-fg-muted">{formatCount(trackCount ?? 0)} 首</p>
         </div>
         <button type="button" onClick={onAdd} className="admin-add shrink-0">
           <span className="i-material-symbols-add-rounded size-4.5" aria-hidden="true" />第{" "}
@@ -65,7 +65,7 @@ export default function AlbumStrip({
                 href={albumMediaHref("music", track.id)}
                 aria-current={selected ? "page" : undefined}
                 aria-label={`第 ${track.number} 首：${track.title}${track.listened ? "（听过）" : ""}`}
-                className={`relative inline-flex h-11 min-w-12 shrink-0 items-center justify-center rounded-[10px] border px-2.5 font-mono text-[13px] ${selected ? "border-[var(--accent-border)] bg-[var(--accent-soft)] font-semibold text-[var(--accent-light)]" : "border-white/12 bg-white/5 text-neutral-300"}`}
+                className={`relative inline-flex h-11 min-w-12 shrink-0 items-center justify-center rounded-[10px] border px-2.5 font-mono text-[13px] ${selected ? "border-[var(--accent-border)] bg-[var(--accent-soft)] font-semibold text-[var(--accent-light)]" : "border-white/12 bg-white/5 text-fg-secondary"}`}
               >
                 {trackLabel(track.number)}
                 {track.listened && (

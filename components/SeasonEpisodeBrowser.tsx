@@ -33,7 +33,7 @@ const STATUS_LABELS: Record<SeasonStatusFilter, string> = { all: "全部", watch
 
 /** 季页筛选与排序共用同一套芯片尺寸，避免升序按钮看起来像选中态或高低错位。 */
 const SEASON_CHIP =
-  "tap-target-expand inline-flex shrink-0 items-center justify-center rounded-lg border px-4 py-1.5 text-[13px] backdrop-blur-2xl transition-all duration-300";
+  "tap-target-expand inline-flex shrink-0 items-center justify-center rounded-lg border px-4 py-1.5 text-[13px] transition-all duration-300";
 const SEASON_CHIP_INACTIVE =
   "surface-muted border-white/10 text-fg-secondary shadow-[0_4px_10px_rgba(0,0,0,0.2)] hover:border-white/20 hover:bg-white/10 hover:text-white hover:shadow-[0_6px_15px_rgba(0,0,0,0.3)] hover:drop-shadow-[0_0_8px_rgba(255,255,255,0.5)]";
 const SEASON_CHIP_ACTIVE =

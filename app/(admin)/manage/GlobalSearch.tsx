@@ -156,7 +156,7 @@ export default function GlobalSearch() {
                   )}
                   <span className="min-w-0 flex-1">
                     <span className="block truncate font-medium text-white">{hit.title}</span>
-                    <span className="block truncate text-[13px] text-neutral-400">{hit.context}</span>
+                    <span className="block truncate text-[13px] text-fg-muted">{hit.context}</span>
                   </span>
                   <span
                     className={`shrink-0 rounded-full border px-2.5 py-0.5 text-xs font-semibold ${badges[hit.type]}`}
@@ -168,11 +168,11 @@ export default function GlobalSearch() {
             );
           })}
           {!pending && !visible.length && (
-            <li className="px-3 py-4 text-sm text-neutral-400">{error || "没有匹配的条目，试试其他标题或副标题。"}</li>
+            <li className="px-3 py-4 text-sm text-fg-muted">{error || "没有匹配的条目，试试其他标题或副标题。"}</li>
           )}
         </ul>
       )}
-      <p className="text-xs text-neutral-400">
+      <p className="text-xs text-fg-muted">
         {searching
           ? "↑↓ 选择 · 回车打开 · 季／集进节目工作台，曲目进专辑工作台"
           : "输入标题或副标题即可搜索，最多显示 40 条。"}

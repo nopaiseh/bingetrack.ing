@@ -1047,7 +1047,7 @@ export default function MediaForm({
           <h2 id={confirmHeading} className="break-words text-xl font-semibold text-white">
             永久删除「{item.title}」？
           </h2>
-          <p className="my-4 text-sm leading-relaxed text-neutral-300">
+          <p className="my-4 text-sm leading-relaxed text-fg-secondary">
             将删除这个条目及其
             {type === "book" ? "阅读" : type === "album" || type === "music" ? "收听" : "观看"}
             记录、评分和关联。

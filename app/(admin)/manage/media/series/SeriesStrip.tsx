@@ -57,17 +57,17 @@ export default function SeriesStrip({
             S{expanded.number}
           </span>
           <span className="truncate">{expanded.title}</span>
-          <span className="truncate font-mono text-xs font-normal text-neutral-400">
+          <span className="truncate font-mono text-xs font-normal text-fg-muted">
             {formatCount(expanded.episodeCount)} 集 · 共 {formatCount(seasons.length)} 季
           </span>
           <span
-            className="i-material-symbols-expand-more-rounded ml-auto size-4.5 shrink-0 text-neutral-400"
+            className="i-material-symbols-expand-more-rounded ml-auto size-4.5 shrink-0 text-fg-muted"
             aria-hidden="true"
           />
         </button>
       ) : (
         <div className="flex items-center justify-between gap-3">
-          <p className="text-sm text-neutral-400">还没有季。</p>
+          <p className="text-sm text-fg-muted">还没有季。</p>
           <button type="button" onClick={() => onAdd("season")} className="admin-add">
             <span className="i-material-symbols-add-rounded size-4.5" aria-hidden="true" />
             新增第 {formatCount(structure.nextSeasonNumber)} 季
@@ -89,7 +89,7 @@ export default function SeriesStrip({
                 href={mediaHref("tv_episode", episode.id)}
                 aria-current={selected ? "page" : undefined}
                 aria-label={`第 ${episode.number} 集：${episode.title}（${episode.watched ? "看过" : "没看过"}）`}
-                className={`relative inline-flex h-11 min-w-12 shrink-0 items-center justify-center rounded-[10px] border px-2.5 font-mono text-[13px] ${selected ? "border-[var(--accent-border)] bg-[var(--accent-soft)] font-semibold text-[var(--accent-light)]" : "border-white/12 bg-white/5 text-neutral-300"}`}
+                className={`relative inline-flex h-11 min-w-12 shrink-0 items-center justify-center rounded-[10px] border px-2.5 font-mono text-[13px] ${selected ? "border-[var(--accent-border)] bg-[var(--accent-soft)] font-semibold text-[var(--accent-light)]" : "border-white/12 bg-white/5 text-fg-secondary"}`}
               >
                 {episode.number}
                 {episode.watched && (
@@ -143,7 +143,7 @@ export default function SeriesStrip({
             <h2 id={sheetHeading} className="text-lg font-semibold text-white">
               选择季
             </h2>
-            <p className="truncate font-mono text-xs text-neutral-400">
+            <p className="truncate font-mono text-xs text-fg-muted">
               {show.title} · {formatCount(seasons.length)} 季 · {formatCount(structure.totalEpisodes)} 集
             </p>
           </div>
@@ -185,7 +185,7 @@ export default function SeriesStrip({
                     S{season.number}
                   </span>
                   <span className="truncate">{season.title}</span>
-                  <span className="ml-auto whitespace-nowrap font-mono text-xs text-neutral-400">
+                  <span className="ml-auto whitespace-nowrap font-mono text-xs text-fg-muted">
                     {formatCount(season.episodeCount)} 集 · {statusLabels[season.status]}
                   </span>
                   <StatusDot status={season.status} />

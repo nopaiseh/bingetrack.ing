@@ -26,7 +26,7 @@ export default function SearchYearFilter({
               setFilters(/* 清除年份筛选。 */ (prev) => ({ ...prev, year: [] }));
             }
           }
-          className={`min-h-10 rounded-full px-4 py-1.5 text-sm transition-all duration-300 backdrop-blur-2xl ${
+          className={`min-h-10 rounded-full px-4 py-1.5 text-sm transition-all duration-300 ${
             allYears ? "filter-option-active" : "filter-option"
           }`}
         >
@@ -39,7 +39,7 @@ export default function SearchYearFilter({
               aria-label="开始年份"
               value={year?.[0] || ""}
               onChange={(e) => setFilters((prev) => changeSearchYear(prev, "start", e.target.value))}
-              className={`min-h-10 w-full min-w-0 cursor-pointer appearance-none rounded-lg py-1.5 pl-3 pr-8 text-[13px] backdrop-blur-2xl transition-all sm:min-w-25 ${
+              className={`min-h-10 w-full min-w-0 cursor-pointer appearance-none rounded-lg py-1.5 pl-3 pr-8 text-[13px] transition-all sm:min-w-25 ${
                 year?.[0] ? "filter-option-active font-semibold" : "filter-option"
               }`}
             >
@@ -67,7 +67,7 @@ export default function SearchYearFilter({
               aria-label="结束年份"
               value={year?.[1] || ""}
               onChange={(e) => setFilters((prev) => changeSearchYear(prev, "end", e.target.value))}
-              className={`min-h-10 w-full min-w-0 cursor-pointer appearance-none rounded-lg py-1.5 pl-3 pr-8 text-[13px] backdrop-blur-2xl transition-all sm:min-w-25 ${
+              className={`min-h-10 w-full min-w-0 cursor-pointer appearance-none rounded-lg py-1.5 pl-3 pr-8 text-[13px] transition-all sm:min-w-25 ${
                 year?.[1] ? "filter-option-active font-semibold" : "filter-option"
               }`}
             >

@@ -58,7 +58,7 @@ export default function QuickAddTrackDialog({
           <h2 id={heading} className="text-xl font-semibold text-white">
             新增曲目
           </h2>
-          <p className="flex flex-wrap items-center gap-1.5 text-sm text-neutral-400">
+          <p className="flex flex-wrap items-center gap-1.5 text-sm text-fg-muted">
             <span className="rounded-full border border-emerald-500/25 bg-emerald-500/10 px-2.5 py-0.5 text-xs font-semibold text-emerald-300">
               {structure.album.title}
             </span>
@@ -110,7 +110,7 @@ export default function QuickAddTrackDialog({
         />
         <p className="edit-hint">默认带上专辑艺人（人物 ID）；可增删或清空。作词、作曲请在保存后于曲目编辑页填写。</p>
         <ActionNotice state={state} />
-        <label className="flex items-center gap-2 text-sm text-neutral-300">
+        <label className="flex items-center gap-2 text-sm text-fg-secondary">
           <input
             type="checkbox"
             checked={keepGoing}
