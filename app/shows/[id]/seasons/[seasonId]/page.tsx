@@ -21,9 +21,9 @@ import type { EpisodeInfo, SeasonEpisodePage, SeasonInfo } from "@/lib/types";
 const JSON_LD_EPISODE_PAGE_SIZE = 100;
 const JSON_LD_EPISODE_PAGE_LIMIT = 10;
 
-// 默认季页（第 1 页、全部、升序）按需静态生成，24 小时再验证；保存条目时沿用媒体标签即时失效。
+// 默认季页（第 1 页、全部、升序）按需静态生成；保存条目时沿用媒体标签即时失效，不定时重建。
 // 不读取 searchParams，否则整页会变成每次请求都动态渲染。分页和筛选留在客户端，地址仍使用原来的查询串。
-export const revalidate = 86400;
+export const revalidate = false;
 
 /** 构建时不枚举季 ID，季页由首次访问触发按需生成。 */
 export function generateStaticParams() {

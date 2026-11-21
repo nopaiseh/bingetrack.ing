@@ -86,7 +86,7 @@ beforeEach(() => {
 });
 
 describe("继续看数据缓存", () => {
-  it("用 24 小时和 media、media:lists 包住 getHomeContinue，并原样返回在看／在听", async () => {
+  it("用 revalidate:false 和 media、media:lists 包住 getHomeContinue，并原样返回在看／在听", async () => {
     const payload = {
       watching: [
         {
@@ -115,7 +115,7 @@ describe("继续看数据缓存", () => {
     expect(cacheSpecs).toContainEqual({
       fn: getHomeContinue,
       keys: ["public-media-home-continue-v2"],
-      options: { revalidate: 86400, tags: ["media", "media:lists"] },
+      options: { revalidate: false, tags: ["media", "media:lists"] },
     });
     await expect(getCachedHomeContinue()).resolves.toEqual(payload);
     expect(getHomeContinue).toHaveBeenCalledOnce();

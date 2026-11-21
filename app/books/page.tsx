@@ -10,8 +10,8 @@ export const metadata = {
   alternates: { canonical: "/books" },
 };
 
-// 图书目录按 24 小时长缓存，数据变更由管理端即时按需刷新。
-export const revalidate = 86400;
+// 图书目录无数据缓存标签，只靠管理端 revalidatePath("/books") 按需刷新。
+export const revalidate = false;
 
 const DEFAULT_STATS = { total: 0, reading: 0, read: 0, want: 0 };
 

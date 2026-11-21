@@ -5,7 +5,8 @@ import { getSupabasePublicServer } from "@/lib/supabase/public-server";
 import type { Metadata } from "next";
 import { buildMediaJsonLd, buildMediaMetadata, serializeJsonLd } from "@/lib/seo/media";
 
-export const revalidate = 86400;
+// 按需生成；只靠保存时的 revalidateTag 失效，不定时重建。
+export const revalidate = false;
 
 /** 构建时不枚举详情 ID，访问时按需生成。 */
 export function generateStaticParams() {

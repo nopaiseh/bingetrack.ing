@@ -26,11 +26,11 @@ import { getBookStats } from "@/lib/functions/media-repo";
 import { getCachedBookStats } from "@/lib/functions/cached-media";
 
 describe("getCachedBookStats", () => {
-  it("caches getBookStats for 24h under media and media:lists tags", async () => {
+  it("caches getBookStats until tag invalidation under media and media:lists tags", async () => {
     expect(cacheSpecs).toContainEqual({
       fn: getBookStats,
       keys: ["public-book-stats-v1"],
-      options: { revalidate: 86400, tags: ["media", "media:lists"] },
+      options: { revalidate: false, tags: ["media", "media:lists"] },
     });
     await expect(getCachedBookStats()).resolves.toEqual({
       total: 4,

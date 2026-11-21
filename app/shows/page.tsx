@@ -9,7 +9,7 @@ export const metadata = {
   alternates: { canonical: "/shows" },
 };
 
-// 电视节目目录按 24 小时长缓存，数据变更由管理端即时按需刷新。
+// 目录的即将上映数量按当天日期计算，保留每天重建一次；数据变更由管理端即时按需刷新。
 export const revalidate = 86400;
 
 const DEFAULT_SERIES_STATS = { total: 0, watched: 0, watching: 0, want: 0, upcoming: 0 };

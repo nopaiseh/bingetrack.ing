@@ -8,7 +8,7 @@ import { getCachedMediaById, getCachedSeasonsBySeriesId } from "@/lib/functions/
 import type { Metadata } from "next";
 import { buildMediaJsonLd, buildMediaMetadata, serializeJsonLd } from "@/lib/seo/media";
 
-// 详情页按需生成，日常走 24 小时长缓存，数据变更通过 revalidatePath/revalidateTag 即时失效。
+// 详情页按需生成；「即将上映」标签按当天日期在服务端算好，保留每天重建一次；保存时 revalidateTag（media:item / media）即时失效。
 export const revalidate = 86400;
 
 /** 构建时不枚举电视节目 ID，详情页由访问触发按需生成。 */
