@@ -5,7 +5,7 @@ import { useLayoutEffect, useRef } from "react";
 import type { SeasonInfo } from "@/lib/types";
 
 /**
- * 季详情头部的全宽季度切换条。
+ * 季详情头部的全宽季度导航条（跨页链接，不是 tab）。
  * 横向滚动、隐藏滚动条；加载后只调整 scrollLeft，把当前季滚进可视区。
  */
 export default function SeasonTabList({
@@ -17,7 +17,7 @@ export default function SeasonTabList({
   seasonId: string;
   seasons: SeasonInfo[];
 }) {
-  const listRef = useRef<HTMLDivElement>(null);
+  const listRef = useRef<HTMLElement>(null);
   const currentRef = useRef<HTMLAnchorElement>(null);
 
   useLayoutEffect(() => {
@@ -32,9 +32,8 @@ export default function SeasonTabList({
 
   return (
     <div className="season-tab-scroller relative mt-4 min-w-0">
-      <div
+      <nav
         ref={listRef}
-        role="tablist"
         aria-label="选择季度"
         className="no-scrollbar flex min-w-0 overflow-x-auto border-b border-white/10"
       >
@@ -44,8 +43,6 @@ export default function SeasonTabList({
             <Link
               key={season.id}
               ref={current ? currentRef : undefined}
-              role="tab"
-              aria-selected={current}
               aria-current={current ? "page" : undefined}
               href={`/shows/${seriesId}/seasons/${season.id}`}
               className={`inline-flex min-h-11 shrink-0 items-center border-b-2 px-3 text-sm whitespace-nowrap -mb-px transition-colors ${
@@ -58,7 +55,7 @@ export default function SeasonTabList({
             </Link>
           );
         })}
-      </div>
+      </nav>
     </div>
   );
 }

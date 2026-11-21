@@ -796,58 +796,6 @@ html {
     box-shadow: inset 3px 0 0 var(--accent);
   }
 
-  /* 详情和季简介：窄屏收成三行，点按 summary 展开。宽屏不限行数，行宽由 70ch 控制。 */
-  .overview-clamp > summary {
-    display: block;
-    list-style: none;
-    cursor: pointer;
-  }
-
-  .overview-clamp > summary::-webkit-details-marker {
-    display: none;
-  }
-
-  .overview-clamp-text {
-    display: -webkit-box;
-    -webkit-box-orient: vertical;
-    -webkit-line-clamp: 3;
-    overflow: hidden;
-  }
-
-  .overview-clamp[open] .overview-clamp-text {
-    display: block;
-    -webkit-line-clamp: unset;
-    overflow: visible;
-  }
-
-  .overview-expand-open {
-    display: none;
-  }
-
-  .overview-clamp[open] .overview-expand-closed {
-    display: none;
-  }
-
-  .overview-clamp[open] .overview-expand-open {
-    display: inline;
-  }
-
-  @media (min-width: 1024px) {
-    .overview-clamp:not(.overview-clamp-persist) > summary {
-      cursor: text;
-    }
-
-    .overview-clamp:not(.overview-clamp-persist) .overview-clamp-text {
-      display: block;
-      -webkit-line-clamp: unset;
-      overflow: visible;
-    }
-  }
-
-  .overview-clamp-persist .overview-clamp-text {
-    -webkit-line-clamp: 4;
-  }
-
   .mobile-tab-bar {
     background: var(--surface-panel);
     border: 1px solid var(--border-strong);

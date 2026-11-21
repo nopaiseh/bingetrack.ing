@@ -1,10 +1,30 @@
 import { render, screen } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import ClampedCopy from "@/components/ClampedCopy";
 import MediaInformation from "@/components/MediaInformation";
 import type { Media } from "@/lib/types";
 
 vi.mock("next/navigation", () => ({ useSearchParams: () => new URLSearchParams() }));
+
+/** 让 ClampedCopy 在测量时认为正文溢出，从而渲染展开按钮。 */
+function stubOverflowingResizeObserver() {
+  vi.stubGlobal(
+    "ResizeObserver",
+    class {
+      callback: ResizeObserverCallback;
+      constructor(callback: ResizeObserverCallback) {
+        this.callback = callback;
+      }
+      observe(target: Element) {
+        Object.defineProperty(target, "scrollHeight", { configurable: true, get: () => 200 });
+        Object.defineProperty(target, "clientHeight", { configurable: true, get: () => 80 });
+        this.callback([], this as unknown as ResizeObserver);
+      }
+      unobserve() {}
+      disconnect() {}
+    },
+  );
+}
 
 const media: Media = {
   id: "test",
@@ -21,6 +41,14 @@ const media: Media = {
 };
 
 describe("详情页窄屏布局", () => {
+  beforeEach(() => {
+    stubOverflowingResizeObserver();
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
   it("标题旁是小海报，字号与搜索页一致，元信息在下一行，没有 TMDB 链接", () => {
     const { container } = render(
       <MediaInformation media={{ ...media, status: "watched" }} seasons={null} releaseDateLabel="2012-09-28" />,
@@ -30,9 +58,9 @@ describe("详情页窄屏布局", () => {
     expect(poster?.querySelector("img")).toHaveAttribute("src", expect.stringContaining("poster.jpg"));
     expect(container.querySelector("[data-hero]")).not.toBeInTheDocument();
     const copy = screen.getByText(/一段很长的剧情简介/);
-    expect(copy).toHaveClass("max-w-[70ch]");
-    expect(copy.closest("details")).toBeInTheDocument();
-    expect(screen.getByText("展开全文 ↓")).toBeInTheDocument();
+    expect(copy).toHaveClass("max-w-[70ch]", "line-clamp-4");
+    expect(copy.closest("details")).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "展开全文 ↓" })).toHaveAttribute("aria-expanded", "false");
     const title = screen.getByRole("heading", { level: 1, name: "完美音调" });
     expect(title).toHaveClass("text-3xl", "sm:text-4xl");
     expect(title).not.toHaveClass("sm:text-5xl");
@@ -113,9 +141,17 @@ describe("详情页窄屏布局", () => {
   });
 
   it("短简介不提供展开控件", () => {
+    vi.stubGlobal(
+      "ResizeObserver",
+      class {
+        observe() {}
+        unobserve() {}
+        disconnect() {}
+      },
+    );
     render(<ClampedCopy text="暂无简介。" />);
     expect(screen.getByText("暂无简介。")).toHaveClass("max-w-[70ch]");
-    expect(screen.queryByText("展开简介 ▾")).not.toBeInTheDocument();
+    expect(screen.queryByRole("button")).not.toBeInTheDocument();
   });
 
   it("导演链接触控目标至少 44px 高且仍链到导演搜索", () => {

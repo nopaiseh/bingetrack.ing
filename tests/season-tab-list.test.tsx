@@ -37,14 +37,17 @@ describe("SeasonTabList", () => {
     expect(container).toBeEmptyDOMElement();
   });
 
-  it("多季渲染 tablist，当前季带 aria-current", () => {
+  it("多季渲染导航，当前季带 aria-current，无 tab 角色", () => {
     const { container } = render(<SeasonTabList seriesId="show" seasonId="s2" seasons={seasons} />);
-    expect(screen.getByRole("tablist", { name: "选择季度" })).toHaveClass("no-scrollbar");
-    expect(screen.getByRole("tab", { name: "第 2 季", current: "page" })).toHaveAttribute(
+    const nav = screen.getByRole("navigation", { name: "选择季度" });
+    expect(nav).toHaveClass("no-scrollbar");
+    expect(screen.getByRole("link", { name: "第 2 季", current: "page" })).toHaveAttribute(
       "href",
       "/shows/show/seasons/s2",
     );
-    expect(screen.getByRole("tab", { name: "第 1 季" })).not.toHaveAttribute("aria-current");
+    expect(screen.getByRole("link", { name: "第 1 季" })).not.toHaveAttribute("aria-current");
+    expect(screen.queryByRole("tablist")).not.toBeInTheDocument();
+    expect(screen.queryByRole("tab")).not.toBeInTheDocument();
     expect(container.querySelector(".season-tab-scroller")).toBeInTheDocument();
   });
 });

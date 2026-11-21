@@ -1,8 +1,8 @@
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { BackLink } from "@/components/MediaBackLink";
+import ClampedCopy from "@/components/ClampedCopy";
 import SeasonEpisodeBrowser from "@/components/SeasonEpisodeBrowser";
-import SeasonOverview from "@/components/SeasonOverview";
 import SeasonTabList from "@/components/SeasonTabList";
 import { formatRuntime, parseRuntimeParts } from "@/lib/format-runtime";
 import {
@@ -115,7 +115,16 @@ export default async function SeasonPage({ params }: { params: Promise<{ id: str
           {seasonData.season.summary ? (
             <div className={seasons.length > 1 ? "mt-5 min-w-0" : "mt-5 min-w-0 border-t border-white/10 pt-4"}>
               <h2 className="text-sm font-semibold tracking-widest text-fg-muted">本季简介</h2>
-              <SeasonOverview text={seasonData.season.summary} />
+              <div className="mt-2">
+                <ClampedCopy
+                  text={seasonData.season.summary}
+                  persistClamp
+                  lines={4}
+                  fullWidth
+                  expandLabel="展开"
+                  collapseLabel="收起"
+                />
+              </div>
             </div>
           ) : null}
         </header>

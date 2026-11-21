@@ -1,44 +1,78 @@
-/** 大约三行中文。更短的简介不显示展开控件。 */
-const OVERVIEW_CLAMP_CHARACTERS = 72;
+"use client";
 
-/** 长简介或超过三行的文本才在窄屏收起；短句保持普通段落。 */
-export function overviewNeedsClamp(text: string): boolean {
-  const trimmed = text.trim();
-  return trimmed.length > OVERVIEW_CLAMP_CHARACTERS || trimmed.split("\n").length > 3;
-}
+import { useLayoutEffect, useRef, useState } from "react";
 
 /**
- * 窄屏把长简介收成三行，并用原生 details 展开，不依赖脚本。
- * 宽屏默认取消行数限制，同时把行宽限制在约 70ch，避免桌面一行超过一百个汉字。
- * persistClamp 在宽屏也保持收起，详情页的「展开全文」用这个。
+ * 长简介默认按行截断，超出时用粉色展开／收起按钮（aria-expanded，命中区 ≥44px）。
+ * persistClamp：各断点都保持截断；否则 ≥1024px 取消截断。
+ * fullWidth：不限制 70ch，占满容器宽度（季详情用）。
  */
 export default function ClampedCopy({
   text,
   className = "",
   persistClamp = false,
+  lines,
   expandLabel = "展开简介 ▾",
   collapseLabel = "收起简介 ▴",
+  fullWidth = false,
 }: {
   text: string;
   className?: string;
   persistClamp?: boolean;
+  /** 截断行数；默认 persistClamp 为 4，否则为 3。 */
+  lines?: number;
   expandLabel?: string;
   collapseLabel?: string;
+  fullWidth?: boolean;
 }) {
-  const body = `max-w-[70ch] whitespace-pre-line text-left text-sm leading-7 tracking-wide text-fg-secondary wrap-break-word md:text-base ${className}`;
-  if (!overviewNeedsClamp(text)) return <p className={body}>{text}</p>;
+  const clampLines = lines ?? (persistClamp ? 4 : 3);
+  const textRef = useRef<HTMLParagraphElement>(null);
+  const [expanded, setExpanded] = useState(false);
+  const [needsClamp, setNeedsClamp] = useState(false);
+
+  useLayoutEffect(() => {
+    const el = textRef.current;
+    if (!el) return;
+
+    const measure = () => {
+      if (expanded) return;
+      setNeedsClamp(el.scrollHeight > el.clientHeight + 1);
+    };
+
+    measure();
+    if (typeof ResizeObserver === "undefined") return;
+    const observer = new ResizeObserver(measure);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [text, expanded, clampLines, persistClamp]);
+
+  const clampClass = expanded
+    ? ""
+    : clampLines === 4
+      ? persistClamp
+        ? "line-clamp-4"
+        : "line-clamp-4 lg:line-clamp-none"
+      : persistClamp
+        ? "line-clamp-3"
+        : "line-clamp-3 lg:line-clamp-none";
+
+  const body = `${fullWidth ? "min-w-0" : "max-w-[70ch]"} whitespace-pre-line text-left text-sm leading-7 tracking-wide text-fg-secondary wrap-break-word md:text-base ${clampClass} ${className}`;
 
   return (
-    <details className={persistClamp ? "overview-clamp overview-clamp-persist" : "overview-clamp"}>
-      <summary>
-        <span className={`overview-clamp-text ${body}`}>{text}</span>
-        <span
-          className={`overview-toggle mt-1.5 inline-block text-sm text-[var(--accent-hover)] ${persistClamp ? "" : "lg:hidden"}`}
+    <div className="min-w-0">
+      <p ref={textRef} className={body}>
+        {text}
+      </p>
+      {needsClamp ? (
+        <button
+          type="button"
+          aria-expanded={expanded}
+          className="mt-1 inline-flex min-h-11 items-center text-sm text-[var(--accent-hover)]"
+          onClick={() => setExpanded((value) => !value)}
         >
-          <span className="overview-expand-closed">{expandLabel}</span>
-          <span className="overview-expand-open">{collapseLabel}</span>
-        </span>
-      </summary>
-    </details>
+          {expanded ? collapseLabel : expandLabel}
+        </button>
+      ) : null}
+    </div>
   );
 }

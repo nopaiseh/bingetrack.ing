@@ -219,26 +219,26 @@ describe("SeasonPage", () => {
     expect(screen.getByRole("heading", { level: 2, name: "本季简介" })).toBeInTheDocument();
   });
 
-  it("多季时渲染全宽季度 tab 条，单季不显示；有 tab 时简介区不加 border-top", async () => {
+  it("多季时渲染全宽季度导航，单季不显示；有导航时简介区不加 border-top", async () => {
     mockSeason([season, seasonTwo]);
     const { container, rerender } = render(await SeasonPage({ params: Promise.resolve({ id: seriesId, seasonId }) }));
-    const tablist = screen.getByRole("tablist", { name: "选择季度" });
-    expect(tablist).toBeInTheDocument();
-    expect(screen.getByRole("tab", { name: "第 1 季", current: "page" })).toHaveAttribute(
+    expect(screen.getByRole("navigation", { name: "选择季度" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "第 1 季", current: "page" })).toHaveAttribute(
       "href",
       `/shows/${seriesId}/seasons/${seasonId}`,
     );
-    expect(screen.getByRole("tab", { name: "第 2 季" })).toHaveAttribute(
+    expect(screen.getByRole("link", { name: "第 2 季" })).toHaveAttribute(
       "href",
       `/shows/${seriesId}/seasons/${seasonTwoId}`,
     );
-    const overviewWithTabs = screen.getByRole("heading", { level: 2, name: "本季简介" }).parentElement;
-    expect(overviewWithTabs).toHaveClass("mt-5");
-    expect(overviewWithTabs).not.toHaveClass("border-t", "pt-4");
+    expect(screen.queryByRole("tablist")).not.toBeInTheDocument();
+    const overviewWithNav = screen.getByRole("heading", { level: 2, name: "本季简介" }).parentElement;
+    expect(overviewWithNav).toHaveClass("mt-5");
+    expect(overviewWithNav).not.toHaveClass("border-t", "pt-4");
 
     mockSeason([season]);
     rerender(await SeasonPage({ params: Promise.resolve({ id: seriesId, seasonId }) }));
-    expect(screen.queryByRole("tablist", { name: "选择季度" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("navigation", { name: "选择季度" })).not.toBeInTheDocument();
     const overviewAlone = screen.getByRole("heading", { level: 2, name: "本季简介" }).parentElement;
     expect(overviewAlone).toHaveClass("border-t", "border-white/10", "pt-4");
     expect(container.querySelector("header")).toBeInTheDocument();
