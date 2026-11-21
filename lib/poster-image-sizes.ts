@@ -22,9 +22,5 @@ export const SEARCH_ABOVE_FOLD_COUNT = 6;
 /** Home continue-watching / reading rails: ~3 cards on phone, sm:w-36. */
 export const RAIL_POSTER_SIZES = "(max-width: 639px) 120px, 144px";
 
-/** Album cover wall: 3→8 columns. */
-export const ALBUM_COVER_SIZES =
-  "(max-width: 639px) 112px, (max-width: 767px) 160px, (max-width: 1023px) 140px, (max-width: 1279px) 120px, 112px";
-
 /** Catalog MediaRow album tiles: w-40 / sm:w-48 square covers. */
 export const ALBUM_ROW_COVER_SIZES = "(max-width: 639px) 160px, 192px";

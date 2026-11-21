@@ -16,9 +16,6 @@ export default function AlbumsCatalog({
   want: readonly MediaCard[];
   stats: AlbumStats;
 }) {
-  const watchedItems = [...(watched ?? [])];
-  const watchingItems = [...(watching ?? [])];
-  const wantItems = [...(want ?? [])];
   const isEmpty = (stats?.total ?? 0) === 0;
 
   const statItems = [
@@ -41,7 +38,7 @@ export default function AlbumsCatalog({
           <div className="space-y-12">
             <MediaRow
               title="我已听"
-              items={watchedItems}
+              items={watched}
               eagerCount={2}
               viewAllLink="/search?type=album&status=watched"
               type="album"
@@ -49,16 +46,16 @@ export default function AlbumsCatalog({
             />
             <MediaRow
               title="我在听"
-              items={watchingItems}
-              eagerCount={watchedItems.length ? 0 : 2}
+              items={watching}
+              eagerCount={watched.length ? 0 : 2}
               viewAllLink="/search?type=album&status=watching"
               type="album"
               hideStatusBadge
             />
             <MediaRow
               title="我想听"
-              items={wantItems}
-              eagerCount={watchedItems.length || watchingItems.length ? 0 : 2}
+              items={want}
+              eagerCount={watched.length || watching.length ? 0 : 2}
               viewAllLink="/search?type=album&status=want_to_watch"
               type="album"
               hideStatusBadge

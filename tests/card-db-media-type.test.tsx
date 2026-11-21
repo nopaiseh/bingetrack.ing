@@ -1,6 +1,5 @@
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
-import AlbumCoverCard from "@/components/AlbumCoverCard";
 import MediaRow from "@/components/MediaRow";
 import { SearchMediaCard } from "@/components/SearchMediaCard";
 import { dbTypeToPublicRoute, publicPathForDbType } from "@/lib/media-types";
@@ -123,24 +122,11 @@ describe("卡片只认数据库类型", () => {
 
     expect(container.querySelector("[class*='aspect-square']")).toBeTruthy();
     expect(container.querySelector("[class*='aspect-2/3']")).toBeNull();
-    expect(screen.getByRole("link", { name: /范特西/ })).toHaveAttribute("href", "/albums/a1");
-    expect(screen.getByText("周杰伦")).toBeInTheDocument();
+    const link = screen.getByRole("link", { name: "范特西，周杰伦" });
+    expect(link).toHaveAttribute("href", "/albums/a1");
+    expect(link).toHaveAccessibleName("范特西，周杰伦");
     expect(screen.getByText("9.2")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /查看全部/ })).toHaveAttribute("href", "/search?type=album&status=watched");
     expect(container.querySelector("[data-initial]")).toBeTruthy();
-  });
-
-  it("AlbumCoverCard：由数据库类型 album 映射到 /albums", () => {
-    render(
-      <AlbumCoverCard
-        item={card({
-          id: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
-          title: "叶惠美",
-          dbType: "album",
-          artists: ["周杰伦"],
-        })}
-      />,
-    );
-    expect(screen.getByRole("link")).toHaveAttribute("href", "/albums/aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa");
   });
 });

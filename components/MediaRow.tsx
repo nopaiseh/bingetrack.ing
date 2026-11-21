@@ -132,7 +132,7 @@ export default function MediaRow({
   hideStatusBadge = false,
 }: {
   title: string;
-  items: MediaCard[];
+  items: readonly MediaCard[];
   viewAllLink?: string;
   /** 行级数据库类型；单卡优先用 item.dbType，缺省时回落到此。 */
   type?: RowDbMediaType;
