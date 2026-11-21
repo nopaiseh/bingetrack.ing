@@ -2,7 +2,7 @@
 
 import { useLayoutEffect, useRef, useState, type CSSProperties, type KeyboardEvent } from "react";
 import Image from "next/image";
-import Link from "next/link";
+import HoverPrefetchLink from "@/components/HoverPrefetchLink";
 import LetterTile from "@/components/LetterTile";
 import { continueWatchingPosterSrc } from "@/components/ContinueWatchingRail";
 import { RAIL_POSTER_SIZES } from "@/lib/poster-image-sizes";
@@ -81,7 +81,7 @@ function ListeningCard({ item, eager }: { item: ContinueListeningCard; eager: bo
   const title = continueListeningTitle(item.title);
   const progress = item.trackProgress;
   return (
-    <Link
+    <HoverPrefetchLink
       href={item.href}
       data-continue-card=""
       className="surface-card interactive-media-card group flex w-[calc((100%-2*var(--cw-gap))/3.05)] flex-none snap-start flex-col overflow-hidden rounded-xl focus-ring sm:w-36"
@@ -110,7 +110,7 @@ function ListeningCard({ item, eager }: { item: ContinueListeningCard; eager: bo
           </div>
         </div>
       </div>
-    </Link>
+    </HoverPrefetchLink>
   );
 }
 

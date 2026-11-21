@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import HoverPrefetchLink from "@/components/HoverPrefetchLink";
 import AnimatedNumber from "@/components/AnimatedNumber";
 
 /** 按传入标题和图标展示媒体部数，并用一行补充季数、集数；未传 details 时保留空行，让各看板卡片高度一致；提供 href 时作为可点击跳转卡片。 */
@@ -56,9 +56,9 @@ export default function MediaStatusCard({
 
   if (href) {
     return (
-      <Link href={href} className={`${containerClasses} cursor-pointer`}>
+      <HoverPrefetchLink href={href} className={`${containerClasses} cursor-pointer`}>
         {content}
-      </Link>
+      </HoverPrefetchLink>
     );
   }
 
