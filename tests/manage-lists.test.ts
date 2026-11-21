@@ -15,16 +15,26 @@ import {
 } from "@/lib/admin/list-params";
 import {
   bulkDeleteAlbums,
+  bulkDeleteBooks,
   bulkDeleteMovies,
   bulkDeletePeople,
   bulkDeleteTvShows,
+  bulkSetBookStatus,
   bulkSetMovieStatus,
   bulkSetTvShowStatus,
   listAdminChildren,
   listAdminMedia,
   listAdminPeople,
 } from "@/lib/admin/lists";
-import { deleteAlbums, deleteMovies, listAlbums, listPeople, setTvShowStatus } from "@/app/(admin)/manage/list-actions";
+import {
+  deleteAlbums,
+  deleteBooks,
+  deleteMovies,
+  listAlbums,
+  listPeople,
+  setBookStatus,
+  setTvShowStatus,
+} from "@/app/(admin)/manage/list-actions";
 import { requireOwner } from "@/lib/auth/server";
 import { affectedMediaIds, referenceMediaIds, revalidateMediaItems } from "@/lib/admin/revalidate-media";
 
@@ -47,6 +57,8 @@ const albumA = "ffffffff-ffff-4fff-8fff-ffffffffffff";
 const albumB = "99999999-9999-4999-8999-999999999999";
 const trackA = "10101010-1010-4010-8010-101010101010";
 const trackB = "20202020-2020-4020-8020-202020202020";
+const bookA = "b0b0b0b0-b0b0-4b0b-8b0b-b0b0b0b0b0b0";
+const bookB = "c1c1c1c1-c1c1-4c1c-8c1c-c1c1c1c1c1c1";
 
 type Result = { data?: unknown; error?: unknown; count?: number | null };
 type QueryCall = { method: string; args: unknown[] };
@@ -753,6 +765,78 @@ describe("批量删除与状态", () => {
     expect(from).toHaveBeenCalledWith("media_items");
     expect(rpc).not.toHaveBeenCalled();
   });
+
+  it("图书一次按类型删除，不存在的 ID 记为失败", async () => {
+    const { db, queries, from } = fakeDb(() => ({ data: [{ id: bookA }] }));
+    const result = await bulkDeleteBooks(db, [bookA, bookB]);
+    expect(queries).toHaveLength(1);
+    expect(queries[0].calls.map((call) => call.method)).toEqual(["delete", "in", "eq", "select"]);
+    expect(calls(queries[0], "eq")[0].args).toEqual(["type", "book"]);
+    expect(calls(queries[0], "in")[0].args).toEqual(["id", [bookA, bookB]]);
+    expect(vi.mocked(affectedMediaIds).mock.invocationCallOrder[0]).toBeLessThan(from.mock.invocationCallOrder[0]);
+    expect(revalidateMediaItems).toHaveBeenCalledWith([bookA, bookB]);
+    expect(result).toEqual({ succeeded: 1, failed: 1 });
+  });
+
+  it("没有删掉任何图书时不刷新缓存；外键冲突整批失败", async () => {
+    const empty = fakeDb(() => ({ data: [] }));
+    expect(await bulkDeleteBooks(empty.db, [bookA])).toEqual({ succeeded: 0, failed: 1 });
+    expect(revalidateMediaItems).not.toHaveBeenCalled();
+
+    const blocked = fakeDb(() => ({ data: null, error: { code: "23503" } }));
+    expect(await bulkDeleteBooks(blocked.db, [bookA, bookB])).toEqual({ succeeded: 0, failed: 2 });
+    expect(revalidateMediaItems).not.toHaveBeenCalled();
+  });
+
+  it("图书删除权限不足或其它写失败向上抛出", async () => {
+    const denied = fakeDb(() => ({ data: null, error: { code: "42501" } }));
+    await expect(bulkDeleteBooks(denied.db, [bookA])).rejects.toThrow("没有写入权限，请检查站长账号配置。");
+
+    const failed = fakeDb(() => ({ data: null, error: { code: "57014", message: "timeout" } }));
+    await expect(bulkDeleteBooks(failed.db, [bookA])).rejects.toThrow("删除失败，请重试。");
+  });
+
+  it("图书状态只更新确认过的图书，接受 in_progress 且不带评分", async () => {
+    const { db, queries } = fakeDb((query) =>
+      query.table === "media_items" ? { data: [{ id: bookA }] } : { data: [{ media_item_id: bookA }] },
+    );
+    const result = await bulkSetBookStatus(db, [bookA, movieA], "in_progress");
+    const upsert = calls(queries[1], "upsert")[0].args;
+    expect(queries[0].table).toBe("media_items");
+    expect(calls(queries[0], "eq")[0].args).toEqual(["type", "book"]);
+    expect(queries[1].table).toBe("tracking");
+    expect(upsert[0]).toEqual([{ media_item_id: bookA, status: "in_progress" }]);
+    expect(upsert[1]).toEqual({ onConflict: "media_item_id", defaultToNull: false });
+    expect(JSON.stringify(upsert[0])).not.toContain("rating");
+    expect(result).toEqual({ succeeded: 1, failed: 1 });
+    expect(revalidateMediaItems).toHaveBeenCalledWith([bookA]);
+  });
+
+  it("没有匹配图书时状态全部记失败；写失败区分权限与其它错误", async () => {
+    const missing = fakeDb(() => ({ data: [] }));
+    expect(await bulkSetBookStatus(missing.db, [bookA], "watched")).toEqual({ succeeded: 0, failed: 1 });
+    expect(missing.queries.some((query) => query.table === "tracking")).toBe(false);
+    expect(revalidateMediaItems).not.toHaveBeenCalled();
+
+    const denied = fakeDb((query) =>
+      query.table === "media_items" ? { data: [{ id: bookA }] } : { data: null, error: { code: "42501" } },
+    );
+    await expect(bulkSetBookStatus(denied.db, [bookA], "want_to_watch")).rejects.toThrow(
+      "没有写入权限，请检查站长账号配置。",
+    );
+
+    const failed = fakeDb((query) =>
+      query.table === "media_items" ? { data: [{ id: bookA }] } : { data: null, error: { message: "upsert down" } },
+    );
+    await expect(bulkSetBookStatus(failed.db, [bookA], "watched")).rejects.toThrow("状态更新失败，请重试。");
+  });
+
+  it("非法图书 ID 或 watching 不会访问数据库", async () => {
+    const { db, from } = fakeDb(() => ({}));
+    await expect(bulkDeleteBooks(db, ["nope"])).rejects.toThrow(AdminInputError);
+    await expect(bulkSetBookStatus(db, [bookA], "watching")).rejects.toThrow(AdminInputError);
+    expect(from).not.toHaveBeenCalled();
+  });
 });
 
 describe("专辑曲目列表", () => {
@@ -836,6 +920,8 @@ describe("管理列表服务端入口", () => {
     await expect(setTvShowStatus([showA], "watched")).rejects.toThrow("unauthorized");
     await expect(listAlbums({})).rejects.toThrow("unauthorized");
     await expect(deleteAlbums([albumA])).rejects.toThrow("unauthorized");
+    await expect(deleteBooks([bookA])).rejects.toThrow("unauthorized");
+    await expect(setBookStatus([bookA], "in_progress")).rejects.toThrow("unauthorized");
   });
 
   it("身份通过后才查询", async () => {
@@ -848,5 +934,11 @@ describe("管理列表服务端入口", () => {
     from.mockClear();
     expect(await listAlbums({})).toEqual({ items: [], total: 0, page: 1, pageSize: 25 });
     expect(from).toHaveBeenCalledWith("v_manage_media_order");
+    from.mockClear();
+    expect(await deleteBooks([bookA])).toEqual({ succeeded: 0, failed: 1 });
+    expect(from).toHaveBeenCalledWith("media_items");
+    from.mockClear();
+    expect(await setBookStatus([bookA], "want_to_watch")).toEqual({ succeeded: 0, failed: 1 });
+    expect(from).toHaveBeenCalledWith("media_items");
   });
 });
