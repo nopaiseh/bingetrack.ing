@@ -9,7 +9,7 @@ insert into public.site_owner(user_id) values ('fc000000-0000-4000-8000-00000000
 
 insert into public.media_items(id,type,title,cover_url,summary,release_date) values
   ('fc000000-0000-4000-8000-000000000100','movie','Report movie',null,null,null),
-  ('fc000000-0000-4000-8000-000000000110','tv_show','Report show','c.jpg','s',null),
+  ('fc000000-0000-4000-8000-000000000110','tv_show','Report show','https://image.tmdb.org/t/p/w500/c.jpg','s',null),
   ('fc000000-0000-4000-8000-000000000111','tv_season','Report S1',null,null,null),
   ('fc000000-0000-4000-8000-000000000112','tv_episode','Report E1',null,null,'2024-01-01'),
   ('fc000000-0000-4000-8000-000000000113','tv_episode','Report E3',null,null,null),
@@ -27,7 +27,7 @@ insert into public.tracking(media_item_id,status,rating) values
 
 -- 集号接续上一季的节目：第 2 季接着第 1 季编号，第 3 季接续时跳号，第 4 季重新从 1 编号。
 insert into public.media_items(id,type,title,cover_url,summary,release_date) values
-  ('fc000000-0000-4000-8000-000000000150','tv_show','Continued show','c.jpg','s',null),
+  ('fc000000-0000-4000-8000-000000000150','tv_show','Continued show','https://image.tmdb.org/t/p/w500/c.jpg','s',null),
   ('fc000000-0000-4000-8000-000000000151','tv_season','Continued S1',null,null,null),
   ('fc000000-0000-4000-8000-000000000152','tv_season','Continued S2',null,null,null),
   ('fc000000-0000-4000-8000-000000000153','tv_season','Continued S3',null,null,null),
