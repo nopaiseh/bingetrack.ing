@@ -86,6 +86,24 @@ select ok(not ('bracket_note' = any(public.manage_name_issues('关谷神奇（�
 select ok(not ('bracket_note' = any(public.manage_name_issues('前固定成员（2010–2016）', true))), 'character bracket note (years) is not flagged');
 select ok('placeholder' = any(public.manage_name_issues('未知', true)), 'placeholder is flagged');
 select ok('mixed_script' = any(public.manage_name_issues('Tom汉克斯', false)), 'mixed script person name is flagged');
+select ok(not ('mixed_script' = any(public.manage_name_issues('J·K·西蒙斯', false))), 'initials with dots are not mixed_script');
+select ok(not ('mixed_script' = any(public.manage_name_issues('O-T·法格本勒', false))), 'hyphenated initials are not mixed_script');
+select ok(not ('mixed_script' = any(public.manage_name_issues('斯特林·K·布朗', false))), 'single middle initial is not mixed_script');
+select ok(not ('mixed_script' = any(public.manage_name_issues('迈克尔·B·乔丹', false))), 'single middle initial B is not mixed_script');
+select ok('mixed_script' = any(public.manage_name_issues('Tom·汉克斯', false)), 'full Latin segment still flags mixed_script');
+select ok('mixed_script' = any(public.manage_name_issues('汤姆Hanks', false)), 'CJK glued to Latin still flags mixed_script');
+select ok('mixed_script' = any(public.manage_name_issues('约翰·Smith', false)), 'full Latin surname still flags mixed_script');
+select ok(not ('separator' = any(public.manage_name_issues(U&'A\00A0/\00A0B', true))), 'NBSP around slash is accepted as separator spacing');
+select ok(not ('separator' = any(public.manage_name_issues(U&'埃迪·布洛克\00A0/\00A0毒液', true))), 'NBSP around Chinese multi-role slash is accepted');
+select ok(not ('separator' = any(public.manage_name_issues('A / B', true))), 'ordinary spaced slash remains accepted');
+select ok('separator' = any(public.manage_name_issues('警察/卧底', true)), 'Chinese slash without spaces still flags separator');
+select ok(not ('separator' = any(public.manage_name_issues('UDT/SEAL', true))), 'ASCII letter/letter slash still not flagged');
+select ok('special_space' = any(public.manage_name_issues(U&'张\00A0三', false)), 'NBSP flags special_space');
+select ok('special_space' = any(public.manage_name_issues(U&'英雄\00A0反派', true)), 'NBSP flags special_space on characters');
+select ok(not ('special_space' = any(public.manage_name_issues('张　三', false))), 'ideographic space is fullwidth not special_space');
+select ok('fullwidth' = any(public.manage_name_issues('张　三', false)), 'ideographic space still flags fullwidth');
+select ok('edge_space' = any(public.manage_name_issues(U&'\00A0张三', false)), 'leading NBSP counts as edge_space');
+select ok('double_space' = any(public.manage_name_issues(U&'张\00A0\00A0三', false)), 'consecutive NBSP counts as double_space');
 select ok('fullwidth' = any(public.manage_name_issues('Ｔｏｍ', false)), 'full-width letters are flagged');
 
 -- 各报告内容
