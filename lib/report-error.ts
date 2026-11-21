@@ -84,10 +84,6 @@ function findFailedQuery(error: unknown): string | undefined {
     if (isRecord(current) && typeof current.operation === "string" && current.operation.length > 0) {
       return current.operation;
     }
-    if (current instanceof Error && current.name === "MediaRepositoryError") {
-      const match = /^Media repository operation failed: (.+)$/.exec(current.message);
-      if (match?.[1]) return match[1];
-    }
     if (!isRecord(current) || !("cause" in current)) break;
     current = current.cause;
   }
