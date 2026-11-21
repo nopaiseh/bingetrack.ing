@@ -105,9 +105,7 @@ test(
 
 test(
   "搜索页标题层级连续且首屏海报优先加载",
-  /* 验证搜索结果 h1→h2 连续，首张海报 preload（非 lazy），其余首屏 eager，更下方懒加载。 */ async ({
-    page,
-  }) => {
+  /* 验证搜索结果 h1→h2 连续，首张海报 preload（非 lazy），其余首屏 eager，更下方懒加载。 */ async ({ page }) => {
     await page.goto("/search");
     await page.waitForLoadState("networkidle");
 

@@ -20,12 +20,7 @@ vi.mock("next/image", () => ({
     fill?: boolean;
   }) => (
     // eslint-disable-next-line @next/next/no-img-element
-    <img
-      alt={alt}
-      sizes={sizes}
-      data-preload={preload ? "true" : undefined}
-      loading={preload ? undefined : loading}
-    />
+    <img alt={alt} sizes={sizes} data-preload={preload ? "true" : undefined} loading={preload ? undefined : loading} />
   ),
 }));
 
