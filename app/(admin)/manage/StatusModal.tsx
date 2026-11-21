@@ -81,7 +81,7 @@ export default function StatusModal({ message, tone = "success", duration = 5000
       {/* 圆角取单行高度（42px）的一半：单行是胶囊，手机上换行后变成圆角矩形，文字不贴弧边。 */}
       <div
         role={error ? "alert" : "status"}
-        className={`flex max-w-md items-center gap-2.5 rounded-[21px] border bg-neutral-900/95 py-2.5 pl-3 pr-5 text-sm text-neutral-100 shadow-[0_12px_32px_rgba(0,0,0,0.5)] backdrop-blur-xl ${error ? "border-rose-500/40" : "border-emerald-500/40"}`}
+        className={`flex max-w-md items-center gap-2.5 rounded-[21px] border bg-neutral-900/95 py-2.5 pl-3 pr-5 text-sm text-neutral-100 shadow-[0_12px_32px_rgba(0,0,0,0.5)] ${error ? "border-rose-500/40" : "border-emerald-500/40"}`}
       >
         <span
           className={`${error ? "i-material-symbols-error-rounded text-rose-400" : "i-material-symbols-check-circle-rounded text-emerald-400"} size-5 shrink-0`}

@@ -79,7 +79,7 @@ export default function AlbumRail({
             <span className="rounded-full border border-emerald-500/25 bg-emerald-500/10 px-2 py-px text-[11px] font-semibold text-emerald-300">
               专辑
             </span>
-            <span className="font-mono text-xs text-neutral-400">
+            <span className="font-mono text-xs text-fg-muted">
               {listenStatusLabels[album.status]}
               {album.rating != null ? ` · ${album.rating.toFixed(1)}` : ""}
             </span>
@@ -112,7 +112,7 @@ export default function AlbumRail({
       )}
 
       <div ref={scroller} className="relative min-h-0 flex-1 overflow-y-auto">
-        {!tracks.length && <p className="px-2.5 py-2 text-sm text-neutral-400">还没有曲目，先新增第 1 首。</p>}
+        {!tracks.length && <p className="px-2.5 py-2 text-sm text-fg-muted">还没有曲目，先新增第 1 首。</p>}
         <ul className="space-y-0.5">
           {tracks.map((track) => {
             const selected = current.type === "music" && current.id === track.id;
@@ -122,15 +122,15 @@ export default function AlbumRail({
                   href={albumMediaHref("music", track.id)}
                   data-track={track.id}
                   aria-current={selected ? "page" : undefined}
-                  className={`flex min-h-9 items-center gap-2.5 rounded-lg border px-2.5 text-[13px] transition-colors ${selected ? "border-[var(--accent-border)] bg-[var(--accent-soft)] font-medium text-[var(--accent-light)]" : "border-transparent text-neutral-300 hover:bg-white/5 hover:text-white"}`}
+                  className={`flex min-h-9 items-center gap-2.5 rounded-lg border px-2.5 text-[13px] transition-colors ${selected ? "border-[var(--accent-border)] bg-[var(--accent-soft)] font-medium text-[var(--accent-light)]" : "border-transparent text-fg-secondary hover:bg-white/5 hover:text-white"}`}
                 >
                   <span
-                    className={`min-w-6 font-mono text-xs ${selected ? "text-[var(--accent-light)]" : "text-neutral-400"}`}
+                    className={`min-w-6 font-mono text-xs ${selected ? "text-[var(--accent-light)]" : "text-fg-muted"}`}
                   >
                     {trackLabel(track.number)}
                   </span>
                   <span className="min-w-0 flex-1 truncate">{track.title}</span>
-                  <span className="font-mono text-[11px] text-neutral-400">{formatSeconds(track.durationSeconds)}</span>
+                  <span className="font-mono text-[11px] text-fg-muted">{formatSeconds(track.durationSeconds)}</span>
                   <StatusDot status={track.listened ? "watched" : "want_to_watch"} />
                 </Link>
               </li>
@@ -143,7 +143,7 @@ export default function AlbumRail({
         <span className="i-material-symbols-add-rounded size-4.5" aria-hidden="true" />
         新增第 {formatCount(nextTrackNumber)} 首
       </button>
-      <p className="flex gap-3.5 px-1 text-[11px] text-neutral-400" aria-hidden="true">
+      <p className="flex gap-3.5 px-1 text-[11px] text-fg-muted" aria-hidden="true">
         <span className="inline-flex items-center gap-1.5">
           <StatusDot status="watched" />
           听过

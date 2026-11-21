@@ -344,7 +344,7 @@ export async function PagedChildList({
           <div className="flex items-center gap-3">
             <Link
               href={`/manage/media/${result.parent}`}
-              className="text-sm text-neutral-300 underline hover:text-white transition-colors"
+              className="text-sm text-fg-secondary underline hover:text-white transition-colors"
             >
               返回上级条目
             </Link>

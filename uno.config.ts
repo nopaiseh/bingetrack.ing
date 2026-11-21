@@ -15,6 +15,7 @@ export default defineConfig({
     fontFamily: {
       sans: 'var(--font-geist), "Noto Sans SC", "Noto Sans CJK SC", "Source Han Sans SC", "Source Han Sans", ui-sans-serif, system-ui, sans-serif',
       mono: 'var(--font-geist-mono), "Noto Sans Mono CJK SC", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
+      display: "var(--font-display)",
     },
     fontSize: {
       // 正文下限 14px。说明、徽标、表头沿用 text-xs，不能再是 12px。

@@ -81,7 +81,7 @@ export default function ManagePagination({
           </span>
         )}
       </div>
-      <p className={total == null ? "text-sm text-neutral-400" : "sr-only"}>
+      <p className={total == null ? "text-sm text-fg-muted" : "sr-only"}>
         第 {page} / {totalPages} 页
       </p>
     </nav>

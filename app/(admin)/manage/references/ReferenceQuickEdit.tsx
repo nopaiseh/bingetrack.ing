@@ -63,7 +63,7 @@ export default function ReferenceQuickEdit({
           />
         )}
         {item && (
-          <Link href={`/manage/references/${kind}/${item.id}`} className="mt-5 inline-block text-sm text-neutral-300">
+          <Link href={`/manage/references/${kind}/${item.id}`} className="mt-5 inline-block text-sm text-fg-secondary">
             查看关联作品 →
           </Link>
         )}

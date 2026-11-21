@@ -72,10 +72,10 @@ export default function SeriesRail({
               href={mediaHref("tv_episode", episode.id)}
               data-episode={episode.id}
               aria-current={selected ? "page" : undefined}
-              className={`flex min-h-9 items-center gap-2.5 rounded-lg border px-2.5 text-[13px] transition-colors ${selected ? "border-[var(--accent-border)] bg-[var(--accent-soft)] font-medium text-[var(--accent-light)]" : "border-transparent text-neutral-300 hover:bg-white/5 hover:text-white"}`}
+              className={`flex min-h-9 items-center gap-2.5 rounded-lg border px-2.5 text-[13px] transition-colors ${selected ? "border-[var(--accent-border)] bg-[var(--accent-soft)] font-medium text-[var(--accent-light)]" : "border-transparent text-fg-secondary hover:bg-white/5 hover:text-white"}`}
             >
               <span
-                className={`min-w-6 font-mono text-xs ${selected ? "text-[var(--accent-light)]" : "text-neutral-400"}`}
+                className={`min-w-6 font-mono text-xs ${selected ? "text-[var(--accent-light)]" : "text-fg-muted"}`}
               >
                 {episodeLabel(episode.number)}
               </span>
@@ -87,7 +87,7 @@ export default function SeriesRail({
       })}
     </ul>
   ) : (
-    <p className="px-2.5 py-2 text-xs text-neutral-400">这一季还没有单集。</p>
+    <p className="px-2.5 py-2 text-xs text-fg-muted">这一季还没有单集。</p>
   );
 
   return (
@@ -125,7 +125,7 @@ export default function SeriesRail({
             <span className="rounded-full border border-sky-500/25 bg-sky-500/10 px-2 py-px text-[11px] font-semibold text-sky-300">
               电视节目
             </span>
-            <span className="font-mono text-xs text-neutral-400">
+            <span className="font-mono text-xs text-fg-muted">
               {statusLabels[show.status]}
               {show.rating != null ? ` · ${show.rating.toFixed(1)}` : ""}
             </span>
@@ -184,7 +184,7 @@ export default function SeriesRail({
       )}
 
       <div ref={scroller} className="relative min-h-0 flex-1 overflow-y-auto">
-        {!seasons.length && <p className="px-2.5 py-2 text-sm text-neutral-400">还没有季，先新增第 1 季。</p>}
+        {!seasons.length && <p className="px-2.5 py-2 text-sm text-fg-muted">还没有季，先新增第 1 季。</p>}
         {tree ? (
           <ul className="space-y-0.5">
             {seasons.map((season) => {
@@ -199,14 +199,14 @@ export default function SeriesRail({
                     className={`flex min-h-11 items-center gap-2.5 rounded-xl border px-2.5 text-sm font-medium transition-colors ${selected ? "border-[var(--accent-border)] bg-[var(--accent-soft)] text-[var(--accent-light)]" : "border-transparent text-white hover:bg-white/5"}`}
                   >
                     <span
-                      className={`${open ? "i-material-symbols-expand-more-rounded text-amber-300" : "i-material-symbols-chevron-right-rounded text-neutral-400"} size-4 shrink-0`}
+                      className={`${open ? "i-material-symbols-expand-more-rounded text-amber-300" : "i-material-symbols-chevron-right-rounded text-fg-muted"} size-4 shrink-0`}
                       aria-hidden="true"
                     />
                     <span className="rounded-full border border-amber-500/25 bg-amber-500/10 px-2 py-px font-mono text-[11px] font-semibold text-amber-300">
                       S{season.number}
                     </span>
                     <span className="truncate">{season.title}</span>
-                    <span className="ml-auto whitespace-nowrap font-mono text-xs font-normal text-neutral-400">
+                    <span className="ml-auto whitespace-nowrap font-mono text-xs font-normal text-fg-muted">
                       {formatCount(season.episodeCount)} 集 · {statusLabels[season.status]}
                     </span>
                   </Link>
@@ -233,7 +233,7 @@ export default function SeriesRail({
           新增第 {formatCount(structure.nextSeasonNumber)} 季
         </button>
       </div>
-      <p className="flex gap-3.5 px-1 text-[11px] text-neutral-400" aria-hidden="true">
+      <p className="flex gap-3.5 px-1 text-[11px] text-fg-muted" aria-hidden="true">
         <span className="inline-flex items-center gap-1.5">
           <StatusDot status="watched" />
           看过

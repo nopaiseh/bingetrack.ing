@@ -20,7 +20,7 @@ export default function BackToList({
   return (
     <Link
       href={fallback}
-      className={`${className} text-sm text-neutral-400 hover:text-white transition-colors`}
+      className={`${className} text-sm text-fg-muted hover:text-white transition-colors`}
       onClick={(event) => {
         if (event.button || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
         event.preventDefault();

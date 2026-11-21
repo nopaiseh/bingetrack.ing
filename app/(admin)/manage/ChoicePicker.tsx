@@ -240,7 +240,7 @@ export default function ChoicePicker({
   const results = (
     <>
       {loading && (
-        <p role="status" className="p-2 text-sm text-neutral-400">
+        <p role="status" className="p-2 text-sm text-fg-muted">
           正在搜索…
         </p>
       )}
@@ -249,7 +249,7 @@ export default function ChoicePicker({
           {error}
         </p>
       )}
-      {!loading && !error && choices.length === 0 && <p className="p-2 text-sm text-neutral-400">没有匹配资料</p>}
+      {!loading && !error && choices.length === 0 && <p className="p-2 text-sm text-fg-muted">没有匹配资料</p>}
       {options.length > 0 && (
         <div id={resultsId} role="listbox" aria-label={`${label}搜索结果`}>
           {options.map(({ choice, create }, index) => (
@@ -286,9 +286,7 @@ export default function ChoicePicker({
                   )}
                   <span className="min-w-0 break-words font-medium">
                     {choice.name}
-                    {choice.detail && (
-                      <span className="block text-xs font-normal text-neutral-400">{choice.detail}</span>
-                    )}
+                    {choice.detail && <span className="block text-xs font-normal text-fg-muted">{choice.detail}</span>}
                   </span>
                 </>
               )}
@@ -296,7 +294,7 @@ export default function ChoicePicker({
           ))}
         </div>
       )}
-      <p className="mt-1 border-t border-white/5 p-2 text-sm text-neutral-400">
+      <p className="mt-1 border-t border-white/5 p-2 text-sm text-fg-muted">
         {allowCreate ? "新名称将在保存资料时创建。" : "最多显示 20 项，可输入完整标题缩小范围。"}
       </p>
     </>
@@ -325,12 +323,12 @@ export default function ChoicePicker({
                 aria-hidden="true"
               />
               <span className="truncate font-medium text-white">{selected[0].name}</span>
-              {selected[0].detail && <span className="truncate text-xs text-neutral-400">({selected[0].detail})</span>}
+              {selected[0].detail && <span className="truncate text-xs text-fg-muted">({selected[0].detail})</span>}
             </div>
             <button
               type="button"
               aria-label={`更换${label}：当前为${selected[0].name}`}
-              className="!min-h-0 !border-0 !bg-transparent !p-1 text-xs text-neutral-400 transition-colors hover:text-white shrink-0"
+              className="!min-h-0 !border-0 !bg-transparent !p-1 text-xs text-fg-muted transition-colors hover:text-white shrink-0"
               onClick={() => {
                 change([]);
                 setTerm("");
@@ -364,12 +362,12 @@ export default function ChoicePicker({
       {selected.map((item, index) => (
         <li key={item.id} className="admin-tag-chip group/chip max-w-full">
           {sortable && (
-            <span className="rounded bg-white/10 px-1 py-0.5 font-mono text-sm font-medium leading-none text-neutral-300">
+            <span className="rounded bg-white/10 px-1 py-0.5 font-mono text-sm font-medium leading-none text-fg-secondary">
               #{index + 1}
             </span>
           )}
           <span className="break-words font-medium">{item.name}</span>
-          {byId && item.detail && <span className="break-words text-sm text-neutral-400">({item.detail})</span>}
+          {byId && item.detail && <span className="break-words text-sm text-fg-muted">({item.detail})</span>}
           {withCharacter && (
             <input
               className="admin-chip-character"
@@ -388,7 +386,7 @@ export default function ChoicePicker({
                   type="button"
                   title={`前移${item.name}`}
                   aria-label={`上移${item.name}`}
-                  className="inline-flex size-4.5 items-center justify-center rounded text-neutral-400 hover:bg-white/15 hover:text-white transition-colors"
+                  className="inline-flex size-4.5 items-center justify-center rounded text-fg-muted hover:bg-white/15 hover:text-white transition-colors"
                   onClick={() => move(index, index - 1)}
                 >
                   <span className="i-material-symbols-chevron-left-rounded size-3.5" aria-hidden="true" />
@@ -399,7 +397,7 @@ export default function ChoicePicker({
                   type="button"
                   title={`后移${item.name}`}
                   aria-label={`下移${item.name}`}
-                  className="inline-flex size-4.5 items-center justify-center rounded text-neutral-400 hover:bg-white/15 hover:text-white transition-colors"
+                  className="inline-flex size-4.5 items-center justify-center rounded text-fg-muted hover:bg-white/15 hover:text-white transition-colors"
                   onClick={() => move(index, index + 1)}
                 >
                   <span className="i-material-symbols-chevron-right-rounded size-3.5" aria-hidden="true" />
@@ -409,7 +407,7 @@ export default function ChoicePicker({
                 type="button"
                 title={`移除关联：${item.name}`}
                 aria-label={`移除关联：${item.name}`}
-                className="inline-flex size-4.5 items-center justify-center rounded text-neutral-400 hover:bg-rose-500/20 hover:text-rose-300 transition-colors"
+                className="inline-flex size-4.5 items-center justify-center rounded text-fg-muted hover:bg-rose-500/20 hover:text-rose-300 transition-colors"
                 onClick={() => change(selected.filter((value) => value.id !== item.id))}
               >
                 <span className="i-material-symbols-close-rounded size-3.5" aria-hidden="true" />
@@ -420,7 +418,7 @@ export default function ChoicePicker({
               type="button"
               title={`移除关联：${item.name}`}
               aria-label={`移除关联：${item.name}`}
-              className="ml-0.5 inline-flex size-4 items-center justify-center rounded-full text-neutral-400 hover:bg-rose-500/20 hover:text-rose-300 transition-colors"
+              className="ml-0.5 inline-flex size-4 items-center justify-center rounded-full text-fg-muted hover:bg-rose-500/20 hover:text-rose-300 transition-colors"
               onClick={() => change(selected.filter((value) => value.id !== item.id))}
             >
               <span className="i-material-symbols-close-rounded size-3" aria-hidden="true" />

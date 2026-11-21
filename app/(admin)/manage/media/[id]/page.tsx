@@ -69,11 +69,11 @@ export default async function EditMediaPage({
         className={`surface-panel group flex min-w-0 items-center gap-2 rounded-2xl px-4 py-3 transition-colors hover:bg-white/5 ${align}`}
       >
         <span
-          className={`${icon} size-5 shrink-0 text-neutral-400 group-hover:text-[var(--accent-hover)]`}
+          className={`${icon} size-5 shrink-0 text-fg-muted group-hover:text-[var(--accent-hover)]`}
           aria-hidden="true"
         />
         <span className="min-w-0">
-          <span className="block text-xs text-neutral-400">
+          <span className="block text-xs text-fg-muted">
             {label} · {sibling.season != null && `第 ${sibling.season} 季 `}第 {sibling.number} {unit}
           </span>
           <span className="block truncate text-sm font-medium text-white group-hover:text-[var(--accent-hover)]">

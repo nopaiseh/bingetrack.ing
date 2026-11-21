@@ -28,12 +28,10 @@ export default function SimilarPeopleGroup({ people }: { people: SimilarPerson[]
   return (
     <article aria-labelledby={heading} className="surface-panel space-y-4 rounded-2xl p-5 sm:p-6">
       <h2 id={heading} className="text-base font-semibold text-white">
-        {people[0].name} <span className="font-mono text-sm font-normal text-neutral-400">{people.length} 位</span>
+        {people[0].name} <span className="font-mono text-sm font-normal text-fg-muted">{people.length} 位</span>
       </h2>
       <fieldset disabled={busy} className="space-y-2">
-        <legend className="mb-2 text-sm text-neutral-400">
-          选择要保留的人物，其余人物的演职关联会并入他，然后删除。
-        </legend>
+        <legend className="mb-2 text-sm text-fg-muted">选择要保留的人物，其余人物的演职关联会并入他，然后删除。</legend>
         {people.map((person) => (
           <div
             key={person.id}
@@ -49,9 +47,9 @@ export default function SimilarPeopleGroup({ people }: { people: SimilarPerson[]
               />
               <span className="min-w-0 flex-1">
                 <span className="block font-medium text-white">{person.name}</span>
-                <span className="block text-sm text-neutral-400">{person.alias ?? "未填别名"}</span>
+                <span className="block text-sm text-fg-muted">{person.alias ?? "未填别名"}</span>
               </span>
-              <span className="whitespace-nowrap font-mono text-sm text-neutral-300">{person.works} 部作品</span>
+              <span className="whitespace-nowrap font-mono text-sm text-fg-secondary">{person.works} 部作品</span>
               {keep === person.id && (
                 <span className="rounded-full border border-[var(--accent-border)] px-2.5 py-0.5 text-xs text-[var(--accent-light)]">
                   保留
@@ -61,7 +59,7 @@ export default function SimilarPeopleGroup({ people }: { people: SimilarPerson[]
             <Link
               href={`/manage/references/people/${person.id}`}
               aria-label={`查看${label(person)}的资料`}
-              className="text-sm text-neutral-300 hover:text-white"
+              className="text-sm text-fg-secondary hover:text-white"
             >
               资料 →
             </Link>
@@ -94,7 +92,7 @@ export default function SimilarPeopleGroup({ people }: { people: SimilarPerson[]
         <h2 id={confirmHeading} className="text-xl font-semibold text-white">
           合并到「{label(kept)}」？
         </h2>
-        <p className="my-4 text-sm leading-6 text-neutral-300">
+        <p className="my-4 text-sm leading-6 text-fg-secondary">
           将把 {removed.map(label).join("、")} 的 <span className="font-mono">{movedWorks}</span> 部作品的演职关联并入「
           {label(kept)}」，然后删除{removed.length > 1 ? "这些人物" : "这位人物"}。
           同一作品同一职务已存在时保留原记录，只补上缺少的角色名。

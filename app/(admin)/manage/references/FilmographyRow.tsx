@@ -25,15 +25,15 @@ export default function FilmographyRow({
       : null;
   const character =
     characters.length > 0 ? (
-      <span className="text-neutral-300">饰 {characters.join("、")}</span>
+      <span className="text-fg-secondary">饰 {characters.join("、")}</span>
     ) : roles.includes("actor") ? (
-      <span className="surface-muted rounded-full border border-white/10 px-2.5 py-0.5 text-xs text-neutral-400">
+      <span className="surface-muted rounded-full border border-white/10 px-2.5 py-0.5 text-xs text-fg-muted">
         未填角色
       </span>
     ) : null;
   const roleText =
     showRoles && roles.length > 0 ? (
-      <span className="text-xs text-neutral-400">{roles.map(roleLabel).join("、")}</span>
+      <span className="text-xs text-fg-muted">{roles.map(roleLabel).join("、")}</span>
     ) : null;
   return (
     <li className="group relative grid grid-cols-[3rem_2rem_minmax(0,1fr)] items-center gap-x-4 px-4 py-3 transition-colors hover:bg-white/5 sm:grid-cols-[3.5rem_2rem_minmax(0,1fr)_minmax(0,14rem)] sm:px-5">
@@ -55,7 +55,7 @@ export default function FilmographyRow({
           {media.title}
         </Link>
         {(media.alternate_title || context) && (
-          <p className="break-words text-xs text-neutral-400">
+          <p className="break-words text-xs text-fg-muted">
             {[media.alternate_title, context].filter(Boolean).join(" · ")}
           </p>
         )}

@@ -97,7 +97,7 @@ export default function ReferenceForm({
             </div>
           ) : null}
           {item && (
-            <p className={inline ? "text-xs text-neutral-400 md:col-span-full" : "text-sm text-neutral-400"}>
+            <p className={inline ? "text-xs text-fg-muted md:col-span-full" : "text-sm text-fg-muted"}>
               修改名称后，已有作品会继续关联这项资料。
             </p>
           )}
@@ -126,7 +126,7 @@ export default function ReferenceForm({
           <h2 id={confirmHeading} className="break-words text-xl font-semibold text-white">
             永久删除「{item.name}」？
           </h2>
-          <p className="my-4 text-sm leading-6 text-neutral-300">
+          <p className="my-4 text-sm leading-6 text-fg-secondary">
             将删除这项{referenceTypes[kind].label}资料及其 {count} 个关联，影视作品与观看记录会保留。此操作无法撤销。
           </p>
           <form action={deleteAction} className="space-y-4">

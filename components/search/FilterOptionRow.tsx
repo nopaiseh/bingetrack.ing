@@ -23,7 +23,7 @@ export default function FilterOptionRow({
         <button
           aria-pressed={isAllSelected}
           onClick={/* 清除当前分类的限制。 */ onClear}
-          className={`min-h-10 rounded-full px-4 py-1.5 text-sm transition-all duration-300 backdrop-blur-2xl ${
+          className={`min-h-10 rounded-full px-4 py-1.5 text-sm transition-all duration-300 ${
             isAllSelected ? "filter-option-active" : "filter-option"
           }`}
         >
@@ -38,7 +38,7 @@ export default function FilterOptionRow({
                 key={option.value}
                 aria-pressed={isSelected}
                 onClick={/* 切换分类选项。 */ () => onToggle(option.value)}
-                className={`group flex min-h-10 items-center gap-1.5 rounded-full px-4 py-1.5 text-sm transition-all duration-300 backdrop-blur-2xl ${
+                className={`group flex min-h-10 items-center gap-1.5 rounded-full px-4 py-1.5 text-sm transition-all duration-300 ${
                   isSelected ? "filter-option-active" : "filter-option"
                 }`}
               >

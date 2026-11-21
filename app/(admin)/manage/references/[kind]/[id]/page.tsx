@@ -167,14 +167,14 @@ export default async function ReferenceDetail({
         <section className="min-w-0 space-y-4">
           <h2 className="admin-section-title text-xl font-semibold text-white">
             {collections ? "系列作品" : "关联作品"}{" "}
-            <span className="font-mono text-sm font-normal text-neutral-400">
+            <span className="font-mono text-sm font-normal text-fg-muted">
               {kind === "people" ? `${works.length} 部作品 · ` : ""}
               {count} 个关联
             </span>
           </h2>
           {collections && (
             <>
-              <p className="text-sm text-neutral-400">
+              <p className="text-sm text-fg-muted">
                 顺序越小越靠前，相同顺序按作品 ID 排列。移除只解除关联，不会删除作品。
               </p>
               <CollectionMember series={id} />
@@ -186,7 +186,7 @@ export default async function ReferenceDetail({
             return (
               <section key={group.type} aria-labelledby={`related-${group.type}`} className="space-y-3">
                 <h3 id={`related-${group.type}`} className="pt-2 text-base font-semibold text-white">
-                  {group.label} <span className="text-sm font-normal text-neutral-400">{group.works.length}</span>
+                  {group.label} <span className="text-sm font-normal text-fg-muted">{group.works.length}</span>
                 </h3>
                 <ol className="surface-panel divide-y divide-white/10 overflow-hidden rounded-2xl">
                   {visible.map((work, index) => (
@@ -217,7 +217,7 @@ export default async function ReferenceDetail({
                 </RelatedWork>
               ),
           )}
-          {!count && <p className="py-6 text-sm text-neutral-400">还没有关联作品。</p>}
+          {!count && <p className="py-6 text-sm text-fg-muted">还没有关联作品。</p>}
           <ManagePagination page={page} totalPages={totalPages} params={{}} basePath={basePath} label="关联作品分页" />
         </section>
       </div>

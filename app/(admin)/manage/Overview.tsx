@@ -76,7 +76,7 @@ export default async function Overview({ db }: { db: SupabaseClient }) {
             <h2 id="airing-title" className="admin-section-title text-base font-medium text-white">
               待录入
             </h2>
-            <span className="text-xs text-neutral-400">最近 {RECENT_DAYS} 天有播出的节目</span>
+            <span className="text-xs text-fg-muted">最近 {RECENT_DAYS} 天有播出的节目</span>
           </div>
           {airing.length ? (
             <ul>
@@ -108,14 +108,14 @@ export default async function Overview({ db }: { db: SupabaseClient }) {
                       >
                         {show.title}
                       </Link>
-                      <p className="mt-0.5 font-mono text-xs text-neutral-400">
+                      <p className="mt-0.5 font-mono text-xs text-fg-muted">
                         最近播出 {show.lastAired}
                         {show.lastEpisode && show.season != null
                           ? ` · 已录入到 S${show.season}E${show.lastEpisode.number}`
                           : ""}
                       </p>
                       <p
-                        className={`mt-0.5 font-mono text-xs ${due.overdue ? "text-[var(--accent-light)]" : "text-neutral-400"}`}
+                        className={`mt-0.5 font-mono text-xs ${due.overdue ? "text-[var(--accent-light)]" : "text-fg-muted"}`}
                       >
                         {due.text}
                       </p>
@@ -133,7 +133,7 @@ export default async function Overview({ db }: { db: SupabaseClient }) {
               })}
             </ul>
           ) : (
-            <p className="py-6 text-sm text-neutral-400">最近 {RECENT_DAYS} 天没有播出的节目。</p>
+            <p className="py-6 text-sm text-fg-muted">最近 {RECENT_DAYS} 天没有播出的节目。</p>
           )}
         </section>
 
@@ -142,7 +142,7 @@ export default async function Overview({ db }: { db: SupabaseClient }) {
             <h2 id="reports-title" className="admin-section-title text-base font-medium text-white">
               数据报告
             </h2>
-            <span className={`font-mono text-xs ${pending.length ? "text-[var(--accent-light)]" : "text-neutral-400"}`}>
+            <span className={`font-mono text-xs ${pending.length ? "text-[var(--accent-light)]" : "text-fg-muted"}`}>
               {pending.length ? `${pending.length} 份待处理` : "全部已清理"}
             </span>
           </div>
@@ -158,8 +158,8 @@ export default async function Overview({ db }: { db: SupabaseClient }) {
               </span>
             </Link>
           ))}
-          {!pending.length && <p className="py-3 text-sm text-neutral-400">没有需要处理的资料。</p>}
-          <Link href="/manage/reports" className="inline-block px-0.5 pt-1 text-sm text-neutral-300 hover:text-white">
+          {!pending.length && <p className="py-3 text-sm text-fg-muted">没有需要处理的资料。</p>}
+          <Link href="/manage/reports" className="inline-block px-0.5 pt-1 text-sm text-fg-secondary hover:text-white">
             查看全部报告 →
           </Link>
         </section>

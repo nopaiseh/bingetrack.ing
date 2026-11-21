@@ -15,7 +15,7 @@ export default function BulkDelete({ report, count, unit }: { report: string; co
         <span className="i-material-symbols-warning-rounded size-5" aria-hidden="true" />
         全部删除
       </h2>
-      <p className="text-sm leading-6 text-neutral-300">
+      <p className="text-sm leading-6 text-fg-secondary">
         将永久删除全部 <span className="font-mono">{count}</span> {unit}
         ，包括不在当前页的项目。它们没有关联任何作品，删除不影响影视与观看记录。此操作无法撤销。
       </p>

@@ -249,13 +249,13 @@
 :root {
   color-scheme: dark;
   accent-color: var(--accent);
-  /* 展示标题不再用衬线，与界面共用 Geist；缺字回落到思源黑体 / Noto Sans。 */
+  /* 界面与展示标题共用 Geist；缺字回落到思源黑体 / Noto Sans。 */
   --font-sans:
     var(--font-geist), "Noto Sans SC", "Noto Sans CJK SC", "Source Han Sans SC", "Source Han Sans", ui-sans-serif,
     system-ui, sans-serif;
   --font-mono:
     var(--font-geist-mono), "Noto Sans Mono CJK SC", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-  --font-serif-movie: var(--font-sans);
+  --font-display: var(--font-sans);
   /* 正文、说明、徽标、表头下限 14px；分页、筛选和切换条的最小点击高度 40px。 */
   --type-min: 0.875rem;
   --t-sm: 0.875rem;
@@ -314,7 +314,6 @@
   --image-overlay: rgba(0, 0, 0, 0.45);
   --image-placeholder: var(--surface-2);
   --image-label: rgba(14, 10, 18, 0.88);
-  --grain-opacity: 0;
   --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.45);
   --shadow-pop: 0 12px 32px rgba(0, 0, 0, 0.5), 0 0 0 1px var(--border-strong);
 
@@ -524,19 +523,6 @@ body::before {
     .navbar-scroll-blur-mask {
       height: 6rem;
     }
-  }
-
-  .film-grain-overlay {
-    position: fixed;
-    inset: 0;
-    width: 100vw;
-    height: 100vh;
-    pointer-events: none;
-    z-index: 40;
-    opacity: var(--grain-opacity, 0.038);
-    background-repeat: repeat;
-    background-size: 180px 180px;
-    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='filmGrainFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23filmGrainFilter)'/%3E%3C/svg%3E");
   }
 
   /* 实色表面：面板、浮层、卡片只用填充、1px 描边和很轻的投影。 */
@@ -1109,8 +1095,8 @@ select:is(.filter-option, .filter-option-active):focus-visible {
   background: rgba(255, 255, 255, 0.3);
 }
 
-.font-serif-movie {
-  font-family: var(--font-sans);
+.font-display {
+  font-family: var(--font-display);
   font-weight: 700;
 }
 
@@ -1125,11 +1111,6 @@ select:is(.filter-option, .filter-option-active):focus-visible {
 
 .text-rose-400\/80 {
   color: var(--danger);
-}
-
-[class*="backdrop-blur"] {
-  -webkit-backdrop-filter: none;
-  backdrop-filter: none;
 }
 
 /* 搜索网格包含大量卡片；避免卡片与徽标的嵌套背景模糊产生额外合成层。 */

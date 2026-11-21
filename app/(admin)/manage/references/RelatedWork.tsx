@@ -51,16 +51,14 @@ export default function RelatedWork({
           >
             {media.title} →
           </Link>
-          {media.alternate_title && <p className="break-words text-xs text-neutral-400">{media.alternate_title}</p>}
-          {meta.length > 0 && <p className="mt-1 text-sm text-neutral-400">{meta.join(" · ")}</p>}
+          {media.alternate_title && <p className="break-words text-xs text-fg-muted">{media.alternate_title}</p>}
+          {meta.length > 0 && <p className="mt-1 text-sm text-fg-muted">{meta.join(" · ")}</p>}
           {roles && roles.length > 0 && (
-            <p className="mt-2 flex flex-wrap items-center gap-2 text-sm text-neutral-300">
+            <p className="mt-2 flex flex-wrap items-center gap-2 text-sm text-fg-secondary">
               <span className="rounded-full border border-white/10 px-2.5 py-0.5 text-xs">
                 {roles.map(roleLabel).join("、")}
               </span>
-              {characters && characters.length > 0 && (
-                <span className="text-neutral-400">饰 {characters.join("、")}</span>
-              )}
+              {characters && characters.length > 0 && <span className="text-fg-muted">饰 {characters.join("、")}</span>}
             </p>
           )}
         </div>
@@ -69,7 +67,7 @@ export default function RelatedWork({
           <dd className={`font-mono text-sm ${media.release_date ? "text-neutral-200" : "text-neutral-500"}`}>
             {media.release_date ?? "待定"}
           </dd>
-          {runtime && <dd className="mt-1 font-mono text-xs text-neutral-400">{runtime}</dd>}
+          {runtime && <dd className="mt-1 font-mono text-xs text-fg-muted">{runtime}</dd>}
         </dl>
       </div>
       {children}

@@ -31,7 +31,7 @@ export default function MediaCardBody({
   return (
     <div className="flex min-w-0 grow flex-col space-y-1.5 px-3 py-2.5">
       <Title
-        className="font-serif-movie line-clamp-2 min-h-10 text-sm font-bold leading-5 text-white transition-colors duration-300 group-hover:text-[var(--accent-hover)]"
+        className="font-display line-clamp-2 min-h-10 text-sm font-bold leading-5 text-white transition-colors duration-300 group-hover:text-[var(--accent-hover)]"
         title={item.title}
       >
         {item.title}

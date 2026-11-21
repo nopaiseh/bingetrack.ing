@@ -63,7 +63,7 @@ export default function QuickAddDialog({
           <h2 id={heading} className="text-xl font-semibold text-white">
             新增{episode ? "单集" : "季"}
           </h2>
-          <p className="flex flex-wrap items-center gap-1.5 text-sm text-neutral-400">
+          <p className="flex flex-wrap items-center gap-1.5 text-sm text-fg-muted">
             <span className="rounded-full border border-sky-500/25 bg-sky-500/10 px-2.5 py-0.5 text-xs font-semibold text-sky-300">
               {structure.show.title}
             </span>
@@ -112,7 +112,7 @@ export default function QuickAddDialog({
               <span className="relative flex items-center">
                 <span
                   aria-hidden="true"
-                  className="pointer-events-none absolute left-3.5 select-none text-sm text-neutral-400"
+                  className="pointer-events-none absolute left-3.5 select-none text-sm text-fg-muted"
                 >
                   第
                 </span>
@@ -129,7 +129,7 @@ export default function QuickAddDialog({
                 />
                 <span
                   aria-hidden="true"
-                  className="pointer-events-none absolute right-3.5 select-none text-sm text-neutral-400"
+                  className="pointer-events-none absolute right-3.5 select-none text-sm text-fg-muted"
                 >
                   {unit}
                 </span>
@@ -142,7 +142,7 @@ export default function QuickAddDialog({
               </label>
             )}
           </div>
-          {episode && next && <p className="-mt-2 text-xs text-neutral-400">{dateHints[next.dateBasis]}</p>}
+          {episode && next && <p className="-mt-2 text-xs text-fg-muted">{dateHints[next.dateBasis]}</p>}
           <label>
             标题
             <input
@@ -218,7 +218,7 @@ export default function QuickAddDialog({
           </div>
         </fieldset>
       </form>
-      <p className="mt-4 text-xs text-neutral-400">
+      <p className="mt-4 text-xs text-fg-muted">
         需要填写完整资料？
         <Link
           href={`/manage/media/new?type=${episode ? "tv_episode" : "tv_season"}&parent=${parentId}`}
