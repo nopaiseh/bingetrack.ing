@@ -606,7 +606,7 @@ export default function ChoicePicker({
         ) : null}
         {!inline && (
           <span
-            className="i-material-symbols-search-rounded pointer-events-none absolute left-3 z-10 size-4 text-fg-subtle"
+            className="i-material-symbols-search-rounded pointer-events-none absolute left-3 top-1/2 z-10 size-4 -translate-y-1/2 text-fg-subtle"
             aria-hidden="true"
           />
         )}
