@@ -146,6 +146,10 @@ export interface Summary {
   reading_books: number;
   want_albums: number;
   want_books: number;
+
+  total_tracks: number;
+  listened_tracks: number;
+  want_tracks: number;
 }
 
 interface Stats {
