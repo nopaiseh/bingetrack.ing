@@ -49,6 +49,7 @@ function MediaPoster({ media }: { media: Media }) {
           sizes="(max-width: 639px) 64px, 96px"
           className="object-cover"
           preload
+          fetchPriority="high"
         />
       ) : (
         <LetterTile title={media.title} />

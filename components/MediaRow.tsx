@@ -38,6 +38,7 @@ function ItemCard({
             className="object-cover transition-transform duration-500 ease-out group-hover:scale-105"
             sizes="(max-width: 639px) 160px, 192px"
             preload={preload}
+            fetchPriority={preload ? "high" : undefined}
             loading={preload ? undefined : eager ? "eager" : "lazy"}
           />
         ) : type === "books" ? (

@@ -127,7 +127,7 @@ export function SearchMediaCard({
 }: {
   item: MediaCard;
   returnHref: string;
-  /** 首屏 LCP 候选：Next 16 `preload`（替代已弃用的 `priority`）。 */
+  /** 首屏 LCP 候选：`preload` + `fetchPriority=high`（替代已弃用的 `priority`）。 */
   preload?: boolean;
   /** 首屏其余海报：eager，避免懒加载推迟可见图。 */
   eager?: boolean;
@@ -155,6 +155,7 @@ export function SearchMediaCard({
           className="object-cover transition-transform duration-500 ease-out group-hover:scale-105"
           sizes={SEARCH_POSTER_SIZES}
           preload={preload}
+          fetchPriority={preload ? "high" : undefined}
           loading={preload ? undefined : eager ? "eager" : "lazy"}
         />
       ) : square || book ? (

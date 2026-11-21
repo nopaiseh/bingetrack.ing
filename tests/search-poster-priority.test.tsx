@@ -12,15 +12,23 @@ vi.mock("next/image", () => ({
     preload,
     loading,
     sizes,
+    fetchPriority,
   }: {
     alt: string;
     preload?: boolean;
     loading?: "eager" | "lazy";
     sizes?: string;
     fill?: boolean;
+    fetchPriority?: "high" | "low" | "auto";
   }) => (
     // eslint-disable-next-line @next/next/no-img-element
-    <img alt={alt} sizes={sizes} data-preload={preload ? "true" : undefined} loading={preload ? undefined : loading} />
+    <img
+      alt={alt}
+      sizes={sizes}
+      data-preload={preload ? "true" : undefined}
+      loading={preload ? undefined : loading}
+      fetchPriority={fetchPriority}
+    />
   ),
 }));
 
@@ -40,14 +48,15 @@ function card(id: string, title: string): MediaCard {
 }
 
 describe("search poster preload loading", () => {
-  it("marks the first search poster as preload and the above-fold set as eager", () => {
+  it("marks the first search poster as preload with high fetch priority and the above-fold set as eager", () => {
     const { container, unmount } = render(
       <SearchMediaCard item={card("a", "首卡")} returnHref="/search" preload eager />,
     );
     const first = container.querySelector("img");
     expect(first).not.toBeNull();
-    // preload disables lazy loading; loading is omitted so Next can insert the preload hint.
+    // preload + fetchPriority=high restore deprecated priority LCP behavior; loading omitted.
     expect(first).toHaveAttribute("data-preload", "true");
+    expect(first).toHaveAttribute("fetchpriority", "high");
     expect(first!.getAttribute("loading")).toBeNull();
     expect(first).toHaveAttribute("sizes", SEARCH_POSTER_SIZES);
     unmount();
@@ -56,6 +65,7 @@ describe("search poster preload loading", () => {
     const second = secondView.container.querySelector("img");
     expect(second).toHaveAttribute("loading", "eager");
     expect(second!.getAttribute("data-preload")).not.toBe("true");
+    expect(second!.getAttribute("fetchpriority")).not.toBe("high");
     expect(second).toHaveAttribute("sizes", SEARCH_POSTER_SIZES);
   });
 
@@ -93,9 +103,11 @@ describe("search poster preload loading", () => {
     const images = [...container.querySelectorAll(".search-media-card img")];
     expect(images).toHaveLength(items.length);
     expect(images[0]).toHaveAttribute("data-preload", "true");
+    expect(images[0]).toHaveAttribute("fetchpriority", "high");
     expect(images[0]!.getAttribute("loading")).toBeNull();
     for (let index = 1; index < SEARCH_ABOVE_FOLD_COUNT; index += 1) {
       expect(images[index]).toHaveAttribute("loading", "eager");
+      expect(images[index]!.getAttribute("fetchpriority")).not.toBe("high");
     }
     expect(images[SEARCH_ABOVE_FOLD_COUNT]).toHaveAttribute("loading", "lazy");
     expect(images[SEARCH_ABOVE_FOLD_COUNT + 1]).toHaveAttribute("loading", "lazy");
