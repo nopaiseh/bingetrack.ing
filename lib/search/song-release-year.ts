@@ -14,16 +14,12 @@ export type SongSearchRow = {
 };
 
 /** 有效发行日：自身优先，否则专辑；与 stats 视图 coalesce 一致。 */
-export function songEffectiveReleaseDate(
-  song: Pick<SongSearchRow, "releaseDate" | "albumReleaseDate">,
-): string | null {
+export function songEffectiveReleaseDate(song: Pick<SongSearchRow, "releaseDate" | "albumReleaseDate">): string | null {
   return song.releaseDate ?? song.albumReleaseDate;
 }
 
 /** 有效发行年；无有效日返回 null（对应 stats 不计该曲）。 */
-export function songEffectiveReleaseYear(
-  song: Pick<SongSearchRow, "releaseDate" | "albumReleaseDate">,
-): number | null {
+export function songEffectiveReleaseYear(song: Pick<SongSearchRow, "releaseDate" | "albumReleaseDate">): number | null {
   const date = songEffectiveReleaseDate(song);
   if (!date) return null;
   const year = Number(date.slice(0, 4));
@@ -48,10 +44,7 @@ export function songMatchesSearchYear(
 }
 
 /** 是否命中搜索 status.in(...)；空列表表示不限状态。 */
-export function songMatchesSearchStatus(
-  song: Pick<SongSearchRow, "status">,
-  statuses: readonly string[],
-): boolean {
+export function songMatchesSearchStatus(song: Pick<SongSearchRow, "status">, statuses: readonly string[]): boolean {
   if (statuses.length === 0) return true;
   return song.status != null && statuses.includes(song.status);
 }
@@ -86,7 +79,6 @@ export function countSongsMatchingSearch(
 ): number {
   const statuses = opts.status ?? [];
   return songs.filter(
-    (song) =>
-      songMatchesSearchYear(song, opts.startYear, opts.endYear) && songMatchesSearchStatus(song, statuses),
+    (song) => songMatchesSearchYear(song, opts.startYear, opts.endYear) && songMatchesSearchStatus(song, statuses),
   ).length;
 }

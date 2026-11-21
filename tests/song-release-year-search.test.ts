@@ -44,9 +44,9 @@ describe("song release year coalesce (release_year_stats parity)", () => {
       expect(stats).toEqual(expected);
 
       // type=music&startYear=&endYear= 对应 total_tracks
-      expect(
-        countSongsMatchingSearch(TRACK_FIXTURES, { startYear: yearText, endYear: yearText }),
-      ).toBe(expected.total_tracks);
+      expect(countSongsMatchingSearch(TRACK_FIXTURES, { startYear: yearText, endYear: yearText })).toBe(
+        expected.total_tracks,
+      );
 
       // status=watched → listened_tracks
       expect(
