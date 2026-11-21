@@ -6,6 +6,24 @@ const SEASON_ID = "50000000-0000-4000-8000-000000000003";
 const MISSING_ID = "50000000-0000-4000-8000-000000000099";
 
 test(
+  "seeded movies and shows catalogs do not show the empty-state panel",
+  /* 有种子数据时目录不应出现方案 C 虚线空状态；电影夹具有已看分栏，剧集夹具仅有剧集级统计（追踪在单集上）。 */ async ({
+    page,
+  }) => {
+    await page.goto("/movies");
+    await expect(page.getByRole("heading", { name: "电影", exact: true })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "还没有电影" })).toHaveCount(0);
+    await expect(page.locator("h2.text-xl", { hasText: "我已看" })).toBeVisible();
+
+    await page.goto("/shows");
+    await expect(page.getByRole("heading", { name: "电视节目", exact: true })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "还没有电视节目" })).toHaveCount(0);
+    // 种子把追踪写在单集上，剧集目录可能没有「我已看」行；用非零总数量统计卡确认不是空库。
+    await expect(page.getByRole("link", { name: /电视节目总数量/ })).toBeVisible();
+  },
+);
+
+test(
   "search finds a seeded movie and preserves the return path",
   /* 验证搜索能找到固定测试电影，进入详情后可以返回原搜索地址。 */ async ({ page }) => {
     await page.goto("/search?q=星光档案");

@@ -21,8 +21,12 @@ function album(overrides: Partial<MediaCard> = {}): MediaCard {
 
 describe("AlbumCoverWall", () => {
   it("shows an empty state when there are no albums", () => {
-    render(<AlbumCoverWall items={[]} />);
+    const { container } = render(<AlbumCoverWall items={[]} />);
     expect(screen.getByText("还没有专辑。")).toBeInTheDocument();
+    expect(screen.getByText("还没有专辑。")).toHaveClass("text-sm", "text-fg-muted");
+    expect(container.firstElementChild).not.toHaveAttribute("role");
+    expect(container.firstElementChild?.className).toMatch(/border-dashed/);
+    expect(screen.queryByRole("link")).not.toBeInTheDocument();
   });
 
   it("renders a compact cover card with title, artist, and score", () => {
