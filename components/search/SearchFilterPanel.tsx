@@ -4,7 +4,7 @@ import type { RefObject } from "react";
 import FilterOptionRow from "@/components/search/FilterOptionRow";
 import SearchYearFilter from "@/components/search/SearchYearFilter";
 import { toggleSearchFilter, toggleSearchSort } from "@/components/search/search-filters";
-import { PRIMARY_CATEGORIES, SORT_OPTIONS } from "@/components/search/search-model";
+import { PRIMARY_CATEGORIES, SORT_OPTIONS, statusFilterOptions } from "@/components/search/search-model";
 import type { SearchFilters } from "@/lib/api/search-state";
 
 /** 分类、状态、排序，以及可折叠的类型、地区、语言和年份。 */
@@ -32,11 +32,15 @@ export default function SearchFilterPanel({
     { id: "region", label: "地区", options: regionOptions },
     { id: "language", label: "语言", options: languageOptions },
   ];
+  const selectedTypes = filters.type ?? [];
+  const primaryCategories = PRIMARY_CATEGORIES.map((category) =>
+    category.id === "status" ? { ...category, options: statusFilterOptions(selectedTypes) } : category,
+  );
 
   return (
     <div id="search-filter-panel" ref={panelRef} className="surface-panel mt-4 rounded-2xl p-4 sm:p-5">
       <div className="flex flex-col">
-        {PRIMARY_CATEGORIES.map(
+        {primaryCategories.map(
           /* 为每个主要分类渲染选项。 */ (category) => (
             <FilterOptionRow
               key={category.id}

@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { getStatusSearchLink } from "@/components/dashboard/dashboard-links";
 import {
   countSongsMatchingSearch,
   countTracksForReleaseYear,
@@ -97,5 +98,47 @@ describe("public search accepts type=music", () => {
         offset: 0,
       }),
     );
+  });
+
+  it("dashboard music card links filter songs to the same counts as the panorama panel", () => {
+    // 使用 parseYear 允许的年份；与看板 getStatusSearchLink 约定一致。
+    const songs: SongSearchRow[] = [
+      { releaseDate: "2024-01-10", albumReleaseDate: null, status: "watched" },
+      { releaseDate: null, albumReleaseDate: "2024-06-01", status: "watched" },
+      { releaseDate: "2024-08-01", albumReleaseDate: null, status: "want_to_watch" },
+      { releaseDate: "2023-01-01", albumReleaseDate: null, status: "watched" },
+    ];
+    const listenedHref = getStatusSearchLink("music", "watched", "2024");
+    const wantHref = getStatusSearchLink("music", "want_to_watch", "2024");
+    expect(listenedHref).toBe("/search?type=music&status=watched&startYear=2024&endYear=2024");
+    expect(wantHref).toBe("/search?type=music&status=want_to_watch&startYear=2024&endYear=2024");
+
+    const listenedParams = parseMediaSearchParams(
+      new URLSearchParams(buildMediaSearchQuery(new URLSearchParams(listenedHref.split("?")[1]!))),
+    );
+    const wantParams = parseMediaSearchParams(
+      new URLSearchParams(buildMediaSearchQuery(new URLSearchParams(wantHref.split("?")[1]!))),
+    );
+    const panel = countTracksForReleaseYear(songs, 2024);
+    expect(panel).toEqual({ total_tracks: 3, listened_tracks: 2, want_tracks: 1 });
+
+    expect(
+      countSongsMatchingSearch(songs, {
+        startYear: listenedParams.startYear ?? undefined,
+        endYear: listenedParams.endYear ?? undefined,
+        status: listenedParams.status?.split(","),
+      }),
+    ).toBe(panel.listened_tracks);
+    expect(
+      countSongsMatchingSearch(songs, {
+        startYear: wantParams.startYear ?? undefined,
+        endYear: wantParams.endYear ?? undefined,
+        status: wantParams.status?.split(","),
+      }),
+    ).toBe(panel.want_tracks);
+
+    const allTimeListened = getStatusSearchLink("music", "watched", "All Time");
+    expect(allTimeListened).toBe("/search?type=music&status=watched");
+    expect(hasOnlyKnownFilterValues(new URLSearchParams(allTimeListened.split("?")[1]!))).toBe(true);
   });
 });

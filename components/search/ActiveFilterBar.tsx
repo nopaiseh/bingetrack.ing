@@ -2,7 +2,13 @@
 
 import FilterChip from "@/components/search/FilterChip";
 import { toggleSearchFilter } from "@/components/search/search-filters";
-import { EMPTY_FILTERS, optionLabel, STATUS_OPTIONS, TYPE_OPTIONS } from "@/components/search/search-model";
+import {
+  EMPTY_FILTERS,
+  optionLabel,
+  STATUS_OPTIONS,
+  TYPE_OPTIONS,
+  statusFilterLabel,
+} from "@/components/search/search-model";
 import type { SearchFilters } from "@/lib/api/search-state";
 
 /** 已选条件标签。排序不在这里出现；清空时保留当前排序。 */
@@ -19,6 +25,7 @@ export default function ActiveFilterBar({
   regionOptions: string[];
   languageOptions: string[];
 }) {
+  const selectedTypes = filters.type ?? [];
   return (
     <div className="mt-3 flex flex-wrap items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 backdrop-blur-xl">
       <span className="flex items-center gap-1.5 text-xs font-semibold tracking-wider text-fg-subtle mr-1">
@@ -52,7 +59,7 @@ export default function ActiveFilterBar({
         <FilterChip
           key={`chip-status-${s}`}
           category="状态"
-          label={optionLabel(STATUS_OPTIONS, s)}
+          label={statusFilterLabel(s, selectedTypes)}
           accent
           onRemove={() =>
             setFilters((prev) =>
