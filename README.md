@@ -99,10 +99,11 @@ docs/                   运维与设计说明
 
 专辑目录空状态用例（`e2e/books-albums-journeys.spec.ts` 中的「还没有专辑。」）**只在 CI 能稳定通过**：CI 在 `next build` 之后才载入 `supabase/fixtures/e2e_album_seed.sql`，因此生产构建烘焙的 `/albums` 仍是空目录。本地若用 `npm run dev`（或已先载入专辑夹具再构建），页面会读到实时数据，空状态断言会对不上；本地要复现请按 CI 顺序：先 `e2e_seed.sql` → 生产构建 → 再载入 `e2e_album_seed.sql` → `npm start` 后跑 Playwright。
 
-`postinstall` 会执行两个依赖补丁：`patch-unocss.mjs` 让 Next 能以 CommonJS 方式加载 `@unocss/postcss`；`patch-next-code-frame.mjs` 固定 Next 错误代码帧宽度，避免在多字节 UTF-8 字符（如中文）中间截断导致 Rust panic。升级后若补丁目标变了，安装会直接失败；上游修复后删掉对应脚本。
+`postinstall` 会执行两个依赖补丁：`patch-unocss.mjs` 让 Next 能以 CommonJS 方式加载 `@unocss/postcss`；`patch-next-code-frame.mjs` 固定 Next 错误代码帧宽度，避免在多字节 UTF-8 字符（如中文）中间截断导致 Rust panic。升级后若补丁目标变了，安装会直接失败；上游修复后删掉对应脚本。若安装时跳过了 scripts（例如 `npm ci --ignore-scripts`），补丁不会打上，单元测试可能失败（如 `tests/listing-canonical.test.ts` 因 UnoCSS PostCSS 导出未打补丁）；请先运行 `npm run postinstall`（以 `package.json` 里实际脚本名为准）再测。
 
 ## 相关文档
 
+- [技术规范](docs/technical-spec.md)：目录、命名、接口、迁移、测试与协作流程
 - [缓存与 Vercel 写入用量](docs/caching.md)：改公开页面或管理端写入逻辑前必读
 - [部署与回滚](docs/deployment.md)
 - [内容管理工作台](docs/manage-workspace.md)
