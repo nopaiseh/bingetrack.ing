@@ -124,7 +124,7 @@ export default function DashboardYearPicker({
           role="combobox"
           aria-label="筛选年份"
           aria-expanded={isOpen}
-          aria-controls="dashboard-year-options"
+          aria-controls={isOpen ? "dashboard-year-options" : undefined}
           aria-autocomplete="list"
           aria-activedescendant={activeIndex >= 0 ? `dashboard-year-option-${activeIndex}` : undefined}
           className="w-full cursor-pointer bg-transparent text-sm text-white outline-none placeholder:text-fg-subtle"

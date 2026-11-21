@@ -112,27 +112,30 @@ export default function SearchFilterPanel({
           </div>
         </div>
 
-        {advancedVisible && (
-          <div id="search-filters" className="flex flex-col origin-top animate-in slide-in-from-top-2 fade-in">
-            {advancedCategories.map(
-              /* 渲染高级分类选项。 */ (category) => (
-                <FilterOptionRow
-                  key={category.id}
-                  label={category.label}
-                  options={category.options.map((option) => ({ value: option, label: option }))}
-                  selected={filters[category.id] || []}
-                  onClear={() =>
-                    setFilters((prev) => toggleSearchFilter(prev, category.id, "全部", true, category.options))
-                  }
-                  onToggle={(value) =>
-                    setFilters((prev) => toggleSearchFilter(prev, category.id, value, true, category.options))
-                  }
-                />
-              ),
-            )}
-            <SearchYearFilter year={filters.year} yearOptions={yearOptions} setFilters={setFilters} />
-          </div>
-        )}
+        {/* 始终挂载，收起时用 hidden：筛选按钮的 aria-controls 不能指向不存在的 id。 */}
+        <div
+          id="search-filters"
+          hidden={!advancedVisible}
+          className={`flex flex-col origin-top ${advancedVisible ? "animate-in slide-in-from-top-2 fade-in" : ""}`}
+        >
+          {advancedCategories.map(
+            /* 渲染高级分类选项。 */ (category) => (
+              <FilterOptionRow
+                key={category.id}
+                label={category.label}
+                options={category.options.map((option) => ({ value: option, label: option }))}
+                selected={filters[category.id] || []}
+                onClear={() =>
+                  setFilters((prev) => toggleSearchFilter(prev, category.id, "全部", true, category.options))
+                }
+                onToggle={(value) =>
+                  setFilters((prev) => toggleSearchFilter(prev, category.id, value, true, category.options))
+                }
+              />
+            ),
+          )}
+          <SearchYearFilter year={filters.year} yearOptions={yearOptions} setFilters={setFilters} />
+        </div>
       </div>
     </div>
   );

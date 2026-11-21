@@ -32,6 +32,16 @@ describe("SearchFilterPanel", () => {
     expect(screen.getByRole("button", { name: "电影" })).toHaveAttribute("aria-pressed", "false");
     expect(screen.getByRole("button", { name: "日期，降序" })).toHaveAttribute("aria-pressed", "true");
     expect(screen.queryByRole("combobox", { name: "开始年份" })).not.toBeInTheDocument();
+    expect(document.getElementById("search-filters")).not.toBeNull();
+    expect(document.getElementById("search-filters")).toHaveAttribute("hidden");
+  });
+
+  it("keeps search-filters mounted when advanced filters are visible", () => {
+    renderPanel(EMPTY_FILTERS, true);
+    const panel = document.getElementById("search-filters");
+    expect(panel).not.toBeNull();
+    expect(panel).not.toHaveAttribute("hidden");
+    expect(screen.getByRole("combobox", { name: "开始年份" })).toBeInTheDocument();
   });
 
   it("toggles a type, reverses the sort, and reveals the year range", () => {
