@@ -88,7 +88,7 @@ describe("SeasonFilterBar", () => {
     expect(right).toHaveAttribute("aria-label", "向右滚动筛选选项");
     expect(right.className).toContain("focus-ring");
     expect(right.className).toContain("size-10");
-    expect(right.className).toContain("tap-target-expand");
+    expect(right.className).toContain("absolute");
     expect(screen.queryByRole("button", { name: "向左滚动筛选选项" })).not.toBeInTheDocument();
 
     fireEvent.click(right);

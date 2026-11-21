@@ -14,12 +14,12 @@ type SeasonFilterBarProps = {
   measureKey?: string | number;
 };
 
-const BAR_SHELL = "relative sticky top-20 z-20 mb-6";
+const BAR_SHELL = "relative sticky top-20 z-20 mb-6 min-w-0 w-full max-w-full";
 const BAR_SURFACE =
-  "surface-overlay no-scrollbar flex items-center gap-2 overflow-x-auto overscroll-x-contain rounded-2xl p-3 motion-safe:scroll-smooth";
-/** 与 MediaRow 翻页钮同为 40px，并叠 tap-target-expand 保证点击区。 */
+  "surface-overlay no-scrollbar flex min-w-0 w-full items-center gap-2 overflow-x-auto overscroll-x-contain rounded-2xl p-3 motion-safe:scroll-smooth";
+/** 与 MediaRow 翻页钮同为 size-10（40px）。不用 tap-target-expand：它会强制 position:relative，盖掉 absolute 叠层。 */
 const ARROW_BTN =
-  "surface-panel focus-ring tap-target-expand absolute top-1/2 z-10 inline-flex size-10 shrink-0 -translate-y-1/2 items-center justify-center rounded-lg text-fg-secondary shadow-md shadow-black/30 transition-colors duration-200 hover:border-white/30 hover:bg-white/15 hover:text-white active:scale-95";
+  "surface-panel focus-ring absolute top-1/2 z-20 inline-flex size-10 shrink-0 -translate-y-1/2 items-center justify-center rounded-lg text-fg-secondary shadow-lg shadow-black/40 transition-colors duration-200 hover:border-white/30 hover:bg-white/15 hover:text-white active:scale-95";
 
 /** 按约一屏 75% 宽度翻动筛选条；遵守 prefers-reduced-motion。 */
 function scrollFilterBar(el: HTMLElement, direction: "left" | "right") {
