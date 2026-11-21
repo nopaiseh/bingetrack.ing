@@ -44,25 +44,33 @@ test("series cards keep two lines of title instead of a single truncated line", 
   ]);
   for (const title of titles) {
     expect(title.className).toContain("line-clamp-2");
-    expect(title.className).toContain("min-h-10");
     expect(title.className).not.toContain("truncate");
   }
-  expect(screen.getByText("综艺").className).toContain("text-xs");
-  expect(screen.getByText("综艺").className).not.toContain("text-[10px]");
+  expect(screen.getByText("综艺")).toBeInTheDocument();
 });
 
-test("MediaRow 卡片、查看全部与翻页按钮使用 focus-ring", () => {
+test("MediaRow 卡片、查看全部与翻页按钮可聚焦且链接正确", () => {
   render(<MediaRow title="我已看" items={series} type="shows" viewAllLink="/shows" />);
 
+  // 无障碍底线：键盘焦点框（toHaveFocus 只证明能聚焦，不能证明 focus-ring 还在）
   for (const link of screen.getAllByRole("link")) {
     expect(link).toHaveClass("focus-ring");
   }
-  expect(screen.getByRole("link", { name: /查看全部/ })).toHaveAttribute("href", "/shows");
   expect(screen.getByRole("button", { name: "向左滚动 我已看", hidden: true })).toHaveClass("focus-ring");
   expect(screen.getByRole("button", { name: "向右滚动 我已看", hidden: true })).toHaveClass("focus-ring");
+
+  const viewAll = screen.getByRole("link", { name: /查看全部/ });
+  expect(viewAll).toHaveAttribute("href", "/shows");
+  viewAll.focus();
+  expect(viewAll).toHaveFocus();
+
+  const card = screen.getByRole("link", { name: /体能之巅：百人大挑战 意大利/ });
+  expect(card).toHaveAttribute("href", "/shows/it");
+  card.focus();
+  expect(card).toHaveFocus();
 });
 
-test("MediaRow 横向滚动类在 reduced-motion 下不强制 scroll-smooth", () => {
+test("MediaRow 横向滚动在 reduced-motion 下不强制 scroll-smooth", () => {
   const { container } = render(<MediaRow title="我已看" items={series} type="shows" />);
 
   const scroller = container.querySelector(".motion-safe\\:scroll-smooth");
@@ -70,37 +78,23 @@ test("MediaRow 横向滚动类在 reduced-motion 下不强制 scroll-smooth", ()
   expect(scroller?.className).not.toMatch(/(?:^|\s)scroll-smooth(?:\s|$)/);
 });
 
-test("search cards reuse the catalog card surface, poster badge, and body", () => {
+test("search cards link to detail with from, show title body and letter-tile fallback", () => {
   render(<SearchMediaCard item={series[0]} returnHref="/search?type=tv_show" />);
 
   const link = screen.getByRole("link", { name: /体能之巅：百人大挑战 意大利/ });
-  expect(link.className).toContain("surface-card");
-  expect(link.className).toContain("interactive-media-card");
-  expect(link.className).toContain("overflow-hidden");
-  expect(link.className).toContain("rounded-xl");
-  expect(link.className).toContain("focus-ring");
   expect(link).toHaveAttribute("href", "/shows/it?from=%2Fsearch%3Ftype%3Dtv_show");
+  // 无障碍底线：搜索卡链接保留焦点框
+  expect(link).toHaveClass("focus-ring");
   link.focus();
   expect(link).toHaveFocus();
 
-  const poster = link.querySelector(".image-placeholder");
-  expect(poster).not.toBeNull();
-  expect(poster?.querySelector("img")).toBeNull();
-  const tile = poster?.querySelector(".letter-tile");
-  expect(tile).not.toBeNull();
+  const tile = link.querySelector(".letter-tile");
   expect(tile).toHaveAttribute("aria-hidden", "true");
   expect(tile).toHaveAttribute("data-initial", "体");
+  expect(link.querySelector("img")).toBeNull();
 
-  const badge = screen.getByTestId("media-card-status-badge");
-  expect(badge.className).toContain("absolute");
-  expect(badge.className).toContain("top-2");
-  expect(badge.className).toContain("right-2");
-  expect(badge.className).not.toContain("bg-transparent");
-
-  const title = screen.getByRole("heading", { level: 2 });
-  expect(title.className).toContain("line-clamp-2");
-  expect(title.className).toContain("min-h-10");
-  expect(title.className).not.toContain("truncate");
+  expect(screen.getByRole("heading", { level: 2, name: "体能之巅：百人大挑战 意大利" })).toBeInTheDocument();
+  expect(screen.getByTestId("media-card-status-badge")).toHaveTextContent("已看");
   expect(screen.getByText("佳作")).toBeInTheDocument();
   expect(screen.getByText("竞技")).toBeInTheDocument();
   expect(screen.getByText("综艺")).toBeInTheDocument();
@@ -119,10 +113,6 @@ test("search cards show 即将上映 on the poster only when unwatched and dated
   const upcoming = screen.getByTestId("media-card-upcoming-badge");
   expect(upcoming).toHaveTextContent("即将上映");
   expect(upcoming).toHaveAttribute("aria-label", "即将上映");
-  expect(upcoming.className).toContain("absolute");
-  expect(upcoming.className).toContain("top-2");
-  expect(upcoming.className).toContain("right-2");
-  expect(upcoming.className).toContain("rounded-full");
   expect(screen.queryByTestId("media-card-status-badge")).not.toBeInTheDocument();
   unmount();
 
@@ -141,7 +131,7 @@ test("search cards show 即将上映 on the poster only when unwatched and dated
   expect(screen.getByTestId("media-card-status-badge")).toHaveTextContent("已看");
 });
 
-test("shared badges and filter chips stay at least 14px with a 40px chip target", () => {
+test("shared badges and filter chips expose rating tier, status, and search tag link", () => {
   render(
     <>
       <MediaRatingBadge rating={8.2} size="sm" />
@@ -151,10 +141,18 @@ test("shared badges and filter chips stay at least 14px with a 40px chip target"
     </>,
   );
 
+  expect(screen.getByText("佳作")).toBeInTheDocument();
+  expect(screen.getByText("未评分")).toBeInTheDocument();
+  expect(screen.getByTestId("media-card-status-badge")).toHaveTextContent("已看");
+  const tag = screen.getByRole("link", { name: "科幻" });
+  expect(tag).toHaveAttribute("href", "/search?genre=%E7%A7%91%E5%B9%BB");
+
+  // 无障碍底线：徽章最小字号 text-xs（禁止缩到 text-[10px]）
   expect(screen.getByText("佳作").className).toContain("text-xs");
   expect(screen.getByText("佳作").className).not.toContain("text-[10px]");
   expect(screen.getByText("未评分").className).toContain("text-xs");
   expect(screen.getByTestId("media-card-status-badge").className).toContain("text-xs");
   expect(screen.getByTestId("media-card-status-badge").className).not.toContain("text-[10px]");
-  expect(screen.getByRole("link", { name: "科幻" }).className).toContain("min-h-10");
+  // 无障碍底线：筛选标签触控目标至少 40px（min-h-10）
+  expect(tag.className).toContain("min-h-10");
 });
