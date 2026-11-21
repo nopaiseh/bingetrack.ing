@@ -25,6 +25,7 @@ function movie(overrides: Partial<MediaCard> = {}): MediaCard {
     languages: [],
     cover_url: "",
     type: "movies",
+    dbType: "movie",
     status: undefined,
     ...overrides,
   };
@@ -51,7 +52,12 @@ describe("无封面统一首字块", () => {
     expect(tile).toHaveAttribute("aria-hidden", "true");
     expect(document.querySelector(".i-material-symbols-image-outline-rounded")).toBeNull();
 
-    rerender(<SearchMediaCard item={movie({ id: "s1", title: "缺封面剧集", type: "shows" })} returnHref="/search" />);
+    rerender(
+      <SearchMediaCard
+        item={movie({ id: "s1", title: "缺封面剧集", type: "shows", dbType: "tv_show" })}
+        returnHref="/search"
+      />,
+    );
     tile = document.querySelector(".letter-tile");
     expect(tile).toHaveAttribute("data-initial", "缺");
     expect(screen.getByRole("heading", { name: "缺封面剧集" })).toBeInTheDocument();
@@ -63,8 +69,8 @@ describe("无封面统一首字块", () => {
         title="精选"
         items={[
           movie({ id: "m", title: "电影甲" }),
-          movie({ id: "s", title: "剧集乙", type: "shows" }),
-          movie({ id: "b", title: "图书丙", type: "books" }),
+          movie({ id: "s", title: "剧集乙", type: "shows", dbType: "tv_show" }),
+          movie({ id: "b", title: "图书丙", type: "books", dbType: "book" }),
         ]}
         hideStatusBadge
       />,

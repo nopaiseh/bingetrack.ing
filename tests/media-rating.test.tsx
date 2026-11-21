@@ -21,15 +21,17 @@ const media: Media = {
   type: "movies",
 };
 
+const card = { ...media, dbType: "movie" as const };
+
 test.each([0, null])(
   "rating %s remains distinct from unrated across public views",
   /* 三种展示位置均区分零分和未评分。 */ (rating) => {
-    const item = { ...media, rating };
+    const item = { ...card, rating };
     render(
       <>
-        <MediaInformation media={item} seasons={null} />
+        <MediaInformation media={{ ...media, rating }} seasons={null} />
         <SearchMediaCard item={item} returnHref="/search" />
-        <MediaRow title="电影" items={[item]} type="movies" />
+        <MediaRow title="电影" items={[item]} type="movie" />
       </>,
     );
     expect(screen.getAllByText(rating === null ? "未评分" : "0.0")).toHaveLength(3);
@@ -49,12 +51,12 @@ test.each([
   [1.5, "灾难"],
   [0.5, "神烂"],
 ])("rating %s corresponds to tier %s across views", (rating, expectedTier) => {
-  const item = { ...media, rating };
+  const item = { ...card, rating };
   render(
     <>
-      <MediaInformation media={item} seasons={null} />
+      <MediaInformation media={{ ...media, rating }} seasons={null} />
       <SearchMediaCard item={item} returnHref="/search" />
-      <MediaRow title="电影" items={[item]} type="movies" />
+      <MediaRow title="电影" items={[item]} type="movie" />
     </>,
   );
   expect(screen.getAllByText(expectedTier)).toHaveLength(3);

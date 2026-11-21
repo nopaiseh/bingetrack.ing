@@ -27,6 +27,7 @@ function movie(overrides: Partial<MediaCard> = {}): MediaCard {
     languages: [],
     cover_url: "https://image.tmdb.org/t/p/w342/poster.jpg",
     type: "movies",
+    dbType: "movie",
     status: undefined,
     ...overrides,
   };
@@ -62,7 +63,7 @@ function linkWithTitleOnce(title: string) {
 
 describe("封面替代文字与可见标题不重复", () => {
   it("MediaRow：有封面时 img alt 为空，链接无障碍名称含标题一次", () => {
-    render(<MediaRow title="我已看" items={[movie()]} type="movies" hideStatusBadge />);
+    render(<MediaRow title="我已看" items={[movie()]} type="movie" hideStatusBadge />);
     const link = linkWithTitleOnce("星光档案");
     const img = within(link).getByRole("presentation");
     expect(img).toHaveAttribute("alt", "");
@@ -70,7 +71,11 @@ describe("封面替代文字与可见标题不重复", () => {
 
   it("MediaRow：无封面字块 aria-hidden，链接名称仍是标题一次", () => {
     render(
-      <MediaRow title="我想读" items={[movie({ cover_url: "", type: "books", title: "未命名书" })]} type="books" />,
+      <MediaRow
+        title="我想读"
+        items={[movie({ cover_url: "", type: "books", dbType: "book", title: "未命名书" })]}
+        type="book"
+      />,
     );
     const link = linkWithTitleOnce("未命名书");
     expect(link.querySelector(".letter-tile")).toHaveAttribute("aria-hidden", "true");
@@ -78,7 +83,7 @@ describe("封面替代文字与可见标题不重复", () => {
 
   it("MediaRow：电影无封面也用首字块，不出现图片图标", () => {
     render(
-      <MediaRow title="我想看" items={[movie({ cover_url: "", title: "缺海报电影" })]} type="movies" hideStatusBadge />,
+      <MediaRow title="我想看" items={[movie({ cover_url: "", title: "缺海报电影" })]} type="movie" hideStatusBadge />,
     );
     const link = linkWithTitleOnce("缺海报电影");
     const tile = link.querySelector(".letter-tile");

@@ -9,24 +9,33 @@ import MediaCardBody from "./MediaCardBody";
 import MediaCardStatusBadge from "./MediaCardStatusBadge";
 import { edgeFadeMask } from "@/lib/edge-fade-mask";
 import { scrollBehavior } from "@/lib/scroll-behavior";
+import { isDbMediaType, publicPathForDbType, type DbMediaType } from "@/lib/media-types";
 
-type RowMediaType = "movies" | "shows" | "books";
+/** 横向海报行支持的数据库类型（影视与图书 2:3；专辑走封面墙）。 */
+type RowDbMediaType = Extract<DbMediaType, "movie" | "tv_show" | "book">;
+
+function resolveRowDbType(item: MediaCard, rowType?: RowDbMediaType): RowDbMediaType | null {
+  if (item.dbType && isDbMediaType(item.dbType)) {
+    if (item.dbType === "movie" || item.dbType === "tv_show" || item.dbType === "book") return item.dbType;
+  }
+  return rowType ?? null;
+}
 
 /** 展示卡片海报，并按参数控制图片加载优先级。标题和标签交给共用的卡片正文。 */
 function ItemCard({
   item,
-  type,
+  dbType,
   eager,
   preload,
   hideStatusBadge,
 }: {
   item: MediaCard;
-  type: RowMediaType;
+  dbType: RowDbMediaType;
   eager: boolean;
   preload: boolean;
   hideStatusBadge?: boolean;
 }) {
-  const bodyType = type === "shows" ? "shows" : "movies";
+  const bodyDbType = dbType === "tv_show" ? "tv_show" : "movie";
   return (
     <>
       <div className="image-placeholder relative flex aspect-2/3 w-full items-center justify-center overflow-hidden">
@@ -44,9 +53,9 @@ function ItemCard({
         ) : (
           <LetterTile title={item.title} decorative />
         )}
-        {!hideStatusBadge && <MediaCardStatusBadge status={item.status} kind={type === "books" ? "book" : "watch"} />}
+        {!hideStatusBadge && <MediaCardStatusBadge status={item.status} kind={dbType === "book" ? "book" : "watch"} />}
       </div>
-      <MediaCardBody item={item} type={bodyType} />
+      <MediaCardBody item={item} dbType={bodyDbType} />
     </>
   );
 }
@@ -63,7 +72,8 @@ export default function MediaRow({
   title: string;
   items: MediaCard[];
   viewAllLink?: string;
-  type?: RowMediaType;
+  /** 行级数据库类型；单卡优先用 item.dbType，缺省时回落到此。 */
+  type?: RowDbMediaType;
   eagerCount?: number;
   hideStatusBadge?: boolean;
 }) {
@@ -157,23 +167,21 @@ export default function MediaRow({
           className="no-scrollbar -mb-8 flex snap-x snap-mandatory space-x-4 overflow-x-auto scroll-px-1 px-1 pb-12 pt-4 motion-safe:scroll-smooth"
         >
           {items.map(
-            /* 决定卡片详情路由类型，并按索引设置首批图片的加载优先级。 */ (media: MediaCard, index: number) => {
+            /* 由数据库类型映射详情路径，并按索引设置首批图片的加载优先级。 */ (media: MediaCard, index: number) => {
               // 横向海报行服务影视与图书 2:3 卡片；专辑走封面墙，不进此组件。
-              const mediaType: RowMediaType =
-                type === "books" || media.type === "books"
-                  ? "books"
-                  : type === "shows" || media.type === "shows"
-                    ? "shows"
-                    : "movies";
+              const dbType = resolveRowDbType(media, type);
+              if (!dbType) return null;
+              const href = publicPathForDbType(dbType, media.id);
+              if (!href) return null;
               return (
                 <HoverPrefetchLink
-                  href={`/${mediaType}/${media.id}`}
+                  href={href}
                   key={media.id}
                   className="surface-card interactive-media-card group flex w-40 flex-none snap-start cursor-pointer flex-col overflow-hidden rounded-xl focus-ring last:snap-end sm:w-48"
                 >
                   <ItemCard
                     item={media}
-                    type={mediaType}
+                    dbType={dbType}
                     eager={index < eagerCount}
                     preload={eagerCount > 0 && index === 0}
                     hideStatusBadge={hideStatusBadge}

@@ -85,7 +85,7 @@ export default function SearchResultSection({
           mediaItems.map(
             /* 首屏 preload／eager；其余 defer 到接近视口再设 src。 */ (item, index) => (
               <SearchMediaCard
-                key={`${item.type}-${item.id}`}
+                key={`${item.dbType ?? "media"}-${item.id}`}
                 item={item}
                 returnHref={returnHref}
                 preload={index === 0}

@@ -6,7 +6,7 @@ import Link from "next/link";
 import LetterTile from "@/components/LetterTile";
 import MediaRatingBadge from "@/components/MediaRatingBadge";
 import { ALBUM_COVER_SIZES } from "@/lib/poster-image-sizes";
-import { publicMediaDetailPath } from "@/lib/media-types";
+import { publicPathForDbType } from "@/lib/media-types";
 import type { MediaCard } from "@/lib/types";
 
 /** 紧凑封面墙卡片：1:1 封面 + 标题／主艺人 + 可选评分。 */
@@ -14,7 +14,8 @@ export default function AlbumCoverCard({ item, eager = false }: { item: MediaCar
   const [failed, setFailed] = useState(false);
   const title = item.title.trim() || "未命名专辑";
   const artist = (item.artists ?? []).filter(Boolean)[0] ?? null;
-  const href = publicMediaDetailPath("albums", item.id);
+  // 封面墙只服务专辑：用数据库类型映射公开路由，不硬编码路由段。
+  const href = publicPathForDbType("album", item.id)!;
   const showCover = Boolean(item.cover_url) && !failed;
 
   return (

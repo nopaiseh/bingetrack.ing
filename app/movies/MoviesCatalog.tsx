@@ -37,7 +37,7 @@ export default function MoviesCatalog({ watched, want, stats }: MediaCatalogProp
               items={watchedItems}
               eagerCount={2}
               viewAllLink="/search?type=movie&status=watched"
-              type="movies"
+              type="movie"
               hideStatusBadge
             />
             <MediaRow
@@ -45,7 +45,7 @@ export default function MoviesCatalog({ watched, want, stats }: MediaCatalogProp
               items={wantItems}
               eagerCount={watchedItems.length ? 0 : 2}
               viewAllLink="/search?type=movie&status=want_to_watch"
-              type="movies"
+              type="movie"
               hideStatusBadge
             />
           </div>
