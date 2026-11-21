@@ -476,15 +476,57 @@ test("keyword search forwards book and music credit roles to search_media", asyn
 });
 
 test("series-only browsing uses the database function; plain catalogs keep the view", async () => {
-  await searchMediaServer({ seriesOnly: true, type: "movie" });
+  await searchMediaServer({ seriesOnly: true });
   expect(state.executed.every((query) => query.table === "rpc:search_media")).toBe(true);
   // 计数请求走 HEAD 查询串，null 会变成字符串 "null"，因此无关键词时必须省略 p_query。
   expect(state.executed.every((query) => query.args && !("p_query" in query.args))).toBe(true);
-  expect(state.executed[0].args).toMatchObject({ p_series_only: true, p_types: ["movie"] });
+  expect(state.executed[0].args).toMatchObject({ p_series_only: true, p_types: [] });
+  expect(state.executed[0].ins).toEqual([]);
 
   state.executed = [];
   await searchMediaServer({ type: "movie" });
   expect(state.executed.every((query) => query.table === "v_all_media")).toBe(true);
+  expect(state.executed[0].ins).toEqual([{ column: "type", value: ["movie"] }]);
+});
+
+test("series and type without person are ANDed via PostgREST type filter", async () => {
+  state.results["rpc:search_media"] = { data: [], error: null, count: 0 };
+  await searchMediaServer({ seriesOnly: true, type: "movie" });
+  expect(state.executed.every((query) => query.table === "rpc:search_media")).toBe(true);
+  // RPC 只做系列匹配；类型由 PostgREST 叠加，避免 search_media 的系列∨类型 OR。
+  expect(state.executed[0].args).toMatchObject({ p_series_only: true, p_types: [], p_credit_roles: [] });
+  expect(state.executed[0].ins).toEqual([{ column: "type", value: ["movie"] }]);
+  expect(state.executed[1].ins).toEqual([{ column: "type", value: ["movie"] }]);
+});
+
+test("series and type with person keep RPC args so SQL can AND all three", async () => {
+  state.results["rpc:search_media"] = { data: [], error: null, count: 0 };
+  await searchMediaServer({
+    q: "诺兰",
+    seriesOnly: true,
+    type: "movie",
+    creditRole: "director",
+  });
+  expect(state.executed[0].args).toEqual({
+    p_query: "诺兰",
+    p_types: ["movie"],
+    p_series_only: true,
+    p_credit_roles: ["director"],
+  });
+  // 人物路径仍由 search_media 内部 AND；不再额外叠 PostgREST 类型筛选。
+  expect(state.executed[0].ins).toEqual([]);
+});
+
+test("type-only keyword search still forwards types to search_media", async () => {
+  state.results["rpc:search_media"] = { data: [], error: null, count: 0 };
+  await searchMediaServer({ q: "星际", type: "movie" });
+  expect(state.executed[0].args).toMatchObject({
+    p_query: "星际",
+    p_types: ["movie"],
+    p_series_only: false,
+    p_credit_roles: [],
+  });
+  expect(state.executed[0].ins).toEqual([]);
 });
 
 test(
