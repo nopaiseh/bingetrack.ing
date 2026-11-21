@@ -241,7 +241,7 @@ export default function UpcomingHero({ items, renderedOn }: UpcomingHeroProps) {
               {currentItem.cover_url ? (
                 <Image
                   src={currentItem.cover_url}
-                  alt={currentItem.title}
+                  alt=""
                   fill
                   preload
                   fetchPriority="high"
@@ -249,7 +249,7 @@ export default function UpcomingHero({ items, renderedOn }: UpcomingHeroProps) {
                   sizes="176px"
                 />
               ) : (
-                <LetterTile title={currentItem.title} className="h-full w-full rounded-2xl" />
+                <LetterTile title={currentItem.title} decorative className="h-full w-full rounded-2xl" />
               )}
             </HoverPrefetchLink>
             {hasMultiple && (

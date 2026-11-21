@@ -52,7 +52,7 @@ function MediaPoster({ media }: { media: Media }) {
           fetchPriority="high"
         />
       ) : (
-        <LetterTile title={media.title} />
+        <LetterTile title={media.title} decorative />
       )}
     </div>
   );

@@ -33,7 +33,7 @@ function ItemCard({
         {item.cover_url ? (
           <Image
             src={item.cover_url}
-            alt={item.title}
+            alt=""
             fill
             className="object-cover transition-transform duration-500 ease-out group-hover:scale-105"
             sizes="(max-width: 639px) 160px, 192px"
@@ -42,7 +42,7 @@ function ItemCard({
             loading={preload ? undefined : eager ? "eager" : "lazy"}
           />
         ) : type === "books" ? (
-          <LetterTile title={item.title} />
+          <LetterTile title={item.title} decorative />
         ) : (
           <span
             className="i-material-symbols-image-outline-rounded inline-block size-10 text-fg-muted"

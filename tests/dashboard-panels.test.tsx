@@ -110,8 +110,11 @@ describe("DashboardCategoryPanel", () => {
       />,
     );
 
-    const image = await screen.findByRole("img", { name: "有海报" });
+    const image = await screen.findByRole("presentation");
+    expect(image).toHaveAttribute("alt", "");
     expect(image.getAttribute("src") ?? "").toContain("poster.jpg");
+    expect(screen.getByRole("link", { name: /有海报/ })).toBeInTheDocument();
+    expect(screen.queryByRole("img", { name: "有海报" })).not.toBeInTheDocument();
     expect(screen.getByText("剧集精选")).toBeInTheDocument();
     expect(screen.getByRole("tabpanel")).toHaveAttribute("id", "dashboard-panel-tv-shows");
   });

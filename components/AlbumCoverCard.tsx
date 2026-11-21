@@ -35,7 +35,7 @@ export default function AlbumCoverCard({ item, eager = false }: { item: MediaCar
             onError={() => setFailed(true)}
           />
         ) : (
-          <LetterTile title={title} />
+          <LetterTile title={title} decorative />
         )}
         {item.rating != null ? (
           <span className="pointer-events-none absolute bottom-1.5 right-1.5 z-10">

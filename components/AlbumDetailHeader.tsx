@@ -24,7 +24,7 @@ function SquarePoster({ title, coverUrl }: { title: string; coverUrl: string }) 
           fetchPriority="high"
         />
       ) : (
-        <LetterTile title={title} />
+        <LetterTile title={title} decorative />
       )}
     </div>
   );

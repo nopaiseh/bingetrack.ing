@@ -34,9 +34,12 @@ describe("CurrentlyReadingRail", () => {
     expect(screen.queryByRole("progressbar")).not.toBeInTheDocument();
   });
 
-  it("有封面时渲染图片，无作者时不写作者行", () => {
+  it("有封面时渲染装饰性图片，无作者时不写作者行", () => {
     render(<CurrentlyReadingRail items={[{ ...item, posterPath: "/poster.jpg", authors: [], title: "  " }]} />);
-    expect(screen.getByRole("img", { name: "未命名图书" })).toBeInTheDocument();
+    const link = screen.getByRole("link", { name: /未命名图书/ });
+    const poster = link.querySelector("img");
+    expect(poster).toHaveAttribute("alt", "");
+    expect(screen.queryByRole("img", { name: "未命名图书" })).not.toBeInTheDocument();
     expect(screen.queryByText("作者一、作者二")).not.toBeInTheDocument();
   });
 

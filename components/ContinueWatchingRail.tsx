@@ -95,7 +95,7 @@ function progressNow(progress: ContinueWatchingCard["seasonProgress"]): number {
 function PosterFallback({ title }: { title: string }) {
   return (
     <div className="relative aspect-2/3 w-full overflow-hidden" data-poster-fallback="">
-      <LetterTile title={title} className="h-full w-full" />
+      <LetterTile title={title} decorative className="h-full w-full" />
     </div>
   );
 }
@@ -112,7 +112,7 @@ function ContinueWatchingPoster({ item, eager }: { item: ContinueWatchingCard; e
     <div className="image-placeholder relative aspect-2/3 w-full overflow-hidden">
       <Image
         src={src}
-        alt={title}
+        alt=""
         fill
         sizes={RAIL_POSTER_SIZES}
         className="object-cover"
