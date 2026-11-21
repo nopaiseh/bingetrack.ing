@@ -73,6 +73,10 @@ select is(public.manage_name_issues('张三', false), '{}'::text[], 'plain Chine
 select is(public.manage_name_issues('A / B', true), '{}'::text[], 'standard character separator is accepted');
 select ok('separator' = any(public.manage_name_issues('A/B', true)), 'unspaced character separator is flagged');
 select ok('bracket_note' = any(public.manage_name_issues('张三（配音）', false)), 'bracketed note is flagged');
+select ok(not ('bracket_note' = any(public.manage_name_issues('亚瑟·库里（海王）', true))), 'character bracket note (alias) is not flagged');
+select ok(not ('bracket_note' = any(public.manage_name_issues('人鱼王国国王（声）', true))), 'character bracket note (voice) is not flagged');
+select ok(not ('bracket_note' = any(public.manage_name_issues('关谷神奇（客串）', true))), 'character bracket note (cameo) is not flagged');
+select ok(not ('bracket_note' = any(public.manage_name_issues('前固定成员（2010–2016）', true))), 'character bracket note (years) is not flagged');
 select ok('placeholder' = any(public.manage_name_issues('未知', true)), 'placeholder is flagged');
 select ok('mixed_script' = any(public.manage_name_issues('Tom汉克斯', false)), 'mixed script person name is flagged');
 select ok('fullwidth' = any(public.manage_name_issues('Ｔｏｍ', false)), 'full-width letters are flagged');
