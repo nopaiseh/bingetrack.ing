@@ -118,6 +118,7 @@ export const reportTagLabels: Record<string, string> = {
   double_space: "连续空格",
   invisible_char: "含不可见字符",
   fullwidth: "含全角字母、数字或空格",
+  special_space: "含特殊空格",
   bracket_note: "含括号备注",
   placeholder: "占位文字",
   edge_punct: "首尾有标点",

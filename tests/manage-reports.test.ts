@@ -50,6 +50,7 @@ describe("报告配置", () => {
   it("资料类别标签沿用关联资料名称", () => {
     expect(reportTagLabels.languages).toBe("语言");
     expect(reportTagLabels.no_cover).toBe("缺封面");
+    expect(reportTagLabels.special_space).toBe("含特殊空格");
   });
 });
 
