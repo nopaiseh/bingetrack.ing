@@ -218,9 +218,9 @@ describe("SeasonPage", () => {
     expect(screen.getByRole("heading", { level: 2, name: "本季简介" })).toBeInTheDocument();
   });
 
-  it("多季时渲染全宽季度 tab 条，单季不显示", async () => {
+  it("多季时渲染全宽季度 tab 条，单季不显示；有 tab 时简介区不加 border-top", async () => {
     mockSeason([season, seasonTwo]);
-    const { rerender } = render(await SeasonPage({ params: Promise.resolve({ id: seriesId, seasonId }) }));
+    const { container, rerender } = render(await SeasonPage({ params: Promise.resolve({ id: seriesId, seasonId }) }));
     const tablist = screen.getByRole("tablist", { name: "选择季度" });
     expect(tablist).toBeInTheDocument();
     expect(screen.getByRole("tab", { name: "第 1 季", current: "page" })).toHaveAttribute(
@@ -231,10 +231,16 @@ describe("SeasonPage", () => {
       "href",
       `/shows/${seriesId}/seasons/${seasonTwoId}`,
     );
+    const overviewWithTabs = screen.getByRole("heading", { level: 2, name: "本季简介" }).parentElement;
+    expect(overviewWithTabs).toHaveClass("mt-5");
+    expect(overviewWithTabs).not.toHaveClass("border-t", "pt-4");
 
     mockSeason([season]);
     rerender(await SeasonPage({ params: Promise.resolve({ id: seriesId, seasonId }) }));
     expect(screen.queryByRole("tablist", { name: "选择季度" })).not.toBeInTheDocument();
+    const overviewAlone = screen.getByRole("heading", { level: 2, name: "本季简介" }).parentElement;
+    expect(overviewAlone).toHaveClass("border-t", "border-white/10", "pt-4");
+    expect(container.querySelector("header")).toBeInTheDocument();
   });
 
   it("没有简介时不渲染简介区", async () => {

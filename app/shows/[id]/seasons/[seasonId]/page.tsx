@@ -113,7 +113,7 @@ export default async function SeasonPage({ params }: { params: Promise<{ id: str
           <SeasonTabList seriesId={id} seasonId={seasonId} seasons={seasons} />
 
           {seasonData.season.summary ? (
-            <div className="mt-5 min-w-0 border-t border-white/10 pt-4">
+            <div className={seasons.length > 1 ? "mt-5 min-w-0" : "mt-5 min-w-0 border-t border-white/10 pt-4"}>
               <h2 className="text-sm font-semibold tracking-widest text-fg-muted">本季简介</h2>
               <SeasonOverview text={seasonData.season.summary} />
             </div>
