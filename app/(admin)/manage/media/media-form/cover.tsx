@@ -33,7 +33,7 @@ export function posterPreviewSrc(value: string): string | null {
 }
 
 /**
- * 专辑封面允许 iTunes／CAA／archive／TMDB 的 HTTPS 地址预览。
+ * 专辑／图书封面允许 iTunes／CAA／archive／Open Library／Google Books／TMDB 的 HTTPS 地址预览。
  * 校验通过后返回 URL 对象规范化的 href，避免把原始输入直接塞进 img.src（CodeQL）。
  */
 export function albumCoverPreviewSrc(value: string): string | null {
@@ -47,6 +47,9 @@ export function albumCoverPreviewSrc(value: string): string | null {
       host === "image.tmdb.org" ||
       host === "coverartarchive.org" ||
       host === "archive.org" ||
+      host === "covers.openlibrary.org" ||
+      host === "books.google.com" ||
+      host === "books.googleusercontent.com" ||
       host.endsWith(".mzstatic.com") ||
       host.endsWith(".archive.org")
     )

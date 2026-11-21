@@ -1,6 +1,15 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { MediaInput } from "@/lib/admin/media-form";
 import { SaveBookMediaError, saveBookMedia } from "@/lib/admin/save-book-media";
+import { resolveBookCover } from "@/lib/books/resolve-cover";
+
+vi.mock("@/lib/books/resolve-cover", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/lib/books/resolve-cover")>();
+  return {
+    ...actual,
+    resolveBookCover: vi.fn(async () => "https://covers.openlibrary.org/b/isbn/9780306406157-L.jpg?default=false"),
+  };
+});
 
 function bookPayload(overrides: Partial<MediaInput> = {}): MediaInput {
   return {
@@ -28,6 +37,7 @@ function bookPayload(overrides: Partial<MediaInput> = {}): MediaInput {
     label: null,
     page_count: 200,
     publisher: "出版社",
+    isbn: null,
     collections: [],
     ...overrides,
   };
@@ -84,5 +94,44 @@ describe("saveBookMedia", () => {
   it("拒绝非法页数", async () => {
     const db = rpcDb({});
     await expect(saveBookMedia(db as never, bookPayload({ page_count: 0 }))).rejects.toThrow(/页数/);
+  });
+
+  it("封面留空且有 ISBN 时自动解析封面", async () => {
+    const db = rpcDb({
+      find_book_by_title_and_authors: () => ({ data: null, error: null }),
+      manage_save_media: () => ({ data: "b1000000-0000-4000-8000-000000000099", error: null }),
+    });
+    await saveBookMedia(db as never, bookPayload({ isbn: "9780306406157", cover_url: null }));
+    expect(resolveBookCover).toHaveBeenCalledWith({ isbn: "9780306406157" });
+    expect(db.rpc).toHaveBeenCalledWith(
+      "manage_save_media",
+      expect.objectContaining({
+        p_data: expect.objectContaining({
+          isbn: "9780306406157",
+          cover_url: "https://covers.openlibrary.org/b/isbn/9780306406157-L.jpg?default=false",
+        }),
+      }),
+    );
+  });
+
+  it("用户已填封面时不覆盖", async () => {
+    const db = rpcDb({
+      find_book_by_title_and_authors: () => ({ data: null, error: null }),
+      manage_save_media: () => ({ data: "b1000000-0000-4000-8000-000000000099", error: null }),
+    });
+    const manual = "https://covers.openlibrary.org/b/isbn/9780306406157-L.jpg";
+    await saveBookMedia(db as never, bookPayload({ isbn: "9780306406157", cover_url: manual }));
+    expect(resolveBookCover).not.toHaveBeenCalled();
+    expect(db.rpc).toHaveBeenCalledWith(
+      "manage_save_media",
+      expect.objectContaining({
+        p_data: expect.objectContaining({ cover_url: manual }),
+      }),
+    );
+  });
+
+  it("拒绝未规范化的 ISBN", async () => {
+    const db = rpcDb({});
+    await expect(saveBookMedia(db as never, bookPayload({ isbn: "978-0-306-40615-7" }))).rejects.toThrow(/ISBN/);
   });
 });

@@ -77,6 +77,9 @@ function allowedCover(src: string) {
     if (
       host === "coverartarchive.org" ||
       host === "archive.org" ||
+      host === "covers.openlibrary.org" ||
+      host === "books.google.com" ||
+      host === "books.googleusercontent.com" ||
       host.endsWith(".mzstatic.com") ||
       host.endsWith(".archive.org")
     )

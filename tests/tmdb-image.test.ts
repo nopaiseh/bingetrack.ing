@@ -53,5 +53,16 @@ describe(
     it("本地图片原样返回", () => {
       expect(tmdbImageLoader({ src: "/opengraph-image", width: 500 })).toBe("/opengraph-image");
     });
+
+    it("音乐与图书封面主机原样返回（同自定义 loader 行为）", () => {
+      const itunes = "https://is1-ssl.mzstatic.com/image/thumb/Music/cover.jpg";
+      const openLibrary = "https://covers.openlibrary.org/b/isbn/9780306406157-L.jpg?default=false";
+      const googleBooks = "https://books.google.com/books/content?id=abc&printsec=frontcover&img=1&zoom=1";
+      expect(tmdbImageLoader({ src: itunes, width: 342 })).toBe(itunes);
+      expect(tmdbImageLoader({ src: openLibrary, width: 342 })).toBe(openLibrary);
+      expect(tmdbImageLoader({ src: googleBooks, width: 342 })).toBe(googleBooks);
+      expect(tmdbImageUrl(openLibrary, "w500")).toBe(openLibrary);
+      expect(tmdbImageUrl(googleBooks, "w500")).toBe(googleBooks);
+    });
   },
 );

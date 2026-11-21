@@ -199,6 +199,25 @@ export function BasicInfoSection({
               />
             </div>
             <div className="span-2">
+              <label htmlFor="field-isbn" className="mb-1.5">
+                ISBN
+              </label>
+              <input
+                id="field-isbn"
+                name="isbn"
+                {...field("isbn", item?.isbn)}
+                maxLength={32}
+                placeholder="10 或 13 位，可留空"
+                className="font-mono"
+                autoComplete="off"
+                spellCheck={false}
+                aria-describedby="field-isbn-hint"
+              />
+              <p id="field-isbn-hint" className="edit-hint mt-1">
+                保存时可按 ISBN 自动匹配封面；已填封面不会被覆盖。
+              </p>
+            </div>
+            <div className="span-2">
               <label htmlFor="field-page-count" className="mb-1.5">
                 页数
               </label>

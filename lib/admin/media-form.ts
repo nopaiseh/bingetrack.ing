@@ -1,3 +1,4 @@
+import { isAllowedBookCoverHost, normalizeIsbn } from "@/lib/books/resolve-cover";
 import { isMediaId } from "@/lib/functions/media-id";
 import { mediaTypes, type ManagedMediaType } from "@/lib/media-types";
 
@@ -8,6 +9,7 @@ const COVER_HOSTS = new Set(["image.tmdb.org", "coverartarchive.org", "archive.o
 
 function isAllowedCoverHost(hostname: string) {
   if (COVER_HOSTS.has(hostname)) return true;
+  if (isAllowedBookCoverHost(hostname)) return true;
   // iTunes／Apple 封面：*.mzstatic.com；archive.org 镜像：*.archive.org
   return hostname.endsWith(".mzstatic.com") || hostname.endsWith(".archive.org");
 }
@@ -67,6 +69,8 @@ export type MediaInput = {
   page_count: number | null;
   /** 出版社；仅图书写入 books.publisher。 */
   publisher: string | null;
+  /** 规范化 ISBN；仅图书写入 books.isbn（10／13 位或空）。 */
+  isbn: string | null;
   collections?: string[];
 };
 
@@ -86,7 +90,7 @@ const creditFieldLabels: Record<string, string> = {
   authors: "作者",
 };
 
-/** 校验封面 URL：影视限 TMDB；音乐另接受 iTunes／CAA／archive.org（与 CSP 一致）。 */
+/** 校验封面 URL：影视限 TMDB；音乐另接受 iTunes／CAA／archive.org；图书另接受 Open Library／Google Books（与 CSP 一致）。 */
 export function assertCoverUrl(cover_url: string, type: ManagedMediaType) {
   let url: URL;
   try {
@@ -96,12 +100,19 @@ export function assertCoverUrl(cover_url: string, type: ManagedMediaType) {
   }
   if (url.protocol !== "https:" || url.username || url.password || url.port) {
     throw new Error(
-      type === "album" || type === "music" ? "封面请使用 HTTPS 图片地址。" : "封面请使用 TMDB HTTPS 图片地址。",
+      type === "album" || type === "music" || type === "book"
+        ? "封面请使用 HTTPS 图片地址。"
+        : "封面请使用 TMDB HTTPS 图片地址。",
     );
   }
   if (type === "album" || type === "music") {
     if (!isAllowedCoverHost(url.hostname)) throw new Error("封面请使用 iTunes、Cover Art Archive 或 TMDB 图片地址。");
     return;
+  }
+  if (type === "book") {
+    if (url.hostname === "image.tmdb.org" && url.pathname.startsWith("/t/p/")) return;
+    if (isAllowedBookCoverHost(url.hostname)) return;
+    throw new Error("封面请使用 Open Library、Google Books 或 TMDB 图片地址。");
   }
   // 与 CSP 的 img-src 和 lib/tmdb-image.ts 的尺寸换算一致，其他地址浏览器不会加载。
   if (url.hostname !== "image.tmdb.org" || !url.pathname.startsWith("/t/p/")) {
@@ -225,9 +236,15 @@ export function parseMediaForm(form: FormData): MediaInput {
   const label = isAlbum ? string("label", 200) : null;
   const publisher = isBook ? string("publisher", 200) : null;
   let page_count: number | null = null;
+  let isbn: string | null = null;
   if (isBook) {
     page_count = numeric("page_count", 20000, true);
     if (page_count === 0) throw new Error("页数须为 1–20000 的整数，或留空。");
+    const rawIsbn = string("isbn", 32);
+    if (rawIsbn) {
+      isbn = normalizeIsbn(rawIsbn);
+      if (!isbn) throw new Error("ISBN 须为 10 位（末位可 X）或 13 位数字，可含空格或连字符。");
+    }
   }
   // 曲目时长以秒计（1–7200，可空）；影视片长仍为分钟（0–100000）；图书不写 runtime。
   let runtime: number | null;
@@ -265,6 +282,7 @@ export function parseMediaForm(form: FormData): MediaInput {
     label,
     page_count,
     publisher,
+    isbn,
     collections: isTvChild || isMusicTrack ? [] : names("collections"),
   };
 }

@@ -32,12 +32,13 @@ describe("book form validation", () => {
     return data;
   }
 
-  it("parses authors, page_count, publisher and reading status", () => {
+  it("parses authors, page_count, publisher, isbn and reading status", () => {
     expect(
       parseMediaForm(
         form({
           page_count: "320",
           publisher: "测验社",
+          isbn: "978-0-306-40615-7",
           authors: "\t作者甲\n\t作者乙",
           status: "in_progress",
         }),
@@ -46,6 +47,7 @@ describe("book form validation", () => {
       type: "book",
       page_count: 320,
       publisher: "测验社",
+      isbn: "9780306406157",
       status: "in_progress",
       authors: [
         { id: null, name: "作者甲" },
@@ -56,6 +58,20 @@ describe("book form validation", () => {
 
   it("rejects page_count 0", () => {
     expect(() => parseMediaForm(form({ page_count: "0" }))).toThrow(/页数/);
+  });
+
+  it("rejects invalid isbn", () => {
+    expect(() => parseMediaForm(form({ isbn: "not-isbn" }))).toThrow(/ISBN/);
+  });
+
+  it("accepts open library book cover urls", () => {
+    expect(
+      parseMediaForm(
+        form({
+          cover_url: "https://covers.openlibrary.org/b/isbn/9780306406157-L.jpg",
+        }),
+      ).cover_url,
+    ).toContain("covers.openlibrary.org");
   });
 });
 

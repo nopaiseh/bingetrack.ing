@@ -29,11 +29,11 @@ select ok(
     select 1 from information_schema.columns
     where table_schema = 'public' and table_name = 'books' and column_name = 'publisher'
   )
-  and not exists (
+  and exists (
     select 1 from information_schema.columns
     where table_schema = 'public' and table_name = 'books' and column_name = 'isbn'
   ),
-  'books has page_count and publisher, no isbn'
+  'books has page_count, publisher and isbn'
 );
 
 select ok(
