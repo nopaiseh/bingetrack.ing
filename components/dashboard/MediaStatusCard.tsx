@@ -3,12 +3,13 @@
 import HoverPrefetchLink from "@/components/HoverPrefetchLink";
 import AnimatedNumber from "@/components/AnimatedNumber";
 
-/** 按传入标题和图标展示媒体部数，并用一行补充季数、集数；未传 details 时保留空行，让各看板卡片高度一致；提供 href 时作为可点击跳转卡片。 */
+/** 按传入标题和图标展示媒体数量；量词默认「部」，音乐用「首」、图书用「本」。 */
 export default function MediaStatusCard({
   title,
   icon,
   toneClass,
   count,
+  unit = "部",
   details,
   href,
 }: {
@@ -16,9 +17,11 @@ export default function MediaStatusCard({
   icon: string;
   toneClass: string;
   count: number;
+  unit?: "部" | "首" | "本";
   details?: string;
   href?: string;
 }) {
+  const safeCount = Number.isFinite(count) ? count : 0;
   const content = (
     <>
       <div className="flex items-center justify-between text-sm font-semibold text-fg transition-colors group-hover:text-[var(--accent-hover)]">
@@ -38,9 +41,9 @@ export default function MediaStatusCard({
       </div>
       <div className="flex items-baseline gap-1.5">
         <span className="font-mono text-3xl tracking-tight text-white sm:text-4xl">
-          <AnimatedNumber value={count} />
+          <AnimatedNumber value={safeCount} />
         </span>
-        <span className="text-sm text-fg-secondary">部</span>
+        <span className="text-sm text-fg-secondary">{unit}</span>
       </div>
       <p
         className="flex items-center gap-1.5 font-mono text-xs text-fg-secondary"

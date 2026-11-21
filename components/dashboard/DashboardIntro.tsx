@@ -3,11 +3,13 @@
 import DashboardYearPicker from "@/components/DashboardYearPicker";
 import AnimatedNumber from "@/components/AnimatedNumber";
 
-/** 展示看板标题、汇总数字、视图标签和年份选择器。 */
+/** 展示看板标题、四类总计、影视完成进度、视图标签和年份选择器。 */
 export default function DashboardIntro({
   selectedYear,
   totalMovies,
   totalSeries,
+  totalTracks,
+  totalBooks,
   runtimePercent,
   tabs,
   tabIds,
@@ -19,6 +21,8 @@ export default function DashboardIntro({
   selectedYear: string;
   totalMovies: number;
   totalSeries: number;
+  totalTracks: number;
+  totalBooks: number;
   runtimePercent: number;
   tabs: readonly string[];
   tabIds: Record<string, string>;
@@ -27,6 +31,14 @@ export default function DashboardIntro({
   years: Array<string | number>;
   onSelectYear: (year: string) => void;
 }) {
+  const totals = [
+    { label: "电影总计", value: totalMovies },
+    { label: "电视节目总计", value: totalSeries },
+    { label: "音乐总计", value: totalTracks },
+    { label: "图书总计", value: totalBooks },
+    { label: "完成进度", value: runtimePercent, accent: true as const },
+  ];
+
   return (
     <section
       aria-labelledby="dashboard-title"
@@ -51,25 +63,20 @@ export default function DashboardIntro({
             </p>
           </div>
 
-          <dl className="grid grid-cols-3 gap-2 border-t border-white/10 pt-4 lg:min-w-100 lg:border-l lg:border-t-0 lg:pl-8 lg:pt-0">
-            <div>
-              <dt className="text-xs tracking-wide text-fg-secondary">电影总计</dt>
-              <dd className="mt-1 font-mono text-2xl font-normal tracking-tight text-white sm:text-3xl">
-                <AnimatedNumber value={totalMovies} />
-              </dd>
-            </div>
-            <div>
-              <dt className="text-xs tracking-wide text-fg-secondary">电视节目总计</dt>
-              <dd className="mt-1 font-mono text-2xl font-normal tracking-tight text-white sm:text-3xl">
-                <AnimatedNumber value={totalSeries} />
-              </dd>
-            </div>
-            <div>
-              <dt className="text-xs tracking-wide text-fg-secondary">完成进度</dt>
-              <dd className="mt-1 font-mono text-2xl font-normal tracking-tight text-[var(--accent-light)] sm:text-3xl">
-                <AnimatedNumber value={runtimePercent} />%
-              </dd>
-            </div>
+          <dl className="grid grid-cols-2 gap-x-3 gap-y-3 border-t border-white/10 pt-4 sm:grid-cols-3 lg:min-w-[28rem] lg:grid-cols-5 lg:border-l lg:border-t-0 lg:pl-8 lg:pt-0">
+            {totals.map((stat) => (
+              <div key={stat.label}>
+                <dt className="text-xs tracking-wide text-fg-secondary">{stat.label}</dt>
+                <dd
+                  className={`mt-1 font-mono text-2xl font-normal tracking-tight sm:text-3xl ${
+                    stat.accent ? "text-[var(--accent-light)]" : "text-white"
+                  }`}
+                >
+                  <AnimatedNumber value={Number.isFinite(stat.value) ? stat.value : 0} />
+                  {stat.accent ? "%" : null}
+                </dd>
+              </div>
+            ))}
           </dl>
         </div>
       </div>
@@ -81,7 +88,6 @@ export default function DashboardIntro({
           role="tablist"
           aria-label="仪表板视图"
         >
-          {/* 平滑滑动的物理胶囊底块 */}
           <div
             aria-hidden="true"
             className="pointer-events-none absolute top-1 bottom-1 rounded-full bg-white/15 shadow-[inset_0_1px_0_rgba(255,255,255,0.3),0_4px_14px_rgba(0,0,0,0.25)] transition-transform duration-300 ease-out"

@@ -26,18 +26,23 @@ function card(cover: string): MediaCard {
 }
 
 describe("OverviewBoards", () => {
-  it("renders zero boards when there is no year data", () => {
+  it("renders four boards with empty music/book states when there is no year data", () => {
     render(<OverviewBoards stats={statsFor()} selectedYear="All Time" />);
     expect(screen.getByText("电影看板")).toBeInTheDocument();
     expect(screen.getByText("电视节目看板")).toBeInTheDocument();
+    expect(screen.getByText("音乐看板")).toBeInTheDocument();
+    expect(screen.getByText("图书看板")).toBeInTheDocument();
     expect(screen.getByText("0 / 0 部 · 0%")).toBeInTheDocument();
     expect(screen.getByText("0 / 0 集 · 0%")).toBeInTheDocument();
+    expect(screen.getAllByText("暂无收录")).toHaveLength(2);
+    expect(screen.getByText("暂无收听记录")).toBeInTheDocument();
+    expect(screen.getByText("暂无阅读记录")).toBeInTheDocument();
     expect(
       screen.getAllByRole("link").some((link) => link.getAttribute("href") === "/search?type=movie&status=watched"),
     ).toBe(true);
   });
 
-  it("shows movie totals and season details from the stats object", () => {
+  it("shows movie, track, and book counts with correct units", () => {
     const summary = [
       {
         release_year: "2024",
@@ -52,19 +57,40 @@ describe("OverviewBoards", () => {
         watched_seasons: 3,
         watching_seasons: 1,
         unwatched_seasons: 4,
+        total_tracks: 20,
+        listened_tracks: 8,
+        want_tracks: 5,
+        total_books: 4,
+        read_books: 1,
+        reading_books: 1,
+        want_books: 2,
       } as Summary,
     ];
     render(<OverviewBoards stats={statsFor(summary, "2024")} selectedYear="2024" />);
     expect(screen.getByText("4 / 10 部 · 40%")).toBeInTheDocument();
     expect(screen.getByText("12 / 42 集 · 29%")).toBeInTheDocument();
+    expect(screen.getByText("8 / 20 首 · 40%")).toBeInTheDocument();
+    expect(screen.getByText("1 / 4 本 · 25%")).toBeInTheDocument();
     expect(screen.getByText("3季 · 12集")).toBeInTheDocument();
-    expect(screen.getByText("1季")).toBeInTheDocument();
+    expect(screen.getByText("已听")).toBeInTheDocument();
+    expect(screen.getByText("想听")).toBeInTheDocument();
+    expect(screen.getByText("已读")).toBeInTheDocument();
+    expect(screen.getByText("在读")).toBeInTheDocument();
+    expect(screen.getByText("想读")).toBeInTheDocument();
+    expect(screen.queryByText("暂无收录")).not.toBeInTheDocument();
     expect(
       screen
         .getAllByRole("link")
         .some(
           (link) =>
             link.getAttribute("href") === "/search?type=tv_show&status=want_to_watch&startYear=2024&endYear=2024",
+        ),
+    ).toBe(true);
+    expect(
+      screen
+        .getAllByRole("link")
+        .some(
+          (link) => link.getAttribute("href") === "/search?type=book&status=in_progress&startYear=2024&endYear=2024",
         ),
     ).toBe(true);
   });

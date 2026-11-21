@@ -1,9 +1,9 @@
 import type { CatalogDbMediaType } from "@/lib/media-types";
 
-/** 按媒体分类与观看状态生成搜索链接；指定年份时同时限定起止年份。 */
+/** 按媒体分类与观看／阅读状态生成搜索链接；指定年份时同时限定起止年份。 */
 export function getStatusSearchLink(
   type: CatalogDbMediaType,
-  status: "watched" | "watching" | "want_to_watch",
+  status: "watched" | "watching" | "want_to_watch" | "in_progress",
   year: string,
 ) {
   const params = new URLSearchParams({ type, status });

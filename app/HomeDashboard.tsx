@@ -124,6 +124,8 @@ export default function HomeDashboard({
         selectedYear={selectedYear}
         totalMovies={stats.totalMovies}
         totalSeries={stats.totalSeries}
+        totalTracks={stats.totalTracks}
+        totalBooks={stats.totalBooks}
         runtimePercent={stats.runtimePercent}
         tabs={tabs}
         tabIds={tabIds}
