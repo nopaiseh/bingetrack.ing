@@ -5,7 +5,7 @@ import {
   countTracksForReleaseYear,
   songEffectiveReleaseYear,
   type SongSearchRow,
-} from "@/lib/search/song-release-year";
+} from "@/tests/helpers/song-release-year";
 import { buildMediaSearchQuery, hasOnlyKnownFilterValues } from "@/lib/api/search-state";
 import { parseMediaSearchParams } from "@/lib/api/media-params";
 
