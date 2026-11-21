@@ -2,7 +2,7 @@
 
 import { useRef, useState, useSyncExternalStore } from "react";
 import Image from "next/image";
-import Link from "next/link";
+import HoverPrefetchLink from "@/components/HoverPrefetchLink";
 import LetterTile from "@/components/LetterTile";
 import type { UpcomingRelease } from "@/lib/types";
 import { daysUntil, pickUpcoming, sgtDateKey } from "@/lib/upcoming";
@@ -205,7 +205,7 @@ export default function UpcomingHero({ items, renderedOn }: UpcomingHeroProps) {
                 {countdown.unit || labels.verb}
               </span>
             </p>
-            <Link
+            <HoverPrefetchLink
               href={currentItem.href}
               className="button-accent group inline-flex h-11 items-center gap-2 rounded-full px-6 text-sm font-bold focus-ring active:scale-[0.98]"
             >
@@ -214,7 +214,7 @@ export default function UpcomingHero({ items, renderedOn }: UpcomingHeroProps) {
                 className="i-material-symbols-arrow-forward-rounded size-4 transition-transform group-hover:translate-x-1"
                 aria-hidden="true"
               />
-            </Link>
+            </HoverPrefetchLink>
           </div>
         </div>
 
@@ -233,7 +233,7 @@ export default function UpcomingHero({ items, renderedOn }: UpcomingHeroProps) {
           }}
         >
           <div key={`poster-${currentItem.id}`} className="relative aspect-[2/3] w-full">
-            <Link
+            <HoverPrefetchLink
               href={currentItem.href}
               aria-label={`查看《${currentItem.title}》详情`}
               className="group/poster relative block h-full w-full overflow-hidden rounded-2xl ring-1 ring-white/15 focus-ring"
@@ -251,7 +251,7 @@ export default function UpcomingHero({ items, renderedOn }: UpcomingHeroProps) {
               ) : (
                 <LetterTile title={currentItem.title} className="h-full w-full rounded-2xl" />
               )}
-            </Link>
+            </HoverPrefetchLink>
             {hasMultiple && (
               <>
                 <button

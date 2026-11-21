@@ -2,7 +2,7 @@
 
 import { useLayoutEffect, useRef, useState, type CSSProperties, type KeyboardEvent } from "react";
 import Image from "next/image";
-import Link from "next/link";
+import HoverPrefetchLink from "@/components/HoverPrefetchLink";
 import LetterTile from "@/components/LetterTile";
 import { RAIL_POSTER_SIZES } from "@/lib/poster-image-sizes";
 import { scrollBehavior } from "@/lib/scroll-behavior";
@@ -131,7 +131,7 @@ function ContinueWatchingCardLink({ item, eager }: { item: ContinueWatchingCard;
   const progress = item.seasonProgress;
 
   return (
-    <Link
+    <HoverPrefetchLink
       href={continueWatchingHref(item)}
       data-continue-card=""
       className="surface-card interactive-media-card group flex w-[calc((100%-2*var(--cw-gap))/3.05)] flex-none snap-start flex-col overflow-hidden rounded-xl focus-ring sm:w-36"
@@ -175,7 +175,7 @@ function ContinueWatchingCardLink({ item, eager }: { item: ContinueWatchingCard;
           </div>
         </div>
       </div>
-    </Link>
+    </HoverPrefetchLink>
   );
 }
 

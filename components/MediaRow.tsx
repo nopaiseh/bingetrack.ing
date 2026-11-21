@@ -2,8 +2,8 @@
 
 import { useLayoutEffect, useRef, useState } from "react";
 import Image from "next/image";
-import Link from "next/link";
 import { MediaCard } from "@/lib/types";
+import HoverPrefetchLink from "@/components/HoverPrefetchLink";
 import LetterTile from "./LetterTile";
 import MediaCardBody from "./MediaCardBody";
 import MediaCardStatusBadge from "./MediaCardStatusBadge";
@@ -114,12 +114,12 @@ export default function MediaRow({
       <div className="flex justify-between items-end mb-5 pr-1 border-b border-white/10 pb-3">
         <h2 className="text-xl font-bold tracking-wide text-white">{title}</h2>
         {viewAllLink && (
-          <Link
+          <HoverPrefetchLink
             href={viewAllLink}
             className="focus-ring rounded-sm text-sm text-fg-secondary uppercase tracking-wider transition-all duration-300 hover:text-[var(--accent-hover)]"
           >
             查看全部 &rarr;
-          </Link>
+          </HoverPrefetchLink>
         )}
       </div>
 
@@ -171,7 +171,7 @@ export default function MediaRow({
                     ? "shows"
                     : "movies";
               return (
-                <Link
+                <HoverPrefetchLink
                   href={`/${mediaType}/${media.id}`}
                   key={media.id}
                   className="surface-card interactive-media-card group flex w-40 flex-none snap-start cursor-pointer flex-col overflow-hidden rounded-xl focus-ring last:snap-end sm:w-48"
@@ -183,7 +183,7 @@ export default function MediaRow({
                     preload={eagerCount > 0 && index === 0}
                     hideStatusBadge={hideStatusBadge}
                   />
-                </Link>
+                </HoverPrefetchLink>
               );
             },
           )}
