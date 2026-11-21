@@ -303,8 +303,13 @@ test("无结果时给出说明、清除筛选和建议，清除按钮留在输�
   const empty = screen.getByRole("status");
   expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("没有找到");
   expect(empty).toHaveTextContent("没有匹配的作品");
-  expect(empty).toHaveTextContent("电影、电视节目");
+  expect(empty).toHaveTextContent("电影、电视节目、音乐、图书或人物");
   expect(empty).toHaveTextContent("试试这些");
+  expect(within(empty).getByRole("button", { name: "音乐" })).toBeInTheDocument();
+  expect(screen.getByRole("textbox", { name: "搜索媒体" })).toHaveAttribute(
+    "placeholder",
+    "搜索电影、电视节目、音乐、图书、导演或演员...",
+  );
   expect(screen.getByRole("button", { name: "清除筛选" })).toHaveClass("button-accent");
 
   fireEvent.click(screen.getByRole("button", { name: "清除筛选" }));
@@ -323,6 +328,18 @@ test("无结果建议会换成对应筛选并清掉关键词", async () => {
   await waitFor(() => {
     const params = new URLSearchParams(window.location.search);
     expect(params.get("type")).toBe("movie");
+    expect(params.has("q")).toBe(false);
+  });
+});
+
+test("无结果时音乐建议会筛选专辑并清掉关键词", async () => {
+  window.history.replaceState(null, "", "/search?q=没有这张");
+  vi.mocked(fetch).mockImplementation(async () => new Response(JSON.stringify({ rows: [], total: 0 })));
+  render(<SearchClient initialOptions={options} initialResult={{ ...resultFor(window.location.search), total: 0 }} />);
+  fireEvent.click(within(screen.getByRole("status")).getByRole("button", { name: "音乐" }));
+  await waitFor(() => {
+    const params = new URLSearchParams(window.location.search);
+    expect(params.get("type")).toBe("album");
     expect(params.has("q")).toBe(false);
   });
 });
