@@ -12,27 +12,27 @@
 
 ## 1. 目录结构
 
-| 路径 | 放什么 |
-| --- | --- |
-| `app/` | App Router：公开页（如 `movies/`、`shows/`、`albums/`、`books/`、`search/`）、`app/api` Route Handler、`app/auth`、路由组 `app/(admin)/`（`/manage`、`/settings`，组名不进 URL） |
-| `components/` | 多页共用 UI；按域分子目录（如 `dashboard/`、`search/`） |
-| `lib/` | **生产**代码：查询、映射、认证、管理逻辑、共享类型与工具 |
-| `lib/functions/` | 公开数据读取、`unstable_cache`、mapper（经视图统一映射） |
-| `lib/admin/` | 管理端解析、列表、报告、保存与缓存失效 |
-| `lib/api/` | API／搜索参数校验与 URL 状态（不含直接 DB 访问） |
-| `lib/auth/` | 浏览器与服务端认证客户端、空闲登出 |
-| `lib/supabase/` | 无用户会话的公开服务端客户端（`public-server.ts`） |
-| `lib/types/` | 共享类型；新增媒体字段时与 mapper、迁移同步 |
-| `lib/media-types.ts` | 媒体类型单一配置源（见第 3 节） |
-| `supabase/migrations/` | `public` schema 的唯一结构来源 |
-| `supabase/tests/` | pgTAP |
-| `supabase/fixtures/` | 本地／CI 浏览器夹具，禁止导入生产 |
-| `tests/` | Vitest 单元与组件测试（`*.test.ts(x)`，入口见 `vitest.config.mts`） |
-| `tests/helpers/` | **仅测试用**辅助代码（例：`song-release-year.ts`）；**不要**放进 `lib/` |
-| `e2e/` | Playwright（`*.spec.ts`） |
-| `scripts/` | 环境检查、站长工具、smoke、依赖补丁等 |
-| `docs/` | 运维与设计说明 |
-| 根目录 | `proxy.ts`、`instrumentation*.ts`、Sentry／Uno／ESLint／Prettier 等配置 |
+| 路径                   | 放什么                                                                                                                                                                           |
+| ---------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `app/`                 | App Router：公开页（如 `movies/`、`shows/`、`albums/`、`books/`、`search/`）、`app/api` Route Handler、`app/auth`、路由组 `app/(admin)/`（`/manage`、`/settings`，组名不进 URL） |
+| `components/`          | 多页共用 UI；按域分子目录（如 `dashboard/`、`search/`）                                                                                                                          |
+| `lib/`                 | **生产**代码：查询、映射、认证、管理逻辑、共享类型与工具                                                                                                                         |
+| `lib/functions/`       | 公开数据读取、`unstable_cache`、mapper（经视图统一映射）                                                                                                                         |
+| `lib/admin/`           | 管理端解析、列表、报告、保存与缓存失效                                                                                                                                           |
+| `lib/api/`             | API／搜索参数校验与 URL 状态（不含直接 DB 访问）                                                                                                                                 |
+| `lib/auth/`            | 浏览器与服务端认证客户端、空闲登出                                                                                                                                               |
+| `lib/supabase/`        | 无用户会话的公开服务端客户端（`public-server.ts`）                                                                                                                               |
+| `lib/types/`           | 共享类型；新增媒体字段时与 mapper、迁移同步                                                                                                                                      |
+| `lib/media-types.ts`   | 媒体类型单一配置源（见第 3 节）                                                                                                                                                  |
+| `supabase/migrations/` | `public` schema 的唯一结构来源                                                                                                                                                   |
+| `supabase/tests/`      | pgTAP                                                                                                                                                                            |
+| `supabase/fixtures/`   | 本地／CI 浏览器夹具，禁止导入生产                                                                                                                                                |
+| `tests/`               | Vitest 单元与组件测试（`*.test.ts(x)`，入口见 `vitest.config.mts`）                                                                                                              |
+| `tests/helpers/`       | **仅测试用**辅助代码（例：`song-release-year.ts`）；**不要**放进 `lib/`                                                                                                          |
+| `e2e/`                 | Playwright（`*.spec.ts`）                                                                                                                                                        |
+| `scripts/`             | 环境检查、站长工具、smoke、依赖补丁等                                                                                                                                            |
+| `docs/`                | 运维与设计说明                                                                                                                                                                   |
+| 根目录                 | `proxy.ts`、`instrumentation*.ts`、Sentry／Uno／ESLint／Prettier 等配置                                                                                                          |
 
 两条约定（与 README 一致）：
 
@@ -45,24 +45,24 @@
 
 按仓库现状归纳，新代码对齐同一套：
 
-| 对象 | 约定 | 示例 |
-| --- | --- | --- |
-| 源／模块文件 | kebab-case | `media-types.ts`、`revalidate-media.ts`、`format-runtime.ts` |
-| React 组件文件 | PascalCase | `MediaCardBody.tsx`、`ContinueWatchingRail.tsx` |
-| 同域非组件辅助 | 可与组件并列的 kebab 或同目录工具 | `dashboard-links.ts`、`search-model.ts` |
-| Vitest | 主题 + `.test.ts`／`.test.tsx` | `media-repo.test.ts`、`home-dashboard.test.tsx` |
-| Playwright | 主题 + `.spec.ts` | `core-journeys.spec.ts`、`admin-access.spec.ts` |
-| 迁移 | `YYYYMMDDHHMMSS_snake_name.sql`，时间戳递增 | `20261121060000_v_all_media_music_coalesce_dates.sql` |
-| pgTAP | snake_case + `.test.sql` | `permission_guard.test.sql`、`music_atomic_save.test.sql` |
-| TS 函数／变量 | camelCase | `searchMediaServer`、`requireOwner`、`parseMediaSearchParams` |
-| TS 类型／组件 | PascalCase | `PublicMediaType`、`MediaInformation` |
-| 导出常量 | UPPER_SNAKE 或配置对象 | `CATALOG_DB_TYPES`、`SEARCH_DB_TYPES`、`MEDIA_TYPE_DEFINITIONS` |
-| 表／列／枚举值 | snake_case | `media_items`、`tv_show`、`want_to_watch`、`in_progress` |
-| 视图 | 多为 `v_` 前缀 | `v_all_media`、`v_manage_media_order`、`v_media_season_summaries`、`v_report_*`；例外如 `release_year_stats` |
-| SQL 函数 | snake_case；参数常用 `p_` | `is_site_owner()`、`manage_save_media(p_data)`、`search_media(...)`、`get_media_stats(p_media_type)` |
-| 管理 RPC | 现行写入 `manage_*`；`admin_*` 为兼容旧调用保留 | 见 [manage-workspace.md](manage-workspace.md) |
-| Server Action 文件 | `actions.ts` 或 `*-actions.ts` | `list-actions.ts`、`report-actions.ts`、`reference-actions.ts` |
-| RLS 策略名 | 英文短句 | `"Allow SELECT from website"`、`"Owner insert"` |
+| 对象               | 约定                                            | 示例                                                                                                         |
+| ------------------ | ----------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| 源／模块文件       | kebab-case                                      | `media-types.ts`、`revalidate-media.ts`、`format-runtime.ts`                                                 |
+| React 组件文件     | PascalCase                                      | `MediaCardBody.tsx`、`ContinueWatchingRail.tsx`                                                              |
+| 同域非组件辅助     | 可与组件并列的 kebab 或同目录工具               | `dashboard-links.ts`、`search-model.ts`                                                                      |
+| Vitest             | 主题 + `.test.ts`／`.test.tsx`                  | `media-repo.test.ts`、`home-dashboard.test.tsx`                                                              |
+| Playwright         | 主题 + `.spec.ts`                               | `core-journeys.spec.ts`、`admin-access.spec.ts`                                                              |
+| 迁移               | `YYYYMMDDHHMMSS_snake_name.sql`，时间戳递增     | `20261121060000_v_all_media_music_coalesce_dates.sql`                                                        |
+| pgTAP              | snake_case + `.test.sql`                        | `permission_guard.test.sql`、`music_atomic_save.test.sql`                                                    |
+| TS 函数／变量      | camelCase                                       | `searchMediaServer`、`requireOwner`、`parseMediaSearchParams`                                                |
+| TS 类型／组件      | PascalCase                                      | `PublicMediaType`、`MediaInformation`                                                                        |
+| 导出常量           | UPPER_SNAKE 或配置对象                          | `CATALOG_DB_TYPES`、`SEARCH_DB_TYPES`、`MEDIA_TYPE_DEFINITIONS`                                              |
+| 表／列／枚举值     | snake_case                                      | `media_items`、`tv_show`、`want_to_watch`、`in_progress`                                                     |
+| 视图               | 多为 `v_` 前缀                                  | `v_all_media`、`v_manage_media_order`、`v_media_season_summaries`、`v_report_*`；例外如 `release_year_stats` |
+| SQL 函数           | snake_case；参数常用 `p_`                       | `is_site_owner()`、`manage_save_media(p_data)`、`search_media(...)`、`get_media_stats(p_media_type)`         |
+| 管理 RPC           | 现行写入 `manage_*`；`admin_*` 为兼容旧调用保留 | 见 [manage-workspace.md](manage-workspace.md)                                                                |
+| Server Action 文件 | `actions.ts` 或 `*-actions.ts`                  | `list-actions.ts`、`report-actions.ts`、`reference-actions.ts`                                               |
+| RLS 策略名         | 英文短句                                        | `"Allow SELECT from website"`、`"Owner insert"`                                                              |
 
 路径别名：`@/` → 仓库根。测试专用模块：`@/tests/helpers/...`。
 
@@ -72,14 +72,14 @@
 
 单一配置源：[`lib/media-types.ts`](../lib/media-types.ts)。
 
-| 导出 | 用途 |
-| --- | --- |
-| `MEDIA_TYPE_DEFINITIONS` | 路由段、中文标签、封面比例、元数据字段、追踪文案、schema.org、enabled／admin 开关 |
-| `CATALOG_DB_TYPES` | 有公开顶层路由且启用的 DB 类型（当前：`movie`、`tv_show`、`album`、`book`） |
-| `SEARCH_DB_TYPES` | 公开搜索 `type=` 白名单（目录类型 + `music`） |
-| `PUBLIC_MEDIA_TYPES`／`ENABLED_PUBLIC_CATALOG_PATHS` | 公开路由段与路径 |
-| `ADMIN_BULK_DB_TYPES`／`mediaTypes` | 管理端批量与表单标签 |
-| `isCatalogDbMediaType`／`isSearchDbMediaType`／`publicRouteToDbType` 等 | 校验与路由↔DB 转换 |
+| 导出                                                                    | 用途                                                                              |
+| ----------------------------------------------------------------------- | --------------------------------------------------------------------------------- |
+| `MEDIA_TYPE_DEFINITIONS`                                                | 路由段、中文标签、封面比例、元数据字段、追踪文案、schema.org、enabled／admin 开关 |
+| `CATALOG_DB_TYPES`                                                      | 有公开顶层路由且启用的 DB 类型（当前：`movie`、`tv_show`、`album`、`book`）       |
+| `SEARCH_DB_TYPES`                                                       | 公开搜索 `type=` 白名单（目录类型 + `music`）                                     |
+| `PUBLIC_MEDIA_TYPES`／`ENABLED_PUBLIC_CATALOG_PATHS`                    | 公开路由段与路径                                                                  |
+| `ADMIN_BULK_DB_TYPES`／`mediaTypes`                                     | 管理端批量与表单标签                                                              |
+| `isCatalogDbMediaType`／`isSearchDbMediaType`／`publicRouteToDbType` 等 | 校验与路由↔DB 转换                                                                |
 
 **禁止**在路由、API、组件、SQL 调用处另写一套类型字面量列表。新增类型：先改本文件，再补迁移、mapper 与 `lib/types`。
 
@@ -120,11 +120,11 @@
 
 ## 5. 测试要求
 
-| 改动范围 | 要求 |
-| --- | --- |
-| 业务逻辑（`lib/`、Route Handler、Server Action、共享组件行为） | 补／改 Vitest：`npm test` 或 `npm run test:coverage` |
-| 数据库结构、RPC、视图、RLS、权限 | 补／改 pgTAP：`supabase test db` |
-| 关键用户流程 | 视情况补 `e2e/`；管理 E2E **仅**对本地 Supabase，禁止打生产库 |
+| 改动范围                                                       | 要求                                                          |
+| -------------------------------------------------------------- | ------------------------------------------------------------- |
+| 业务逻辑（`lib/`、Route Handler、Server Action、共享组件行为） | 补／改 Vitest：`npm test` 或 `npm run test:coverage`          |
+| 数据库结构、RPC、视图、RLS、权限                               | 补／改 pgTAP：`supabase test db`                              |
+| 关键用户流程                                                   | 视情况补 `e2e/`；管理 E2E **仅**对本地 Supabase，禁止打生产库 |
 
 pgTAP：优先使用 `select plan(N)`，且 **N 与断言条数一致**；只有沿用既有风格时才用 `no_plan()`（如部分 `admin_schema`／`manage_reports`）。改断言数时同步改 `plan`。
 
