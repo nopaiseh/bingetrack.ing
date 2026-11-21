@@ -1,7 +1,8 @@
 -- 疑似名字「确认无误」跟进（#230 架构评审）：
 -- 1. credit 确认键纳入角色名，避免同一演员同一作品多个角色共用一行、互相覆盖。
--- 2. 拆出 person_id / media_item_id / character_name / credit_role，并加 FK ON DELETE CASCADE，
---    作品或人物删除时确认行随之清除；同时清理既有孤儿行。
+-- 2. 拆出 person_id / media_item_id / character_name，并只对 people、media_items 加 FK ON DELETE CASCADE。
+--    故意不加 media_credits FK：admin_save_media / manage_merge_people 会删光再插入演职，级联会误删确认。
+--    视图已要求演职行存在且角色名匹配，演职短暂消失的确认行无害，同名角色写回后自动重新生效。
 -- 合并后会通过 Supabase GitHub 集成自动上 prod。
 
 -- 与视图 / 应用共用的 item_id 构造：角色名用 hex，避免「:」与大小写问题。
@@ -33,8 +34,7 @@ grant execute on function public.manage_name_issue_credit_item_id(uuid, uuid, te
 alter table public.name_issue_confirmations
   add column if not exists person_id uuid,
   add column if not exists media_item_id uuid,
-  add column if not exists character_name text,
-  add column if not exists credit_role public.person_role;
+  add column if not exists character_name text;
 
 -- 回填人物确认：people:<uuid>
 update public.name_issue_confirmations
@@ -49,7 +49,6 @@ set
   media_item_id = mc.media_item_id,
   person_id = mc.person_id,
   character_name = mc.character_name,
-  credit_role = mc.role,
   item_id = public.manage_name_issue_credit_item_id(mc.media_item_id, mc.person_id, mc.character_name)
 from public.media_credits as mc
 where c.item_id ~* '^credit:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
@@ -58,7 +57,8 @@ where c.item_id ~* '^credit:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9
   and mc.role = 'actor'::public.person_role
   and mc.character_name is not null;
 
--- 一次性清理孤儿：人物/作品已不存在，或旧 credit 键找不到对应演职行，或列未填全。
+-- 一次性清理孤儿：人物/作品已不存在，或旧 credit 键无法补全结构化列。
+-- 不因缺少 media_credits 行而删除（保存作品时演职会短暂消失，确认应保留）。
 delete from public.name_issue_confirmations c
 where c.person_id is null
   or not exists (select 1 from public.people p where p.id = c.person_id)
@@ -67,15 +67,7 @@ where c.person_id is null
     and (
       c.media_item_id is null
       or c.character_name is null
-      or c.credit_role is null
       or not exists (select 1 from public.media_items m where m.id = c.media_item_id)
-      or not exists (
-        select 1
-        from public.media_credits mc
-        where mc.media_item_id = c.media_item_id
-          and mc.person_id = c.person_id
-          and mc.role = c.credit_role
-      )
     )
   );
 
@@ -86,8 +78,8 @@ alter table public.name_issue_confirmations
   drop constraint if exists name_issue_confirmations_shape_check;
 alter table public.name_issue_confirmations
   add constraint name_issue_confirmations_shape_check check (
-    (media_item_id is null and character_name is null and credit_role is null)
-    or (media_item_id is not null and character_name is not null and credit_role is not null)
+    (media_item_id is null and character_name is null)
+    or (media_item_id is not null and character_name is not null)
   );
 
 alter table public.name_issue_confirmations
@@ -102,14 +94,11 @@ alter table public.name_issue_confirmations
   add constraint name_issue_confirmations_media_item_id_fkey
   foreign key (media_item_id) references public.media_items (id) on delete cascade;
 
--- MATCH SIMPLE：人物确认行的 media/role 为 null 时不校验；演职确认行引用 media_credits，删除演职即级联清除。
+-- 若曾加过 media_credits 级联 FK / credit_role（评审前草稿），一并去掉。
 alter table public.name_issue_confirmations
   drop constraint if exists name_issue_confirmations_media_credit_fkey;
 alter table public.name_issue_confirmations
-  add constraint name_issue_confirmations_media_credit_fkey
-  foreign key (media_item_id, person_id, credit_role)
-  references public.media_credits (media_item_id, person_id, role)
-  on delete cascade;
+  drop column if exists credit_role;
 
 create index if not exists name_issue_confirmations_media_item_id_idx
   on public.name_issue_confirmations using btree (media_item_id)
@@ -130,7 +119,6 @@ begin
     new.person_id := substr(new.item_id, 8)::uuid;
     new.media_item_id := null;
     new.character_name := null;
-    new.credit_role := null;
     new.item_id := public.manage_name_issue_people_item_id(new.person_id);
     return new;
   end if;
@@ -142,7 +130,6 @@ begin
     new.media_item_id := media_text::uuid;
     new.person_id := person_text::uuid;
     new.character_name := convert_from(decode(character_hex, 'hex'), 'UTF8');
-    new.credit_role := 'actor'::public.person_role;
     new.item_id := public.manage_name_issue_credit_item_id(new.media_item_id, new.person_id, new.character_name);
     return new;
   end if;

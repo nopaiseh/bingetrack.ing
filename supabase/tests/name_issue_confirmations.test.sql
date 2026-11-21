@@ -1,7 +1,7 @@
 begin;
-select no_plan();
+select plan(14);
 
--- 仅在回滚事务内构造样本，验证确认键含角色名、互不覆盖，以及删除作品/人物时级联清理。
+-- 仅在回滚事务内构造样本，验证确认键含角色名、互不覆盖，保存作品不丢确认，以及删除作品/人物时级联清理。
 insert into auth.users(id,email) values
   ('fd000000-0000-4000-8000-000000000001','owner@test.invalid');
 insert into public.site_owner(user_id) values ('fd000000-0000-4000-8000-000000000001');
@@ -154,6 +154,42 @@ select is(
   ),
   1,
   're-confirming the same credit overwrites that row only'
+);
+
+-- 保存作品会删光再插入演职，确认行必须保留（因此不加 media_credits 级联 FK）。
+set local role authenticated;
+do $$ begin perform set_config('request.jwt.claim.sub','fd000000-0000-4000-8000-000000000001',true); end $$;
+select lives_ok(
+  $$select public.admin_save_media(jsonb_build_object(
+    'id','fd000000-0000-4000-8000-000000000100',
+    'type','movie',
+    'title','Confirm movie',
+    'status','want_to_watch',
+    'rating',null,
+    'genres','[]'::jsonb,
+    'languages','[]'::jsonb,
+    'regions','[]'::jsonb,
+    'directors','[]'::jsonb,
+    'actors',jsonb_build_array(jsonb_build_object(
+      'id','fd000000-0000-4000-8000-000000000201',
+      'name','Confirm Actor',
+      'character','警察/卧底'
+    ))
+  ))$$,
+  'owner can re-save the same cast through admin_save_media'
+);
+reset role;
+
+select ok(
+  exists(
+    select 1 from public.name_issue_confirmations
+    where item_id = public.manage_name_issue_credit_item_id(
+      'fd000000-0000-4000-8000-000000000100',
+      'fd000000-0000-4000-8000-000000000201',
+      '警察/卧底'
+    )
+  ),
+  're-saving media keeps the character confirmation row'
 );
 
 -- 删除作品 / 人物时确认行随之清除。

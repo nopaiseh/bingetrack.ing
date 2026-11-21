@@ -1,6 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { confirmSuspiciousName } from "@/app/(admin)/manage/report-actions";
-import { creditNameIssueItemId, peopleNameIssueItemId } from "@/lib/admin/name-issue-item-id";
 import { requireOwner } from "@/lib/auth/server";
 import { redirect } from "next/navigation";
 
@@ -11,12 +10,8 @@ vi.mock("@/lib/report-error", async (importOriginal) => {
 vi.mock("@/lib/auth/server", () => ({ requireOwner: vi.fn() }));
 vi.mock("next/navigation", () => ({ redirect: vi.fn() }));
 
-const peopleItem = peopleNameIssueItemId("22222222-2222-4222-8222-222222222222");
-const creditItem = creditNameIssueItemId(
-  "44444444-4444-4444-8444-444444444444",
-  "22222222-2222-4222-8222-222222222222",
-  "英雄/反派",
-);
+const peopleItem = "people:22222222-2222-4222-8222-222222222222";
+const creditItem = `credit:44444444-4444-4444-8444-444444444444:22222222-2222-4222-8222-222222222222:${Buffer.from("英雄/反派", "utf8").toString("hex")}`;
 const deleteEq = vi.fn();
 const upsert = vi.fn();
 const from = vi.fn(() => ({
