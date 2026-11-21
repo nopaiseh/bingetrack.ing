@@ -108,13 +108,7 @@ export function DeleteDialog({
         <input type="hidden" name="id" value={item.id ?? ""} />
         <label>
           输入完整标题以确认删除
-          <input
-            ref={confirmInput}
-            name="confirm_title"
-            required
-            autoComplete="off"
-            disabled={pending || deleting}
-          />
+          <input ref={confirmInput} name="confirm_title" required autoComplete="off" disabled={pending || deleting} />
         </label>
         <ActionNotice state={deleteState} />
         <div className="flex flex-wrap justify-end gap-3">

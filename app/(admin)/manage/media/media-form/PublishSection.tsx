@@ -190,12 +190,7 @@ export function PublishSection({
             >
               {isMusicTrack ? "听过" : "已看"}
             </button>
-            <button
-              type="button"
-              className="edit-segment-btn"
-              aria-pressed={!rated}
-              onClick={() => onSetRating("")}
-            >
+            <button type="button" className="edit-segment-btn" aria-pressed={!rated} onClick={() => onSetRating("")}>
               {isMusicTrack ? "没听过" : "未看"}
             </button>
           </div>
@@ -261,9 +256,7 @@ export function PublishSection({
               </button>
             ))}
           </div>
-          {item?.rating != null ? (
-            <p className="edit-hint font-mono">当前 {Number(item.rating).toFixed(1)}</p>
-          ) : null}
+          {item?.rating != null ? <p className="edit-hint font-mono">当前 {Number(item.rating).toFixed(1)}</p> : null}
           <p className="edit-hint">
             {isAlbum
               ? "专辑的收听状态由下属曲目自动汇总决定，不可在此直接删改。"

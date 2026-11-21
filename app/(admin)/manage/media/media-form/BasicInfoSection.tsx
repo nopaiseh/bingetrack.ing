@@ -38,16 +38,7 @@ export function BasicInfoSection({
   dateLabel: string;
   onTypeChange: (type: ManagedMediaType) => void;
 }) {
-  const {
-    type,
-    isMusicTrack,
-    isAlbum,
-    isBook,
-    isChild,
-    hasReleaseDate,
-    hasRuntime,
-    showTypeSelect,
-  } = flags;
+  const { type, isMusicTrack, isAlbum, isBook, isChild, hasReleaseDate, hasRuntime, showTypeSelect } = flags;
 
   return (
     <section className="edit-card edit-basic" aria-labelledby="edit-basic-heading">
@@ -64,9 +55,7 @@ export function BasicInfoSection({
       {type === "tv_episode" ? (
         <p className="edit-note">已去掉图片输入。电影和电视节目仍可上传海报与剧照；单集只填文字资料。</p>
       ) : null}
-      {isMusicTrack ? (
-        <p className="edit-note">曲序在同一专辑内不可重复；时长按整数秒填写，可留空。</p>
-      ) : null}
+      {isMusicTrack ? <p className="edit-note">曲序在同一专辑内不可重复；时长按整数秒填写，可留空。</p> : null}
       <div className="edit-fields">
         {type === "tv_episode" && ancestorName ? (
           <div className="span-3">
@@ -130,14 +119,7 @@ export function BasicInfoSection({
             <label htmlFor="field-title">中文标题</label>
             <span className="edit-required">必填</span>
           </div>
-          <input
-            id="field-title"
-            name="title"
-            {...titleField}
-            maxLength={300}
-            placeholder="作品名称"
-            required
-          />
+          <input id="field-title" name="title" {...titleField} maxLength={300} placeholder="作品名称" required />
         </div>
         <div className={type === "tv_episode" ? "span-2" : "span-3"}>
           <label htmlFor="field-alt-title" className="mb-1.5">

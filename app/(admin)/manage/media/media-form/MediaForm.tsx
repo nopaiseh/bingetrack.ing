@@ -238,12 +238,7 @@ export default function MediaForm({
               {showFilmCast ? <FilmCastSection item={item} resetKey={resetKey} /> : null}
 
               {showMusicPeople ? (
-                <MusicPeopleSection
-                  item={item}
-                  resetKey={resetKey}
-                  isAlbum={isAlbum}
-                  isMusicTrack={isMusicTrack}
-                />
+                <MusicPeopleSection item={item} resetKey={resetKey} isAlbum={isAlbum} isMusicTrack={isMusicTrack} />
               ) : null}
 
               {isBook ? <BookAuthorsSection item={item} resetKey={resetKey} /> : null}
