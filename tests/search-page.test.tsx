@@ -14,7 +14,10 @@ vi.mock("next/navigation", () => ({
 }));
 vi.mock("@/lib/functions/cached-media", () => ({ searchCachedMedia: vi.fn() }));
 vi.mock("@/lib/functions/media-repo", () => ({ searchMediaServer: vi.fn() }));
-vi.mock("@/lib/report-error", () => ({ reportHandledError: vi.fn() }));
+vi.mock("@/lib/report-error", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/lib/report-error")>();
+  return { ...actual, reportHandledError: vi.fn() };
+});
 vi.mock("@/app/search/SearchClient", () => ({ default: () => null }));
 
 import SearchPage, { generateMetadata } from "@/app/search/page";

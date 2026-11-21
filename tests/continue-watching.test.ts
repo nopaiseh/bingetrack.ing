@@ -294,7 +294,10 @@ describe("getContinueWatching", () => {
     state.results = [{ data: null, error }];
     const log = vi.spyOn(console, "error").mockImplementation(() => {});
     try {
-      await expect(getContinueWatching()).rejects.toMatchObject({ name: "MediaRepositoryError", cause: error });
+      await expect(getContinueWatching()).rejects.toMatchObject({
+        name: "MediaRepositoryError",
+        cause: expect.objectContaining(error),
+      });
     } finally {
       log.mockRestore();
     }

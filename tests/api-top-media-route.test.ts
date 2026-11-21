@@ -4,7 +4,10 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 vi.mock("@/lib/functions/cached-media", () => ({
   getCachedTopMediaServer: vi.fn(),
 }));
-vi.mock("@/lib/report-error", () => ({ reportHandledError: vi.fn() }));
+vi.mock("@/lib/report-error", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/lib/report-error")>();
+  return { ...actual, reportHandledError: vi.fn() };
+});
 
 import { GET } from "@/app/api/top-media/route";
 import { getCachedTopMediaServer } from "@/lib/functions/cached-media";

@@ -15,15 +15,19 @@ import {
   FetchMediaListOptions,
 } from "@/lib/types";
 import { CATALOG_DB_TYPES, publicMediaDetailPath, publicPathForDbType } from "@/lib/media-types";
-import { reportHandledError } from "@/lib/report-error";
+import { normalizeDbErrorCause, reportHandledError } from "@/lib/report-error";
 import { nextUnwatchedEpisodeNumber } from "@/lib/season-browse";
 
 // 统一为查询失败附加操作名称和原始错误，让页面区分加载失败与查无记录。
 export class MediaRepositoryError extends Error {
-  /** 创建包含操作名称和原始原因的仓库错误，保留异常链便于定位失败查询。 */
+  /** 失败的仓库操作名（如 fetch media list），供 Sentry 标注查询／视图。 */
+  readonly operation: string;
+
+  /** 创建包含操作名称和原始原因的仓库错误；PostgREST 对象会收成 Error 挂到 cause 上。 */
   constructor(operation: string, cause?: unknown) {
-    super(`Media repository operation failed: ${operation}`, { cause });
+    super(`Media repository operation failed: ${operation}`, { cause: normalizeDbErrorCause(cause) });
     this.name = "MediaRepositoryError";
+    this.operation = operation;
   }
 }
 

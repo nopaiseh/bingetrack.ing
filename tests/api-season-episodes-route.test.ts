@@ -5,7 +5,10 @@ vi.mock("@/lib/functions/cached-media", () => ({
   getCachedSeasonEpisodes: vi.fn(),
   getCachedSeasonNextEpisodeNumber: vi.fn(),
 }));
-vi.mock("@/lib/report-error", () => ({ reportHandledError: vi.fn() }));
+vi.mock("@/lib/report-error", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/lib/report-error")>();
+  return { ...actual, reportHandledError: vi.fn() };
+});
 
 import { GET } from "@/app/api/shows/[id]/seasons/[seasonId]/episodes/route";
 import { getCachedSeasonEpisodes, getCachedSeasonNextEpisodeNumber } from "@/lib/functions/cached-media";

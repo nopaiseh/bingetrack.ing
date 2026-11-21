@@ -80,7 +80,7 @@ test("watch progress failures keep their original cause", async () => {
   try {
     await expect(getSeasonNextEpisodeNumber(id, id)).rejects.toMatchObject({
       name: "MediaRepositoryError",
-      cause: error,
+      cause: expect.objectContaining(error),
     });
   } finally {
     log.mockRestore();
@@ -92,7 +92,10 @@ test("real database failures retain their original cause", async () => {
   state.result.error = error;
   const log = vi.spyOn(console, "error").mockImplementation(() => {});
   try {
-    await expect(getMediaById(id)).rejects.toMatchObject({ name: "MediaRepositoryError", cause: error });
+    await expect(getMediaById(id)).rejects.toMatchObject({
+      name: "MediaRepositoryError",
+      cause: expect.objectContaining(error),
+    });
     await expect(getSeasonEpisodes(id, id, 1, 10)).rejects.toBeInstanceOf(MediaRepositoryError);
   } finally {
     log.mockRestore();
