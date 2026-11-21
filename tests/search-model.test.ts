@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  TYPE_FILTER_ORDER,
   TYPE_OPTIONS,
   countActiveFilters,
   optionLabel,
@@ -11,12 +12,17 @@ import {
   statusFilterOptions,
 } from "@/components/search/search-model";
 import { EMPTY_FILTERS } from "@/components/search/search-model";
+import { SEARCH_DB_TYPES } from "@/lib/media-types";
 
 describe("search model helpers", () => {
   it("keeps a known label and echoes an unknown value", () => {
     expect(optionLabel([{ value: "movie", label: "电影" }], "movie")).toBe("电影");
     expect(optionLabel([{ value: "movie", label: "电影" }], "unknown")).toBe("unknown");
     expect(optionLabel([], "")).toBe("");
+  });
+
+  it("keeps TYPE_FILTER_ORDER as the same set as SEARCH_DB_TYPES", () => {
+    expect(new Set(TYPE_FILTER_ORDER)).toEqual(new Set(SEARCH_DB_TYPES));
   });
 
   it("lists 专辑／单曲 in type filters and uses 已听／想听 when only music is selected", () => {

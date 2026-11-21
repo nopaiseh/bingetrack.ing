@@ -1,5 +1,6 @@
 import { render, screen } from "@testing-library/react";
 import { expect, test } from "vitest";
+import AlbumsCatalog from "@/app/albums/AlbumsCatalog";
 import MoviesCatalog from "@/app/movies/MoviesCatalog";
 import ShowsCatalog from "@/app/shows/ShowsCatalog";
 import type { MediaCard } from "@/lib/types";
@@ -62,4 +63,35 @@ test("upcoming-only catalogs keep stats and skip the empty-state panel", () => {
   expect(screen.getByRole("heading", { name: "电影总数量" })).toBeInTheDocument();
   expect(screen.getByRole("link", { name: /近期将上映/ })).toBeInTheDocument();
   expect(screen.queryByRole("heading", { name: "还没有电影" })).not.toBeInTheDocument();
+});
+
+test("album scheme C links five independent stats including music track total", () => {
+  render(
+    <AlbumsCatalog
+      albums={[{ ...placeholderCard, type: "albums", title: "示例专辑" }]}
+      stats={{ total: 12, watched: 5, watching: 2, want: 3, trackTotal: 48 }}
+    />,
+  );
+
+  expect(screen.getByRole("link", { name: /专辑总数量/ })).toHaveAttribute("href", "/search?type=album");
+  expect(screen.getByRole("link", { name: /单曲总数量/ })).toHaveAttribute("href", "/search?type=music");
+  expect(screen.getByRole("link", { name: /已听的专辑/ })).toHaveAttribute("href", "/search?type=album&status=watched");
+  expect(screen.getByRole("link", { name: /在听的专辑/ })).toHaveAttribute(
+    "href",
+    "/search?type=album&status=watching",
+  );
+  expect(screen.getByRole("link", { name: /想听的专辑/ })).toHaveAttribute(
+    "href",
+    "/search?type=album&status=want_to_watch",
+  );
+});
+
+test("an empty album catalog keeps the muted total and hides zero-value cards", () => {
+  render(<AlbumsCatalog albums={[]} stats={{ total: 0, watched: 0, watching: 0, want: 0, trackTotal: 0 }} />);
+
+  expect(screen.getByRole("heading", { name: "专辑总数量" })).toBeInTheDocument();
+  expect(screen.queryByRole("link", { name: /专辑总数量/ })).not.toBeInTheDocument();
+  expect(screen.queryByText("单曲总数量")).not.toBeInTheDocument();
+  expect(screen.queryByText("已听的专辑")).not.toBeInTheDocument();
+  expect(screen.getByText("还没有专辑。")).toBeInTheDocument();
 });
