@@ -60,7 +60,7 @@ insert into public.people(id,name,alternate_name) values
   ('fc000000-0000-4000-8000-000000000206','Report Artist',null);
 insert into public.media_credits(media_item_id,person_id,role,credit_order,character_name) values
   ('fc000000-0000-4000-8000-000000000100','fc000000-0000-4000-8000-000000000202','actor',0,null),
-  ('fc000000-0000-4000-8000-000000000100','fc000000-0000-4000-8000-000000000203','actor',0,'Hero/Villain'),
+  ('fc000000-0000-4000-8000-000000000100','fc000000-0000-4000-8000-000000000203','actor',0,'英雄/反派'),
   ('fc000000-0000-4000-8000-000000000110','fc000000-0000-4000-8000-000000000204','actor',0,'Twin Name'),
   ('fc000000-0000-4000-8000-000000000110','fc000000-0000-4000-8000-000000000205','actor',1,'Good Twin');
 insert into public.media_items(id,type,title) values ('fc000000-0000-4000-8000-000000000130','album','Report album');
@@ -71,7 +71,12 @@ insert into public.genres(id,name) values ('fc000000-0000-4000-8000-000000000301
 select is(public.manage_name_key('Ｔｏｍ　Hanks'), public.manage_name_key('tom hanks'), 'name key folds width, case and spacing');
 select is(public.manage_name_issues('张三', false), '{}'::text[], 'plain Chinese name has no issues');
 select is(public.manage_name_issues('A / B', true), '{}'::text[], 'standard character separator is accepted');
-select ok('separator' = any(public.manage_name_issues('A/B', true)), 'unspaced character separator is flagged');
+select ok(not ('separator' = any(public.manage_name_issues('A/B', true))), 'ASCII letter/letter slash is not a multi-role separator');
+select ok(not ('separator' = any(public.manage_name_issues('海军UDT/SEAL教官', true))), 'UDT/SEAL style slash is not flagged');
+select ok('separator' = any(public.manage_name_issues('警察/卧底', true)), 'Chinese slash still flags separator');
+select ok('separator' = any(public.manage_name_issues('A/ 卧底', true)), 'slash before non-letter still flags separator');
+select ok('separator' = any(public.manage_name_issues('/A', true)) or 'edge_punct' = any(public.manage_name_issues('/A', true)), 'leading slash is still flagged');
+select ok('separator' = any(public.manage_name_issues('警察／卧底', true)), 'fullwidth slash still flags separator');
 select ok('bracket_note' = any(public.manage_name_issues('张三（配音）', false)), 'bracketed note is flagged');
 select ok(not ('bracket_note' = any(public.manage_name_issues('亚瑟·库里（海王）', true))), 'character bracket note (alias) is not flagged');
 select ok(not ('bracket_note' = any(public.manage_name_issues('人鱼王国国王（声）', true))), 'character bracket note (voice) is not flagged');
@@ -90,6 +95,17 @@ select ok(not exists(select 1 from public.v_report_missing_alias where link_id='
 select ok(exists(select 1 from public.v_report_suspicious_names where id='credit:fc000000-0000-4000-8000-000000000100:fc000000-0000-4000-8000-000000000203' and 'separator' = any(tags)), 'suspicious character name is listed');
 select ok(exists(select 1 from public.v_report_suspicious_names where link_id='fc000000-0000-4000-8000-000000000203' and 'double_space' = any(tags)), 'suspicious person name is listed');
 select ok(exists(select 1 from public.v_report_suspicious_names where 'same_as_actor' = any(tags) and title='Twin Name'), 'character named after its actor is listed');
+
+-- 确认无误后离开报告；改名后确认失效并重新出现
+insert into public.name_issue_confirmations(item_id, confirmed_name)
+  values ('credit:fc000000-0000-4000-8000-000000000100:fc000000-0000-4000-8000-000000000203', '英雄/反派');
+select ok(not exists(select 1 from public.v_report_suspicious_names where id='credit:fc000000-0000-4000-8000-000000000100:fc000000-0000-4000-8000-000000000203'), 'confirmed name leaves the report');
+update public.media_credits set character_name='英雄／反派'
+  where media_item_id='fc000000-0000-4000-8000-000000000100' and person_id='fc000000-0000-4000-8000-000000000203';
+select ok(exists(select 1 from public.v_report_suspicious_names where id='credit:fc000000-0000-4000-8000-000000000100:fc000000-0000-4000-8000-000000000203'), 'renamed character reappears after confirmation');
+update public.media_credits set character_name='英雄/反派'
+  where media_item_id='fc000000-0000-4000-8000-000000000100' and person_id='fc000000-0000-4000-8000-000000000203';
+delete from public.name_issue_confirmations where item_id='credit:fc000000-0000-4000-8000-000000000100:fc000000-0000-4000-8000-000000000203';
 select is((select count(*)::integer from public.v_report_similar_people where link_id in ('fc000000-0000-4000-8000-000000000202','fc000000-0000-4000-8000-000000000203')), 2, 'spelling variants are similar people');
 select ok(not exists(select 1 from public.v_report_similar_people where title='Twin Name'), 'same names with distinct aliases are not flagged');
 select ok(exists(select 1 from public.v_report_unused_references where link_id='fc000000-0000-4000-8000-000000000301'), 'unused genre is listed');
@@ -118,8 +134,11 @@ do $$ begin perform set_config('request.jwt.claim.sub','fc000000-0000-4000-8000-
 select throws_ok($$select public.manage_delete_unused('people')$$,'42501',null,'other user cannot bulk delete');
 select throws_ok($$select public.manage_merge_people('fc000000-0000-4000-8000-000000000202', array['fc000000-0000-4000-8000-000000000203']::uuid[])$$,'42501',null,'other user cannot merge people');
 select throws_ok($$insert into public.people_distinct_pairs(person_a,person_b) values ('fc000000-0000-4000-8000-000000000202','fc000000-0000-4000-8000-000000000203')$$,'42501',null,'other user cannot mark people as distinct');
+select throws_ok($$insert into public.name_issue_confirmations(item_id,confirmed_name) values ('people:fc000000-0000-4000-8000-000000000203','Report  Actor')$$,'42501',null,'other user cannot confirm suspicious names');
+select is_empty($$select item_id from public.name_issue_confirmations$$,'other user cannot read name confirmations');
 
 do $$ begin perform set_config('request.jwt.claim.sub','fc000000-0000-4000-8000-000000000001',true); end $$;
+select lives_ok($$insert into public.name_issue_confirmations(item_id,confirmed_name) values ('people:fc000000-0000-4000-8000-000000000203','Report  Actor') on conflict (item_id) do nothing$$,'owner can confirm suspicious names');
 select throws_ok($$select public.manage_delete_unused('media')$$,'22023',null,'unknown kind is rejected');
 select lives_ok($$select public.manage_delete_unused('people')$$,'owner deletes orphan people');
 select ok(not exists(select 1 from public.people where id='fc000000-0000-4000-8000-000000000201'), 'orphan person was deleted');
@@ -137,7 +156,7 @@ select throws_ok($$select public.manage_merge_people('fc000000-0000-4000-8000-00
 select throws_ok($$select public.manage_merge_people('fc000000-0000-4000-8000-000000000202', array['fc000000-0000-4000-8000-000000000206']::uuid[])$$,'23503',null,'album artist cannot be merged away');
 select is(public.manage_merge_people('fc000000-0000-4000-8000-000000000202', array['fc000000-0000-4000-8000-000000000203']::uuid[]), 1, 'merge moves the credit');
 select ok(not exists(select 1 from public.people where id='fc000000-0000-4000-8000-000000000203'), 'merged person is deleted');
-select is((select character_name from public.media_credits where media_item_id='fc000000-0000-4000-8000-000000000100' and person_id='fc000000-0000-4000-8000-000000000202' and role='actor'), 'Hero/Villain', 'missing character name is filled from the merged credit');
+select is((select character_name from public.media_credits where media_item_id='fc000000-0000-4000-8000-000000000100' and person_id='fc000000-0000-4000-8000-000000000202' and role='actor'), '英雄/反派', 'missing character name is filled from the merged credit');
 select ok(not exists(select 1 from public.v_report_similar_people where link_id='fc000000-0000-4000-8000-000000000202'), 'merged group leaves the report');
 insert into public.people(id,name,alternate_name) values
   ('fc000000-0000-4000-8000-000000000207','Solo Name',null),
