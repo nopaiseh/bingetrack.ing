@@ -123,6 +123,7 @@ export function getMediaDescription(media: Media): string {
 /** 按媒体类型选取详情栏目，并对媒体 ID 编码形成规范路径。 */
 function getMediaPath(media: Pick<Media, "id" | "type">): string {
   const section = normalizeToPublicMediaType(media.type);
+  if (!section) throw new Error(`Unknown media type for path: ${media.type ?? "(empty)"}`);
   return publicMediaDetailPath(section, media.id);
 }
 
@@ -156,13 +157,15 @@ export function buildMediaMetadata(media: Media): Metadata {
 
 /** 按电影或电视节目生成 JSON-LD，并仅在存在数据时补充人员、产地、语言和时长等字段。 */
 export function buildMediaJsonLd(media: Media): Record<string, unknown> {
+  const section = normalizeToPublicMediaType(media.type);
   const jsonLd: Record<string, unknown> = {
     "@context": "https://schema.org",
     "@type": mediaSchemaType(media.type),
     name: media.title,
-    url: `${SITE_URL}${getMediaPath(media)}`,
     description: getMediaDescription(media),
   };
+  // 单曲等尚无公开详情路由时省略 url，不回退到错误的影视路径。
+  if (section) jsonLd.url = `${SITE_URL}${publicMediaDetailPath(section, media.id)}`;
 
   if (media.alternate_title) jsonLd.alternateName = media.alternate_title;
   if (media.cover_url) jsonLd.image = tmdbImageUrl(media.cover_url, SHARE_IMAGE_SIZE);

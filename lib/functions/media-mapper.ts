@@ -1,10 +1,5 @@
 import type { MediaCard, Media, ViewAllMediaRow } from "@/lib/types";
-import {
-  dbTypeToPublicRoute,
-  isDbMediaType,
-  normalizeToPublicMediaType,
-  type PublicMediaType,
-} from "@/lib/media-types";
+import { isDbMediaType, normalizeToPublicMediaType, type PublicMediaType } from "@/lib/media-types";
 
 const nameCollator = new Intl.Collator(undefined, {
   numeric: true,
@@ -31,11 +26,9 @@ function authorsInOrder(names: string[] | null | undefined): string[] {
 
 /** 公开详情路由段；未启用的 music 保留字面量供搜索标签使用，避免误链到影视页。 */
 function cardPublicType(raw: string | null | undefined): MediaCard["type"] {
-  if (!raw) return normalizeToPublicMediaType(raw);
-  const route = dbTypeToPublicRoute(raw);
-  if (route) return route;
+  if (!raw) return undefined;
   if (raw === "music") return "music";
-  return normalizeToPublicMediaType(raw);
+  return normalizeToPublicMediaType(raw) ?? undefined;
 }
 
 // 将数据库字段转换为详情对象，补齐空值、统一路由类型并排序分类名称。
@@ -44,7 +37,7 @@ export function mapViewRowToMedia(
   overrideSeries?: string[] | null,
   overrideType?: PublicMediaType,
 ): Media {
-  const mediaType = overrideType ?? normalizeToPublicMediaType(item.type);
+  const mediaType = overrideType ?? normalizeToPublicMediaType(item.type) ?? undefined;
 
   return {
     id: String(item.id),

@@ -81,11 +81,13 @@ describe(
       "uses schema types and fallback copy from media type config for music",
       /* 验证音乐类型走配置中的 MusicRecording／MusicAlbum，默认描述来自 config。 */ () => {
         const track = { ...movie, id: "track-1", type: "music" as never, summary: "" };
-        const album = { ...movie, id: "album-1", type: "album" as never, summary: "" };
+        const album = { ...movie, id: "album-1", type: "albums" as const, summary: "" };
         expect(getMediaDescription(track)).toBe("查看《测试电影》的收听记录与详细信息。");
         expect(getMediaDescription(album)).toBe("查看《测试电影》的曲目与收听记录。");
         expect(buildMediaJsonLd(track)["@type"]).toBe("MusicRecording");
+        expect(buildMediaJsonLd(track)).not.toHaveProperty("url");
         expect(buildMediaJsonLd(album)["@type"]).toBe("MusicAlbum");
+        expect(buildMediaJsonLd(album).url).toBe(`${SITE_URL}/albums/album-1`);
       },
     );
 
@@ -142,7 +144,6 @@ describe(
             title: "启程",
             alternateTitle: "Departure",
             summary: "",
-            coverUrl: "",
             releaseDate: "2026-01-02",
             runtime: 48,
             status: "watched",
@@ -153,7 +154,6 @@ describe(
             episodeNumber: 2,
             title: "  ",
             summary: "",
-            coverUrl: "",
             releaseDate: null,
             runtime: null,
             status: null,

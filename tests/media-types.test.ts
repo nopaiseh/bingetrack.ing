@@ -108,14 +108,23 @@ describe("media type config", () => {
     expect(MEDIA_TYPE_DEFINITIONS.album.coverAspect).toBe("1/1");
   });
 
-  it("normalizes legacy and child types like the previous mapper", () => {
+  it("normalizes dual forms and TV child types; rejects unknown values", () => {
     expect(normalizeToPublicMediaType("movie")).toBe("movies");
     expect(normalizeToPublicMediaType("movies")).toBe("movies");
     expect(normalizeToPublicMediaType("tv_show")).toBe("shows");
     expect(normalizeToPublicMediaType("shows")).toBe("shows");
+    expect(normalizeToPublicMediaType("album")).toBe("albums");
+    expect(normalizeToPublicMediaType("albums")).toBe("albums");
+    expect(normalizeToPublicMediaType("book")).toBe("books");
+    expect(normalizeToPublicMediaType("books")).toBe("books");
     expect(normalizeToPublicMediaType("tv_season")).toBe("shows");
     expect(normalizeToPublicMediaType("tv_episode")).toBe("shows");
-    expect(normalizeToPublicMediaType(null)).toBe("shows");
+    expect(normalizeToPublicMediaType(null)).toBeNull();
+    expect(normalizeToPublicMediaType(undefined)).toBeNull();
+    expect(normalizeToPublicMediaType("")).toBeNull();
+    expect(normalizeToPublicMediaType("music")).toBeNull();
+    expect(normalizeToPublicMediaType("tv_series")).toBeNull();
+    expect(normalizeToPublicMediaType("unknown")).toBeNull();
   });
 
   it("exposes schema.org types and default SEO descriptions from config", () => {

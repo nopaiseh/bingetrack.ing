@@ -1,13 +1,13 @@
 import Link from "next/link";
 import type { SeasonInfo } from "@/lib/types";
 import { seasonListLabel } from "@/lib/season-label";
-import { WatchStatusBadge } from "@/components/watch-status";
+import { WatchStatusBadge, type WatchStatusId } from "@/components/watch-status";
 
-/** 已看完、看过一部分、还没看，对应单集列表里的状态胶囊。 */
-function seasonWatchLabel(season: SeasonInfo): "已看" | "在看" | "未看" {
-  if (season.episodeCount > 0 && season.watchedEpisodeCount >= season.episodeCount) return "已看";
-  if (season.watchedEpisodeCount > 0) return "在看";
-  return "未看";
+/** 已看完、看过一部分、还没看；徽标只吃数据库枚举，未看单独渲染。 */
+function seasonWatchStatus(season: SeasonInfo): WatchStatusId | "unwatched" {
+  if (season.episodeCount > 0 && season.watchedEpisodeCount >= season.episodeCount) return "watched";
+  if (season.watchedEpisodeCount > 0) return "watching";
+  return "unwatched";
 }
 
 /** 有观看记录时写出进度，否则只写集数。 */
@@ -25,7 +25,7 @@ function yearLabel(season: SeasonInfo): string | null {
 /** 纯文字季行：季序号、统一季名、原标题、年份、集数和观看进度。 */
 function SeasonListItem({ seriesId, season }: { seriesId: string; season: SeasonInfo }) {
   const label = seasonListLabel(season);
-  const watchLabel = seasonWatchLabel(season);
+  const watchStatus = seasonWatchStatus(season);
   const year = yearLabel(season);
   const started = season.watchedEpisodeCount > 0;
   const percent =
@@ -68,12 +68,12 @@ function SeasonListItem({ seriesId, season }: { seriesId: string; season: Season
         ) : null}
       </div>
       <div className="col-start-2 justify-self-start sm:col-start-3 sm:row-start-1 sm:self-start">
-        {watchLabel === "未看" ? (
+        {watchStatus === "unwatched" ? (
           <span className="inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border border-[var(--border)] bg-[var(--surface-2)] px-2.5 py-1 text-xs font-medium text-fg-muted">
             未看
           </span>
         ) : (
-          <WatchStatusBadge status={watchLabel} className="px-2.5 py-1" />
+          <WatchStatusBadge status={watchStatus} className="px-2.5 py-1" />
         )}
       </div>
     </Link>

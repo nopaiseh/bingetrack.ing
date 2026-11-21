@@ -28,5 +28,5 @@ export function syncBrandToTheme(themeId: ThemeId): void {
 
 export const THEME_STORAGE_KEY = "bingetrack-theme";
 
-/** 首帧前执行：只应用已知主题，并同步状态栏颜色与标签页图标，避免刷新后回退为默认色；已下线的旧主题（cyber、sepia、noir）会回落到默认主题。 */
+/** 首帧前执行：只应用已知主题，并同步状态栏颜色与标签页图标，避免刷新后回退为默认色；未知主题 id 保持默认主题。 */
 export const THEME_INIT_SCRIPT = `(function(){try{var c=${JSON.stringify(THEME_COLORS)};var f=${JSON.stringify(THEME_FAVICONS)};var t=localStorage.getItem(${JSON.stringify(THEME_STORAGE_KEY)});if(!t||t==="default"||!Object.prototype.hasOwnProperty.call(c,t))return;document.documentElement.setAttribute("data-theme",t);var m=document.querySelector('meta[name="theme-color"]');if(m)m.setAttribute("content",c[t]);var s=document.getElementById(${JSON.stringify(FAVICON_SVG_ID)});if(s)s.setAttribute("href","/icons/favicon-"+f[t]+".svg");var p=document.getElementById(${JSON.stringify(FAVICON_PNG_ID)});if(p)p.setAttribute("href","/icons/favicon-"+f[t]+"-32.png");}catch(e){}})();`;

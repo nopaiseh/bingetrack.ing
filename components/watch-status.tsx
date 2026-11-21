@@ -62,28 +62,14 @@ export const READ_STATUS_DISPLAY: Record<"watched" | "want_to_watch" | "in_progr
   in_progress: "在读",
 };
 
-const ALIASES: Record<string, WatchStatusId> = {
-  watched: "watched",
-  已看: "watched",
-  已观看: "watched",
-  读过: "watched",
-  watching: "watching",
-  在看: "watching",
-  正在看: "watching",
-  want_to_watch: "want_to_watch",
-  想看: "want_to_watch",
-  想要看: "want_to_watch",
-  想读: "want_to_watch",
-  in_progress: "in_progress",
-  在读: "in_progress",
-};
+const DB_STATUS_IDS = new Set<string>(Object.keys(WATCH_STATUSES));
 
-/** 把状态值或旧文案解析成统一配置；未记录和未知值返回 null。 */
+/** 只认数据库枚举（watched / watching / want_to_watch / in_progress）；未记录和未知值返回 null。 */
 export function resolveWatchStatus(status: string | null | undefined): WatchStatus | null {
   if (!status) return null;
-  const trimmed = status.trim();
-  const id = ALIASES[trimmed] ?? ALIASES[trimmed.toLowerCase()];
-  return id ? WATCH_STATUSES[id] : null;
+  const id = status.trim();
+  if (!DB_STATUS_IDS.has(id)) return null;
+  return WATCH_STATUSES[id as WatchStatusId];
 }
 
 function StatusMark({ status }: { status: WatchStatus }): ReactNode {

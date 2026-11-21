@@ -1,8 +1,5 @@
 import type { PublicMediaType } from "@/lib/media-types";
 
-/** 公开站点路由段；由 lib/media-types 配置派生。 */
-type MediaType = PublicMediaType;
-
 export interface Media {
   id: string;
   title: string;
@@ -31,7 +28,7 @@ export interface Media {
   artists?: string[];
   /** 图书作者（media_credits role=author，按 credit_order）。 */
   authors?: string[];
-  type?: MediaType;
+  type?: PublicMediaType;
 }
 
 // 服务端传给浏览器的卡片字段集合，不包含详情页专用数据；可按需携带精选摘要。
@@ -43,7 +40,7 @@ export type MediaCard = Omit<
   >,
   "type"
 > & {
-  type?: MediaType | "music";
+  type?: PublicMediaType | "music";
   summary?: string;
   artists?: string[];
   authors?: string[];
@@ -85,8 +82,6 @@ export interface EpisodeInfo {
   title: string;
   alternateTitle?: string | null;
   summary: string;
-  // 季列表不再下发剧照。保留可选字段，避免旧缓存或测试数据在类型上不兼容。
-  coverUrl?: string;
   releaseDate: string | null;
   runtime: number | null;
   status: string | null;
@@ -179,7 +174,7 @@ export interface MediaDistribution {
   genres: DistributionItem[];
 }
 
-export type MediaDistributions = Record<MediaType, Record<string, MediaDistribution>>;
+export type MediaDistributions = Record<PublicMediaType, Record<string, MediaDistribution>>;
 
 export interface ViewAllMediaRow {
   id: string | number;

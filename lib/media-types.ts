@@ -211,9 +211,6 @@ export type AdminBulkMediaType = {
   [K in MediaTypeKey]: (typeof MEDIA_TYPE_DEFINITIONS)[K]["adminBulkOps"] extends true ? K : never;
 }[MediaTypeKey];
 
-/** @deprecated 使用 PublicMediaType；保留 MediaType 别名供现有类型文件引用。 */
-export type MediaType = PublicMediaType;
-
 const ALL_KEYS = Object.keys(MEDIA_TYPE_DEFINITIONS) as MediaTypeKey[];
 
 /** 启用的目录类型（有公开路由）：movie、tv_show、album、book。 */
@@ -319,14 +316,17 @@ export function dbTypeToPublicRoute(dbType: string): PublicMediaType | null {
 
 /**
  * 将视图／API 中的 type 字段规范为公开路由段。
- * 接受 movie/movies、tv_show/shows；未知值回退为 shows（与历史 mapper 行为一致）。
+ * 接受公开路由（movies/shows/albums/books）、对应数据库类型，以及挂在电视下的季／集。
+ * 空值或无法识别的类型返回 null，不再默认成 shows。
  */
-export function normalizeToPublicMediaType(raw: string | null | undefined): PublicMediaType {
-  if (!raw) return "shows";
+export function normalizeToPublicMediaType(raw: string | null | undefined): PublicMediaType | null {
+  if (!raw) return null;
   if (isPublicMediaType(raw)) return raw;
   const fromDb = dbTypeToPublicRoute(raw);
   if (fromDb) return fromDb;
-  return raw === "movie" || raw === "movies" ? "movies" : "shows";
+  // 季／集无独立公开目录路由，归到电视节目。
+  if (raw === "tv_season" || raw === "tv_episode") return "shows";
+  return null;
 }
 
 /** 公开路由段 → 数据库类型。 */
