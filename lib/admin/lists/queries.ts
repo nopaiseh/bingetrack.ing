@@ -385,12 +385,14 @@ export async function listAdminTracks(
 
   const { data: album, error: albumError } = await db
     .from("media_items")
-    .select("title")
+    .select("title,cover_url")
     .eq("id", query.parent)
     .eq("type", "album")
     .maybeSingle();
   if (albumError) throw new Error(CHILD_LIST_READ_ERROR);
   const albumTitle = album?.title ?? null;
+  // 曲目列表展示用专辑封面，忽略曲目自身 cover_url。
+  const albumCoverUrl = typeof album?.cover_url === "string" ? album.cover_url.trim() || null : null;
 
   const rows = readRows<TrackListRow>(
     await db
@@ -413,7 +415,7 @@ export async function listAdminTracks(
       type: "music" as const,
       title: media?.title ?? "",
       alternate_title: media?.alternate_title ?? null,
-      cover_url: media?.cover_url ?? null,
+      cover_url: albumCoverUrl,
       display_date: media?.release_date ?? null,
       status: childWatchStatus(tracking?.status),
       rating: tracking?.rating == null ? null : Number(tracking.rating),

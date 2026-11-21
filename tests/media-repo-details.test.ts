@@ -104,6 +104,44 @@ describe("作品详情与相关作品", () => {
     expect(state.builds).toBe(1);
   });
 
+  it("曲目详情展示所属专辑封面，忽略曲目自身 cover_url", async () => {
+    const albumCover = "https://is1-ssl.mzstatic.com/image/thumb/Music/album/600x600bb.jpg";
+    const trackOwn = "https://coverartarchive.org/release/track/front-500";
+    const albumId = otherId;
+    state.handle = (query) => {
+      if (query.table === "v_all_media") {
+        return { data: { id: mediaId, type: "music", title: "晴天", cover_url: trackOwn } };
+      }
+      if (query.table === "media_item_series") return { data: [] };
+      if (query.table === "music") return { data: [{ media_item_id: mediaId, album_id: albumId }] };
+      if (query.table === "media_items") return { data: [{ id: albumId, cover_url: albumCover }] };
+      return { data: null, error: null };
+    };
+    const media = await getMediaById(mediaId);
+    expect(media).toMatchObject({ id: mediaId, title: "晴天", cover_url: albumCover });
+    expect(state.queries.some((query) => query.table === "music")).toBe(true);
+  });
+
+  it("曲目所属专辑无封面时详情 cover_url 为空，不回退曲目自身封面", async () => {
+    state.handle = (query) => {
+      if (query.table === "v_all_media") {
+        return {
+          data: {
+            id: mediaId,
+            type: "music",
+            title: "无封面曲",
+            cover_url: "https://coverartarchive.org/release/track/front-500",
+          },
+        };
+      }
+      if (query.table === "media_item_series") return { data: [] };
+      if (query.table === "music") return { data: [{ media_item_id: mediaId, album_id: otherId }] };
+      if (query.table === "media_items") return { data: [{ id: otherId, cover_url: null }] };
+      return { data: null, error: null };
+    };
+    expect(await getMediaById(mediaId)).toMatchObject({ cover_url: "" });
+  });
+
   it("相关作品只读卡片列，系列查询失败或没有其他条目时返回空列表", async () => {
     state.handle = (query) => {
       if (query.table === "media_item_series") {

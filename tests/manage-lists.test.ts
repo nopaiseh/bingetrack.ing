@@ -846,7 +846,8 @@ describe("专辑曲目列表", () => {
 
   it("按曲序读取并支持搜索、状态与评分排序", async () => {
     const { db, queries } = fakeDb((query) => {
-      if (query.table === "media_items") return { data: { title: "所属专辑" } };
+      if (query.table === "media_items")
+        return { data: { title: "所属专辑", cover_url: "https://is1-ssl.mzstatic.com/album.jpg" } };
       if (query.table === "music") {
         return {
           data: [
@@ -887,6 +888,8 @@ describe("专辑曲目列表", () => {
       id: trackA,
       type: "music",
       title: "甲曲",
+      // 展示用专辑封面，忽略曲目自身 cover_url
+      cover_url: "https://is1-ssl.mzstatic.com/album.jpg",
       status: "watched",
       rating: 9,
       track: { albumTitle: "所属专辑", trackNumber: 1 },
