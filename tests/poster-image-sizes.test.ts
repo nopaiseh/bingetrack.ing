@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
-  ALBUM_COVER_SIZES,
+  ALBUM_ROW_COVER_SIZES,
   RAIL_POSTER_SIZES,
   SEARCH_ABOVE_FOLD_COUNT,
   SEARCH_POSTER_SIZES,
@@ -9,7 +9,7 @@ import { tmdbImageSizeForWidth } from "../lib/tmdb-image";
 
 describe("poster image sizes", () => {
   it("uses absolute px slots so Next keeps every TMDB tier in srcset", () => {
-    for (const sizes of [SEARCH_POSTER_SIZES, RAIL_POSTER_SIZES, ALBUM_COVER_SIZES]) {
+    for (const sizes of [SEARCH_POSTER_SIZES, RAIL_POSTER_SIZES, ALBUM_ROW_COVER_SIZES]) {
       expect(sizes).not.toMatch(/\dvw\b/);
       expect(sizes).toMatch(/\d+px/);
     }

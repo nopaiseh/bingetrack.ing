@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import BooksCatalog from "@/app/books/BooksCatalog";
 import type { MediaCard } from "@/lib/types";
@@ -36,37 +36,52 @@ describe("BooksCatalog", () => {
   const read = [card({ id: "d1", title: "读过书", status: "watched" })];
   const want = [card({ id: "w1", title: "想读书", status: "want_to_watch" })];
 
-  it("渲染统计卡、筛选标签与三个分区", () => {
+  it("渲染统计卡与三个分区，无筛选标签", () => {
     render(
       <BooksCatalog reading={reading} read={read} want={want} stats={{ total: 3, reading: 1, read: 1, want: 1 }} />,
     );
 
     expect(screen.getByRole("heading", { name: "图书", hidden: true })).toBeInTheDocument();
-    expect(screen.getByText("图书总数量")).toBeInTheDocument();
-    expect(screen.getByText("读过的书")).toBeInTheDocument();
-    expect(screen.getByRole("tab", { name: "在读" })).toBeInTheDocument();
-    expect(screen.getByRole("tab", { name: "想读" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /图书总数量/ })).toHaveAttribute("href", "/search?type=book");
+    expect(screen.getByRole("link", { name: /读过的书/ })).toHaveAttribute("href", "/search?type=book&status=watched");
+    expect(screen.getByRole("link", { name: /在读的书/ })).toHaveAttribute(
+      "href",
+      "/search?type=book&status=in_progress",
+    );
+    expect(screen.getByRole("link", { name: /想读的书/ })).toHaveAttribute(
+      "href",
+      "/search?type=book&status=want_to_watch",
+    );
 
-    expect(screen.getByRole("tab", { name: "全部" })).toHaveAttribute("aria-selected", "true");
+    expect(screen.queryByRole("tablist", { name: "阅读状态筛选" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("tab")).not.toBeInTheDocument();
+
+    expect(screen.getByRole("heading", { name: "在读" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "我已读" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "我想读" })).toBeInTheDocument();
-    expect(screen.getAllByRole("heading", { name: "在读" }).length).toBeGreaterThan(0);
     expect(screen.getByText("在读书")).toBeInTheDocument();
     expect(screen.getByText("读过书")).toBeInTheDocument();
     expect(screen.getByText("想读书")).toBeInTheDocument();
+
+    expect(screen.getAllByRole("link", { name: /查看全部/ }).map((link) => link.getAttribute("href"))).toEqual([
+      "/search?type=book&status=in_progress",
+      "/search?type=book&status=watched",
+      "/search?type=book&status=want_to_watch",
+    ]);
   });
 
-  it("筛选标签只显示对应分区", () => {
-    render(
-      <BooksCatalog reading={reading} read={read} want={want} stats={{ total: 3, reading: 1, read: 1, want: 1 }} />,
+  it("空分区不渲染，空目录显示空状态", () => {
+    const { rerender } = render(
+      <BooksCatalog reading={reading} read={[]} want={[]} stats={{ total: 1, reading: 1, read: 0, want: 0 }} />,
     );
 
-    fireEvent.click(screen.getByRole("tab", { name: "在读" }));
-    expect(screen.getByRole("tab", { name: "在读" })).toHaveAttribute("aria-selected", "true");
-    expect(screen.getAllByRole("heading", { name: "在读" }).length).toBeGreaterThan(0);
+    expect(screen.getByRole("heading", { name: "在读" })).toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "我已读" })).not.toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "我想读" })).not.toBeInTheDocument();
-    expect(screen.getByText("在读书")).toBeInTheDocument();
+
+    rerender(<BooksCatalog reading={[]} read={[]} want={[]} stats={{ total: 0, reading: 0, read: 0, want: 0 }} />);
+    expect(screen.getByRole("heading", { name: "还没有图书" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "去搜索" })).toHaveAttribute("href", "/search?type=book");
   });
 
   it("无封面时用书名首字块", () => {

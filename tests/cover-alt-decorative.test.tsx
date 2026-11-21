@@ -2,7 +2,6 @@ import { render, screen, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import MediaRow from "@/components/MediaRow";
 import { SearchMediaCard } from "@/components/SearchMediaCard";
-import AlbumCoverCard from "@/components/AlbumCoverCard";
 import ContinueWatchingRail, { type ContinueWatchingCard } from "@/components/ContinueWatchingRail";
 import CurrentlyReadingRail from "@/components/CurrentlyReadingRail";
 import ContinueListeningRail, { type ContinueListeningCard } from "@/components/ContinueListeningRail";
@@ -98,16 +97,22 @@ describe("封面替代文字与可见标题不重复", () => {
     expect(within(link).getByRole("presentation")).toHaveAttribute("alt", "");
   });
 
-  it("AlbumCoverCard：封面装饰性，链接无障碍名称等于标题加艺人", () => {
+  it("MediaRow 专辑卡：封面装饰性，链接无障碍名称等于标题加艺人", () => {
     render(
-      <AlbumCoverCard
-        item={movie({
-          id: "a1",
-          title: "叶惠美",
-          type: "albums",
-          cover_url: "https://is1-ssl.mzstatic.com/image/thumb/Music/cover.jpg",
-          artists: ["周杰伦"],
-        })}
+      <MediaRow
+        title="我已听"
+        type="album"
+        hideStatusBadge
+        items={[
+          movie({
+            id: "a1",
+            title: "叶惠美",
+            type: "albums",
+            dbType: "album",
+            cover_url: "https://is1-ssl.mzstatic.com/image/thumb/Music/cover.jpg",
+            artists: ["周杰伦"],
+          }),
+        ]}
       />,
     );
     const link = screen.getByRole("link", { name: "叶惠美，周杰伦" });
