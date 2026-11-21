@@ -38,7 +38,10 @@ vi.mock("@/lib/supabase/public-server", () => ({
   },
 }));
 
-vi.mock("@/lib/report-error", () => ({ reportHandledError: vi.fn() }));
+vi.mock("@/lib/report-error", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/lib/report-error")>();
+  return { ...actual, reportHandledError: vi.fn() };
+});
 
 import { reportHandledError } from "@/lib/report-error";
 import { getAlbumDetail } from "@/lib/functions/album-repo";

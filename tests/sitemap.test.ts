@@ -1,7 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("@/lib/functions/media-repo", () => ({ getSitemapMediaEntries: vi.fn() }));
-vi.mock("@/lib/report-error", () => ({ reportHandledError: vi.fn() }));
+vi.mock("@/lib/report-error", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/lib/report-error")>();
+  return { ...actual, reportHandledError: vi.fn() };
+});
 
 import sitemap from "@/app/sitemap";
 import { getSitemapMediaEntries } from "@/lib/functions/media-repo";
