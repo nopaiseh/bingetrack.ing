@@ -988,11 +988,6 @@
   height: 100%;
   object-fit: cover;
 }
-.edit-poster-letter {
-  font-size: 3rem;
-  font-weight: 600;
-  line-height: 1;
-}
 .edit-poster-caption {
   font-size: 0.875rem;
 }

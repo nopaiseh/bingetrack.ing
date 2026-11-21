@@ -18,7 +18,13 @@ import SearchBar from "@/components/search/SearchBar";
 import SearchFilterPanel from "@/components/search/SearchFilterPanel";
 import SearchResultSection from "@/components/search/SearchResultSection";
 import SearchScrollTop from "@/components/search/SearchScrollTop";
-import { countActiveFilters, EMPTY_FILTERS, resultRange, resultsHeading } from "@/components/search/search-model";
+import {
+  countActiveFilters,
+  EMPTY_FILTERS,
+  resultRange,
+  resultsCountLabel,
+  resultsHeading,
+} from "@/components/search/search-model";
 import { scrollBehavior } from "@/lib/scroll-behavior";
 import SearchLoading from "./loading";
 
@@ -225,6 +231,7 @@ function SearchContent({ initialOptions, initialResult }: SearchProps) {
 
   const heading = resultsHeading(urlQuery.trim(), total, isLoading || Boolean(requestError));
   const rangeLabel = resultRange(page, isLoading || requestError ? 0 : total);
+  const countLabel = resultsCountLabel(total, filters.type);
 
   return (
     <div className="text-fg pt-24 pb-8 md:pb-12 selection:bg-[var(--accent-soft)] selection:text-white font-sans relative">
@@ -237,7 +244,7 @@ function SearchContent({ initialOptions, initialResult }: SearchProps) {
             {heading}
           </h1>
           <p className="mt-2 text-sm text-fg-muted">
-            {isLoading ? "加载中..." : requestError ? "加载失败" : `找到 ${total} 部作品`}
+            {isLoading ? "加载中..." : requestError ? "加载失败" : countLabel}
           </p>
 
           <div className="mb-8 mt-6">

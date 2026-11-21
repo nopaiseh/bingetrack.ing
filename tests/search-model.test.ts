@@ -4,6 +4,7 @@ import {
   countActiveFilters,
   optionLabel,
   resultRange,
+  resultsCountLabel,
   resultsHeading,
   sortCaption,
   statusFilterLabel,
@@ -70,5 +71,18 @@ describe("search model helpers", () => {
     expect(resultsHeading("旧", 0, true)).toBe("“旧”的搜索结果");
     expect(resultsHeading("旧", 0, false)).toBe("没有找到“旧”");
     expect(resultsHeading("旧", 3, false)).toBe("“旧”的搜索结果");
+  });
+
+  it("uses 首／本 for music／book-only counts and 部作品 otherwise", () => {
+    expect(resultsCountLabel(0, ["music"])).toBe("找到 0 首");
+    expect(resultsCountLabel(12, ["music"])).toBe("找到 12 首");
+    expect(resultsCountLabel(3, ["book"])).toBe("找到 3 本");
+    expect(resultsCountLabel(8, ["movie"])).toBe("找到 8 部作品");
+    expect(resultsCountLabel(8, ["tv_show"])).toBe("找到 8 部作品");
+    expect(resultsCountLabel(5, ["album"])).toBe("找到 5 部作品");
+    expect(resultsCountLabel(9, [])).toBe("找到 9 部作品");
+    expect(resultsCountLabel(4, ["music", "book"])).toBe("找到 4 部作品");
+    expect(resultsCountLabel(2, ["music", "movie"])).toBe("找到 2 部作品");
+    expect(resultsCountLabel(1, ["music", "director"])).toBe("找到 1 首");
   });
 });
