@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import type { ReactNode } from "react";
+import LetterTile from "@/components/LetterTile";
 import { roleLabel, type RelatedMedia } from "@/lib/admin/credits";
 import { mediaTypes } from "@/lib/admin/media-form";
 import { formatRuntime } from "@/lib/format-runtime";
@@ -39,7 +40,9 @@ export default function RelatedWork({
             className="h-16 w-11 shrink-0 rounded-md object-cover"
           />
         ) : (
-          <span className="surface-muted h-16 w-11 shrink-0 rounded-md" aria-hidden="true" />
+          <span className="relative h-16 w-11 shrink-0 overflow-hidden rounded-md">
+            <LetterTile title={media.title} decorative />
+          </span>
         )}
         <div className="min-w-0 flex-1">
           <Link

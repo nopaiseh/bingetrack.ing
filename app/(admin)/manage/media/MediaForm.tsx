@@ -2,6 +2,7 @@
 
 import { useActionState, useEffect, useId, useRef, useState, type ChangeEvent } from "react";
 import Link from "next/link";
+import LetterTile from "@/components/LetterTile";
 import { useDraftFields } from "../useDraftFields";
 import ChoicePicker from "../ChoicePicker";
 import UnsavedGuard from "../UnsavedGuard";
@@ -10,7 +11,6 @@ import { saveMedia, deleteMedia, type ActionResult } from "@/app/(admin)/manage/
 import { mediaTypes, type MediaInput, type ManagedMediaType } from "@/lib/admin/media-form";
 import { ActionNotice } from "../StatusModal";
 import { formatRuntime } from "@/lib/format-runtime";
-import { listInitial, listTint } from "../list/model";
 
 const deleteLabels: Record<ManagedMediaType, string> = {
   movie: "删除这部电影…",
@@ -100,18 +100,16 @@ function PosterPreview({
   const preview = musicCover ? albumCoverPreviewSrc(src) : posterPreviewSrc(src);
   const showImage = Boolean(preview) && !failed;
   const emptyLabel = square ? "无封面" : "无海报";
+  const tileTitle = title || (square ? "专" : "片");
   return (
-    <div
-      className={`edit-poster${square ? " edit-poster-square" : ""}`}
-      style={showImage ? undefined : { backgroundColor: listTint(title || (square ? "专" : "片")) }}
-    >
+    <div className={`edit-poster relative${square ? " edit-poster-square" : ""}`}>
       {showImage ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img src={preview ?? undefined} alt="封面预览" onError={() => setFailed(true)} />
       ) : (
         <>
-          <span className="edit-poster-letter">{listInitial(title || (square ? "专" : "片"))}</span>
-          <span className="edit-poster-caption">{emptyLabel}</span>
+          <LetterTile title={tileTitle} decorative className="absolute inset-0" />
+          <span className="edit-poster-caption relative z-10">{emptyLabel}</span>
         </>
       )}
     </div>

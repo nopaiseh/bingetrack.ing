@@ -135,7 +135,10 @@ describe("search poster deferral", () => {
       <SearchMediaCard item={card("empty", "无封面电影", false)} returnHref="/search" deferPoster />,
     );
     expect(screen.getByRole("heading", { name: "无封面电影" })).toBeInTheDocument();
-    expect(container.querySelector(".i-material-symbols-image-outline-rounded")).not.toBeNull();
+    const tile = container.querySelector(".letter-tile");
+    expect(tile).not.toBeNull();
+    expect(tile).toHaveAttribute("aria-hidden", "true");
+    expect(tile).toHaveAttribute("data-initial", "无");
     expect(container.querySelector("img")).toBeNull();
   });
 

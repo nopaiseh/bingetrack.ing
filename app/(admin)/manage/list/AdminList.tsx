@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useId, useRef, useState } from "react";
+import LetterTile from "@/components/LetterTile";
 import ManagePagination from "../ManagePagination";
 import {
   deleteAlbums,
@@ -18,8 +19,6 @@ import {
 import type { BulkCounts } from "@/lib/admin/list-params";
 import {
   adminListHref,
-  listInitial,
-  listTint,
   type AdminBulkAction,
   type AdminListChips,
   type AdminListColumn,
@@ -93,8 +92,8 @@ function ListThumb({ src, title }: { src?: string | null; title: string }) {
   const cover = src ? allowedCover(src) : null;
   if (!cover || failed) {
     return (
-      <span className="admin-list-mark" style={{ backgroundColor: listTint(title) }} aria-hidden="true">
-        {listInitial(title)}
+      <span className="admin-list-mark overflow-hidden p-0">
+        <LetterTile title={title} decorative />
       </span>
     );
   }

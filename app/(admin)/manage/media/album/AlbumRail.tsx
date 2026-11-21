@@ -2,9 +2,9 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef } from "react";
+import LetterTile from "@/components/LetterTile";
 import { mayLeaveEditor } from "@/lib/admin/navigation";
 import type { AlbumStructure } from "@/lib/admin/album-structure";
-import { listInitial, listTint } from "../../list/model";
 import { centerInside, StatusDot } from "../series/SeriesRail";
 import {
   albumMediaHref,
@@ -69,12 +69,8 @@ export default function AlbumRail({
           // eslint-disable-next-line @next/next/no-img-element
           <img src={album.coverUrl} alt="" width={36} height={36} className="size-9 shrink-0 rounded-md object-cover" />
         ) : (
-          <span
-            className="flex size-9 shrink-0 items-center justify-center rounded-md text-sm font-semibold text-white"
-            style={{ backgroundColor: listTint(album.title) }}
-            aria-hidden="true"
-          >
-            {listInitial(album.title)}
+          <span className="relative size-9 shrink-0 overflow-hidden rounded-md">
+            <LetterTile title={album.title} decorative />
           </span>
         )}
         <span className="min-w-0 flex-1">

@@ -90,7 +90,10 @@ describe("DashboardCategoryPanel", () => {
     expect(await screen.findByRole("heading", { name: "无海报" })).toBeInTheDocument();
     expect(screen.getByText("影史精选")).toBeInTheDocument();
     expect(screen.queryByRole("img", { name: "无海报" })).not.toBeInTheDocument();
-    expect(document.querySelector(".i-material-symbols-image-outline-rounded")).toBeInTheDocument();
+    const tile = document.querySelector(".letter-tile");
+    expect(tile).toBeInTheDocument();
+    expect(tile).toHaveAttribute("aria-hidden", "true");
+    expect(tile).toHaveAttribute("data-initial", "无");
     expect(screen.getByRole("tabpanel")).toHaveAttribute("id", "dashboard-panel-movies");
   });
 

@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { BackLink } from "@/components/MediaBackLink";
 import ClampedCopy from "@/components/ClampedCopy";
+import LetterTile from "@/components/LetterTile";
 import SeasonEpisodeBrowser from "@/components/SeasonEpisodeBrowser";
 import { formatRuntime, parseRuntimeParts } from "@/lib/format-runtime";
 import {
@@ -172,12 +173,7 @@ export default async function SeasonPage({ params }: { params: Promise<{ id: str
                 sizes="(max-width: 1023px) 80px, 288px"
               />
             ) : (
-              <div className="flex h-full items-center justify-center text-fg-faint">
-                <span
-                  className="i-material-symbols-image-outline-rounded inline-block size-6 lg:size-9"
-                  aria-hidden="true"
-                />
-              </div>
+              <LetterTile title={seasonData.season.title} decorative />
             )}
           </div>
           <div className="col-start-2 row-start-1 min-w-0 self-start">

@@ -199,7 +199,8 @@ describe("管理列表", () => {
     expect(list).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /Avengers/ })).toHaveAttribute("href", "/manage/media/avengers?type=movie");
     expect(screen.getByRole("link", { name: "查看复仇者联盟的公开页面" })).toHaveAttribute("href", "/movies/avengers");
-    expect(screen.getByText("复")).toBeInTheDocument();
+    expect(document.querySelector(".admin-list-mark .letter-tile")).toHaveAttribute("data-initial", "复");
+    expect(document.querySelector(".admin-list-mark .letter-tile")).toHaveAttribute("aria-hidden", "true");
     expect(screen.getAllByText("没看过").length).toBeGreaterThan(0);
     expect(screen.getByText(/第 1–25 条，共 67 条/)).toBeInTheDocument();
     expect(screen.getByText("每页 25")).toBeInTheDocument();

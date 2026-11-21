@@ -197,6 +197,14 @@ describe("SeasonPage", () => {
     expect(screen.getByText("展开简介 ▾")).toBeInTheDocument();
   });
 
+  it("无季海报时用首字块，与可见标题配套时 aria-hidden", async () => {
+    const { container } = render(await SeasonPage({ params: Promise.resolve({ id: seriesId, seasonId }) }));
+    const tile = container.querySelector("[data-poster] .letter-tile");
+    expect(tile).toHaveAttribute("data-initial", "城");
+    expect(tile).toHaveAttribute("aria-hidden", "true");
+    expect(container.querySelector(".i-material-symbols-image-outline-rounded")).toBeNull();
+  });
+
   it("季不存在时返回未找到", async () => {
     vi.mocked(getCachedSeasonEpisodes).mockResolvedValue(null);
     await expect(SeasonPage({ params: Promise.resolve({ id: seriesId, seasonId }) })).rejects.toThrow("NOT_FOUND");

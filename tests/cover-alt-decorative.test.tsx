@@ -76,6 +76,17 @@ describe("封面替代文字与可见标题不重复", () => {
     expect(link.querySelector(".letter-tile")).toHaveAttribute("aria-hidden", "true");
   });
 
+  it("MediaRow：电影无封面也用首字块，不出现图片图标", () => {
+    render(
+      <MediaRow title="我想看" items={[movie({ cover_url: "", title: "缺海报电影" })]} type="movies" hideStatusBadge />,
+    );
+    const link = linkWithTitleOnce("缺海报电影");
+    const tile = link.querySelector(".letter-tile");
+    expect(tile).toHaveAttribute("aria-hidden", "true");
+    expect(tile).toHaveAttribute("data-initial", "缺");
+    expect(link.querySelector(".i-material-symbols-image-outline-rounded")).toBeNull();
+  });
+
   it("SearchMediaCard：封面装饰性，链接名称含标题一次", () => {
     render(<SearchMediaCard item={movie({ title: "搜索影片" })} returnHref="/search" />);
     const link = linkWithTitleOnce("搜索影片");

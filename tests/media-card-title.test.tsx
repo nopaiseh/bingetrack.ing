@@ -86,7 +86,10 @@ test("search cards reuse the catalog card surface, poster badge, and body", () =
   const poster = link.querySelector(".image-placeholder");
   expect(poster).not.toBeNull();
   expect(poster?.querySelector("img")).toBeNull();
-  expect(poster?.querySelector(".i-material-symbols-image-outline-rounded")).not.toBeNull();
+  const tile = poster?.querySelector(".letter-tile");
+  expect(tile).not.toBeNull();
+  expect(tile).toHaveAttribute("aria-hidden", "true");
+  expect(tile).toHaveAttribute("data-initial", "体");
 
   const badge = screen.getByTestId("media-card-status-badge");
   expect(badge.className).toContain("absolute");

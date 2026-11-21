@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import type { SupabaseClient } from "@supabase/supabase-js";
+import LetterTile from "@/components/LetterTile";
 import {
   readAiringShows,
   readLibraryCounts,
@@ -96,10 +97,9 @@ export default async function Overview({ db }: { db: SupabaseClient }) {
                         className="h-[54px] w-9 shrink-0 rounded-md object-cover"
                       />
                     ) : (
-                      <span
-                        className="surface-muted h-[54px] w-9 shrink-0 rounded-md border border-white/10"
-                        aria-hidden="true"
-                      />
+                      <span className="relative h-[54px] w-9 shrink-0 overflow-hidden rounded-md border border-white/10">
+                        <LetterTile title={show.title} decorative />
+                      </span>
                     )}
                     <div className="min-w-0 flex-1">
                       <Link

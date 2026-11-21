@@ -73,6 +73,11 @@ test(
     await page.goto("/search?type=movie");
     await page.getByRole("textbox", { name: "搜索媒体", exact: true }).fill("分页测试");
     await expect(page.getByText("分页测试电影 0")).toBeVisible();
+    // 无封面搜索卡用全站统一的首字块，不用图片图标。
+    const emptyCoverCard = page.locator(".search-media-card", { hasText: "分页测试电影 0" });
+    await expect(emptyCoverCard.locator(".letter-tile")).toHaveAttribute("data-initial", "分");
+    await expect(emptyCoverCard.locator(".letter-tile")).toHaveAttribute("aria-hidden", "true");
+    await expect(emptyCoverCard.locator(".i-material-symbols-image-outline-rounded")).toHaveCount(0);
     await page
       .getByRole("navigation", { name: "搜索结果分页" })
       .getByRole("button", { name: "2", exact: true })

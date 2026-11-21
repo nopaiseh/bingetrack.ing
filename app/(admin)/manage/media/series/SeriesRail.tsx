@@ -3,6 +3,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef } from "react";
+import LetterTile from "@/components/LetterTile";
 import { mayLeaveEditor } from "@/lib/admin/navigation";
 import type { SeriesStructure, WatchStatus } from "@/lib/admin/series-structure";
 import { episodeLabel, formatCount, mediaHref, statusLabels, type CurrentItem, type QuickAddKind } from "./shared";
@@ -114,7 +115,9 @@ export default function SeriesRail({
             className="h-[54px] w-9 shrink-0 rounded-md object-cover"
           />
         ) : (
-          <span className="surface-muted h-[54px] w-9 shrink-0 rounded-md" aria-hidden="true" />
+          <span className="relative h-[54px] w-9 shrink-0 overflow-hidden rounded-md">
+            <LetterTile title={show.title} decorative />
+          </span>
         )}
         <span className="min-w-0 flex-1">
           <span className="block truncate font-semibold text-white">{show.title}</span>
