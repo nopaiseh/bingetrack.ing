@@ -11,7 +11,7 @@ vi.mock("@/lib/auth/server", () => ({ requireOwner: vi.fn() }));
 vi.mock("next/navigation", () => ({ redirect: vi.fn() }));
 
 const peopleItem = "people:22222222-2222-4222-8222-222222222222";
-const creditItem = "credit:44444444-4444-4444-8444-444444444444:22222222-2222-4222-8222-222222222222";
+const creditItem = `credit:44444444-4444-4444-8444-444444444444:22222222-2222-4222-8222-222222222222:${Buffer.from("英雄/反派", "utf8").toString("hex")}`;
 const deleteEq = vi.fn();
 const upsert = vi.fn();
 const from = vi.fn(() => ({
@@ -54,7 +54,7 @@ describe("确认疑似名字错误", () => {
     );
   });
 
-  it("接受 credit 行 id", async () => {
+  it("接受含角色名 hex 的 credit 行 id", async () => {
     await confirmSuspiciousName(
       {},
       form([
@@ -68,7 +68,16 @@ describe("确认疑似名字错误", () => {
     );
   });
 
-  it("拒绝格式不正确的条目", async () => {
+  it("拒绝缺少角色段的旧 credit 键与非法条目", async () => {
+    expect(
+      await confirmSuspiciousName(
+        {},
+        form([
+          ["item_id", "credit:44444444-4444-4444-8444-444444444444:22222222-2222-4222-8222-222222222222"],
+          ["confirmed_name", "英雄/反派"],
+        ]),
+      ),
+    ).toHaveProperty("error");
     expect(
       await confirmSuspiciousName(
         {},

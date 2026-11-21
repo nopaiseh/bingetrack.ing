@@ -1,5 +1,6 @@
 "use server";
 import { requireOwner } from "@/lib/auth/server";
+import { isNameIssueItemId, normalizeNameIssueItemId } from "@/lib/admin/name-issue-item-id";
 import { isReportKind, reports } from "@/lib/admin/reports";
 import { referenceMediaIds, revalidateMediaItems } from "@/lib/admin/revalidate-media";
 import { isMediaId } from "@/lib/functions/media-id";
@@ -88,16 +89,12 @@ export async function dismissSimilarPeople(_previous: ActionResult, form: FormDa
   redirect(`/manage/reports/similar-people?dismissed=1&n=${Date.now()}`);
 }
 
-/** 报告行 id：people:<uuid> 或 credit:<media_item_id>:<person_id>。 */
-const SUSPICIOUS_NAME_ITEM_ID =
-  /^(people:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|credit:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$/i;
-
 /** 确认疑似名字错误无误：记下确认时的名字；名字未改前不再出现在报告中。 */
 export async function confirmSuspiciousName(_previous: ActionResult, form: FormData): Promise<ActionResult> {
   const { db } = await requireOwner();
-  const itemId = String(form.get("item_id") ?? "").toLowerCase();
+  const itemId = normalizeNameIssueItemId(String(form.get("item_id") ?? ""));
   const confirmedName = String(form.get("confirmed_name") ?? "");
-  if (!SUSPICIOUS_NAME_ITEM_ID.test(itemId) || !confirmedName || confirmedName.length > 200) {
+  if (!isNameIssueItemId(itemId) || !confirmedName || confirmedName.length > 200) {
     return { error: "无法确认该条目，请刷新后重试。" };
   }
   // 表权限与 people_distinct_pairs 一致（无 update）；先删后插，等价于按 item_id upsert。

@@ -92,20 +92,20 @@ select ok(not exists(select 1 from public.v_report_orphan_people where link_id i
 select is((select tags from public.v_report_missing_character where link_id='fc000000-0000-4000-8000-000000000100'), array['Report Actor'], 'actor without character is listed per work');
 select ok(exists(select 1 from public.v_report_missing_alias where link_id='fc000000-0000-4000-8000-000000000201'), 'person without alias is listed');
 select ok(not exists(select 1 from public.v_report_missing_alias where link_id='fc000000-0000-4000-8000-000000000202'), 'person with alias is not listed');
-select ok(exists(select 1 from public.v_report_suspicious_names where id='credit:fc000000-0000-4000-8000-000000000100:fc000000-0000-4000-8000-000000000203' and 'separator' = any(tags)), 'suspicious character name is listed');
+select ok(exists(select 1 from public.v_report_suspicious_names where id=public.manage_name_issue_credit_item_id('fc000000-0000-4000-8000-000000000100','fc000000-0000-4000-8000-000000000203','英雄/反派') and 'separator' = any(tags)), 'suspicious character name is listed');
 select ok(exists(select 1 from public.v_report_suspicious_names where link_id='fc000000-0000-4000-8000-000000000203' and 'double_space' = any(tags)), 'suspicious person name is listed');
 select ok(exists(select 1 from public.v_report_suspicious_names where 'same_as_actor' = any(tags) and title='Twin Name'), 'character named after its actor is listed');
 
 -- 确认无误后离开报告；改名后确认失效并重新出现
 insert into public.name_issue_confirmations(item_id, confirmed_name)
-  values ('credit:fc000000-0000-4000-8000-000000000100:fc000000-0000-4000-8000-000000000203', '英雄/反派');
-select ok(not exists(select 1 from public.v_report_suspicious_names where id='credit:fc000000-0000-4000-8000-000000000100:fc000000-0000-4000-8000-000000000203'), 'confirmed name leaves the report');
+  values (public.manage_name_issue_credit_item_id('fc000000-0000-4000-8000-000000000100','fc000000-0000-4000-8000-000000000203','英雄/反派'), '英雄/反派');
+select ok(not exists(select 1 from public.v_report_suspicious_names where id=public.manage_name_issue_credit_item_id('fc000000-0000-4000-8000-000000000100','fc000000-0000-4000-8000-000000000203','英雄/反派')), 'confirmed name leaves the report');
 update public.media_credits set character_name='英雄／反派'
   where media_item_id='fc000000-0000-4000-8000-000000000100' and person_id='fc000000-0000-4000-8000-000000000203';
-select ok(exists(select 1 from public.v_report_suspicious_names where id='credit:fc000000-0000-4000-8000-000000000100:fc000000-0000-4000-8000-000000000203'), 'renamed character reappears after confirmation');
+select ok(exists(select 1 from public.v_report_suspicious_names where id=public.manage_name_issue_credit_item_id('fc000000-0000-4000-8000-000000000100','fc000000-0000-4000-8000-000000000203','英雄／反派')), 'renamed character reappears after confirmation');
 update public.media_credits set character_name='英雄/反派'
   where media_item_id='fc000000-0000-4000-8000-000000000100' and person_id='fc000000-0000-4000-8000-000000000203';
-delete from public.name_issue_confirmations where item_id='credit:fc000000-0000-4000-8000-000000000100:fc000000-0000-4000-8000-000000000203';
+delete from public.name_issue_confirmations where item_id=public.manage_name_issue_credit_item_id('fc000000-0000-4000-8000-000000000100','fc000000-0000-4000-8000-000000000203','英雄/反派');
 select is((select count(*)::integer from public.v_report_similar_people where link_id in ('fc000000-0000-4000-8000-000000000202','fc000000-0000-4000-8000-000000000203')), 2, 'spelling variants are similar people');
 select ok(not exists(select 1 from public.v_report_similar_people where title='Twin Name'), 'same names with distinct aliases are not flagged');
 select ok(exists(select 1 from public.v_report_unused_references where link_id='fc000000-0000-4000-8000-000000000301'), 'unused genre is listed');
