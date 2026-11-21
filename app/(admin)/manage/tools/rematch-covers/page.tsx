@@ -14,7 +14,7 @@ export default async function RematchCoversPage() {
       <PageHeader
         eyebrow={<AdminCrumb current="重新匹配音乐封面" />}
         title="重新匹配音乐封面"
-        description="只针对封面主机为 *.mzstatic.com 的专辑与曲目。先预览新规则解析结果，勾选后再提交；未勾选的不动。手填的非 mzstatic 封面不会出现在此列表。"
+        description="只针对封面主机为 *.mzstatic.com 的专辑。曲目封面跟所属专辑，不在此重配。先预览新规则解析结果，勾选后再提交；未勾选的不动。手填的非 mzstatic 封面不会出现在此列表。"
       />
       <RematchCoversClient />
     </section>

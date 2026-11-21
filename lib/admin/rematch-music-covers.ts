@@ -1,6 +1,6 @@
 /**
- * 后台批量重新匹配音乐封面：仅处理 cover_url 主机为 *.mzstatic.com 的专辑／曲目。
- * 预览用新规则解析；提交只更新勾选条目。不改表结构、不加迁移。
+ * 后台批量重新匹配音乐封面：仅处理 cover_url 主机为 *.mzstatic.com 的专辑。
+ * 曲目展示封面跟所属专辑，不再单独重配。预览用新规则解析；提交只更新勾选条目。不改表结构、不加迁移。
  */
 
 import "server-only";
@@ -17,7 +17,7 @@ export const REMATCH_PREVIEW_DEADLINE_MS = 50_000;
 
 export type RematchMusicItem = {
   id: string;
-  type: "album" | "music";
+  type: "album";
   title: string;
   cover_url: string;
   artist: string | null;
@@ -25,7 +25,7 @@ export type RematchMusicItem = {
 
 export type RematchPreviewRow = {
   id: string;
-  type: "album" | "music";
+  type: "album";
   title: string;
   artist: string | null;
   oldCover: string;
@@ -172,7 +172,7 @@ async function attachArtists(db: SupabaseClient, rows: RematchMusicItem[]): Prom
 }
 
 /**
- * 按 id 升序游标列出 *.mzstatic.com 封面的专辑／曲目。
+ * 按 id 升序游标列出 *.mzstatic.com 封面的专辑（不含曲目）。
  * afterId 之后继续；会多读几页直到凑满 limit 或库耗尽。
  */
 export async function listMzstaticMusicItems(
@@ -189,7 +189,7 @@ export async function listMzstaticMusicItems(
     let request = db
       .from("media_items")
       .select("id,type,title,cover_url")
-      .in("type", ["album", "music"])
+      .eq("type", "album")
       .not("cover_url", "is", null)
       .ilike("cover_url", "%mzstatic.com%")
       .order("id", { ascending: true })
@@ -208,7 +208,7 @@ export async function listMzstaticMusicItems(
     for (const row of page) {
       cursor = String(row.id);
       if (
-        (row.type === "album" || row.type === "music") &&
+        row.type === "album" &&
         typeof row.id === "string" &&
         typeof row.title === "string" &&
         typeof row.cover_url === "string" &&
@@ -216,7 +216,7 @@ export async function listMzstaticMusicItems(
       ) {
         collected.push({
           id: row.id,
-          type: row.type,
+          type: "album",
           title: row.title,
           cover_url: row.cover_url,
           artist: null,
@@ -238,7 +238,7 @@ export async function listMzstaticMusicItems(
     const { data: probeRows, error: probeError } = await db
       .from("media_items")
       .select("id,type,cover_url")
-      .in("type", ["album", "music"])
+      .eq("type", "album")
       .not("cover_url", "is", null)
       .ilike("cover_url", "%mzstatic.com%")
       .order("id", { ascending: true })
@@ -246,10 +246,7 @@ export async function listMzstaticMusicItems(
       .limit(5);
     if (probeError) throw new Error("无法读取音乐封面列表，请重试。");
     hasMore = (probeRows ?? []).some(
-      (row) =>
-        (row.type === "album" || row.type === "music") &&
-        typeof row.cover_url === "string" &&
-        isMzstaticCoverUrl(row.cover_url),
+      (row) => row.type === "album" && typeof row.cover_url === "string" && isMzstaticCoverUrl(row.cover_url),
     );
   } else {
     hasMore = !exhausted && withArtists.length > 0;
@@ -276,7 +273,7 @@ export async function previewMusicCoverRematch(
         {
           title: item.title,
           artist: item.artist,
-          entity: item.type === "album" ? "album" : "song",
+          entity: "album",
         },
         deps,
       ).catch(() => null);
@@ -347,7 +344,7 @@ export async function applyMusicCoverRematch(
     .from("media_items")
     .select("id,type,cover_url")
     .in("id", ids)
-    .in("type", ["album", "music"]);
+    .eq("type", "album");
 
   if (error) throw new Error("无法校验音乐条目，请重试。");
 
@@ -372,7 +369,7 @@ export async function applyMusicCoverRematch(
       continue;
     }
     const current = byId.get(update.id);
-    if (!current || (current.type !== "album" && current.type !== "music")) {
+    if (!current || current.type !== "album") {
       failed += 1;
       continue;
     }
@@ -396,7 +393,7 @@ export async function applyMusicCoverRematch(
       .update({ cover_url: nextCover })
       .eq("id", update.id)
       .eq("cover_url", update.expected_cover_url)
-      .in("type", ["album", "music"])
+      .eq("type", "album")
       .select("id");
 
     if (writeError) {

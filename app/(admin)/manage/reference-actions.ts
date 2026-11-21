@@ -12,6 +12,7 @@ import {
 } from "@/lib/admin/catalog";
 import { isMediaId } from "@/lib/functions/media-id";
 import { affectedMediaIds, mergeAffected, referenceMediaIds, revalidateMediaItems } from "@/lib/admin/revalidate-media";
+import { withAlbumCoversForTracks } from "@/lib/music/track-display-cover";
 import { isExpectedDbError, reportHandledError } from "@/lib/report-error";
 import { redirect } from "next/navigation";
 import type { ActionResult } from "./actions";
@@ -41,16 +42,24 @@ export async function searchChoices(kind: string, term: string): Promise<{ choic
         : query.eq("type", kind);
   const { data, error } = await query;
   if (error) return { choices: [], error: "搜索失败，请重试。" };
+  const rows = data as unknown as (MediaChoiceRow & {
+    id: string;
+    title?: string;
+    name?: string;
+    alternate_name?: string | null;
+    cover_url?: string | null;
+    type?: string | null;
+  })[];
+  let withCovers = rows;
+  if (media) {
+    try {
+      withCovers = await withAlbumCoversForTracks(db, rows);
+    } catch {
+      return { choices: [], error: "搜索失败，请重试。" };
+    }
+  }
   return {
-    choices: (
-      data as unknown as (MediaChoiceRow & {
-        id: string;
-        title?: string;
-        name?: string;
-        alternate_name?: string | null;
-        cover_url?: string | null;
-      })[]
-    ).map(
+    choices: withCovers.map(
       /* 统一名称和影视标题；人物以别名区分同名者。 */ (row) => ({
         id: row.id,
         name: row.title ?? row.name ?? "",

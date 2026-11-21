@@ -11,6 +11,7 @@ import {
   type RelatedMedia,
 } from "@/lib/admin/credits";
 import { isMediaId } from "@/lib/functions/media-id";
+import { withAlbumCoversForTracks } from "@/lib/music/track-display-cover";
 import ReferenceForm from "../../ReferenceForm";
 import CollectionMember from "../../CollectionMember";
 import RelatedWork from "../../RelatedWork";
@@ -154,7 +155,8 @@ export default async function ReferenceDetail({
       .select(relatedMediaColumns)
       .in("id", [...pageIds]);
     if (error) throw new Error("无法完整读取资料，请重试。");
-    for (const media of data as unknown as RelatedMedia[]) details.set(media.id, withAirDate(media));
+    const pageMedia = await withAlbumCoversForTracks(db, data as unknown as RelatedMedia[]);
+    for (const media of pageMedia) details.set(media.id, withAirDate(media));
   }
 
   return (

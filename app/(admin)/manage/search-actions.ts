@@ -2,6 +2,7 @@
 import { requireOwner } from "@/lib/auth/server";
 import { titleOrAliasFilter } from "@/lib/admin/catalog";
 import type { ManagedMediaType } from "@/lib/admin/media-form";
+import { withAlbumCoversForTracks } from "@/lib/music/track-display-cover";
 
 export type MediaHit = { id: string; type: ManagedMediaType; title: string; context: string; coverUrl: string | null };
 
@@ -78,8 +79,14 @@ export async function searchMedia(term: string): Promise<{ hits: MediaHit[]; err
     (a, b) =>
       exact(a) - exact(b) || typeOrder[a.type] - typeOrder[b.type] || a.title.localeCompare(b.title, "zh-Hans-CN"),
   );
+  let withCovers = rows;
+  try {
+    withCovers = await withAlbumCoversForTracks(db, rows);
+  } catch {
+    return { hits: [], error: "搜索失败，请重试。" };
+  }
   return {
-    hits: rows.map((row) => ({
+    hits: withCovers.map((row) => ({
       id: row.id,
       type: row.type,
       title: row.title,

@@ -2,6 +2,7 @@ import { getSupabasePublicServer } from "@/lib/supabase/public-server";
 import { mapViewRowToMedia, mapViewRowToMediaCard } from "@/lib/functions/media-mapper";
 import { isMediaId } from "@/lib/functions/media-id";
 import { withRetry } from "@/lib/functions/retry";
+import { fetchAlbumCoversByTrackIds, trackDisplayCoverUrl } from "@/lib/music/track-display-cover";
 import { EpisodeInfo, MediaCard, Media, SeasonEpisodePage, SeasonInfo, ViewAllMediaRow } from "@/lib/types";
 import { reportHandledError } from "@/lib/report-error";
 import { nextUnwatchedEpisodeNumber } from "@/lib/season-browse";
@@ -42,7 +43,16 @@ export async function getMediaById(id: string): Promise<Media | null> {
       },
     );
 
-    return mapViewRowToMedia(viewData as ViewAllMediaRow, seriesNames);
+    const media = mapViewRowToMedia(viewData as ViewAllMediaRow, seriesNames);
+    if (String(viewData.type) === "music") {
+      try {
+        const covers = await fetchAlbumCoversByTrackIds(db, [id]);
+        media.cover_url = trackDisplayCoverUrl(covers.get(id)) ?? "";
+      } catch (error) {
+        throw new MediaRepositoryError("fetch track album cover", error);
+      }
+    }
+    return media;
   });
 }
 
