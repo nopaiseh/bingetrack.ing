@@ -523,21 +523,14 @@ function rowsIn<Row extends { id: string }>(rows: Row[], allowed: string[]) {
 
 /**
  * 删除人物。演职关联和「不是同一人」记录随外键级联删除，影视条目保留。
- * music_albums.artist_id 已弃用（艺人改走 media_credits），但列与外键仍在：仍被该列引用的人物计为失败。
  * media_credits 随 people 级联删除，不额外拦截。
  */
 export async function bulkDeletePeople(db: SupabaseClient, ids: unknown): Promise<BulkCounts> {
   const targets = parseBulkIds(ids);
-  const blockedRows = readRows<{ artist_id: string | null }>(
-    await db.from("music_albums").select("artist_id").in("artist_id", targets),
-    DELETE_ERROR,
-  );
-  const blocked = new Set(blockedRows.flatMap((row) => (row.artist_id ? [row.artist_id.toLowerCase()] : [])));
-  const deletable = targets.filter((id) => !blocked.has(id));
-  if (deletable.length === 0) return { succeeded: 0, failed: targets.length };
+  if (targets.length === 0) return { succeeded: 0, failed: 0 };
   // 级联会先删掉演职关联，受影响的详情页必须在删除前查出。
-  const affected = await referenceMediaIds(db, "people", deletable);
-  const { data, error } = await db.from("people").delete().in("id", deletable).select("id");
+  const affected = await referenceMediaIds(db, "people", targets);
+  const { data, error } = await db.from("people").delete().in("id", targets).select("id");
   if (error?.code === "23503") return { succeeded: 0, failed: targets.length };
   assertWrite(error, DELETE_ERROR);
   const succeeded = deletedIds((data ?? []) as { id: string }[]).size;

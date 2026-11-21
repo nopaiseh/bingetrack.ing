@@ -12,7 +12,7 @@ returns jsonb language sql as $$
   select jsonb_build_object(
     'type','album','title',title,'status','want_to_watch','rating',null,
     'runtime',null,'label','删除测试厂牌','genres','[]'::jsonb,
-    'artists',jsonb_build_array('删除测试艺人'),
+    'artists',jsonb_build_array(jsonb_build_object('name','删除测试艺人')),
     'collections','[]'::jsonb,
     'languages','[]'::jsonb,'regions','[]'::jsonb,
     'actors','[]'::jsonb,'directors','[]'::jsonb,
@@ -25,7 +25,7 @@ returns jsonb language sql as $$
   select jsonb_build_object(
     'type','music','title',title,'number',track_no,'runtime',runtime,
     'status','want_to_watch','rating',null,
-    'artists',jsonb_build_array('删除测试艺人'),
+    'artists',jsonb_build_array(jsonb_build_object('name','删除测试艺人')),
     'lyricists','[]'::jsonb,'composers','[]'::jsonb,
     'genres','[]'::jsonb,'languages','[]'::jsonb,'regions','[]'::jsonb,
     'actors','[]'::jsonb,'directors','[]'::jsonb,

@@ -64,7 +64,9 @@ insert into public.media_credits(media_item_id,person_id,role,credit_order,chara
   ('fc000000-0000-4000-8000-000000000110','fc000000-0000-4000-8000-000000000204','actor',0,'Twin Name'),
   ('fc000000-0000-4000-8000-000000000110','fc000000-0000-4000-8000-000000000205','actor',1,'Good Twin');
 insert into public.media_items(id,type,title) values ('fc000000-0000-4000-8000-000000000130','album','Report album');
-insert into public.music_albums(media_item_id,artist_id) values ('fc000000-0000-4000-8000-000000000130','fc000000-0000-4000-8000-000000000206');
+insert into public.music_albums(media_item_id) values ('fc000000-0000-4000-8000-000000000130');
+insert into public.media_credits(media_item_id,person_id,role,credit_order) values
+  ('fc000000-0000-4000-8000-000000000130','fc000000-0000-4000-8000-000000000206','artist',0);
 insert into public.genres(id,name) values ('fc000000-0000-4000-8000-000000000301','Report unused genre');
 
 -- 名称检查函数
@@ -88,7 +90,7 @@ select ok('fullwidth' = any(public.manage_name_issues('Ｔｏｍ', false)), 'ful
 
 -- 各报告内容
 select ok(exists(select 1 from public.v_report_orphan_people where link_id='fc000000-0000-4000-8000-000000000201'), 'unlinked person is orphan');
-select ok(not exists(select 1 from public.v_report_orphan_people where link_id in ('fc000000-0000-4000-8000-000000000202','fc000000-0000-4000-8000-000000000206')), 'credited person and album artist are not orphans');
+select ok(not exists(select 1 from public.v_report_orphan_people where link_id in ('fc000000-0000-4000-8000-000000000202','fc000000-0000-4000-8000-000000000206')), 'credited person and album credit artist are not orphans');
 select is((select tags from public.v_report_missing_character where link_id='fc000000-0000-4000-8000-000000000100'), array['Report Actor'], 'actor without character is listed per work');
 select ok(exists(select 1 from public.v_report_missing_alias where link_id='fc000000-0000-4000-8000-000000000201'), 'person without alias is listed');
 select ok(not exists(select 1 from public.v_report_missing_alias where link_id='fc000000-0000-4000-8000-000000000202'), 'person with alias is not listed');
@@ -142,7 +144,7 @@ select lives_ok($$insert into public.name_issue_confirmations(item_id,confirmed_
 select throws_ok($$select public.manage_delete_unused('media')$$,'22023',null,'unknown kind is rejected');
 select lives_ok($$select public.manage_delete_unused('people')$$,'owner deletes orphan people');
 select ok(not exists(select 1 from public.people where id='fc000000-0000-4000-8000-000000000201'), 'orphan person was deleted');
-select ok(exists(select 1 from public.people where id='fc000000-0000-4000-8000-000000000206'), 'album artist is kept');
+select ok(exists(select 1 from public.people where id='fc000000-0000-4000-8000-000000000206'), 'album credit artist is kept');
 select lives_ok($$select public.manage_delete_unused('references')$$,'owner deletes unused references');
 select ok(not exists(select 1 from public.genres where id='fc000000-0000-4000-8000-000000000301'), 'unused genre was deleted');
 
@@ -153,7 +155,8 @@ select throws_ok($$insert into public.people_distinct_pairs(person_a,person_b) v
 delete from public.people_distinct_pairs where person_a='fc000000-0000-4000-8000-000000000202';
 select ok(exists(select 1 from public.v_report_similar_people where link_id='fc000000-0000-4000-8000-000000000202' and group_key <> ''), 'removing the mark brings the group back');
 select throws_ok($$select public.manage_merge_people('fc000000-0000-4000-8000-000000000202', array['fc000000-0000-4000-8000-000000000202']::uuid[])$$,'22023',null,'cannot merge a person into themselves');
-select throws_ok($$select public.manage_merge_people('fc000000-0000-4000-8000-000000000202', array['fc000000-0000-4000-8000-000000000206']::uuid[])$$,'23503',null,'album artist cannot be merged away');
+select is(public.manage_merge_people('fc000000-0000-4000-8000-000000000202', array['fc000000-0000-4000-8000-000000000206']::uuid[]), 1, 'album credit artist can be merged into another person');
+select ok(exists(select 1 from public.media_credits where media_item_id='fc000000-0000-4000-8000-000000000130' and person_id='fc000000-0000-4000-8000-000000000202' and role='artist'), 'album artist credit moved to kept person');
 select is(public.manage_merge_people('fc000000-0000-4000-8000-000000000202', array['fc000000-0000-4000-8000-000000000203']::uuid[]), 1, 'merge moves the credit');
 select ok(not exists(select 1 from public.people where id='fc000000-0000-4000-8000-000000000203'), 'merged person is deleted');
 select is((select character_name from public.media_credits where media_item_id='fc000000-0000-4000-8000-000000000100' and person_id='fc000000-0000-4000-8000-000000000202' and role='actor'), '英雄/反派', 'missing character name is filled from the merged credit');

@@ -583,29 +583,18 @@ describe("批量删除与状态", () => {
     vi.mocked(revalidateMediaItems).mockClear();
   });
 
-  it("删除人物时排除仍被专辑引用的 ID，并在删除前收集受影响条目", async () => {
-    const { db, queries, from } = fakeDb((query) => {
-      if (query.table === "music_albums") return { data: [{ artist_id: personB.toUpperCase() }] };
-      return { data: [{ id: personA }] };
-    });
+  it("删除人物前收集受影响条目，并按去重后的 ID 删除", async () => {
+    const { db, queries, from } = fakeDb(() => ({ data: [{ id: personA }] }));
     const result = await bulkDeletePeople(db, [personA, personB, personA]);
-    expect(queries.map((query) => query.table)).toEqual(["music_albums", "people"]);
-    expect(calls(queries[0], "delete")).toHaveLength(0);
-    expect(calls(queries[1], "in")[0].args).toEqual(["id", [personA]]);
-    expect(vi.mocked(referenceMediaIds).mock.invocationCallOrder[0]).toBeLessThan(from.mock.invocationCallOrder[1]);
+    expect(queries.map((query) => query.table)).toEqual(["people"]);
+    expect(calls(queries[0], "in")[0].args).toEqual(["id", [personA, personB]]);
+    expect(vi.mocked(referenceMediaIds).mock.invocationCallOrder[0]).toBeLessThan(from.mock.invocationCallOrder[0]);
     expect(revalidateMediaItems).toHaveBeenCalledWith(["33333333-3333-4333-8333-333333333333"]);
     expect(result).toEqual({ succeeded: 1, failed: 1 });
   });
 
-  it("人物全部被外键挡住时不删除，语句被拒绝时整批记为失败且不刷新缓存", async () => {
-    const blocked = fakeDb(() => ({ data: [{ artist_id: personA }] }));
-    expect(await bulkDeletePeople(blocked.db, [personA])).toEqual({ succeeded: 0, failed: 1 });
-    expect(blocked.queries).toHaveLength(1);
-    expect(revalidateMediaItems).not.toHaveBeenCalled();
-
-    const rejected = fakeDb((query) =>
-      query.table === "people" ? { data: null, error: { code: "23503" } } : { data: [] },
-    );
+  it("语句被外键拒绝时整批记为失败且不刷新缓存", async () => {
+    const rejected = fakeDb(() => ({ data: null, error: { code: "23503" } }));
     expect(await bulkDeletePeople(rejected.db, [personA])).toEqual({ succeeded: 0, failed: 1 });
     expect(revalidateMediaItems).not.toHaveBeenCalled();
   });
