@@ -8,12 +8,12 @@ import LetterTile from "./LetterTile";
 import MediaCardBody from "./MediaCardBody";
 import MediaCardStatusBadge from "./MediaCardStatusBadge";
 import MediaRatingBadge from "./MediaRatingBadge";
-import { getMediaTypeDefinition, MEDIA_TYPE_DEFINITIONS, publicPathForDbType } from "@/lib/media-types";
+import { getMediaTypeDefinition, publicPathForDbType } from "@/lib/media-types";
 
 /** 已看、在看优先于即将上映；还没看且日期在今天之后，用即将上映代替想看。 */
 function showUpcoming(item: MediaCard): boolean {
   if (item.status === "watched" || item.status === "watching" || item.status === "in_progress") return false;
-  if (item.dbType === "book" || item.type === "books") return false;
+  if (item.dbType === "book") return false;
   return isUpcomingDate(item.date);
 }
 
@@ -33,31 +33,19 @@ function UpcomingPosterBadge() {
 }
 
 function typeTagLabel(item: MediaCard): string | null {
-  if (item.dbType && getMediaTypeDefinition(item.dbType)) {
-    return getMediaTypeDefinition(item.dbType)!.label;
-  }
-  if (item.type === "albums") return MEDIA_TYPE_DEFINITIONS.album.label;
-  if (item.type === "music") return MEDIA_TYPE_DEFINITIONS.music.label;
-  if (item.type === "movies") return MEDIA_TYPE_DEFINITIONS.movie.label;
-  if (item.type === "shows") return MEDIA_TYPE_DEFINITIONS.tv_show.label;
-  if (item.type === "books") return MEDIA_TYPE_DEFINITIONS.book.label;
-  return null;
+  if (!item.dbType) return null;
+  return getMediaTypeDefinition(item.dbType)?.label ?? null;
 }
 
 function isSquareCover(item: MediaCard): boolean {
-  if (item.dbType === "album" || item.dbType === "music") return true;
-  return item.type === "albums" || item.type === "music";
+  return getMediaTypeDefinition(item.dbType ?? "")?.coverAspect === "1/1";
 }
 
 function detailHref(item: MediaCard, returnHref: string): string | null {
-  if (item.dbType) {
-    const path = publicPathForDbType(item.dbType, item.id);
-    if (path) return `${path}?from=${encodeURIComponent(returnHref)}`;
-  }
-  if (item.type === "movies" || item.type === "shows" || item.type === "albums" || item.type === "books") {
-    return `/${item.type}/${item.id}?from=${encodeURIComponent(returnHref)}`;
-  }
-  return null;
+  if (!item.dbType) return null;
+  const path = publicPathForDbType(item.dbType, item.id);
+  if (!path) return null;
+  return `${path}?from=${encodeURIComponent(returnHref)}`;
 }
 
 /** 搜索结果加载时的卡片骨架，外形与目录卡一致。 */
@@ -115,7 +103,11 @@ function MusicSearchBody({ item, typeLabel }: { item: MediaCard; typeLabel: stri
 }
 
 function isBookCard(item: MediaCard): boolean {
-  return item.dbType === "book" || item.type === "books";
+  return item.dbType === "book";
+}
+
+function isMusicCard(item: MediaCard): boolean {
+  return item.dbType === "album" || item.dbType === "music";
 }
 
 /** 搜索网格：影视／图书 2:3、音乐 1:1；专辑／单曲带类型标签。无公开详情的单曲只展示、不可点进详情。 */
@@ -140,12 +132,11 @@ export function SearchMediaCard({
 }) {
   const square = isSquareCover(item);
   const book = isBookCard(item);
+  const music = isMusicCard(item);
   const typeLabel = typeTagLabel(item);
   const href = detailHref(item, returnHref);
-  const mediaBodyType = item.type === "shows" ? "shows" : "movies";
-  const showTypeOnFilmCard =
-    typeLabel &&
-    (item.type === "albums" || item.type === "music" || item.dbType === "album" || item.dbType === "music");
+  const mediaBodyDbType = item.dbType === "tv_show" ? "tv_show" : "movie";
+  const showTypeOnFilmCard = Boolean(typeLabel && music);
 
   const cover = (
     <div
@@ -177,12 +168,11 @@ export function SearchMediaCard({
     </div>
   );
 
-  const body =
-    item.type === "albums" || item.type === "music" || item.dbType === "album" || item.dbType === "music" ? (
-      <MusicSearchBody item={item} typeLabel={null} />
-    ) : (
-      <MediaCardBody item={item} type={mediaBodyType} headingLevel={2} />
-    );
+  const body = music ? (
+    <MusicSearchBody item={item} typeLabel={null} />
+  ) : (
+    <MediaCardBody item={item} dbType={mediaBodyDbType} headingLevel={2} />
+  );
 
   const className =
     "search-media-card surface-card interactive-media-card group flex h-full flex-col overflow-hidden rounded-xl focus-ring";

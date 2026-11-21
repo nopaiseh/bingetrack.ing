@@ -6,9 +6,9 @@ export function mediaCardTags(item: Pick<MediaCard, "genres" | "languages">): st
   return [...(item.genres ?? []).slice(0, 3), ...(item.languages ?? []).slice(0, 1)].slice(0, 3);
 }
 
-/** 电影取上映年；剧集保留跨年区间，并把连字符收成短横。 */
-function mediaCardYear(item: MediaCard, type: "movies" | "shows"): string {
-  if (type === "shows") {
+/** 电影／图书取上映年；剧集保留跨年区间，并把连字符收成短横。 */
+function mediaCardYear(item: MediaCard, dbType: "movie" | "tv_show"): string {
+  if (dbType === "tv_show") {
     return String(item.release_year || (item.date ? item.date.substring(0, 4) : "未知")).replace(/\s*-\s*/g, "–");
   }
   return item.date ? item.date.substring(0, 4) : "未知";
@@ -17,11 +17,12 @@ function mediaCardYear(item: MediaCard, type: "movies" | "shows"): string {
 /** 卡片标题、年份、评分和标签。标题固定两行高，短标题也不会把同一行的卡片挤矮。 */
 export default function MediaCardBody({
   item,
-  type,
+  dbType,
   headingLevel = 3,
 }: {
   item: MediaCard;
-  type: "movies" | "shows";
+  /** 仅用于年份展示口径：剧集用跨年区间，其余用日期年。 */
+  dbType: "movie" | "tv_show";
   /** 搜索页在 h1 下用 h2；目录行在行标题 h2 下保持 h3。 */
   headingLevel?: 2 | 3;
 }) {
@@ -38,7 +39,7 @@ export default function MediaCardBody({
       </Title>
 
       <div className="flex min-w-0 items-center justify-between gap-1.5 text-xs">
-        <span className="shrink-0 whitespace-nowrap font-medium text-fg-secondary">{mediaCardYear(item, type)}</span>
+        <span className="shrink-0 whitespace-nowrap font-medium text-fg-secondary">{mediaCardYear(item, dbType)}</span>
         <MediaRatingBadge rating={item.rating} size="sm" showTier={item.rating != null} />
       </div>
 

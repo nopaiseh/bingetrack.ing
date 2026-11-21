@@ -11,7 +11,7 @@ function statsFor(summary: Summary[] = [], year = "All Time") {
   return deriveDashboardStats(summary, year, distributions);
 }
 
-function card(cover: string): MediaCard {
+function card(cover: string, dbType: "movie" | "tv_show" = "movie"): MediaCard {
   return {
     id: "m1",
     title: cover ? "有海报" : "无海报",
@@ -20,7 +20,8 @@ function card(cover: string): MediaCard {
     genres: ["剧情"],
     languages: ["汉语"],
     cover_url: cover,
-    type: "movies",
+    type: dbType === "tv_show" ? "shows" : "movies",
+    dbType,
     status: "watched",
   };
 }
@@ -120,7 +121,7 @@ describe("DashboardCategoryPanel", () => {
         selectedYear="All Time"
         allTimeItems={[card("")]}
         yearItems={[]}
-        mediaType="movies"
+        mediaType="movie"
         searchType="movie"
       />,
     );
@@ -144,9 +145,9 @@ describe("DashboardCategoryPanel", () => {
         isTopMediaLoading={false}
         allTimeTitle="剧集精选"
         selectedYear="All Time"
-        allTimeItems={[{ ...card("/poster.jpg"), type: "shows", title: "有海报" }]}
+        allTimeItems={[card("/poster.jpg", "tv_show")]}
         yearItems={[]}
-        mediaType="shows"
+        mediaType="tv_show"
         searchType="tv_show"
       />,
     );

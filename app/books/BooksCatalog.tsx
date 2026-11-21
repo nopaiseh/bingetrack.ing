@@ -111,7 +111,7 @@ export default function BooksCatalog({
                 items={section.items}
                 eagerCount={eagerCount}
                 viewAllLink={section.viewAllLink}
-                type="books"
+                type="book"
                 hideStatusBadge
               />
             );

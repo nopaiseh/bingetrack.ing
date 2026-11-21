@@ -18,6 +18,7 @@ const series: MediaCard[] = [
     languages: ["意大利语"],
     cover_url: "",
     type: "shows",
+    dbType: "tv_show",
     status: "watched",
   },
   {
@@ -30,12 +31,13 @@ const series: MediaCard[] = [
     languages: ["西班牙语"],
     cover_url: "",
     type: "shows",
+    dbType: "tv_show",
     status: "watched",
   },
 ];
 
 test("series cards keep two lines of title instead of a single truncated line", () => {
-  render(<MediaRow title="我已看" items={series} type="shows" />);
+  render(<MediaRow title="我已看" items={series} type="tv_show" />);
 
   const titles = screen.getAllByRole("heading", { level: 3 });
   expect(titles.map((title) => title.textContent)).toEqual([
@@ -50,7 +52,7 @@ test("series cards keep two lines of title instead of a single truncated line", 
 });
 
 test("MediaRow 卡片、查看全部与翻页按钮可聚焦且链接正确", () => {
-  render(<MediaRow title="我已看" items={series} type="shows" viewAllLink="/shows" />);
+  render(<MediaRow title="我已看" items={series} type="tv_show" viewAllLink="/shows" />);
 
   // 无障碍底线：键盘焦点框（toHaveFocus 只证明能聚焦，不能证明 focus-ring 还在）
   for (const link of screen.getAllByRole("link")) {
@@ -71,7 +73,7 @@ test("MediaRow 卡片、查看全部与翻页按钮可聚焦且链接正确", ()
 });
 
 test("MediaRow 横向滚动在 reduced-motion 下不强制 scroll-smooth", () => {
-  const { container } = render(<MediaRow title="我已看" items={series} type="shows" />);
+  const { container } = render(<MediaRow title="我已看" items={series} type="tv_show" />);
 
   const scroller = container.querySelector(".motion-safe\\:scroll-smooth");
   expect(scroller).not.toBeNull();

@@ -39,7 +39,7 @@ export default function ShowsCatalog({ watched, watching, want, stats }: MediaCa
               items={watchedItems}
               eagerCount={2}
               viewAllLink="/search?type=tv_show&status=watched"
-              type="shows"
+              type="tv_show"
               hideStatusBadge
             />
             <MediaRow
@@ -47,7 +47,7 @@ export default function ShowsCatalog({ watched, watching, want, stats }: MediaCa
               items={watchingItems}
               eagerCount={watchedItems.length ? 0 : 2}
               viewAllLink="/search?type=tv_show&status=watching"
-              type="shows"
+              type="tv_show"
               hideStatusBadge
             />
             <MediaRow
@@ -55,7 +55,7 @@ export default function ShowsCatalog({ watched, watching, want, stats }: MediaCa
               items={wantItems}
               eagerCount={watchedItems.length || watchingItems.length ? 0 : 2}
               viewAllLink="/search?type=tv_show&status=want_to_watch"
-              type="shows"
+              type="tv_show"
               hideStatusBadge
             />
           </div>

@@ -49,6 +49,7 @@ function card(id: string, title: string, cover = true): MediaCard {
     languages: ["汉语"],
     cover_url: cover ? `https://image.tmdb.org/t/p/original/${id}.jpg` : "",
     type: "movies",
+    dbType: "movie",
     status: "watched",
   };
 }
