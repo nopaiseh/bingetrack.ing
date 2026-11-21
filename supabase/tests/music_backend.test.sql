@@ -53,12 +53,13 @@ select ok(
 );
 
 select ok(
-  (
-    select pg_catalog.col_description('public.music_albums'::regclass, a.attnum)
-    from pg_attribute a
-    where a.attrelid = 'public.music_albums'::regclass and a.attname = 'artist_id'
-  ) ilike '%DEPRECATED%',
-  'music_albums.artist_id is marked deprecated'
+  not exists (
+    select 1 from pg_attribute a
+    where a.attrelid = 'public.music_albums'::regclass
+      and a.attname = 'artist_id'
+      and not a.attisdropped
+  ),
+  'music_albums.artist_id column is gone'
 );
 
 -- 专辑／曲目夹具

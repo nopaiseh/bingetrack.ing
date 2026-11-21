@@ -35,7 +35,7 @@ select is((select count(*)::integer from public.site_owner),0,'other user cannot
 
 do $$ begin perform set_config('request.jwt.claim.sub','fa000000-0000-4000-8000-000000000001',true); end $$;
 select is(public.is_site_owner(),true,'designated owner is recognized');
-select lives_ok($$insert into admin_test_ids values ('movie',public.admin_save_media(pg_temp.admin_payload('movie','Admin test movie') || '{"genres":["Admin genre"],"actors":["Doe, Jane"]}'))$$,'owner creates media and relations atomically');
+select lives_ok($$insert into admin_test_ids values ('movie',public.admin_save_media(pg_temp.admin_payload('movie','Admin test movie') || '{"genres":["Admin genre"],"actors":[{"name":"Doe, Jane"}]}'))$$,'owner creates media and relations atomically');
 select lives_ok($$insert into admin_test_ids values ('series',public.admin_save_media(pg_temp.admin_payload('tv_show','Admin test series')))$$,'owner creates series');
 select lives_ok($$insert into admin_test_ids values ('season',public.admin_save_media(pg_temp.admin_payload('tv_season','Admin test season',(select id from admin_test_ids where name='series'),1)))$$,'owner creates season');
 select lives_ok($$insert into admin_test_ids values ('episode',public.admin_save_media(pg_temp.admin_payload('tv_episode','Admin test episode',(select id from admin_test_ids where name='season'),1)))$$,'owner creates episode');
@@ -66,10 +66,10 @@ select is((select count(*)::integer from public.media_items where id=(select id 
 -- 八类管理补充：系列和关联资料不能绕过站长权限，失败须整次回滚。
 select ok(not has_table_privilege('anon','public.media_series','INSERT,UPDATE,DELETE'), 'anonymous cannot write collections');
 select ok(not has_function_privilege('anon','public.manage_save_media(jsonb)','EXECUTE'), 'anonymous cannot call catalog save');
-select lives_ok($$select public.manage_save_media(pg_temp.admin_payload('movie','Catalog movie') || '{"collections":["Catalog collection"],"actors":["Catalog person"],"genres":["Catalog genre"],"regions":["Catalog region"]}')$$, 'owner creates collection and all reference kinds with media');
+select lives_ok($$select public.manage_save_media(pg_temp.admin_payload('movie','Catalog movie') || '{"collections":["Catalog collection"],"actors":[{"name":"Catalog person"}],"genres":["Catalog genre"],"regions":["Catalog region"]}')$$, 'owner creates collection and all reference kinds with media');
 select is((select count(*)::integer from public.media_item_series join public.media_series on series_id=media_series.id where name='Catalog collection'),1,'collection membership saved');
 select lives_ok($$update public.media_item_series set position=9 where series_id=(select id from public.media_series where name='Catalog collection')$$,'owner reorders collection member');
-select lives_ok($$select public.manage_save_media(pg_temp.admin_payload('movie','Catalog movie') || jsonb_build_object('id',(select id from public.media_items where title='Catalog movie'),'collections',jsonb_build_array('Catalog collection'),'actors',jsonb_build_array('Catalog person'),'genres',jsonb_build_array('Catalog genre'),'regions',jsonb_build_array('Catalog region')))$$,'owner updates existing media with collection');
+select lives_ok($$select public.manage_save_media(pg_temp.admin_payload('movie','Catalog movie') || jsonb_build_object('id',(select id from public.media_items where title='Catalog movie'),'collections',jsonb_build_array('Catalog collection'),'actors',jsonb_build_array(jsonb_build_object('name','Catalog person')),'genres',jsonb_build_array('Catalog genre'),'regions',jsonb_build_array('Catalog region')))$$,'owner updates existing media with collection');
 select is((select position from public.media_item_series where series_id=(select id from public.media_series where name='Catalog collection')),9,'media save preserves collection order');
 select throws_ok($$select public.manage_save_media(pg_temp.admin_payload('movie','Catalog rollback') || '{"collections":[""]}')$$,'22023',null,'invalid collection aborts transaction');
 select is((select count(*)::integer from public.media_items where title='Catalog rollback'),0,'invalid collection leaves no media or tracking');
@@ -89,12 +89,18 @@ select lives_ok($$delete from public.people where name='Catalog person'; delete 
 select is((select count(*)::integer from public.media_credits join public.media_items on media_item_id=media_items.id where title='Catalog movie'),0,'reference deletion removes links');
 select is((select count(*)::integer from public.media_items where title='Catalog movie'),1,'deleting reference data preserves movie');
 select is((select count(*)::integer from public.tracking join public.media_items on media_item_id=media_items.id where title='Catalog movie'),1,'deleting reference data preserves tracking');
-select lives_ok($$select public.admin_save_media(pg_temp.admin_payload('movie','Character movie') || '{"actors":[{"name":"Character actor","character":" Hero / Villain "},{"name":"Plain actor","character":null},"Legacy actor"],"directors":["Character director"]}')$$,'owner saves actors with character names');
+select lives_ok($$select public.admin_save_media(pg_temp.admin_payload('movie','Character movie') || '{"actors":[{"name":"Character actor","character":" Hero / Villain "},{"name":"Plain actor","character":null},{"name":"Legacy actor"}],"directors":[{"name":"Character director"}]}')$$,'owner saves actors with character names');
 select is((select casts from public.v_all_media where title='Character movie'),array['Character actor','Plain actor','Legacy actor'],'casts keep credit order');
 select is((select characters from public.v_all_media where title='Character movie'),array['Hero / Villain',null,null]::text[],'characters align with casts and are trimmed');
 select throws_ok($$select public.admin_save_media(pg_temp.admin_payload('movie','Bad character') || '{"directors":[{"name":"Object director","character":"X"}]}')$$,'22023',null,'directors reject character objects');
 select throws_ok($$select public.admin_save_media(pg_temp.admin_payload('movie','Bad character') || jsonb_build_object('actors',jsonb_build_array(jsonb_build_object('name','Long','character',repeat('x',201)))))$$,'22023',null,'overlong character is rejected');
 select throws_ok($$update public.media_credits set character_name='Nope' where role='director' and media_item_id=(select id from public.media_items where title='Character movie')$$,'23514',null,'only actor credits may have a character');
+
+-- 人物字段不再接受纯名字字符串；genres 仍接受字符串。
+select throws_ok($$select public.admin_save_media(pg_temp.admin_payload('movie','Legacy string actor') || '{"actors":["Legacy string"]}')$$,'22023',null,'actor plain strings are rejected');
+select throws_ok($$select public.admin_save_media(pg_temp.admin_payload('movie','Legacy string director') || '{"directors":["Legacy director"]}')$$,'22023',null,'director plain strings are rejected');
+select lives_ok($$select public.admin_save_media(pg_temp.admin_payload('movie','Genre string movie') || '{"genres":["Still string genre"],"actors":[{"name":"Object actor"}]}')$$,'genre plain strings remain accepted with object people');
+select is((select count(*)::integer from public.media_genres mg join public.genres g on g.id=mg.genre_id join public.media_items m on m.id=mg.media_item_id where m.title='Genre string movie' and g.name='Still string genre'),1,'genre string association persisted');
 
 -- 同名人物以别名区分：保存时凭 ID 关联指定人物，无 ID 只匹配无别名的同名人物。
 select lives_ok($$insert into public.people(id,name,alternate_name) values
@@ -105,16 +111,16 @@ select throws_ok($$insert into public.people(name) values('Same name')$$,'23505'
 select lives_ok($$select public.admin_save_media(pg_temp.admin_payload('movie','Same name movie') || '{"actors":[{"id":"fa000000-0000-4000-8000-000000000102","name":"Same name","character":"B"},{"id":"fa000000-0000-4000-8000-000000000101","name":"Same name","character":"A"}],"directors":[{"id":"fa000000-0000-4000-8000-000000000102","name":"Same name"}]}')$$,'owner credits same-name people by id');
 select is((select array_agg(person_id::text order by credit_order) from public.media_credits where role='actor' and media_item_id=(select id from public.media_items where title='Same name movie')),array['fa000000-0000-4000-8000-000000000102','fa000000-0000-4000-8000-000000000101'],'both same-name actors are credited in order');
 select is((select person_id::text from public.media_credits where role='director' and media_item_id=(select id from public.media_items where title='Same name movie')),'fa000000-0000-4000-8000-000000000102','director keeps the chosen person');
-select lives_ok($$select public.admin_save_media(pg_temp.admin_payload('movie','Same name by text') || '{"actors":["Same name"]}')$$,'name without id still saves');
+select lives_ok($$select public.admin_save_media(pg_temp.admin_payload('movie','Same name by text') || '{"actors":[{"name":"Same name"}]}')$$,'name without id still saves');
 select is((select person_id::text from public.media_credits where media_item_id=(select id from public.media_items where title='Same name by text')),'fa000000-0000-4000-8000-000000000101','name without id reuses the person without alias');
 select is((select count(*)::integer from public.people where name='Same name'),2,'name without id creates no duplicate person');
 select throws_ok($$select public.admin_save_media(pg_temp.admin_payload('movie','Missing person') || '{"actors":[{"id":"fa000000-0000-4000-8000-000000000199","name":"Ghost"}]}')$$,'P0002',null,'unknown person id is rejected');
 select throws_ok($$select public.admin_save_media(pg_temp.admin_payload('movie','Bad person id') || '{"actors":[{"id":"nope","name":"Ghost"}]}')$$,'22023',null,'malformed person id is rejected');
 
 -- 演员上限 300：恰好 300 可存，301 拒绝；类型仍限 100。
-select lives_ok($$select public.admin_save_media(pg_temp.admin_payload('movie','Three hundred actors') || jsonb_build_object('actors',(select jsonb_agg('Actor '||g) from generate_series(1,300) g)))$$,'owner can save 300 actors');
+select lives_ok($$select public.admin_save_media(pg_temp.admin_payload('movie','Three hundred actors') || jsonb_build_object('actors',(select jsonb_agg(jsonb_build_object('name','Actor '||g)) from generate_series(1,300) g)))$$,'owner can save 300 actors');
 select is((select count(*)::integer from public.media_credits where role='actor' and media_item_id=(select id from public.media_items where title='Three hundred actors')),300,'300 actors persisted');
-select throws_ok($$select public.admin_save_media(pg_temp.admin_payload('movie','Too many actors') || jsonb_build_object('actors',(select jsonb_agg('Actor '||g) from generate_series(1,301) g)))$$,'22023',null,'301 actors are rejected');
+select throws_ok($$select public.admin_save_media(pg_temp.admin_payload('movie','Too many actors') || jsonb_build_object('actors',(select jsonb_agg(jsonb_build_object('name','Actor '||g)) from generate_series(1,301) g)))$$,'22023',null,'301 actors are rejected');
 select is((select count(*)::integer from public.media_items where title='Too many actors'),0,'rejected oversize cast leaves no media');
 select throws_ok($$select public.admin_save_media(pg_temp.admin_payload('movie','Too many genres') || jsonb_build_object('genres',(select jsonb_agg('Genre '||g) from generate_series(1,101) g)))$$,'22023',null,'101 genres are still rejected');
 

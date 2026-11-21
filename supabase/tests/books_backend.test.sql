@@ -1,6 +1,6 @@
 begin;
 
-select plan(25);
+select plan(27);
 
 -- 虚构站长，事务结束回滚。
 insert into auth.users(id,email) values
@@ -128,7 +128,7 @@ select throws_ok(
 set local role authenticated;
 do $$ begin perform set_config('request.jwt.claim.sub','c1000000-0000-4000-8000-000000000002',true); end $$;
 select throws_ok(
-  $$select public.admin_save_media(pg_temp.book_payload('无权图书', '["作者"]'::jsonb))$$,
+  $$select public.admin_save_media(pg_temp.book_payload('无权图书', '[{"name":"作者"}]'::jsonb))$$,
   '42501',
   null,
   'non-owner cannot save book'
@@ -136,8 +136,15 @@ select throws_ok(
 
 do $$ begin perform set_config('request.jwt.claim.sub','c1000000-0000-4000-8000-000000000001',true); end $$;
 
+select throws_ok(
+  $$select public.admin_save_media(pg_temp.book_payload('纯字符串作者', '["作者字符串"]'::jsonb))$$,
+  '22023',
+  null,
+  'author plain strings are rejected'
+);
+
 select lives_ok(
-  $$select public.admin_save_media(pg_temp.book_payload('原子图书', '["作者甲","作者乙"]'::jsonb))$$,
+  $$select public.admin_save_media(pg_temp.book_payload('原子图书', '[{"name":"作者甲"},{"name":"作者乙"}]'::jsonb))$$,
   'owner saves book with authors in one transaction'
 );
 
@@ -157,7 +164,7 @@ select is(
 );
 
 select throws_ok(
-  $$select public.admin_save_media(pg_temp.book_payload('原子图书', '["作者乙","作者甲"]'::jsonb))$$,
+  $$select public.admin_save_media(pg_temp.book_payload('原子图书', '[{"name":"作者乙"},{"name":"作者甲"}]'::jsonb))$$,
   '23505',
   null,
   'duplicate title+author set rejected'
@@ -166,7 +173,7 @@ select throws_ok(
 select throws_ok(
   $$select public.admin_save_media(pg_temp.book_payload(
     '作者上限书',
-    (select jsonb_agg('作者' || g) from generate_series(1, 301) g)
+    (select jsonb_agg(jsonb_build_object('name', '作者' || g)) from generate_series(1, 301) g)
   ))$$,
   '22023',
   null,
@@ -175,7 +182,7 @@ select throws_ok(
 
 select throws_ok(
   $$select public.admin_save_media(pg_temp.book_payload(
-    '坏页数书', '["作者丙"]'::jsonb, '{"page_count":0}'::jsonb
+    '坏页数书', '[{"name":"作者丙"}]'::jsonb, '{"page_count":0}'::jsonb
   ))$$,
   '22023',
   null,
@@ -195,9 +202,16 @@ select throws_ok(
 
 select lives_ok(
   $$select public.admin_save_media(pg_temp.book_payload(
-    '在读书', '["作者丁"]'::jsonb, '{"status":"in_progress"}'::jsonb
+    '在读书', '[{"name":"作者丁"}]'::jsonb, '{"status":"in_progress"}'::jsonb
   ))$$,
   'RPC accepts in_progress for book'
+);
+
+select lives_ok(
+  $$select public.admin_save_media(pg_temp.book_payload(
+    '类型字符串书', '[{"name":"作者戊"}]'::jsonb, '{"genres":["仍可字符串类型"]}'::jsonb
+  ))$$,
+  'book genres still accept plain strings'
 );
 
 select ok(
