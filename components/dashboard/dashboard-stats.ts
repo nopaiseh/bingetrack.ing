@@ -56,7 +56,7 @@ export function deriveDashboardStats(summary: Summary[], selectedYear: string, d
   const totalRuntime = currentYearData?.total_runtime ?? 0;
   const runtimePercent = percent(watchedRuntime, totalRuntime);
 
-  // 专辑／图书仅做数据派生，进度与时长仍只来自影视列。
+  // 专辑／图书／曲目仅做数据派生，进度与时长仍只来自影视列。
   const totalAlbums = currentYearData?.total_albums || 0;
   const listenedAlbums = currentYearData?.listened_albums || 0;
   const wantAlbums = currentYearData?.want_albums || 0;
@@ -64,6 +64,9 @@ export function deriveDashboardStats(summary: Summary[], selectedYear: string, d
   const readBooks = currentYearData?.read_books || 0;
   const readingBooks = currentYearData?.reading_books || 0;
   const wantBooks = currentYearData?.want_books || 0;
+  const totalTracks = currentYearData?.total_tracks || 0;
+  const listenedTracks = currentYearData?.listened_tracks || 0;
+  const wantTracks = currentYearData?.want_tracks || 0;
 
   return {
     currentYearData,
@@ -100,6 +103,9 @@ export function deriveDashboardStats(summary: Summary[], selectedYear: string, d
     readBooks,
     readingBooks,
     wantBooks,
+    totalTracks,
+    listenedTracks,
+    wantTracks,
   };
 }
 
