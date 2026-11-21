@@ -12,7 +12,7 @@ export class ApiValidationError extends Error {
 
 /** 搜索 type= 白名单：目录类型 + music（单曲）；精选榜单仍只用 movie／tv_show。 */
 const MEDIA_TYPES = new Set<string>(SEARCH_DB_TYPES);
-const CREDIT_ROLES = new Set(["director", "actor", "author", "artist"]);
+const CREDIT_ROLES = new Set(["director", "actor", "author", "artist", "lyricist", "composer"]);
 // 与 v_all_media 实际产生的状态一致；含图书在读 in_progress；视图不会输出 "unwatched"。
 const STATUSES = new Set(["want_to_watch", "watching", "watched", "in_progress"]);
 const SORTS = new Set(["date_asc", "date_desc", "rating_asc", "rating_desc"]);

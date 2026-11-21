@@ -726,9 +726,16 @@ async function fetchMediaList(
 
   const types = type?.split(",").filter(Boolean) ?? [];
   const creditRoles =
-    creditRole
-      ?.split(",")
-      .filter(/* 只接受导演和演员两类演职员角色。 */ (role) => role === "director" || role === "actor") ?? [];
+    creditRole?.split(",").filter(
+      /* 接受目录可搜的演职员角色：导演／演员／作者／艺人／作词／作曲。 */
+      (role) =>
+        role === "director" ||
+        role === "actor" ||
+        role === "author" ||
+        role === "artist" ||
+        role === "lyricist" ||
+        role === "composer",
+    ) ?? [];
   const hasQuery = typeof q === "string" && q.trim().length > 0;
   // 关键词和“系列”分类的匹配需要跨表合并，交给数据库函数完成，避免把命中 ID 回传到 URL 而被截断。
   const usesSearchFunction = hasQuery || seriesOnly;
