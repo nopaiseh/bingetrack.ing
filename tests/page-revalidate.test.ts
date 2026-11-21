@@ -16,13 +16,16 @@ describe("页面 ISR revalidate", () => {
     expect(homeRevalidate).toBe(3600);
   });
 
-  it("目录、详情与站点地图改为只靠路径／标签失效", () => {
-    expect(moviesRevalidate).toBe(false);
-    expect(showsRevalidate).toBe(false);
+  it("电影、电视节目的目录和详情页因即将上映按日期变化，保留每天重建一次", () => {
+    expect(moviesRevalidate).toBe(86400);
+    expect(showsRevalidate).toBe(86400);
+    expect(movieDetailRevalidate).toBe(86400);
+    expect(showDetailRevalidate).toBe(86400);
+  });
+
+  it("图书、专辑、季页与站点地图只靠路径／标签失效", () => {
     expect(albumsRevalidate).toBe(false);
     expect(booksRevalidate).toBe(false);
-    expect(movieDetailRevalidate).toBe(false);
-    expect(showDetailRevalidate).toBe(false);
     expect(albumDetailRevalidate).toBe(false);
     expect(bookDetailRevalidate).toBe(false);
     expect(seasonRevalidate).toBe(false);
