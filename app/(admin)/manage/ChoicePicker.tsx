@@ -286,9 +286,7 @@ export default function ChoicePicker({
                   )}
                   <span className="min-w-0 break-words font-medium">
                     {choice.name}
-                    {choice.detail && (
-                      <span className="block text-xs font-normal text-fg-muted">{choice.detail}</span>
-                    )}
+                    {choice.detail && <span className="block text-xs font-normal text-fg-muted">{choice.detail}</span>}
                   </span>
                 </>
               )}

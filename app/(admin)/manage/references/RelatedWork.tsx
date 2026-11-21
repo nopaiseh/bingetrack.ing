@@ -58,9 +58,7 @@ export default function RelatedWork({
               <span className="rounded-full border border-white/10 px-2.5 py-0.5 text-xs">
                 {roles.map(roleLabel).join("、")}
               </span>
-              {characters && characters.length > 0 && (
-                <span className="text-fg-muted">饰 {characters.join("、")}</span>
-              )}
+              {characters && characters.length > 0 && <span className="text-fg-muted">饰 {characters.join("、")}</span>}
             </p>
           )}
         </div>

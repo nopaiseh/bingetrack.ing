@@ -31,9 +31,7 @@ export default function SimilarPeopleGroup({ people }: { people: SimilarPerson[]
         {people[0].name} <span className="font-mono text-sm font-normal text-fg-muted">{people.length} 位</span>
       </h2>
       <fieldset disabled={busy} className="space-y-2">
-        <legend className="mb-2 text-sm text-fg-muted">
-          选择要保留的人物，其余人物的演职关联会并入他，然后删除。
-        </legend>
+        <legend className="mb-2 text-sm text-fg-muted">选择要保留的人物，其余人物的演职关联会并入他，然后删除。</legend>
         {people.map((person) => (
           <div
             key={person.id}
