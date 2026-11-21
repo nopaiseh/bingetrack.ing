@@ -1,7 +1,7 @@
 -- search_media：人物角色筛选补齐作词／作曲，并修正类型与人物的组合语义。
 -- 1) 无分类关键词搜：searched_roles 含 lyricist、composer（原先仅 director/actor/artist/author）。
 -- 2) 仅媒体类型 + 关键词：仍匹配该类型下的标题与全部演职（不再清空 searched_roles）。
--- 3) 媒体类型 + 人物角色 + 关键词：结果须同时满足类型与人物（AND）；显式角色时不做纯标题命中。
+-- 3) 媒体类型 + 人物角色 + 关键词：结果须同时满足类型与人物（AND）；显式角色时不做纯标题／系列名命中。
 -- 合并后会通过 Supabase GitHub 集成自动上 prod。
 -- 列与 security_invoker 保持不变；无新增数据暴露。
 
@@ -39,7 +39,7 @@ as $$
           then array['director', 'actor', 'artist', 'author', 'lyricist', 'composer']
         else roles
       end as searched_roles,
-      -- 显式人物角色时要求人名命中（与类型组合为 AND，关闭纯标题命中）。
+      -- 显式人物角色时要求人名命中（与类型／系列组合为 AND，关闭纯标题与系列名命中）。
       cardinality(roles) > 0 as require_person
     from (
       select *, term is not null and cardinality(types) = 0 and not series_only and cardinality(roles) = 0 as all_categories
@@ -53,7 +53,9 @@ as $$
     where scope.searches_series
       and (scope.term is null or ms.name ilike scope.pattern)
   ), matched as (
-    select id from series_members cross join scope where scope.term is not null
+    select id from series_members cross join scope
+    where scope.term is not null
+      and not scope.require_person
     union
     select m.id
     from public.v_all_media m cross join scope
@@ -65,6 +67,7 @@ as $$
     select m.id
     from public.v_all_media m cross join scope
     where scope.term is not null
+      and not scope.require_person
       and scope.series_only
       and (m.title ilike scope.pattern or m.alternate_title ilike scope.pattern)
       and exists (select 1 from public.media_item_series s where s.media_item_id = m.id)
@@ -81,6 +84,11 @@ as $$
       and (
         cardinality(scope.searched_types) = 0
         or mi.type::text = any(scope.searched_types)
+      )
+      -- 系列模式 + 人物：仅保留系列成员上的演职命中。
+      and (
+        not scope.series_only
+        or exists (select 1 from public.media_item_series s where s.media_item_id = mc.media_item_id)
       )
   )
   select m.*
