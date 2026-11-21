@@ -100,6 +100,31 @@ describe("reportHandledError", () => {
     expect(JSON.stringify(options)).not.toContain("Authorization");
   });
 
+  it("嵌套在 cause 链中的 MediaRepositoryError 仍通过 operation 写出 db.query", () => {
+    const inner = new MediaRepositoryError("fetch album tracks", {
+      code: "57014",
+      message: "canceling statement due to statement timeout",
+      details: null,
+      hint: null,
+    });
+    const outer = new Error("wrapper", { cause: inner });
+
+    reportHandledError("Album detail failed:", outer);
+
+    expect(vi.mocked(Sentry.captureException).mock.calls[0]![1]).toMatchObject({
+      extra: { query: "fetch album tracks" },
+      tags: {
+        "db.code": "57014",
+        "db.query": "fetch album tracks",
+      },
+      contexts: {
+        postgrest: {
+          query: "fetch album tracks",
+        },
+      },
+    });
+  });
+
   it("直接传入 PostgREST 错误对象时同样写入 context", () => {
     reportHandledError("Failed to fetch ownership:", {
       code: "42501",
