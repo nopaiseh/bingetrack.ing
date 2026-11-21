@@ -30,7 +30,7 @@ export default function SeasonOverview({ text }: { text: string }) {
     <div className="mt-2 min-w-0">
       <p
         ref={textRef}
-        className={`max-w-[70ch] whitespace-pre-line text-left text-sm leading-7 tracking-wide text-fg-secondary wrap-break-word md:text-base ${
+        className={`min-w-0 whitespace-pre-line text-left text-sm leading-7 tracking-wide text-fg-secondary wrap-break-word md:text-base ${
           expanded ? "" : "line-clamp-4"
         }`}
       >

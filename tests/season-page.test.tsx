@@ -214,7 +214,8 @@ describe("SeasonPage", () => {
       "lg:text-5xl",
     );
     expect(screen.getByRole("region", { name: "本季统计" })).toHaveClass("whitespace-nowrap", "lg:grid");
-    expect(screen.getByText(/本季从摸索走到定型/)).toHaveClass("max-w-[70ch]", "line-clamp-4");
+    expect(screen.getByText(/本季从摸索走到定型/)).toHaveClass("min-w-0", "line-clamp-4");
+    expect(screen.getByText(/本季从摸索走到定型/)).not.toHaveClass("max-w-[70ch]");
     expect(screen.getByRole("heading", { level: 2, name: "本季简介" })).toBeInTheDocument();
   });
 
