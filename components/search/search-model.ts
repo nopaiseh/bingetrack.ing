@@ -99,3 +99,14 @@ export function resultsHeading(query: string, total: number, pending: boolean) {
   if (!pending && total === 0) return `没有找到“${query}”`;
   return `“${query}”的搜索结果`;
 }
+
+/**
+ * 搜索结果数量文案：仅筛单曲用「首」，仅筛图书用「本」，
+ * 影视／专辑／未选分类／混选仍用「部作品」。
+ */
+export function resultsCountLabel(total: number, selectedTypes: readonly string[] = []): string {
+  const mediaTypes = selectedTypes.filter((type) => isSearchDbMediaType(type));
+  if (mediaTypes.length === 1 && mediaTypes[0] === "music") return `找到 ${total} 首`;
+  if (mediaTypes.length === 1 && mediaTypes[0] === "book") return `找到 ${total} 本`;
+  return `找到 ${total} 部作品`;
+}
