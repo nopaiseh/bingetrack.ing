@@ -71,7 +71,7 @@ function ProgressBlock({
   );
 }
 
-/** 与现网 OverviewBoards 同风格的单类看板。 */
+/** 与现网 OverviewBoards 同风格的单类看板；状态格数随后端字段（专辑仅已听）。 */
 export function TypeBoard({
   type,
   compact = false,
@@ -83,7 +83,9 @@ export function TypeBoard({
   const cols =
     type.statuses.length >= 3
       ? "grid-cols-3 gap-2.5 sm:gap-4"
-      : "grid-cols-2 gap-3 sm:gap-4";
+      : type.statuses.length === 1
+        ? "grid-cols-1 gap-3 sm:gap-4"
+        : "grid-cols-2 gap-3 sm:gap-4";
 
   return (
     <div
@@ -96,7 +98,12 @@ export function TypeBoard({
           <div className="stat-icon flex items-center justify-center rounded-lg p-2">
             <span className={`${type.icon} size-4 inline-block`} aria-hidden="true" />
           </div>
-          <span className="text-sm font-bold tracking-wide text-fg-secondary">{type.label}看板</span>
+          <div>
+            <span className="text-sm font-bold tracking-wide text-fg-secondary">{type.label}看板</span>
+            <p className="mt-0.5 font-mono text-xs text-fg-muted">
+              共 <AnimatedNumber value={type.total} /> {type.unit}
+            </p>
+          </div>
         </div>
         {empty && (
           <span className="rounded-full border border-white/10 px-2.5 py-1 text-[11px] text-fg-muted">
@@ -120,12 +127,16 @@ export function TypeBoard({
         ))}
       </div>
 
-      <ProgressBlock
-        label={type.progressLabel}
-        done={type.done}
-        total={type.doneTotal}
-        unitSuffix={type.id === "tv_show" ? "集" : type.unit}
-      />
+      {type.progressLabel ? (
+        <ProgressBlock
+          label={type.progressLabel}
+          done={type.done}
+          total={type.doneTotal}
+          unitSuffix={type.id === "tv_show" ? "集" : type.unit}
+        />
+      ) : (
+        <p className="mt-auto text-xs text-fg-muted">暂无阅读记录</p>
+      )}
     </div>
   );
 }
@@ -213,10 +224,12 @@ export function PanoramaIntro({
   );
 }
 
-/** 方案 C：一行一类，状态横向排布。 */
+/** 方案 C：一行一类；状态格数跟随 release_year_stats 实际列。 */
 export function DensityRow({ type }: { type: PanoramaTypeStats }) {
   const empty = type.total <= 0;
   const pct = percent(type.done, type.doneTotal);
+  const statusCols =
+    type.statuses.length >= 3 ? "grid-cols-3" : type.statuses.length === 1 ? "grid-cols-1 sm:grid-cols-2" : "grid-cols-2";
 
   return (
     <div
@@ -239,18 +252,14 @@ export function DensityRow({ type }: { type: PanoramaTypeStats }) {
           <span className="rounded-full border border-white/10 px-2.5 py-1 text-[11px] text-fg-muted">
             暂无收录
           </span>
-        ) : (
+        ) : type.progressLabel ? (
           <p className="font-mono text-xs text-fg-secondary">
             {type.progressLabel} {pct}%
           </p>
-        )}
+        ) : null}
       </div>
 
-      <div
-        className={`grid gap-2 sm:gap-3 ${
-          type.statuses.length >= 3 ? "grid-cols-3" : "grid-cols-2"
-        }`}
-      >
+      <div className={`grid gap-2 sm:gap-3 ${statusCols}`}>
         {type.statuses.map((status) => (
           <div
             key={status.id}
@@ -262,14 +271,30 @@ export function DensityRow({ type }: { type: PanoramaTypeStats }) {
             </div>
             <p className="mt-1.5 font-mono text-xl text-white sm:text-2xl">
               <AnimatedNumber value={status.count} />
+              <span className="ml-1 text-sm font-sans text-fg-secondary">{type.unit}</span>
             </p>
           </div>
         ))}
+        {/* 专辑仅有「已听」列时，右侧补总数，避免单格过空 */}
+        {type.id === "album" && type.statuses.length === 1 ? (
+          <div className={`surface-inline rounded-2xl px-3 py-3 ${empty ? "opacity-55" : ""}`}>
+            <div className="flex items-center gap-1.5 text-xs font-semibold text-fg-secondary">
+              <span className={`${type.icon} size-3.5 inline-block`} aria-hidden="true" />
+              总计
+            </div>
+            <p className="mt-1.5 font-mono text-xl text-white sm:text-2xl">
+              <AnimatedNumber value={type.total} />
+              <span className="ml-1 text-sm font-sans text-fg-secondary">{type.unit}</span>
+            </p>
+          </div>
+        ) : null}
       </div>
 
-      <div className="progress-track h-1.5 w-full overflow-hidden rounded-full">
-        <div className="progress-fill h-full rounded-full" style={{ width: `${pct}%` }} />
-      </div>
+      {type.progressLabel ? (
+        <div className="progress-track h-1.5 w-full overflow-hidden rounded-full">
+          <div className="progress-fill h-full rounded-full" style={{ width: `${pct}%` }} />
+        </div>
+      ) : null}
     </div>
   );
 }

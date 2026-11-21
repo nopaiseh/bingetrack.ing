@@ -1,31 +1,32 @@
 import type { Metadata } from "next";
 import PrototypeChrome from "../PrototypeChrome";
 import { PanoramaIntro, TypeBoard } from "../PanoramaPieces";
-import { MOCK_TYPES, percent } from "../mock-data";
+import { MOCK_TYPES, avRuntimePercent } from "../mock-data";
 
 export const metadata: Metadata = {
   title: "媒体全景原型 A",
   robots: { index: false, follow: false },
 };
 
-/** 方案 A：四类媒体等权 2×2 看板；标题区改为四类总计。 */
+/** 方案 A：四类等权；音书字段对齐 release_year_stats 扩展列。 */
 export default function PanoramaSchemeAPage() {
-  const movie = MOCK_TYPES[0];
-  const series = MOCK_TYPES[1];
-  const runtimePercent = percent(66, 100);
+  const runtimePercent = avRuntimePercent();
 
   return (
     <PrototypeChrome
       scheme="a"
       title="四格并列"
-      blurb="电影／电视／音乐／图书四张看板等权并排；标题区改为四类总数。空类保留「暂无收录」弱化态。"
+      blurb="标题区四类总数 + 影视完成进度。音乐只展示已听（及总数），图书展示已读／在读；完成进度仍只算影视片长。"
     >
       <PanoramaIntro
-        stats={MOCK_TYPES.map((type) => ({
-          label: `${type.label}总计`,
-          value: type.total,
-        }))}
-        footnote={`影视完成进度仍可单独显示：${runtimePercent}%（本方案标题区优先展示四类体量）`}
+        stats={[
+          ...MOCK_TYPES.map((type) => ({
+            label: `${type.label}总计`,
+            value: type.total,
+          })),
+          { label: "完成进度", value: runtimePercent, accent: true },
+        ]}
+        footnote="完成进度 = 影视已看片长／总片长；专辑与图书不并入"
       />
 
       <div className="grid grid-cols-1 gap-4 md:gap-6 xl:grid-cols-2">
@@ -33,10 +34,6 @@ export default function PanoramaSchemeAPage() {
           <TypeBoard key={type.id} type={type} />
         ))}
       </div>
-
-      <p className="sr-only">
-        参考影视体量：电影 {movie.total}，电视 {series.total}
-      </p>
     </PrototypeChrome>
   );
 }

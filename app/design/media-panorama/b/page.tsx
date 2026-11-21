@@ -1,26 +1,26 @@
 import type { Metadata } from "next";
 import PrototypeChrome from "../PrototypeChrome";
 import { PanoramaIntro, TypeBoard } from "../PanoramaPieces";
-import { MOCK_TYPES, percent, primaryTypes, secondaryTypes } from "../mock-data";
+import { MOCK_TYPES, avRuntimePercent, primaryTypes, secondaryTypes } from "../mock-data";
 
 export const metadata: Metadata = {
   title: "媒体全景原型 B",
   robots: { index: false, follow: false },
 };
 
-/** 方案 B：电影／电视保持主看板；音乐／图书压缩为次层。 */
+/** 方案 B：影视主层；音书次层，字段仅用后端将提供的列。 */
 export default function PanoramaSchemeBPage() {
   const movie = MOCK_TYPES[0];
   const series = MOCK_TYPES[1];
   const album = MOCK_TYPES[2];
   const book = MOCK_TYPES[3];
-  const runtimePercent = percent(66, 100);
+  const runtimePercent = avRuntimePercent();
 
   return (
     <PrototypeChrome
       scheme="b"
       title="主次两层"
-      blurb="标题区与主看板仍以电影／电视为主；音乐／图书作为次层紧凑卡，体量较小时不抢视觉权重。"
+      blurb="标题区保持电影／电视／完成进度。次层音乐＝总数＋已听；图书＝总数＋已读＋在读。完成进度仍只算影视。"
     >
       <PanoramaIntro
         stats={[
@@ -28,7 +28,7 @@ export default function PanoramaSchemeBPage() {
           { label: "电视节目总计", value: series.total },
           { label: "完成进度", value: runtimePercent, accent: true },
         ]}
-        footnote={`次层：音乐 ${album.total} 张 · 图书 ${book.total} 本`}
+        footnote={`次层：音乐 ${album.total} 张（已听 ${album.statuses[0]?.count ?? 0}）· 图书 ${book.total} 本`}
       />
 
       <div className="flex flex-col gap-4 md:gap-6">
