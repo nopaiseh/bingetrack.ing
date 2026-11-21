@@ -136,7 +136,7 @@ CI：`.github/workflows/test.yml`（工作流名 `Application quality checks`，
 
 1. **分支**：不直接推 `main`；一律经拉取请求。`main` 受保护，必要状态检查为上述质量工作流（平台核对见 [deployment.md](deployment.md)）。
 2. **架构审查**：审查结论只能是 **通过**／**需修改**／**不建议合并**。
-3. **合并**：架构审查为「通过」后，由作者请**阁主本人**批准再合并；他人不得代合。
+3. **合并**：架构审查为「通过」后，由作者请**阁主本人**批准再合并；他人不得代合。合并一律用 **Squash and merge**，使 `main` 上每个 PR 只留一个提交；提交标题沿用 PR 标题并带 `(#编号)`，便于阅读历史和按 PR 回滚。
 4. **密钥**：不得出现在代码、提交、PR 正文、聊天或日志中；不得放进任何 `NEXT_PUBLIC_*` 变量。模板在 `.env.example`，本机放被 Git 忽略的 `.env.local`（权限建议 `600`）。
 5. **预览环境**：Preview／测试环境**不得**持有生产 `SUPABASE_SERVICE_ROLE_KEY`（无 service role key）。公开页与 Passkey 会话只用 `NEXT_PUBLIC_SUPABASE_URL` 与 `NEXT_PUBLIC_SUPABASE_ANON_KEY`。
 6. **发布**：应用经 Vercel 在合并 `main` 后发布生产；数据库随迁移合并上线（见第 4 节）。事后 smoke、域名核对与回滚步骤见 [deployment.md](deployment.md)。
