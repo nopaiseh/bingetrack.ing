@@ -166,7 +166,8 @@ export default async function SeasonPage({ params }: { params: Promise<{ id: str
                 src={seasonData.season.coverUrl}
                 alt={`${seasonData.season.title} 海报`}
                 fill
-                priority
+                preload
+                fetchPriority="high"
                 className="object-cover"
                 sizes="(max-width: 1023px) 80px, 288px"
               />

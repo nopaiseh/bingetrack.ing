@@ -17,13 +17,13 @@ function ItemCard({
   item,
   type,
   eager,
-  highPriority,
+  preload,
   hideStatusBadge,
 }: {
   item: MediaCard;
   type: RowMediaType;
   eager: boolean;
-  highPriority: boolean;
+  preload: boolean;
   hideStatusBadge?: boolean;
 }) {
   const bodyType = type === "shows" ? "shows" : "movies";
@@ -37,8 +37,9 @@ function ItemCard({
             fill
             className="object-cover transition-transform duration-500 ease-out group-hover:scale-105"
             sizes="(max-width: 639px) 160px, 192px"
-            priority={highPriority}
-            loading={highPriority ? undefined : eager ? "eager" : "lazy"}
+            preload={preload}
+            fetchPriority={preload ? "high" : undefined}
+            loading={preload ? undefined : eager ? "eager" : "lazy"}
           />
         ) : type === "books" ? (
           <LetterTile title={item.title} />
@@ -179,7 +180,7 @@ export default function MediaRow({
                     item={media}
                     type={mediaType}
                     eager={index < eagerCount}
-                    highPriority={eagerCount > 0 && index === 0}
+                    preload={eagerCount > 0 && index === 0}
                     hideStatusBadge={hideStatusBadge}
                   />
                 </Link>

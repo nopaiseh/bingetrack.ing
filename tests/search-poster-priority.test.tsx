@@ -9,22 +9,25 @@ import type { MediaCard } from "@/lib/types";
 vi.mock("next/image", () => ({
   default: ({
     alt,
-    priority,
+    preload,
     loading,
     sizes,
+    fetchPriority,
   }: {
     alt: string;
-    priority?: boolean;
+    preload?: boolean;
     loading?: "eager" | "lazy";
     sizes?: string;
     fill?: boolean;
+    fetchPriority?: "high" | "low" | "auto";
   }) => (
     // eslint-disable-next-line @next/next/no-img-element
     <img
       alt={alt}
       sizes={sizes}
-      loading={priority ? undefined : loading}
-      fetchPriority={priority ? "high" : undefined}
+      data-preload={preload ? "true" : undefined}
+      loading={preload ? undefined : loading}
+      fetchPriority={fetchPriority}
     />
   ),
 }));
@@ -44,14 +47,15 @@ function card(id: string, title: string): MediaCard {
   };
 }
 
-describe("search poster priority loading", () => {
-  it("marks the first search poster as priority and the above-fold set as eager", () => {
+describe("search poster preload loading", () => {
+  it("marks the first search poster as preload with high fetch priority and the above-fold set as eager", () => {
     const { container, unmount } = render(
-      <SearchMediaCard item={card("a", "首卡")} returnHref="/search" priority eager />,
+      <SearchMediaCard item={card("a", "首卡")} returnHref="/search" preload eager />,
     );
     const first = container.querySelector("img");
     expect(first).not.toBeNull();
-    // priority → fetchPriority=high；loading 在 priority 时由组件省略。
+    // preload + fetchPriority=high restore deprecated priority LCP behavior; loading omitted.
+    expect(first).toHaveAttribute("data-preload", "true");
     expect(first).toHaveAttribute("fetchpriority", "high");
     expect(first!.getAttribute("loading")).toBeNull();
     expect(first).toHaveAttribute("sizes", SEARCH_POSTER_SIZES);
@@ -60,6 +64,7 @@ describe("search poster priority loading", () => {
     const secondView = render(<SearchMediaCard item={card("b", "次卡")} returnHref="/search" eager />);
     const second = secondView.container.querySelector("img");
     expect(second).toHaveAttribute("loading", "eager");
+    expect(second!.getAttribute("data-preload")).not.toBe("true");
     expect(second!.getAttribute("fetchpriority")).not.toBe("high");
     expect(second).toHaveAttribute("sizes", SEARCH_POSTER_SIZES);
   });
@@ -69,7 +74,7 @@ describe("search poster priority loading", () => {
     expect(container.querySelector("img")).toHaveAttribute("loading", "lazy");
   });
 
-  it("applies priority and eager across the first search result row(s)", () => {
+  it("applies preload and eager across the first search result row(s)", () => {
     const items = Array.from({ length: SEARCH_ABOVE_FOLD_COUNT + 2 }, (_, index) =>
       card(`id-${index}`, `作品 ${index}`),
     );
@@ -97,9 +102,12 @@ describe("search poster priority loading", () => {
 
     const images = [...container.querySelectorAll(".search-media-card img")];
     expect(images).toHaveLength(items.length);
+    expect(images[0]).toHaveAttribute("data-preload", "true");
     expect(images[0]).toHaveAttribute("fetchpriority", "high");
+    expect(images[0]!.getAttribute("loading")).toBeNull();
     for (let index = 1; index < SEARCH_ABOVE_FOLD_COUNT; index += 1) {
       expect(images[index]).toHaveAttribute("loading", "eager");
+      expect(images[index]!.getAttribute("fetchpriority")).not.toBe("high");
     }
     expect(images[SEARCH_ABOVE_FOLD_COUNT]).toHaveAttribute("loading", "lazy");
     expect(images[SEARCH_ABOVE_FOLD_COUNT + 1]).toHaveAttribute("loading", "lazy");

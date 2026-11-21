@@ -243,7 +243,7 @@ export default function UpcomingHero({ items, renderedOn }: UpcomingHeroProps) {
                   src={currentItem.cover_url}
                   alt={currentItem.title}
                   fill
-                  priority
+                  preload
                   fetchPriority="high"
                   className="object-cover"
                   sizes="176px"
