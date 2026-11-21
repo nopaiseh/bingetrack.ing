@@ -30,9 +30,7 @@ export default function AlbumWorkspace({
       strip={<AlbumStrip structure={structure} current={current} onAdd={() => setAdding(true)} />}
       rail={<AlbumRail structure={structure} current={current} onAdd={() => setAdding(true)} />}
       dialog={
-        adding ? (
-          <QuickAddTrackDialog key="add-track" structure={structure} onClose={() => setAdding(false)} />
-        ) : null
+        adding ? <QuickAddTrackDialog key="add-track" structure={structure} onClose={() => setAdding(false)} /> : null
       }
     >
       {children}

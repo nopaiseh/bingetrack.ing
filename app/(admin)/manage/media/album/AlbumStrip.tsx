@@ -68,11 +68,7 @@ export default function AlbumStrip({
       )}
 
       {tracks.length > JUMP_THRESHOLD && (
-        <JumpNumberField
-          label="跳到曲序，按回车打开"
-          placeholder="跳到曲序"
-          onJump={(value) => jumpToTrack(value)}
-        />
+        <JumpNumberField label="跳到曲序，按回车打开" placeholder="跳到曲序" onJump={(value) => jumpToTrack(value)} />
       )}
     </section>
   );

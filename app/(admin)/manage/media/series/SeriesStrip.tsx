@@ -2,13 +2,7 @@
 import Link from "next/link";
 import { useId, useRef } from "react";
 import type { SeriesStructure } from "@/lib/admin/series-structure";
-import {
-  JUMP_THRESHOLD,
-  StatusDot,
-  JumpNumberField,
-  useCenterCurrent,
-  useSafeNavigate,
-} from "../structure-shared";
+import { JUMP_THRESHOLD, StatusDot, JumpNumberField, useCenterCurrent, useSafeNavigate } from "../structure-shared";
 import { formatCount, mediaHref, statusLabels, type CurrentItem, type QuickAddKind } from "./shared";
 
 /** 手机与平板的剧集结构：季从底部面板选择，单集横向滚动，季数与集数多少都不会撑破版面。 */

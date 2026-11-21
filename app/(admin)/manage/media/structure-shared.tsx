@@ -10,13 +10,7 @@ import { statusLabels } from "./series/shared";
 export const JUMP_THRESHOLD = 20;
 
 /** 观看／收听状态圆点：看过实心、在看半满、没看过空心，形状不同，不只靠颜色区分。 */
-export function StatusDot({
-  status,
-  label = statusLabels[status],
-}: {
-  status: WatchStatus;
-  label?: string;
-}) {
+export function StatusDot({ status, label = statusLabels[status] }: { status: WatchStatus; label?: string }) {
   return <span className={`status-dot status-dot-${status}`} role="img" aria-label={label} />;
 }
 

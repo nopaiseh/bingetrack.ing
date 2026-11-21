@@ -19,9 +19,6 @@ import {
   type AlbumCurrentItem,
 } from "./shared";
 
-/** 与剧集轨共用跳转阈值；保留别名避免专辑侧引用断裂。 */
-export const TRACK_JUMP_THRESHOLD = JUMP_THRESHOLD;
-
 /** 桌面编辑页右侧曲目结构栏：贴在页头下跟随滚动，是新增曲目的入口。 */
 export default function AlbumRail({
   structure,
@@ -83,7 +80,7 @@ export default function AlbumRail({
         </span>
       </Link>
 
-      {tracks.length > TRACK_JUMP_THRESHOLD && (
+      {tracks.length > JUMP_THRESHOLD && (
         <JumpNumberField
           label="跳到曲序，按回车打开"
           placeholder="跳到曲序"
