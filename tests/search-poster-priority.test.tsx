@@ -100,8 +100,10 @@ describe("search poster preload loading", () => {
       />,
     );
 
+    const cards = [...container.querySelectorAll(".search-media-card")];
     const images = [...container.querySelectorAll(".search-media-card img")];
-    expect(images).toHaveLength(items.length);
+    // Below-fold cards defer the img node until near the viewport.
+    expect(images).toHaveLength(SEARCH_ABOVE_FOLD_COUNT);
     expect(images[0]).toHaveAttribute("data-preload", "true");
     expect(images[0]).toHaveAttribute("fetchpriority", "high");
     expect(images[0]!.getAttribute("loading")).toBeNull();
@@ -109,7 +111,7 @@ describe("search poster preload loading", () => {
       expect(images[index]).toHaveAttribute("loading", "eager");
       expect(images[index]!.getAttribute("fetchpriority")).not.toBe("high");
     }
-    expect(images[SEARCH_ABOVE_FOLD_COUNT]).toHaveAttribute("loading", "lazy");
-    expect(images[SEARCH_ABOVE_FOLD_COUNT + 1]).toHaveAttribute("loading", "lazy");
+    expect(cards[SEARCH_ABOVE_FOLD_COUNT].querySelector('[data-poster-deferred="true"]')).not.toBeNull();
+    expect(cards[SEARCH_ABOVE_FOLD_COUNT + 1].querySelector('[data-poster-deferred="true"]')).not.toBeNull();
   });
 });

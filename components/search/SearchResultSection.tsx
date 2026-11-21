@@ -83,13 +83,14 @@ export default function SearchResultSection({
           )
         ) : requestError ? null : mediaItems.length > 0 ? (
           mediaItems.map(
-            /* 将搜索结果渲染为卡片；首屏海报 preload／立即加载，其余懒加载。 */ (item, index) => (
+            /* 首屏 preload／eager；其余 defer 到接近视口再设 src。 */ (item, index) => (
               <SearchMediaCard
                 key={`${item.type}-${item.id}`}
                 item={item}
                 returnHref={returnHref}
                 preload={index === 0}
                 eager={index < SEARCH_ABOVE_FOLD_COUNT}
+                deferPoster={index >= SEARCH_ABOVE_FOLD_COUNT}
               />
             ),
           )
