@@ -1,14 +1,11 @@
 import AlbumCoverCard from "@/components/AlbumCoverCard";
+import CatalogEmptyState from "@/components/CatalogEmptyState";
 import type { MediaCard } from "@/lib/types";
 
 /** 专辑列表：紧凑方形封面墙；无条目时显示空状态。 */
 export default function AlbumCoverWall({ items }: { items: readonly MediaCard[] }) {
   if (items.length === 0) {
-    return (
-      <div className="rounded-2xl border border-dashed border-[var(--border)] px-6 py-16 text-center">
-        <p className="text-sm text-fg-muted">还没有专辑。</p>
-      </div>
-    );
+    return <CatalogEmptyState message="还没有专辑。" />;
   }
 
   return (

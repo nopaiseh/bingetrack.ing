@@ -133,6 +133,7 @@ test(
     await page.goto("/albums");
     await expect(page.getByRole("heading", { name: "专辑", exact: true })).toBeVisible();
     await expect(page.getByText("还没有专辑。")).toBeVisible();
+    await expect(page.getByRole("link", { name: "去搜索" })).toHaveCount(0);
     await expect(page.getByRole("list", { name: "专辑封面墙" })).toHaveCount(0);
   },
 );

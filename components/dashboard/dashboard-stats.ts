@@ -56,6 +56,15 @@ export function deriveDashboardStats(summary: Summary[], selectedYear: string, d
   const totalRuntime = currentYearData?.total_runtime ?? 0;
   const runtimePercent = percent(watchedRuntime, totalRuntime);
 
+  // 专辑／图书仅做数据派生，进度与时长仍只来自影视列。
+  const totalAlbums = currentYearData?.total_albums || 0;
+  const listenedAlbums = currentYearData?.listened_albums || 0;
+  const wantAlbums = currentYearData?.want_albums || 0;
+  const totalBooks = currentYearData?.total_books || 0;
+  const readBooks = currentYearData?.read_books || 0;
+  const readingBooks = currentYearData?.reading_books || 0;
+  const wantBooks = currentYearData?.want_books || 0;
+
   return {
     currentYearData,
     movieDistribution,
@@ -84,6 +93,13 @@ export function deriveDashboardStats(summary: Summary[], selectedYear: string, d
     seriesUnwatchedRuntime,
     totalSeriesRuntime,
     runtimePercent,
+    totalAlbums,
+    listenedAlbums,
+    wantAlbums,
+    totalBooks,
+    readBooks,
+    readingBooks,
+    wantBooks,
   };
 }
 

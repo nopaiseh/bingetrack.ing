@@ -1175,6 +1175,26 @@ select:is(.filter-option, .filter-option-active):focus-visible {
   }
 }
 
+/*
+ * 手机端隐形扩大点击面到至少 40×40：伪元素居中铺开，不改图标、描边与布局密度。
+ * 相邻控件间距须大于扩张量，避免热区重叠（顶栏 gap-3、季筛选 gap-2 已满足）。
+ */
+@media (max-width: 767px) {
+  .tap-target-expand {
+    position: relative;
+  }
+
+  .tap-target-expand::before {
+    content: "";
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: max(100%, var(--hit-target));
+    height: max(100%, var(--hit-target));
+    transform: translate(-50%, -50%);
+  }
+}
+
 /* 分页按钮在搜索、季列表和管理页是同一套标记。拉到 40px，避免 38px 的翻页热区。 */
 nav[aria-label$="分页"] :is(a, button, span.surface-control) {
   display: inline-flex;

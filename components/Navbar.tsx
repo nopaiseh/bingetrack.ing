@@ -157,7 +157,7 @@ export default function Navbar() {
                 prefetch={false}
                 aria-label="管理"
                 aria-current={isActive("/manage") ? "page" : undefined}
-                className="surface-control focus-ring flex size-9 shrink-0 cursor-pointer items-center justify-center rounded-full text-fg-secondary outline-none transition-all duration-200 hover:text-white active:scale-95 md:hidden"
+                className="surface-control focus-ring tap-target-expand flex size-9 shrink-0 cursor-pointer items-center justify-center rounded-full text-fg-secondary outline-none transition-all duration-200 hover:text-white active:scale-95 md:hidden"
               >
                 <span className="i-material-symbols-settings-rounded inline-block size-4.5" aria-hidden="true" />
               </Link>
@@ -167,7 +167,7 @@ export default function Navbar() {
               <form action="/auth/logout" method="POST">
                 <button
                   type="submit"
-                  className="surface-control focus-ring shrink-0 cursor-pointer rounded-full px-3.5 py-1.5 text-sm font-medium text-fg transition-all duration-200 hover:text-white active:scale-95"
+                  className="surface-control focus-ring tap-target-expand inline-flex shrink-0 cursor-pointer items-center justify-center rounded-full px-3.5 py-1.5 text-sm font-medium text-fg transition-all duration-200 hover:text-white active:scale-95"
                 >
                   退出
                 </button>
@@ -177,7 +177,7 @@ export default function Navbar() {
                 type="button"
                 disabled={auth.busy}
                 onClick={() => void auth.signIn()}
-                className="surface-control focus-ring shrink-0 cursor-pointer rounded-full px-3.5 py-1.5 text-sm font-medium text-fg transition-all duration-200 hover:text-white active:scale-95 disabled:cursor-not-allowed disabled:opacity-60 disabled:active:scale-100"
+                className="surface-control focus-ring tap-target-expand inline-flex shrink-0 cursor-pointer items-center justify-center rounded-full px-3.5 py-1.5 text-sm font-medium text-fg transition-all duration-200 hover:text-white active:scale-95 disabled:cursor-not-allowed disabled:opacity-60 disabled:active:scale-100"
               >
                 {auth.busy ? "验证中…" : "登录"}
               </button>

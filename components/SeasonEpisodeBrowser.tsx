@@ -31,6 +31,14 @@ import { WatchStatusBadge } from "@/components/watch-status";
 
 const STATUS_LABELS: Record<SeasonStatusFilter, string> = { all: "全部", watched: "已看", unwatched: "未看" };
 
+/** 季页筛选与排序共用同一套芯片尺寸，避免升序按钮看起来像选中态或高低错位。 */
+const SEASON_CHIP =
+  "tap-target-expand inline-flex shrink-0 items-center justify-center rounded-lg border px-4 py-1.5 text-[13px] backdrop-blur-2xl transition-all duration-300";
+const SEASON_CHIP_INACTIVE =
+  "surface-muted border-white/10 text-fg-secondary shadow-[0_4px_10px_rgba(0,0,0,0.2)] hover:border-white/20 hover:bg-white/10 hover:text-white hover:shadow-[0_6px_15px_rgba(0,0,0,0.3)] hover:drop-shadow-[0_0_8px_rgba(255,255,255,0.5)]";
+const SEASON_CHIP_ACTIVE =
+  "surface-active border-[var(--accent-border)] font-bold text-[var(--accent-hover)] shadow-[0_4px_10px_var(--accent-glow-soft)] drop-shadow-[0_0_3px_var(--accent-glow-soft)]";
+
 type LoadedList = {
   key: string;
   episodes: EpisodeInfo[];
@@ -353,36 +361,38 @@ export default function SeasonEpisodeBrowser({
       </Suspense>
 
       <div ref={anchorRef} data-testid="episode-list-anchor" />
-      <div className="surface-overlay sticky top-20 z-20 mb-6 flex flex-col justify-between gap-3 rounded-2xl p-3 sm:flex-row sm:items-center">
-        <div className="flex items-center gap-2 overflow-x-auto">
-          <span
-            className="i-material-symbols-filter-list-rounded ml-1 size-4 shrink-0 text-fg-muted inline-block"
-            aria-hidden="true"
-          />
-          {(["all", "watched", "unwatched"] as const).map(
-            /* 生成观看状态筛选链接，切换状态时回到第一页。 */ (value) => (
-              <BrowseLink
-                key={value}
-                href={hrefFor({ page: 1, status: value })}
-                onBrowse={onBrowseClick}
-                className={`shrink-0 rounded-lg border px-4 py-1.5 text-[13px] backdrop-blur-2xl transition-all duration-300 ${query.status === value ? "surface-active border-[var(--accent-border)] font-bold text-[var(--accent-hover)] shadow-[0_4px_10px_var(--accent-glow-soft)] drop-shadow-[0_0_3px_var(--accent-glow-soft)]" : "surface-muted border-white/10 text-fg-secondary shadow-[0_4px_10px_rgba(0,0,0,0.2)] hover:border-white/20 hover:bg-white/10 hover:text-white hover:shadow-[0_6px_15px_rgba(0,0,0,0.3)] hover:drop-shadow-[0_0_8px_rgba(255,255,255,0.5)]"}`}
-              >
-                {STATUS_LABELS[value]}
-              </BrowseLink>
-            ),
-          )}
-        </div>
-        <div className="flex items-center gap-2 text-sm">
-          <span className="text-fg-muted">集数</span>
-          <BrowseLink
-            href={hrefFor({ page: 1, order: query.order === "asc" ? "desc" : "asc" })}
-            onBrowse={onBrowseClick}
-            className="surface-active rounded-lg border border-[var(--accent-border)] px-4 py-1.5 text-[13px] font-bold text-[var(--accent-hover)] shadow-[0_4px_10px_var(--accent-glow-soft)] backdrop-blur-2xl drop-shadow-[0_0_3px_var(--accent-glow-soft)] transition-all duration-300 hover:bg-[var(--accent-soft)]"
-          >
-            {query.order === "asc" ? "升序 ↑" : "降序 ↓"}
-          </BrowseLink>
-          <span className="ml-auto text-fg-muted sm:ml-2">{pending ? "加载中" : `${total} 集`}</span>
-        </div>
+      <div
+        className="surface-overlay sticky top-20 z-20 mb-6 flex items-center gap-2 overflow-x-auto rounded-2xl p-3"
+        data-testid="season-filter-bar"
+      >
+        <span
+          className="i-material-symbols-filter-list-rounded ml-1 size-4 shrink-0 text-fg-muted inline-block"
+          aria-hidden="true"
+        />
+        {(["all", "watched", "unwatched"] as const).map(
+          /* 生成观看状态筛选链接，切换状态时回到第一页。 */ (value) => (
+            <BrowseLink
+              key={value}
+              href={hrefFor({ page: 1, status: value })}
+              onBrowse={onBrowseClick}
+              className={`${SEASON_CHIP} ${query.status === value ? SEASON_CHIP_ACTIVE : SEASON_CHIP_INACTIVE}`}
+            >
+              {STATUS_LABELS[value]}
+            </BrowseLink>
+          ),
+        )}
+        <span className="ml-1 shrink-0 text-[13px] text-fg-muted">集数</span>
+        <BrowseLink
+          href={hrefFor({ page: 1, order: query.order === "asc" ? "desc" : "asc" })}
+          onBrowse={onBrowseClick}
+          className={`${SEASON_CHIP} ${SEASON_CHIP_INACTIVE}`}
+          data-testid="season-sort-toggle"
+        >
+          {query.order === "asc" ? "升序 ↑" : "降序 ↓"}
+        </BrowseLink>
+        <span className="ml-auto shrink-0 whitespace-nowrap text-[13px] text-fg-muted">
+          {pending ? "加载中" : `${total} 集`}
+        </span>
       </div>
 
       <div
