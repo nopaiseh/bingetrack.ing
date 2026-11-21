@@ -6,6 +6,7 @@ import { MEDIA_TYPE_DEFINITIONS, isSearchDbMediaType, type SearchDbMediaType } f
  * 分类筛选项顺序与文案（仅搜索面板／已选条件条）。
  * value 与 URL `type=` 及 MEDIA_TYPE_DEFINITIONS 对齐；album 显示为「专辑」以区别于顶栏等处的「音乐」。
  * 集合须与 SEARCH_DB_TYPES 一致（顺序可不同）；见 tests/search-model.test.ts。
+ * 人物角色不在分类行，见 CREDIT_ROLE_OPTIONS。
  */
 export const TYPE_FILTER_ORDER = [
   "movie",
@@ -21,9 +22,20 @@ export const TYPE_OPTIONS = [
     label: value === "album" ? "专辑" : MEDIA_TYPE_DEFINITIONS[value].label,
   })),
   { value: "series", label: "系列" },
+];
+
+/**
+ * 人物角色筛选项：顺序固定，作者放最后；value 与 URL／API `creditRole=` 对齐。
+ * 「全部」由 FilterOptionRow 渲染，不在此列表。
+ */
+export const CREDIT_ROLE_OPTIONS = [
   { value: "director", label: "导演" },
   { value: "actor", label: "演员" },
-];
+  { value: "artist", label: "歌手" },
+  { value: "lyricist", label: "作词" },
+  { value: "composer", label: "作曲" },
+  { value: "author", label: "作者" },
+] as const;
 
 export const STATUS_OPTIONS = [
   { value: "want_to_watch", label: WATCH_STATUSES.want_to_watch.label },
@@ -53,6 +65,12 @@ export function statusFilterOptions(selectedTypes: readonly string[] = []) {
 
 export const PRIMARY_CATEGORIES = [
   { id: "type", label: "分类", options: TYPE_OPTIONS, multiSelect: true },
+  {
+    id: "creditRole",
+    label: "人物",
+    options: CREDIT_ROLE_OPTIONS.map((option) => ({ value: option.value, label: option.label })),
+    multiSelect: true,
+  },
   { id: "status", label: "状态", options: STATUS_OPTIONS, multiSelect: true },
 ];
 
@@ -63,6 +81,7 @@ export const SORT_OPTIONS = [
 
 export const EMPTY_FILTERS = Object.freeze({
   type: Object.freeze([] as const),
+  creditRole: Object.freeze([] as const),
   status: Object.freeze([] as const),
   genre: Object.freeze([] as const),
   region: Object.freeze([] as const),
@@ -78,7 +97,7 @@ export function optionLabel(options: { value: string; label: string }[], value: 
 
 /** 统计偏离默认值的筛选项，供手机端「筛选 (n)」展示。排序只在离开默认日期降序时计入。 */
 export function countActiveFilters(filters: SearchFilters) {
-  const listed = ["type", "status", "genre", "region", "language"].reduce(
+  const listed = ["type", "creditRole", "status", "genre", "region", "language"].reduce(
     (sum, key) => sum + (filters[key]?.length ?? 0),
     0,
   );

@@ -127,7 +127,7 @@ describe("详情页窄屏布局", () => {
       />,
     );
     const link = screen.getByRole("link", { name: "王家卫" });
-    expect(link).toHaveAttribute("href", "/search?q=%E7%8E%8B%E5%AE%B6%E5%8D%AB&type=director");
+    expect(link).toHaveAttribute("href", "/search?q=%E7%8E%8B%E5%AE%B6%E5%8D%AB&creditRole=director");
     expect(link.className).toContain("min-h-11");
     expect(link.className).toContain("min-w-6");
     expect(link.className).toContain("inline-flex");

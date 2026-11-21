@@ -3,7 +3,9 @@ import { SEARCH_DB_TYPES, isSearchDbMediaType } from "@/lib/media-types";
 export const PAGE_SIZE = 30;
 export type SearchFilters = Readonly<Record<string, readonly string[]>>;
 
-const TYPE_VALUES = new Set([...SEARCH_DB_TYPES, "series", "director", "actor"]);
+const TYPE_VALUES = new Set([...SEARCH_DB_TYPES, "series"]);
+/** 与 API `creditRole` 白名单一致；页面 URL 也用同名参数。 */
+const CREDIT_ROLE_VALUES = new Set(["director", "actor", "author", "artist", "lyricist", "composer"]);
 const STATUS_VALUES = new Set(["want_to_watch", "watching", "watched", "in_progress", "upcoming"]);
 // “即将上映”在页面上是一个状态选项，但发给 API 时单独成为 upcoming 参数。
 // in_progress 为图书「在读」；影视不会产出该状态。
@@ -15,18 +17,24 @@ function readList(value: string | null): string[] {
   return [...new Set(value?.split(",").filter(Boolean) ?? [])];
 }
 
-/** 分类、状态和排序只接受规范值，出现任何未知值都视为无效地址。 */
+/** 分类、人物角色、状态和排序只接受规范值，出现任何未知值都视为无效地址。 */
 export function hasOnlyKnownFilterValues(searchParams: URLSearchParams): boolean {
   const within = (key: string, allowed: Set<string>) =>
     readList(searchParams.get(key)).every(/* 检查每个值是否为规范值。 */ (value) => allowed.has(value));
   const sort = searchParams.get("sort");
-  return within("type", TYPE_VALUES) && within("status", STATUS_VALUES) && (sort === null || SORT_VALUES.has(sort));
+  return (
+    within("type", TYPE_VALUES) &&
+    within("creditRole", CREDIT_ROLE_VALUES) &&
+    within("status", STATUS_VALUES) &&
+    (sort === null || SORT_VALUES.has(sort))
+  );
 }
 
 /** 从 URL 读取多选筛选和年份范围，缺省排序使用日期降序。 */
 export function readFilters(searchParams: URLSearchParams): SearchFilters {
   return {
     type: readList(searchParams.get("type")),
+    creditRole: readList(searchParams.get("creditRole")),
     status: readList(searchParams.get("status")),
     genre: searchParams.get("genre")?.split(",").filter(Boolean) ?? [],
     region: searchParams.get("region")?.split(",").filter(Boolean) ?? [],
@@ -41,10 +49,10 @@ export function readFilters(searchParams: URLSearchParams): SearchFilters {
 
 /** 原地重写 URL 中的筛选参数，保留其他参数，并省略空筛选和默认排序。 */
 export function writeFilters(params: URLSearchParams, filters: SearchFilters) {
-  for (const key of ["type", "status", "genre", "region", "language", "startYear", "endYear", "sort"]) {
+  for (const key of ["type", "creditRole", "status", "genre", "region", "language", "startYear", "endYear", "sort"]) {
     params.delete(key);
   }
-  for (const key of ["type", "status", "genre", "region", "language"]) {
+  for (const key of ["type", "creditRole", "status", "genre", "region", "language"]) {
     if (filters[key]?.length) params.set(key, filters[key].join(","));
   }
   if (filters.year?.[0]) params.set("startYear", filters.year[0]);
@@ -67,9 +75,7 @@ export function buildMediaSearchQuery(searchParams: URLSearchParams): string {
   if (query) params.set("q", query);
 
   const mediaTypes = filters.type.filter(/* 媒体分类映射为数据库媒体类型（含单曲）。 */ (t) => isSearchDbMediaType(t));
-  const creditRoles = filters.type.filter(
-    /* 人员分类映射为导演或演员角色。 */ (t) => t === "director" || t === "actor",
-  );
+  const creditRoles = filters.creditRole.filter(/* 仅保留白名单人物角色。 */ (role) => CREDIT_ROLE_VALUES.has(role));
   if (mediaTypes.length > 0) params.set("type", mediaTypes.join(","));
   if (filters.type.includes("series")) params.set("series", "true");
   if (creditRoles.length > 0) params.set("creditRole", creditRoles.join(","));

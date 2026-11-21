@@ -1,14 +1,16 @@
 import { expect, test } from "vitest";
-import { buildMediaSearchQuery, hasOnlyKnownFilterValues } from "@/lib/api/search-state";
+import { buildMediaSearchQuery, hasOnlyKnownFilterValues, readFilters, writeFilters } from "@/lib/api/search-state";
 import { parseMediaSearchParams } from "@/lib/api/media-params";
+import { EMPTY_FILTERS } from "@/components/search/search-model";
 
 test(
   "server and browser query conversion preserves all search categories",
-  /* 验证服务端与浏览器共用的转换函数保留分类、状态、属性、年份及分页条件。 */ () => {
+  /* 验证服务端与浏览器共用的转换函数保留分类、人物角色、状态、属性、年份及分页条件。 */ () => {
     const query = buildMediaSearchQuery(
       new URLSearchParams({
         q: " 王家卫 ",
-        type: "movie,tv_show,director,actor,series",
+        type: "movie,tv_show,series",
+        creditRole: "director,actor,author",
         status: "watched,want_to_watch,watching",
         genre: "剧情,喜剧",
         region: "香港",
@@ -22,7 +24,7 @@ test(
     expect(parseMediaSearchParams(new URLSearchParams(query))).toEqual({
       q: "王家卫",
       type: "movie,tv_show",
-      creditRole: "director,actor",
+      creditRole: "director,actor,author",
       seriesOnly: true,
       status: "watched,want_to_watch,watching",
       genre: "剧情,喜剧",
@@ -35,6 +37,46 @@ test(
       offset: 30,
       upcoming: false,
     });
+  },
+);
+
+test(
+  "readFilters and writeFilters round-trip creditRole independently of type",
+  /* 验证人物角色写入 URL creditRole，并与分类参数可组合。 */ () => {
+    const filters = {
+      ...EMPTY_FILTERS,
+      type: ["book", "music"],
+      creditRole: ["author", "artist"],
+      status: ["watched"],
+    };
+    const params = new URLSearchParams({ q: "周杰伦" });
+    writeFilters(params, filters);
+    expect(params.get("type")).toBe("book,music");
+    expect(params.get("creditRole")).toBe("author,artist");
+    expect(params.get("status")).toBe("watched");
+    expect(params.get("q")).toBe("周杰伦");
+    expect(readFilters(params)).toEqual(
+      expect.objectContaining({
+        type: ["book", "music"],
+        creditRole: ["author", "artist"],
+        status: ["watched"],
+      }),
+    );
+    expect(readFilters(new URLSearchParams()).creditRole).toEqual([]);
+  },
+);
+
+test(
+  "empty creditRole means no person role limit in the API query",
+  /* 「全部」人物不写 creditRole，只选人物时也不带 type。 */ () => {
+    const withPerson = new URLSearchParams(
+      buildMediaSearchQuery(new URLSearchParams({ q: "诺兰", creditRole: "director" })),
+    );
+    expect(withPerson.get("creditRole")).toBe("director");
+    expect(withPerson.get("type")).toBeNull();
+
+    const allPeople = new URLSearchParams(buildMediaSearchQuery(new URLSearchParams({ q: "诺兰" })));
+    expect(allPeople.get("creditRole")).toBeNull();
   },
 );
 
@@ -57,9 +99,16 @@ test.each(["-1", "NaN", "Infinity", "1.5"])(
   },
 );
 
-test.each<Record<string, string>>([{ type: "电影" }, { type: "tv_series" }, { status: "已看" }, { sort: "评分" }])(
+test.each<Record<string, string>>([
+  { type: "电影" },
+  { type: "tv_series" },
+  { type: "director" },
+  { creditRole: "producer" },
+  { status: "已看" },
+  { sort: "评分" },
+])(
   "unknown filter values %o are rejected",
-  /* 验证分类、状态和排序中的旧版中文值与未知值都判定为无效地址。 */ (params) => {
+  /* 验证分类、人物、状态和排序中的旧版中文值与未知值都判定为无效地址。 */ (params) => {
     expect(hasOnlyKnownFilterValues(new URLSearchParams(params))).toBe(false);
   },
 );
@@ -72,6 +121,7 @@ test(
         new URLSearchParams({
           q: "王家卫",
           type: "movie,tv_show,series",
+          creditRole: "director,lyricist,composer,author",
           status: "watched",
           sort: "rating_desc",
           genre: "剧情",

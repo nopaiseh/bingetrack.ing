@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  CREDIT_ROLE_OPTIONS,
   TYPE_FILTER_ORDER,
   TYPE_OPTIONS,
   countActiveFilters,
@@ -25,7 +26,7 @@ describe("search model helpers", () => {
     expect(new Set(TYPE_FILTER_ORDER)).toEqual(new Set(SEARCH_DB_TYPES));
   });
 
-  it("lists 专辑／单曲 in type filters and uses 已听／想听 when only music is selected", () => {
+  it("lists only media types in type filters and person roles in creditRole order", () => {
     expect(TYPE_OPTIONS.map((option) => option.value)).toEqual([
       "movie",
       "tv_show",
@@ -33,21 +34,19 @@ describe("search model helpers", () => {
       "music",
       "book",
       "series",
-      "director",
-      "actor",
     ]);
-    expect(TYPE_OPTIONS.map((option) => option.label)).toEqual([
-      "电影",
-      "电视节目",
-      "专辑",
-      "单曲",
-      "图书",
-      "系列",
-      "导演",
-      "演员",
-    ]);
+    expect(TYPE_OPTIONS.map((option) => option.label)).toEqual(["电影", "电视节目", "专辑", "单曲", "图书", "系列"]);
     expect(TYPE_OPTIONS.some((option) => option.value === "album" && option.label === "专辑")).toBe(true);
     expect(TYPE_OPTIONS.some((option) => option.value === "music" && option.label === "单曲")).toBe(true);
+    expect(CREDIT_ROLE_OPTIONS.map((option) => option.value)).toEqual([
+      "director",
+      "actor",
+      "artist",
+      "lyricist",
+      "composer",
+      "author",
+    ]);
+    expect(CREDIT_ROLE_OPTIONS.map((option) => option.label)).toEqual(["导演", "演员", "歌手", "作词", "作曲", "作者"]);
     expect(statusFilterLabel("watched", ["music"])).toBe("已听");
     expect(statusFilterLabel("want_to_watch", ["music"])).toBe("想听");
     expect(statusFilterLabel("watched", ["movie"])).toBe("已看");
@@ -68,11 +67,12 @@ describe("search model helpers", () => {
       countActiveFilters({
         ...EMPTY_FILTERS,
         type: ["movie"],
+        creditRole: ["author"],
         status: ["watched", "watching"],
         year: ["2020", ""],
         sort: ["rating_asc"],
       }),
-    ).toBe(5);
+    ).toBe(6);
     expect(countActiveFilters({ sort: [] })).toBe(0);
   });
 
@@ -110,6 +110,6 @@ describe("search model helpers", () => {
     expect(resultsCountLabel(9, [])).toBe("找到 9 部作品");
     expect(resultsCountLabel(4, ["music", "book"])).toBe("找到 4 部作品");
     expect(resultsCountLabel(2, ["music", "movie"])).toBe("找到 2 部作品");
-    expect(resultsCountLabel(1, ["music", "director"])).toBe("找到 1 首");
+    expect(resultsCountLabel(1, ["music"])).toBe("找到 1 首");
   });
 });

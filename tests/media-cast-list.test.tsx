@@ -37,6 +37,6 @@ test("shows the character beside each actor while the link searches only the act
     <MediaInformation media={{ ...media, casts: ["演员1", "演员2"], characters: ["角色甲", null] }} seasons={null} />,
   );
   const link = screen.getByRole("link", { name: /演员1饰\s*角色甲/ });
-  expect(link).toHaveAttribute("href", "/search?q=%E6%BC%94%E5%91%981&type=actor");
+  expect(link).toHaveAttribute("href", "/search?q=%E6%BC%94%E5%91%981&creditRole=actor");
   expect(screen.getByRole("link", { name: "演员2" })).toBeInTheDocument();
 });

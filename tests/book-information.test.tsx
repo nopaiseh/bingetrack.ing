@@ -39,6 +39,10 @@ describe("BookInformation", () => {
     expect(screen.getByText("在读")).toBeInTheDocument();
     expect(screen.getByText("读过")).toBeInTheDocument();
     expect(screen.getAllByText("作者甲").length).toBeGreaterThan(0);
+    expect(screen.getAllByRole("link", { name: "作者甲" })[0]).toHaveAttribute(
+      "href",
+      "/search?q=%E4%BD%9C%E8%80%85%E7%94%B2&creditRole=author",
+    );
     expect(screen.getAllByText("测试出版社").length).toBeGreaterThan(0);
     expect(screen.getAllByText(/320/).length).toBeGreaterThan(0);
     expect(screen.queryByRole("progressbar")).not.toBeInTheDocument();
