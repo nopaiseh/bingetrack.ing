@@ -739,10 +739,13 @@ async function fetchMediaList(
   const hasQuery = typeof q === "string" && q.trim().length > 0;
   // 关键词和“系列”分类的匹配需要跨表合并，交给数据库函数完成，避免把命中 ID 回传到 URL 而被截断。
   const usesSearchFunction = hasQuery || seriesOnly;
+  // search_media 在同时传入系列与媒体类型且无人物角色时用 OR 合并；无人物时改为只让 RPC
+  // 做系列匹配，再由 PostgREST 叠加类型，得到系列 ∩ 类型（与人物路径的 AND 一致）。
+  const andSeriesWithType = seriesOnly && types.length > 0 && creditRoles.length === 0;
   // 无关键词时省略 p_query 使用函数默认值：计数请求走 HEAD 查询串，null 会被序列化成字符串 "null"。
   const searchArgs = {
     ...(hasQuery ? { p_query: q.trim() } : {}),
-    p_types: types,
+    p_types: andSeriesWithType ? [] : types,
     p_series_only: seriesOnly,
     p_credit_roles: creditRoles,
   };
@@ -755,7 +758,7 @@ async function fetchMediaList(
   let dataQuery = source(MEDIA_CARD_COLUMNS);
   let countQuery = source("id", { count: "exact", head: true });
 
-  if (!usesSearchFunction && types.length > 0) {
+  if ((!usesSearchFunction || andSeriesWithType) && types.length > 0) {
     dataQuery = dataQuery.in("type", types);
     countQuery = countQuery.in("type", types);
   }
