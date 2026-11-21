@@ -15,7 +15,7 @@ export const SEARCH_POSTER_SIZES =
 
 /**
  * First row on xl (6 cols) and about three rows on a phone (2 cols).
- * Index 0 gets priority; indices below this count load eagerly.
+ * Index 0 gets preload; indices below this count load eagerly.
  */
 export const SEARCH_ABOVE_FOLD_COUNT = 6;
 

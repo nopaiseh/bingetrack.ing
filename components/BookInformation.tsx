@@ -16,7 +16,7 @@ function BookPoster({ title, coverUrl }: { title: string; coverUrl: string }) {
       className="relative aspect-2/3 w-full overflow-hidden rounded-xl shadow-[0_12px_30px_-16px_rgba(0,0,0,0.8)]"
     >
       {coverUrl ? (
-        <Image src={coverUrl} alt="" fill sizes="(max-width: 639px) 64px, 96px" className="object-cover" priority />
+        <Image src={coverUrl} alt="" fill sizes="(max-width: 639px) 64px, 96px" className="object-cover" preload />
       ) : (
         <LetterTile title={title} />
       )}

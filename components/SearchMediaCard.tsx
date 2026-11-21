@@ -122,13 +122,13 @@ function isBookCard(item: MediaCard): boolean {
 export function SearchMediaCard({
   item,
   returnHref,
-  priority = false,
+  preload = false,
   eager = false,
 }: {
   item: MediaCard;
   returnHref: string;
-  /** 首屏 LCP 候选：fetchPriority=high 且立即加载。 */
-  priority?: boolean;
+  /** 首屏 LCP 候选：Next 16 `preload`（替代已弃用的 `priority`）。 */
+  preload?: boolean;
   /** 首屏其余海报：eager，避免懒加载推迟可见图。 */
   eager?: boolean;
 }) {
@@ -154,8 +154,8 @@ export function SearchMediaCard({
           fill
           className="object-cover transition-transform duration-500 ease-out group-hover:scale-105"
           sizes={SEARCH_POSTER_SIZES}
-          priority={priority}
-          loading={priority ? undefined : eager ? "eager" : "lazy"}
+          preload={preload}
+          loading={preload ? undefined : eager ? "eager" : "lazy"}
         />
       ) : square || book ? (
         <LetterTile title={item.title} />
