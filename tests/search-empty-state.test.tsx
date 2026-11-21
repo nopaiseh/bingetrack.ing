@@ -9,7 +9,9 @@ describe("SearchEmptyState", () => {
     expect(screen.getByRole("status")).toBeInTheDocument();
     expect(screen.getByText("没有匹配的作品")).toBeInTheDocument();
     expect(
-      screen.getByText("没有与这个关键词匹配的电影、电视节目、音乐、图书或人物。可以换一个词，或清除目前的筛选后再试。"),
+      screen.getByText(
+        "没有与这个关键词匹配的电影、电视节目、音乐、图书或人物。可以换一个词，或清除目前的筛选后再试。",
+      ),
     ).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "清除筛选" })).not.toBeInTheDocument();
   });
@@ -19,9 +21,7 @@ describe("SearchEmptyState", () => {
     render(<SearchEmptyState query="" canReset onReset={onReset} onSuggest={vi.fn()} />);
 
     expect(
-      screen.getByText(
-        "没有作品符合当前筛选。可搜索电影、电视节目、音乐或图书；也可以放宽条件，或从下面的方向开始。",
-      ),
+      screen.getByText("没有作品符合当前筛选。可搜索电影、电视节目、音乐或图书；也可以放宽条件，或从下面的方向开始。"),
     ).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "清除筛选" }));
     expect(onReset).toHaveBeenCalledTimes(1);
