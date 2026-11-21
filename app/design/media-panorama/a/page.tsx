@@ -16,7 +16,7 @@ export default function PanoramaSchemeAPage() {
     <PrototypeChrome
       scheme="a"
       title="四格并列"
-      blurb="专辑看板：总数＋已听＋想听。图书看板：总数＋已读＋在读＋想读。完成进度仍只算影视片长。"
+      blurb="字段对齐 PR #229：total_albums／listened_albums／want_albums；total_books／read_books／reading_books／want_books。完成进度仍只算影视。"
     >
       <PanoramaIntro
         stats={[
@@ -26,7 +26,7 @@ export default function PanoramaSchemeAPage() {
           })),
           { label: "完成进度", value: runtimePercent, accent: true },
         ]}
-        footnote="完成进度 = 影视片长；专辑／图书不并入。现网确有想听／想读状态（见报告）。"
+        footnote="完成进度 = 影视片长（#229 不改时长列）。want_* 仅计 want_to_watch，无 tracking 不计。"
       />
 
       <div className="grid grid-cols-1 gap-4 md:gap-6 xl:grid-cols-2">

@@ -1,14 +1,19 @@
 /**
- * 设计原型 mock（站长补充：要看想听／想读）。
+ * 设计原型 mock：字段名与列序对齐后端 PR #229
+ *（`release_year_stats` 末尾追加的七列）。
  *
- * 专辑：total_albums / listened_albums / want_albums
- * 图书：total_books / read_books / reading_books / want_books
- * 完成进度：仍只用影视片长，音书不并入
+ *   total_albums, listened_albums, total_books, read_books,
+ *   reading_books, want_albums, want_books
  *
- * want_albums／want_books 字段名已由后端确认。图书全 0 验收空态。不连数据库。
+ * 口径（同 #229）：专辑／图书按 media_items.release_date 年份；
+ * listened/read = tracking.watched；reading = in_progress；
+ * want_* = want_to_watch（**无 tracking 不计想听／想读**）；
+ * 单曲不计；时长列仍只含影视。
+ *
+ * 图书全 0 验收空态。不连数据库。
  */
 
-/** 对齐已定 release_year_stats 扩展列（含 want_albums／want_books）。 */
+/** 与 PR #229 `Summary`／视图末尾七列对齐（影视字段仅原型够用子集）。 */
 export type ReleaseYearStatsRow = {
   release_year: string;
   watched_movies: number;
@@ -24,14 +29,13 @@ export type ReleaseYearStatsRow = {
   total_series_episodes: number;
   total_watched_runtime: number;
   total_runtime: number;
+  // —— PR #229 追加（顺序与视图／Summary 一致）——
   total_albums: number;
   listened_albums: number;
-  /** 想听；后端确认列名 */
-  want_albums: number;
   total_books: number;
   read_books: number;
   reading_books: number;
-  /** 想读；后端确认列名 */
+  want_albums: number;
   want_books: number;
 };
 
@@ -39,7 +43,7 @@ export const MOCK_YEAR = "全时段档案";
 
 /**
  * 全时段 mock。
- * 专辑：28 = 已听 14 + 想听 8 +（现网还有「在听」6，本全景字段集未展示，见报告）。
+ * 专辑：total 28＝listened 14＋want 8＋其余 6（无 tracking／未完成，不算想听）。
  * 图书：全 0 空态。
  */
 export const MOCK_SUMMARY: ReleaseYearStatsRow = {
@@ -59,12 +63,23 @@ export const MOCK_SUMMARY: ReleaseYearStatsRow = {
   total_runtime: 100,
   total_albums: 28,
   listened_albums: 14,
-  want_albums: 8,
   total_books: 0,
   read_books: 0,
   reading_books: 0,
+  want_albums: 8,
   want_books: 0,
 };
+
+/** PR #229 七列的只读快照，便于方案页／报告引用。 */
+export const PR229_ALBUM_BOOK_FIELDS = [
+  "total_albums",
+  "listened_albums",
+  "total_books",
+  "read_books",
+  "reading_books",
+  "want_albums",
+  "want_books",
+] as const;
 
 export type PanoramaTypeStats = {
   id: "movie" | "tv_show" | "album" | "book";

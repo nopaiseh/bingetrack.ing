@@ -1,10 +1,10 @@
 # 媒体全景：音乐／图书纳入 — 设计调研
 
 > 临时分支 `cursor/media-panorama-design-bf63` · 仅调研与原型 · **不开 PR** · 不改 `main` · 不碰生产库／环境变量  
-> 后端扩展 `release_year_stats` **另开 PR**
+> 后端字段以 **[PR #229](https://github.com/nopaiseh/bingetrack.ing/pull/229)** 为准
 
 原型：`/design/media-panorama/{a,b,c}`  
-截图（含想听／想读）：`panorama_want_{a|b|c}_{1440|390}.png`
+截图：`panorama_want_{a|b|c}_{1440|390}.png`（已含想听／想读；字段名与 #229 一致，未重截）
 
 ---
 
@@ -16,70 +16,68 @@
 | 看板 | `HomeDashboard` + `deriveDashboardStats` | 按年取行 |
 | 标题区 | `DashboardIntro` | 电影总计／电视总计／完成进度 |
 | 总览 | `OverviewBoards` | 电影已看／想看；电视已看／在看／想看 |
-| 数据源 | `public.release_year_stats` | 现网 **仅** movie + tv_show |
+| 数据源 | `public.release_year_stats` | 现网仅 movie + tv_show；**#229 末尾追加专辑／图书七列** |
 
-完成进度：`total_watched_runtime / total_runtime`（**仅影视片长**；音书不并入——已定）。
+完成进度：`total_watched_runtime / total_runtime`（**仅影视**；#229 不改时长列）。
 
 ---
 
 ## 2. 想听／想读：现有数据里有没有？
 
-**有。** 底层 tracking／视图已支持，不是新造状态。
+**有**（写入侧／目录／`get_media_stats` 已用）。年统计侧由 #229 落列。
 
-### 专辑（想听）
-
-| 项 | 结论 |
-| --- | --- |
-| DB 值 | `tracking_status = want_to_watch`（曲目级；专辑状态由曲目汇总） |
-| `v_all_media` | 专辑 `status` 可为 `watched`（已听／听过）、`watching`（在听）、`want_to_watch`（想听） |
-| 展示文案 | `lib/listen-status.ts`：`want_to_watch` →「想听」；`MEDIA_TYPE_DEFINITIONS.album.trackingLabels.want` =「想听」 |
-| 全量计数 | `get_media_stats('album')` 的 `want` 列即可拿到想听数 |
-
-**注意：** 专辑在现网还有第三态 **「在听」**（`watching`：部分曲目已听、未听完）。因此：
-
-- `总数` ≠ 一定等于 `已听 + 想听`
-- 本原型 mock：总数 28＝已听 14＋想听 8＋（未展示的在听 6）
-- 若年统计只出「已听／想听」而不出「在听」，报告／UI 应接受差额，或后端把「在听」并入某一侧（需产品拍板）
-
-### 图书（想读）
-
-| 项 | 结论 |
-| --- | --- |
-| DB 值 | `tracking.status = want_to_watch`（图书条目级） |
-| 合法状态 | `watched`（读过／已读）、`in_progress`（在读）、`want_to_watch`（想读） |
-| 展示文案 | `READ_STATUS_DISPLAY.want_to_watch` =「想读」；`trackingLabels.want` =「想读」 |
-| 全量计数 | `get_media_stats('book')` → `want`；`getBookStats().wantToWatch` |
-| 目录页 | `BooksCatalog` 已有「想读」筛选与分区 |
-
-图书一般：`总数 = 已读 + 在读 + 想读`（无「在听」类第四态）。
-
----
-
-## 3. 已定后端字段名（`release_year_stats` 另 PR）
-
-| 媒体 | 列名 | 展示 |
+| 展示 | DB | #229 列 |
 | --- | --- | --- |
-| 专辑 | `total_albums` | 总数 |
-| 专辑 | `listened_albums` | 已听 |
-| 专辑 | **`want_albums`** | 想听（后端已确认字段名） |
-| 图书 | `total_books` | 总数 |
-| 图书 | `read_books` | 已读 |
-| 图书 | `reading_books` | 在读 |
-| 图书 | **`want_books`** | 想读（后端已确认字段名） |
+| 已听 | 专辑 `tracking.status = watched` | `listened_albums` |
+| 想听 | 专辑 `tracking.status = want_to_watch` | `want_albums` |
+| 已读 | 图书 `watched` | `read_books` |
+| 在读 | 图书 `in_progress` | `reading_books` |
+| 想读 | 图书 `want_to_watch` | `want_books` |
 
-年份：专辑发行日／书出版日；`All Time` 汇总。完成进度仍只算影视片长。
+口径要点（#229）：
 
-可选：年统计是否另出专辑「在听」列——现网有该态，未在上表；产品另定。
+- **无 tracking 不计想听／想读**（计入 `total_*`，但不进 `want_*`）
+- 单曲（`music`）不计
+- 须有 `release_date`；年份按发行／出版日；`All Time` 与电影一致
+- #229 **不**把曲目汇总的「在听」写进年统计；全景这七列没有「在听」
+
+因此：`total_albums` 可以大于 `listened_albums + want_albums`（差额＝无 tracking 等未完成）。
 
 ---
 
-## 4. 原型字段形状
+## 3. PR #229 七列（视图末尾顺序）
 
-原型 `MOCK_SUMMARY` **已按上表字段名**（含 `want_albums` / `want_books`）驱动三方案。
+```
+total_albums
+listened_albums
+total_books
+read_books
+reading_books
+want_albums
+want_books
+```
+
+| 列名 | 含义 |
+| --- | --- |
+| `total_albums` | 专辑总数 |
+| `listened_albums` | 已听 |
+| `total_books` | 图书总数 |
+| `read_books` | 已读 |
+| `reading_books` | 在读 |
+| `want_albums` | 想听 |
+| `want_books` | 想读 |
+
+应用侧 #229 已在 `Summary` 与 `deriveDashboardStats` 派生：`totalAlbums`／`listenedAlbums`／`wantAlbums`／`totalBooks`／`readBooks`／`readingBooks`／`wantBooks`（**未改 UI**）。
+
+---
+
+## 4. 原型
+
+`MOCK_SUMMARY` 使用上表七字段（顺序与 #229 一致）驱动 A／B／C。
 
 | 媒体 | 展示 |
 | --- | --- |
-| 专辑 | 总数 · 已听 · 想听 |
+| 专辑 | 总数（`total_albums`）· 已听（`listened_albums`）· 想听（`want_albums`） |
 | 图书 | 总数 · 已读 · 在读 · 想读 |
 | 标题完成进度 | 仅影视 |
 
@@ -87,23 +85,22 @@
 
 ---
 
-## 5. 三方案要点
+## 5. 三方案
 
 | 方案 | 布局 | 优点 | 缺点 |
 | --- | --- | --- | --- |
-| **A 四格并列** | 2×2 等权看板 | 四类对等；音书状态一目了然 | 图书 0 占大卡；页更高 |
-| **B 主次两层** | 影视大卡 +「声音与文字」次层 | 改动小、延续强 | 音书偏次 |
-| **C 密度行（推荐）** | 每类一行，状态格随列数伸缩 | 想听／想读加列不挤；空态轻；手机好扫 | 与现网大卡略有落差 |
+| **A 四格并列** | 2×2 等权 | 四类对等 | 空类占大卡 |
+| **B 主次两层** | 影视主 + 音书次 | 改动小 | 音书偏次 |
+| **C 密度行（推荐）** | 每类一行 | 贴合七列、空态轻、手机好扫 | 与现网大卡略有落差 |
 
-**推荐仍为 C。** 图书三态、专辑两态（外加可选在听）用行式最省事；完成进度与音书解耦也清楚。
+**推荐 C。** 前端落地可直接读 `summary`／`deriveDashboardStats` 新字段，无需再调 `get_media_stats`。
 
 ---
 
-## 6. 分工（本调研）
+## 6. 分工
 
 | 项 | 谁 |
 | --- | --- |
-| `release_year_stats` 加音书列（含想听／想读） | 后端另 PR |
-| 是否年统计也出「在听」 | 产品／后端拍板 |
-| 标题区／总览按新列渲染 | 前端后续 |
+| `release_year_stats` 七列 + `Summary`／stats 派生 | **后端 PR #229** |
+| 标题区／总览 UI | 前端另开（本分支不做） |
 | 本分支 | 原型 + 报告 + 截图 · **不开 PR** |
