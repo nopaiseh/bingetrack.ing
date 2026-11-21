@@ -64,6 +64,15 @@ describe("SearchPage", () => {
     expect(searchMediaServer).not.toHaveBeenCalled();
   });
 
+  it.each(["director", "actor"] as const)(
+    "旧 type=%s 视为未知分类并 404（人物改用 creditRole）",
+    /* 不做兼容重定向：type 中的导演／演员不再合法。 */ async (role) => {
+      await expect(initialResultFor({ q: "测试", type: role })).rejects.toThrow("NOT_FOUND");
+      expect(searchCachedMedia).not.toHaveBeenCalled();
+      expect(searchMediaServer).not.toHaveBeenCalled();
+    },
+  );
+
   it("翻页、年份范围与多选组合绕过数据缓存，缓存键数量保持有界", async () => {
     const queries: Record<string, string>[] = [
       { genre: "剧情", page: "2" },

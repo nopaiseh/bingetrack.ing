@@ -308,7 +308,7 @@ test("无结果时给出说明、清除筛选和建议，清除按钮留在输�
   expect(within(empty).getByRole("button", { name: "音乐" })).toBeInTheDocument();
   expect(screen.getByRole("textbox", { name: "搜索媒体" })).toHaveAttribute(
     "placeholder",
-    "搜索电影、电视节目、音乐、图书、导演或演员...",
+    "搜索电影、电视节目、音乐、图书或人物...",
   );
   expect(screen.getByRole("button", { name: "清除筛选" })).toHaveClass("button-accent");
 

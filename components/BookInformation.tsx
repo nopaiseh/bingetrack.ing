@@ -51,7 +51,7 @@ function SideRow({ label, children }: { label: string; children: ReactNode }) {
 }
 
 function authorHref(name: string) {
-  return `/search?${new URLSearchParams({ q: name, type: "book" }).toString()}`;
+  return `/search?${new URLSearchParams({ q: name, creditRole: "author" }).toString()}`;
 }
 
 /** 图书详情：封面／首字块、三态阅读状态、作者／出版社／页数等字段；无进度条。 */

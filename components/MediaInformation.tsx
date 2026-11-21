@@ -78,11 +78,11 @@ function SideRow({ label, children }: { label: string; children: ReactNode }) {
 
 /** 演员名链到人物搜索；角色只作说明，不进链接的查询词。 */
 function castHref(name: string) {
-  return `/search?${new URLSearchParams({ q: name, type: "actor" }).toString()}`;
+  return `/search?${new URLSearchParams({ q: name, creditRole: "actor" }).toString()}`;
 }
 
 function directorHref(name: string) {
-  return `/search?${new URLSearchParams({ q: name, type: "director" }).toString()}`;
+  return `/search?${new URLSearchParams({ q: name, creditRole: "director" }).toString()}`;
 }
 
 /** 窄屏先露四位，其余用复选框展开，不用脚本；宽屏全部展示。 */

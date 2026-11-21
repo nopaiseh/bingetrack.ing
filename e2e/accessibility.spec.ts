@@ -180,7 +180,7 @@ test(
     await page.goto(`/shows/${SERIES_ID}`);
     await page.waitForLoadState("networkidle");
 
-    const director = page.locator('a[href*="type=director"]').first();
+    const director = page.locator('a[href*="creditRole=director"]').first();
     test.skip((await director.count()) === 0, "种子剧集无导演链接时跳过");
 
     const box = await director.boundingBox();

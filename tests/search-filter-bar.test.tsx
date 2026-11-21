@@ -27,15 +27,19 @@ describe("SearchFilterPanel", () => {
   it("shows the primary filters and hides advanced fields until asked", () => {
     renderPanel();
     expect(screen.getByText("分类")).toBeInTheDocument();
+    expect(screen.getByText("人物")).toBeInTheDocument();
     expect(screen.getByText("状态")).toBeInTheDocument();
     expect(screen.getByText("排序")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "电影" })).toHaveAttribute("aria-pressed", "false");
     expect(screen.getByRole("button", { name: "专辑" })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "音乐" })).not.toBeInTheDocument();
-    const typeRow = screen.getByText("分类").parentElement;
-    expect(typeRow).not.toBeNull();
-    const typeLabels = Array.from(typeRow!.querySelectorAll("button")).map((button) => button.textContent?.trim());
-    expect(typeLabels).toEqual(["全部", "电影", "电视节目", "专辑", "单曲", "图书", "系列", "导演", "演员"]);
+    const typeRow = screen.getByRole("group", { name: "分类" });
+    const typeLabels = Array.from(typeRow.querySelectorAll("button")).map((button) => button.textContent?.trim());
+    expect(typeLabels).toEqual(["全部", "电影", "电视节目", "专辑", "单曲", "图书", "系列"]);
+    const personRow = screen.getByRole("group", { name: "人物" });
+    const personLabels = Array.from(personRow.querySelectorAll("button")).map((button) => button.textContent?.trim());
+    expect(personLabels).toEqual(["全部", "导演", "演员", "歌手", "作词", "作曲", "作者"]);
+    expect(screen.getByRole("button", { name: "导演" })).toHaveAttribute("aria-pressed", "false");
     expect(screen.getByRole("button", { name: "日期，降序" })).toHaveAttribute("aria-pressed", "true");
     expect(screen.queryByRole("combobox", { name: "开始年份" })).not.toBeInTheDocument();
     const collapsed = document.getElementById("search-filters");
@@ -68,12 +72,19 @@ describe("SearchFilterPanel", () => {
     expect(screen.getByRole("combobox", { name: "开始年份" })).toBeInTheDocument();
     expect(screen.getByRole("combobox", { name: "结束年份" })).toBeInTheDocument();
   });
+
+  it("toggles a person credit role into creditRole", () => {
+    const setFilters = renderPanel();
+    fireEvent.click(screen.getByRole("button", { name: "作者" }));
+    const toggle = setFilters.mock.calls[0][0] as (previous: SearchFilters) => SearchFilters;
+    expect(toggle(EMPTY_FILTERS).creditRole).toEqual(["author"]);
+  });
 });
 
 describe("ActiveFilterBar", () => {
   it("clears filters with the shared empty object and keeps the current sort", () => {
     const setFilters = vi.fn();
-    const filters = { ...EMPTY_FILTERS, type: ["movie"], sort: ["rating_desc"] };
+    const filters = { ...EMPTY_FILTERS, type: ["movie"], creditRole: ["author"], sort: ["rating_desc"] };
     render(
       <ActiveFilterBar
         filters={filters}
@@ -85,6 +96,8 @@ describe("ActiveFilterBar", () => {
     );
 
     expect(screen.getByText("已选条件:")).toBeInTheDocument();
+    expect(screen.getByText("人物:")).toBeInTheDocument();
+    expect(screen.getByText("作者")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "清空筛选" }));
     expect(setFilters).toHaveBeenCalledWith({ ...EMPTY_FILTERS, sort: ["rating_desc"] });
   });

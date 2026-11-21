@@ -2,15 +2,14 @@ import Link from "next/link";
 
 type SearchTagCategory = "genre" | "region" | "language" | "director" | "cast" | "series";
 
-/** 将导演、演员或系列名编码为分类关键词搜索；其他分类使用对应筛选参数。 */
+/** 将导演、演员编码为 creditRole 关键词搜索；系列用 type=series；其他分类用对应筛选参数。 */
 function getSearchHref(label: string, category: SearchTagCategory) {
-  if (category === "director" || category === "cast" || category === "series") {
-    const type = category === "director" ? "director" : category === "cast" ? "actor" : "series";
-    const params = new URLSearchParams({
-      q: label,
-      type,
-    });
-    return `/search?${params.toString()}`;
+  if (category === "director" || category === "cast") {
+    const creditRole = category === "director" ? "director" : "actor";
+    return `/search?${new URLSearchParams({ q: label, creditRole }).toString()}`;
+  }
+  if (category === "series") {
+    return `/search?${new URLSearchParams({ q: label, type: "series" }).toString()}`;
   }
 
   return `/search?${category}=${encodeURIComponent(label)}`;

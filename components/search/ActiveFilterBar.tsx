@@ -3,6 +3,7 @@
 import FilterChip from "@/components/search/FilterChip";
 import { toggleSearchFilter } from "@/components/search/search-filters";
 import {
+  CREDIT_ROLE_OPTIONS,
   EMPTY_FILTERS,
   optionLabel,
   STATUS_OPTIONS,
@@ -26,11 +27,12 @@ export default function ActiveFilterBar({
   languageOptions: string[];
 }) {
   const selectedTypes = filters.type ?? [];
+  const creditRoleOptions = CREDIT_ROLE_OPTIONS.map((option) => ({ value: option.value, label: option.label }));
   return (
     <div className="mt-3 flex flex-wrap items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-2.5">
-      <span className="flex items-center gap-1.5 text-xs font-semibold tracking-wider text-fg-subtle mr-1">
+      <span className="mr-1 flex items-center gap-1.5 text-xs font-semibold tracking-wider text-fg-subtle">
         <span
-          className="i-material-symbols-filter-alt-outline-rounded size-3.5 inline-block text-[var(--accent)]"
+          className="i-material-symbols-filter-alt-outline-rounded inline-block size-3.5 text-[var(--accent)]"
           aria-hidden="true"
         />
         已选条件:
@@ -50,6 +52,25 @@ export default function ActiveFilterBar({
                 t,
                 true,
                 TYPE_OPTIONS.map((option) => option.value),
+              ),
+            )
+          }
+        />
+      ))}
+      {filters.creditRole?.map((role) => (
+        <FilterChip
+          key={`chip-credit-${role}`}
+          category="人物"
+          label={optionLabel(creditRoleOptions, role)}
+          accent
+          onRemove={() =>
+            setFilters((prev) =>
+              toggleSearchFilter(
+                prev,
+                "creditRole",
+                role,
+                true,
+                creditRoleOptions.map((option) => option.value),
               ),
             )
           }
