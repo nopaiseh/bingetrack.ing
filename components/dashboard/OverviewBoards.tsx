@@ -122,7 +122,7 @@ export default function OverviewBoards({ stats, selectedYear }: { stats: Dashboa
               toneClass={WATCH_STATUSES.watched.textClass}
               count={listenedTracks}
               unit="首"
-              href={musicEmpty ? undefined : "/albums"}
+              href={musicEmpty ? undefined : getStatusSearchLink("album", "watched", selectedYear)}
             />
             <MediaStatusCard
               title="想听"
@@ -130,7 +130,7 @@ export default function OverviewBoards({ stats, selectedYear }: { stats: Dashboa
               toneClass={WATCH_STATUSES.want_to_watch.textClass}
               count={wantTracks}
               unit="首"
-              href={musicEmpty ? undefined : "/albums"}
+              href={musicEmpty ? undefined : getStatusSearchLink("album", "want_to_watch", selectedYear)}
             />
           </div>
           {musicEmpty ? (

@@ -27,4 +27,11 @@ describe("dashboard search links", () => {
       "/search?type=book&status=want_to_watch&startYear=2024&endYear=2024",
     );
   });
+
+  it("supports album listen statuses with the same year params as films and books", () => {
+    expect(getStatusSearchLink("album", "watched", "All Time")).toBe("/search?type=album&status=watched");
+    expect(getStatusSearchLink("album", "want_to_watch", "2024")).toBe(
+      "/search?type=album&status=want_to_watch&startYear=2024&endYear=2024",
+    );
+  });
 });
