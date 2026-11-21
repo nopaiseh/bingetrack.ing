@@ -24,7 +24,7 @@ describe("AlbumCoverWall", () => {
     const { container } = render(<AlbumCoverWall items={[]} />);
     expect(screen.getByText("还没有专辑。")).toBeInTheDocument();
     expect(screen.getByText("还没有专辑。")).toHaveClass("text-sm", "text-fg-muted");
-    expect(container.firstElementChild).toHaveAttribute("role", "status");
+    expect(container.firstElementChild).not.toHaveAttribute("role");
     expect(container.firstElementChild?.className).toMatch(/border-dashed/);
     expect(screen.queryByRole("link")).not.toBeInTheDocument();
   });

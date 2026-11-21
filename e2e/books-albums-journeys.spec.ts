@@ -132,10 +132,8 @@ test(
   /* 专辑夹具在构建后载入，目录 ISR 仍烘焙空状态文案。 */ async ({ page }) => {
     await page.goto("/albums");
     await expect(page.getByRole("heading", { name: "专辑", exact: true })).toBeVisible();
-    const empty = page.getByRole("status");
-    await expect(empty).toBeVisible();
-    await expect(empty.getByText("还没有专辑。")).toBeVisible();
-    await expect(empty.getByRole("link")).toHaveCount(0);
+    await expect(page.getByText("还没有专辑。")).toBeVisible();
+    await expect(page.getByRole("link", { name: "去搜索" })).toHaveCount(0);
     await expect(page.getByRole("list", { name: "专辑封面墙" })).toHaveCount(0);
   },
 );

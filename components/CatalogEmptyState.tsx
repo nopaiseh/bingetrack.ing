@@ -13,7 +13,7 @@ type CatalogEmptyStateProps = {
   description?: string;
   /** 文字链目标，通常指向搜索页。 */
   ctaHref?: string;
-  /** 文字链可见名称（须自说明去向）。 */
+  /** 文字链可见名称（不含箭头；箭头由组件以装饰性方式追加）。 */
   ctaLabel?: string;
 };
 
@@ -26,7 +26,7 @@ const panelClass = "rounded-2xl border border-dashed border-[var(--border)] px-6
 export default function CatalogEmptyState({ message, title, description, ctaHref, ctaLabel }: CatalogEmptyStateProps) {
   if (title) {
     return (
-      <div className={`${panelClass} py-14 sm:py-16`} role="status">
+      <div className={`${panelClass} py-14 sm:py-16`}>
         <h2 className="text-base font-semibold text-fg">{title}</h2>
         {description ? (
           <p className="mx-auto mt-2 max-w-md text-sm leading-relaxed text-fg-secondary">{description}</p>
@@ -36,7 +36,7 @@ export default function CatalogEmptyState({ message, title, description, ctaHref
             href={ctaHref}
             className="focus-ring mt-5 inline-flex min-h-10 items-center rounded-sm text-sm font-medium text-[var(--accent-hover)] underline-offset-4 hover:underline"
           >
-            {ctaLabel}
+            {ctaLabel} <span aria-hidden="true">→</span>
           </Link>
         ) : null}
       </div>
@@ -44,7 +44,7 @@ export default function CatalogEmptyState({ message, title, description, ctaHref
   }
 
   return (
-    <div className={`${panelClass} py-16`} role="status">
+    <div className={`${panelClass} py-16`}>
       <p className="text-sm text-fg-muted">{message}</p>
     </div>
   );

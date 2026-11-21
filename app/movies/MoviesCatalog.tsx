@@ -7,7 +7,8 @@ import { MediaCatalogProps } from "@/lib/types";
 export default function MoviesCatalog({ watched, want, stats }: MediaCatalogProps) {
   const watchedItems = watched ?? [];
   const wantItems = want ?? [];
-  const isEmpty = watchedItems.length === 0 && wantItems.length === 0;
+  // 以统计总数为准：仅「近期将上映」等计入 total 时，不显示「还没有电影」。
+  const isEmpty = (stats?.total ?? 0) === 0;
 
   const statItems = [
     { label: "电影总数量", value: stats?.total || 0, href: "/search?type=movie" },
@@ -27,7 +28,7 @@ export default function MoviesCatalog({ watched, want, stats }: MediaCatalogProp
             title="还没有电影"
             description="录入作品后，已看与想看会显示在这里。"
             ctaHref="/search?type=movie"
-            ctaLabel="去搜索 →"
+            ctaLabel="去搜索"
           />
         ) : (
           <div className="space-y-12">

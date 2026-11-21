@@ -53,5 +53,13 @@ test("an empty catalog keeps the total and does not link to an empty search", ()
   expect(screen.queryByRole("link", { name: /电影总数量/ })).not.toBeInTheDocument();
   expect(screen.queryByText("近期将上映")).not.toBeInTheDocument();
   expect(screen.getByRole("heading", { name: "还没有电影" })).toBeInTheDocument();
-  expect(screen.getByRole("link", { name: "去搜索 →" })).toHaveAttribute("href", "/search?type=movie");
+  expect(screen.getByRole("link", { name: "去搜索" })).toHaveAttribute("href", "/search?type=movie");
+});
+
+test("upcoming-only catalogs keep stats and skip the empty-state panel", () => {
+  render(<MoviesCatalog watched={[]} want={[]} stats={{ total: 1, watched: 0, want: 0, upcoming: 1 }} />);
+
+  expect(screen.getByRole("heading", { name: "电影总数量" })).toBeInTheDocument();
+  expect(screen.getByRole("link", { name: /近期将上映/ })).toBeInTheDocument();
+  expect(screen.queryByRole("heading", { name: "还没有电影" })).not.toBeInTheDocument();
 });

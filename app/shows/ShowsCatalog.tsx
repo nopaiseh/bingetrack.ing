@@ -8,7 +8,8 @@ export default function ShowsCatalog({ watched, watching, want, stats }: MediaCa
   const watchedItems = watched ?? [];
   const watchingItems = watching ?? [];
   const wantItems = want ?? [];
-  const isEmpty = watchedItems.length === 0 && watchingItems.length === 0 && wantItems.length === 0;
+  // 以统计总数为准：仅「近期将播出」等计入 total 时，不显示「还没有电视节目」。
+  const isEmpty = (stats?.total ?? 0) === 0;
 
   const statItems = [
     { label: "电视节目总数量", value: stats?.total || 0, href: "/search?type=tv_show" },
@@ -29,7 +30,7 @@ export default function ShowsCatalog({ watched, watching, want, stats }: MediaCa
             title="还没有电视节目"
             description="录入剧集后，已看、在看与想看会显示在这里。"
             ctaHref="/search?type=tv_show"
-            ctaLabel="去搜索 →"
+            ctaLabel="去搜索"
           />
         ) : (
           <div className="space-y-12">
