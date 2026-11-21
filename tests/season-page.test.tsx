@@ -100,8 +100,8 @@ describe("SeasonPage", () => {
     mockSeason();
   });
 
-  it("按 24 小时增量静态生成，构建时不枚举季", () => {
-    expect(revalidate).toBe(86400);
+  it("按需静态生成且不定时重建，构建时不枚举季", () => {
+    expect(revalidate).toBe(false);
     expect(generateStaticParams()).toEqual([]);
   });
 

@@ -4,7 +4,8 @@ import { ENABLED_PUBLIC_CATALOG_PATHS } from "@/lib/media-types";
 import { SITE_URL } from "@/lib/site";
 import { reportHandledError } from "@/lib/report-error";
 
-export const revalidate = 86400;
+// 站点地图直接查库；管理端 revalidatePath("/sitemap.xml") 按需刷新，不定时重建。
+export const revalidate = false;
 
 /** 合并固定页面和数据库中的媒体地址生成站点地图；查询失败时退回固定页面列表。 */
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {

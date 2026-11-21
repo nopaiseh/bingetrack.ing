@@ -8,8 +8,8 @@ import { getCachedMediaById } from "@/lib/functions/cached-media";
 import type { Metadata } from "next";
 import { buildMediaJsonLd, buildMediaMetadata, serializeJsonLd } from "@/lib/seo/media";
 
-// 详情页按需生成，日常走 24 小时长缓存，数据变更通过 revalidatePath/revalidateTag 即时失效。
-export const revalidate = 86400;
+// 详情页按需生成；只靠保存时的 revalidateTag（media:item / media）失效，不定时重建。
+export const revalidate = false;
 
 /** 构建时不枚举详情 ID，让动态详情路由在访问时按需生成。 */
 export function generateStaticParams() {

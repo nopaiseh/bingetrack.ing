@@ -23,21 +23,20 @@ import { getCurrentlyReading, getHomeContinue } from "@/lib/continue-watching";
 import { MEDIA_LISTS_TAG, MEDIA_TAG, mediaItemTag } from "./media-cache-tags";
 import type { Summary } from "@/lib/types";
 
-// 公开详情长缓存 24 小时，函数参数参与缓存键；每个条目带独立标签，保存时只失效受影响的详情页。
-// 非法 ID 在进入数据缓存前直接返回，避免任意路径参数写入缓存条目。
+// 公开详情只靠 tag 失效（保存时 revalidateMediaItems／revalidateAllMedia）；非法 ID 不进缓存。
 export const getCachedMediaById = cache(async (id: string) => {
   if (!isMediaId(id)) return null;
   return unstable_cache(getMediaById, ["public-media-detail-v3"], {
-    revalidate: 86400,
+    revalidate: false,
     tags: [MEDIA_TAG, mediaItemTag(id)],
   })(id);
 });
 
-/** 专辑详情（元数据、拥有权、曲目与 credits）长缓存 24 小时。 */
+/** 专辑详情（元数据、拥有权、曲目与 credits）；写入走 media / media:item 失效。 */
 export const getCachedAlbumDetail = cache(async (id: string) => {
   if (!isMediaId(id)) return null;
   return unstable_cache(getAlbumDetail, ["public-album-detail-v1"], {
-    revalidate: 86400,
+    revalidate: false,
     tags: [MEDIA_TAG, mediaItemTag(id)],
   })(id);
 });
@@ -46,12 +45,12 @@ export const getCachedAlbumDetail = cache(async (id: string) => {
 export const getCachedSeasonsBySeriesId = cache(async (seriesId: string) => {
   if (!isMediaId(seriesId)) return [];
   return unstable_cache(getSeasonsBySeriesId, ["public-media-seasons-v3"], {
-    revalidate: 86400,
+    revalidate: false,
     tags: [MEDIA_TAG, mediaItemTag(seriesId)],
   })(seriesId);
 });
 
-// 单集分页与季统计长缓存 24 小时。标签挂在电视节目上：保存单集时失效列表包含所属节目，季页与筛选接口一起刷新。
+// 单集分页与季统计：标签挂在电视节目上，保存单集时失效列表包含所属节目。
 export const getCachedSeasonEpisodes = cache(
   async (
     seriesId: string,
@@ -63,18 +62,18 @@ export const getCachedSeasonEpisodes = cache(
   ) => {
     if (!isMediaId(seriesId) || !isMediaId(seasonId)) return null;
     return unstable_cache(getSeasonEpisodes, ["public-season-episodes-v2"], {
-      revalidate: 86400,
+      revalidate: false,
       tags: [MEDIA_TAG, mediaItemTag(seriesId)],
     })(seriesId, seasonId, page, pageSize, status, order);
   },
 );
 
-// 下一集只跟季有关，不随分页和筛选变化。查询失败时降级为不标记，避免单集列表整页打不开。
+// 下一集只跟季有关；查询失败时降级为不标记，避免单集列表整页打不开。
 export const getCachedSeasonNextEpisodeNumber = cache(async (seriesId: string, seasonId: string) => {
   if (!isMediaId(seriesId) || !isMediaId(seasonId)) return null;
   try {
     return await unstable_cache(getSeasonNextEpisodeNumber, ["public-season-next-episode-v1"], {
-      revalidate: 86400,
+      revalidate: false,
       tags: [MEDIA_TAG, mediaItemTag(seriesId)],
     })(seriesId, seasonId);
   } catch (error) {
@@ -83,7 +82,8 @@ export const getCachedSeasonNextEpisodeNumber = cache(async (seriesId: string, s
   }
 });
 
-// 以完整查询字符串区分搜索缓存，1 小时后允许重新验证，数据变更由 "media" tag 即时失效。
+// 搜索结果按查询串缓存。upcoming=true 的过滤条件含当天日期，故保留 1 小时定时重建；
+// 其余筛选仍只靠后台写入时的 media / media:lists 标签失效。
 export const searchCachedMedia = unstable_cache(
   /** 解析缓存键中的查询参数并执行媒体搜索。 */
   async (query: string) => searchMediaServer(parseMediaSearchParams(new URLSearchParams(query))),
@@ -91,16 +91,16 @@ export const searchCachedMedia = unstable_cache(
   { revalidate: 3600, tags: [MEDIA_TAG, MEDIA_LISTS_TAG] },
 );
 
-// 榜单数据按类型、年份与数量长缓存 24 小时。
+// 榜单数据按类型、年份与数量缓存；写入走 media:lists。
 export const getCachedTopMediaServer = cache(
   unstable_cache(fetchTopMediaServer, ["public-media-top-v3"], {
-    revalidate: 86400,
+    revalidate: false,
     tags: [MEDIA_TAG, MEDIA_LISTS_TAG],
   }),
 );
 
-// 即将上映候选池长缓存 24 小时；候选池留有余量，缓存滞后时由浏览器按当天过滤。
-// 下限取 UTC 昨天，24 小时内仍覆盖新加坡的今天。倒计时天数在页面重新生成时按新加坡日历现算，不使用缓存里的“今天”。
+// 即将上映候选池：查询下限取 UTC 昨天且带 limit，跨日不重建会挤掉真正的即将上映条目，故保留 24 小时定时。
+// 候选池留有余量，缓存滞后时由浏览器按当天过滤；倒计时天数在页面重新生成时按新加坡日历现算。
 export const getCachedUpcomingReleasesServer = cache(
   unstable_cache(fetchUpcomingReleasesServer, ["public-media-upcoming-v2"], {
     revalidate: 86400,
@@ -108,20 +108,20 @@ export const getCachedUpcomingReleasesServer = cache(
   }),
 );
 
-// 全时段分布统计长缓存 24 小时。
+// 全时段分布统计；写入走 media:lists。
 export const getCachedMediaDistributionsServer = cache(
   unstable_cache(fetchMediaDistributionsServer, ["public-media-distributions-v2"], {
-    revalidate: 86400,
+    revalidate: false,
     tags: [MEDIA_TAG, MEDIA_LISTS_TAG],
   }),
 );
 
-// 首页「继续」长缓存 24 小时，全站一条：{ watching, listening, reading }。
+// 首页「继续」全站一条：{ watching, listening, reading }。
 // getHomeContinue 只用公开读取客户端，缓存回调里不能读 cookies()、headers() 或当前用户。
 // 观看／收听／阅读写入走 revalidateMediaItems，失效 media:lists；全站刷新失效 media。
 export const getCachedHomeContinue = cache(
   unstable_cache(getHomeContinue, ["public-media-home-continue-v2"], {
-    revalidate: 86400,
+    revalidate: false,
     tags: [MEDIA_TAG, MEDIA_LISTS_TAG],
   }),
 );
@@ -129,12 +129,12 @@ export const getCachedHomeContinue = cache(
 /** 首页「在读」单独缓存；前端可直接使用，不必改 HomeDashboard 形状。 */
 export const getCachedCurrentlyReading = cache(
   unstable_cache(getCurrentlyReading, ["public-media-currently-reading-v1"], {
-    revalidate: 86400,
+    revalidate: false,
     tags: [MEDIA_TAG, MEDIA_LISTS_TAG],
   }),
 );
 
-// 年度统计聚合结果长缓存 24 小时。
+// 年度统计聚合；写入走 media:lists。
 export const getCachedReleaseYearStats = cache(
   unstable_cache(
     async () => {
@@ -152,22 +152,22 @@ export const getCachedReleaseYearStats = cache(
       });
     },
     ["public-media-release-year-stats-v2"],
-    { revalidate: 86400, tags: [MEDIA_TAG, MEDIA_LISTS_TAG] },
+    { revalidate: false, tags: [MEDIA_TAG, MEDIA_LISTS_TAG] },
   ),
 );
 
-/** 图书目录统计长缓存 24 小时；写入走 media:lists 失效。 */
+/** 图书目录统计；写入走 media:lists 失效。 */
 export const getCachedBookStats = cache(
   unstable_cache(getBookStats, ["public-book-stats-v1"], {
-    revalidate: 86400,
+    revalidate: false,
     tags: [MEDIA_TAG, MEDIA_LISTS_TAG],
   }),
 );
 
-/** 专辑目录统计长缓存 24 小时；写入走 media:lists 失效。 */
+/** 专辑目录统计；写入走 media:lists 失效。 */
 export const getCachedAlbumStats = cache(
   unstable_cache(getAlbumStats, ["public-album-stats-v1"], {
-    revalidate: 86400,
+    revalidate: false,
     tags: [MEDIA_TAG, MEDIA_LISTS_TAG],
   }),
 );

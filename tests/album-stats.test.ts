@@ -27,11 +27,11 @@ import { getAlbumStats } from "@/lib/functions/media-repo";
 import { getCachedAlbumStats } from "@/lib/functions/cached-media";
 
 describe("getCachedAlbumStats", () => {
-  it("caches getAlbumStats for 24h under media and media:lists tags", async () => {
+  it("caches getAlbumStats until tag invalidation under media and media:lists tags", async () => {
     expect(cacheSpecs).toContainEqual({
       fn: getAlbumStats,
       keys: ["public-album-stats-v1"],
-      options: { revalidate: 86400, tags: ["media", "media:lists"] },
+      options: { revalidate: false, tags: ["media", "media:lists"] },
     });
     await expect(getCachedAlbumStats()).resolves.toEqual({
       total: 5,

@@ -54,7 +54,8 @@ export function hasOnlyKnownTagFilters(
   );
 }
 
+// 筛选选项只随后台写入变化；revalidateMediaItems 会失效 media:lists（含新建无引用的资料）。
 export const fetchSearchOptionsServer = unstable_cache(fetchSearchOptions, ["search-options-v2"], {
-  revalidate: 86400,
+  revalidate: false,
   tags: [MEDIA_TAG, MEDIA_LISTS_TAG],
 });

@@ -9,8 +9,8 @@ export const metadata = {
   alternates: { canonical: "/shows" },
 };
 
-// 电视节目目录按 24 小时长缓存，数据变更由管理端即时按需刷新。
-export const revalidate = 86400;
+// 电视节目目录无数据缓存标签，只靠管理端 revalidatePath("/shows") 按需刷新。
+export const revalidate = false;
 
 const DEFAULT_SERIES_STATS = { total: 0, watched: 0, watching: 0, want: 0, upcoming: 0 };
 

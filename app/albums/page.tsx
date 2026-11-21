@@ -10,8 +10,8 @@ export const metadata = {
   alternates: { canonical: "/albums" },
 };
 
-// 专辑目录按 24 小时长缓存，数据变更由管理端即时按需刷新。
-export const revalidate = 86400;
+// 专辑目录无数据缓存标签，只靠管理端 revalidatePath("/albums") 按需刷新。
+export const revalidate = false;
 
 const ALBUM_WALL_LIMIT = 240;
 

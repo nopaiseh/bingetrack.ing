@@ -103,4 +103,18 @@ describe("按条目失效公开缓存", () => {
       ["/sitemap.xml"],
     ]);
   });
+
+  it("空受影响列表仍失效 media:lists 与目录路径，覆盖新建无引用资料与筛选选项缓存", () => {
+    revalidateMediaItems([]);
+    expect(vi.mocked(revalidateTag).mock.calls).toEqual([["media:lists", { expire: 0 }]]);
+    expect(vi.mocked(revalidatePath).mock.calls).toEqual([
+      ["/"],
+      ["/movies"],
+      ["/shows"],
+      ["/albums"],
+      ["/books"],
+      ["/sitemap.xml"],
+    ]);
+    expect(revalidateTag).not.toHaveBeenCalledWith("media", expect.anything());
+  });
 });
