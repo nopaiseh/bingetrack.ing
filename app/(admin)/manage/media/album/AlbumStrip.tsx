@@ -1,11 +1,7 @@
 "use client";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useEffect, useRef } from "react";
-import { mayLeaveEditor } from "@/lib/admin/navigation";
 import type { AlbumStructure } from "@/lib/admin/album-structure";
-import { centerInside } from "../series/SeriesRail";
-import { TRACK_JUMP_THRESHOLD } from "./AlbumRail";
+import { JUMP_THRESHOLD, JumpNumberField, useCenterCurrent, useSafeNavigate } from "../structure-shared";
 import { albumMediaHref, formatCount, trackLabel, type AlbumCurrentItem } from "./shared";
 
 /** 手机与平板的曲目结构：曲序横向滚动，条数再多也不会撑破版面。 */
@@ -18,18 +14,9 @@ export default function AlbumStrip({
   current: AlbumCurrentItem;
   onAdd: () => void;
 }) {
-  const router = useRouter();
-  const strip = useRef<HTMLDivElement>(null);
+  const go = useSafeNavigate();
+  const strip = useCenterCurrent("x", current.id);
   const { tracks, trackCount, nextTrackNumber } = structure;
-
-  useEffect(() => {
-    const row = strip.current;
-    centerInside(row, row?.querySelector<HTMLElement>('[aria-current="page"]') ?? null, "x");
-  }, [current.id]);
-
-  function go(href: string) {
-    if (mayLeaveEditor()) router.push(href);
-  }
 
   function jumpToTrack(value: string) {
     const target = tracks.find((track) => track.number === Number(value));
@@ -80,24 +67,8 @@ export default function AlbumStrip({
         </div>
       )}
 
-      {tracks.length > TRACK_JUMP_THRESHOLD && (
-        <label>
-          <span className="sr-only">跳到曲序，按回车打开</span>
-          <input
-            type="number"
-            inputMode="numeric"
-            min="0"
-            placeholder="跳到曲序"
-            enterKeyHint="go"
-            onKeyDown={(event) => {
-              if (event.key === "Enter") {
-                event.preventDefault();
-                jumpToTrack(event.currentTarget.value);
-              }
-            }}
-            className="font-mono !text-[13px]"
-          />
-        </label>
+      {tracks.length > JUMP_THRESHOLD && (
+        <JumpNumberField label="跳到曲序，按回车打开" placeholder="跳到曲序" onJump={(value) => jumpToTrack(value)} />
       )}
     </section>
   );

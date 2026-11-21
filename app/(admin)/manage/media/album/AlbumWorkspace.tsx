@@ -1,6 +1,7 @@
 "use client";
-import { useEffect, useState, type ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import type { AlbumStructure } from "@/lib/admin/album-structure";
+import { StructureWorkspaceShell } from "../structure-shared";
 import AlbumRail from "./AlbumRail";
 import AlbumStrip from "./AlbumStrip";
 import QuickAddTrackDialog from "./QuickAddTrackDialog";
@@ -22,22 +23,17 @@ export default function AlbumWorkspace({
 }) {
   const [adding, setAdding] = useState(Boolean(initialAdd));
 
-  useEffect(() => {
-    if (!initialAdd) return;
-    const url = new URL(window.location.href);
-    url.searchParams.delete("add");
-    window.history.replaceState(window.history.state, "", `${url.pathname}${url.search}`);
-  }, [initialAdd]);
-
   return (
-    <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_20rem] lg:items-start">
-      <div className="min-w-0 space-y-6">
-        {header}
-        <AlbumStrip structure={structure} current={current} onAdd={() => setAdding(true)} />
-        {children}
-      </div>
-      <AlbumRail structure={structure} current={current} onAdd={() => setAdding(true)} />
-      {adding && <QuickAddTrackDialog key="add-track" structure={structure} onClose={() => setAdding(false)} />}
-    </div>
+    <StructureWorkspaceShell
+      header={header}
+      clearAddParam={Boolean(initialAdd)}
+      strip={<AlbumStrip structure={structure} current={current} onAdd={() => setAdding(true)} />}
+      rail={<AlbumRail structure={structure} current={current} onAdd={() => setAdding(true)} />}
+      dialog={
+        adding ? <QuickAddTrackDialog key="add-track" structure={structure} onClose={() => setAdding(false)} /> : null
+      }
+    >
+      {children}
+    </StructureWorkspaceShell>
   );
 }

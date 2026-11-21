@@ -1,10 +1,8 @@
 "use client";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useEffect, useId, useRef } from "react";
-import { mayLeaveEditor } from "@/lib/admin/navigation";
+import { useId, useRef } from "react";
 import type { SeriesStructure } from "@/lib/admin/series-structure";
-import { centerInside, JUMP_THRESHOLD, StatusDot } from "./SeriesRail";
+import { JUMP_THRESHOLD, StatusDot, JumpNumberField, useCenterCurrent, useSafeNavigate } from "../structure-shared";
 import { formatCount, mediaHref, statusLabels, type CurrentItem, type QuickAddKind } from "./shared";
 
 /** 手机与平板的剧集结构：季从底部面板选择，单集横向滚动，季数与集数多少都不会撑破版面。 */
@@ -17,22 +15,13 @@ export default function SeriesStrip({
   current: CurrentItem;
   onAdd: (kind: QuickAddKind) => void;
 }) {
-  const router = useRouter();
-  const strip = useRef<HTMLDivElement>(null);
+  const go = useSafeNavigate();
+  const strip = useCenterCurrent("x", current.id);
   const sheet = useRef<HTMLDialogElement>(null);
   const sheetHeading = useId();
   const { show, seasons, episodes, expandedSeasonId, nextEpisode } = structure;
   const expanded = seasons.find((season) => season.id === expandedSeasonId);
 
-  useEffect(() => {
-    const row = strip.current;
-    centerInside(row, row?.querySelector<HTMLElement>('[aria-current="page"]') ?? null, "x");
-  }, [current.id]);
-
-  /** 跳转不是原生链接，离开前复用未保存检查。 */
-  function go(href: string) {
-    if (mayLeaveEditor()) router.push(href);
-  }
   function jumpToEpisode(value: string) {
     const target = episodes.find((episode) => episode.number === Number(value));
     if (target) go(mediaHref("tv_episode", target.id));
@@ -152,23 +141,12 @@ export default function SeriesStrip({
           </button>
         </div>
         {seasons.length > 8 && (
-          <label>
-            <span className="sr-only">输入季号，按回车打开</span>
-            <input
-              type="number"
-              inputMode="numeric"
-              min="0"
-              placeholder="输入季号"
-              enterKeyHint="go"
-              onKeyDown={(event) => {
-                if (event.key === "Enter") {
-                  event.preventDefault();
-                  jumpToSeason(event.currentTarget.value);
-                }
-              }}
-              className="font-mono"
-            />
-          </label>
+          <JumpNumberField
+            label="输入季号，按回车打开"
+            placeholder="输入季号"
+            className="font-mono"
+            onJump={(value) => jumpToSeason(value)}
+          />
         )}
         <ul className="min-h-0 flex-1 space-y-0.5 overflow-y-auto">
           {[...seasons].reverse().map((season) => {
