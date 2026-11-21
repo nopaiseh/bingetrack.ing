@@ -78,3 +78,8 @@ test("accepts only a single whitelisted sort and statuses the view produces", ()
   assert.throws(() => parseMediaSearchParams(new URLSearchParams({ sort: "date_asc,rating_desc" })), /Invalid sort/);
   assert.throws(() => parseMediaSearchParams(new URLSearchParams({ status: "unwatched" })), /Invalid status/);
 });
+
+test("accepts type=music for singles search without enabling top-media", () => {
+  assert.equal(parseMediaSearchParams(new URLSearchParams({ type: "music" })).type, "music");
+  assert.throws(() => parseTopMediaParams(new URLSearchParams({ type: "music" })), /Invalid media type/);
+});

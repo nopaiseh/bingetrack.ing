@@ -5,6 +5,7 @@ import {
   MEDIA_TYPE_DEFINITIONS,
   PUBLIC_MEDIA_TYPES,
   PUBLIC_SEASON_PATH_PATTERN,
+  SEARCH_DB_TYPES,
   adminBulkOpsLabelList,
   adminMediaListTypes,
   dbTypeToPublicRoute,
@@ -12,6 +13,7 @@ import {
   isCatalogDbMediaType,
   isManagedMediaType,
   isPublicMediaType,
+  isSearchDbMediaType,
   mediaDefaultDescription,
   mediaSchemaType,
   mediaTypes,
@@ -43,7 +45,7 @@ describe("media type config", () => {
     expect(publicPathForDbType("tv_season", "abc")).toBeNull();
   });
 
-  it("keeps music singles off the public catalog while books and albums stay enabled", () => {
+  it("keeps music singles off the public catalog while allowing search type=music", () => {
     expect(MEDIA_TYPE_DEFINITIONS.movie.enabled).toBe(true);
     expect(MEDIA_TYPE_DEFINITIONS.tv_show.enabled).toBe(true);
     expect(MEDIA_TYPE_DEFINITIONS.tv_season.enabled).toBe(true);
@@ -59,9 +61,14 @@ describe("media type config", () => {
     expect(isCatalogDbMediaType("album")).toBe(true);
     expect(isCatalogDbMediaType("book")).toBe(true);
     expect(isCatalogDbMediaType("music")).toBe(false);
+    expect(SEARCH_DB_TYPES).toEqual(["movie", "tv_show", "album", "book", "music"]);
+    expect(isSearchDbMediaType("music")).toBe(true);
+    expect(isSearchDbMediaType("book")).toBe(true);
+    expect(isSearchDbMediaType("tv_season")).toBe(false);
     expect(isPublicMediaType("movies")).toBe(true);
     expect(isPublicMediaType("albums")).toBe(true);
     expect(isPublicMediaType("books")).toBe(true);
+    expect(isPublicMediaType("music")).toBe(false);
   });
 
   it("keeps zh labels and tracking verbs per type family", () => {

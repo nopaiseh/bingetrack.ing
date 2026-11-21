@@ -27,4 +27,14 @@ describe("dashboard search links", () => {
       "/search?type=book&status=want_to_watch&startYear=2024&endYear=2024",
     );
   });
+
+  it("supports music singles for dashboard search links", () => {
+    expect(getStatusSearchLink("music", "watched", "All Time")).toBe("/search?type=music&status=watched");
+    expect(getStatusSearchLink("music", "want_to_watch", "2082")).toBe(
+      "/search?type=music&status=want_to_watch&startYear=2082&endYear=2082",
+    );
+    expect(getSearchViewAllLink("music", "2081")).toBe(
+      "/search?type=music&sort=rating_desc&startYear=2081&endYear=2081",
+    );
+  });
 });
