@@ -9,8 +9,7 @@ import { sify } from "chinese-conv";
 const TITLE_SUFFIX =
   /\s*[([（【［]\s*(?:live(?:\s+version)?|acoustic(?:\s+version)?|remix|deluxe(?:\s+edition)?|extended(?:\s+version)?|remaster(?:ed)?|explicit|radio\s+edit|bonus\s+track)\s*[)\]）】］]\s*$/i;
 const SINGLE_SUFFIX = /\s*[-–—]\s*single\s*$/i;
-const FEAT_SUFFIX =
-  /\s*[([（【［-]?\s*(?:feat\.?|ft\.?|featuring)\s+.+?(?:[)\]）】］]|$)/i;
+const FEAT_SUFFIX = /\s*[([（【［-]?\s*(?:feat\.?|ft\.?|featuring)\s+.+?(?:[)\]）】］]|$)/i;
 
 /** 全角标点／空白 → 半角或去掉，便于跨区比较。 */
 const FULLWIDTH_PUNCT: Record<string, string> = {

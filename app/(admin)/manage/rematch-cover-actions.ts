@@ -12,12 +12,10 @@ import {
 import { reportHandledError } from "@/lib/report-error";
 
 export type RematchPreviewResult =
-  | { ok: true; rows: RematchPreviewRow[]; truncated: boolean }
-  | { ok: false; error: string };
+  { ok: true; rows: RematchPreviewRow[]; truncated: boolean } | { ok: false; error: string };
 
 export type RematchApplyActionResult =
-  | { ok: true; succeeded: number; failed: number; cleared: number }
-  | { ok: false; error: string };
+  { ok: true; succeeded: number; failed: number; cleared: number } | { ok: false; error: string };
 
 /** 预览：拉取最多一批 mzstatic 音乐条目并用新规则重新解析封面。 */
 export async function previewMusicCoversRematch(): Promise<RematchPreviewResult> {

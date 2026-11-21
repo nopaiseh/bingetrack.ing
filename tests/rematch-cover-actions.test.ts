@@ -37,9 +37,7 @@ describe("rematch cover actions auth", () => {
   it("preview requires owner and returns rows", async () => {
     vi.mocked(requireOwner).mockResolvedValue({ db: {} as never, user: { id: "owner" } as never });
     vi.mocked(listMzstaticMusicItems)
-      .mockResolvedValueOnce([
-        { id: albumId, type: "album", title: "叶惠美", cover_url: mz, artist: "周杰伦" },
-      ])
+      .mockResolvedValueOnce([{ id: albumId, type: "album", title: "叶惠美", cover_url: mz, artist: "周杰伦" }])
       .mockResolvedValueOnce([]);
     vi.mocked(previewMusicCoverRematch).mockResolvedValue([
       {

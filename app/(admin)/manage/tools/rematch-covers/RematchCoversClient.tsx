@@ -39,9 +39,7 @@ function CoverThumb({ src, label }: { src: string | null; label: string }) {
       </span>
     );
   }
-  return (
-    <Image src={cover} alt="" width={56} height={56} unoptimized className="size-14 rounded-md object-cover" />
-  );
+  return <Image src={cover} alt="" width={56} height={56} unoptimized className="size-14 rounded-md object-cover" />;
 }
 
 /** 重新匹配音乐封面：先预览再勾选提交。 */
@@ -96,9 +94,7 @@ export default function RematchCoversClient() {
   }
 
   function runApply() {
-    const payload = rows
-      .filter((row) => selected.has(row.id))
-      .map((row) => ({ id: row.id, cover_url: row.newCover }));
+    const payload = rows.filter((row) => selected.has(row.id)).map((row) => ({ id: row.id, cover_url: row.newCover }));
     if (payload.length === 0) {
       showError("请至少勾选一条要替换的封面。");
       return;
@@ -192,12 +188,7 @@ export default function RematchCoversClient() {
       )}
 
       {notice ? (
-        <StatusModal
-          key={notice.id}
-          tone={notice.tone}
-          message={notice.message}
-          onClose={() => setNotice(null)}
-        />
+        <StatusModal key={notice.id} tone={notice.tone} message={notice.message} onClose={() => setNotice(null)} />
       ) : null}
     </div>
   );
