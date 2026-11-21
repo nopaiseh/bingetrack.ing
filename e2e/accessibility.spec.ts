@@ -105,27 +105,30 @@ test(
 
 test(
   "搜索筛选按钮的 aria-controls 在收起和展开时都指向存在的元素",
-  /* 收起时面板仍挂在 DOM（hidden），展开后同样可解析，避免读屏关联空 id。 */ async ({ page }) => {
+  /* 收起时面板仍挂在 DOM 且真正隐藏，展开后可见；aria-controls 始终可解析。 */ async ({ page }) => {
     await page.goto("/search");
     await page.waitForLoadState("networkidle");
 
+    const panel = page.locator("#search-filters");
     const toggle = page.getByRole("button", { name: /^筛选(\s\(\d+\))?$/ });
     await expect(toggle).toHaveAttribute("aria-expanded", "false");
     const collapsedControls = await toggle.getAttribute("aria-controls");
-    expect(collapsedControls).toBeTruthy();
-    await expect(page.locator(`#${collapsedControls}`)).toHaveCount(1);
+    expect(collapsedControls).toBe("search-filters");
+    await expect(panel).toHaveCount(1);
+    await expect(panel).toBeHidden();
 
     await toggle.click();
     const expanded = page.getByRole("button", { name: "收起筛选" });
     await expect(expanded).toHaveAttribute("aria-expanded", "true");
     const expandedControls = await expanded.getAttribute("aria-controls");
     expect(expandedControls).toBe(collapsedControls);
-    await expect(page.locator(`#${expandedControls}`)).toHaveCount(1);
+    await expect(panel).toBeVisible();
 
     await expanded.click();
     const collapsedAgain = page.getByRole("button", { name: /^筛选(\s\(\d+\))?$/ });
     await expect(collapsedAgain).toHaveAttribute("aria-expanded", "false");
     await expect(page.locator(`#${await collapsedAgain.getAttribute("aria-controls")}`)).toHaveCount(1);
+    await expect(panel).toBeHidden();
   },
 );
 

@@ -112,11 +112,12 @@ export default function SearchFilterPanel({
           </div>
         </div>
 
-        {/* 始终挂载，收起时用 hidden：筛选按钮的 aria-controls 不能指向不存在的 id。 */}
+        {/* 始终挂载，收起时用 hidden：筛选按钮的 aria-controls 不能指向不存在的 id。
+            收起时不用 flex：UnoCSS 的 .flex 不在 @layer，会盖过 @layer base 的 [hidden]。 */}
         <div
           id="search-filters"
           hidden={!advancedVisible}
-          className={`flex flex-col origin-top ${advancedVisible ? "animate-in slide-in-from-top-2 fade-in" : ""}`}
+          className={advancedVisible ? "flex flex-col origin-top animate-in slide-in-from-top-2 fade-in" : "hidden"}
         >
           {advancedCategories.map(
             /* 渲染高级分类选项。 */ (category) => (

@@ -32,8 +32,11 @@ describe("SearchFilterPanel", () => {
     expect(screen.getByRole("button", { name: "电影" })).toHaveAttribute("aria-pressed", "false");
     expect(screen.getByRole("button", { name: "日期，降序" })).toHaveAttribute("aria-pressed", "true");
     expect(screen.queryByRole("combobox", { name: "开始年份" })).not.toBeInTheDocument();
-    expect(document.getElementById("search-filters")).not.toBeNull();
-    expect(document.getElementById("search-filters")).toHaveAttribute("hidden");
+    const collapsed = document.getElementById("search-filters");
+    expect(collapsed).not.toBeNull();
+    expect(collapsed).toHaveAttribute("hidden");
+    expect(collapsed).toHaveClass("hidden");
+    expect(collapsed).not.toHaveClass("flex");
   });
 
   it("keeps search-filters mounted when advanced filters are visible", () => {
@@ -41,6 +44,8 @@ describe("SearchFilterPanel", () => {
     const panel = document.getElementById("search-filters");
     expect(panel).not.toBeNull();
     expect(panel).not.toHaveAttribute("hidden");
+    expect(panel).toHaveClass("flex");
+    expect(panel).not.toHaveClass("hidden");
     expect(screen.getByRole("combobox", { name: "开始年份" })).toBeInTheDocument();
   });
 
