@@ -52,6 +52,13 @@ test("series cards keep two lines of title instead of a single truncated line", 
 test("MediaRow 卡片、查看全部与翻页按钮可聚焦且链接正确", () => {
   render(<MediaRow title="我已看" items={series} type="shows" viewAllLink="/shows" />);
 
+  // 无障碍底线：键盘焦点框（toHaveFocus 只证明能聚焦，不能证明 focus-ring 还在）
+  for (const link of screen.getAllByRole("link")) {
+    expect(link).toHaveClass("focus-ring");
+  }
+  expect(screen.getByRole("button", { name: "向左滚动 我已看", hidden: true })).toHaveClass("focus-ring");
+  expect(screen.getByRole("button", { name: "向右滚动 我已看", hidden: true })).toHaveClass("focus-ring");
+
   const viewAll = screen.getByRole("link", { name: /查看全部/ });
   expect(viewAll).toHaveAttribute("href", "/shows");
   viewAll.focus();
@@ -61,9 +68,6 @@ test("MediaRow 卡片、查看全部与翻页按钮可聚焦且链接正确", ()
   expect(card).toHaveAttribute("href", "/shows/it");
   card.focus();
   expect(card).toHaveFocus();
-
-  expect(screen.getByRole("button", { name: "向左滚动 我已看", hidden: true })).toBeInTheDocument();
-  expect(screen.getByRole("button", { name: "向右滚动 我已看", hidden: true })).toBeInTheDocument();
 });
 
 test("MediaRow 横向滚动在 reduced-motion 下不强制 scroll-smooth", () => {
@@ -79,6 +83,8 @@ test("search cards link to detail with from, show title body and letter-tile fal
 
   const link = screen.getByRole("link", { name: /体能之巅：百人大挑战 意大利/ });
   expect(link).toHaveAttribute("href", "/shows/it?from=%2Fsearch%3Ftype%3Dtv_show");
+  // 无障碍底线：搜索卡链接保留焦点框
+  expect(link).toHaveClass("focus-ring");
   link.focus();
   expect(link).toHaveFocus();
 
@@ -138,5 +144,15 @@ test("shared badges and filter chips expose rating tier, status, and search tag 
   expect(screen.getByText("佳作")).toBeInTheDocument();
   expect(screen.getByText("未评分")).toBeInTheDocument();
   expect(screen.getByTestId("media-card-status-badge")).toHaveTextContent("已看");
-  expect(screen.getByRole("link", { name: "科幻" })).toHaveAttribute("href", "/search?genre=%E7%A7%91%E5%B9%BB");
+  const tag = screen.getByRole("link", { name: "科幻" });
+  expect(tag).toHaveAttribute("href", "/search?genre=%E7%A7%91%E5%B9%BB");
+
+  // 无障碍底线：徽章最小字号 text-xs（禁止缩到 text-[10px]）
+  expect(screen.getByText("佳作").className).toContain("text-xs");
+  expect(screen.getByText("佳作").className).not.toContain("text-[10px]");
+  expect(screen.getByText("未评分").className).toContain("text-xs");
+  expect(screen.getByTestId("media-card-status-badge").className).toContain("text-xs");
+  expect(screen.getByTestId("media-card-status-badge").className).not.toContain("text-[10px]");
+  // 无障碍底线：筛选标签触控目标至少 40px（min-h-10）
+  expect(tag.className).toContain("min-h-10");
 });
