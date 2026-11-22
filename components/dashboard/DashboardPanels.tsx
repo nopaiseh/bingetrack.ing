@@ -1,6 +1,7 @@
 "use client";
 
 import DashboardCategoryPanel from "@/components/dashboard/DashboardCategoryPanel";
+import MusicBookCategoryPanel from "@/components/dashboard/MusicBookCategoryPanel";
 import OverviewBoards from "@/components/dashboard/OverviewBoards";
 import type { DashboardStats } from "@/components/dashboard/dashboard-stats";
 import { MEDIA_TYPE_DEFINITIONS } from "@/lib/media-types";
@@ -27,7 +28,7 @@ const CATEGORY_PANELS = [
   },
 ] as const;
 
-/** 按当前标签展示总览、电影或电视节目，并显示年度精选的加载与错误状态。 */
+/** 按当前标签展示总览、电影、电视节目、音乐或图书，并显示年度精选的加载与错误状态。 */
 export default function DashboardPanels({
   stats,
   activeTab,
@@ -90,6 +91,8 @@ export default function DashboardPanels({
           />
         ) : null,
       )}
+      {activeTab === "音乐" && <MusicBookCategoryPanel stats={stats} kind="music" selectedYear={selectedYear} />}
+      {activeTab === "图书" && <MusicBookCategoryPanel stats={stats} kind="books" selectedYear={selectedYear} />}
     </div>
   );
 }

@@ -1,5 +1,12 @@
-export const TABS = ["总览", "电影", "电视节目"];
-export const TAB_IDS: Record<string, string> = { 总览: "overview", 电影: "movies", 电视节目: "tv-shows" };
+export const TABS = ["总览", "电影", "电视节目", "音乐", "图书"] as const;
+export type DashboardTab = (typeof TABS)[number];
+export const TAB_IDS: Record<DashboardTab, string> = {
+  总览: "overview",
+  电影: "movies",
+  电视节目: "tv-shows",
+  音乐: "music",
+  图书: "books",
+};
 
 // 看板视图与年份写入查询串（?view=movies&year=2023），跳转搜索页后返回、刷新或分享链接时都能还原。
 // 首页为静态预渲染，useSearchParams 会让整个看板退化为仅客户端渲染，因此直接订阅 location.search：

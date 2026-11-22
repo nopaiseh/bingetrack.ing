@@ -20,6 +20,8 @@ export function deriveDashboardStats(summary: Summary[], selectedYear: string, d
   );
   const movieDistribution = distributions.movies[selectedYear] ?? EMPTY_MEDIA_DISTRIBUTION;
   const seriesDistribution = distributions.shows[selectedYear] ?? EMPTY_MEDIA_DISTRIBUTION;
+  const albumDistribution = distributions.albums[selectedYear] ?? EMPTY_MEDIA_DISTRIBUTION;
+  const bookDistribution = distributions.books[selectedYear] ?? EMPTY_MEDIA_DISTRIBUTION;
 
   // 电影总数采用已看与未看之和；进度按已看数量占比计算。缺行时全部为 0（某年仅有音乐／图书时影视看板不炸）。
   const watchedMovies = Number(currentYearData?.watched_movies) || 0;
@@ -68,6 +70,7 @@ export function deriveDashboardStats(summary: Summary[], selectedYear: string, d
   const listenedTracks = Number(currentYearData?.listened_tracks) || 0;
   const wantTracks = Number(currentYearData?.want_tracks) || 0;
   const tracksPercent = percent(listenedTracks, totalTracks);
+  const albumsPercent = percent(listenedAlbums, totalAlbums);
   const booksPercent = percent(readBooks, totalBooks);
 
   const avgAlbumsRating = readNullableRating(currentYearData?.album_avg_rating);
@@ -79,6 +82,8 @@ export function deriveDashboardStats(summary: Summary[], selectedYear: string, d
     currentYearData,
     movieDistribution,
     seriesDistribution,
+    albumDistribution,
+    bookDistribution,
     watchedMovies,
     unwatchedMovies,
     totalMovies,
@@ -114,6 +119,7 @@ export function deriveDashboardStats(summary: Summary[], selectedYear: string, d
     listenedTracks,
     wantTracks,
     tracksPercent,
+    albumsPercent,
     booksPercent,
     avgAlbumsRating,
     avgAlbumsRatingPercent,

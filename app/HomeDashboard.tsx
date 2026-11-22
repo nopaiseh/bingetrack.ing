@@ -11,6 +11,7 @@ import { deriveDashboardStats } from "@/components/dashboard/dashboard-stats";
 import {
   TABS,
   TAB_IDS,
+  type DashboardTab,
   getServerUrlSnapshot,
   getUrlSnapshot,
   subscribeToUrl,
@@ -45,13 +46,13 @@ export default function HomeDashboard({
 
   // 从查询串派生当前视图与年份；无效值回退为总览与全时段。
   const searchParams = new URLSearchParams(useSyncExternalStore(subscribeToUrl, getUrlSnapshot, getServerUrlSnapshot));
-  const activeTab = tabs.find((tab) => tabIds[tab] === searchParams.get("view")) ?? "总览";
+  const activeTab: DashboardTab = tabs.find((tab) => tabIds[tab] === searchParams.get("view")) ?? "总览";
   const yearParam = searchParams.get("year");
   const selectedYear =
     yearParam && summary.some((item) => String(item.release_year) === yearParam) ? yearParam : "All Time";
 
   /** 切换看板标签并同步到 URL。 */
-  const setActiveTab = (tab: string) => writeDashboardParams(tabIds[tab], selectedYear);
+  const setActiveTab = (tab: DashboardTab) => writeDashboardParams(tabIds[tab], selectedYear);
   /** 切换统计年份并同步到 URL。 */
   const setSelectedYear = (year: string) => writeDashboardParams(tabIds[activeTab], year);
 

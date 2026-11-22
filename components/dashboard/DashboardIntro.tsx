@@ -1,7 +1,9 @@
 "use client";
 
+import { useEffect, useRef, useState, type KeyboardEvent } from "react";
 import DashboardYearPicker from "@/components/DashboardYearPicker";
 import AnimatedNumber from "@/components/AnimatedNumber";
+import type { DashboardTab } from "@/components/dashboard/dashboard-url";
 
 /** 展示看板标题、四类总计、影视完成进度、视图标签和年份选择器。 */
 export default function DashboardIntro({
@@ -24,10 +26,10 @@ export default function DashboardIntro({
   totalTracks: number;
   totalBooks: number;
   runtimePercent: number;
-  tabs: readonly string[];
-  tabIds: Record<string, string>;
-  activeTab: string;
-  onSelectTab: (tab: string) => void;
+  tabs: readonly DashboardTab[];
+  tabIds: Record<DashboardTab, string>;
+  activeTab: DashboardTab;
+  onSelectTab: (tab: DashboardTab) => void;
   years: Array<string | number>;
   onSelectYear: (year: string) => void;
 }) {
@@ -38,6 +40,41 @@ export default function DashboardIntro({
     { label: "图书总计", value: totalBooks },
     { label: "完成进度", value: runtimePercent, accent: true as const },
   ];
+
+  const tablistRef = useRef<HTMLDivElement>(null);
+  const tabRefs = useRef<Partial<Record<DashboardTab, HTMLButtonElement | null>>>({});
+  const [indicator, setIndicator] = useState({ left: 0, width: 0 });
+
+  useEffect(() => {
+    const activeButton = tabRefs.current[activeTab];
+    const list = tablistRef.current;
+    if (!activeButton || !list) return;
+
+    setIndicator({ left: activeButton.offsetLeft, width: activeButton.offsetWidth });
+    const listRect = list.getBoundingClientRect();
+    const tabRect = activeButton.getBoundingClientRect();
+    if (tabRect.left < listRect.left || tabRect.right > listRect.right) {
+      activeButton.scrollIntoView({ inline: "nearest", block: "nearest", behavior: "smooth" });
+    }
+  }, [activeTab, tabs]);
+
+  /** 方向键在标签间移动焦点并切换；Home／End 跳到两端。 */
+  function onTabListKeyDown(event: KeyboardEvent<HTMLDivElement>) {
+    const key = event.key;
+    if (key !== "ArrowLeft" && key !== "ArrowRight" && key !== "Home" && key !== "End") return;
+
+    event.preventDefault();
+    const currentIndex = tabs.indexOf(activeTab);
+    let nextIndex = currentIndex;
+    if (key === "ArrowLeft") nextIndex = (currentIndex - 1 + tabs.length) % tabs.length;
+    if (key === "ArrowRight") nextIndex = (currentIndex + 1) % tabs.length;
+    if (key === "Home") nextIndex = 0;
+    if (key === "End") nextIndex = tabs.length - 1;
+
+    const nextTab = tabs[nextIndex] ?? activeTab;
+    onSelectTab(nextTab);
+    tabRefs.current[nextTab]?.focus();
+  }
 
   return (
     <section
@@ -82,38 +119,48 @@ export default function DashboardIntro({
       </div>
 
       <div className="relative mt-5 flex flex-col items-start justify-between gap-4 border-t border-white/10 pt-4 md:flex-row md:items-center">
-        {/* 标签等宽（取最宽者），滑块按等分宽度平移才能与每个标签对齐。 */}
+        {/* 手机横向滚动，避免五标签挤压换行；滑块按当前标签的 offset 对齐。 */}
         <div
-          className="relative grid grid-flow-col auto-cols-fr items-center rounded-full bg-black/25 p-1 shadow-[inset_0_1px_2px_rgba(0,0,0,0.4)]"
+          ref={tablistRef}
+          className="relative max-w-full overflow-x-auto overscroll-x-contain [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
           role="tablist"
           aria-label="仪表板视图"
+          onKeyDown={onTabListKeyDown}
         >
-          <div
-            aria-hidden="true"
-            className="pointer-events-none absolute top-1 bottom-1 rounded-full bg-white/15 shadow-[inset_0_1px_0_rgba(255,255,255,0.3),0_4px_14px_rgba(0,0,0,0.25)] transition-transform duration-300 ease-out"
-            style={{
-              width: `calc((100% - 8px) / ${tabs.length})`,
-              transform: `translateX(calc(${tabs.indexOf(activeTab)} * 100%))`,
-            }}
-          />
+          <div className="relative flex w-max min-w-full items-center rounded-full bg-black/25 p-1 shadow-[inset_0_1px_2px_rgba(0,0,0,0.4)]">
+            <div
+              aria-hidden="true"
+              className="pointer-events-none absolute top-1 bottom-1 left-0 rounded-full bg-white/15 shadow-[inset_0_1px_0_rgba(255,255,255,0.3),0_4px_14px_rgba(0,0,0,0.25)] transition-[transform,width] duration-300 ease-out"
+              style={{
+                width: indicator.width || 0,
+                transform: `translateX(${indicator.left}px)`,
+              }}
+            />
 
-          {tabs.map(
-            /* 为每个看板分类渲染可切换的标签按钮。 */ (tab) => (
-              <button
-                key={tab}
-                onClick={/* 将点击的分类设为当前看板标签。 */ () => onSelectTab(tab)}
-                role="tab"
-                id={`dashboard-tab-${tabIds[tab]}`}
-                aria-controls={`dashboard-panel-${tabIds[tab]}`}
-                aria-selected={activeTab === tab}
-                className={`relative z-10 px-5 py-2 rounded-full text-sm font-medium transition-colors duration-200 ${
-                  activeTab === tab ? "text-white font-bold" : "text-fg-secondary hover:text-white"
-                }`}
-              >
-                {tab}
-              </button>
-            ),
-          )}
+            {tabs.map((tab) => {
+              const selected = activeTab === tab;
+              return (
+                <button
+                  key={tab}
+                  ref={(node) => {
+                    tabRefs.current[tab] = node;
+                  }}
+                  type="button"
+                  onClick={() => onSelectTab(tab)}
+                  role="tab"
+                  id={`dashboard-tab-${tabIds[tab]}`}
+                  aria-controls={`dashboard-panel-${tabIds[tab]}`}
+                  aria-selected={selected}
+                  tabIndex={selected ? 0 : -1}
+                  className={`relative z-10 shrink-0 whitespace-nowrap px-5 py-2 rounded-full text-sm font-medium transition-colors duration-200 ${
+                    selected ? "text-white font-bold" : "text-fg-secondary hover:text-white"
+                  }`}
+                >
+                  {tab}
+                </button>
+              );
+            })}
+          </div>
         </div>
 
         <DashboardYearPicker years={years} selectedYear={selectedYear} onSelect={onSelectYear} />

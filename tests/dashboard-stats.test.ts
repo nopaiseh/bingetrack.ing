@@ -48,6 +48,8 @@ describe("deriveDashboardStats", () => {
     expect(stats.avgBooksRatingPercent).toBe(0);
     expect(stats.movieDistribution).toEqual({ regions: [], languages: [], genres: [] });
     expect(stats.seriesDistribution).toEqual({ regions: [], languages: [], genres: [] });
+    expect(stats.albumDistribution).toEqual({ regions: [], languages: [], genres: [] });
+    expect(stats.bookDistribution).toEqual({ regions: [], languages: [], genres: [] });
   });
 
   it("sums movies without the watching count and falls back when episode totals are missing", () => {
@@ -77,8 +79,8 @@ describe("deriveDashboardStats", () => {
     const distributions: MediaDistributions = {
       movies: { "2024": { regions: [{ name: "美国", count: 2, percent: 100 }], languages: [], genres: [] } },
       shows: {},
-      albums: {},
-      books: {},
+      albums: { "2024": { regions: [{ name: "日本", count: 1, percent: 100 }], languages: [], genres: [] } },
+      books: { "2024": { regions: [], languages: [{ name: "汉语", count: 3, percent: 100 }], genres: [] } },
     };
 
     const stats = deriveDashboardStats(summary, "2024", distributions);
@@ -94,6 +96,8 @@ describe("deriveDashboardStats", () => {
     expect(stats.runtimePercent).toBe(0);
     expect(stats.movieDistribution.regions).toEqual([{ name: "美国", count: 2, percent: 100 }]);
     expect(stats.seriesDistribution.genres).toEqual([]);
+    expect(stats.albumDistribution.regions).toEqual([{ name: "日本", count: 1, percent: 100 }]);
+    expect(stats.bookDistribution.languages).toEqual([{ name: "汉语", count: 3, percent: 100 }]);
     expect(stats.currentYearData?.watched_seasons).toBe(2);
     expect(stats.totalAlbums).toBe(0);
     expect(stats.listenedAlbums).toBe(0);
@@ -139,6 +143,7 @@ describe("deriveDashboardStats", () => {
     expect(stats.listenedTracks).toBe(4);
     expect(stats.wantTracks).toBe(3);
     expect(stats.tracksPercent).toBe(33);
+    expect(stats.albumsPercent).toBe(40);
     expect(stats.booksPercent).toBe(43);
     expect(stats.avgAlbumsRating).toBe(8.5);
     expect(stats.avgAlbumsRatingPercent).toBe(85);
