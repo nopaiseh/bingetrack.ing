@@ -170,7 +170,10 @@ describe("saveMusicMedia", () => {
 
   it("新建专辑时解析封面并调用 admin_save_album_with_tracks", async () => {
     const db = dbWithRpc(async () => ({ data: albumId, error: null }));
-    const id = await saveMusicMedia(db as never, albumPayload());
+    const id = await saveMusicMedia(
+      db as never,
+      albumPayload({ languages: ["国语"], regions: ["台湾"] }),
+    );
     expect(id).toBe(albumId);
     expect(db.rpc).toHaveBeenCalledWith(
       "admin_save_album_with_tracks",
@@ -181,6 +184,8 @@ describe("saveMusicMedia", () => {
           cover_url: "https://is1-ssl.mzstatic.com/image/thumb/Music/auto.jpg",
           label: "厂牌",
           artists: [{ id: null, name: "艺人" }],
+          languages: ["国语"],
+          regions: ["台湾"],
         }),
         p_tracks: [],
       }),

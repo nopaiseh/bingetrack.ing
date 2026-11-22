@@ -103,6 +103,15 @@ export function PublishSection({
                 initial={(item?.collections ?? []).map((value) => ({ id: value, name: value }))}
               />
               <ChoicePicker
+                key={`${resetKey}-regions`}
+                kind="regions"
+                name="regions"
+                label="地区"
+                inline
+                allowCreate
+                initial={(item?.regions ?? []).map((value) => ({ id: value, name: value }))}
+              />
+              <ChoicePicker
                 key={`${resetKey}-languages`}
                 kind="languages"
                 name="languages"
@@ -113,15 +122,35 @@ export function PublishSection({
               />
             </>
           ) : isAlbum ? (
-            <ChoicePicker
-              key={`${resetKey}-collections`}
-              kind="collections"
-              name="collections"
-              label="系列"
-              inline
-              allowCreate
-              initial={(item?.collections ?? []).map((value) => ({ id: value, name: value }))}
-            />
+            <>
+              <ChoicePicker
+                key={`${resetKey}-collections`}
+                kind="collections"
+                name="collections"
+                label="系列"
+                inline
+                allowCreate
+                initial={(item?.collections ?? []).map((value) => ({ id: value, name: value }))}
+              />
+              <ChoicePicker
+                key={`${resetKey}-regions`}
+                kind="regions"
+                name="regions"
+                label="地区"
+                inline
+                allowCreate
+                initial={(item?.regions ?? []).map((value) => ({ id: value, name: value }))}
+              />
+              <ChoicePicker
+                key={`${resetKey}-languages`}
+                kind="languages"
+                name="languages"
+                label="语言"
+                inline
+                allowCreate
+                initial={(item?.languages ?? []).map((value) => ({ id: value, name: value }))}
+              />
+            </>
           ) : null}
         </div>
       ) : null}

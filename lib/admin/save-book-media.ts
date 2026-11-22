@@ -54,7 +54,7 @@ function bookRpcPayload(payload: MediaInput) {
     rating: payload.rating,
     genres: payload.genres,
     languages: payload.languages,
-    // 与 admin_save_media 图书 related_fields 对齐；#276 合入前表单仍可能强制 []。
+    // 与 admin_save_media 图书 related_fields 对齐。
     regions: payload.regions,
     authors: creditPayload(payload.authors),
     page_count: payload.page_count,

@@ -273,8 +273,9 @@ export function parseMediaForm(form: FormData): MediaInput {
     rating,
     // 曲目可有最多 2 个类型；季／集仍不写类型。专辑／影视／图书上限仍为 MAX_NAMES。
     genres: isTvChild ? [] : names("genres", isMusicTrack ? 2 : MAX_NAMES),
-    languages: isTvChild || isMusicTrack || isAlbum ? [] : names("languages"),
-    regions: isTvChild || isMusicTrack || isAlbum || isBook ? [] : names("regions"),
+    // 专辑可设语言／地区；图书可设地区（语言原本已支持）。曲目与季／集仍清空。
+    languages: isTvChild || isMusicTrack ? [] : names("languages"),
+    regions: isTvChild || isMusicTrack ? [] : names("regions"),
     actors: isTvChild || isMusicTrack || isAlbum || isBook ? [] : credits("actors"),
     directors:
       isTvChild || isMusicTrack || isAlbum || isBook ? [] : credits("directors").map(({ id, name }) => ({ id, name })),
