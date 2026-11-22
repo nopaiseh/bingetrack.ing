@@ -172,10 +172,7 @@ export default function MediaForm({
         <fieldset disabled={pending || deleting} className="edit-frame">
           <legend className="sr-only">媒体资料</legend>
           <input type="hidden" name="id" value={item?.id ?? ""} />
-          {/* 季与单集都不渲染／不提交 cover_url。曲目不设封面表单项，展示用专辑封面，此处仅回传原值或空；保存侧强制 null 由后端 PR 处理。 */}
-          {type === "music" ? (
-            <input type="hidden" name="cover_url" value={item?.type === type ? (item.cover_url ?? "") : ""} />
-          ) : null}
+          {/* 季／单集／曲目都不渲染／不提交 cover_url（曲目展示用专辑封面；保存侧强制 null 由 #269 处理）。 */}
           {locked ? <input type="hidden" name="type" value={type} /> : null}
 
           <div className="edit-toolbar">

@@ -94,6 +94,8 @@ it("曲目表单要求曲序与所属专辑，时长为整数秒，创作人员�
   expect(screen.getAllByText("作曲").length).toBeGreaterThan(0);
   expect(screen.getByLabelText("评分（0–10，可留空）")).toBeInTheDocument();
   expect(screen.queryByRole("heading", { name: "封面图片" })).not.toBeInTheDocument();
+  expect(screen.queryByLabelText(/封面/)).not.toBeInTheDocument();
+  expect(document.querySelector('input[name="cover_url"]')).toBeNull();
   // 隐藏字段提交人物 ID（ChoicePicker 按 ID\\t姓名）
   const artists = document.querySelector('input[name="artists"]') as HTMLInputElement;
   expect(artists.value).toContain("p1\t周杰伦");
