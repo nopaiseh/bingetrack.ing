@@ -7,7 +7,7 @@ import HoverPrefetchLink from "@/components/HoverPrefetchLink";
 import LetterTile from "./LetterTile";
 import MediaCardBody from "./MediaCardBody";
 import MediaCardStatusBadge from "./MediaCardStatusBadge";
-import MediaRatingBadge from "./MediaRatingBadge";
+import MusicCardBody from "./MusicCardBody";
 import { edgeFadeMask } from "@/lib/edge-fade-mask";
 import { scrollBehavior } from "@/lib/scroll-behavior";
 import { isDbMediaType, publicPathForDbType, type DbMediaType } from "@/lib/media-types";
@@ -34,7 +34,7 @@ export function resolveRowDbType(item: MediaCard, rowType?: RowDbMediaType): Row
   return rowType ?? null;
 }
 
-/** 专辑方封面：评分叠在封面上，正文只保留标题与主艺人。 */
+/** 专辑方封面；正文与搜索音乐卡共用 MusicCardBody（年、评分、类型；无「专辑」角标）。 */
 function AlbumItemCard({
   item,
   eager,
@@ -47,7 +47,6 @@ function AlbumItemCard({
   hideStatusBadge?: boolean;
 }) {
   const title = item.title.trim() || "未命名专辑";
-  const artist = (item.artists ?? []).filter(Boolean)[0] ?? null;
 
   return (
     <>
@@ -67,27 +66,8 @@ function AlbumItemCard({
           <LetterTile title={title} decorative />
         )}
         {!hideStatusBadge && <MediaCardStatusBadge status={item.status} kind="listen" />}
-        {item.rating != null ? (
-          <span className="pointer-events-none absolute bottom-1.5 right-1.5 z-10">
-            <MediaRatingBadge rating={item.rating} size="sm" showTier={false} />
-          </span>
-        ) : null}
       </div>
-      <div className="flex min-w-0 grow flex-col gap-1 px-3 py-2.5">
-        <h3
-          className="font-display line-clamp-2 min-h-10 text-sm font-bold leading-5 text-white transition-colors duration-300 group-hover:text-[var(--accent-hover)]"
-          title={title}
-        >
-          {title}
-        </h3>
-        {artist ? (
-          <p className="truncate text-xs text-fg-muted" title={artist}>
-            {artist}
-          </p>
-        ) : (
-          <p className="truncate text-xs text-fg-subtle">—</p>
-        )}
-      </div>
+      <MusicCardBody item={{ ...item, title }} headingLevel={3} artistFallback="dash" />
     </>
   );
 }

@@ -36,7 +36,7 @@ export function PublishSection({
           <p className="edit-hint">
             {hasRatingInput
               ? isMusicTrack
-                ? "本曲收听状态与评分"
+                ? "本曲收听状态、评分与类型标签"
                 : isBook
                   ? "阅读状态与评分。会显示在公开页"
                   : type === "tv_episode"
@@ -48,7 +48,7 @@ export function PublishSection({
           </p>
         </div>
       </header>
-      {showFilmCast || isAlbum || isBook ? (
+      {showFilmCast || isAlbum || isBook || isMusicTrack ? (
         <div className="edit-taxonomies">
           <ChoicePicker
             key={`${resetKey}-genres`}
@@ -57,8 +57,12 @@ export function PublishSection({
             label="类型标签"
             inline
             allowCreate
+            maxSelections={isMusicTrack ? 2 : undefined}
             initial={(item?.genres ?? []).map((value) => ({ id: value, name: value }))}
           />
+          {isMusicTrack ? (
+            <p className="edit-hint">每首最多 2 个类型；可搜索已有标签或新建。无类型时可留空。</p>
+          ) : null}
           {showFilmCast ? (
             <>
               <ChoicePicker
@@ -110,7 +114,7 @@ export function PublishSection({
                 initial={(item?.languages ?? []).map((value) => ({ id: value, name: value }))}
               />
             </>
-          ) : (
+          ) : isAlbum ? (
             <ChoicePicker
               key={`${resetKey}-collections`}
               kind="collections"
@@ -120,7 +124,7 @@ export function PublishSection({
               allowCreate
               initial={(item?.collections ?? []).map((value) => ({ id: value, name: value }))}
             />
-          )}
+          ) : null}
         </div>
       ) : null}
       {isBook ? (

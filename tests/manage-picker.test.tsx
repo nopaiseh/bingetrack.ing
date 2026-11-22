@@ -159,6 +159,35 @@ describe("管理关联选择器", () => {
     expect(hidden()).toHaveValue("a\t张三\t主角\nb\t李四\t配角");
     expect(screen.getByRole("button", { name: "上移张三" })).toBeDisabled();
   });
+  it("maxSelections 达到上限后禁止再选并显示计数", async () => {
+    const user = userEvent.setup();
+    vi.mocked(searchChoices).mockResolvedValue({
+      choices: [
+        { id: "g1", name: "流行" },
+        { id: "g2", name: "摇滚" },
+        { id: "g3", name: "爵士" },
+      ],
+    });
+    const { container } = render(
+      <ChoicePicker
+        kind="genres"
+        name="genres"
+        label="类型"
+        allowCreate
+        inline
+        maxSelections={2}
+        initial={[{ id: "g1", name: "流行" }]}
+      />,
+    );
+    expect(screen.getByText("1/2")).toBeInTheDocument();
+    const box = screen.getByRole("combobox", { name: "类型" });
+    await user.type(box, "摇");
+    await user.click(await screen.findByRole("option", { name: "摇滚" }));
+    expect(container.querySelector('input[name="genres"]')).toHaveValue("流行\n摇滚");
+    expect(screen.getByText("2/2")).toBeInTheDocument();
+    expect(screen.getByRole("combobox", { name: "类型" })).toBeDisabled();
+  });
+
   it("单选模式下展示紧凑卡片，点击更换可重新搜索", async () => {
     const user = userEvent.setup();
     const { container } = render(
