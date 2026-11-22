@@ -16,10 +16,10 @@ function isAllowedCoverHost(hostname: string) {
 
 /**
  * 决定写入媒体条目的封面。
- * 季与单集忽略提交值，新建和更新都存 null。其余类型保留提交的封面。
+ * 季忽略提交值，新建和更新都存 null。其余类型保留提交的封面。
  */
 export function coverUrlForSave(type: ManagedMediaType, supplied: string | null): string | null {
-  return type === "tv_season" || type === "tv_episode" ? null : supplied;
+  return type === "tv_season" ? null : supplied;
 }
 
 /** 演员／导演人数上限（credits）。 */
@@ -198,10 +198,9 @@ export function parseMediaForm(form: FormData): MediaInput {
   if (needsParentNumber && (!parent_id || number === null))
     throw new Error(type === "music" ? "请指定所属专辑和曲序。" : "请指定上级条目和季／集编号。");
   if (id && id === parent_id) throw new Error("不能把条目设为自己的上级。");
-  // 季与单集不设海报。不读取、不校验提交的 cover_url，新建和更新都写入 null，不采用新的封面地址。
-  // 这里不改已有行；只有之后再次保存该条目时，数据库才会按这份 payload 把封面写成 null。
-  const skipCover = type === "tv_season" || type === "tv_episode";
-  const cover_url = coverUrlForSave(type as ManagedMediaType, skipCover ? null : string("cover_url", 2000));
+  // 季不设海报。不读取、不校验提交的 cover_url，新建和更新都写入 null，不采用新的封面地址。
+  // 这里不改已有行；只有之后再次保存该季时，数据库才会按这份 payload 把封面写成 null。
+  const cover_url = coverUrlForSave(type as ManagedMediaType, type === "tv_season" ? null : string("cover_url", 2000));
   if (cover_url) assertCoverUrl(cover_url, type as ManagedMediaType);
   const isDerived = type === "tv_show" || type === "tv_season" || type === "album";
   const release_date = isDerived && type !== "album" ? null : string("release_date");
