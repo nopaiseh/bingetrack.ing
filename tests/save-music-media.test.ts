@@ -170,10 +170,7 @@ describe("saveMusicMedia", () => {
 
   it("新建专辑时解析封面并调用 admin_save_album_with_tracks", async () => {
     const db = dbWithRpc(async () => ({ data: albumId, error: null }));
-    const id = await saveMusicMedia(
-      db as never,
-      albumPayload({ languages: ["国语"], regions: ["台湾"] }),
-    );
+    const id = await saveMusicMedia(db as never, albumPayload({ languages: ["国语"], regions: ["台湾"] }));
     expect(id).toBe(albumId);
     expect(db.rpc).toHaveBeenCalledWith(
       "admin_save_album_with_tracks",
