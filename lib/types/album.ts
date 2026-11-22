@@ -8,6 +8,8 @@ export type AlbumTrack = {
   singers: string[];
   lyricists: string[];
   composers: string[];
+  /** 曲目自身类型名（media_genres）；最多 2 个，与专辑类型无关。 */
+  genres: string[];
   /** media_items.runtime，按秒展示为 m:ss；空则无时长。 */
   durationSeconds: number | null;
   status: string | null;

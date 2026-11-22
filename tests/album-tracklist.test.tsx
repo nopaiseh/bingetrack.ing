@@ -10,6 +10,7 @@ const track: AlbumTrack = {
   singers: ["歌手 A", "歌手 B"],
   lyricists: ["词人"],
   composers: ["曲作者"],
+  genres: ["流行"],
   durationSeconds: 205,
   status: "watched",
   rating: 9,

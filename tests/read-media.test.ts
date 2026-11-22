@@ -116,6 +116,64 @@ describe("readEditableMedia", () => {
     expect(result?.rating).toBe(8.8);
   });
 
+  it("读取曲目时返回所属专辑、曲序与当前类型以便表单预填", async () => {
+    const trackId = "44444444-4444-4444-8444-444444444444";
+    const albumId = "55555555-5555-4555-8555-555555555555";
+    const mockDb = {
+      from: vi.fn((table: string) => ({
+        select: vi.fn(() => ({
+          eq: vi.fn(() => ({
+            maybeSingle: vi.fn(async () => {
+              if (table === "media_items") {
+                return {
+                  data: {
+                    id: trackId,
+                    type: "music",
+                    title: "测试曲目",
+                    alternate_title: null,
+                    summary: null,
+                    cover_url: null,
+                    release_date: null,
+                    runtime: 200,
+                  },
+                  error: null,
+                };
+              }
+              if (table === "tracking") {
+                return { data: { status: "watched", rating: 8 }, error: null };
+              }
+              if (table === "music") {
+                return { data: { album_id: albumId, track_number: 2 }, error: null };
+              }
+              return { data: null, error: null };
+            }),
+            order: vi.fn(async () => ({ data: [], error: null })),
+            then: (resolve: (val: unknown) => void) => {
+              if (table === "media_genres") {
+                resolve({
+                  data: [{ genres: { name: "流行" } }, { genres: { name: "说唱" } }],
+                  error: null,
+                });
+              } else {
+                resolve({ data: [], error: null });
+              }
+            },
+          })),
+        })),
+      })),
+    } as unknown as SupabaseClient;
+
+    const result = await readEditableMedia(mockDb, trackId);
+    expect(result).toMatchObject({
+      type: "music",
+      parent_id: albumId,
+      number: 2,
+      genres: ["流行", "说唱"],
+      status: "watched",
+      rating: 8,
+    });
+  });
+
   it("读取季时根据 v_media_season_summaries 集数统计动态计算观看状态", async () => {
     const mockDb = {
       from: vi.fn((table: string) => ({

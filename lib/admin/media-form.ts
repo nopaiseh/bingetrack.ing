@@ -140,8 +140,8 @@ export function parseMediaForm(form: FormData): MediaInput {
       throw new Error("时长、评分或编号超出有效范围。");
     return value;
   }
-  /** 一行一个名称，保留名字里的逗号，并去除重复条目。 */
-  function names(key: string) {
+  /** 一行一个名称，保留名字里的逗号，并去除重复条目。max 覆盖默认上限（如曲目类型最多 2）。 */
+  function names(key: string, max = MAX_NAMES) {
     const label = nameFieldLabels[key] ?? key;
     const raw = form.get(key);
     if (raw !== null && typeof raw !== "string") throw new Error("表单字段格式不正确。");
@@ -157,7 +157,7 @@ export function parseMediaForm(form: FormData): MediaInput {
       seen.add(value);
       values.push(value);
     }
-    if (values.length > MAX_NAMES) throw new Error(`${label}最多 ${MAX_NAMES} 个，当前 ${values.length} 个。`);
+    if (values.length > max) throw new Error(`${label}最多 ${max} 个，当前 ${values.length} 个。`);
     return values;
   }
   /** 每行「人物 ID<Tab>姓名<Tab>角色」，ID 与角色可留空，无制表符的行视为仅有姓名；同一人物只保留第一行，无 ID 时按姓名去重。 */
@@ -271,7 +271,8 @@ export function parseMediaForm(form: FormData): MediaInput {
     number,
     status: effectiveStatus,
     rating,
-    genres: isTvChild || isMusicTrack ? [] : names("genres"),
+    // 曲目可有最多 2 个类型；季／集仍不写类型。专辑／影视／图书上限仍为 MAX_NAMES。
+    genres: isTvChild ? [] : names("genres", isMusicTrack ? 2 : MAX_NAMES),
     languages: isTvChild || isMusicTrack || isAlbum ? [] : names("languages"),
     regions: isTvChild || isMusicTrack || isAlbum || isBook ? [] : names("regions"),
     actors: isTvChild || isMusicTrack || isAlbum || isBook ? [] : credits("actors"),

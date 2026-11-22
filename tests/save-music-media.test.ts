@@ -305,6 +305,44 @@ describe("saveMusicMedia", () => {
     ).rejects.toThrow(/1–7200/);
   });
 
+  it("曲目类型超过 2 个在调用 RPC 前拒绝；RPC 文案可映射", async () => {
+    await expect(
+      saveMusicMedia({ from: vi.fn(), rpc: vi.fn() } as never, trackPayload({ genres: ["流行", "说唱", "摇滚"] })),
+    ).rejects.toThrow(/类型最多 2 个/);
+
+    const from = vi.fn(trackGuardFrom());
+    const db = dbWithRpc(
+      async () => ({
+        data: null,
+        error: { code: "22023", message: "Music tracks allow at most 2 genres" },
+      }),
+      from,
+    );
+    await expect(saveMusicMedia(db as never, trackPayload({ genres: ["流行", "说唱"] }))).rejects.toThrow(
+      /类型最多 2 个/,
+    );
+  });
+
+  it("曲目带 0／1／2 个类型写入 admin_save_media 负载", async () => {
+    const from = vi.fn(trackGuardFrom());
+    const db = dbWithRpc(async () => ({ data: trackId, error: null }), from);
+    await saveMusicMedia(db as never, trackPayload({ genres: [] }));
+    expect(db.rpc).toHaveBeenLastCalledWith(
+      "admin_save_media",
+      expect.objectContaining({ p_data: expect.objectContaining({ genres: [] }) }),
+    );
+    await saveMusicMedia(db as never, trackPayload({ genres: ["流行"] }));
+    expect(db.rpc).toHaveBeenLastCalledWith(
+      "admin_save_media",
+      expect.objectContaining({ p_data: expect.objectContaining({ genres: ["流行"] }) }),
+    );
+    await saveMusicMedia(db as never, trackPayload({ genres: ["流行", "说唱"] }));
+    expect(db.rpc).toHaveBeenLastCalledWith(
+      "admin_save_media",
+      expect.objectContaining({ p_data: expect.objectContaining({ genres: ["流行", "说唱"] }) }),
+    );
+  });
+
   it("RPC 校验失败（23514）映射为时长文案", async () => {
     const from = vi.fn(trackGuardFrom());
     const db = dbWithRpc(

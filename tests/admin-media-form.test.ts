@@ -230,11 +230,35 @@ describe("管理媒体输入", () => {
       status: "watched",
       rating: 8.5,
       cover_url: null,
-      genres: [],
+      genres: ["流行"],
       artists: [{ id: null, name: "主唱" }],
       lyricists: [{ id: null, name: "作词人" }],
       composers: [{ id: null, name: "作曲人" }],
     });
+    expect(
+      parseMediaForm(
+        form({
+          type: "music",
+          title: "双类型",
+          parent_id: albumId,
+          number: "1",
+          artists: "\t主唱",
+          genres: "流行\n说唱",
+        }),
+      ).genres,
+    ).toEqual(["流行", "说唱"]);
+    expect(() =>
+      parseMediaForm(
+        form({
+          type: "music",
+          title: "三类型",
+          parent_id: albumId,
+          number: "1",
+          artists: "\t主唱",
+          genres: "流行\n说唱\n摇滚",
+        }),
+      ),
+    ).toThrow(/类型最多 2 个/);
     expect(() => parseMediaForm(form({ type: "music", title: "无上级", number: "1" }))).toThrow(/所属专辑/);
     expect(() =>
       parseMediaForm(
