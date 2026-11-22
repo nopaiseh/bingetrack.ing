@@ -60,9 +60,7 @@ export function PublishSection({
             maxSelections={isMusicTrack ? 2 : undefined}
             initial={(item?.genres ?? []).map((value) => ({ id: value, name: value }))}
           />
-          {isMusicTrack ? (
-            <p className="edit-hint">每首最多 2 个类型；可搜索已有标签或新建。无类型时可留空。</p>
-          ) : null}
+          {isMusicTrack ? <p className="edit-hint">每首最多 2 个类型；可搜索已有标签或新建。无类型时可留空。</p> : null}
           {showFilmCast ? (
             <>
               <ChoicePicker

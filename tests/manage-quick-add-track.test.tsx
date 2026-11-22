@@ -62,4 +62,3 @@ describe("快速加曲目弹窗", () => {
     expect(container.querySelector('input[name="genres"]')).toHaveValue("");
   });
 });
-
