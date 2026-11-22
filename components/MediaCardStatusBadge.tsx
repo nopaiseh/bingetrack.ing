@@ -1,5 +1,8 @@
 import type { ReactElement } from "react";
 import { READ_STATUS_DISPLAY, resolveWatchStatus } from "@/components/watch-status";
+import { listenStatusLabel } from "@/lib/listen-status";
+
+export type MediaCardStatusKind = "watch" | "book" | "listen";
 
 interface StatusBadgeConfig {
   label: string;
@@ -9,10 +12,10 @@ interface StatusBadgeConfig {
   textClass: string;
 }
 
-/** 解析观看／阅读状态值，返回与全站一致的红绿灯样式；未记录状态返回 null。 */
+/** 解析观看／阅读／收听状态值，返回与全站一致的红绿灯样式；未记录状态返回 null。 */
 export function getStatusBadgeConfig(
   status: string | null | undefined,
-  kind: "watch" | "book" = "watch",
+  kind: MediaCardStatusKind = "watch",
 ): StatusBadgeConfig | null {
   const config = resolveWatchStatus(status);
   if (!config) return null;
@@ -20,8 +23,9 @@ export function getStatusBadgeConfig(
     kind === "book" && (status === "watched" || status === "want_to_watch" || status === "in_progress")
       ? READ_STATUS_DISPLAY[status]
       : null;
+  const listenLabel = kind === "listen" ? listenStatusLabel(status) : null;
   return {
-    label: bookLabel ?? config.label,
+    label: bookLabel ?? listenLabel ?? config.label,
     dotClass: config.dotClass,
     ...(config.pulse ? { pulse: true } : {}),
     borderClass: config.borderClass,
@@ -40,13 +44,12 @@ export default function MediaCardStatusBadge({
   className?: string;
   /** overlay 盖在海报角上；inline 跟在年份后面，给搜索海报网格用。 */
   placement?: "overlay" | "inline";
-  /** book 使用想读／在读／读过文案。 */
-  kind?: "watch" | "book";
+  /** book：想读／在读／读过；listen：想听／在听／听过；其余用观看文案。 */
+  kind?: MediaCardStatusKind;
 }): ReactElement | null {
   const config = getStatusBadgeConfig(status, kind);
   if (!config) return null;
-  const ariaKind = kind === "book" ? "阅读状态" : "观看状态";
-
+  const ariaKind = kind === "book" ? "阅读状态" : kind === "listen" ? "收听状态" : "观看状态";
   return (
     <div
       data-testid="media-card-status-badge"
