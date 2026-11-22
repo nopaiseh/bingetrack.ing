@@ -49,9 +49,15 @@ describe("search model helpers", () => {
     expect(CREDIT_ROLE_OPTIONS.map((option) => option.label)).toEqual(["导演", "演员", "歌手", "作词", "作曲", "作者"]);
     expect(statusFilterLabel("watched", ["music"])).toBe("已听");
     expect(statusFilterLabel("want_to_watch", ["music"])).toBe("想听");
+    expect(statusFilterLabel("watching", ["music"])).toBe("在听");
+    expect(statusFilterLabel("want_to_watch", ["album"])).toBe("想听");
+    expect(statusFilterLabel("watched", ["album", "music"])).toBe("已听");
+    expect(statusFilterLabel("watching", ["album"])).toBe("在听");
     expect(statusFilterLabel("watched", ["movie"])).toBe("已看");
+    expect(statusFilterLabel("want_to_watch", ["movie"])).toBe("想看");
     expect(statusFilterLabel("watched", ["music", "movie"])).toBe("已看");
     expect(statusFilterOptions(["music"]).find((option) => option.value === "watched")?.label).toBe("已听");
+    expect(statusFilterOptions(["album"]).find((option) => option.value === "want_to_watch")?.label).toBe("想听");
   });
 
   it("freezes the default filters and their lists", () => {

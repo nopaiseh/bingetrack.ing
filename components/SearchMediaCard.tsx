@@ -71,23 +71,8 @@ export function SearchMediaCardSkeleton() {
 }
 
 /**
- * 标题与主艺人是否实质重复（完全相同，或一方包含另一方的显著片段）。
- * 例：专辑「杰伦」与艺人「周杰伦」——正文只留标题，避免再出一行艺人。
- */
-export function musicSearchArtistIsRedundant(title: string, artist: string): boolean {
-  const t = title.trim();
-  const a = artist.trim();
-  if (!t || !a) return false;
-  if (t === a) return true;
-  if (t.length >= 2 && a.includes(t)) return true;
-  if (a.length >= 2 && t.includes(a)) return true;
-  return false;
-}
-
-/**
  * 搜索音乐卡正文：标题 + 主艺人 + 年份／评分。
- * 类型标签只放封面上，避免正文再出一枚「专辑／单曲」；
- * 艺人与标题实质重复时不渲染艺人行。
+ * 类型标签只放封面上；专辑／单曲有艺人数据时一律显示艺人行。
  */
 function MusicSearchBody({ item }: { item: MediaCard }) {
   const year = item.date
@@ -95,9 +80,7 @@ function MusicSearchBody({ item }: { item: MediaCard }) {
     : item.release_year
       ? String(item.release_year).slice(0, 4)
       : "未知";
-  const title = item.title.trim();
   const artist = (item.artists ?? []).map((name) => name.trim()).find(Boolean) ?? null;
-  const showArtist = Boolean(artist && !musicSearchArtistIsRedundant(title, artist));
 
   return (
     <div className="flex min-w-0 grow flex-col space-y-1.5 px-3 py-2.5">
@@ -107,7 +90,7 @@ function MusicSearchBody({ item }: { item: MediaCard }) {
       >
         {item.title}
       </h2>
-      {showArtist ? <p className="truncate text-xs text-fg-muted">{artist}</p> : null}
+      {artist ? <p className="truncate text-xs text-fg-muted">{artist}</p> : null}
       <div className="flex min-w-0 items-center justify-between gap-1.5 text-xs">
         <span className="shrink-0 whitespace-nowrap font-medium text-fg-secondary">{year}</span>
         <MediaRatingBadge rating={item.rating} size="sm" showTier={item.rating != null} />
@@ -172,7 +155,7 @@ export function SearchMediaCard({
       {showUpcoming(item) ? (
         <UpcomingPosterBadge />
       ) : (
-        <MediaCardStatusBadge status={item.status} kind={book ? "book" : "watch"} />
+        <MediaCardStatusBadge status={item.status} kind={book ? "book" : music ? "listen" : "watch"} />
       )}
       {showTypeOnFilmCard ? (
         <span className="pointer-events-none absolute bottom-2 left-2 z-10 inline-flex items-center rounded-md border border-[var(--accent-border)] bg-[var(--canvas)]/90 px-1.5 py-0.5 text-[11px] font-medium text-[var(--accent-hover)]">

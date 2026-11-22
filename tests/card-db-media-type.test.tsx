@@ -1,7 +1,7 @@
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import MediaRow, { resolveRowDbType } from "@/components/MediaRow";
-import { SearchMediaCard, musicSearchArtistIsRedundant } from "@/components/SearchMediaCard";
+import { SearchMediaCard } from "@/components/SearchMediaCard";
 import { dbTypeToPublicRoute, publicPathForDbType } from "@/lib/media-types";
 import type { MediaCard } from "@/lib/types";
 
@@ -155,36 +155,44 @@ describe("卡片只认数据库类型", () => {
     expect(screen.queryByText("混进单曲")).not.toBeInTheDocument();
   });
 
-  it("musicSearchArtistIsRedundant：相同或互相包含则视为重复", () => {
-    expect(musicSearchArtistIsRedundant("自命名", "自命名")).toBe(true);
-    expect(musicSearchArtistIsRedundant("杰伦", "周杰伦")).toBe(true);
-    expect(musicSearchArtistIsRedundant("周杰伦精选", "周杰伦")).toBe(true);
-    expect(musicSearchArtistIsRedundant("龙卷风", "周杰伦")).toBe(false);
-    expect(musicSearchArtistIsRedundant("A", "周杰伦")).toBe(false);
-  });
-
-  it("SearchMediaCard：艺人与标题实质重复时正文不重复艺人行；类型只在封面", () => {
+  it("SearchMediaCard：专辑／单曲有艺人时一律显示艺人行；类型只在封面；音乐想听文案", () => {
     const { container, rerender } = render(
       <SearchMediaCard
-        item={card({ id: "a1", title: "杰伦", dbType: "album", artists: ["周杰伦"], date: "2000-01-01" })}
+        item={card({
+          id: "a1",
+          title: "杰伦",
+          dbType: "album",
+          artists: ["周杰伦"],
+          date: "2000-01-01",
+          status: "want_to_watch",
+        })}
         returnHref="/search"
       />,
     );
     expect(screen.getByRole("heading", { level: 2, name: "杰伦" })).toBeInTheDocument();
+    expect(screen.getByText("周杰伦")).toBeInTheDocument();
     expect(screen.getByText("2000")).toBeInTheDocument();
-    expect(screen.queryByText("周杰伦")).not.toBeInTheDocument();
-    expect(container.querySelectorAll("p").length).toBe(0);
+    expect(screen.getByTestId("media-card-status-badge")).toHaveTextContent("想听");
+    expect(screen.getByTestId("media-card-status-badge")).toHaveAttribute("aria-label", "收听状态：想听");
     // 封面类型徽标存在；正文不再另渲染一枚类型标签
     const typeBadges = Array.from(container.querySelectorAll("span")).filter((el) => el.textContent === "音乐");
     expect(typeBadges).toHaveLength(1);
 
     rerender(
       <SearchMediaCard
-        item={card({ id: "t1", title: "龙卷风", dbType: "music", artists: ["周杰伦"], date: "2000-01-01" })}
+        item={card({
+          id: "t1",
+          title: "龙卷风",
+          dbType: "music",
+          artists: ["周杰伦"],
+          date: "2000-01-01",
+          status: "want_to_watch",
+        })}
         returnHref="/search"
       />,
     );
     expect(screen.getByText("周杰伦")).toBeInTheDocument();
     expect(screen.getByText("单曲")).toBeInTheDocument();
+    expect(screen.getByTestId("media-card-status-badge")).toHaveTextContent("想听");
   });
 });

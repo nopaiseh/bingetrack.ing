@@ -66,7 +66,7 @@ function AlbumItemCard({
         ) : (
           <LetterTile title={title} decorative />
         )}
-        {!hideStatusBadge && <MediaCardStatusBadge status={item.status} kind="watch" />}
+        {!hideStatusBadge && <MediaCardStatusBadge status={item.status} kind="listen" />}
         {item.rating != null ? (
           <span className="pointer-events-none absolute bottom-1.5 right-1.5 z-10">
             <MediaRatingBadge rating={item.rating} size="sm" showTier={false} />

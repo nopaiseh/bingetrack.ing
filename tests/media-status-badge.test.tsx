@@ -88,4 +88,15 @@ describe("MediaCardStatusBadge", () => {
     expect(badge).toHaveTextContent("在读");
     expect(badge).toHaveAttribute("aria-label", "阅读状态：在读");
   });
+
+  it("listen kind uses 想听／在听／听过", () => {
+    expect(getStatusBadgeConfig("want_to_watch", "listen")?.label).toBe("想听");
+    expect(getStatusBadgeConfig("watching", "listen")?.label).toBe("在听");
+    expect(getStatusBadgeConfig("watched", "listen")?.label).toBe("听过");
+
+    render(<MediaCardStatusBadge status="want_to_watch" kind="listen" />);
+    const badge = screen.getByTestId("media-card-status-badge");
+    expect(badge).toHaveTextContent("想听");
+    expect(badge).toHaveAttribute("aria-label", "收听状态：想听");
+  });
 });

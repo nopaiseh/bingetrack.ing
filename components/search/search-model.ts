@@ -45,17 +45,23 @@ export const STATUS_OPTIONS = [
   { value: "upcoming", label: "即将上映" },
 ];
 
-/** 仅筛选单曲时，状态用「已听／想听」；与媒体全景看板文案一致。 */
-export function statusFilterLabel(value: string, selectedTypes: readonly string[] = []): string {
+/** 所选分类是否全是音乐类型（专辑／单曲，可混选）。 */
+function isMusicOnlyFilter(selectedTypes: readonly string[]): boolean {
   const mediaTypes = selectedTypes.filter((type) => isSearchDbMediaType(type));
-  if (mediaTypes.length === 1 && mediaTypes[0] === "music") {
+  return mediaTypes.length > 0 && mediaTypes.every((type) => type === "music" || type === "album");
+}
+
+/** 仅筛选专辑／单曲时，状态用「已听／想听／在听」；与媒体全景看板文案一致。 */
+export function statusFilterLabel(value: string, selectedTypes: readonly string[] = []): string {
+  if (isMusicOnlyFilter(selectedTypes)) {
     if (value === "watched") return "已听";
     if (value === "want_to_watch") return "想听";
+    if (value === "watching") return "在听";
   }
   return optionLabel(STATUS_OPTIONS, value);
 }
 
-/** 状态筛选项：单曲场景下替换想看／已看文案，其余保持影视／图书默认。 */
+/** 状态筛选项：音乐场景下替换想看／已看／在看文案，其余保持影视／图书默认。 */
 export function statusFilterOptions(selectedTypes: readonly string[] = []) {
   return STATUS_OPTIONS.map((option) => ({
     ...option,
