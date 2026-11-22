@@ -72,7 +72,7 @@ it("电影和单集由评分决定观看状态，电视节目和季显示只读�
   expect(screen.getByText(/电视节目的观看状态由下属单集自动汇总决定/)).toBeInTheDocument();
 });
 
-it("季不提交封面地址，单集用隐藏字段带回已有地址，电影和电视节目仍可编辑", () => {
+it("季与单集都不提交封面地址，电影和电视节目仍可编辑", () => {
   const { container, unmount } = render(<MediaForm initialType="movie" />);
   const cover = screen.getByLabelText("TMDB 海报路径");
   fireEvent.change(cover, { target: { value: "https://image.tmdb.org/t/p/w500/poster.jpg" } });
@@ -87,7 +87,7 @@ it("季不提交封面地址，单集用隐藏字段带回已有地址，电影�
   expect(screen.queryByLabelText("TMDB 海报路径")).not.toBeInTheDocument();
   expect(screen.queryByPlaceholderText("https://image.tmdb.org/t/p/original/…")).not.toBeInTheDocument();
   expect(screen.queryByRole("img", { name: "封面预览" })).not.toBeInTheDocument();
-  expect(container.querySelector('input[name="cover_url"]')).toHaveValue("");
+  expect(container.querySelector('input[name="cover_url"]')).toBeNull();
   fireEvent.change(screen.getByLabelText("类型"), { target: { value: "tv_show" } });
   expect(screen.getByLabelText("TMDB 海报路径")).toHaveValue("https://image.tmdb.org/t/p/w500/poster.jpg");
   unmount();
@@ -126,10 +126,9 @@ it("季不提交封面地址，单集用隐藏字段带回已有地址，电影�
     />,
   );
   expect(screen.queryByLabelText(/封面/)).not.toBeInTheDocument();
-  expect(episode.container.querySelector('input[name="cover_url"]')).toHaveAttribute("type", "hidden");
-  expect(episode.container.querySelector('input[name="cover_url"]')).toHaveValue(
-    "https://image.tmdb.org/t/p/w500/still.jpg",
-  );
+  expect(screen.queryByLabelText("TMDB 海报路径")).not.toBeInTheDocument();
+  expect(screen.queryByRole("img", { name: "封面预览" })).not.toBeInTheDocument();
+  expect(episode.container.querySelector('input[name="cover_url"]')).toBeNull();
   episode.unmount();
 
   const season = render(
