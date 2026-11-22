@@ -145,6 +145,9 @@ export interface Summary {
   total_tracks: number;
   listened_tracks: number;
   want_tracks: number;
+
+  album_avg_rating: number;
+  book_avg_rating: number;
 }
 
 interface Stats {

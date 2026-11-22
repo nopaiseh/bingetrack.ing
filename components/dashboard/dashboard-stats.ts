@@ -70,6 +70,11 @@ export function deriveDashboardStats(summary: Summary[], selectedYear: string, d
   const tracksPercent = percent(listenedTracks, totalTracks);
   const booksPercent = percent(readBooks, totalBooks);
 
+  const avgAlbumsRating = readNullableRating(currentYearData?.album_avg_rating);
+  const avgAlbumsRatingPercent = avgAlbumsRating == null ? 0 : percent(avgAlbumsRating, 10);
+  const avgBooksRating = readNullableRating(currentYearData?.book_avg_rating);
+  const avgBooksRatingPercent = avgBooksRating == null ? 0 : percent(avgBooksRating, 10);
+
   return {
     currentYearData,
     movieDistribution,
@@ -110,6 +115,10 @@ export function deriveDashboardStats(summary: Summary[], selectedYear: string, d
     wantTracks,
     tracksPercent,
     booksPercent,
+    avgAlbumsRating,
+    avgAlbumsRatingPercent,
+    avgBooksRating,
+    avgBooksRatingPercent,
   };
 }
 

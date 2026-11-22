@@ -42,6 +42,10 @@ describe("deriveDashboardStats", () => {
     expect(stats.seriesEpisodesPercent).toBe(0);
     expect(stats.runtimePercent).toBe(0);
     expect(stats.avgMoviesRatingPercent).toBe(0);
+    expect(stats.avgAlbumsRating).toBeNull();
+    expect(stats.avgAlbumsRatingPercent).toBe(0);
+    expect(stats.avgBooksRating).toBeNull();
+    expect(stats.avgBooksRatingPercent).toBe(0);
     expect(stats.movieDistribution).toEqual({ regions: [], languages: [], genres: [] });
     expect(stats.seriesDistribution).toEqual({ regions: [], languages: [], genres: [] });
   });
@@ -117,6 +121,8 @@ describe("deriveDashboardStats", () => {
         total_tracks: 12,
         listened_tracks: 4,
         want_tracks: 3,
+        album_avg_rating: 8.5,
+        book_avg_rating: 7.2,
       } as Summary,
     ];
 
@@ -134,6 +140,10 @@ describe("deriveDashboardStats", () => {
     expect(stats.wantTracks).toBe(3);
     expect(stats.tracksPercent).toBe(33);
     expect(stats.booksPercent).toBe(43);
+    expect(stats.avgAlbumsRating).toBe(8.5);
+    expect(stats.avgAlbumsRatingPercent).toBe(85);
+    expect(stats.avgBooksRating).toBe(7.2);
+    expect(stats.avgBooksRatingPercent).toBe(72);
   });
 
   it("keeps movie/TV zeros when a year only has tracks or books", () => {
@@ -159,6 +169,8 @@ describe("deriveDashboardStats", () => {
     expect(stats.runtimePercent).toBe(0);
     expect(stats.avgMoviesRating).toBeNull();
     expect(stats.avgSeriesRating).toBeNull();
+    expect(stats.avgAlbumsRating).toBeNull();
+    expect(stats.avgBooksRating).toBeNull();
     expect(stats.totalTracks).toBe(10);
     expect(stats.tracksPercent).toBe(40);
     expect(stats.totalBooks).toBe(3);
@@ -171,6 +183,8 @@ describe("deriveDashboardStats", () => {
         release_year: "All Time",
         movie_avg_rating: null,
         series_avg_rating: Number.NaN,
+        album_avg_rating: null,
+        book_avg_rating: Number.NaN,
       } as unknown as Summary,
     ];
 
@@ -180,5 +194,9 @@ describe("deriveDashboardStats", () => {
     expect(stats.avgMoviesRatingPercent).toBe(0);
     expect(stats.avgSeriesRating).toBeNull();
     expect(stats.avgSeriesRatingPercent).toBe(0);
+    expect(stats.avgAlbumsRating).toBeNull();
+    expect(stats.avgAlbumsRatingPercent).toBe(0);
+    expect(stats.avgBooksRating).toBeNull();
+    expect(stats.avgBooksRatingPercent).toBe(0);
   });
 });

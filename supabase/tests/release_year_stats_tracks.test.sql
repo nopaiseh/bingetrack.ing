@@ -45,7 +45,9 @@ select is(
     'want_books',
     'total_tracks',
     'listened_tracks',
-    'want_tracks'
+    'want_tracks',
+    'album_avg_rating',
+    'book_avg_rating'
   ]::text[],
   'release_year_stats keeps legacy columns and appends track counts'
 );
