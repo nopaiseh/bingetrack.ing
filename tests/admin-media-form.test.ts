@@ -108,7 +108,7 @@ describe("管理媒体输入", () => {
       "image.tmdb.org",
     );
   });
-  it("新建和更新季时丢掉封面，其他类型保留", () => {
+  it("新建和更新季／单集／曲目时丢掉封面，其他类型保留", () => {
     const cover = "https://image.tmdb.org/t/p/original/poster.jpg";
     const parent = "11111111-1111-4111-8111-111111111111";
     const id = "22222222-2222-4222-8222-222222222222";
@@ -124,11 +124,17 @@ describe("管理媒体输入", () => {
     expect(parseMediaForm(form({ type: "tv_show", title: "测试剧集", cover_url: cover })).cover_url).toBe(cover);
     expect(parseMediaForm(form({ id, type: "tv_show", title: "测试剧集", cover_url: cover })).cover_url).toBe(cover);
     const episode = { type: "tv_episode", title: "第 1 集", parent_id: parent, number: "1", cover_url: cover };
-    expect(parseMediaForm(form(episode)).cover_url).toBe(cover);
-    expect(parseMediaForm(form({ ...episode, id })).cover_url).toBe(cover);
+    expect(parseMediaForm(form(episode)).cover_url).toBeNull();
+    expect(parseMediaForm(form({ ...episode, id })).cover_url).toBeNull();
+    expect(parseMediaForm(form({ ...episode, cover_url: "not a url" })).cover_url).toBeNull();
+    expect(parseMediaForm(form({ ...episode, cover_url: "x".repeat(2001) })).cover_url).toBeNull();
+    const track = { type: "music", title: "单曲", parent_id: parent, number: "1", cover_url: cover };
+    expect(parseMediaForm(form(track)).cover_url).toBeNull();
+    expect(parseMediaForm(form({ ...track, id })).cover_url).toBeNull();
     expect(coverUrlForSave("movie", cover)).toBe(cover);
     expect(coverUrlForSave("tv_show", cover)).toBe(cover);
-    expect(coverUrlForSave("tv_episode", null)).toBeNull();
+    expect(coverUrlForSave("tv_episode", cover)).toBeNull();
+    expect(coverUrlForSave("music", cover)).toBeNull();
   });
   it("拒绝无效日期和无上级关系的集", () => {
     expect(() => parseMediaForm(form({ release_date: "2026-02-30" }))).toThrow();
@@ -223,6 +229,7 @@ describe("管理媒体输入", () => {
       runtime: 215,
       status: "watched",
       rating: 8.5,
+      cover_url: null,
       genres: [],
       artists: [{ id: null, name: "主唱" }],
       lyricists: [{ id: null, name: "作词人" }],

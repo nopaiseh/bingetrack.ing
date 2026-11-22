@@ -180,9 +180,9 @@ async function prepareMusicPayload(
     }
   }
 
-  // 曲目不再解析／写入展示用封面（展示一律用所属专辑封面）；保留提交值或 null。
+  // 曲目不再解析／写入自身封面（展示一律用所属专辑封面）。
   if (payload.type === "music") {
-    return { ...payload, cover_url: payload.cover_url };
+    return { ...payload, cover_url: null };
   }
 
   let coverUrl = payload.cover_url;

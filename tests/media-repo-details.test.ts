@@ -297,6 +297,36 @@ describe("季详情与单集分页", () => {
     expect(page?.episodes[1]).toMatchObject({ title: "回响", alternateTitle: "Echo", summary: "文本", rating: null });
   });
 
+  it("季自身 cover_url 为空时详情 coverUrl 为空串，供分享层回退剧集封面", async () => {
+    state.handle = (query) => {
+      if (query.table === "rpc:get_season_episode_page") {
+        return {
+          data: {
+            season_number: 1,
+            episode_count: "1",
+            watched_count: "0",
+            total_runtime: "40",
+            average_rating: null,
+            first_release_date: "2020-01-02",
+            last_release_date: "2020-01-02",
+            total: "1",
+            episodes: [],
+          },
+        };
+      }
+      return {
+        data: { title: "第一季", alternate_title: null, summary: "", cover_url: null },
+      };
+    };
+
+    const page = await getSeasonEpisodes(seriesId, seasonId, 1, 20);
+    expect(page?.season).toMatchObject({
+      id: seasonId,
+      title: "第一季",
+      coverUrl: "",
+    });
+  });
+
   it("非法 ID 或空分页不访问数据库，简介失败保留原始原因", async () => {
     const log = vi.spyOn(console, "error").mockImplementation(() => {});
     try {
