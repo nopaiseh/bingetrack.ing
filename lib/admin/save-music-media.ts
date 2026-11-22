@@ -8,11 +8,14 @@ const WRITE_ERROR = "保存失败，请检查字段或数据库配置后重试�
 const PERMISSION_ERROR = "没有写入权限，请检查站长账号配置。";
 const RUNTIME_ERROR = "曲目时长须为 1–7200 秒的整数，或留空。";
 
+const GENRE_LIMIT_ERROR = "曲目类型最多 2 个。";
+
 function writeError(code?: string, message?: string) {
   if (code === "23505") return "同一专辑中已存在这个曲序，请更换曲序。";
   if (code === "23503" || code === "P0002") return "资料或所属专辑已不存在，请刷新后重试。";
   if (code === "42501") return PERMISSION_ERROR;
   if (code === "23514" || (message && /runtime|7200|Invalid numeric/i.test(message))) return RUNTIME_ERROR;
+  if (message && /at most 2 genres/i.test(message)) return GENRE_LIMIT_ERROR;
   return WRITE_ERROR;
 }
 
@@ -150,6 +153,9 @@ async function prepareMusicPayload(
   if (payload.type === "music") {
     if (payload.runtime != null && (payload.runtime < 1 || payload.runtime > 7200)) {
       throw new SaveMusicMediaError(RUNTIME_ERROR, "22023");
+    }
+    if (payload.genres.length > 2) {
+      throw new SaveMusicMediaError(GENRE_LIMIT_ERROR, "22023");
     }
     if (!options.skipAlbumExistsCheck) {
       const { data: album, error } = await db

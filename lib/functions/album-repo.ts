@@ -54,6 +54,11 @@ type CreditJoinRow = {
   people: { name: string | null } | Array<{ name: string | null }> | null;
 };
 
+type GenreJoinRow = {
+  media_item_id: string;
+  genres: { name: string | null } | Array<{ name: string | null }> | null;
+};
+
 function firstRelated<T>(value: T | T[] | null | undefined): T | undefined {
   return Array.isArray(value) ? value[0] : (value ?? undefined);
 }
@@ -61,6 +66,12 @@ function firstRelated<T>(value: T | T[] | null | undefined): T | undefined {
 function personName(people: CreditJoinRow["people"]): string | null {
   const person = firstRelated(people);
   const name = person?.name?.trim();
+  return name ? name : null;
+}
+
+function genreName(genres: GenreJoinRow["genres"]): string | null {
+  const genre = firstRelated(genres);
+  const name = genre?.name?.trim();
   return name ? name : null;
 }
 
@@ -116,28 +127,44 @@ export async function getAlbumDetail(id: string): Promise<AlbumDetail | null> {
     const trackIds = trackRows.map((row) => row.media_item_id);
 
     const creditsByTrack = new Map<string, { singers: string[]; lyricists: string[]; composers: string[] }>();
+    const genresByTrack = new Map<string, string[]>();
     for (const trackId of trackIds) {
       creditsByTrack.set(trackId, { singers: [], lyricists: [], composers: [] });
+      genresByTrack.set(trackId, []);
     }
 
     if (trackIds.length > 0) {
-      const { data: creditData, error: creditError } = await db
-        .from("media_credits")
-        .select("media_item_id,role,credit_order,people(name)")
-        .in("media_item_id", trackIds)
-        .in("role", ["artist", "lyricist", "composer"])
-        .order("credit_order", { ascending: true, nullsFirst: false });
+      const [creditsResult, genresResult] = await Promise.all([
+        db
+          .from("media_credits")
+          .select("media_item_id,role,credit_order,people(name)")
+          .in("media_item_id", trackIds)
+          .in("role", ["artist", "lyricist", "composer"])
+          .order("credit_order", { ascending: true, nullsFirst: false }),
+        db.from("media_genres").select("media_item_id,genres(name)").in("media_item_id", trackIds),
+      ]);
 
-      if (creditError) {
-        reportHandledError(`Failed to fetch track credits for album ${id}:`, creditError);
+      if (creditsResult.error) {
+        reportHandledError(`Failed to fetch track credits for album ${id}:`, creditsResult.error);
       } else {
-        for (const row of (creditData ?? []) as CreditJoinRow[]) {
+        for (const row of (creditsResult.data ?? []) as CreditJoinRow[]) {
           const bucket = creditsByTrack.get(row.media_item_id);
           const name = personName(row.people);
           if (!bucket || !name) continue;
           if (row.role === "artist") bucket.singers.push(name);
           else if (row.role === "lyricist") bucket.lyricists.push(name);
           else if (row.role === "composer") bucket.composers.push(name);
+        }
+      }
+
+      if (genresResult.error) {
+        reportHandledError(`Failed to fetch track genres for album ${id}:`, genresResult.error);
+      } else {
+        for (const row of (genresResult.data ?? []) as GenreJoinRow[]) {
+          const bucket = genresByTrack.get(row.media_item_id);
+          const name = genreName(row.genres);
+          if (!bucket || !name) continue;
+          bucket.push(name);
         }
       }
     }
@@ -156,6 +183,7 @@ export async function getAlbumDetail(id: string): Promise<AlbumDetail | null> {
         singers: credits.singers,
         lyricists: credits.lyricists,
         composers: credits.composers,
+        genres: genresByTrack.get(row.media_item_id) ?? [],
         durationSeconds: item?.runtime == null ? null : Number(item.runtime),
         status: tracking?.status ?? null,
         rating,

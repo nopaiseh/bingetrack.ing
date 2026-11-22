@@ -127,6 +127,15 @@ describe("专辑详情查询 getAlbumDetail", () => {
           ],
         };
       }
+      if (query.table === "media_genres") {
+        return {
+          data: [
+            { media_item_id: trackA, genres: { name: "流行" } },
+            { media_item_id: trackA, genres: [{ name: "说唱" }] },
+            { media_item_id: trackB, genres: null },
+          ],
+        };
+      }
       return { data: null };
     };
 
@@ -147,6 +156,7 @@ describe("专辑详情查询 getAlbumDetail", () => {
         singers: ["周杰伦"],
         lyricists: ["方文山"],
         composers: ["周杰伦"],
+        genres: ["流行", "说唱"],
         durationSeconds: 341,
         status: "watched",
         rating: 9.5,
@@ -158,6 +168,7 @@ describe("专辑详情查询 getAlbumDetail", () => {
         singers: [],
         lyricists: [],
         composers: [],
+        genres: [],
         durationSeconds: null,
         status: "want_to_watch",
         rating: null,
@@ -172,6 +183,8 @@ describe("专辑详情查询 getAlbumDetail", () => {
     ]);
     const credits = state.queries.find((query) => query.table === "media_credits");
     expect(args(credits!, "in")).toEqual(["media_item_id", [trackA, trackB]]);
+    const genres = state.queries.find((query) => query.table === "media_genres");
+    expect(args(genres!, "in")).toEqual(["media_item_id", [trackA, trackB]]);
   });
 
   it("非法 ID 不访问数据库；视图缺失或非专辑返回 null", async () => {
@@ -221,6 +234,7 @@ describe("专辑详情查询 getAlbumDetail", () => {
     expect(detail?.tracks[0]).toMatchObject({
       title: "未命名曲目",
       trackNumber: null,
+      genres: [],
       durationSeconds: 0,
       status: null,
       rating: null,
@@ -288,7 +302,7 @@ describe("专辑详情查询 getAlbumDetail", () => {
       ownership: null,
       label: "索尼",
       ratedCount: 1,
-      tracks: [{ id: trackA, singers: [], lyricists: [], composers: [], rating: 8 }],
+      tracks: [{ id: trackA, singers: [], lyricists: [], composers: [], genres: [], rating: 8 }],
     });
     expect(reportHandledError).toHaveBeenCalledWith(`Failed to fetch ownership for album ${albumId}:`, {
       code: "42501",
