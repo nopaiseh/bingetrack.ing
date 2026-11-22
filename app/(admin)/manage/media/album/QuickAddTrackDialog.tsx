@@ -109,6 +109,16 @@ export default function QuickAddTrackDialog({
           initial={defaultArtists}
         />
         <p className="edit-hint">默认带上专辑艺人（人物 ID）；可增删或清空。作词、作曲请在保存后于曲目编辑页填写。</p>
+        <ChoicePicker
+          key={`genres-${artistKey}`}
+          kind="genres"
+          name="genres"
+          label="类型"
+          allowCreate
+          compact
+          maxSelections={2}
+          initial={[]}
+        />
         <ActionNotice state={state} />
         <label className="flex items-center gap-2 text-sm text-fg-secondary">
           <input

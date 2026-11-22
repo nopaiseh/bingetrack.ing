@@ -54,4 +54,11 @@ describe("快速加曲目弹窗", () => {
     expect(screen.getByText("还没有演唱艺人。在下方搜索名字即可添加。")).toBeInTheDocument();
     expect(screen.getByPlaceholderText("添加演唱艺人")).toBeInTheDocument();
   });
+
+  it("提供紧凑类型选择（最多两个）", () => {
+    const { container } = render(<QuickAddTrackDialog structure={albumStructure([])} onClose={vi.fn()} />);
+    expect(screen.getByText("0/2")).toBeInTheDocument();
+    expect(screen.getByRole("combobox", { name: "类型" })).toBeInTheDocument();
+    expect(container.querySelector('input[name="genres"]')).toHaveValue("");
+  });
 });

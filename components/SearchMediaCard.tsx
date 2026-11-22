@@ -7,7 +7,7 @@ import { SkeletonBlock } from "./LoadingSkeletons";
 import LetterTile from "./LetterTile";
 import MediaCardBody from "./MediaCardBody";
 import MediaCardStatusBadge from "./MediaCardStatusBadge";
-import MediaRatingBadge from "./MediaRatingBadge";
+import MusicCardBody from "./MusicCardBody";
 import { getMediaTypeDefinition, publicPathForDbType } from "@/lib/media-types";
 
 /** 已看、在看优先于即将上映；还没看且日期在今天之后，用即将上映代替想看。 */
@@ -65,35 +65,6 @@ export function SearchMediaCardSkeleton() {
           <SkeletonBlock className="h-4 w-2/5 rounded-md" />
         </div>
         <SkeletonBlock className="h-4 w-3/5 rounded-md" />
-      </div>
-    </div>
-  );
-}
-
-/**
- * 搜索音乐卡正文：标题 + 主艺人 + 年份／评分。
- * 类型标签只放封面上；专辑／单曲有艺人数据时一律显示艺人行。
- */
-function MusicSearchBody({ item }: { item: MediaCard }) {
-  const year = item.date
-    ? item.date.substring(0, 4)
-    : item.release_year
-      ? String(item.release_year).slice(0, 4)
-      : "未知";
-  const artist = (item.artists ?? []).map((name) => name.trim()).find(Boolean) ?? null;
-
-  return (
-    <div className="flex min-w-0 grow flex-col space-y-1.5 px-3 py-2.5">
-      <h2
-        className="font-display line-clamp-2 min-h-10 text-sm font-bold leading-5 text-white transition-colors duration-300 group-hover:text-[var(--accent-hover)]"
-        title={item.title}
-      >
-        {item.title}
-      </h2>
-      {artist ? <p className="truncate text-xs text-fg-muted">{artist}</p> : null}
-      <div className="flex min-w-0 items-center justify-between gap-1.5 text-xs">
-        <span className="shrink-0 whitespace-nowrap font-medium text-fg-secondary">{year}</span>
-        <MediaRatingBadge rating={item.rating} size="sm" showTier={item.rating != null} />
       </div>
     </div>
   );
@@ -166,7 +137,7 @@ export function SearchMediaCard({
   );
 
   const body = music ? (
-    <MusicSearchBody item={item} />
+    <MusicCardBody item={item} headingLevel={2} artistFallback="omit" />
   ) : (
     <MediaCardBody item={item} dbType={mediaBodyDbType} headingLevel={2} />
   );

@@ -95,6 +95,10 @@ export default function ChoicePicker({
   withCharacter = false,
   rows = false,
   inline = false,
+  /** 紧凑行内：芯片与搜索框同一容器（快速录入用）。 */
+  compact = false,
+  /** 多选上限；达到后禁止再选，并在标签旁显示 n/max。 */
+  maxSelections,
   onSelect,
 }: {
   kind: string;
@@ -112,6 +116,8 @@ export default function ChoicePicker({
   rows?: boolean;
   /** 发布栏里的标签：标签名和已选项同一行，不再套一张大卡片。 */
   inline?: boolean;
+  compact?: boolean;
+  maxSelections?: number;
   onSelect?: (value: Choice[]) => void;
 }) {
   const [selected, setSelected] = useState(initial);
@@ -172,24 +178,35 @@ export default function ChoicePicker({
     change(next);
   }
 
+  const atMax = multiple && maxSelections != null && selected.length >= maxSelections;
+
   /** 关联资料去重，单选父级保存真实 ID。选择后清理检索词并关闭下拉。 */
   function choose(choice: Choice) {
-    change(multiple ? [...selected.filter((item) => !same(item, choice)), choice] : [choice]);
+    if (multiple) {
+      const without = selected.filter((item) => !same(item, choice));
+      // 新增项时若已达上限则忽略；替换同名／同 ID 仍允许。
+      if (without.length === selected.length && atMax) return;
+      change([...without, choice].slice(0, maxSelections ?? undefined));
+    } else {
+      change([choice]);
+    }
     setOpen(false);
     setTerm("");
     setActiveIndex(-1);
   }
 
   const newName = term.trim();
-  // 可定位的候选项：搜索结果在前，允许新增时末尾附新增项。
-  const options: { choice: Choice; create?: boolean }[] = [
-    ...(loading || error
-      ? []
-      : choices.filter((item) => !selected.some((value) => same(value, item))).map((choice) => ({ choice }))),
-    ...(allowCreate && newName && !selected.some(exists) && !choices.some(exists)
-      ? [{ choice: { id: `new:${newName}`, name: newName }, create: true }]
-      : []),
-  ];
+  // 可定位的候选项：搜索结果在前，允许新增时末尾附新增项；已达上限时不再提供候选项。
+  const options: { choice: Choice; create?: boolean }[] = atMax
+    ? []
+    : [
+        ...(loading || error
+          ? []
+          : choices.filter((item) => !selected.some((value) => same(value, item))).map((choice) => ({ choice }))),
+        ...(allowCreate && newName && !selected.some(exists) && !choices.some(exists)
+          ? [{ choice: { id: `new:${newName}`, name: newName }, create: true }]
+          : []),
+      ];
   const active = Math.min(activeIndex, options.length - 1);
   const resultsId = `${listId}-results`;
   const optionId = (index: number) => `${listId}-option-${index}`;
@@ -357,77 +374,84 @@ export default function ChoicePicker({
     change(selected.map((value) => (value.id === id ? { ...value, character } : value)));
   }
 
-  const chips = selected.length > 0 && !rows && (
-    <ul className={inline ? "flex flex-wrap gap-2" : "mb-3 flex flex-wrap gap-2"}>
-      {selected.map((item, index) => (
-        <li key={item.id} className="admin-tag-chip group/chip max-w-full">
-          {sortable && (
-            <span className="rounded bg-white/10 px-1 py-0.5 font-mono text-sm font-medium leading-none text-fg-secondary">
-              #{index + 1}
-            </span>
-          )}
-          <span className="break-words font-medium">{item.name}</span>
-          {byId && item.detail && <span className="break-words text-sm text-fg-muted">({item.detail})</span>}
-          {withCharacter && (
-            <input
-              className="admin-chip-character"
-              value={item.character ?? ""}
-              maxLength={200}
-              autoComplete="off"
-              placeholder="饰演角色"
-              aria-label={`${item.name}饰演的角色`}
-              onChange={(event) => setCharacter(item.id, event.target.value)}
-            />
-          )}
-          {sortable ? (
-            <div className="ml-1 flex items-center gap-0.5 border-l border-white/15 pl-1">
-              {index > 0 && (
-                <button
-                  type="button"
-                  title={`前移${item.name}`}
-                  aria-label={`上移${item.name}`}
-                  className="inline-flex size-4.5 items-center justify-center rounded text-fg-muted hover:bg-white/15 hover:text-white transition-colors"
-                  onClick={() => move(index, index - 1)}
-                >
-                  <span className="i-material-symbols-chevron-left-rounded size-3.5" aria-hidden="true" />
-                </button>
-              )}
-              {index < selected.length - 1 && (
-                <button
-                  type="button"
-                  title={`后移${item.name}`}
-                  aria-label={`下移${item.name}`}
-                  className="inline-flex size-4.5 items-center justify-center rounded text-fg-muted hover:bg-white/15 hover:text-white transition-colors"
-                  onClick={() => move(index, index + 1)}
-                >
-                  <span className="i-material-symbols-chevron-right-rounded size-3.5" aria-hidden="true" />
-                </button>
-              )}
-              <button
-                type="button"
-                title={`移除关联：${item.name}`}
-                aria-label={`移除关联：${item.name}`}
-                className="inline-flex size-4.5 items-center justify-center rounded text-fg-muted hover:bg-rose-500/20 hover:text-rose-300 transition-colors"
-                onClick={() => change(selected.filter((value) => value.id !== item.id))}
-              >
-                <span className="i-material-symbols-close-rounded size-3.5" aria-hidden="true" />
-              </button>
-            </div>
-          ) : (
+  const chipItems = selected.map((item, index) => (
+    <li key={item.id} className={`admin-tag-chip group/chip max-w-full ${compact ? "!py-0.5" : ""}`}>
+      {sortable && (
+        <span className="rounded bg-white/10 px-1 py-0.5 font-mono text-sm font-medium leading-none text-fg-secondary">
+          #{index + 1}
+        </span>
+      )}
+      <span className="break-words font-medium">{item.name}</span>
+      {byId && item.detail && <span className="break-words text-sm text-fg-muted">({item.detail})</span>}
+      {withCharacter && (
+        <input
+          className="admin-chip-character"
+          value={item.character ?? ""}
+          maxLength={200}
+          autoComplete="off"
+          placeholder="饰演角色"
+          aria-label={`${item.name}饰演的角色`}
+          onChange={(event) => setCharacter(item.id, event.target.value)}
+        />
+      )}
+      {sortable ? (
+        <div className="ml-1 flex items-center gap-0.5 border-l border-white/15 pl-1">
+          {index > 0 && (
             <button
               type="button"
-              title={`移除关联：${item.name}`}
-              aria-label={`移除关联：${item.name}`}
-              className="ml-0.5 inline-flex size-4 items-center justify-center rounded-full text-fg-muted hover:bg-rose-500/20 hover:text-rose-300 transition-colors"
-              onClick={() => change(selected.filter((value) => value.id !== item.id))}
+              title={`前移${item.name}`}
+              aria-label={`上移${item.name}`}
+              className="inline-flex size-4.5 items-center justify-center rounded text-fg-muted hover:bg-white/15 hover:text-white transition-colors"
+              onClick={() => move(index, index - 1)}
             >
-              <span className="i-material-symbols-close-rounded size-3" aria-hidden="true" />
+              <span className="i-material-symbols-chevron-left-rounded size-3.5" aria-hidden="true" />
             </button>
           )}
-        </li>
-      ))}
-    </ul>
+          {index < selected.length - 1 && (
+            <button
+              type="button"
+              title={`后移${item.name}`}
+              aria-label={`下移${item.name}`}
+              className="inline-flex size-4.5 items-center justify-center rounded text-fg-muted hover:bg-white/15 hover:text-white transition-colors"
+              onClick={() => move(index, index + 1)}
+            >
+              <span className="i-material-symbols-chevron-right-rounded size-3.5" aria-hidden="true" />
+            </button>
+          )}
+          <button
+            type="button"
+            title={`移除关联：${item.name}`}
+            aria-label={`移除关联：${item.name}`}
+            className="inline-flex size-4.5 items-center justify-center rounded text-fg-muted hover:bg-rose-500/20 hover:text-rose-300 transition-colors"
+            onClick={() => change(selected.filter((value) => value.id !== item.id))}
+          >
+            <span className="i-material-symbols-close-rounded size-3.5" aria-hidden="true" />
+          </button>
+        </div>
+      ) : (
+        <button
+          type="button"
+          title={`移除关联：${item.name}`}
+          aria-label={`移除关联：${item.name}`}
+          className="ml-0.5 inline-flex size-4 items-center justify-center rounded-full text-fg-muted hover:bg-rose-500/20 hover:text-rose-300 transition-colors"
+          onClick={() => change(selected.filter((value) => value.id !== item.id))}
+        >
+          <span className="i-material-symbols-close-rounded size-3" aria-hidden="true" />
+        </button>
+      )}
+    </li>
+  ));
+
+  const chips = selected.length > 0 && !rows && !compact && (
+    <ul className={inline ? "flex flex-wrap gap-2" : "mb-3 flex flex-wrap gap-2"}>{chipItems}</ul>
   );
+
+  const limitHint =
+    maxSelections != null ? (
+      <span className="edit-hint font-mono">
+        {selected.length}/{maxSelections}
+      </span>
+    ) : null;
 
   const castRows = rows && (
     <>
@@ -538,15 +562,29 @@ export default function ChoicePicker({
     </>
   );
 
+  const searchPlaceholder = atMax
+    ? "已达上限"
+    : compact
+      ? selected.length === 0
+        ? `搜索或新建${label}…`
+        : "再加一个…"
+      : rows
+        ? `添加${label}`
+        : inline
+          ? "添加…"
+          : `搜索${label}…`;
+
   return (
     <div
       ref={root}
       className={
         rows
           ? "edit-cast relative min-w-0"
-          : inline
-            ? "edit-inline-field relative min-w-0"
-            : "choice-picker-card relative min-w-0"
+          : compact
+            ? "edit-compact-field relative min-w-0"
+            : inline
+              ? "edit-inline-field relative min-w-0"
+              : "choice-picker-card relative min-w-0"
       }
       onBlur={(event) => {
         if (!event.currentTarget.contains(event.relatedTarget) && !list.current?.contains(event.relatedTarget))
@@ -569,10 +607,13 @@ export default function ChoicePicker({
         <p className="edit-hint">
           {selected.length} 位{label} · 拖动左侧手柄排序，或使用上移、下移按钮
         </p>
-      ) : inline ? (
+      ) : compact || inline ? (
         <div className="edit-inline-label">
           <label htmlFor={listId}>{label}</label>
-          {required && <span className="edit-required">必填</span>}
+          <span className="flex items-center gap-2">
+            {limitHint}
+            {required ? <span className="edit-required">必填</span> : null}
+          </span>
         </div>
       ) : (
         <div className="mb-3 flex items-center justify-between">
@@ -588,7 +629,7 @@ export default function ChoicePicker({
                   : "border border-[var(--border)] bg-[var(--surface-2)] text-fg-secondary"
               }`}
             >
-              {selected.length}
+              {maxSelections != null ? `${selected.length}/${maxSelections}` : selected.length}
             </span>
           </div>
           {required && <span className="edit-required">必填</span>}
@@ -598,29 +639,54 @@ export default function ChoicePicker({
       {castRows}
       {chips}
 
-      <div className={rows || inline ? "edit-inline-search" : "relative flex items-center"}>
-        {rows ? (
-          <label htmlFor={listId} className="sr-only">
-            {label}
-          </label>
-        ) : null}
-        {!inline && (
-          <span
-            className="i-material-symbols-search-rounded pointer-events-none absolute left-3 top-1/2 z-10 size-4 -translate-y-1/2 text-fg-subtle"
-            aria-hidden="true"
+      {compact ? (
+        <div
+          className="edit-compact-box"
+          role="group"
+          aria-label={label}
+          onClick={() => {
+            if (!atMax) input.current?.focus();
+          }}
+        >
+          {selected.length > 0 ? <ul className="flex flex-wrap gap-1.5">{chipItems}</ul> : null}
+          {atMax ? <span className="px-1 text-xs text-fg-muted">已满</span> : null}
+          <input
+            {...comboboxProps}
+            placeholder={searchPlaceholder}
+            disabled={atMax}
+            className={
+              atMax
+                ? "sr-only"
+                : "!min-h-0 !min-w-[6rem] !flex-1 !border-0 !bg-transparent !px-1 !py-1 !shadow-none focus:!shadow-none"
+            }
           />
-        )}
-        <input
-          {...comboboxProps}
-          placeholder={rows ? `添加${label}` : inline ? "添加…" : `搜索${label}…`}
-          className={
-            inline ? "" : "!pl-9 !py-2 !text-sm !bg-black/30 hover:!bg-black/40 focus:!bg-black/60 !rounded-xl"
-          }
-        />
-      </div>
+        </div>
+      ) : (
+        <div className={rows || inline ? "edit-inline-search" : "relative flex items-center"}>
+          {rows ? (
+            <label htmlFor={listId} className="sr-only">
+              {label}
+            </label>
+          ) : null}
+          {!inline && (
+            <span
+              className="i-material-symbols-search-rounded pointer-events-none absolute left-3 top-1/2 z-10 size-4 -translate-y-1/2 text-fg-subtle"
+              aria-hidden="true"
+            />
+          )}
+          <input
+            {...comboboxProps}
+            placeholder={searchPlaceholder}
+            disabled={atMax}
+            className={
+              inline ? "" : "!pl-9 !py-2 !text-sm !bg-black/30 hover:!bg-black/40 focus:!bg-black/60 !rounded-xl"
+            }
+          />
+        </div>
+      )}
 
       {/* 下拉结果浮层 */}
-      {open && (
+      {open && !atMax && (
         <FloatingResults root={root} input={input} listRef={list}>
           {results}
         </FloatingResults>

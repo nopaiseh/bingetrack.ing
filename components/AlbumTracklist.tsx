@@ -1,4 +1,5 @@
 import MediaRatingBadge from "@/components/MediaRatingBadge";
+import { MUSIC_GENRE_CHIP_CLASS } from "@/components/MusicCardBody";
 import { formatTrackDuration } from "@/lib/album-display";
 import type { AlbumTrack } from "@/lib/types/album";
 import { listenStatusLabel } from "@/lib/listen-status";
@@ -7,7 +8,26 @@ function joinNames(names: readonly string[]): string {
   return names.filter(Boolean).join("、") || "—";
 }
 
-/** 专辑曲目表：桌面完整列；手机把作词／作曲收到标题下第二行。 */
+/** 库无排序字段：按名称（zh）排序后展示。 */
+export function sortedTrackGenres(genres: readonly string[]): string[] {
+  return [...genres].sort((a, b) => a.localeCompare(b, "zh"));
+}
+
+function GenreChips({ genres }: { genres: readonly string[] }) {
+  const sorted = sortedTrackGenres(genres);
+  if (sorted.length === 0) return null;
+  return (
+    <div className="flex flex-wrap items-center gap-1" aria-label={`类型：${sorted.join("、")}`}>
+      {sorted.map((name) => (
+        <span key={name} title={name} className={`${MUSIC_GENRE_CHIP_CLASS} max-w-[8rem]`}>
+          {name}
+        </span>
+      ))}
+    </div>
+  );
+}
+
+/** 专辑曲目表：桌面完整列含「类型」；手机把类型芯片收到曲名下，无类型时手机不占位。 */
 export default function AlbumTracklist({ tracks }: { tracks: readonly AlbumTrack[] }) {
   if (tracks.length === 0) {
     return (
@@ -28,6 +48,9 @@ export default function AlbumTracklist({ tracks }: { tracks: readonly AlbumTrack
             </th>
             <th scope="col" className="px-3 py-3 font-medium sm:px-4">
               曲目
+            </th>
+            <th scope="col" className="hidden px-3 py-3 font-medium sm:table-cell sm:px-4">
+              类型
             </th>
             <th scope="col" className="hidden px-3 py-3 font-medium md:table-cell md:px-4">
               演唱
@@ -59,6 +82,8 @@ export default function AlbumTracklist({ tracks }: { tracks: readonly AlbumTrack
             ]
               .filter(Boolean)
               .join(" · ");
+            const genres = track.genres ?? [];
+            const hasGenres = genres.length > 0;
 
             return (
               <tr key={track.id} className="border-b border-[var(--border)] last:border-b-0 hover:bg-white/[0.03]">
@@ -66,7 +91,15 @@ export default function AlbumTracklist({ tracks }: { tracks: readonly AlbumTrack
                 <td className="min-w-0 px-3 py-3 align-top sm:px-4">
                   <div className="font-medium text-fg">{track.title}</div>
                   <div className="mt-0.5 text-xs text-fg-muted md:hidden">{joinNames(track.singers)}</div>
+                  {hasGenres ? (
+                    <div className="mt-1 sm:hidden">
+                      <GenreChips genres={genres} />
+                    </div>
+                  ) : null}
                   {creditsLine ? <div className="mt-0.5 text-xs text-fg-subtle lg:hidden">{creditsLine}</div> : null}
+                </td>
+                <td className="hidden px-3 py-3 align-top sm:table-cell sm:px-4">
+                  {hasGenres ? <GenreChips genres={genres} /> : <span className="text-fg-subtle">—</span>}
                 </td>
                 <td className="hidden min-w-0 px-3 py-3 align-top text-fg-secondary md:table-cell md:px-4">
                   {joinNames(track.singers)}
