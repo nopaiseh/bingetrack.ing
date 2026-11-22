@@ -761,6 +761,22 @@ html {
     background-color: rgba(255, 255, 255, 0.04);
   }
 
+  /* ClampedCopy：非 3／4 行时用变量截断，避开 Uno 对动态 line-clamp-* 的静态提取限制。 */
+  .clamped-copy-n {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: var(--clamp-lines);
+    overflow: hidden;
+  }
+
+  @media (min-width: 1024px) {
+    .clamped-copy-n--lg-free {
+      display: block;
+      -webkit-line-clamp: unset;
+      overflow: visible;
+    }
+  }
+
   .episode-blurb {
     display: -webkit-box;
     -webkit-box-orient: vertical;

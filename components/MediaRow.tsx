@@ -16,11 +16,20 @@ import { ALBUM_ROW_COVER_SIZES } from "@/lib/poster-image-sizes";
 /** 横向媒体行支持的数据库类型（影视／图书 2:3；专辑 1:1）。 */
 type RowDbMediaType = Extract<DbMediaType, "movie" | "tv_show" | "book" | "album">;
 
-function resolveRowDbType(item: MediaCard, rowType?: RowDbMediaType): RowDbMediaType | null {
+const ROW_DB_TYPES = new Set<RowDbMediaType>(["movie", "tv_show", "book", "album"]);
+
+/**
+ * 单卡优先认 item.dbType：专辑／影视／图书直接返回；
+ * 已识别但不属于横滑行的库类型（如 music 单曲）返回 null，禁止回落到行级 type
+ *（否则专辑行里的单曲会被链到 /albums/{曲目 id}）。
+ * 缺库类型时才回落行级 type。
+ */
+export function resolveRowDbType(item: MediaCard, rowType?: RowDbMediaType): RowDbMediaType | null {
   if (item.dbType && isDbMediaType(item.dbType)) {
-    if (item.dbType === "movie" || item.dbType === "tv_show" || item.dbType === "book" || item.dbType === "album") {
-      return item.dbType;
+    if (ROW_DB_TYPES.has(item.dbType as RowDbMediaType)) {
+      return item.dbType as RowDbMediaType;
     }
+    return null;
   }
   return rowType ?? null;
 }

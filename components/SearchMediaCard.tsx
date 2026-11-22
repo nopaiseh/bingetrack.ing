@@ -70,13 +70,20 @@ export function SearchMediaCardSkeleton() {
   );
 }
 
-function MusicSearchBody({ item, typeLabel }: { item: MediaCard; typeLabel: string | null }) {
+/**
+ * 搜索音乐卡正文：标题 + 主艺人 + 年份／评分。
+ * 类型标签只放封面上，避免正文再出一枚「专辑／单曲」；
+ * 艺人与标题相同（自命名专辑等）时不重复一行艺人。
+ */
+function MusicSearchBody({ item }: { item: MediaCard }) {
   const year = item.date
     ? item.date.substring(0, 4)
     : item.release_year
       ? String(item.release_year).slice(0, 4)
       : "未知";
-  const artist = (item.artists ?? []).filter(Boolean)[0] ?? null;
+  const title = item.title.trim();
+  const artist = (item.artists ?? []).map((name) => name.trim()).find(Boolean) ?? null;
+  const showArtist = Boolean(artist && artist !== title);
 
   return (
     <div className="flex min-w-0 grow flex-col space-y-1.5 px-3 py-2.5">
@@ -86,18 +93,11 @@ function MusicSearchBody({ item, typeLabel }: { item: MediaCard; typeLabel: stri
       >
         {item.title}
       </h2>
-      {artist ? <p className="truncate text-xs text-fg-muted">{artist}</p> : null}
+      {showArtist ? <p className="truncate text-xs text-fg-muted">{artist}</p> : null}
       <div className="flex min-w-0 items-center justify-between gap-1.5 text-xs">
         <span className="shrink-0 whitespace-nowrap font-medium text-fg-secondary">{year}</span>
         <MediaRatingBadge rating={item.rating} size="sm" showTier={item.rating != null} />
       </div>
-      {typeLabel ? (
-        <div className="mt-1.5 flex min-h-6 w-full items-center gap-1.5 overflow-hidden">
-          <span className="inline-flex min-h-5 shrink items-center truncate rounded-md border border-[var(--accent-border)] bg-[var(--accent-soft)] px-1.5 py-0.5 text-xs font-medium tracking-wide text-[var(--accent-hover)]">
-            {typeLabel}
-          </span>
-        </div>
-      ) : null}
     </div>
   );
 }
@@ -169,7 +169,7 @@ export function SearchMediaCard({
   );
 
   const body = music ? (
-    <MusicSearchBody item={item} typeLabel={null} />
+    <MusicSearchBody item={item} />
   ) : (
     <MediaCardBody item={item} dbType={mediaBodyDbType} headingLevel={2} />
   );

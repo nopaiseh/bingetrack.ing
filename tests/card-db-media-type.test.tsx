@@ -1,6 +1,6 @@
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
-import MediaRow from "@/components/MediaRow";
+import MediaRow, { resolveRowDbType } from "@/components/MediaRow";
 import { SearchMediaCard } from "@/components/SearchMediaCard";
 import { dbTypeToPublicRoute, publicPathForDbType } from "@/lib/media-types";
 import type { MediaCard } from "@/lib/types";
@@ -128,5 +128,56 @@ describe("卡片只认数据库类型", () => {
     expect(screen.getByText("9.2")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /查看全部/ })).toHaveAttribute("href", "/search?type=album&status=watched");
     expect(container.querySelector("[data-initial]")).toBeTruthy();
+  });
+
+  it("resolveRowDbType：识别专辑／影视／图书；单曲不回落行级 type", () => {
+    expect(resolveRowDbType(card({ id: "a1", title: "专辑", dbType: "album" }), "movie")).toBe("album");
+    expect(resolveRowDbType(card({ id: "m1", title: "电影", dbType: "movie" }), "album")).toBe("movie");
+    expect(resolveRowDbType(card({ id: "s1", title: "剧", dbType: "tv_show" }))).toBe("tv_show");
+    expect(resolveRowDbType(card({ id: "b1", title: "书", dbType: "book" }), "movie")).toBe("book");
+    expect(resolveRowDbType(card({ id: "t1", title: "单曲", dbType: "music" }), "album")).toBeNull();
+    expect(resolveRowDbType(card({ id: "x", title: "无库类型", dbType: undefined }), "album")).toBe("album");
+  });
+
+  it("MediaRow：专辑行里的单曲不被当成专辑链出去", () => {
+    render(
+      <MediaRow
+        title="混排"
+        type="album"
+        items={[
+          card({ id: "a1", title: "正经专辑", dbType: "album", artists: ["艺人"] }),
+          card({ id: "t1", title: "混进单曲", dbType: "music", artists: ["艺人"] }),
+        ]}
+      />,
+    );
+    expect(screen.getByRole("link", { name: "正经专辑，艺人" })).toHaveAttribute("href", "/albums/a1");
+    expect(screen.queryByRole("link", { name: /混进单曲/ })).not.toBeInTheDocument();
+    expect(screen.queryByText("混进单曲")).not.toBeInTheDocument();
+  });
+
+  it("SearchMediaCard：艺人与标题相同时正文不重复艺人行；类型只在封面", () => {
+    const { container, rerender } = render(
+      <SearchMediaCard
+        item={card({ id: "a1", title: "自命名", dbType: "album", artists: ["自命名"], date: "2020-01-01" })}
+        returnHref="/search"
+      />,
+    );
+    expect(screen.getByRole("heading", { level: 2, name: "自命名" })).toBeInTheDocument();
+    expect(screen.getByText("2020")).toBeInTheDocument();
+    expect(container.querySelectorAll("p").length).toBe(0);
+    expect(screen.getByText("音乐")).toBeInTheDocument();
+    expect(container.querySelectorAll("span").length).toBeGreaterThan(0);
+    // 封面类型徽标存在；正文不再另渲染一枚类型标签
+    const typeBadges = Array.from(container.querySelectorAll("span")).filter((el) => el.textContent === "音乐");
+    expect(typeBadges).toHaveLength(1);
+
+    rerender(
+      <SearchMediaCard
+        item={card({ id: "t1", title: "龙卷风", dbType: "music", artists: ["周杰伦"], date: "2000-01-01" })}
+        returnHref="/search"
+      />,
+    );
+    expect(screen.getByText("周杰伦")).toBeInTheDocument();
+    expect(screen.getByText("单曲")).toBeInTheDocument();
   });
 });
