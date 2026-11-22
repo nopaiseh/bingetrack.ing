@@ -237,7 +237,7 @@ describe("saveMusicMedia", () => {
     );
   });
 
-  it("曲目不调用 resolveMusicCover；无封面时保持 null，有提交值则原样保留", async () => {
+  it("曲目不调用 resolveMusicCover；提交封面也强制写入 null", async () => {
     const from = vi.fn(trackGuardFrom());
     const db = dbWithRpc(async () => ({ data: trackId, error: null }), from);
     await saveMusicMedia(db as never, trackPayload({ cover_url: null }));
@@ -251,13 +251,13 @@ describe("saveMusicMedia", () => {
 
     vi.mocked(resolveMusicCover).mockClear();
     const db2 = dbWithRpc(async () => ({ data: trackId, error: null }), vi.fn(trackGuardFrom()));
-    const kept = "https://coverartarchive.org/release/x/front-500";
-    await saveMusicMedia(db2 as never, trackPayload({ cover_url: kept }));
+    const submitted = "https://coverartarchive.org/release/x/front-500";
+    await saveMusicMedia(db2 as never, trackPayload({ cover_url: submitted }));
     expect(resolveMusicCover).not.toHaveBeenCalled();
     expect(db2.rpc).toHaveBeenCalledWith(
       "admin_save_media",
       expect.objectContaining({
-        p_data: expect.objectContaining({ type: "music", cover_url: kept }),
+        p_data: expect.objectContaining({ type: "music", cover_url: null }),
       }),
     );
   });

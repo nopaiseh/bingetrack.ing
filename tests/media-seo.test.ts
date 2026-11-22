@@ -124,6 +124,36 @@ describe(
     );
 
     it(
+      "falls back to series cover for season share images when season cover is empty",
+      /* 季自身封面清空后，Open Graph／Twitter／JSON-LD 分享图回退到剧集海报。 */ () => {
+        const series = {
+          ...movie,
+          id: "series-1",
+          type: "shows" as const,
+          cover_url: "https://images.example.com/show.jpg",
+        };
+        const season: SeasonInfo = {
+          id: "season-1",
+          seasonNumber: 1,
+          title: "第一季",
+          coverUrl: "",
+          episodeCount: 10,
+          watchedEpisodeCount: 2,
+          summary: "季度简介",
+        };
+
+        const metadata = buildSeasonMetadata(series, season);
+        expect(metadata.openGraph).toMatchObject({
+          images: [{ url: "https://images.example.com/show.jpg" }],
+        });
+        expect(metadata.twitter).toMatchObject({
+          images: ["https://images.example.com/show.jpg"],
+        });
+        expect(buildSeasonJsonLd(series, season).image).toBe(series.cover_url);
+      },
+    );
+
+    it(
       "builds TVSeason structured data linked to the parent series",
       /* 验证季号、集数、单集名称日期，以及与电视节目详情相同的绝对地址。 */ () => {
         const series = { ...movie, id: "series/1", type: "shows" as const, title: "测试剧集" };

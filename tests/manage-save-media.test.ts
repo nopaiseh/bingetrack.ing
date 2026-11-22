@@ -181,7 +181,6 @@ describe("saveMedia 封面", () => {
   it.each([
     ["movie", { type: "movie", title: "测试电影" }],
     ["tv_show", { type: "tv_show", title: "测试剧集" }],
-    ["tv_episode", { type: "tv_episode", title: "第 8 集", parent_id: season, number: "8" }],
   ] as const)("新建%s保留封面", async (_label, fields) => {
     await saveMedia({}, episodeForm({ ...fields, cover_url: cover, after: "continue" }));
     expect(savedCover()).toBe(cover);
@@ -190,10 +189,48 @@ describe("saveMedia 封面", () => {
   it.each([
     ["movie", { type: "movie", title: "测试电影" }],
     ["tv_show", { type: "tv_show", title: "测试剧集" }],
-    ["tv_episode", { type: "tv_episode", title: "第 8 集", parent_id: season, number: "8" }],
   ] as const)("更新%s保留封面", async (_label, fields) => {
     await saveMedia({}, episodeForm({ id: saved, ...fields, cover_url: cover, after: "continue" }));
     expect(savedCover()).toBe(cover);
     expect(rpc.mock.calls[0][1].p_data.id).toBe(saved);
+  });
+
+  it("新建单集时丢掉提交的封面，写入 null", async () => {
+    await saveMedia(
+      {},
+      episodeForm({
+        type: "tv_episode",
+        title: "第 8 集",
+        parent_id: season,
+        number: "8",
+        cover_url: cover,
+        after: "continue",
+      }),
+    );
+    expect(savedCover()).toBeNull();
+    expect(rpc).toHaveBeenCalledWith(
+      "manage_save_media",
+      expect.objectContaining({
+        p_data: expect.objectContaining({ type: "tv_episode", id: null, cover_url: null }),
+      }),
+    );
+  });
+
+  it("更新单集时丢掉新封面，不改成提交的地址", async () => {
+    await saveMedia(
+      {},
+      episodeForm({
+        id: saved,
+        type: "tv_episode",
+        title: "第 8 集",
+        parent_id: season,
+        number: "8",
+        cover_url: cover,
+        after: "continue",
+      }),
+    );
+    expect(savedCover()).toBeNull();
+    expect(rpc.mock.calls[0][1].p_data.id).toBe(saved);
+    expect(rpc.mock.calls[0][1].p_data.cover_url).not.toBe(cover);
   });
 });
