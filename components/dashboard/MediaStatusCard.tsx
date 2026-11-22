@@ -17,7 +17,7 @@ export default function MediaStatusCard({
   icon: string;
   toneClass: string;
   count: number;
-  unit?: "部" | "首" | "本";
+  unit?: "部" | "首" | "本" | "张";
   details?: string;
   href?: string;
 }) {

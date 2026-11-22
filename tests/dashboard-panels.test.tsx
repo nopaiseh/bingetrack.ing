@@ -109,6 +109,63 @@ describe("OverviewBoards", () => {
   });
 });
 
+describe("DashboardPanels music and books tabs", () => {
+  it("switches to the music and books panels from DashboardPanels", async () => {
+    const { default: DashboardPanels } = await import("@/components/dashboard/DashboardPanels");
+    const summary = [
+      {
+        release_year: "All Time",
+        total_albums: 2,
+        listened_albums: 1,
+        want_albums: 1,
+        total_books: 3,
+        read_books: 1,
+        reading_books: 1,
+        want_books: 1,
+        album_avg_rating: 8,
+        book_avg_rating: 7,
+      } as Summary,
+    ];
+    const stats = statsFor(summary);
+
+    const { rerender } = render(
+      <DashboardPanels
+        stats={stats}
+        activeTab="音乐"
+        selectedYear="All Time"
+        topMediaError={null}
+        isTopMediaLoading={false}
+        topMovies={[]}
+        displayedTopMovies={[]}
+        topSeries={[]}
+        displayedTopSeries={[]}
+      />,
+    );
+
+    expect(screen.getByRole("tabpanel")).toHaveAttribute("id", "dashboard-panel-music");
+    expect(screen.getByText("已听")).toBeInTheDocument();
+    expect(screen.queryByText("影史精选")).not.toBeInTheDocument();
+
+    rerender(
+      <DashboardPanels
+        stats={stats}
+        activeTab="图书"
+        selectedYear="All Time"
+        topMediaError={null}
+        isTopMediaLoading={false}
+        topMovies={[]}
+        displayedTopMovies={[]}
+        topSeries={[]}
+        displayedTopSeries={[]}
+      />,
+    );
+
+    expect(screen.getByRole("tabpanel")).toHaveAttribute("id", "dashboard-panel-books");
+    expect(screen.getByText("已读")).toBeInTheDocument();
+    expect(screen.getByText("在读")).toBeInTheDocument();
+  });
+});
+
 describe("DashboardCategoryPanel", () => {
   it("renders the movie spotlight and a placeholder when the poster is missing", async () => {
     render(

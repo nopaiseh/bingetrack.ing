@@ -34,14 +34,17 @@ function DistributionCard({ title, icon, items }: { title: string; icon: string;
 }
 
 /** 将地区、语言和类型三个维度分别展示为前五名分布卡片。 */
-export default function DistributionTop5Cards({ distribution }: { distribution: MediaDistribution }) {
+export default function DistributionTop5Cards({
+  distribution,
+  regionTitle = "影视产地分布 Top 5",
+}: {
+  distribution: MediaDistribution;
+  /** 地区维度标题；音乐／图书用「产地分布 Top 5」。 */
+  regionTitle?: string;
+}) {
   return (
     <div className="grid grid-cols-1 items-stretch gap-4 md:grid-cols-2 md:gap-6 lg:grid-cols-3">
-      <DistributionCard
-        title="影视产地分布 Top 5"
-        icon="i-material-symbols-public-rounded"
-        items={distribution.regions}
-      />
+      <DistributionCard title={regionTitle} icon="i-material-symbols-public-rounded" items={distribution.regions} />
       <DistributionCard
         title="主要语言 Top 5"
         icon="i-material-symbols-translate-rounded"
