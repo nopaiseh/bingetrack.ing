@@ -13,7 +13,7 @@ export type ResolveBookCoverDeps = {
 
 const OPEN_LIBRARY_COVER = "https://covers.openlibrary.org/b/isbn";
 const GOOGLE_BOOKS_API = "https://www.googleapis.com/books/v1/volumes";
-const FETCH_TIMEOUT_MS = 8_000;
+const FETCH_TIMEOUT_MS = 4_000;
 
 /** 可写入 cover_url／CSP img-src 的图书封面主机。 */
 export const BOOK_COVER_HOSTS = new Set(["covers.openlibrary.org", "books.google.com", "books.googleusercontent.com"]);
