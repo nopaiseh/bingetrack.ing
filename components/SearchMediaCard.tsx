@@ -71,9 +71,23 @@ export function SearchMediaCardSkeleton() {
 }
 
 /**
+ * 标题与主艺人是否实质重复（完全相同，或一方包含另一方的显著片段）。
+ * 例：专辑「杰伦」与艺人「周杰伦」——正文只留标题，避免再出一行艺人。
+ */
+export function musicSearchArtistIsRedundant(title: string, artist: string): boolean {
+  const t = title.trim();
+  const a = artist.trim();
+  if (!t || !a) return false;
+  if (t === a) return true;
+  if (t.length >= 2 && a.includes(t)) return true;
+  if (a.length >= 2 && t.includes(a)) return true;
+  return false;
+}
+
+/**
  * 搜索音乐卡正文：标题 + 主艺人 + 年份／评分。
  * 类型标签只放封面上，避免正文再出一枚「专辑／单曲」；
- * 艺人与标题相同（自命名专辑等）时不重复一行艺人。
+ * 艺人与标题实质重复时不渲染艺人行。
  */
 function MusicSearchBody({ item }: { item: MediaCard }) {
   const year = item.date
@@ -83,7 +97,7 @@ function MusicSearchBody({ item }: { item: MediaCard }) {
       : "未知";
   const title = item.title.trim();
   const artist = (item.artists ?? []).map((name) => name.trim()).find(Boolean) ?? null;
-  const showArtist = Boolean(artist && artist !== title);
+  const showArtist = Boolean(artist && !musicSearchArtistIsRedundant(title, artist));
 
   return (
     <div className="flex min-w-0 grow flex-col space-y-1.5 px-3 py-2.5">

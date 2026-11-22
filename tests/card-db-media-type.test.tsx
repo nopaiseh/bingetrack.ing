@@ -1,7 +1,7 @@
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import MediaRow, { resolveRowDbType } from "@/components/MediaRow";
-import { SearchMediaCard } from "@/components/SearchMediaCard";
+import { SearchMediaCard, musicSearchArtistIsRedundant } from "@/components/SearchMediaCard";
 import { dbTypeToPublicRoute, publicPathForDbType } from "@/lib/media-types";
 import type { MediaCard } from "@/lib/types";
 
@@ -155,18 +155,25 @@ describe("卡片只认数据库类型", () => {
     expect(screen.queryByText("混进单曲")).not.toBeInTheDocument();
   });
 
-  it("SearchMediaCard：艺人与标题相同时正文不重复艺人行；类型只在封面", () => {
+  it("musicSearchArtistIsRedundant：相同或互相包含则视为重复", () => {
+    expect(musicSearchArtistIsRedundant("自命名", "自命名")).toBe(true);
+    expect(musicSearchArtistIsRedundant("杰伦", "周杰伦")).toBe(true);
+    expect(musicSearchArtistIsRedundant("周杰伦精选", "周杰伦")).toBe(true);
+    expect(musicSearchArtistIsRedundant("龙卷风", "周杰伦")).toBe(false);
+    expect(musicSearchArtistIsRedundant("A", "周杰伦")).toBe(false);
+  });
+
+  it("SearchMediaCard：艺人与标题实质重复时正文不重复艺人行；类型只在封面", () => {
     const { container, rerender } = render(
       <SearchMediaCard
-        item={card({ id: "a1", title: "自命名", dbType: "album", artists: ["自命名"], date: "2020-01-01" })}
+        item={card({ id: "a1", title: "杰伦", dbType: "album", artists: ["周杰伦"], date: "2000-01-01" })}
         returnHref="/search"
       />,
     );
-    expect(screen.getByRole("heading", { level: 2, name: "自命名" })).toBeInTheDocument();
-    expect(screen.getByText("2020")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 2, name: "杰伦" })).toBeInTheDocument();
+    expect(screen.getByText("2000")).toBeInTheDocument();
+    expect(screen.queryByText("周杰伦")).not.toBeInTheDocument();
     expect(container.querySelectorAll("p").length).toBe(0);
-    expect(screen.getByText("音乐")).toBeInTheDocument();
-    expect(container.querySelectorAll("span").length).toBeGreaterThan(0);
     // 封面类型徽标存在；正文不再另渲染一枚类型标签
     const typeBadges = Array.from(container.querySelectorAll("span")).filter((el) => el.textContent === "音乐");
     expect(typeBadges).toHaveLength(1);
