@@ -186,12 +186,6 @@ export default function QuickAddDialog({
               </label>
             </div>
           )}
-          {!episode && (
-            <label>
-              封面地址（TMDB）
-              <input name="cover_url" type="url" maxLength={2000} placeholder="https://image.tmdb.org/t/p/original/…" />
-            </label>
-          )}
           <label>
             简介
             <textarea name="summary" rows={3} maxLength={20000} placeholder="输入剧情梗概…" />
