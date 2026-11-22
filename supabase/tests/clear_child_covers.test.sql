@@ -1,5 +1,5 @@
 begin;
-select plan(8);
+select plan(10);
 
 -- 虚构站长；事务结束回滚。
 insert into auth.users(id,email) values
@@ -47,7 +47,7 @@ select lives_ok(
   'movie cover_url still allowed'
 );
 
--- admin_save_media 对提交的封面强制为 NULL。
+-- admin_save_media 对提交的封面强制为 NULL（先写入再断言，避免 WHERE 中重复求值）。
 set local role authenticated;
 do $$ begin perform set_config('request.jwt.claim.sub','c1000000-0000-4000-8000-000000000001',true); end $$;
 
@@ -61,37 +61,39 @@ select lives_ok(
   'owner creates show with cover'
 );
 
-select is(
-  (
-    select cover_url is null
-    from public.media_items
-    where id = public.admin_save_media(jsonb_build_object(
-      'type','tv_season','title','Cover season','status','want_to_watch',
-      'parent_id',(select id from public.media_items where title = 'Cover parent show'),
-      'number',1,
-      'genres','[]'::jsonb,'languages','[]'::jsonb,'regions','[]'::jsonb,
-      'actors','[]'::jsonb,'directors','[]'::jsonb,'collections','[]'::jsonb,
-      'cover_url','https://image.tmdb.org/t/p/w500/season.jpg'
-    ))
-  ),
-  true,
-  'admin_save_media forces tv_season cover_url to null'
+select lives_ok(
+  $$select public.admin_save_media(jsonb_build_object(
+    'type','tv_season','title','Cover season','status','want_to_watch',
+    'parent_id',(select id from public.media_items where title = 'Cover parent show'),
+    'number',1,
+    'genres','[]'::jsonb,'languages','[]'::jsonb,'regions','[]'::jsonb,
+    'actors','[]'::jsonb,'directors','[]'::jsonb,'collections','[]'::jsonb,
+    'cover_url','https://image.tmdb.org/t/p/w500/season.jpg'
+  ))$$,
+  'owner creates season with submitted cover'
 );
 
 select is(
-  (
-    select cover_url is null
-    from public.media_items
-    where id = public.admin_save_media(jsonb_build_object(
-      'type','tv_episode','title','Cover episode','status','want_to_watch','rating',null,
-      'parent_id',(select id from public.media_items where title = 'Cover season'),
-      'number',1,
-      'genres','[]'::jsonb,'languages','[]'::jsonb,'regions','[]'::jsonb,
-      'actors','[]'::jsonb,'directors','[]'::jsonb,'collections','[]'::jsonb,
-      'cover_url','https://image.tmdb.org/t/p/w500/ep.jpg'
-    ))
-  ),
-  true,
+  (select cover_url from public.media_items where title = 'Cover season' and type = 'tv_season'),
+  null,
+  'admin_save_media forces tv_season cover_url to null'
+);
+
+select lives_ok(
+  $$select public.admin_save_media(jsonb_build_object(
+    'type','tv_episode','title','Cover episode','status','want_to_watch','rating',null,
+    'parent_id',(select id from public.media_items where title = 'Cover season' and type = 'tv_season'),
+    'number',1,
+    'genres','[]'::jsonb,'languages','[]'::jsonb,'regions','[]'::jsonb,
+    'actors','[]'::jsonb,'directors','[]'::jsonb,'collections','[]'::jsonb,
+    'cover_url','https://image.tmdb.org/t/p/w500/ep.jpg'
+  ))$$,
+  'owner creates episode with submitted cover'
+);
+
+select is(
+  (select cover_url from public.media_items where title = 'Cover episode' and type = 'tv_episode'),
+  null,
   'admin_save_media forces tv_episode cover_url to null'
 );
 
