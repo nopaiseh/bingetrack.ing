@@ -69,7 +69,7 @@ describe("MusicBookCategoryPanel", () => {
       />,
     );
 
-    expect(screen.getByText("全时段 音乐 阅览进度")).toBeInTheDocument();
+    expect(screen.getByText("全时段 音乐 收听进度")).toBeInTheDocument();
     expect(screen.getByText("已听")).toBeInTheDocument();
     expect(screen.getByText("想听")).toBeInTheDocument();
     expect(screen.getByRole("progressbar", { name: "已听 8 首，共 20 首" })).toBeInTheDocument();
@@ -112,7 +112,7 @@ describe("MusicBookCategoryPanel", () => {
       <MusicBookCategoryPanel stats={statsFor(summary, "2024", distributions)} kind="books" selectedYear="2024" />,
     );
 
-    expect(screen.getByText("2024 图书 阅览进度")).toBeInTheDocument();
+    expect(screen.getByText("2024 图书 阅读进度")).toBeInTheDocument();
     expect(screen.getByText("已读")).toBeInTheDocument();
     expect(screen.getByText("在读")).toBeInTheDocument();
     expect(screen.getByText("想读")).toBeInTheDocument();
@@ -157,7 +157,7 @@ describe("DashboardIntro tabs", () => {
         selectedYear="All Time"
         totalMovies={1}
         totalSeries={1}
-        totalTracks={1}
+        totalAlbums={3}
         totalBooks={1}
         runtimePercent={10}
         tabs={TABS}
@@ -177,6 +177,8 @@ describe("DashboardIntro tabs", () => {
     expect(screen.getByRole("tab", { name: "音乐" })).toHaveAttribute("tabindex", "-1");
     expect(screen.getByRole("tab", { name: "音乐" })).toHaveAttribute("aria-controls", "dashboard-panel-music");
     expect(screen.getByRole("tab", { name: "图书" })).toHaveAttribute("aria-controls", "dashboard-panel-books");
+    // 页头「音乐总计」按专辑数，不按曲目数。
+    expect(screen.getByText("音乐总计").parentElement).toHaveTextContent("3");
 
     screen.getByRole("tab", { name: "总览" }).focus();
     await user.keyboard("{ArrowRight}");

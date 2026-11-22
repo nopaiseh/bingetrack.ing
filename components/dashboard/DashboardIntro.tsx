@@ -10,7 +10,7 @@ export default function DashboardIntro({
   selectedYear,
   totalMovies,
   totalSeries,
-  totalTracks,
+  totalAlbums,
   totalBooks,
   runtimePercent,
   tabs,
@@ -23,7 +23,8 @@ export default function DashboardIntro({
   selectedYear: string;
   totalMovies: number;
   totalSeries: number;
-  totalTracks: number;
+  /** 与音乐标签卡片一致：按专辑数，不用曲目数。 */
+  totalAlbums: number;
   totalBooks: number;
   runtimePercent: number;
   tabs: readonly DashboardTab[];
@@ -36,7 +37,7 @@ export default function DashboardIntro({
   const totals = [
     { label: "电影总计", value: totalMovies },
     { label: "电视节目总计", value: totalSeries },
-    { label: "音乐总计", value: totalTracks },
+    { label: "音乐总计", value: totalAlbums },
     { label: "图书总计", value: totalBooks },
     { label: "完成进度", value: runtimePercent, accent: true as const },
   ];

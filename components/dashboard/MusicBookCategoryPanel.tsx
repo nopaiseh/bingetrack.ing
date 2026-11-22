@@ -59,7 +59,7 @@ export default function MusicBookCategoryPanel({
             <div className="surface-card col-span-1 flex flex-col justify-center rounded-2xl p-4 sm:p-5 lg:col-span-3 lg:p-6">
               <div className="mb-4 flex items-center justify-between text-fg-secondary">
                 <h3 className="text-lg font-semibold">
-                  {yearLabel} {categoryName} 阅览进度
+                  {yearLabel} {categoryName} {isMusic ? "收听进度" : "阅读进度"}
                 </h3>
                 <p className="font-mono text-xs text-fg-muted sm:text-sm">
                   共 <AnimatedNumber value={total} /> {unit}
