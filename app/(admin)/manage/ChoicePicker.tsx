@@ -186,7 +186,6 @@ export default function ChoicePicker({
       const without = selected.filter((item) => !same(item, choice));
       // 新增项时若已达上限则忽略；替换同名／同 ID 仍允许。
       if (without.length === selected.length && atMax) return;
-      if (without.length === selected.length && maxSelections != null && without.length >= maxSelections) return;
       change([...without, choice].slice(0, maxSelections ?? undefined));
     } else {
       change([choice]);
