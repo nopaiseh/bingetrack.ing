@@ -245,7 +245,7 @@ export default function UpcomingHero({ items, renderedOn }: UpcomingHeroProps) {
 
           {/* 右侧大海报 + 轮播控件；窄屏居中叠在文案上方。 */}
           <div
-            className="order-1 mx-auto flex w-[min(100%,13.5rem)] shrink-0 flex-col gap-3 sm:w-60 lg:order-2 lg:mx-0 lg:w-72 xl:w-80"
+            className="order-1 mx-auto flex w-[min(100%,14rem)] shrink-0 flex-col gap-3 sm:w-64 lg:order-2 lg:mx-0 lg:w-80 xl:w-[22rem]"
             onTouchStart={(event) => {
               touchStartX.current = event.touches[0]?.clientX ?? null;
             }}
