@@ -139,9 +139,11 @@ export default function UpcomingHero({ items, renderedOn }: UpcomingHeroProps) {
               src={currentItem.cover_url}
               alt=""
               fill
-              sizes="100vw"
+              // 装饰虚化底图：小尺寸足够，避免 sizes=100vw 拉 2–3k 宽图；不抢 LCP。
+              sizes="96px"
+              quality={40}
+              loading="lazy"
               className="object-cover object-center"
-              loading={prioritizePoster ? "eager" : "lazy"}
             />
           </div>
         ) : (

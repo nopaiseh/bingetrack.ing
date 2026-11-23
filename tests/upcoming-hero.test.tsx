@@ -198,6 +198,13 @@ test("有海报时用虚化海报作全幅背景，锐利海报在前景", () =>
   expect(hero.querySelector('[aria-hidden="true"] .upcoming-hero-backdrop')).toBeInTheDocument();
   expect(screen.getByRole("link", { name: "查看《沙丘3》详情" })).toBeInTheDocument();
   expect(container.querySelectorAll("img").length).toBeGreaterThanOrEqual(1);
+  // 虚化底图只用小尺寸、懒加载，不与前景大海报抢带宽。
+  const backdropImg = hero.querySelector(".upcoming-hero-backdrop img");
+  expect(backdropImg).toHaveAttribute("sizes", "96px");
+  expect(backdropImg).toHaveAttribute("loading", "lazy");
+  const posterImg = hero.querySelector(".upcoming-hero-poster img");
+  expect(posterImg).toBeTruthy();
+  expect(posterImg).not.toHaveAttribute("sizes", "96px");
 });
 
 test("只有一条时不显示箭头和进度条", () => {
