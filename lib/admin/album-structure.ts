@@ -11,6 +11,8 @@ export type AlbumTrackItem = {
   title: string;
   durationSeconds: number | null;
   listened: boolean;
+  /** 是否已关联至少一种语言（media_languages）；结构栏缺语言提示用。 */
+  hasLanguages: boolean;
 };
 
 /** 专辑艺人（人物 ID + 姓名）；供快速加曲目预填演唱艺人。 */
@@ -75,10 +77,27 @@ async function readTracks(db: SupabaseClient, albumId: string): Promise<AlbumTra
         title: media?.title ?? "",
         durationSeconds: media?.runtime != null ? Number(media.runtime) : null,
         listened: one(media?.tracking)?.status === "watched",
+        hasLanguages: false,
       });
     }
-    if ((data?.length ?? 0) < TRACK_CHUNK) return tracks;
+    if ((data?.length ?? 0) < TRACK_CHUNK) break;
   }
+  if (tracks.length === 0) return tracks;
+
+  const withLanguages = new Set<string>();
+  for (let offset = 0; offset < tracks.length; offset += TRACK_CHUNK) {
+    const chunk = tracks.slice(offset, offset + TRACK_CHUNK).map((track) => track.id);
+    const { data, error } = await db.from("media_languages").select("media_item_id").in("media_item_id", chunk);
+    if (error) throw new Error("无法读取曲目结构，请重试。");
+    for (const row of data ?? []) {
+      const id = (row as { media_item_id?: string }).media_item_id;
+      if (typeof id === "string") withLanguages.add(id);
+    }
+  }
+  for (const track of tracks) {
+    track.hasLanguages = withLanguages.has(track.id);
+  }
+  return tracks;
 }
 
 /**

@@ -116,6 +116,61 @@ describe("readEditableMedia", () => {
     expect(result?.rating).toBe(8.8);
   });
 
+  it("读取专辑时语言取自 v_all_media（曲目并集），地区仍取 media_regions", async () => {
+    const albumId = "66666666-6666-4666-8666-666666666666";
+    const mockDb = {
+      from: vi.fn((table: string) => ({
+        select: vi.fn(() => ({
+          eq: vi.fn(() => ({
+            maybeSingle: vi.fn(async () => {
+              if (table === "media_items") {
+                return {
+                  data: {
+                    id: albumId,
+                    type: "album",
+                    title: "摩天动物园",
+                  },
+                  error: null,
+                };
+              }
+              if (table === "v_all_media") {
+                return {
+                  data: { status: "watching", rating: 8.2, languages: ["国语", "粤语"] },
+                  error: null,
+                };
+              }
+              if (table === "music_albums") {
+                return { data: { label: "蜂鸟音乐" }, error: null };
+              }
+              return { data: null, error: null };
+            }),
+            order: vi.fn(async () => ({ data: [], error: null })),
+            then: (resolve: (val: unknown) => void) => {
+              if (table === "media_regions") {
+                resolve({ data: [{ regions: { name: "香港" } }], error: null });
+              } else if (table === "media_languages") {
+                // 专辑行上的直连语言应被视图并集覆盖。
+                resolve({ data: [{ languages: { name: "应被忽略" } }], error: null });
+              } else {
+                resolve({ data: [], error: null });
+              }
+            },
+          })),
+        })),
+      })),
+    } as unknown as SupabaseClient;
+
+    const result = await readEditableMedia(mockDb, albumId);
+    expect(result).toMatchObject({
+      type: "album",
+      languages: ["国语", "粤语"],
+      regions: ["香港"],
+      status: "watching",
+      rating: 8.2,
+      label: "蜂鸟音乐",
+    });
+  });
+
   it("读取曲目时返回所属专辑、曲序与当前类型以便表单预填", async () => {
     const trackId = "44444444-4444-4444-8444-444444444444";
     const albumId = "55555555-5555-4555-8555-555555555555";

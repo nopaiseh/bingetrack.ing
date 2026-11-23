@@ -204,7 +204,7 @@ describe("管理媒体输入", () => {
         { id: null, name: "歌手乙" },
       ],
       genres: ["流行"],
-      languages: ["国语"],
+      languages: [],
       regions: ["台湾"],
       actors: [],
       directors: [],
@@ -224,6 +224,7 @@ describe("管理媒体输入", () => {
         lyricists: "\t作词人",
         composers: "\t作曲人",
         genres: "流行",
+        languages: "国语",
       }),
     );
     expect(track).toMatchObject({
@@ -235,6 +236,7 @@ describe("管理媒体输入", () => {
       rating: 8.5,
       cover_url: null,
       genres: ["流行"],
+      languages: ["国语"],
       artists: [{ id: null, name: "主唱" }],
       lyricists: [{ id: null, name: "作词人" }],
       composers: [{ id: null, name: "作曲人" }],
@@ -382,17 +384,17 @@ describe("管理媒体输入", () => {
     expect(movieResult.genres).toEqual(["动作", "剧情"]);
     expect(movieResult.actors).toEqual([{ id: null, name: "演员一", character: null }]);
 
-    // 曲目仍强制清空语言／地区；专辑与图书保留提交值。
+    // 曲目可写语言、仍清空地区；专辑语言改为只读汇总（保存时清空），地区保留。
     const trackForm = form({
       type: "music",
       title: "曲目",
       parent_id: parentId,
       number: "1",
-      languages: "英语",
+      languages: "英语\n粤语",
       regions: "美国",
     });
     const trackResult = parseMediaForm(trackForm);
-    expect(trackResult.languages).toEqual([]);
+    expect(trackResult.languages).toEqual(["英语", "粤语"]);
     expect(trackResult.regions).toEqual([]);
 
     const albumTaxonomy = parseMediaForm(
@@ -403,7 +405,7 @@ describe("管理媒体输入", () => {
         regions: "香港",
       }),
     );
-    expect(albumTaxonomy.languages).toEqual(["国语", "粤语"]);
+    expect(albumTaxonomy.languages).toEqual([]);
     expect(albumTaxonomy.regions).toEqual(["香港"]);
 
     const bookTaxonomy = parseMediaForm(

@@ -31,6 +31,23 @@ describe("MusicCardBody", () => {
     expect(screen.getByText("城市民谣")).toBeInTheDocument();
   });
 
+  it("appends one language chip after genres, capped at three tags", () => {
+    render(
+      <MusicCardBody item={album({ genres: ["独立流行", "城市民谣"], languages: ["国语", "粤语"] })} />,
+    );
+    expect(screen.getByText("独立流行")).toBeInTheDocument();
+    expect(screen.getByText("城市民谣")).toBeInTheDocument();
+    expect(screen.getByText("国语")).toBeInTheDocument();
+    expect(screen.queryByText("粤语")).not.toBeInTheDocument();
+    expect(screen.getByLabelText("类型与语言：独立流行、城市民谣、国语")).toBeInTheDocument();
+  });
+
+  it("shows a lone language chip when genres are empty", () => {
+    render(<MusicCardBody item={album({ genres: [], languages: ["粤语"] })} />);
+    expect(screen.getByText("粤语")).toBeInTheDocument();
+    expect(screen.getByLabelText("类型与语言：粤语")).toBeInTheDocument();
+  });
+
   it("shows 未评分 and keeps genre row height when empty", () => {
     const { container } = render(
       <MusicCardBody item={album({ rating: null, genres: [], artists: [] })} artistFallback="dash" />,

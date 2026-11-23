@@ -2,6 +2,7 @@ import Image from "next/image";
 import { Suspense } from "react";
 import MediaBackLink, { DefaultMediaBackLink } from "@/components/MediaBackLink";
 import LetterTile from "@/components/LetterTile";
+import SearchTag from "@/components/SearchTag";
 import { ownershipLabel, type OwnershipStatus } from "@/lib/album-display";
 import { listenStatusLabel } from "@/lib/listen-status";
 import { ratingTierLabel } from "@/components/MediaRatingBadge";
@@ -53,6 +54,9 @@ export default function AlbumDetailHeader({
   const listenLabel = listenStatusLabel(media.status);
   const artistLine = artists.filter(Boolean).join("、");
   const alternate = media.alternate_title && media.alternate_title !== media.title ? media.alternate_title : null;
+  const languages = media.languages ?? [];
+  const regions = media.regions ?? [];
+  const hasTaxonomyTags = languages.length > 0 || regions.length > 0;
 
   const metaItems = [
     artistLine ? <span key="artist">{artistLine}</span> : null,
@@ -113,6 +117,16 @@ export default function AlbumDetailHeader({
                   ],
             )}
           </p>
+          {hasTaxonomyTags ? (
+            <div className="mt-3 flex flex-wrap gap-2" aria-label="地区与语言">
+              {regions.map((name) => (
+                <SearchTag key={`region-${name}`} label={name} category="region" />
+              ))}
+              {languages.map((name) => (
+                <SearchTag key={`language-${name}`} label={name} category="language" />
+              ))}
+            </div>
+          ) : null}
         </div>
       </div>
     </header>
