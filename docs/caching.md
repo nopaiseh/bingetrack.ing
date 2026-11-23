@@ -17,7 +17,7 @@
 | `/shows/[id]/seasons/[seasonId]`    | 按需 ISR，`generateStaticParams` 返回空数组 | 默认季页（第 1 页、全部、升序）首次访问时生成，之后缓存 24 小时。页面不读取分页或筛选参数；节目详情、季摘要、单集分页和下一集走数据缓存 |
 | `/search`                           | 动态                                        | 首屏结果只对部分条件走数据缓存（见下）                                                                                                  |
 | `/api/media`                        | 动态                                        | `s-maxage=30, stale-while-revalidate=120`，只有 CDN 缓存，不写数据缓存                                                                  |
-| `/api/top-media`                    | 动态                                        | `s-maxage=60`，底层数据走数据缓存；条数固定为 10，缓存键只随类型和年份变化                                                              |
+| `/api/top-media`                    | 动态                                        | `s-maxage=60`，底层数据走数据缓存；条数固定为 10，类型为 `movie`／`tv_show`／`album`／`book`，缓存键只随类型和年份变化                  |
 
 `npm run build` 输出的路由表标出了每条路由是 ○（静态）、●（SSG）还是 ƒ（动态），以及 revalidate 时间。改动公开页面后应对比前后的路由表，确认没有意外变化。
 
@@ -34,7 +34,7 @@
 | 单集分页与季统计             | `public-season-episodes-v2` + 节目 ID／季 ID／页码／每页条数／状态／排序 | 24 小时 | `media`、`media:item:<节目 ID>` |
 | 下一集                       | `public-season-next-episode-v1` + 节目 ID／季 ID                         | 24 小时 | `media`、`media:item:<节目 ID>` |
 | 搜索首屏                     | `public-media-search-v3` + 查询串                                        | 1 小时  | `media`、`media:lists`          |
-| 榜单                         | `public-media-top-v3` + 类型／年份／条数（固定 10）                      | 24 小时 | `media`、`media:lists`          |
+| 榜单                         | `public-media-top-v4` + 类型／年份／条数（固定 10；类型含 album／book）  | 24 小时 | `media`、`media:lists`          |
 | 即将上映、分布统计、年度统计 | `public-media-*-v2`                                                      | 24 小时 | `media`、`media:lists`          |
 | 首页继续看                   | `public-media-continue-watching-v1`                                      | 24 小时 | `media`、`media:lists`          |
 | 搜索筛选选项                 | `search-options-v2`                                                      | 24 小时 | `media`、`media:lists`          |

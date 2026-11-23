@@ -92,8 +92,9 @@ export const searchCachedMedia = unstable_cache(
 );
 
 // 榜单数据按类型、年份与数量缓存；写入走 media:lists。
+// v4：select 增加 authors，并支持 album／book 类型键。
 export const getCachedTopMediaServer = cache(
-  unstable_cache(fetchTopMediaServer, ["public-media-top-v3"], {
+  unstable_cache(fetchTopMediaServer, ["public-media-top-v4"], {
     revalidate: false,
     tags: [MEDIA_TAG, MEDIA_LISTS_TAG],
   }),

@@ -20,9 +20,9 @@ export class MediaRepositoryError extends Error {
 // 详情仍走 select("*")，会带上 authors。
 export const MEDIA_CARD_COLUMNS =
   "id,type,title,sort_date,first_air_date,last_air_date,release_year,rating,genres,languages,cover_url,status,artists";
-// 榜单精选读取卡片字段及简介摘要，供首页展台和精选展示使用。
+// 榜单精选读取卡片字段、简介摘要与 authors（v_all_media 自 books_backend／后续视图重建起已暴露该列）。
 export const TOP_MEDIA_COLUMNS =
-  "id,type,title,sort_date,first_air_date,last_air_date,release_year,rating,genres,languages,cover_url,status,summary,artists";
+  "id,type,title,sort_date,first_air_date,last_air_date,release_year,rating,genres,languages,cover_url,status,summary,artists,authors";
 
 // v_all_media 实际输出的观看／阅读状态。
 export const WATCH_STATUSES = new Set(["want_to_watch", "watching", "watched", "in_progress"]);

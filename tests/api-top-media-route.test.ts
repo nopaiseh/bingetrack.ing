@@ -33,6 +33,18 @@ describe("GET /api/top-media 热门榜接口", () => {
     expect(getCachedTopMediaServer).toHaveBeenCalledWith("movie", "2014", 10);
   });
 
+  it.each([
+    ["album", "2020", [{ id: "a1", title: "叶惠美", type: "albums" as const, rating: 9.2, artists: ["周杰伦"] }]],
+    ["book", "2019", [{ id: "b1", title: "三体", type: "books" as const, rating: 9.0, authors: ["刘慈欣"] }]],
+  ] as const)("接受 type=%s 精选并走缓存查询", async (type, year, items) => {
+    vi.mocked(getCachedTopMediaServer).mockResolvedValue(items as never);
+
+    const response = await get(`type=${type}&year=${year}`);
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual(items);
+    expect(getCachedTopMediaServer).toHaveBeenCalledWith(type, year, 10);
+  });
+
   it("空榜单返回 200 与空数组", async () => {
     const response = await get("type=tv_show");
     expect(response.status).toBe(200);
@@ -40,7 +52,7 @@ describe("GET /api/top-media 热门榜接口", () => {
     expect(getCachedTopMediaServer).toHaveBeenCalledWith("tv_show", null, 10);
   });
 
-  it.each(["", "type=album", "type=book", "type=music", "type=movie&year=not-a-year", "year=2024"])(
+  it.each(["", "type=music", "type=movie&year=not-a-year", "year=2024"])(
     "非法参数返回 400，不查询榜单：%s",
     async (query) => {
       const response = await get(query);

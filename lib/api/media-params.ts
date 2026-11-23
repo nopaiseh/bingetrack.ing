@@ -10,8 +10,10 @@ export class ApiValidationError extends Error {
   }
 }
 
-/** 搜索 type= 白名单：目录类型 + music（单曲）；精选榜单仍只用 movie／tv_show。 */
+/** 搜索 type= 白名单：目录类型 + music（单曲）；精选榜单另见 parseTopMediaParams。 */
 const MEDIA_TYPES = new Set<string>(SEARCH_DB_TYPES);
+/** 精选榜单 type=：电影／电视／专辑／图书；不含 music（单曲）。 */
+const TOP_MEDIA_TYPES = new Set(["movie", "tv_show", "album", "book"]);
 const CREDIT_ROLES = new Set(["director", "actor", "author", "artist", "lyricist", "composer"]);
 // 与 v_all_media 实际产生的状态一致；含图书在读 in_progress；视图不会输出 "unwatched"。
 const STATUSES = new Set(["want_to_watch", "watching", "watched", "in_progress"]);
@@ -89,18 +91,18 @@ export function parseMediaSearchParams(searchParams: URLSearchParams): FetchMedi
 // 榜单条数固定，不接受请求参数，数据缓存的键只随类型和年份变化。
 export const TOP_MEDIA_LIMIT = 10;
 
-/** 只接受电影或电视节目榜单并校验可选年份；条数固定为 TOP_MEDIA_LIMIT。专辑虽已进公开目录，但不走精选榜单接口。 */
+/** 接受电影／电视／专辑／图书榜单并校验可选年份；条数固定为 TOP_MEDIA_LIMIT。单曲 music 不进精选。 */
 export function parseTopMediaParams(searchParams: URLSearchParams): {
-  type: "movie" | "tv_show";
+  type: "movie" | "tv_show" | "album" | "book";
   year: string | null;
   limit: number;
 } {
   const type = searchParams.get("type");
-  // 精选榜单仅电影／电视；album 已是目录类型，但不能用 isCatalogDbMediaType 代替此白名单。
-  if (type !== "movie" && type !== "tv_show") {
+  // 精选白名单显式列类型；不能用 isCatalogDbMediaType 代替（避免误放行其他目录类型）。
+  if (!type || !TOP_MEDIA_TYPES.has(type)) {
     throw new ApiValidationError("Invalid media type");
   }
 
   const year = parseYear(searchParams.get("year"), "year") ?? null;
-  return { type, year, limit: TOP_MEDIA_LIMIT };
+  return { type: type as "movie" | "tv_show" | "album" | "book", year, limit: TOP_MEDIA_LIMIT };
 }

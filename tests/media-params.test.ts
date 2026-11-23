@@ -49,6 +49,16 @@ test(
       year: "2024",
       limit: 10,
     });
+    assert.deepEqual(parseTopMediaParams(new URLSearchParams({ type: "album", year: "2023" })), {
+      type: "album",
+      year: "2023",
+      limit: 10,
+    });
+    assert.deepEqual(parseTopMediaParams(new URLSearchParams({ type: "book", limit: "99" })), {
+      type: "book",
+      year: null,
+      limit: 10,
+    });
     assert.throws(
       /** 传入非年份文本以验证榜单参数拒绝该值。 */
       () => parseTopMediaParams(new URLSearchParams({ type: "movie", year: "all" })),
@@ -82,6 +92,7 @@ test("accepts only a single whitelisted sort and statuses the view produces", ()
 test("accepts type=music for singles search without enabling top-media", () => {
   assert.equal(parseMediaSearchParams(new URLSearchParams({ type: "music" })).type, "music");
   assert.throws(() => parseTopMediaParams(new URLSearchParams({ type: "music" })), /Invalid media type/);
+  assert.throws(() => parseTopMediaParams(new URLSearchParams({ type: "documentary" })), /Invalid media type/);
 });
 
 test("accepts book and music person credit roles including lyricist and composer", () => {
