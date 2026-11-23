@@ -32,7 +32,7 @@ describe("book form validation", () => {
     return data;
   }
 
-  it("parses authors, page_count, publisher, isbn and reading status", () => {
+  it("parses authors, page_count, publisher, isbn, regions and reading status", () => {
     expect(
       parseMediaForm(
         form({
@@ -40,6 +40,8 @@ describe("book form validation", () => {
           publisher: "测验社",
           isbn: "978-0-306-40615-7",
           authors: "\t作者甲\n\t作者乙",
+          languages: "汉语",
+          regions: "中国\n美国",
           status: "in_progress",
         }),
       ),
@@ -49,6 +51,8 @@ describe("book form validation", () => {
       publisher: "测验社",
       isbn: "9780306406157",
       status: "in_progress",
+      languages: ["汉语"],
+      regions: ["中国", "美国"],
       authors: [
         { id: null, name: "作者甲" },
         { id: null, name: "作者乙" },

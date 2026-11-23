@@ -186,6 +186,8 @@ describe("管理媒体输入", () => {
         cover_url: "https://is1-ssl.mzstatic.com/image/thumb/Music/cover.jpg",
         artists: "\t歌手甲\n\t歌手乙",
         genres: "流行",
+        languages: "国语",
+        regions: "台湾",
         label: "测试厂牌",
         rating: "9",
         runtime: "40",
@@ -202,6 +204,8 @@ describe("管理媒体输入", () => {
         { id: null, name: "歌手乙" },
       ],
       genres: ["流行"],
+      languages: ["国语"],
+      regions: ["台湾"],
       actors: [],
       directors: [],
     });
@@ -377,5 +381,40 @@ describe("管理媒体输入", () => {
     const movieResult = parseMediaForm(movieForm);
     expect(movieResult.genres).toEqual(["动作", "剧情"]);
     expect(movieResult.actors).toEqual([{ id: null, name: "演员一", character: null }]);
+
+    // 曲目仍强制清空语言／地区；专辑与图书保留提交值。
+    const trackForm = form({
+      type: "music",
+      title: "曲目",
+      parent_id: parentId,
+      number: "1",
+      languages: "英语",
+      regions: "美国",
+    });
+    const trackResult = parseMediaForm(trackForm);
+    expect(trackResult.languages).toEqual([]);
+    expect(trackResult.regions).toEqual([]);
+
+    const albumTaxonomy = parseMediaForm(
+      form({
+        type: "album",
+        title: "专辑",
+        languages: "国语\n粤语",
+        regions: "香港",
+      }),
+    );
+    expect(albumTaxonomy.languages).toEqual(["国语", "粤语"]);
+    expect(albumTaxonomy.regions).toEqual(["香港"]);
+
+    const bookTaxonomy = parseMediaForm(
+      form({
+        type: "book",
+        title: "图书",
+        languages: "汉语",
+        regions: "中国",
+      }),
+    );
+    expect(bookTaxonomy.languages).toEqual(["汉语"]);
+    expect(bookTaxonomy.regions).toEqual(["中国"]);
   });
 });

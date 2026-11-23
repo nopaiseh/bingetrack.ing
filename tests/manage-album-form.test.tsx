@@ -58,7 +58,32 @@ it("专辑表单展示厂牌、艺人选择器与正方形无封面占位", () =
   expect(screen.getByRole("heading", { name: "艺人" })).toBeInTheDocument();
   expect(screen.getByText("周杰伦")).toBeInTheDocument();
   expect(screen.getByLabelText("发行日期")).toBeInTheDocument();
+  expect(screen.getByLabelText("类型标签")).toBeInTheDocument();
+  expect(screen.getByLabelText("系列")).toBeInTheDocument();
+  expect(screen.getByLabelText("地区")).toBeInTheDocument();
+  expect(screen.getByLabelText("语言")).toBeInTheDocument();
   expect(screen.queryByLabelText("时长（秒）")).not.toBeInTheDocument();
+});
+
+it("编辑页预填专辑地区与语言", () => {
+  render(
+    <MediaForm
+      initialType="album"
+      lockType
+      item={{
+        id: "a1",
+        type: "album",
+        title: "叶惠美",
+        ...blank,
+        label: "阿尔发音乐",
+        languages: ["国语"],
+        regions: ["台湾"],
+        artists: [{ id: "p1", name: "周杰伦", alternate_name: null }],
+      }}
+    />,
+  );
+  expect(screen.getByText("台湾")).toBeInTheDocument();
+  expect(screen.getByText("国语")).toBeInTheDocument();
 });
 
 it("曲目表单要求曲序与所属专辑，时长为整数秒，创作人员用人物选择器", () => {
