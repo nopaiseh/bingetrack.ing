@@ -128,48 +128,54 @@ export default function HomeDashboard({
   const isTopMediaLoading = topMediaLoading && selectedYear !== "All Time";
 
   // 放映单固定先倒计时、再在看、再在听、再在读。没有内容的那一块返回 null，这里不包额外节点，避免空区块撑出间距。
+  // 倒计时展台全幅铺开，需跳出内容栏；其余区块仍落在 max-w-7xl 容器里。
   const continueWatchingRail = <ContinueWatchingRail items={continueWatching} />;
   const continueListeningRail = <ContinueListeningRail items={continueListening} />;
   const currentlyReadingRail = <CurrentlyReadingRail items={currentlyReading} />;
   const upcomingHero = <UpcomingHero items={upcoming} renderedOn={renderedOn} />;
+  const hasUpcomingLead = upcoming.length > 0;
 
   return (
-    <div className="container mx-auto flex max-w-7xl flex-col gap-4 px-4 pb-8 pt-20 sm:gap-5 sm:px-6 sm:pt-22 md:pb-12 lg:px-8 lg:pt-24">
+    <div className="flex flex-col gap-4 sm:gap-5">
       {upcomingHero}
-      {continueWatchingRail}
-      {continueListeningRail}
-      {currentlyReadingRail}
+      <div
+        className={`container mx-auto flex max-w-7xl flex-col gap-4 px-4 pb-8 sm:gap-5 sm:px-6 md:pb-12 lg:px-8 ${hasUpcomingLead ? "pt-2 sm:pt-3" : "pt-20 sm:pt-22 lg:pt-24"}`}
+      >
+        {continueWatchingRail}
+        {continueListeningRail}
+        {currentlyReadingRail}
 
-      <DashboardIntro
-        selectedYear={selectedYear}
-        totalMovies={stats.totalMovies}
-        totalSeries={stats.totalSeries}
-        totalAlbums={stats.totalAlbums}
-        totalBooks={stats.totalBooks}
-        runtimePercent={stats.runtimePercent}
-        tabs={tabs}
-        tabIds={tabIds}
-        activeTab={activeTab}
-        onSelectTab={setActiveTab}
-        years={summary.map(/* 提取统计行的年份，供年份选择器使用。 */ (item) => item.release_year)}
-        onSelectYear={setSelectedYear}
-      />
+        <DashboardIntro
+          selectedYear={selectedYear}
+          totalMovies={stats.totalMovies}
+          totalSeries={stats.totalSeries}
+          totalAlbums={stats.totalAlbums}
+          totalBooks={stats.totalBooks}
+          runtimePercent={stats.runtimePercent}
+          tabs={tabs}
+          tabIds={tabIds}
+          activeTab={activeTab}
+          onSelectTab={setActiveTab}
+          years={summary.map(/* 提取统计行的年份，供年份选择器使用。 */ (item) => item.release_year)}
+          onSelectYear={setSelectedYear}
+        />
 
-      <DashboardPanels
-        stats={stats}
-        activeTab={activeTab}
-        selectedYear={selectedYear}
-        topMediaError={topMediaError}
-        isTopMediaLoading={isTopMediaLoading}
-        topMovies={topMovies}
-        displayedTopMovies={displayedTopMovies}
-        topSeries={topSeries}
-        displayedTopSeries={displayedTopSeries}
-        topAlbums={topAlbums}
-        displayedTopAlbums={displayedTopAlbums}
-        topBooks={topBooks}
-        displayedTopBooks={displayedTopBooks}
-      />
+        <DashboardPanels
+          stats={stats}
+          activeTab={activeTab}
+          selectedYear={selectedYear}
+          topMediaError={topMediaError}
+          isTopMediaLoading={isTopMediaLoading}
+          topMovies={topMovies}
+          displayedTopMovies={displayedTopMovies}
+          topSeries={topSeries}
+          displayedTopSeries={displayedTopSeries}
+          topAlbums={topAlbums}
+          displayedTopAlbums={displayedTopAlbums}
+          topBooks={topBooks}
+          displayedTopBooks={displayedTopBooks}
+        />
+      </div>
     </div>
   );
 }
