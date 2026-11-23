@@ -1,5 +1,6 @@
 begin;
 select plan(10);
+-- 专辑 languages 已下放到单曲（见 track_languages 迁移）；本文件仍覆盖专辑 regions 与图书 languages／regions。
 
 -- 虚构站长；事务结束回滚。
 insert into auth.users(id,email) values
@@ -51,7 +52,7 @@ grant execute on function pg_temp.book_payload(text, jsonb, jsonb, jsonb, jsonb)
 set local role authenticated;
 do $$ begin perform set_config('request.jwt.claim.sub','e1000000-0000-4000-8000-000000000001',true); end $$;
 
--- 专辑：languages + regions，并保留 genres／artists。
+-- 专辑：regions 仍可写；languages 在 payload 中被忽略；保留 genres／artists。
 select lives_ok(
   $$insert into album_book_lr_ids(name, id)
     values (
@@ -63,7 +64,7 @@ select lives_ok(
         '["日本","美国"]'::jsonb
       ))
     )$$,
-  'album saves with languages and regions'
+  'album saves with regions; languages in payload ignored'
 );
 
 select is(
@@ -91,13 +92,12 @@ select is(
 
 select is(
   (
-    select array_agg(l.name order by l.name)
+    select count(*)::integer
     from public.media_languages ml
-    join public.languages l on l.id = ml.language_id
     where ml.media_item_id = (select id from album_book_lr_ids where name = 'album')
   ),
-  array['日语','英语'],
-  'album languages persist'
+  0,
+  'album languages in payload are not written'
 );
 
 select is(

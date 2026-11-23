@@ -181,7 +181,8 @@ describe("saveMusicMedia", () => {
           cover_url: "https://is1-ssl.mzstatic.com/image/thumb/Music/auto.jpg",
           label: "厂牌",
           artists: [{ id: null, name: "艺人" }],
-          languages: ["国语"],
+          // 语言记在单曲上；专辑 RPC 负载不发 languages。
+          languages: [],
           regions: ["台湾"],
         }),
         p_tracks: [],
@@ -342,6 +343,31 @@ describe("saveMusicMedia", () => {
     expect(db.rpc).toHaveBeenLastCalledWith(
       "admin_save_media",
       expect.objectContaining({ p_data: expect.objectContaining({ genres: ["流行", "说唱"] }) }),
+    );
+  });
+
+  it("曲目语言写入 RPC；地区不发；专辑不发语言", async () => {
+    const from = vi.fn(trackGuardFrom());
+    const db = dbWithRpc(async () => ({ data: trackId, error: null }), from);
+    await saveMusicMedia(db as never, trackPayload({ languages: ["国语", "粤语"], regions: ["台湾"] }));
+    expect(db.rpc).toHaveBeenCalledWith(
+      "admin_save_media",
+      expect.objectContaining({
+        p_data: expect.objectContaining({
+          type: "music",
+          languages: ["国语", "粤语"],
+          regions: [],
+        }),
+      }),
+    );
+
+    const albumDb = dbWithRpc(async () => ({ data: albumId, error: null }));
+    await saveMusicMedia(albumDb as never, albumPayload({ languages: ["日语"], regions: ["日本"] }));
+    expect(albumDb.rpc).toHaveBeenCalledWith(
+      "admin_save_album_with_tracks",
+      expect.objectContaining({
+        p_album: expect.objectContaining({ languages: [], regions: ["日本"] }),
+      }),
     );
   });
 

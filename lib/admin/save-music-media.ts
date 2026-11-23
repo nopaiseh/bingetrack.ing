@@ -45,6 +45,8 @@ function creditPayload(people: PersonRef[]) {
 
 /** 组装 manage_save_media／admin_save_media 可接受的 jsonb 负载。 */
 function mediaRpcPayload(payload: MediaInput) {
+  const isAlbum = payload.type === "album";
+  const isMusic = payload.type === "music";
   return {
     id: payload.id,
     type: payload.type,
@@ -59,8 +61,10 @@ function mediaRpcPayload(payload: MediaInput) {
     status: payload.status === "watched" ? "watched" : "want_to_watch",
     rating: payload.rating,
     genres: payload.genres,
-    languages: payload.languages,
-    regions: payload.regions,
+    // 语言记在单曲上；专辑不发 languages（RPC 端也会忽略）。
+    languages: isAlbum ? [] : payload.languages,
+    // 地区仍在专辑；单曲不发 regions。
+    regions: isMusic ? [] : payload.regions,
     actors: payload.actors,
     directors: payload.directors,
     artists: creditPayload(payload.artists),
