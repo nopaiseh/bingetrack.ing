@@ -110,6 +110,14 @@ export default function AlbumRail({
                   </span>
                   <span className="min-w-0 flex-1 truncate">{track.title}</span>
                   <span className="font-mono text-[11px] text-fg-muted">{formatSeconds(track.durationSeconds)}</span>
+                  {!track.hasLanguages ? (
+                    <span
+                      className="size-1.5 shrink-0 rounded-full bg-[var(--warn)]"
+                      title="未设语言"
+                      role="img"
+                      aria-label="未设语言"
+                    />
+                  ) : null}
                   <StatusDot status={track.listened ? "watched" : "want_to_watch"} />
                 </Link>
               </li>
@@ -122,7 +130,7 @@ export default function AlbumRail({
         <span className="i-material-symbols-add-rounded size-4.5" aria-hidden="true" />
         新增第 {formatCount(nextTrackNumber)} 首
       </button>
-      <p className="flex gap-3.5 px-1 text-[11px] text-fg-muted" aria-hidden="true">
+      <p className="flex flex-wrap gap-x-3.5 gap-y-1.5 px-1 text-[11px] text-fg-muted" aria-hidden="true">
         <span className="inline-flex items-center gap-1.5">
           <StatusDot status="watched" />
           听过
@@ -130,6 +138,10 @@ export default function AlbumRail({
         <span className="inline-flex items-center gap-1.5">
           <StatusDot status="want_to_watch" />
           没听过
+        </span>
+        <span className="inline-flex items-center gap-1.5">
+          <span className="size-1.5 shrink-0 rounded-full bg-[var(--warn)]" />
+          未设语言
         </span>
       </p>
     </aside>

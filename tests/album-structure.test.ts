@@ -18,7 +18,7 @@ function fakeDb(handle: (query: Query) => Result) {
         query.calls.push({ method, args });
         return builder;
       };
-    for (const method of ["select", "eq", "gt", "lt", "order", "limit", "range"]) builder[method] = chain(method);
+    for (const method of ["select", "eq", "gt", "lt", "order", "limit", "range", "in"]) builder[method] = chain(method);
     const finish = () => ({ data: null, error: null, count: null, ...handle(query) });
     builder.maybeSingle = () => Promise.resolve(finish());
     builder.then = (resolve: (value: Result) => unknown, reject?: (reason: unknown) => unknown) =>
@@ -55,6 +55,7 @@ describe("readAlbumStructure", () => {
             },
           ],
         };
+      if (query.table === "media_languages") return { data: [{ media_item_id: trackId }] };
       if (query.table === "media_credits")
         return {
           data: [{ people: { id: artistId, name: "周杰伦", alternate_name: "Jay Chou" } }],
@@ -74,8 +75,36 @@ describe("readAlbumStructure", () => {
       },
       nextTrackNumber: 4,
       trackCount: 1,
-      tracks: [{ id: trackId, number: 3, title: "晴天", durationSeconds: 269, listened: true }],
+      tracks: [{ id: trackId, number: 3, title: "晴天", durationSeconds: 269, listened: true, hasLanguages: true }],
     });
+  });
+
+  it("曲目无语言时 hasLanguages 为 false", async () => {
+    const albumId = "11111111-1111-4111-8111-111111111111";
+    const trackId = "22222222-2222-4222-8222-222222222222";
+    const { db } = fakeDb((query) => {
+      if (query.table === "media_items")
+        return { data: { id: albumId, title: "叶惠美", alternate_title: null, cover_url: null } };
+      if (query.table === "v_all_media") return { data: { status: "want_to_watch", rating: null } };
+      if (query.table === "music")
+        return {
+          data: [
+            {
+              media_item_id: trackId,
+              track_number: 1,
+              media: { title: "简单爱", runtime: 200, tracking: null },
+            },
+          ],
+        };
+      if (query.table === "media_languages") return { data: [] };
+      if (query.table === "media_credits") return { data: [] };
+      if (query.table === "music_albums") return { data: { track_count: 1 } };
+      return { data: null };
+    });
+    const structure = await readAlbumStructure(db, { id: albumId, type: "album", parent_id: null });
+    expect(structure?.tracks).toEqual([
+      { id: trackId, number: 1, title: "简单爱", durationSeconds: 200, listened: false, hasLanguages: false },
+    ]);
   });
 
   it("曲目条目经 parent_id 解析专辑", async () => {

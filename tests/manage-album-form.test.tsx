@@ -61,11 +61,13 @@ it("专辑表单展示厂牌、艺人选择器与正方形无封面占位", () =
   expect(screen.getByLabelText("类型标签")).toBeInTheDocument();
   expect(screen.getByLabelText("系列")).toBeInTheDocument();
   expect(screen.getByLabelText("地区")).toBeInTheDocument();
-  expect(screen.getByLabelText("语言")).toBeInTheDocument();
+  expect(screen.getByText("语言（来自曲目）")).toBeInTheDocument();
+  expect(screen.getByText(/只读汇总：请在各曲目编辑页设置语言/)).toBeInTheDocument();
+  expect(document.querySelector('input[name="languages"]')).toBeNull();
   expect(screen.queryByLabelText("时长（秒）")).not.toBeInTheDocument();
 });
 
-it("编辑页预填专辑地区与语言", () => {
+it("编辑页预填专辑地区，语言以只读芯片展示并集", () => {
   render(
     <MediaForm
       initialType="album"
@@ -83,7 +85,10 @@ it("编辑页预填专辑地区与语言", () => {
     />,
   );
   expect(screen.getByText("台湾")).toBeInTheDocument();
-  expect(screen.getByText("国语")).toBeInTheDocument();
+  expect(screen.getByLabelText("地区")).toBeInTheDocument();
+  const languages = screen.getByLabelText("由曲目汇总的语言");
+  expect(languages).toHaveTextContent("国语");
+  expect(document.querySelector('input[name="languages"]')).toBeNull();
 });
 
 it("曲目表单要求曲序与所属专辑，时长为整数秒，创作人员用人物选择器", () => {
@@ -100,6 +105,7 @@ it("曲目表单要求曲序与所属专辑，时长为整数秒，创作人员�
         parent_id: "a1",
         number: 5,
         runtime: 313,
+        languages: ["国语"],
         artists: [{ id: "p1", name: "周杰伦", alternate_name: null }],
         lyricists: [
           { id: "p2", name: "方文山", alternate_name: null },
@@ -121,6 +127,9 @@ it("曲目表单要求曲序与所属专辑，时长为整数秒，创作人员�
   expect(screen.getByText("类型标签")).toBeInTheDocument();
   expect(screen.getByText("0/2")).toBeInTheDocument();
   expect(document.querySelector('input[name="genres"]')).toBeTruthy();
+  expect(screen.getByLabelText("语言")).toBeInTheDocument();
+  expect(screen.getByText("国语")).toBeInTheDocument();
+  expect(document.querySelector('input[name="languages"]')).toBeTruthy();
   expect(screen.queryByRole("heading", { name: "封面图片" })).not.toBeInTheDocument();
   expect(screen.queryByLabelText(/封面/)).not.toBeInTheDocument();
   expect(document.querySelector('input[name="cover_url"]')).toBeNull();

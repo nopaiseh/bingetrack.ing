@@ -11,12 +11,12 @@ export function musicCardYear(item: Pick<MediaCard, "date" | "release_year">): s
   return "未知";
 }
 
-/** 卡片上最多三个类型名（不掺语言）。 */
-export function musicCardGenreTags(item: Pick<MediaCard, "genres">): string[] {
-  return [...(item.genres ?? [])].slice(0, 3);
+/** 类型优先，再补一个语言，卡片上最多三个标签（与影视 MediaCardBody 一致）。 */
+export function musicCardGenreTags(item: Pick<MediaCard, "genres" | "languages">): string[] {
+  return [...(item.genres ?? []).slice(0, 3), ...(item.languages ?? []).slice(0, 1)].slice(0, 3);
 }
 
-/** 搜索页与 /albums 横向行共用的音乐卡正文：标题、艺人、年+评分、类型行。 */
+/** 搜索页与 /albums 横向行共用的音乐卡正文：标题、艺人、年+评分、类型／语言行。 */
 export default function MusicCardBody({
   item,
   headingLevel = 3,
@@ -53,7 +53,7 @@ export default function MusicCardBody({
       </div>
       <div
         className="mt-1.5 flex min-h-6 w-full items-center gap-1.5 overflow-hidden"
-        aria-label={tags.length ? `类型：${tags.join("、")}` : undefined}
+        aria-label={tags.length ? `类型与语言：${tags.join("、")}` : undefined}
       >
         {tags.map((tag, index) => (
           <span key={`${tag}-${index}`} title={tag} className={MUSIC_GENRE_CHIP_CLASS}>

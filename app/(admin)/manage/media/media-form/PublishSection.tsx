@@ -4,6 +4,36 @@ import ChoicePicker from "../../ChoicePicker";
 import type { MediaInput } from "@/lib/admin/media-form";
 import type { DraftField, TypeFlags } from "./types";
 
+/** 专辑语言只读汇总：来自曲目并集（v_all_media），不可在此编辑。 */
+function AlbumLanguagesReadonly({ languages }: { languages: readonly string[] }) {
+  return (
+    <div className="edit-inline-field relative min-w-0">
+      <div className="edit-inline-label">
+        <span className="edit-field-label !mb-0">语言（来自曲目）</span>
+      </div>
+      {languages.length > 0 ? (
+        <ul className="flex flex-wrap gap-2" aria-label="由曲目汇总的语言">
+          {languages.map((name) => (
+            <li
+              key={name}
+              className="admin-tag-chip max-w-full border-[var(--border)] bg-[var(--surface-2)] opacity-90"
+            >
+              <span
+                className="i-material-symbols-translate-rounded size-3.5 shrink-0 text-fg-muted"
+                aria-hidden="true"
+              />
+              <span className="break-words font-medium">{name}</span>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p className="edit-note !py-2.5 text-fg-muted">尚无曲目语言</p>
+      )}
+      <p className="edit-hint">只读汇总：请在各曲目编辑页设置语言。地区仍表示发行地，写在专辑上。</p>
+    </div>
+  );
+}
+
 /** 侧栏「发布」卡片：分类标签、观看／收听／阅读状态与评分。 */
 export function PublishSection({
   flags,
@@ -61,6 +91,20 @@ export function PublishSection({
             initial={(item?.genres ?? []).map((value) => ({ id: value, name: value }))}
           />
           {isMusicTrack ? <p className="edit-hint">每首最多 2 个类型；可搜索已有标签或新建。无类型时可留空。</p> : null}
+          {isMusicTrack ? (
+            <>
+              <ChoicePicker
+                key={`${resetKey}-languages`}
+                kind="languages"
+                name="languages"
+                label="语言"
+                inline
+                allowCreate
+                initial={(item?.languages ?? []).map((value) => ({ id: value, name: value }))}
+              />
+              <p className="edit-hint">曲目语言会汇总到专辑页；可搜索已有语言或新建。无语言时可留空。</p>
+            </>
+          ) : null}
           {showFilmCast ? (
             <>
               <ChoicePicker
@@ -141,15 +185,7 @@ export function PublishSection({
                 allowCreate
                 initial={(item?.regions ?? []).map((value) => ({ id: value, name: value }))}
               />
-              <ChoicePicker
-                key={`${resetKey}-languages`}
-                kind="languages"
-                name="languages"
-                label="语言"
-                inline
-                allowCreate
-                initial={(item?.languages ?? []).map((value) => ({ id: value, name: value }))}
-              />
+              <AlbumLanguagesReadonly languages={item?.languages ?? []} />
             </>
           ) : null}
         </div>

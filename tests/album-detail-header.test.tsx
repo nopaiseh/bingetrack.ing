@@ -80,6 +80,46 @@ describe("AlbumDetailHeader", () => {
     expect(poster?.querySelector("img")).toBeNull();
   });
 
+  it("有地区／语言时渲染可搜索标签行；无封面仍用首字块", () => {
+    const { container } = render(
+      <AlbumDetailHeader
+        media={media({
+          cover_url: "",
+          title: "摩天动物园",
+          languages: ["国语", "粤语"],
+          regions: ["香港"],
+        })}
+        artists={["邓紫棋"]}
+        trackCount={5}
+        label={null}
+        ratedCount={0}
+        ownership={null}
+      />,
+    );
+
+    expect(container.querySelector("[data-poster] .letter-tile")).toHaveAttribute("data-initial", "摩");
+    const taxonomy = screen.getByLabelText("地区与语言");
+    expect(taxonomy).toBeInTheDocument();
+    const mandarin = screen.getByRole("link", { name: "国语" });
+    expect(mandarin).toHaveAttribute("href", expect.stringContaining("language="));
+    expect(screen.getByRole("link", { name: "粤语" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "香港" })).toHaveAttribute("href", expect.stringContaining("region="));
+  });
+
+  it("无地区与语言时不渲染标签行", () => {
+    render(
+      <AlbumDetailHeader
+        media={media({ languages: [], regions: [] })}
+        artists={["周杰伦"]}
+        trackCount={10}
+        label={null}
+        ratedCount={0}
+        ownership={null}
+      />,
+    );
+    expect(screen.queryByLabelText("地区与语言")).not.toBeInTheDocument();
+  });
+
   it("副标题与主标题相同时不重复展示，无评分时省略分数行", () => {
     render(
       <AlbumDetailHeader
