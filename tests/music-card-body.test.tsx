@@ -32,9 +32,7 @@ describe("MusicCardBody", () => {
   });
 
   it("appends one language chip after genres, capped at three tags", () => {
-    render(
-      <MusicCardBody item={album({ genres: ["独立流行", "城市民谣"], languages: ["国语", "粤语"] })} />,
-    );
+    render(<MusicCardBody item={album({ genres: ["独立流行", "城市民谣"], languages: ["国语", "粤语"] })} />);
     expect(screen.getByText("独立流行")).toBeInTheDocument();
     expect(screen.getByText("城市民谣")).toBeInTheDocument();
     expect(screen.getByText("国语")).toBeInTheDocument();

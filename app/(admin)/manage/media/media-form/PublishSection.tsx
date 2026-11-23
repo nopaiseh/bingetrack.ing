@@ -18,7 +18,10 @@ function AlbumLanguagesReadonly({ languages }: { languages: readonly string[] })
               key={name}
               className="admin-tag-chip max-w-full border-[var(--border)] bg-[var(--surface-2)] opacity-90"
             >
-              <span className="i-material-symbols-translate-rounded size-3.5 shrink-0 text-fg-muted" aria-hidden="true" />
+              <span
+                className="i-material-symbols-translate-rounded size-3.5 shrink-0 text-fg-muted"
+                aria-hidden="true"
+              />
               <span className="break-words font-medium">{name}</span>
             </li>
           ))}
