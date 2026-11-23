@@ -82,11 +82,12 @@ export async function readEditableMedia(db: SupabaseClient, id: string): Promise
   let status: "watched" | "watching" | "want_to_watch" | "in_progress" = "want_to_watch";
   let rating: number | null = null;
   // 专辑语言取自 v_all_media（曲目并集，由库视图计算）；地区仍读 media_regions。
+  // select 字符串须为字面量，否则 supabase-js 类型解析会报 ParserError。
   let albumLanguagesFromView: string[] | null = null;
   if (media.data.type === "tv_show" || media.data.type === "album") {
     const { data: seriesStatus } = await db
       .from("v_all_media")
-      .select(media.data.type === "album" ? "status,rating,languages" : "status,rating")
+      .select("status,rating,languages")
       .eq("id", id)
       .maybeSingle();
     status = (seriesStatus?.status as "watched" | "watching" | "want_to_watch") ?? "want_to_watch";
