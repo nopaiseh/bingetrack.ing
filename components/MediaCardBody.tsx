@@ -6,28 +6,35 @@ export function mediaCardTags(item: Pick<MediaCard, "genres" | "languages">): st
   return [...(item.genres ?? []).slice(0, 3), ...(item.languages ?? []).slice(0, 1)].slice(0, 3);
 }
 
+/** 图书作者名按 credit_order 拼接；空则不显示作者行。 */
+export function mediaCardAuthorsLine(authors: readonly string[] | null | undefined): string | null {
+  const names = (authors ?? []).map((name) => name.trim()).filter(Boolean);
+  return names.length > 0 ? names.join("、") : null;
+}
+
 /** 电影／图书取上映年；剧集保留跨年区间，并把连字符收成短横。 */
-function mediaCardYear(item: MediaCard, dbType: "movie" | "tv_show"): string {
+function mediaCardYear(item: MediaCard, dbType: "movie" | "tv_show" | "book"): string {
   if (dbType === "tv_show") {
     return String(item.release_year || (item.date ? item.date.substring(0, 4) : "未知")).replace(/\s*-\s*/g, "–");
   }
   return item.date ? item.date.substring(0, 4) : "未知";
 }
 
-/** 卡片标题、年份、评分和标签。标题固定两行高，短标题也不会把同一行的卡片挤矮。 */
+/** 卡片标题、年份、评分和标签。标题固定两行高，短标题也不会把同一行的卡片挤矮。图书在标题下显示作者行。 */
 export default function MediaCardBody({
   item,
   dbType,
   headingLevel = 3,
 }: {
   item: MediaCard;
-  /** 仅用于年份展示口径：剧集用跨年区间，其余用日期年。 */
-  dbType: "movie" | "tv_show";
+  /** 年份口径：剧集用跨年区间；图书另显示 authors。 */
+  dbType: "movie" | "tv_show" | "book";
   /** 搜索页在 h1 下用 h2；目录行在行标题 h2 下保持 h3。 */
   headingLevel?: 2 | 3;
 }) {
   const tags = mediaCardTags(item);
   const Title = headingLevel === 2 ? "h2" : "h3";
+  const authorsLine = dbType === "book" ? mediaCardAuthorsLine(item.authors) : null;
 
   return (
     <div className="flex min-w-0 grow flex-col space-y-1.5 px-3 py-2.5">
@@ -37,6 +44,11 @@ export default function MediaCardBody({
       >
         {item.title}
       </Title>
+      {authorsLine ? (
+        <p className="truncate text-xs text-fg-muted" title={authorsLine}>
+          {authorsLine}
+        </p>
+      ) : null}
 
       <div className="flex min-w-0 items-center justify-between gap-1.5 text-xs">
         <span className="shrink-0 whitespace-nowrap font-medium text-fg-secondary">{mediaCardYear(item, dbType)}</span>

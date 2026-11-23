@@ -139,6 +139,10 @@ describe("DashboardPanels music and books tabs", () => {
         displayedTopMovies={[]}
         topSeries={[]}
         displayedTopSeries={[]}
+        topAlbums={[]}
+        displayedTopAlbums={[]}
+        topBooks={[]}
+        displayedTopBooks={[]}
       />,
     );
 
@@ -157,6 +161,10 @@ describe("DashboardPanels music and books tabs", () => {
         displayedTopMovies={[]}
         topSeries={[]}
         displayedTopSeries={[]}
+        topAlbums={[]}
+        displayedTopAlbums={[]}
+        topBooks={[]}
+        displayedTopBooks={[]}
       />,
     );
 

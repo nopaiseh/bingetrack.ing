@@ -19,11 +19,13 @@ import {
 } from "@/components/dashboard/dashboard-url";
 import type { MediaCard, MediaDistributions, Summary, UpcomingRelease } from "@/lib/types";
 
-/** 根据年份和总览、电影、电视节目标签组织统计、分布及榜单；年份变化时加载对应榜单。 */
+/** 根据年份和总览、电影、电视节目、音乐、图书标签组织统计、分布及榜单；年份变化时加载对应榜单。 */
 export default function HomeDashboard({
   summary,
   topMovies,
   topSeries,
+  topAlbums,
+  topBooks,
   distributions,
   upcoming = [],
   continueWatching = [],
@@ -34,6 +36,8 @@ export default function HomeDashboard({
   summary: Summary[];
   topMovies: MediaCard[];
   topSeries: MediaCard[];
+  topAlbums: MediaCard[];
+  topBooks: MediaCard[];
   distributions: MediaDistributions;
   upcoming?: UpcomingRelease[];
   continueWatching?: readonly ContinueWatchingCard[];
@@ -58,6 +62,8 @@ export default function HomeDashboard({
 
   const [displayedTopMovies, setDisplayedTopMovies] = useState(topMovies);
   const [displayedTopSeries, setDisplayedTopSeries] = useState(topSeries);
+  const [displayedTopAlbums, setDisplayedTopAlbums] = useState(topAlbums);
+  const [displayedTopBooks, setDisplayedTopBooks] = useState(topBooks);
   const [topMediaError, setTopMediaError] = useState<string | null>(null);
   const [topMediaLoading, setTopMediaLoading] = useState(false);
 
@@ -70,23 +76,36 @@ export default function HomeDashboard({
       }
 
       const controller = new AbortController();
-      /** 并行加载该年的电影和电视节目榜单，更新加载状态与结果，并显示非取消类错误。 */
+      /** 并行加载该年的电影、电视、专辑与图书榜单，更新加载状态与结果，并显示非取消类错误。 */
       const loadTopMedia = async () => {
         try {
           setTopMediaError(null);
           setTopMediaLoading(true);
           setDisplayedTopMovies([]);
           setDisplayedTopSeries([]);
-          const [moviesResponse, seriesResponse] = await Promise.all([
+          setDisplayedTopAlbums([]);
+          setDisplayedTopBooks([]);
+          const [moviesResponse, seriesResponse, albumsResponse, booksResponse] = await Promise.all([
             fetch(`/api/top-media?type=movie&year=${encodeURIComponent(selectedYear)}`, { signal: controller.signal }),
             fetch(`/api/top-media?type=tv_show&year=${encodeURIComponent(selectedYear)}`, {
               signal: controller.signal,
             }),
+            fetch(`/api/top-media?type=album&year=${encodeURIComponent(selectedYear)}`, { signal: controller.signal }),
+            fetch(`/api/top-media?type=book&year=${encodeURIComponent(selectedYear)}`, { signal: controller.signal }),
           ]);
-          if (!moviesResponse.ok || !seriesResponse.ok) throw new Error("Failed to load top media");
-          const [movies, series] = await Promise.all([moviesResponse.json(), seriesResponse.json()]);
+          if (!moviesResponse.ok || !seriesResponse.ok || !albumsResponse.ok || !booksResponse.ok) {
+            throw new Error("Failed to load top media");
+          }
+          const [movies, series, albums, books] = await Promise.all([
+            moviesResponse.json(),
+            seriesResponse.json(),
+            albumsResponse.json(),
+            booksResponse.json(),
+          ]);
           setDisplayedTopMovies(movies);
           setDisplayedTopSeries(series);
+          setDisplayedTopAlbums(albums);
+          setDisplayedTopBooks(books);
         } catch (error) {
           if ((error as Error).name !== "AbortError") {
             console.error(error);
@@ -146,6 +165,10 @@ export default function HomeDashboard({
         displayedTopMovies={displayedTopMovies}
         topSeries={topSeries}
         displayedTopSeries={displayedTopSeries}
+        topAlbums={topAlbums}
+        displayedTopAlbums={displayedTopAlbums}
+        topBooks={topBooks}
+        displayedTopBooks={displayedTopBooks}
       />
     </div>
   );

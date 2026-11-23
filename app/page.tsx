@@ -74,6 +74,8 @@ export default async function HomePage() {
   let summary: Summary[] = [];
   let topMovies: MediaCard[] = [];
   let topSeries: MediaCard[] = [];
+  let topAlbums: MediaCard[] = [];
+  let topBooks: MediaCard[] = [];
   let distributions = EMPTY_DISTRIBUTIONS;
   let upcoming: UpcomingRelease[] = [];
   let continueWatching: ContinueWatchingCard[] = [];
@@ -84,6 +86,8 @@ export default async function HomePage() {
     getCachedReleaseYearStats(),
     getCachedTopMediaServer("movie", null, TOP_MEDIA_LIMIT),
     getCachedTopMediaServer("tv_show", null, TOP_MEDIA_LIMIT),
+    getCachedTopMediaServer("album", null, TOP_MEDIA_LIMIT),
+    getCachedTopMediaServer("book", null, TOP_MEDIA_LIMIT),
     getCachedMediaDistributionsServer(),
     getCachedUpcomingReleasesServer(),
   ]);
@@ -91,10 +95,20 @@ export default async function HomePage() {
   const [dashboard, homeContinueResult] = await Promise.allSettled([dashboardResult, continueResult]);
 
   if (dashboard.status === "fulfilled") {
-    const [fetchedSummary, fetchedTopMovies, fetchedTopSeries, fetchedDistributions, fetchedUpcoming] = dashboard.value;
+    const [
+      fetchedSummary,
+      fetchedTopMovies,
+      fetchedTopSeries,
+      fetchedTopAlbums,
+      fetchedTopBooks,
+      fetchedDistributions,
+      fetchedUpcoming,
+    ] = dashboard.value;
     summary = fetchedSummary;
     topMovies = fetchedTopMovies ?? [];
     topSeries = fetchedTopSeries ?? [];
+    topAlbums = fetchedTopAlbums ?? [];
+    topBooks = fetchedTopBooks ?? [];
     distributions = fetchedDistributions;
     upcoming = fetchedUpcoming;
   } else {
@@ -118,6 +132,8 @@ export default async function HomePage() {
         summary={summary}
         topMovies={topMovies}
         topSeries={topSeries}
+        topAlbums={topAlbums}
+        topBooks={topBooks}
         distributions={distributions}
         upcoming={upcoming}
         continueWatching={continueWatching}

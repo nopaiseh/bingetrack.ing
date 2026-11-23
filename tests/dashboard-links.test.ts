@@ -37,4 +37,13 @@ describe("dashboard search links", () => {
       "/search?type=music&sort=rating_desc&startYear=2081&endYear=2081",
     );
   });
+
+  it("supports album and book view-all links for featured rows", () => {
+    expect(getSearchViewAllLink("album", "All Time")).toBe("/search?type=album&sort=rating_desc");
+    expect(getSearchViewAllLink("book", "All Time")).toBe("/search?type=book&sort=rating_desc");
+    expect(getSearchViewAllLink("album", "2023")).toBe(
+      "/search?type=album&sort=rating_desc&startYear=2023&endYear=2023",
+    );
+    expect(getSearchViewAllLink("book", "2019")).toBe("/search?type=book&sort=rating_desc&startYear=2019&endYear=2019");
+  });
 });

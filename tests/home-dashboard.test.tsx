@@ -56,6 +56,8 @@ describe("HomeDashboard", () => {
         summary={[{ release_year: "2024" } as unknown as Summary]}
         topMovies={[]}
         topSeries={[]}
+        topAlbums={[]}
+        topBooks={[]}
         distributions={buildMediaDistributions([])}
       />,
     );
@@ -82,6 +84,8 @@ describe("HomeDashboard", () => {
         summary={[{ release_year: "2024" } as unknown as Summary]}
         topMovies={[]}
         topSeries={[]}
+        topAlbums={[]}
+        topBooks={[]}
         distributions={buildMediaDistributions([])}
         upcoming={[{ id: "next-release" } as never]}
       />,
@@ -92,9 +96,49 @@ describe("HomeDashboard", () => {
     expect(screen.getByTestId("upcoming").dataset.ids).toBe("next-release");
   });
 
+  it("年份切换时并行请求电影、剧集、专辑与图书精选", async () => {
+    const fetchMock = vi.fn<(input: RequestInfo | URL, init?: RequestInit) => Promise<Response>>(() =>
+      Promise.resolve(new Response("[]")),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(
+      <HomeDashboard
+        summary={[{ release_year: "2024" } as unknown as Summary]}
+        topMovies={[]}
+        topSeries={[]}
+        topAlbums={[]}
+        topBooks={[]}
+        distributions={buildMediaDistributions([])}
+      />,
+    );
+
+    await act(async () => {
+      fireEvent.click(screen.getByText("year-2024"));
+    });
+
+    const urls = fetchMock.mock.calls.map(([input]) => String(input));
+    expect(urls).toEqual(
+      expect.arrayContaining([
+        "/api/top-media?type=movie&year=2024",
+        "/api/top-media?type=tv_show&year=2024",
+        "/api/top-media?type=album&year=2024",
+        "/api/top-media?type=book&year=2024",
+      ]),
+    );
+    expect(urls).toHaveLength(4);
+  });
+
   it("把在看放在看板最上方，没有条目时不占位", () => {
     const { rerender } = render(
-      <HomeDashboard summary={[]} topMovies={[]} topSeries={[]} distributions={buildMediaDistributions([])} />,
+      <HomeDashboard
+        summary={[]}
+        topMovies={[]}
+        topSeries={[]}
+        topAlbums={[]}
+        topBooks={[]}
+        distributions={buildMediaDistributions([])}
+      />,
     );
     expect(screen.queryByRole("heading", { name: "在看" })).not.toBeInTheDocument();
 
@@ -111,6 +155,8 @@ describe("HomeDashboard", () => {
         summary={[]}
         topMovies={[]}
         topSeries={[]}
+        topAlbums={[]}
+        topBooks={[]}
         distributions={buildMediaDistributions([])}
         continueWatching={[item]}
       />,
@@ -134,6 +180,8 @@ describe("HomeDashboard", () => {
         summary={[]}
         topMovies={[]}
         topSeries={[]}
+        topAlbums={[]}
+        topBooks={[]}
         distributions={buildMediaDistributions([])}
         upcoming={[{ id: "next-release" } as never]}
         continueWatching={[watchingItem]}
@@ -199,6 +247,8 @@ describe("HomeDashboard", () => {
         ]}
         topMovies={[]}
         topSeries={[]}
+        topAlbums={[]}
+        topBooks={[]}
         distributions={buildMediaDistributions([])}
       />,
     );

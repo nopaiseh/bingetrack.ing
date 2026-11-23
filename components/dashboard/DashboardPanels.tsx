@@ -39,6 +39,10 @@ export default function DashboardPanels({
   displayedTopMovies,
   topSeries,
   displayedTopSeries,
+  topAlbums,
+  displayedTopAlbums,
+  topBooks,
+  displayedTopBooks,
 }: {
   stats: DashboardStats;
   activeTab: string;
@@ -49,6 +53,10 @@ export default function DashboardPanels({
   displayedTopMovies: MediaCard[];
   topSeries: MediaCard[];
   displayedTopSeries: MediaCard[];
+  topAlbums: MediaCard[];
+  displayedTopAlbums: MediaCard[];
+  topBooks: MediaCard[];
+  displayedTopBooks: MediaCard[];
 }) {
   const itemsByKey = {
     movies: { allTime: topMovies, year: displayedTopMovies },
@@ -91,8 +99,26 @@ export default function DashboardPanels({
           />
         ) : null,
       )}
-      {activeTab === "音乐" && <MusicBookCategoryPanel stats={stats} kind="music" selectedYear={selectedYear} />}
-      {activeTab === "图书" && <MusicBookCategoryPanel stats={stats} kind="books" selectedYear={selectedYear} />}
+      {activeTab === "音乐" && (
+        <MusicBookCategoryPanel
+          stats={stats}
+          kind="music"
+          selectedYear={selectedYear}
+          isTopMediaLoading={isTopMediaLoading}
+          allTimeItems={topAlbums}
+          yearItems={displayedTopAlbums}
+        />
+      )}
+      {activeTab === "图书" && (
+        <MusicBookCategoryPanel
+          stats={stats}
+          kind="books"
+          selectedYear={selectedYear}
+          isTopMediaLoading={isTopMediaLoading}
+          allTimeItems={topBooks}
+          yearItems={displayedTopBooks}
+        />
+      )}
     </div>
   );
 }
