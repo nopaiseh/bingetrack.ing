@@ -81,9 +81,9 @@ export async function getSitemapMediaEntries(): Promise<SitemapMediaEntry[]> {
   });
 }
 
-/** 获取指定类型的评分榜单；年度电视节目按当年单集评分排名，并补充电视节目年份范围。 */
+/** 获取指定类型的评分榜单；年度电视节目按当年单集评分排名，并补充电视节目年份范围。专辑／图书与电影同路径（按 type 过滤，不含单曲）。 */
 export async function fetchTopMediaServer(
-  mediaType: "movie" | "tv_show",
+  mediaType: "movie" | "tv_show" | "album" | "book",
   year?: string | null,
   limit = 10,
 ): Promise<MediaCard[]> {

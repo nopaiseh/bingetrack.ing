@@ -72,7 +72,7 @@ describe("cached-media revalidate 策略", () => {
     expect(byKey["public-media-seasons-v3"]).toEqual({ revalidate: false, tags: TAGS_ITEM });
     expect(byKey["public-season-episodes-v2"]).toEqual({ revalidate: false, tags: TAGS_ITEM });
     expect(byKey["public-season-next-episode-v1"]).toEqual({ revalidate: false, tags: TAGS_ITEM });
-    expect(byKey["public-media-top-v3"]).toEqual({ revalidate: false, tags: TAGS_LISTS });
+    expect(byKey["public-media-top-v4"]).toEqual({ revalidate: false, tags: TAGS_LISTS });
     expect(byKey["public-media-distributions-v2"]).toEqual({ revalidate: false, tags: TAGS_LISTS });
     expect(byKey["public-media-home-continue-v2"]).toEqual({ revalidate: false, tags: TAGS_LISTS });
     expect(byKey["public-media-currently-reading-v1"]).toEqual({ revalidate: false, tags: TAGS_LISTS });

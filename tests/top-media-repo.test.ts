@@ -49,7 +49,13 @@ function args(query: Query, method: string) {
   return query.calls.find((call) => call.method === method)?.args;
 }
 
-function cardRow(id: string, type: "movie" | "tv_show", title: string, rating: number | null) {
+function cardRow(
+  id: string,
+  type: "movie" | "tv_show" | "album" | "book",
+  title: string,
+  rating: number | null,
+  extras: { artists?: string[] | null; authors?: string[] | null } = {},
+) {
   return {
     id,
     type,
@@ -62,7 +68,8 @@ function cardRow(id: string, type: "movie" | "tv_show", title: string, rating: n
     cover_url: "",
     status: "watched",
     summary: `${title} 简介`,
-    artists: null,
+    artists: extras.artists ?? null,
+    authors: extras.authors ?? null,
   };
 }
 
@@ -92,6 +99,7 @@ describe("热门榜查询 fetchTopMediaServer", () => {
 
     const query = state.queries[0];
     expect(query.table).toBe("v_all_media");
+    expect(String(args(query, "select")?.[0])).toContain("authors");
     expect(args(query, "eq")).toEqual(["type", "movie"]);
     expect(args(query, "limit")).toEqual([10]);
     expect(args(query, "gte")).toEqual(["sort_date", "2024-01-01"]);
@@ -179,5 +187,61 @@ describe("热门榜查询 fetchTopMediaServer", () => {
     } finally {
       log.mockRestore();
     }
+  });
+
+  it.each([
+    {
+      mediaType: "album" as const,
+      publicType: "albums",
+      id: "44444444-4444-4444-8444-444444444444",
+      title: "叶惠美",
+      extras: { artists: ["周杰伦"], authors: null },
+      expectArtists: ["周杰伦"],
+      expectAuthors: [],
+    },
+    {
+      mediaType: "book" as const,
+      publicType: "books",
+      id: "55555555-5555-4555-8555-555555555555",
+      title: "三体",
+      extras: { artists: null, authors: ["刘慈欣"] },
+      expectArtists: [],
+      expectAuthors: ["刘慈欣"],
+    },
+  ])("精选 $mediaType 按评分与 sort_date 规则查询，不含单曲", async (fixture) => {
+    state.handle = (query) => {
+      if (query.table === "v_all_media") {
+        return {
+          data: [cardRow(fixture.id, fixture.mediaType, fixture.title, 9.1, fixture.extras)],
+        };
+      }
+      return { data: [] };
+    };
+
+    const items = await fetchTopMediaServer(fixture.mediaType, "2024", 10);
+    expect(items).toHaveLength(1);
+    expect(items[0]).toMatchObject({
+      id: fixture.id,
+      title: fixture.title,
+      type: fixture.publicType,
+      rating: 9.1,
+      artists: fixture.expectArtists,
+      authors: fixture.expectAuthors,
+      summary: `${fixture.title} 简介`,
+    });
+
+    const query = state.queries[0];
+    expect(query.table).toBe("v_all_media");
+    expect(String(args(query, "select")?.[0])).toContain("authors");
+    expect(args(query, "eq")).toEqual(["type", fixture.mediaType]);
+    expect(args(query, "limit")).toEqual([10]);
+    expect(args(query, "gte")).toEqual(["sort_date", "2024-01-01"]);
+    expect(args(query, "lte")).toEqual(["sort_date", "2024-12-31"]);
+    expect(query.calls.filter((call) => call.method === "order").map((call) => call.args)).toEqual([
+      ["rating", { ascending: false, nullsFirst: false }],
+      ["id", { ascending: true }],
+    ]);
+    // 只按 album／book 过滤，不会查 type=music。
+    expect(query.calls.some((call) => call.method === "eq" && call.args[1] === "music")).toBe(false);
   });
 });
