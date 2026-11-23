@@ -77,6 +77,8 @@ describe("saveBookMedia", () => {
           status: "in_progress",
           page_count: 200,
           publisher: "出版社",
+          languages: ["汉语"],
+          regions: [],
           authors: [{ id: null, name: "作者" }],
         }),
       }),

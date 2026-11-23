@@ -10,7 +10,7 @@ create function pg_temp.book_payload(title text, authors jsonb, extras jsonb def
 returns jsonb language sql as $$
   select jsonb_build_object(
     'type','book','title',title,'status','want_to_watch','rating',null,
-    'genres','[]'::jsonb,'languages','[]'::jsonb,'authors',authors,
+    'genres','[]'::jsonb,'languages','[]'::jsonb,'regions','[]'::jsonb,'authors',authors,
     'page_count',120,'publisher','ISBN测验社','collections','[]'::jsonb
   ) || extras;
 $$;

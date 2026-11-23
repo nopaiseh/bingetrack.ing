@@ -16,8 +16,8 @@ export class MediaRepositoryError extends Error {
 }
 
 // 列表只读取卡片需要的字段，避免把简介和演职员等详情数据传到客户端。
-// 不选 authors：生产库在迁移落地前没有 v_all_media.authors，选它会让 /api/media 等公开接口 503。
-// 详情仍走 select("*")；迁移前 authors 映射为空数组，迁移后自然带上。
+// 不选 authors：仅控制列表载荷大小；生产 v_all_media 已暴露该列（自 books_backend／后续视图重建起）。
+// 详情仍走 select("*")，会带上 authors。
 export const MEDIA_CARD_COLUMNS =
   "id,type,title,sort_date,first_air_date,last_air_date,release_year,rating,genres,languages,cover_url,status,artists";
 // 榜单精选读取卡片字段及简介摘要，供首页展台和精选展示使用。
