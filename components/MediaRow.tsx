@@ -86,7 +86,7 @@ function PosterItemCard({
   preload: boolean;
   hideStatusBadge?: boolean;
 }) {
-  const bodyDbType = dbType === "tv_show" ? "tv_show" : "movie";
+  const bodyDbType = dbType === "tv_show" ? "tv_show" : dbType === "book" ? "book" : "movie";
   return (
     <>
       <div className="image-placeholder relative flex aspect-2/3 w-full items-center justify-center overflow-hidden">

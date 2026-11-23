@@ -3,26 +3,38 @@
 import dynamic from "next/dynamic";
 import CatalogEmptyState from "@/components/CatalogEmptyState";
 import AnimatedNumber from "@/components/AnimatedNumber";
+import { PosterRowSkeleton } from "@/components/LoadingSkeletons";
 import MediaStatusCard from "@/components/dashboard/MediaStatusCard";
-import { getStatusSearchLink } from "@/components/dashboard/dashboard-links";
+import { getSearchViewAllLink, getStatusSearchLink } from "@/components/dashboard/dashboard-links";
 import type { DashboardStats } from "@/components/dashboard/dashboard-stats";
 import { WATCH_STATUSES } from "@/components/watch-status";
+import type { MediaCard } from "@/lib/types";
 
 const DistributionTop5Cards = dynamic(() => import("@/components/dashboard/DistributionTop5Cards"), {
   loading: () => <div className="min-h-60 rounded-2xl bg-white/5 animate-pulse" />,
 });
 
+const MediaRow = dynamic(() => import("@/components/MediaRow"), {
+  loading: () => <PosterRowSkeleton />,
+});
+
 type MusicBookKind = "music" | "books";
 
-/** 音乐或图书标签：状态卡、平均评分、可选曲目进度与分布；无精选轮播。 */
+/** 音乐或图书标签：状态卡、平均评分、分布，以及专辑／图书精选横排。 */
 export default function MusicBookCategoryPanel({
   stats,
   kind,
   selectedYear,
+  isTopMediaLoading,
+  allTimeItems,
+  yearItems,
 }: {
   stats: DashboardStats;
   kind: MusicBookKind;
   selectedYear: string;
+  isTopMediaLoading: boolean;
+  allTimeItems: MediaCard[];
+  yearItems: MediaCard[];
 }) {
   const yearLabel = selectedYear === "All Time" ? "全时段" : selectedYear;
   const isMusic = kind === "music";
@@ -36,6 +48,10 @@ export default function MusicBookCategoryPanel({
   const hasRating = avgRating != null && Number.isFinite(avgRating);
   const empty = total <= 0;
   const showTrackProgress = isMusic && stats.totalTracks > 0;
+  const mediaType = isMusic ? ("album" as const) : ("book" as const);
+  const searchType = mediaType;
+  const allTimeTitle = isMusic ? "专辑精选" : "图书精选";
+  const featuredItems = selectedYear === "All Time" ? allTimeItems : yearItems;
 
   return (
     <div
@@ -173,6 +189,19 @@ export default function MusicBookCategoryPanel({
           </div>
 
           <DistributionTop5Cards distribution={distribution} regionTitle="产地分布 Top 5" />
+
+          <div className="mt-4 space-y-12">
+            {isTopMediaLoading ? (
+              <PosterRowSkeleton />
+            ) : (
+              <MediaRow
+                title={selectedYear === "All Time" ? allTimeTitle : `${selectedYear} 年度精选`}
+                items={featuredItems}
+                viewAllLink={getSearchViewAllLink(searchType, selectedYear)}
+                type={mediaType}
+              />
+            )}
+          </div>
         </>
       )}
     </div>

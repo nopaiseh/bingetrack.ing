@@ -103,7 +103,7 @@ export function SearchMediaCard({
   const music = isMusicCard(item);
   const typeLabel = typeTagLabel(item);
   const href = detailHref(item, returnHref);
-  const mediaBodyDbType = item.dbType === "tv_show" ? "tv_show" : "movie";
+  const mediaBodyDbType = item.dbType === "tv_show" ? "tv_show" : item.dbType === "book" ? "book" : "movie";
   const showTypeOnFilmCard = Boolean(typeLabel && music);
 
   const cover = (

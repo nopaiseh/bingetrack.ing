@@ -83,6 +83,8 @@ describe("Prerender graceful fallbacks", () => {
       expect(props.summary).toEqual([]);
       expect(props.topMovies).toEqual([]);
       expect(props.topSeries).toEqual([]);
+      expect(props.topAlbums).toEqual([]);
+      expect(props.topBooks).toEqual([]);
       expect(props.upcoming).toEqual([]);
       expect(props.continueWatching).toEqual([]);
       expect(props.continueListening).toEqual([]);

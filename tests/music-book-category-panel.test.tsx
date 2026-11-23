@@ -5,11 +5,28 @@ import { deriveDashboardStats } from "@/components/dashboard/dashboard-stats";
 import MusicBookCategoryPanel from "@/components/dashboard/MusicBookCategoryPanel";
 import DashboardIntro from "@/components/dashboard/DashboardIntro";
 import { TABS, TAB_IDS } from "@/components/dashboard/dashboard-url";
-import type { MediaDistributions, Summary } from "@/lib/types";
+import type { MediaCard, MediaDistributions, Summary } from "@/lib/types";
 
 vi.mock("@/components/AnimatedNumber", () => ({
   default: ({ value }: { value: number }) => <>{value}</>,
 }));
+
+vi.mock("@/components/LoadingSkeletons", () => ({
+  PosterRowSkeleton: () => <div data-testid="poster-skeleton" />,
+}));
+
+function featuredCard(partial: Partial<MediaCard>): MediaCard {
+  return {
+    id: "x1",
+    title: "作品",
+    date: "2020-01-01",
+    rating: 9,
+    genres: [],
+    languages: [],
+    cover_url: "",
+    ...partial,
+  };
+}
 
 const emptyDistributions: MediaDistributions = { movies: {}, shows: {}, albums: {}, books: {} };
 
@@ -19,7 +36,16 @@ function statsFor(summary: Summary[] = [], year = "All Time", distributions = em
 
 describe("MusicBookCategoryPanel", () => {
   it("shows the music empty state without zero-value charts", () => {
-    render(<MusicBookCategoryPanel stats={statsFor()} kind="music" selectedYear="All Time" />);
+    render(
+      <MusicBookCategoryPanel
+        stats={statsFor()}
+        kind="music"
+        selectedYear="All Time"
+        isTopMediaLoading={false}
+        allTimeItems={[]}
+        yearItems={[]}
+      />,
+    );
 
     expect(screen.getByRole("tabpanel")).toHaveAttribute("id", "dashboard-panel-music");
     expect(screen.getByRole("heading", { name: "暂无收听记录" })).toBeInTheDocument();
@@ -28,7 +54,16 @@ describe("MusicBookCategoryPanel", () => {
   });
 
   it("shows the books empty state without distribution cards", () => {
-    render(<MusicBookCategoryPanel stats={statsFor()} kind="books" selectedYear="2024" />);
+    render(
+      <MusicBookCategoryPanel
+        stats={statsFor()}
+        kind="books"
+        selectedYear="2024"
+        isTopMediaLoading={false}
+        allTimeItems={[]}
+        yearItems={[]}
+      />,
+    );
 
     expect(screen.getByRole("tabpanel")).toHaveAttribute("id", "dashboard-panel-books");
     expect(screen.getByRole("heading", { name: "暂无阅读记录" })).toBeInTheDocument();
@@ -66,6 +101,9 @@ describe("MusicBookCategoryPanel", () => {
         stats={statsFor(summary, "All Time", distributions)}
         kind="music"
         selectedYear="All Time"
+        isTopMediaLoading={false}
+        allTimeItems={[]}
+        yearItems={[]}
       />,
     );
 
@@ -109,7 +147,14 @@ describe("MusicBookCategoryPanel", () => {
     };
 
     render(
-      <MusicBookCategoryPanel stats={statsFor(summary, "2024", distributions)} kind="books" selectedYear="2024" />,
+      <MusicBookCategoryPanel
+        stats={statsFor(summary, "2024", distributions)}
+        kind="books"
+        selectedYear="2024"
+        isTopMediaLoading={false}
+        allTimeItems={[]}
+        yearItems={[]}
+      />,
     );
 
     expect(screen.getByText("2024 图书 阅读进度")).toBeInTheDocument();
@@ -140,10 +185,133 @@ describe("MusicBookCategoryPanel", () => {
       } as Summary,
     ];
 
-    render(<MusicBookCategoryPanel stats={statsFor(summary)} kind="music" selectedYear="All Time" />);
+    render(
+      <MusicBookCategoryPanel
+        stats={statsFor(summary)}
+        kind="music"
+        selectedYear="All Time"
+        isTopMediaLoading={false}
+        allTimeItems={[]}
+        yearItems={[]}
+      />,
+    );
 
     expect(screen.queryByText("曲目收听进度")).not.toBeInTheDocument();
     expect(screen.queryByRole("progressbar")).not.toBeInTheDocument();
+  });
+
+  it("renders album featured row with view-all link and hides when empty", async () => {
+    const summary = [
+      {
+        release_year: "All Time",
+        total_albums: 2,
+        listened_albums: 1,
+        want_albums: 1,
+        album_avg_rating: 8,
+      } as Summary,
+    ];
+
+    const { rerender } = render(
+      <MusicBookCategoryPanel
+        stats={statsFor(summary)}
+        kind="music"
+        selectedYear="All Time"
+        isTopMediaLoading={false}
+        allTimeItems={[
+          featuredCard({ id: "a1", title: "夜色电台", type: "albums", dbType: "album", artists: ["林澄"] }),
+        ]}
+        yearItems={[]}
+      />,
+    );
+
+    expect(await screen.findByRole("heading", { name: "专辑精选" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "查看全部 →" })).toHaveAttribute(
+      "href",
+      "/search?type=album&sort=rating_desc",
+    );
+    expect(screen.getByRole("heading", { name: "夜色电台" })).toBeInTheDocument();
+    expect(screen.getByText("林澄")).toBeInTheDocument();
+
+    rerender(
+      <MusicBookCategoryPanel
+        stats={statsFor(summary)}
+        kind="music"
+        selectedYear="2024"
+        isTopMediaLoading={false}
+        allTimeItems={[]}
+        yearItems={[featuredCard({ id: "a2", title: "年度唱片", type: "albums", dbType: "album" })]}
+      />,
+    );
+    expect(await screen.findByRole("heading", { name: "2024 年度精选" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "查看全部 →" })).toHaveAttribute(
+      "href",
+      "/search?type=album&sort=rating_desc&startYear=2024&endYear=2024",
+    );
+
+    rerender(
+      <MusicBookCategoryPanel
+        stats={statsFor(summary)}
+        kind="music"
+        selectedYear="All Time"
+        isTopMediaLoading={false}
+        allTimeItems={[]}
+        yearItems={[]}
+      />,
+    );
+    expect(screen.queryByRole("heading", { name: "专辑精选" })).not.toBeInTheDocument();
+  });
+
+  it("renders book featured row with authors and loading skeleton", async () => {
+    const summary = [
+      {
+        release_year: "All Time",
+        total_books: 3,
+        read_books: 1,
+        reading_books: 1,
+        want_books: 1,
+        book_avg_rating: 7,
+      } as Summary,
+    ];
+
+    const { rerender } = render(
+      <MusicBookCategoryPanel
+        stats={statsFor(summary)}
+        kind="books"
+        selectedYear="All Time"
+        isTopMediaLoading={false}
+        allTimeItems={[
+          featuredCard({
+            id: "b1",
+            title: "海边的卡夫卡",
+            type: "books",
+            dbType: "book",
+            authors: ["村上春树", "柴田元幸"],
+          }),
+        ]}
+        yearItems={[]}
+      />,
+    );
+
+    expect(await screen.findByRole("heading", { name: "图书精选" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "查看全部 →" })).toHaveAttribute(
+      "href",
+      "/search?type=book&sort=rating_desc",
+    );
+    expect(screen.getByRole("heading", { name: "海边的卡夫卡" })).toBeInTheDocument();
+    expect(screen.getByText("村上春树、柴田元幸")).toBeInTheDocument();
+
+    rerender(
+      <MusicBookCategoryPanel
+        stats={statsFor(summary)}
+        kind="books"
+        selectedYear="2024"
+        isTopMediaLoading
+        allTimeItems={[]}
+        yearItems={[]}
+      />,
+    );
+    expect(screen.getByTestId("poster-skeleton")).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "图书精选" })).not.toBeInTheDocument();
   });
 });
 
