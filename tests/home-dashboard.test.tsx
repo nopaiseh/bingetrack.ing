@@ -14,11 +14,16 @@ vi.mock("@/components/LoadingSkeletons", () => ({
   PosterRowSkeleton: () => <div data-testid="poster-skeleton" />,
 }));
 
-vi.mock("@/components/UpcomingHero", () => ({
-  default: ({ items }: { items: { id: string }[] }) => (
-    <div data-testid="upcoming" data-ids={items.map((item) => item.id).join(",")} />
-  ),
-}));
+vi.mock("@/components/UpcomingHero", async () => {
+  const { pickUpcoming } = await import("@/lib/upcoming");
+  return {
+    default: ({ items, renderedOn }: { items: UpcomingRelease[]; renderedOn?: string }) => {
+      const visible = pickUpcoming(items ?? [], renderedOn ?? "2099-01-01", 10);
+      if (!visible.length) return null;
+      return <div data-testid="upcoming" data-ids={visible.map((item) => item.id).join(",")} />;
+    },
+  };
+});
 vi.mock("@/components/AnimatedNumber", () => ({ default: ({ value }: { value: number }) => <>{value}</> }));
 
 vi.mock("@/components/DashboardYearPicker", () => ({
@@ -33,6 +38,31 @@ vi.mock("@/components/DashboardYearPicker", () => ({
 
 import HomeDashboard from "@/app/HomeDashboard";
 import type { ContinueWatchingCard } from "@/components/ContinueWatchingRail";
+import type { UpcomingRelease } from "@/lib/types";
+
+const futureUpcoming: UpcomingRelease = {
+  id: "next-release",
+  kind: "movie",
+  groupId: "next-release",
+  title: "Next",
+  releaseDate: "2099-06-01",
+  cover_url: "",
+  href: "/movies/next",
+  genres: [],
+  languages: [],
+};
+
+const pastUpcoming: UpcomingRelease = {
+  id: "past-release",
+  kind: "movie",
+  groupId: "past-release",
+  title: "Past",
+  releaseDate: "2020-01-01",
+  cover_url: "",
+  href: "/movies/past",
+  genres: [],
+  languages: [],
+};
 
 describe("HomeDashboard", () => {
   afterEach(() => {
@@ -87,7 +117,8 @@ describe("HomeDashboard", () => {
         topAlbums={[]}
         topBooks={[]}
         distributions={buildMediaDistributions([])}
-        upcoming={[{ id: "next-release" } as never]}
+        upcoming={[futureUpcoming]}
+        renderedOn="2026-09-27"
       />,
     );
     await act(async () => {
@@ -183,8 +214,9 @@ describe("HomeDashboard", () => {
         topAlbums={[]}
         topBooks={[]}
         distributions={buildMediaDistributions([])}
-        upcoming={[{ id: "next-release" } as never]}
+        upcoming={[futureUpcoming]}
         continueWatching={[watchingItem]}
+        renderedOn="2026-09-27"
       />,
     );
   }
@@ -210,6 +242,25 @@ describe("HomeDashboard", () => {
     const heading = screen.getByRole("heading", { name: "在看" });
     const upcoming = screen.getByTestId("upcoming");
     expect(upcoming.compareDocumentPosition(heading) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  it("缓存池非空但过滤后无展台时，仍为固定导航栏留出顶部间距", () => {
+    const { container } = render(
+      <HomeDashboard
+        summary={[]}
+        topMovies={[]}
+        topSeries={[]}
+        topAlbums={[]}
+        topBooks={[]}
+        distributions={buildMediaDistributions([])}
+        upcoming={[pastUpcoming]}
+        renderedOn="2026-09-27"
+      />,
+    );
+    expect(screen.queryByTestId("upcoming")).not.toBeInTheDocument();
+    const content = container.querySelector(".container");
+    expect(content?.className).toMatch(/\bpt-20\b/);
+    expect(content?.className).not.toMatch(/\bpt-2\b/);
   });
 
   it("不渲染全时段四格统计，年份切换只更新媒体全景", async () => {
