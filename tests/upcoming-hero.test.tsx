@@ -174,8 +174,11 @@ test("左右箭头循环切换条目", async () => {
   expect(screen.getByRole("heading", { name: "沙丘3" })).toBeInTheDocument();
 });
 
-test("没有海报时用同尺寸字块，倒计时仍在", () => {
+test("没有海报时用同尺寸字块，倒计时仍在，背景用品红雾面而非空画框", () => {
   render(<UpcomingHero items={[{ ...mockItems[0], cover_url: "" }]} />);
+  const hero = screen.getByTestId("upcoming-hero");
+  expect(hero.querySelector(".upcoming-hero-haze")).toBeInTheDocument();
+  expect(hero.querySelector(".upcoming-hero-backdrop")).not.toBeInTheDocument();
   const tile = document.querySelector(".letter-tile");
   expect(tile).toHaveAttribute("data-initial", "沙");
   expect(tile?.className).toContain("h-full");
@@ -183,8 +186,45 @@ test("没有海报时用同尺寸字块，倒计时仍在", () => {
   expect(screen.queryByRole("img", { name: "沙丘3" })).not.toBeInTheDocument();
 });
 
+test("有海报时用虚化海报作全幅背景，锐利海报在前景", () => {
+  const { container } = render(<UpcomingHero items={[mockItems[0]]} />);
+  const hero = screen.getByTestId("upcoming-hero");
+  expect(hero).toHaveClass("upcoming-hero", "w-full", "overflow-hidden");
+  expect(hero.querySelector(".upcoming-hero-backdrop")).toBeInTheDocument();
+  expect(hero.querySelector(".upcoming-hero-wash")).toBeInTheDocument();
+  expect(hero.querySelector(".upcoming-hero-fade")).toBeInTheDocument();
+  expect(hero.querySelector(".upcoming-hero-poster")).toBeInTheDocument();
+  // 装饰背景在无障碍树外；前景海报链接仍可聚焦。
+  expect(hero.querySelector('[aria-hidden="true"] .upcoming-hero-backdrop')).toBeInTheDocument();
+  expect(screen.getByRole("link", { name: "查看《沙丘3》详情" })).toBeInTheDocument();
+  expect(container.querySelectorAll("img").length).toBeGreaterThanOrEqual(1);
+  // 虚化底图只用小尺寸、懒加载，不与前景大海报抢带宽。
+  const backdropImg = hero.querySelector(".upcoming-hero-backdrop img");
+  expect(backdropImg).toHaveAttribute("sizes", "96px");
+  expect(backdropImg).toHaveAttribute("loading", "lazy");
+  const posterImg = hero.querySelector(".upcoming-hero-poster img");
+  expect(posterImg).toBeTruthy();
+  expect(posterImg).not.toHaveAttribute("sizes", "96px");
+});
+
 test("只有一条时不显示箭头和进度条", () => {
   render(<UpcomingHero items={[mockItems[0]]} />);
   expect(screen.queryByRole("button", { name: "下一条" })).not.toBeInTheDocument();
   expect(screen.queryByTestId("upcoming-progress")).not.toBeInTheDocument();
+});
+
+test("减少动态效果时背景不做漂移动画", () => {
+  vi.stubGlobal("matchMedia", (query: string) => ({
+    matches: query.includes("reduce"),
+    addEventListener: () => {},
+    removeEventListener: () => {},
+  }));
+  try {
+    render(<UpcomingHero items={[mockItems[0]]} />);
+    const backdrop = screen.getByTestId("upcoming-hero").querySelector(".upcoming-hero-backdrop");
+    expect(backdrop).toBeInTheDocument();
+    expect(backdrop?.className).not.toContain("upcoming-hero-backdrop-motion");
+  } finally {
+    vi.unstubAllGlobals();
+  }
 });

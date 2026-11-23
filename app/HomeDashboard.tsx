@@ -18,6 +18,20 @@ import {
   writeDashboardParams,
 } from "@/components/dashboard/dashboard-url";
 import type { MediaCard, MediaDistributions, Summary, UpcomingRelease } from "@/lib/types";
+import { pickUpcoming, sgtDateKey } from "@/lib/upcoming";
+
+// 与 UpcomingHero 的轮播上限一致，用来判断展台是否真的会渲染。
+const UPCOMING_HERO_MAX_ITEMS = 10;
+
+/** 每分钟与可见性变化时刷新新加坡日期，与展台跨午夜行为对齐。 */
+function subscribeToToday(onChange: () => void) {
+  const timer = window.setInterval(onChange, 60_000);
+  document.addEventListener("visibilitychange", onChange);
+  return () => {
+    window.clearInterval(timer);
+    document.removeEventListener("visibilitychange", onChange);
+  };
+}
 
 /** 根据年份和总览、电影、电视节目、音乐、图书标签组织统计、分布及榜单；年份变化时加载对应榜单。 */
 export default function HomeDashboard({
@@ -47,6 +61,7 @@ export default function HomeDashboard({
 }) {
   const tabs = TABS;
   const tabIds = TAB_IDS;
+  const today = useSyncExternalStore(subscribeToToday, sgtDateKey, () => renderedOn ?? sgtDateKey());
 
   // 从查询串派生当前视图与年份；无效值回退为总览与全时段。
   const searchParams = new URLSearchParams(useSyncExternalStore(subscribeToUrl, getUrlSnapshot, getServerUrlSnapshot));
@@ -128,48 +143,55 @@ export default function HomeDashboard({
   const isTopMediaLoading = topMediaLoading && selectedYear !== "All Time";
 
   // 放映单固定先倒计时、再在看、再在听、再在读。没有内容的那一块返回 null，这里不包额外节点，避免空区块撑出间距。
+  // 倒计时展台全幅铺开，需跳出内容栏；其余区块仍落在 max-w-7xl 容器里。
   const continueWatchingRail = <ContinueWatchingRail items={continueWatching} />;
   const continueListeningRail = <ContinueListeningRail items={continueListening} />;
   const currentlyReadingRail = <CurrentlyReadingRail items={currentlyReading} />;
   const upcomingHero = <UpcomingHero items={upcoming} renderedOn={renderedOn} />;
+  // 展台会对过期条目再过滤；不能用 raw length，否则隐藏展台后内容会顶到固定导航栏下。
+  const hasUpcomingLead = pickUpcoming(upcoming, today, UPCOMING_HERO_MAX_ITEMS).length > 0;
 
   return (
-    <div className="container mx-auto flex max-w-7xl flex-col gap-4 px-4 pb-8 pt-20 sm:gap-5 sm:px-6 sm:pt-22 md:pb-12 lg:px-8 lg:pt-24">
+    <div className="flex flex-col gap-4 sm:gap-5">
       {upcomingHero}
-      {continueWatchingRail}
-      {continueListeningRail}
-      {currentlyReadingRail}
+      <div
+        className={`container mx-auto flex max-w-7xl flex-col gap-4 px-4 pb-8 sm:gap-5 sm:px-6 md:pb-12 lg:px-8 ${hasUpcomingLead ? "pt-2 sm:pt-3" : "pt-20 sm:pt-22 lg:pt-24"}`}
+      >
+        {continueWatchingRail}
+        {continueListeningRail}
+        {currentlyReadingRail}
 
-      <DashboardIntro
-        selectedYear={selectedYear}
-        totalMovies={stats.totalMovies}
-        totalSeries={stats.totalSeries}
-        totalAlbums={stats.totalAlbums}
-        totalBooks={stats.totalBooks}
-        runtimePercent={stats.runtimePercent}
-        tabs={tabs}
-        tabIds={tabIds}
-        activeTab={activeTab}
-        onSelectTab={setActiveTab}
-        years={summary.map(/* 提取统计行的年份，供年份选择器使用。 */ (item) => item.release_year)}
-        onSelectYear={setSelectedYear}
-      />
+        <DashboardIntro
+          selectedYear={selectedYear}
+          totalMovies={stats.totalMovies}
+          totalSeries={stats.totalSeries}
+          totalAlbums={stats.totalAlbums}
+          totalBooks={stats.totalBooks}
+          runtimePercent={stats.runtimePercent}
+          tabs={tabs}
+          tabIds={tabIds}
+          activeTab={activeTab}
+          onSelectTab={setActiveTab}
+          years={summary.map(/* 提取统计行的年份，供年份选择器使用。 */ (item) => item.release_year)}
+          onSelectYear={setSelectedYear}
+        />
 
-      <DashboardPanels
-        stats={stats}
-        activeTab={activeTab}
-        selectedYear={selectedYear}
-        topMediaError={topMediaError}
-        isTopMediaLoading={isTopMediaLoading}
-        topMovies={topMovies}
-        displayedTopMovies={displayedTopMovies}
-        topSeries={topSeries}
-        displayedTopSeries={displayedTopSeries}
-        topAlbums={topAlbums}
-        displayedTopAlbums={displayedTopAlbums}
-        topBooks={topBooks}
-        displayedTopBooks={displayedTopBooks}
-      />
+        <DashboardPanels
+          stats={stats}
+          activeTab={activeTab}
+          selectedYear={selectedYear}
+          topMediaError={topMediaError}
+          isTopMediaLoading={isTopMediaLoading}
+          topMovies={topMovies}
+          displayedTopMovies={displayedTopMovies}
+          topSeries={topSeries}
+          displayedTopSeries={displayedTopSeries}
+          topAlbums={topAlbums}
+          displayedTopAlbums={displayedTopAlbums}
+          topBooks={topBooks}
+          displayedTopBooks={displayedTopBooks}
+        />
+      </div>
     </div>
   );
 }
