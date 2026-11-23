@@ -908,10 +908,10 @@ select:is(.filter-option, .filter-option-active):focus-visible {
 
 .upcoming-hero-backdrop {
   /* 放大再虚化，避免模糊边缘露底；饱和略抬高，让色调在深色画布上仍可读。 */
-  inset: -8%;
-  transform: scale(1.08);
-  filter: blur(40px) saturate(1.35);
-  opacity: 0.88;
+  inset: -10%;
+  transform: scale(1.06);
+  filter: blur(40px) saturate(1.45) brightness(1.08);
+  opacity: 1;
 }
 
 .upcoming-hero-backdrop-motion {
@@ -935,13 +935,13 @@ select:is(.filter-option, .filter-option-active):focus-visible {
 }
 
 .upcoming-hero-wash {
-  /* 左侧压暗保字对比，右侧多留背景色，避免桌面中间出现“空黑条”。 */
+  /* 左侧压暗保字对比，中间与右侧多留背景色，避免桌面中间出现“空黑条”。 */
   background: linear-gradient(
     to right,
     var(--canvas) 0%,
-    color-mix(in srgb, var(--canvas) 88%, transparent) 22%,
-    color-mix(in srgb, var(--canvas) 48%, transparent) 48%,
-    color-mix(in srgb, var(--canvas) 12%, transparent) 72%,
+    color-mix(in srgb, var(--canvas) 82%, transparent) 18%,
+    color-mix(in srgb, var(--canvas) 38%, transparent) 42%,
+    color-mix(in srgb, var(--canvas) 8%, transparent) 68%,
     transparent 100%
   );
 }
@@ -950,9 +950,9 @@ select:is(.filter-option, .filter-option-active):focus-visible {
   background: linear-gradient(
     to top,
     var(--canvas) 0%,
-    color-mix(in srgb, var(--canvas) 70%, transparent) 18%,
-    color-mix(in srgb, var(--canvas) 12%, transparent) 52%,
-    color-mix(in srgb, var(--canvas) 35%, transparent) 100%
+    color-mix(in srgb, var(--canvas) 62%, transparent) 16%,
+    color-mix(in srgb, var(--canvas) 8%, transparent) 48%,
+    color-mix(in srgb, var(--canvas) 28%, transparent) 100%
   );
 }
 
