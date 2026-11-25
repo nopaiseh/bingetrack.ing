@@ -32,10 +32,11 @@ export const getCachedMediaById = cache(async (id: string) => {
   })(id);
 });
 
-/** 专辑详情（元数据、拥有权、曲目与 credits）；写入走 media / media:item 失效。 */
+/** 专辑详情（元数据、拥有权、曲目、credits、系列）；写入走 media / media:item 失效。 */
 export const getCachedAlbumDetail = cache(async (id: string) => {
   if (!isMediaId(id)) return null;
-  return unstable_cache(getAlbumDetail, ["public-album-detail-v1"], {
+  // v2：详情附带系列名称、当前序位与同系列其他条目（含 seriesPosition）。
+  return unstable_cache(getAlbumDetail, ["public-album-detail-v2"], {
     revalidate: false,
     tags: [MEDIA_TAG, mediaItemTag(id)],
   })(id);

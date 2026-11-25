@@ -2,16 +2,21 @@ import "server-only";
 import { getSupabasePublicServer } from "@/lib/supabase/public-server";
 import { isMediaId } from "@/lib/functions/media-id";
 import { withRetry } from "@/lib/functions/retry";
-import { MediaRepositoryError } from "@/lib/functions/media-repo";
+import { getRelatedBySeries, MediaRepositoryError } from "@/lib/functions/media-repo";
 import { mapViewRowToMedia } from "@/lib/functions/media-mapper";
 import { resolveAlbumTrackCount, type OwnershipStatus } from "@/lib/album-display";
-import type { AlbumDetail, AlbumTrack } from "@/lib/types/album";
+import type { AlbumDetail, AlbumSeriesMembership, AlbumTrack } from "@/lib/types/album";
 import type { ViewAllMediaRow } from "@/lib/types";
 import { reportHandledError } from "@/lib/report-error";
 
 export type { OwnershipStatus } from "@/lib/album-display";
-export type { AlbumDetail, AlbumTrack } from "@/lib/types/album";
+export type { AlbumDetail, AlbumSeriesMembership, AlbumTrack } from "@/lib/types/album";
 export { formatTrackDuration, ownershipLabel, resolveAlbumTrackCount } from "@/lib/album-display";
+
+type SeriesMembershipRow = {
+  position: number | null;
+  media_series: { name: string | null } | Array<{ name: string | null }> | null;
+};
 
 type MusicAlbumRow = {
   track_count: number | null;
@@ -118,7 +123,31 @@ export async function getAlbumDetail(id: string): Promise<AlbumDetail | null> {
       throw new MediaRepositoryError("fetch album tracks", tracksResult.error);
     }
 
-    const media = mapViewRowToMedia(viewResult.data as ViewAllMediaRow, null, "albums");
+    // 与影视详情一致：额外读取系列成员；失败只上报，系列降级为空。
+    const { data: seriesData, error: seriesError } = await db
+      .from("media_item_series")
+      .select("position, media_series(name)")
+      .eq("media_item_id", id)
+      .order("position", { ascending: true, nullsFirst: false });
+
+    if (seriesError) {
+      reportHandledError(`Failed to fetch series memberships for album ${id}:`, seriesError);
+    }
+
+    const memberships = ((seriesData ?? []) as SeriesMembershipRow[]).flatMap((membership) => {
+      const linkedSeries = firstRelated(membership.media_series);
+      const name = linkedSeries?.name?.trim();
+      if (!name) return [];
+      return [
+        {
+          name,
+          position: typeof membership.position === "number" ? membership.position : null,
+        },
+      ];
+    });
+    const seriesNames = memberships.map((membership) => membership.name);
+
+    const media = mapViewRowToMedia(viewResult.data as ViewAllMediaRow, seriesNames, "albums");
     const artists = media.artists ?? [];
     const albumMeta = albumMetaResult.data as MusicAlbumRow | null;
     const ownership = (ownershipResult.data as OwnershipRow | null)?.status ?? null;
@@ -190,6 +219,15 @@ export async function getAlbumDetail(id: string): Promise<AlbumDetail | null> {
       };
     });
 
+    // 复用影视／图书的 getRelatedBySeries；卡片已含 seriesPosition，按序位与发行日排序。
+    const relatedGroups = await Promise.all(
+      memberships.map(async (membership): Promise<AlbumSeriesMembership> => ({
+        name: membership.name,
+        position: membership.position,
+        items: await getRelatedBySeries(membership.name, id),
+      })),
+    );
+
     return {
       media,
       artists,
@@ -198,6 +236,7 @@ export async function getAlbumDetail(id: string): Promise<AlbumDetail | null> {
       ratedCount,
       ownership,
       tracks,
+      series: relatedGroups,
     };
   });
 }

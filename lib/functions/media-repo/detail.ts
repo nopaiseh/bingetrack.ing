@@ -56,7 +56,20 @@ export async function getMediaById(id: string): Promise<Media | null> {
   });
 }
 
-// 先找到同一作品系列中的其他条目，再读取卡片数据并按发行日期排列。
+/** 系列相关卡片：先按 seriesPosition（null 靠后），再按发行日、id。 */
+function compareSeriesCards(a: MediaCard, b: MediaCard): number {
+  const pa = a.seriesPosition;
+  const pb = b.seriesPosition;
+  if (pa != null && pb != null && pa !== pb) return pa - pb;
+  if (pa != null && pb == null) return -1;
+  if (pa == null && pb != null) return 1;
+  const dateA = a.date || "";
+  const dateB = b.date || "";
+  if (dateA !== dateB) return dateA < dateB ? -1 : 1;
+  return a.id < b.id ? -1 : a.id > b.id ? 1 : 0;
+}
+
+// 先找到同一作品系列中的其他条目，再读取卡片数据；按系列序位、发行日排列，并附带 seriesPosition。
 export async function getRelatedBySeries(seriesName: string, currentId: string): Promise<MediaCard[]> {
   if (!seriesName) return [];
 
@@ -65,7 +78,7 @@ export async function getRelatedBySeries(seriesName: string, currentId: string):
 
     const { data: seriesItems, error: seriesError } = await db
       .from("media_item_series")
-      .select("media_item_id, media_series!inner(name)")
+      .select("media_item_id, position, media_series!inner(name)")
       .eq("media_series.name", seriesName)
       .neq("media_item_id", currentId)
       .order("position", { ascending: true, nullsFirst: false });
@@ -76,6 +89,12 @@ export async function getRelatedBySeries(seriesName: string, currentId: string):
     }
 
     const relatedIds = seriesItems.map(/* 提取关联作品 ID，供后续卡片查询使用。 */ (item) => item.media_item_id);
+    const positionById = new Map(
+      seriesItems.map(/* 保留 media_item_series.position，供卡片「第几部」展示。 */ (item) => [
+        String(item.media_item_id),
+        typeof item.position === "number" ? item.position : null,
+      ]),
+    );
 
     const { data, error } = await db
       .from("v_all_media")
@@ -89,7 +108,12 @@ export async function getRelatedBySeries(seriesName: string, currentId: string):
       return [];
     }
 
-    return data.map(/* 将视图行转换为轻量媒体卡片。 */ (item: ViewAllMediaRow) => mapViewRowToMediaCard(item));
+    return data
+      .map(/* 将视图行转换为轻量媒体卡片，并附带系列序位。 */ (item: ViewAllMediaRow) => ({
+        ...mapViewRowToMediaCard(item),
+        seriesPosition: positionById.get(String(item.id)) ?? null,
+      }))
+      .sort(compareSeriesCards);
   });
 }
 
