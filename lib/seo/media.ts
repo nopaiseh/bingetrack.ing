@@ -132,7 +132,7 @@ export function buildMediaMetadata(media: Media): Metadata {
   const description = getMediaDescription(media);
   const path = getMediaPath(media);
   const images = media.cover_url
-    ? [{ url: tmdbImageUrl(media.cover_url, SHARE_IMAGE_SIZE), alt: `${media.title} 海报` }]
+    ? [{ url: tmdbImageUrl(media.cover_url, SHARE_IMAGE_SIZE), alt: media.title }]
     : [{ url: "/opengraph-image", alt: "bingetrack.ing 个人媒体记录平台" }];
 
   return {
@@ -183,6 +183,17 @@ export function buildMediaJsonLd(media: Media): Record<string, unknown> {
   if (media.casts?.length)
     jsonLd.actor = media.casts.map(
       /* 将演员姓名包装为结构化数据中的 Person 对象。 */ (name) => ({ "@type": "Person", name }),
+    );
+  if (media.authors?.length)
+    jsonLd.author = media.authors.map(
+      /* 图书作者按 schema.org Book 的 author 字段输出。 */ (name) => ({ "@type": "Person", name }),
+    );
+  if (media.artists?.length)
+    jsonLd.byArtist = media.artists.map(
+      /* 专辑艺人按 schema.org MusicAlbum 的 byArtist 字段输出。 */ (name) => ({
+        "@type": "MusicGroup",
+        name,
+      }),
     );
   if (media.runtime && media.runtime > 0) jsonLd.duration = `PT${media.runtime}M`;
 
@@ -273,7 +284,7 @@ export function buildSeasonMetadata(series: Media, season: SeasonInfo): Metadata
       url: path,
       title: `${series.title} · ${season.title}`,
       description,
-      images: [{ url: image, alt: `${series.title} ${season.title} 海报` }],
+      images: [{ url: image, alt: `${series.title} · ${season.title}` }],
     },
     twitter: {
       card: "summary_large_image",

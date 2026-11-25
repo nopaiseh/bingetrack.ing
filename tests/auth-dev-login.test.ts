@@ -171,4 +171,21 @@ describe("开发环境免密登录", () => {
       expect(res.headers.get("location")).toBe("/manage");
     },
   );
+
+  it("畸形 next 参数不抛 500，回落到 /manage", async () => {
+    vi.stubEnv("NODE_ENV", "development");
+    vi.stubEnv("OWNER_EMAIL", "admin@example.com");
+    vi.stubEnv("SUPABASE_SECRET_KEY", "test-secret");
+    vi.stubEnv("NEXT_PUBLIC_SUPABASE_URL", "http://localhost:54321");
+
+    generateLink.mockResolvedValue({
+      data: { properties: { hashed_token: "mock-token-123" } },
+      error: null,
+    });
+    verifyOtp.mockResolvedValue({ error: null });
+
+    const res = await GET(new NextRequest(`http://localhost:3000/auth/dev-login?next=${encodeURIComponent("//[")}`));
+    expect(res.status).toBe(303);
+    expect(res.headers.get("location")).toBe("/manage");
+  });
 });

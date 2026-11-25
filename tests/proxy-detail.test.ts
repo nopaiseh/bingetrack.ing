@@ -17,10 +17,14 @@ describe("详情路由的非法 ID", () => {
     for (const url of [
       `/movies/${id}`,
       `/shows/${id}`,
+      `/albums/${id}`,
+      `/books/${id}`,
       `/shows/${id.toUpperCase()}`,
       `/shows/${id}/seasons/${id}`,
       "/movies",
       "/shows",
+      "/albums",
+      "/books",
     ]) {
       expect(matches(url), url).toBe(false);
     }
@@ -33,15 +37,21 @@ describe("详情路由的非法 ID", () => {
       `/movies/${id}x`,
       "/shows/old-slug",
       "/shows/old-slug/seasons/1",
+      "/albums/old-slug",
+      "/books/wp-login.php",
+      `/albums/${id}x`,
+      `/books/${id}x`,
     ]) {
       expect(matches(url), url).toBe(true);
     }
   });
 
   it("非法 ID 在渲染前返回 404，不进入页面", async () => {
-    const response = await proxy(new NextRequest("https://www.bingetrack.ing/movies/wp-login.php"));
-    expect(response.status).toBe(404);
-    expect(response.headers.get("x-middleware-next")).toBeNull();
+    for (const url of ["/movies/wp-login.php", "/shows/old-slug", "/albums/not-a-uuid", "/books/123"]) {
+      const response = await proxy(new NextRequest(`https://www.bingetrack.ing${url}`));
+      expect(response.status, url).toBe(404);
+      expect(response.headers.get("x-middleware-next"), url).toBeNull();
+    }
   });
 
   it("合法的季 UUID 通过校验，不经过 proxy", async () => {
@@ -75,7 +85,17 @@ describe("详情路由的非法 ID", () => {
   });
 
   it("节目 ID 的校验保持不变", async () => {
-    for (const url of [`/movies/${id}`, `/shows/${id}`, `/shows/${id.toUpperCase()}`, "/movies", "/shows"]) {
+    for (const url of [
+      `/movies/${id}`,
+      `/shows/${id}`,
+      `/albums/${id}`,
+      `/books/${id}`,
+      `/shows/${id.toUpperCase()}`,
+      "/movies",
+      "/shows",
+      "/albums",
+      "/books",
+    ]) {
       expect(matches(url), url).toBe(false);
     }
     for (const url of [
@@ -84,6 +104,8 @@ describe("详情路由的非法 ID", () => {
       `/movies/${id}x`,
       "/shows/old-slug",
       `/shows/old-slug/seasons/${seasonId}`,
+      "/albums/old-slug",
+      "/books/123",
     ]) {
       expect(matches(url), url).toBe(true);
     }
@@ -94,6 +116,12 @@ describe("详情路由的非法 ID", () => {
     const movie = await proxy(new NextRequest("https://www.bingetrack.ing/movies/wp-login.php"));
     expect(movie.status).toBe(404);
     expect(movie.headers.get("x-middleware-next")).toBeNull();
+    const album = await proxy(new NextRequest("https://www.bingetrack.ing/albums/old-slug"));
+    expect(album.status).toBe(404);
+    expect(album.headers.get("x-middleware-next")).toBeNull();
+    const book = await proxy(new NextRequest("https://www.bingetrack.ing/books/123"));
+    expect(book.status).toBe(404);
+    expect(book.headers.get("x-middleware-next")).toBeNull();
   });
 
   it("管理路径仍按原逻辑刷新会话并禁止缓存", async () => {

@@ -185,6 +185,10 @@ describe("Agent 专属口令登录 (/auth/agent-login)", () => {
 
     const protocolRelative = await POST(bearerPost(TOKEN, "/auth/agent-login?next=//evil.com"));
     expect(protocolRelative.headers.get("location")).toBe("/manage");
+
+    const malformed = await POST(bearerPost(TOKEN, `/auth/agent-login?next=${encodeURIComponent("//[")}`));
+    expect(malformed.status).toBe(303);
+    expect(malformed.headers.get("location")).toBe("/manage");
   });
 
   it("口令正确但缺少 Supabase 站长配置时返回 500", async () => {

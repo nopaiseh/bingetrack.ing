@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import BookInformation from "@/components/BookInformation";
 import { getCachedMediaById } from "@/lib/functions/cached-media";
+import { handlePageDataError } from "@/lib/functions/page-data";
 import { getSupabasePublicServer } from "@/lib/supabase/public-server";
 import type { Metadata } from "next";
 import { buildMediaJsonLd, buildMediaMetadata, serializeJsonLd } from "@/lib/seo/media";
@@ -13,25 +14,27 @@ export function generateStaticParams() {
   return [];
 }
 
-/** 用缓存的图书详情生成页面与分享元数据。 */
+/** 用缓存的图书详情生成页面与分享元数据；无记录或类型不符时返回未找到标题。 */
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
   const { id } = await params;
   const book = await getCachedMediaById(id);
-  if (!book) return { title: "图书未找到" };
+  if (!book || book.type !== "books") return { title: "图书未找到" };
   return buildMediaMetadata(book);
 }
 
-/** 读取 books 表上的可空出版社／页数；表未迁移时降级为空。 */
+/** 读取 books 表上的可空出版社／页数；查不到行返回空值，运行期查库失败抛出，仅构建期降级。 */
 async function loadBookMeta(id: string): Promise<{ publisher: string | null; pageCount: number | null }> {
   try {
     const db = getSupabasePublicServer();
     const { data, error } = await db.from("books").select("page_count,publisher").eq("media_item_id", id).maybeSingle();
-    if (error || !data) return { publisher: null, pageCount: null };
+    if (error) throw error;
+    if (!data) return { publisher: null, pageCount: null };
     return {
       publisher: data.publisher ?? null,
       pageCount: data.page_count != null ? Number(data.page_count) : null,
     };
-  } catch {
+  } catch (error) {
+    handlePageDataError("book meta", error);
     return { publisher: null, pageCount: null };
   }
 }
