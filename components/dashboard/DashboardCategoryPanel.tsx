@@ -4,6 +4,7 @@ import dynamic from "next/dynamic";
 import { PosterRowSkeleton } from "@/components/LoadingSkeletons";
 import { getSearchViewAllLink } from "@/components/dashboard/dashboard-links";
 import type { DashboardStats } from "@/components/dashboard/dashboard-stats";
+import TopMediaInlineError from "@/components/dashboard/TopMediaInlineError";
 import type { MediaCard } from "@/lib/types";
 import { type CatalogDbMediaType } from "@/lib/media-types";
 
@@ -29,6 +30,8 @@ export default function DashboardCategoryPanel({
   panelKey,
   categoryName,
   isTopMediaLoading,
+  topMediaError = null,
+  onRetryTopMedia,
   allTimeTitle,
   selectedYear,
   allTimeItems,
@@ -40,6 +43,8 @@ export default function DashboardCategoryPanel({
   panelKey: "movies" | "tv-shows";
   categoryName: string;
   isTopMediaLoading: boolean;
+  topMediaError?: string | null;
+  onRetryTopMedia?: () => void;
   allTimeTitle: string;
   selectedYear: string;
   allTimeItems: MediaCard[];
@@ -86,6 +91,8 @@ export default function DashboardCategoryPanel({
       <div className="space-y-12 mt-4">
         {isTopMediaLoading ? (
           <PosterRowSkeleton />
+        ) : topMediaError && onRetryTopMedia ? (
+          <TopMediaInlineError message={topMediaError} onRetry={onRetryTopMedia} />
         ) : (
           <MediaRow
             title={selectedYear === "All Time" ? allTimeTitle : `${selectedYear} 年度精选`}

@@ -7,6 +7,7 @@ import { PosterRowSkeleton } from "@/components/LoadingSkeletons";
 import MediaStatusCard from "@/components/dashboard/MediaStatusCard";
 import { getSearchViewAllLink, getStatusSearchLink } from "@/components/dashboard/dashboard-links";
 import type { DashboardStats } from "@/components/dashboard/dashboard-stats";
+import TopMediaInlineError from "@/components/dashboard/TopMediaInlineError";
 import { WATCH_STATUSES } from "@/components/watch-status";
 import type { MediaCard } from "@/lib/types";
 
@@ -26,6 +27,8 @@ export default function MusicBookCategoryPanel({
   kind,
   selectedYear,
   isTopMediaLoading,
+  topMediaError = null,
+  onRetryTopMedia,
   allTimeItems,
   yearItems,
 }: {
@@ -33,6 +36,8 @@ export default function MusicBookCategoryPanel({
   kind: MusicBookKind;
   selectedYear: string;
   isTopMediaLoading: boolean;
+  topMediaError?: string | null;
+  onRetryTopMedia?: () => void;
   allTimeItems: MediaCard[];
   yearItems: MediaCard[];
 }) {
@@ -193,6 +198,8 @@ export default function MusicBookCategoryPanel({
           <div className="mt-4 space-y-12">
             {isTopMediaLoading ? (
               <PosterRowSkeleton />
+            ) : topMediaError && onRetryTopMedia ? (
+              <TopMediaInlineError message={topMediaError} onRetry={onRetryTopMedia} />
             ) : (
               <MediaRow
                 title={selectedYear === "All Time" ? allTimeTitle : `${selectedYear} 年度精选`}
