@@ -56,15 +56,17 @@ export async function getMediaById(id: string): Promise<Media | null> {
   });
 }
 
-/** 系列相关卡片：先按 seriesPosition（null 靠后），再按发行日、id。 */
+/** 系列相关卡片：先按 seriesPosition（null 靠后），再按发行日（空日期靠后，与 SQL nullsFirst:false 一致）、id。 */
 function compareSeriesCards(a: MediaCard, b: MediaCard): number {
   const pa = a.seriesPosition;
   const pb = b.seriesPosition;
   if (pa != null && pb != null && pa !== pb) return pa - pb;
   if (pa != null && pb == null) return -1;
   if (pa == null && pb != null) return 1;
-  const dateA = a.date || "";
-  const dateB = b.date || "";
+  const dateA = a.date?.trim() || "";
+  const dateB = b.date?.trim() || "";
+  if (dateA && !dateB) return -1;
+  if (!dateA && dateB) return 1;
   if (dateA !== dateB) return dateA < dateB ? -1 : 1;
   return a.id < b.id ? -1 : a.id > b.id ? 1 : 0;
 }

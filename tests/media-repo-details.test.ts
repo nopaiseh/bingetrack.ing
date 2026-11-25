@@ -189,8 +189,9 @@ describe("作品详情与相关作品", () => {
     expect(state.queries.map((query) => query.table)).toEqual(["media_item_series"]);
   });
 
-  it("序位为空时靠后，同序位按发行日、id 排序", async () => {
+  it("序位为空时靠后，同序位按发行日、id 排序；无日期靠后", async () => {
     const thirdId = "52345678-1234-4234-8234-123456789abc";
+    const undatedId = "62345678-1234-4234-8234-123456789abc";
     state.handle = (query) => {
       if (query.table === "media_item_series") {
         return {
@@ -198,6 +199,7 @@ describe("作品详情与相关作品", () => {
             { media_item_id: mediaId, position: null },
             { media_item_id: otherId, position: 1 },
             { media_item_id: thirdId, position: 1 },
+            { media_item_id: undatedId, position: 1 },
           ],
         };
       }
@@ -206,6 +208,7 @@ describe("作品详情与相关作品", () => {
           { id: mediaId, type: "album", title: "无序", sort_date: "2010-01-01" },
           { id: thirdId, type: "album", title: "乙", sort_date: "2018-06-01" },
           { id: otherId, type: "album", title: "甲", sort_date: "2015-01-01" },
+          { id: undatedId, type: "album", title: "未定档", sort_date: null, release_year: null },
         ],
       };
     };
@@ -213,6 +216,7 @@ describe("作品详情与相关作品", () => {
     expect(cards.map((card) => [card.title, card.seriesPosition, card.date])).toEqual([
       ["甲", 1, "2015-01-01"],
       ["乙", 1, "2018-06-01"],
+      ["未定档", 1, ""],
       ["无序", null, "2010-01-01"],
     ]);
   });
