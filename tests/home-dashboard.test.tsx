@@ -285,6 +285,80 @@ describe("HomeDashboard", () => {
     expect(fetchMock.mock.calls.map(([input]) => String(input))).toEqual(["/api/top-media?type=movie&year=2024"]);
   });
 
+  it("重试进行中切换标签时，旧 effect cleanup 不会清掉重试的在途状态或写回过期错误", async () => {
+    const movieCard = {
+      id: "m-retry",
+      title: "重试成功电影",
+      date: "2024-01-01",
+      rating: 8,
+      genres: [],
+      languages: [],
+      cover_url: "/m.jpg",
+      type: "movies",
+      dbType: "movie",
+      status: "watched",
+    };
+    let resolveRetry: ((value: Response) => void) | undefined;
+    let movieAttempts = 0;
+    const fetchMock = vi.fn<(input: RequestInfo | URL, init?: RequestInit) => Promise<Response>>((input) => {
+      const url = String(input);
+      if (url === "/api/top-media?type=movie&year=2024") {
+        movieAttempts += 1;
+        if (movieAttempts === 1) {
+          return Promise.resolve(new Response("boom", { status: 500 }));
+        }
+        return new Promise((resolve) => {
+          resolveRetry = resolve;
+        });
+      }
+      return Promise.resolve(new Response("[]"));
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(
+      <HomeDashboard
+        summary={[{ release_year: "2024" } as unknown as Summary]}
+        topMovies={[]}
+        topSeries={[]}
+        topAlbums={[]}
+        topBooks={[]}
+        distributions={buildMediaDistributions([])}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("tab", { name: "电影" }));
+    await act(async () => {
+      fireEvent.click(screen.getByText("year-2024"));
+    });
+    expect(await screen.findByRole("alert")).toHaveTextContent("年度精选暂时无法加载");
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: "重试" }));
+    });
+    expect(screen.getByTestId("poster-skeleton")).toBeInTheDocument();
+    const callsAfterRetry = fetchMock.mock.calls.length;
+
+    // 切到总览会跑旧电影 effect 的 cleanup；不应再为电影发起第二请求。
+    await act(async () => {
+      fireEvent.click(screen.getByRole("tab", { name: "总览" }));
+    });
+    expect(fetchMock.mock.calls.filter(([input]) => String(input).includes("type=movie"))).toHaveLength(2);
+    expect(fetchMock.mock.calls.length).toBeGreaterThan(callsAfterRetry);
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole("tab", { name: "电影" }));
+    });
+    expect(screen.getByTestId("poster-skeleton")).toBeInTheDocument();
+    // 重试仍在途，切回电影标签不应再打 movie 接口。
+    expect(fetchMock.mock.calls.filter(([input]) => String(input).includes("type=movie"))).toHaveLength(2);
+
+    await act(async () => {
+      resolveRetry?.(new Response(JSON.stringify([movieCard])));
+    });
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "重试成功电影" })).toBeInTheDocument();
+  });
+
   it("重试进行中切到已缓存年份时直接显示数据，不停留在骨架屏", async () => {
     const movie2025 = {
       id: "m2025",

@@ -83,8 +83,8 @@ export default function HomeDashboard({
   const cacheRef = useRef(topMediaCache);
   const [topMediaErrors, setTopMediaErrors] = useState<Partial<Record<string, string>>>({});
   const [topMediaLoading, setTopMediaLoading] = useState<Partial<Record<string, boolean>>>({});
-  // 同步记录在途请求键，供 effect 去重（不能只靠 loading state，cleanup 的 setState 尚未提交时会误判）。
-  const inFlightRef = useRef(new Set<string>());
+  // 在途请求的所有权标记：cleanup／重试／后继请求只处理仍属于自己的键，避免互相清掉 loading 或写回过期错误。
+  const inFlightRef = useRef(new Map<string, symbol>());
   const requestIdRef = useRef(0);
 
   const stats = deriveDashboardStats(summary, selectedYear, distributions);
@@ -114,10 +114,13 @@ export default function HomeDashboard({
       const requestId = ++requestIdRef.current;
       const fetchKeys = toFetch.map((type) => topMediaCacheKey(selectedYear, type));
       const inFlight = inFlightRef.current;
-      for (const key of fetchKeys) inFlight.add(key);
+      const ownership = Symbol();
+      for (const key of fetchKeys) inFlight.set(key, ownership);
 
       /** 判断当前请求是否仍对应当前年份／标签视图。 */
       const isCurrent = () => !controller.signal.aborted && requestId === requestIdRef.current;
+      /** 该键是否仍由本次 effect 持有（重试或后继请求会替换 ownership）。 */
+      const stillOwns = (key: string) => inFlight.get(key) === ownership;
 
       setTopMediaLoading((prev) => {
         const next = { ...prev };
@@ -143,18 +146,19 @@ export default function HomeDashboard({
                 throw new Error("Failed to load top media");
               }
               const items = (await response.json()) as MediaCard[];
-              if (!isCurrent()) return;
+              if (!isCurrent() || !stillOwns(key)) return;
               setTopMediaCache((prev) => ({ ...prev, [key]: items }));
             } catch (error) {
               if ((error as Error).name === "AbortError") return;
-              if (!isCurrent()) return;
+              if (!isCurrent() || !stillOwns(key)) return;
               console.error(error);
               setTopMediaErrors((prev) => ({ ...prev, [key]: TOP_MEDIA_ERROR_MESSAGE }));
             } finally {
-              // 仅当前世代清 in-flight，避免 abort 后误删后继同键请求的在途标记。
-              if (isCurrent()) {
+              if (stillOwns(key)) {
                 inFlight.delete(key);
-                setTopMediaLoading((prev) => ({ ...prev, [key]: false }));
+                if (isCurrent()) {
+                  setTopMediaLoading((prev) => ({ ...prev, [key]: false }));
+                }
               }
             }
           }),
@@ -162,13 +166,20 @@ export default function HomeDashboard({
       };
 
       void loadTypes();
-      return /* 取消当前年份／标签尚未完成的榜单请求，并复位其加载标记。 */ () => {
+      return /* 取消当前年份／标签尚未完成的榜单请求；只释放仍属于本次 effect 的键。 */ () => {
         controller.abort();
-        for (const key of fetchKeys) inFlight.delete(key);
+        const keysToClear: string[] = [];
+        for (const key of fetchKeys) {
+          if (stillOwns(key)) {
+            inFlight.delete(key);
+            keysToClear.push(key);
+          }
+        }
+        if (keysToClear.length === 0) return;
         setTopMediaLoading((prev) => {
           let changed = false;
           const next = { ...prev };
-          for (const key of fetchKeys) {
+          for (const key of keysToClear) {
             if (next[key]) {
               next[key] = false;
               changed = true;
@@ -186,6 +197,7 @@ export default function HomeDashboard({
     if (selectedYear === "All Time") return;
     const year = selectedYear;
     const key = topMediaCacheKey(year, type);
+    const ownership = Symbol();
     setTopMediaCache((prev) => {
       if (prev[key] === undefined) return prev;
       const next = { ...prev };
@@ -198,29 +210,33 @@ export default function HomeDashboard({
       delete next[key];
       return next;
     });
-    inFlightRef.current.add(key);
+    inFlightRef.current.set(key, ownership);
     setTopMediaLoading((prev) => ({ ...prev, [key]: true }));
 
     void (async () => {
+      const stillOwns = () => inFlightRef.current.get(key) === ownership;
       try {
         const response = await fetch(`/api/top-media?type=${type}&year=${encodeURIComponent(year)}`);
         if (!response.ok) {
           throw new Error("Failed to load top media");
         }
         const items = (await response.json()) as MediaCard[];
+        if (!stillOwns()) return;
         // 按键写入，即使已切走年份也保留结果，避免浪费响应。
         setTopMediaCache((prev) => ({ ...prev, [key]: items }));
       } catch (error) {
         if ((error as Error).name === "AbortError") return;
+        if (!stillOwns()) return;
         console.error(error);
         setTopMediaErrors((prev) => ({ ...prev, [key]: TOP_MEDIA_ERROR_MESSAGE }));
       } finally {
-        inFlightRef.current.delete(key);
-        // 始终清掉该键的加载态，避免切年后骨架屏被错误年份的 loading 卡住。
-        setTopMediaLoading((prev) => {
-          if (!prev[key]) return prev;
-          return { ...prev, [key]: false };
-        });
+        if (stillOwns()) {
+          inFlightRef.current.delete(key);
+          setTopMediaLoading((prev) => {
+            if (!prev[key]) return prev;
+            return { ...prev, [key]: false };
+          });
+        }
       }
     })();
   };
