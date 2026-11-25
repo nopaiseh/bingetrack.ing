@@ -411,7 +411,7 @@ describe("专辑详情查询 getAlbumDetail", () => {
     ]);
   });
 
-  it("系列成员查询失败只上报，系列降级为空数组并标记 degraded", async () => {
+  it("系列成员查询失败只上报，系列降级为空数组并标记 seriesDegraded", async () => {
     state.handle = (query) => {
       if (query.table === "v_all_media") return { data: albumViewRow() };
       if (query.table === "music_albums") return { data: { track_count: 0, label: null } };
@@ -422,7 +422,7 @@ describe("专辑详情查询 getAlbumDetail", () => {
     };
 
     const result = await loadAlbumDetail(albumId);
-    expect(result.degraded).toBe(true);
+    expect(result.seriesDegraded).toBe(true);
     expect(result.value).toMatchObject({
       media: { series: [] },
       series: [],

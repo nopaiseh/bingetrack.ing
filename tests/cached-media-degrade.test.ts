@@ -1,10 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { CacheSkipError } from "@/lib/functions/cache-degrade";
+import { SeriesDegradedError } from "@/lib/functions/cache-degrade";
 
 const cacheStore = vi.hoisted(() => new Map<string, unknown>());
 const cacheSpecs = vi.hoisted(() => [] as Array<{ keys: unknown; options: unknown }>);
 const mediaForCache = vi.hoisted(() => vi.fn());
+const mediaUncached = vi.hoisted(() => vi.fn());
 const albumForCache = vi.hoisted(() => vi.fn());
+const albumUncached = vi.hoisted(() => vi.fn());
 
 vi.mock("server-only", () => ({}));
 vi.mock("react", () => ({
@@ -25,6 +27,7 @@ vi.mock("next/cache", () => ({
 }));
 vi.mock("@/lib/functions/media-repo", () => ({
   getMediaByIdForCache: (...args: unknown[]) => mediaForCache(...args),
+  getMediaById: (...args: unknown[]) => mediaUncached(...args),
   getSeasonEpisodes: vi.fn(async () => null),
   getSeasonNextEpisodeNumber: vi.fn(async () => null),
   getSeasonsBySeriesId: vi.fn(async () => []),
@@ -37,6 +40,7 @@ vi.mock("@/lib/functions/media-repo", () => ({
 }));
 vi.mock("@/lib/functions/album-repo", () => ({
   getAlbumDetailForCache: (...args: unknown[]) => albumForCache(...args),
+  getAlbumDetail: (...args: unknown[]) => albumUncached(...args),
 }));
 vi.mock("@/lib/continue-watching", () => ({
   getHomeContinue: vi.fn(async () => ({ watching: [], listening: [], reading: [] })),
@@ -61,38 +65,42 @@ const mediaId = "11111111-1111-4111-8111-111111111111";
 
 const { getCachedMediaById, getCachedAlbumDetail } = await import("@/lib/functions/cached-media");
 
-describe("详情缓存跳过降级结果", () => {
+describe("系列降级不写入缓存，成功后可正常命中", () => {
   beforeEach(() => {
     cacheStore.clear();
     cacheSpecs.length = 0;
     mediaForCache.mockReset();
+    mediaUncached.mockReset();
     albumForCache.mockReset();
+    albumUncached.mockReset();
   });
 
-  it("影视详情：降级结果返回调用方但不写入缓存；成功结果写入并可命中", async () => {
-    const degraded = { id: mediaId, title: "降级", series: [] as string[] };
-    const ok = { id: mediaId, title: "完整", series: ["系列甲"] };
+  it("影视：(a) 系列降级抛错不写缓存并无缓存重跑返回空系列；(b) 下次成功返回系列并缓存", async () => {
+    const emptySeries = { id: mediaId, title: "影片", series: [] as string[] };
+    const withSeries = { id: mediaId, title: "影片", series: ["系列甲"] };
 
-    mediaForCache.mockImplementationOnce(async () => {
-      throw new CacheSkipError(degraded);
-    });
-    expect(await getCachedMediaById(mediaId)).toEqual(degraded);
+    mediaForCache.mockRejectedValueOnce(new SeriesDegradedError());
+    mediaUncached.mockResolvedValueOnce(emptySeries);
+
+    expect(await getCachedMediaById(mediaId)).toEqual(emptySeries);
     expect(cacheStore.size).toBe(0);
     expect(mediaForCache).toHaveBeenCalledTimes(1);
+    expect(mediaUncached).toHaveBeenCalledTimes(1);
 
-    mediaForCache.mockResolvedValueOnce(ok);
-    expect(await getCachedMediaById(mediaId)).toEqual(ok);
+    mediaForCache.mockResolvedValueOnce(withSeries);
+    expect(await getCachedMediaById(mediaId)).toEqual(withSeries);
     expect(cacheStore.size).toBe(1);
     expect(mediaForCache).toHaveBeenCalledTimes(2);
+    expect(mediaUncached).toHaveBeenCalledTimes(1);
 
-    expect(await getCachedMediaById(mediaId)).toEqual(ok);
+    expect(await getCachedMediaById(mediaId)).toEqual(withSeries);
     expect(mediaForCache).toHaveBeenCalledTimes(2);
   });
 
-  it("专辑详情：降级结果不缓存；成功结果缓存", async () => {
-    const degraded = {
-      media: { id: mediaId, title: "降级专辑", series: [] },
-      series: [],
+  it("专辑：(a) 系列降级不写缓存；(b) 下次成功返回系列并缓存", async () => {
+    const emptySeries = {
+      media: { id: mediaId, title: "专辑", series: [] as string[] },
+      series: [] as Array<{ name: string; position: number | null; items: unknown[] }>,
       artists: [],
       trackCount: 0,
       label: null,
@@ -100,23 +108,26 @@ describe("详情缓存跳过降级结果", () => {
       ownership: null,
       tracks: [],
     };
-    const ok = {
-      ...degraded,
-      media: { id: mediaId, title: "完整专辑", series: ["杰伦"] },
+    const withSeries = {
+      ...emptySeries,
+      media: { id: mediaId, title: "专辑", series: ["杰伦"] },
       series: [{ name: "杰伦", position: 1, items: [] }],
     };
 
-    albumForCache.mockImplementationOnce(async () => {
-      throw new CacheSkipError(degraded);
-    });
-    expect(await getCachedAlbumDetail(mediaId)).toEqual(degraded);
-    expect(cacheStore.size).toBe(0);
+    albumForCache.mockRejectedValueOnce(new SeriesDegradedError());
+    albumUncached.mockResolvedValueOnce(emptySeries);
 
-    albumForCache.mockResolvedValueOnce(ok);
-    expect(await getCachedAlbumDetail(mediaId)).toEqual(ok);
+    expect(await getCachedAlbumDetail(mediaId)).toEqual(emptySeries);
+    expect(cacheStore.size).toBe(0);
+    expect(albumForCache).toHaveBeenCalledTimes(1);
+    expect(albumUncached).toHaveBeenCalledTimes(1);
+
+    albumForCache.mockResolvedValueOnce(withSeries);
+    expect(await getCachedAlbumDetail(mediaId)).toEqual(withSeries);
     expect(cacheStore.size).toBe(1);
 
-    expect(await getCachedAlbumDetail(mediaId)).toEqual(ok);
+    expect(await getCachedAlbumDetail(mediaId)).toEqual(withSeries);
     expect(albumForCache).toHaveBeenCalledTimes(2);
+    expect(albumUncached).toHaveBeenCalledTimes(1);
   });
 });

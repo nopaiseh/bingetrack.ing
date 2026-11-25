@@ -9,7 +9,7 @@ import type { AlbumDetail, AlbumSeriesMembership, AlbumTrack } from "@/lib/types
 import type { ViewAllMediaRow } from "@/lib/types";
 import { reportHandledError } from "@/lib/report-error";
 import type { DetailFetchResult } from "@/lib/functions/cache-degrade";
-import { throwIfDegraded } from "@/lib/functions/cache-degrade";
+import { throwIfSeriesDegraded } from "@/lib/functions/cache-degrade";
 
 export type { OwnershipStatus } from "@/lib/album-display";
 export type { AlbumDetail, AlbumSeriesMembership, AlbumTrack } from "@/lib/types/album";
@@ -85,14 +85,14 @@ function genreName(genres: GenreJoinRow["genres"]): string | null {
 /**
  * 读取专辑详情：v_all_media 元数据 + music_albums 字段 + ownership + 曲目与 credits + 系列。
  * 只读既有表／视图，不新增 RPC。找不到或非专辑返回 null。
- * 子查询失败并降级时标记 degraded（供缓存层跳过写入）。
+ * 系列／同系列查询失败时标记 seriesDegraded（供缓存层抛 SeriesDegradedError）。
  */
 export async function loadAlbumDetail(id: string): Promise<DetailFetchResult<AlbumDetail | null>> {
-  if (!isMediaId(id)) return { value: null, degraded: false };
+  if (!isMediaId(id)) return { value: null, seriesDegraded: false };
 
   return withRetry(async () => {
     const db = getSupabasePublicServer();
-    let degraded = false;
+    let seriesDegraded = false;
 
     const [viewResult, albumMetaResult, ownershipResult, tracksResult, seriesResult] = await Promise.all([
       db.from("v_all_media").select("*").eq("id", id).maybeSingle(),
@@ -118,8 +118,8 @@ export async function loadAlbumDetail(id: string): Promise<DetailFetchResult<Alb
       console.error(`Failed to fetch album view for ${id}:`, viewResult.error);
       throw new MediaRepositoryError("fetch album view", viewResult.error);
     }
-    if (!viewResult.data) return { value: null, degraded: false };
-    if (String(viewResult.data.type) !== "album") return { value: null, degraded: false };
+    if (!viewResult.data) return { value: null, seriesDegraded: false };
+    if (String(viewResult.data.type) !== "album") return { value: null, seriesDegraded: false };
 
     if (albumMetaResult.error) {
       console.error(`Failed to fetch music_albums for ${id}:`, albumMetaResult.error);
@@ -127,7 +127,6 @@ export async function loadAlbumDetail(id: string): Promise<DetailFetchResult<Alb
     }
     if (ownershipResult.error) {
       reportHandledError(`Failed to fetch ownership for album ${id}:`, ownershipResult.error);
-      degraded = true;
     }
     if (tracksResult.error) {
       console.error(`Failed to fetch album tracks for ${id}:`, tracksResult.error);
@@ -135,7 +134,7 @@ export async function loadAlbumDetail(id: string): Promise<DetailFetchResult<Alb
     }
     if (seriesResult.error) {
       reportHandledError(`Failed to fetch series memberships for album ${id}:`, seriesResult.error);
-      degraded = true;
+      seriesDegraded = true;
     }
 
     const memberships = ((seriesResult.data ?? []) as SeriesMembershipRow[]).flatMap((membership) => {
@@ -179,7 +178,6 @@ export async function loadAlbumDetail(id: string): Promise<DetailFetchResult<Alb
 
       if (creditsResult.error) {
         reportHandledError(`Failed to fetch track credits for album ${id}:`, creditsResult.error);
-        degraded = true;
       } else {
         for (const row of (creditsResult.data ?? []) as CreditJoinRow[]) {
           const bucket = creditsByTrack.get(row.media_item_id);
@@ -193,7 +191,6 @@ export async function loadAlbumDetail(id: string): Promise<DetailFetchResult<Alb
 
       if (genresResult.error) {
         reportHandledError(`Failed to fetch track genres for album ${id}:`, genresResult.error);
-        degraded = true;
       } else {
         for (const row of (genresResult.data ?? []) as GenreJoinRow[]) {
           const bucket = genresByTrack.get(row.media_item_id);
@@ -225,11 +222,11 @@ export async function loadAlbumDetail(id: string): Promise<DetailFetchResult<Alb
       };
     });
 
-    // 复用影视／图书的 loadRelatedBySeries；卡片已含 seriesPosition；失败标记 degraded。
+    // 复用影视／图书的 loadRelatedBySeries；同系列查询失败标记 seriesDegraded。
     const relatedGroups = await Promise.all(
       memberships.map(async (membership): Promise<AlbumSeriesMembership> => {
         const related = await loadRelatedBySeries(membership.name, id);
-        if (related.degraded) degraded = true;
+        if (related.seriesDegraded) seriesDegraded = true;
         return {
           name: membership.name,
           position: membership.position,
@@ -249,17 +246,17 @@ export async function loadAlbumDetail(id: string): Promise<DetailFetchResult<Alb
         tracks,
         series: relatedGroups,
       },
-      degraded,
+      seriesDegraded,
     };
   });
 }
 
-/** 公开读取；降级时仍返回兜底结果。 */
+/** 公开读取；系列降级时仍返回空系列。 */
 export async function getAlbumDetail(id: string): Promise<AlbumDetail | null> {
   return (await loadAlbumDetail(id)).value;
 }
 
-/** 供 unstable_cache：降级时抛 CacheSkipError，避免把空系列等兜底结果写入缓存。 */
+/** 供 unstable_cache：系列降级时抛 SeriesDegradedError，避免写入空系列。 */
 export async function getAlbumDetailForCache(id: string): Promise<AlbumDetail | null> {
-  return throwIfDegraded(await loadAlbumDetail(id));
+  return throwIfSeriesDegraded(await loadAlbumDetail(id));
 }

@@ -14,6 +14,7 @@ vi.mock("next/cache", () => ({
 }));
 vi.mock("@/lib/functions/media-repo", () => ({
   getMediaByIdForCache: vi.fn(async () => null),
+  getMediaById: vi.fn(async () => null),
   getSeasonEpisodes: vi.fn(async () => null),
   getSeasonNextEpisodeNumber: vi.fn(async () => null),
   getSeasonsBySeriesId: vi.fn(async () => []),
@@ -24,7 +25,10 @@ vi.mock("@/lib/functions/media-repo", () => ({
   getBookStats: vi.fn(async () => ({})),
   getAlbumStats: vi.fn(async () => ({})),
 }));
-vi.mock("@/lib/functions/album-repo", () => ({ getAlbumDetailForCache: vi.fn(async () => null) }));
+vi.mock("@/lib/functions/album-repo", () => ({
+  getAlbumDetailForCache: vi.fn(async () => null),
+  getAlbumDetail: vi.fn(async () => null),
+}));
 vi.mock("@/lib/continue-watching", () => ({
   getHomeContinue: vi.fn(async () => ({ watching: [], listening: [], reading: [] })),
   getCurrentlyReading: vi.fn(async () => []),

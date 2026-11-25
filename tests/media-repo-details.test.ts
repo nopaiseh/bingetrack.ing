@@ -98,7 +98,7 @@ describe("作品详情与相关作品", () => {
         ? { data: { id: mediaId, type: "tv_show", title: "剧" } }
         : { data: null, error: { code: "42501" } };
     const degraded = await loadMediaById(mediaId);
-    expect(degraded).toMatchObject({ value: { title: "剧", series: [] }, degraded: true });
+    expect(degraded).toMatchObject({ value: { title: "剧", series: [] }, seriesDegraded: true });
     expect(reportHandledError).toHaveBeenCalledTimes(1);
     expect(reportHandledError).toHaveBeenCalledWith(`Failed to fetch series memberships for media ${mediaId}:`, {
       code: "42501",
@@ -229,20 +229,20 @@ describe("作品详情与相关作品", () => {
     ]);
   });
 
-  it("卡片查询失败时上报并返回空列表，且标记 degraded", async () => {
+  it("卡片查询失败时上报并返回空列表，且标记 seriesDegraded", async () => {
     state.handle = (query) =>
       query.table === "media_item_series"
         ? { data: [{ media_item_id: otherId, position: 3 }] }
         : { data: null, error: { message: "cards down" } };
-    expect(await loadRelatedBySeries("系列", mediaId)).toEqual({ value: [], degraded: true });
+    expect(await loadRelatedBySeries("系列", mediaId)).toEqual({ value: [], seriesDegraded: true });
     expect(reportHandledError).toHaveBeenCalledWith("Failed to fetch related media details for series 系列:", {
       message: "cards down",
     });
   });
 
-  it("系列成员查询失败时 getRelatedBySeries 降级为空并标记 degraded", async () => {
+  it("系列成员查询失败时 getRelatedBySeries 降级为空并标记 seriesDegraded", async () => {
     state.handle = () => ({ data: null, error: { message: "membership down" } });
-    expect(await loadRelatedBySeries("系列", mediaId)).toEqual({ value: [], degraded: true });
+    expect(await loadRelatedBySeries("系列", mediaId)).toEqual({ value: [], seriesDegraded: true });
     expect(await getRelatedBySeries("系列", mediaId)).toEqual([]);
   });
 });

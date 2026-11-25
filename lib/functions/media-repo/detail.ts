@@ -7,15 +7,15 @@ import { EpisodeInfo, MediaCard, Media, SeasonEpisodePage, SeasonInfo, ViewAllMe
 import { reportHandledError } from "@/lib/report-error";
 import { nextUnwatchedEpisodeNumber } from "@/lib/season-browse";
 import type { DetailFetchResult } from "@/lib/functions/cache-degrade";
-import { throwIfDegraded } from "@/lib/functions/cache-degrade";
+import { throwIfSeriesDegraded } from "@/lib/functions/cache-degrade";
 import { MEDIA_CARD_COLUMNS, MediaRepositoryError, firstRelated, formatYearRange } from "./shared";
 
 /**
  * 详情读取完整视图；找不到记录返回 null，硬失败抛错。
- * 系列成员查询失败时降级为空系列并标记 degraded（供缓存层跳过写入）。
+ * 系列成员查询失败时降级为空系列并标记 seriesDegraded（供缓存层抛 SeriesDegradedError）。
  */
 export async function loadMediaById(id: string): Promise<DetailFetchResult<Media | null>> {
-  if (!isMediaId(id)) return { value: null, degraded: false };
+  if (!isMediaId(id)) return { value: null, seriesDegraded: false };
 
   return withRetry(async () => {
     const db = getSupabasePublicServer();
@@ -26,7 +26,7 @@ export async function loadMediaById(id: string): Promise<DetailFetchResult<Media
       console.error(`Failed to fetch media details for id ${id}:`, viewError);
       throw new MediaRepositoryError("fetch media details", viewError);
     }
-    if (!viewData) return { value: null, degraded: false };
+    if (!viewData) return { value: null, seriesDegraded: false };
 
     // 视图未提供作品所属系列，额外读取关联表；映射函数会将系列名称排序后展示。
     const { data: seriesData, error: seriesError } = await db
@@ -35,10 +35,10 @@ export async function loadMediaById(id: string): Promise<DetailFetchResult<Media
       .eq("media_item_id", id)
       .order("position", { ascending: true, nullsFirst: false });
 
-    let degraded = false;
+    let seriesDegraded = false;
     if (seriesError) {
       reportHandledError(`Failed to fetch series memberships for media ${id}:`, seriesError);
-      degraded = true;
+      seriesDegraded = true;
     }
 
     const seriesNames = (seriesData ?? []).flatMap(
@@ -59,18 +59,18 @@ export async function loadMediaById(id: string): Promise<DetailFetchResult<Media
         throw new MediaRepositoryError("fetch track album cover", error);
       }
     }
-    return { value: media, degraded };
+    return { value: media, seriesDegraded };
   });
 }
 
-/** 公开读取；降级时仍返回兜底结果。 */
+/** 公开读取；系列降级时仍返回空系列。 */
 export async function getMediaById(id: string): Promise<Media | null> {
   return (await loadMediaById(id)).value;
 }
 
-/** 供 unstable_cache：降级时抛 CacheSkipError，避免把空系列等兜底结果写入缓存。 */
+/** 供 unstable_cache：系列降级时抛 SeriesDegradedError，避免写入空系列。 */
 export async function getMediaByIdForCache(id: string): Promise<Media | null> {
-  return throwIfDegraded(await loadMediaById(id));
+  return throwIfSeriesDegraded(await loadMediaById(id));
 }
 
 /** 系列相关卡片：先按 seriesPosition（null 靠后），再按发行日（空日期靠后，与 SQL nullsFirst:false 一致）、id。 */
@@ -96,7 +96,7 @@ export async function loadRelatedBySeries(
   seriesName: string,
   currentId: string,
 ): Promise<DetailFetchResult<MediaCard[]>> {
-  if (!seriesName) return { value: [], degraded: false };
+  if (!seriesName) return { value: [], seriesDegraded: false };
 
   return withRetry(async () => {
     const db = getSupabasePublicServer();
@@ -110,9 +110,9 @@ export async function loadRelatedBySeries(
 
     if (seriesError) {
       reportHandledError(`Failed to fetch related media IDs for series ${seriesName}:`, seriesError);
-      return { value: [], degraded: true };
+      return { value: [], seriesDegraded: true };
     }
-    if (!seriesItems || seriesItems.length === 0) return { value: [], degraded: false };
+    if (!seriesItems || seriesItems.length === 0) return { value: [], seriesDegraded: false };
 
     const relatedIds = seriesItems.map(/* 提取关联作品 ID，供后续卡片查询使用。 */ (item) => item.media_item_id);
     const positionById = new Map(
@@ -133,7 +133,7 @@ export async function loadRelatedBySeries(
 
     if (error || !data) {
       reportHandledError(`Failed to fetch related media details for series ${seriesName}:`, error);
-      return { value: [], degraded: true };
+      return { value: [], seriesDegraded: true };
     }
 
     return {
@@ -145,7 +145,7 @@ export async function loadRelatedBySeries(
           }),
         )
         .sort(compareSeriesCards),
-      degraded: false,
+      seriesDegraded: false,
     };
   });
 }
