@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useSyncExternalStore } from "react";
+import { useState, useEffect, useRef, useSyncExternalStore } from "react";
 import ContinueListeningRail, { type ContinueListeningCard } from "@/components/ContinueListeningRail";
 import ContinueWatchingRail, { type ContinueWatchingCard } from "@/components/ContinueWatchingRail";
 import CurrentlyReadingRail, { type CurrentlyReadingCard } from "@/components/CurrentlyReadingRail";
@@ -17,11 +17,14 @@ import {
   subscribeToUrl,
   writeDashboardParams,
 } from "@/components/dashboard/dashboard-url";
+import { TAB_TOP_MEDIA_TYPES, topMediaCacheKey, type TopMediaType } from "@/components/dashboard/top-media-fetch";
 import type { MediaCard, MediaDistributions, Summary, UpcomingRelease } from "@/lib/types";
 import { pickUpcoming, sgtDateKey } from "@/lib/upcoming";
 
 // 与 UpcomingHero 的轮播上限一致，用来判断展台是否真的会渲染。
 const UPCOMING_HERO_MAX_ITEMS = 10;
+
+const TOP_MEDIA_ERROR_MESSAGE = "年度精选暂时无法加载，请稍后重试。";
 
 /** 每分钟与可见性变化时刷新新加坡日期，与展台跨午夜行为对齐。 */
 function subscribeToToday(onChange: () => void) {
@@ -33,7 +36,7 @@ function subscribeToToday(onChange: () => void) {
   };
 }
 
-/** 根据年份和总览、电影、电视节目、音乐、图书标签组织统计、分布及榜单；年份变化时加载对应榜单。 */
+/** 根据年份和总览、电影、电视节目、音乐、图书标签组织统计、分布及榜单；按当前标签按需加载年度榜单。 */
 export default function HomeDashboard({
   summary,
   topMovies,
@@ -75,72 +78,193 @@ export default function HomeDashboard({
   /** 切换统计年份并同步到 URL。 */
   const setSelectedYear = (year: string) => writeDashboardParams(tabIds[activeTab], year);
 
-  const [displayedTopMovies, setDisplayedTopMovies] = useState(topMovies);
-  const [displayedTopSeries, setDisplayedTopSeries] = useState(topSeries);
-  const [displayedTopAlbums, setDisplayedTopAlbums] = useState(topAlbums);
-  const [displayedTopBooks, setDisplayedTopBooks] = useState(topBooks);
-  const [topMediaError, setTopMediaError] = useState<string | null>(null);
-  const [topMediaLoading, setTopMediaLoading] = useState(false);
+  // 缓存／错误／加载均按 (year, type) 键存，避免跨年泄漏。
+  const [topMediaCache, setTopMediaCache] = useState<Partial<Record<string, MediaCard[]>>>({});
+  const cacheRef = useRef(topMediaCache);
+  const [topMediaErrors, setTopMediaErrors] = useState<Partial<Record<string, string>>>({});
+  const [topMediaLoading, setTopMediaLoading] = useState<Partial<Record<string, boolean>>>({});
+  // 在途请求的所有权标记：cleanup／重试／后继请求只处理仍属于自己的键，避免互相清掉 loading 或写回过期错误。
+  const inFlightRef = useRef(new Map<string, symbol>());
+  const requestIdRef = useRef(0);
 
   const stats = deriveDashboardStats(summary, selectedYear, distributions);
 
+  // 供拉取 effect 读取最新缓存，避免把 cache 放进依赖导致进行中的请求被中途取消。
+  useEffect(() => {
+    cacheRef.current = topMediaCache;
+  }, [topMediaCache]);
+
   useEffect(
-    /* 选择具体年份时启动榜单请求，离开该年份或卸载组件时取消请求。 */ () => {
+    /* 按当前标签按需拉取年度精选；独立处理各类型成败，并忽略过期响应。 */ () => {
       if (selectedYear === "All Time") {
         return;
       }
 
+      const needed = TAB_TOP_MEDIA_TYPES[activeTab];
+      // 已缓存或已有同键请求在途时跳过，避免标签来回切换或与重试重复打同一接口。
+      const toFetch = needed.filter((type) => {
+        const key = topMediaCacheKey(selectedYear, type);
+        return cacheRef.current[key] === undefined && !inFlightRef.current.has(key);
+      });
+      if (toFetch.length === 0) {
+        return;
+      }
+
       const controller = new AbortController();
-      /** 并行加载该年的电影、电视、专辑与图书榜单，更新加载状态与结果，并显示非取消类错误。 */
-      const loadTopMedia = async () => {
-        try {
-          setTopMediaError(null);
-          setTopMediaLoading(true);
-          setDisplayedTopMovies([]);
-          setDisplayedTopSeries([]);
-          setDisplayedTopAlbums([]);
-          setDisplayedTopBooks([]);
-          const [moviesResponse, seriesResponse, albumsResponse, booksResponse] = await Promise.all([
-            fetch(`/api/top-media?type=movie&year=${encodeURIComponent(selectedYear)}`, { signal: controller.signal }),
-            fetch(`/api/top-media?type=tv_show&year=${encodeURIComponent(selectedYear)}`, {
-              signal: controller.signal,
-            }),
-            fetch(`/api/top-media?type=album&year=${encodeURIComponent(selectedYear)}`, { signal: controller.signal }),
-            fetch(`/api/top-media?type=book&year=${encodeURIComponent(selectedYear)}`, { signal: controller.signal }),
-          ]);
-          if (!moviesResponse.ok || !seriesResponse.ok || !albumsResponse.ok || !booksResponse.ok) {
-            throw new Error("Failed to load top media");
-          }
-          const [movies, series, albums, books] = await Promise.all([
-            moviesResponse.json(),
-            seriesResponse.json(),
-            albumsResponse.json(),
-            booksResponse.json(),
-          ]);
-          setDisplayedTopMovies(movies);
-          setDisplayedTopSeries(series);
-          setDisplayedTopAlbums(albums);
-          setDisplayedTopBooks(books);
-        } catch (error) {
-          if ((error as Error).name !== "AbortError") {
-            console.error(error);
-            setTopMediaError("年度精选暂时无法加载，请稍后重试。");
-          }
-        } finally {
-          if (!controller.signal.aborted) {
-            setTopMediaLoading(false);
-          }
-        }
+      const requestId = ++requestIdRef.current;
+      const fetchKeys = toFetch.map((type) => topMediaCacheKey(selectedYear, type));
+      const inFlight = inFlightRef.current;
+      const ownership = Symbol();
+      for (const key of fetchKeys) inFlight.set(key, ownership);
+
+      /** 判断当前请求是否仍对应当前年份／标签视图。 */
+      const isCurrent = () => !controller.signal.aborted && requestId === requestIdRef.current;
+      /** 该键是否仍由本次 effect 持有（重试或后继请求会替换 ownership）。 */
+      const stillOwns = (key: string) => inFlight.get(key) === ownership;
+
+      setTopMediaLoading((prev) => {
+        const next = { ...prev };
+        for (const key of fetchKeys) next[key] = true;
+        return next;
+      });
+      setTopMediaErrors((prev) => {
+        const next = { ...prev };
+        for (const key of fetchKeys) delete next[key];
+        return next;
+      });
+
+      /** 并行拉取缺口类型；单一失败只写入该键错误，不清空其它缓存。 */
+      const loadTypes = async () => {
+        await Promise.allSettled(
+          toFetch.map(async (type) => {
+            const key = topMediaCacheKey(selectedYear, type);
+            try {
+              const response = await fetch(`/api/top-media?type=${type}&year=${encodeURIComponent(selectedYear)}`, {
+                signal: controller.signal,
+              });
+              if (!response.ok) {
+                throw new Error("Failed to load top media");
+              }
+              const items = (await response.json()) as MediaCard[];
+              if (!isCurrent() || !stillOwns(key)) return;
+              setTopMediaCache((prev) => ({ ...prev, [key]: items }));
+            } catch (error) {
+              if ((error as Error).name === "AbortError") return;
+              if (!isCurrent() || !stillOwns(key)) return;
+              console.error(error);
+              setTopMediaErrors((prev) => ({ ...prev, [key]: TOP_MEDIA_ERROR_MESSAGE }));
+            } finally {
+              if (stillOwns(key)) {
+                inFlight.delete(key);
+                if (isCurrent()) {
+                  setTopMediaLoading((prev) => ({ ...prev, [key]: false }));
+                }
+              }
+            }
+          }),
+        );
       };
 
-      void loadTopMedia();
-      return /* 取消当前年份尚未完成的榜单请求。 */ () => controller.abort();
+      void loadTypes();
+      return /* 取消当前年份／标签尚未完成的榜单请求；只释放仍属于本次 effect 的键。 */ () => {
+        controller.abort();
+        const keysToClear: string[] = [];
+        for (const key of fetchKeys) {
+          if (stillOwns(key)) {
+            inFlight.delete(key);
+            keysToClear.push(key);
+          }
+        }
+        if (keysToClear.length === 0) return;
+        setTopMediaLoading((prev) => {
+          let changed = false;
+          const next = { ...prev };
+          for (const key of keysToClear) {
+            if (next[key]) {
+              next[key] = false;
+              changed = true;
+            }
+          }
+          return changed ? next : prev;
+        });
+      };
     },
-    [selectedYear],
+    [selectedYear, activeTab],
   );
 
-  // 请求中途切回全时段时，被取消的请求不会复位加载状态，因此只在选定年份时采用该状态。
-  const isTopMediaLoading = topMediaLoading && selectedYear !== "All Time";
+  /** 仅重试指定类型；按键更新状态，不触发整表 effect，以免中止同标签其它进行中的请求。 */
+  const retryTopMedia = (type: TopMediaType) => {
+    if (selectedYear === "All Time") return;
+    const year = selectedYear;
+    const key = topMediaCacheKey(year, type);
+    const ownership = Symbol();
+    setTopMediaCache((prev) => {
+      if (prev[key] === undefined) return prev;
+      const next = { ...prev };
+      delete next[key];
+      return next;
+    });
+    setTopMediaErrors((prev) => {
+      if (!prev[key]) return prev;
+      const next = { ...prev };
+      delete next[key];
+      return next;
+    });
+    inFlightRef.current.set(key, ownership);
+    setTopMediaLoading((prev) => ({ ...prev, [key]: true }));
+
+    void (async () => {
+      const stillOwns = () => inFlightRef.current.get(key) === ownership;
+      try {
+        const response = await fetch(`/api/top-media?type=${type}&year=${encodeURIComponent(year)}`);
+        if (!response.ok) {
+          throw new Error("Failed to load top media");
+        }
+        const items = (await response.json()) as MediaCard[];
+        if (!stillOwns()) return;
+        // 按键写入，即使已切走年份也保留结果，避免浪费响应。
+        setTopMediaCache((prev) => ({ ...prev, [key]: items }));
+      } catch (error) {
+        if ((error as Error).name === "AbortError") return;
+        if (!stillOwns()) return;
+        console.error(error);
+        setTopMediaErrors((prev) => ({ ...prev, [key]: TOP_MEDIA_ERROR_MESSAGE }));
+      } finally {
+        if (stillOwns()) {
+          inFlightRef.current.delete(key);
+          setTopMediaLoading((prev) => {
+            if (!prev[key]) return prev;
+            return { ...prev, [key]: false };
+          });
+        }
+      }
+    })();
+  };
+
+  const displayedTopMovies = topMediaCache[topMediaCacheKey(selectedYear, "movie")] ?? [];
+  const displayedTopSeries = topMediaCache[topMediaCacheKey(selectedYear, "tv_show")] ?? [];
+  const displayedTopAlbums = topMediaCache[topMediaCacheKey(selectedYear, "album")] ?? [];
+  const displayedTopBooks = topMediaCache[topMediaCacheKey(selectedYear, "book")] ?? [];
+
+  // 只把当前年份的加载／错误投影成按类型的视图状态，供面板消费。
+  const activeTypes = selectedYear === "All Time" ? [] : TAB_TOP_MEDIA_TYPES[activeTab];
+  const topMediaLoadingByType: Partial<Record<TopMediaType, boolean>> =
+    selectedYear === "All Time"
+      ? {}
+      : Object.fromEntries(
+          activeTypes
+            .filter((type) => topMediaLoading[topMediaCacheKey(selectedYear, type)])
+            .map((type) => [type, true]),
+        );
+  const isTopMediaLoading = selectedYear !== "All Time" && activeTypes.some((type) => topMediaLoadingByType[type]);
+  const visibleErrors: Partial<Record<TopMediaType, string>> =
+    selectedYear === "All Time"
+      ? {}
+      : Object.fromEntries(
+          activeTypes
+            .map((type) => [type, topMediaErrors[topMediaCacheKey(selectedYear, type)]] as const)
+            .filter((entry): entry is readonly [TopMediaType, string] => Boolean(entry[1])),
+        );
 
   // 放映单固定先倒计时、再在看、再在听、再在读。没有内容的那一块返回 null，这里不包额外节点，避免空区块撑出间距。
   // 倒计时展台全幅铺开，需跳出内容栏；其余区块仍落在 max-w-7xl 容器里。
@@ -180,8 +304,10 @@ export default function HomeDashboard({
           stats={stats}
           activeTab={activeTab}
           selectedYear={selectedYear}
-          topMediaError={topMediaError}
+          topMediaErrors={visibleErrors}
           isTopMediaLoading={isTopMediaLoading}
+          topMediaLoadingByType={topMediaLoadingByType}
+          onRetryTopMedia={retryTopMedia}
           topMovies={topMovies}
           displayedTopMovies={displayedTopMovies}
           topSeries={topSeries}

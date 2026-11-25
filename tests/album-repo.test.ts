@@ -44,7 +44,7 @@ vi.mock("@/lib/report-error", async (importOriginal) => {
 });
 
 import { reportHandledError } from "@/lib/report-error";
-import { getAlbumDetail } from "@/lib/functions/album-repo";
+import { getAlbumDetail, loadAlbumDetail } from "@/lib/functions/album-repo";
 import { MediaRepositoryError } from "@/lib/functions/media-repo";
 
 const albumId = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
@@ -141,12 +141,13 @@ describe("专辑详情查询 getAlbumDetail", () => {
 
     const detail = await getAlbumDetail(albumId);
     expect(detail).toMatchObject({
-      media: { id: albumId, title: "叶惠美", type: "albums" },
+      media: { id: albumId, title: "叶惠美", type: "albums", series: [] },
       artists: ["周杰伦"],
       trackCount: 2,
       label: "阿尔发音乐",
       ratedCount: 1,
       ownership: "owned",
+      series: [],
     });
     expect(detail?.tracks).toEqual([
       {
@@ -185,6 +186,9 @@ describe("专辑详情查询 getAlbumDetail", () => {
     expect(args(credits!, "in")).toEqual(["media_item_id", [trackA, trackB]]);
     const genres = state.queries.find((query) => query.table === "media_genres");
     expect(args(genres!, "in")).toEqual(["media_item_id", [trackA, trackB]]);
+    const membership = state.queries.find((query) => query.table === "media_item_series");
+    expect(args(membership!, "select")).toEqual(["position, media_series(name)"]);
+    expect(args(membership!, "eq")).toEqual(["media_item_id", albumId]);
   });
 
   it("非法 ID 不访问数据库；视图缺失或非专辑返回 null", async () => {
@@ -194,7 +198,7 @@ describe("专辑详情查询 getAlbumDetail", () => {
     state.handle = () => ({ data: null });
     expect(await getAlbumDetail(albumId)).toBeNull();
     expect(state.queries.map((query) => query.table).sort()).toEqual(
-      ["music", "music_albums", "ownership", "v_all_media"].sort(),
+      ["media_item_series", "music", "music_albums", "ownership", "v_all_media"].sort(),
     );
 
     state.queries = [];
@@ -303,6 +307,7 @@ describe("专辑详情查询 getAlbumDetail", () => {
       label: "索尼",
       ratedCount: 1,
       tracks: [{ id: trackA, singers: [], lyricists: [], composers: [], genres: [], rating: 8 }],
+      series: [],
     });
     expect(reportHandledError).toHaveBeenCalledWith(`Failed to fetch ownership for album ${albumId}:`, {
       code: "42501",
@@ -310,5 +315,138 @@ describe("专辑详情查询 getAlbumDetail", () => {
     expect(reportHandledError).toHaveBeenCalledWith(`Failed to fetch track credits for album ${albumId}:`, {
       message: "credits down",
     });
+  });
+
+  it("返回系列名称、当前序位与同系列其他条目（含 seriesPosition）", async () => {
+    const siblingA = "dddddddd-dddd-4ddd-8ddd-dddddddddddd";
+    const siblingB = "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee";
+    let membershipPass = 0;
+    state.handle = (query) => {
+      if (query.table === "v_all_media") {
+        if (args(query, "eq")?.[0] === "id" && args(query, "eq")?.[1] === albumId) {
+          return { data: albumViewRow() };
+        }
+        return {
+          data: [
+            {
+              id: siblingB,
+              type: "album",
+              title: "范特西",
+              sort_date: "2001-09-14",
+              release_year: "2001",
+              cover_url: "https://cover.example/fantasy.jpg",
+            },
+            {
+              id: siblingA,
+              type: "album",
+              title: "八度空间",
+              sort_date: "2002-07-19",
+              release_year: "2002",
+              cover_url: "https://cover.example/oct.jpg",
+            },
+          ],
+        };
+      }
+      if (query.table === "music_albums") return { data: { track_count: 0, label: null } };
+      if (query.table === "ownership") return { data: null };
+      if (query.table === "music") return { data: [] };
+      if (query.table === "media_item_series") {
+        membershipPass += 1;
+        // 第一次：当前专辑的成员关系；之后是 getRelatedBySeries 的同系列查询。
+        if (membershipPass === 1) {
+          return {
+            data: [
+              { position: 3, media_series: { name: "杰伦专辑" } },
+              { position: null, media_series: [{ name: "华语经典" }] },
+              { position: 1, media_series: { name: "" } },
+              { position: 2, media_series: null },
+            ],
+          };
+        }
+        return {
+          data: [
+            { media_item_id: siblingB, position: 1 },
+            { media_item_id: siblingA, position: 2 },
+          ],
+        };
+      }
+      return { data: null };
+    };
+
+    const detail = await getAlbumDetail(albumId);
+    expect(detail?.media.series).toEqual(["华语经典", "杰伦专辑"]);
+    expect(detail?.series).toEqual([
+      {
+        name: "杰伦专辑",
+        position: 3,
+        items: [
+          expect.objectContaining({
+            id: siblingB,
+            title: "范特西",
+            cover_url: "https://cover.example/fantasy.jpg",
+            date: "2001-09-14",
+            release_year: "2001",
+            type: "albums",
+            seriesPosition: 1,
+          }),
+          expect.objectContaining({
+            id: siblingA,
+            title: "八度空间",
+            cover_url: "https://cover.example/oct.jpg",
+            date: "2002-07-19",
+            release_year: "2002",
+            type: "albums",
+            seriesPosition: 2,
+          }),
+        ],
+      },
+      {
+        name: "华语经典",
+        position: null,
+        items: [
+          expect.objectContaining({ id: siblingB, seriesPosition: 1 }),
+          expect.objectContaining({ id: siblingA, seriesPosition: 2 }),
+        ],
+      },
+    ]);
+  });
+
+  it("系列成员查询失败只上报，系列降级为空数组并标记 seriesDegraded", async () => {
+    state.handle = (query) => {
+      if (query.table === "v_all_media") return { data: albumViewRow() };
+      if (query.table === "music_albums") return { data: { track_count: 0, label: null } };
+      if (query.table === "ownership") return { data: null };
+      if (query.table === "music") return { data: [] };
+      if (query.table === "media_item_series") return { data: null, error: { code: "42501" } };
+      return { data: null };
+    };
+
+    const result = await loadAlbumDetail(albumId);
+    expect(result.seriesDegraded).toBe(true);
+    expect(result.value).toMatchObject({
+      media: { series: [] },
+      series: [],
+    });
+    expect(reportHandledError).toHaveBeenCalledWith(`Failed to fetch series memberships for album ${albumId}:`, {
+      code: "42501",
+    });
+  });
+
+  it("系列成员查询与视图等并行发起", async () => {
+    state.handle = (query) => {
+      if (query.table === "v_all_media") return { data: albumViewRow() };
+      if (query.table === "music_albums") return { data: { track_count: 0, label: null } };
+      if (query.table === "ownership") return { data: null };
+      if (query.table === "music") return { data: [] };
+      if (query.table === "media_item_series") return { data: [] };
+      return { data: null };
+    };
+
+    await getAlbumDetail(albumId);
+    const initialTables = state.queries
+      .slice(0, 5)
+      .map((query) => query.table)
+      .sort();
+    expect(initialTables).toEqual(["media_item_series", "music", "music_albums", "ownership", "v_all_media"].sort());
   });
 });

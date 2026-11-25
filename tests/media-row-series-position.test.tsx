@@ -76,6 +76,42 @@ describe("MediaRow showSeriesPosition", () => {
     expect(screen.queryByText(/第\d+部/)).not.toBeInTheDocument();
   });
 
+  it("模拟 getRelatedBySeries 返回：有序位显示，null／缺省不显示、不按数组下标编号", () => {
+    // 与 detail.ts 一致：mapViewRowToMediaCard 后再附带 seriesPosition（可为 null）。
+    const fromRelatedBySeries: MediaCard[] = [
+      { ...book({ id: "p2", title: "第二部" }), seriesPosition: 2 },
+      { ...book({ id: "pnull", title: "无序位" }), seriesPosition: null },
+      book({ id: "pundef", title: "未附带序位" }),
+      { ...book({ id: "p5", title: "第五部" }), seriesPosition: 5 },
+    ];
+    render(
+      <MediaRow
+        title="《金庸作品集》系列"
+        items={fromRelatedBySeries}
+        type="book"
+        showSeriesPosition
+        hideStatusBadge
+      />,
+    );
+
+    const badges = screen.getAllByTestId("media-card-series-position");
+    expect(badges.map((node) => node.textContent)).toEqual(["第2部", "第5部"]);
+    expect(
+      within(screen.getByRole("link", { name: /第二部/ })).getByTestId("media-card-series-position"),
+    ).toHaveTextContent("第2部");
+    expect(
+      within(screen.getByRole("link", { name: /第五部/ })).getByTestId("media-card-series-position"),
+    ).toHaveTextContent("第5部");
+    expect(within(screen.getByRole("link", { name: /无序位/ })).queryByTestId("media-card-series-position")).toBeNull();
+    expect(
+      within(screen.getByRole("link", { name: /未附带序位/ })).queryByTestId("media-card-series-position"),
+    ).toBeNull();
+    // 不得把数组下标当成「第1部」「第3部」等编造出来。
+    expect(screen.queryByText("第1部")).not.toBeInTheDocument();
+    expect(screen.queryByText("第3部")).not.toBeInTheDocument();
+    expect(screen.queryByText("第4部")).not.toBeInTheDocument();
+  });
+
   it("无封面字块上仍可显示系列序号；专辑 1:1 封面同样支持", () => {
     const { rerender } = render(
       <MediaRow

@@ -41,7 +41,7 @@ describe(
           title: movie.title,
           description: movie.summary,
           url: "/movies/movie%2Fid",
-          images: [{ url: movie.cover_url, alt: `${movie.title} 海报` }],
+          images: [{ url: movie.cover_url, alt: movie.title }],
         });
         expect(metadata.twitter).toMatchObject({
           card: "summary_large_image",
@@ -81,13 +81,46 @@ describe(
       "uses schema types and fallback copy from media type config for music",
       /* 验证音乐类型走配置中的 MusicRecording／MusicAlbum，默认描述来自 config。 */ () => {
         const track = { ...movie, id: "track-1", type: "music" as never, summary: "" };
-        const album = { ...movie, id: "album-1", type: "albums" as const, summary: "" };
+        const album = {
+          ...movie,
+          id: "album-1",
+          type: "albums" as const,
+          summary: "",
+          artists: ["周杰伦"],
+          directors: undefined,
+          casts: undefined,
+        };
         expect(getMediaDescription(track)).toBe("查看《测试电影》的收听记录与详细信息。");
         expect(getMediaDescription(album)).toBe("查看《测试电影》的曲目与收听记录。");
         expect(buildMediaJsonLd(track)["@type"]).toBe("MusicRecording");
         expect(buildMediaJsonLd(track)).not.toHaveProperty("url");
-        expect(buildMediaJsonLd(album)["@type"]).toBe("MusicAlbum");
-        expect(buildMediaJsonLd(album).url).toBe(`${SITE_URL}/albums/album-1`);
+        expect(buildMediaJsonLd(album)).toMatchObject({
+          "@type": "MusicAlbum",
+          url: `${SITE_URL}/albums/album-1`,
+          byArtist: [{ "@type": "MusicGroup", name: "周杰伦" }],
+        });
+      },
+    );
+
+    it(
+      "builds Book structured data with author and share alt from the title",
+      /* 验证图书 JSON-LD 输出 author，分享图 alt 使用作品标题。 */ () => {
+        const book = {
+          ...movie,
+          id: "book-1",
+          type: "books" as const,
+          authors: ["村上春树"],
+          directors: undefined,
+          casts: undefined,
+        };
+        expect(buildMediaJsonLd(book)).toMatchObject({
+          "@type": "Book",
+          url: `${SITE_URL}/books/book-1`,
+          author: [{ "@type": "Person", name: "村上春树" }],
+        });
+        expect(buildMediaMetadata(book).openGraph).toMatchObject({
+          images: [{ url: book.cover_url, alt: book.title }],
+        });
       },
     );
 

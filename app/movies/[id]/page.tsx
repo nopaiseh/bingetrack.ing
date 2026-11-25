@@ -16,11 +16,11 @@ export function generateStaticParams() {
   return [];
 }
 
-/** 用缓存的电影详情生成页面与分享元数据；无记录时返回未找到标题。 */
+/** 用缓存的电影详情生成页面与分享元数据；无记录或类型不符时返回未找到标题。 */
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
   const { id } = await params;
   const movie = await getCachedMediaById(id);
-  if (!movie) return { title: "电影未找到" };
+  if (!movie || movie.type !== "movies") return { title: "电影未找到" };
   return buildMediaMetadata(movie);
 }
 

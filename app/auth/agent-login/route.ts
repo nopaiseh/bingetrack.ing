@@ -41,10 +41,15 @@ function extractBearerToken(request: NextRequest): string | null {
   return token || null;
 }
 
-/** 解析并校验站内回跳地址，拒绝任何外部或协议相对路径。 */
+/** 解析并校验站内回跳地址，拒绝任何外部或协议相对路径；畸形 URL 回落到默认目标。 */
 function resolveSafeNext(next: string | null, origin: string): string {
-  const resolved = next?.startsWith("/") ? new URL(next, origin) : null;
-  return resolved?.origin === origin ? `${resolved.pathname}${resolved.search}${resolved.hash}` : "/manage";
+  if (!next?.startsWith("/")) return "/manage";
+  try {
+    const resolved = new URL(next, origin);
+    return resolved.origin === origin ? `${resolved.pathname}${resolved.search}${resolved.hash}` : "/manage";
+  } catch {
+    return "/manage";
+  }
 }
 
 function notFound() {

@@ -16,11 +16,11 @@ export function generateStaticParams() {
   return [];
 }
 
-/** 用缓存的电视节目详情生成页面与分享元数据；无记录时返回未找到标题。 */
+/** 用缓存的电视节目详情生成页面与分享元数据；无记录或类型不符时返回未找到标题。 */
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
   const { id } = await params;
   const series = await getCachedMediaById(id);
-  if (!series) return { title: "电视节目未找到" };
+  if (!series || series.type !== "shows") return { title: "电视节目未找到" };
   return buildMediaMetadata(series);
 }
 

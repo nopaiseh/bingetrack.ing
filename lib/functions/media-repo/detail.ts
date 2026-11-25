@@ -6,11 +6,16 @@ import { fetchAlbumCoversByTrackIds, trackDisplayCoverUrl } from "@/lib/music/tr
 import { EpisodeInfo, MediaCard, Media, SeasonEpisodePage, SeasonInfo, ViewAllMediaRow } from "@/lib/types";
 import { reportHandledError } from "@/lib/report-error";
 import { nextUnwatchedEpisodeNumber } from "@/lib/season-browse";
+import type { DetailFetchResult } from "@/lib/functions/cache-degrade";
+import { throwIfSeriesDegraded } from "@/lib/functions/cache-degrade";
 import { MEDIA_CARD_COLUMNS, MediaRepositoryError, firstRelated, formatYearRange } from "./shared";
 
-// 详情读取完整视图；找不到记录返回 null，查询失败则抛出错误。
-export async function getMediaById(id: string): Promise<Media | null> {
-  if (!isMediaId(id)) return null;
+/**
+ * 详情读取完整视图；找不到记录返回 null，硬失败抛错。
+ * 系列成员查询失败时降级为空系列并标记 seriesDegraded（供缓存层抛 SeriesDegradedError）。
+ */
+export async function loadMediaById(id: string): Promise<DetailFetchResult<Media | null>> {
+  if (!isMediaId(id)) return { value: null, seriesDegraded: false };
 
   return withRetry(async () => {
     const db = getSupabasePublicServer();
@@ -21,7 +26,7 @@ export async function getMediaById(id: string): Promise<Media | null> {
       console.error(`Failed to fetch media details for id ${id}:`, viewError);
       throw new MediaRepositoryError("fetch media details", viewError);
     }
-    if (!viewData) return null;
+    if (!viewData) return { value: null, seriesDegraded: false };
 
     // 视图未提供作品所属系列，额外读取关联表；映射函数会将系列名称排序后展示。
     const { data: seriesData, error: seriesError } = await db
@@ -30,8 +35,10 @@ export async function getMediaById(id: string): Promise<Media | null> {
       .eq("media_item_id", id)
       .order("position", { ascending: true, nullsFirst: false });
 
+    let seriesDegraded = false;
     if (seriesError) {
       reportHandledError(`Failed to fetch series memberships for media ${id}:`, seriesError);
+      seriesDegraded = true;
     }
 
     const seriesNames = (seriesData ?? []).flatMap(
@@ -52,30 +59,70 @@ export async function getMediaById(id: string): Promise<Media | null> {
         throw new MediaRepositoryError("fetch track album cover", error);
       }
     }
-    return media;
+    return { value: media, seriesDegraded };
   });
 }
 
-// 先找到同一作品系列中的其他条目，再读取卡片数据并按发行日期排列。
-export async function getRelatedBySeries(seriesName: string, currentId: string): Promise<MediaCard[]> {
-  if (!seriesName) return [];
+/** 公开读取；系列降级时仍返回空系列。 */
+export async function getMediaById(id: string): Promise<Media | null> {
+  return (await loadMediaById(id)).value;
+}
+
+/** 供 unstable_cache：系列降级时抛 SeriesDegradedError，避免写入空系列。 */
+export async function getMediaByIdForCache(id: string): Promise<Media | null> {
+  return throwIfSeriesDegraded(await loadMediaById(id));
+}
+
+/** 系列相关卡片：先按 seriesPosition（null 靠后），再按发行日（空日期靠后，与 SQL nullsFirst:false 一致）、id。 */
+function compareSeriesCards(a: MediaCard, b: MediaCard): number {
+  const pa = a.seriesPosition;
+  const pb = b.seriesPosition;
+  if (pa != null && pb != null && pa !== pb) return pa - pb;
+  if (pa != null && pb == null) return -1;
+  if (pa == null && pb != null) return 1;
+  const dateA = a.date?.trim() || "";
+  const dateB = b.date?.trim() || "";
+  if (dateA && !dateB) return -1;
+  if (!dateA && dateB) return 1;
+  if (dateA !== dateB) return dateA < dateB ? -1 : 1;
+  return a.id < b.id ? -1 : a.id > b.id ? 1 : 0;
+}
+
+/**
+ * 先找到同一作品系列中的其他条目，再读取卡片数据；按系列序位、发行日排列，并附带 seriesPosition。
+ * 子查询失败时返回空列表并标记 degraded。
+ */
+export async function loadRelatedBySeries(
+  seriesName: string,
+  currentId: string,
+): Promise<DetailFetchResult<MediaCard[]>> {
+  if (!seriesName) return { value: [], seriesDegraded: false };
 
   return withRetry(async () => {
     const db = getSupabasePublicServer();
 
     const { data: seriesItems, error: seriesError } = await db
       .from("media_item_series")
-      .select("media_item_id, media_series!inner(name)")
+      .select("media_item_id, position, media_series!inner(name)")
       .eq("media_series.name", seriesName)
       .neq("media_item_id", currentId)
       .order("position", { ascending: true, nullsFirst: false });
 
-    if (seriesError || !seriesItems || seriesItems.length === 0) {
-      if (seriesError) reportHandledError(`Failed to fetch related media IDs for series ${seriesName}:`, seriesError);
-      return [];
+    if (seriesError) {
+      reportHandledError(`Failed to fetch related media IDs for series ${seriesName}:`, seriesError);
+      return { value: [], seriesDegraded: true };
     }
+    if (!seriesItems || seriesItems.length === 0) return { value: [], seriesDegraded: false };
 
     const relatedIds = seriesItems.map(/* 提取关联作品 ID，供后续卡片查询使用。 */ (item) => item.media_item_id);
+    const positionById = new Map(
+      seriesItems.map(
+        /* 保留 media_item_series.position，供卡片「第几部」展示。 */ (item) => [
+          String(item.media_item_id),
+          typeof item.position === "number" ? item.position : null,
+        ],
+      ),
+    );
 
     const { data, error } = await db
       .from("v_all_media")
@@ -86,11 +133,26 @@ export async function getRelatedBySeries(seriesName: string, currentId: string):
 
     if (error || !data) {
       reportHandledError(`Failed to fetch related media details for series ${seriesName}:`, error);
-      return [];
+      return { value: [], seriesDegraded: true };
     }
 
-    return data.map(/* 将视图行转换为轻量媒体卡片。 */ (item: ViewAllMediaRow) => mapViewRowToMediaCard(item));
+    return {
+      value: data
+        .map(
+          /* 将视图行转换为轻量媒体卡片，并附带系列序位。 */ (item: ViewAllMediaRow) => ({
+            ...mapViewRowToMediaCard(item),
+            seriesPosition: positionById.get(String(item.id)) ?? null,
+          }),
+        )
+        .sort(compareSeriesCards),
+      seriesDegraded: false,
+    };
   });
+}
+
+/** 公开读取；降级时仍返回空列表。 */
+export async function getRelatedBySeries(seriesName: string, currentId: string): Promise<MediaCard[]> {
+  return (await loadRelatedBySeries(seriesName, currentId)).value;
 }
 
 /** 读取 v_media_season_summaries 中的季摘要。查询失败一律抛出 MediaRepositoryError。 */
