@@ -77,4 +77,11 @@ describe("BookInformation", () => {
     expect(screen.queryByText("出版社")).not.toBeInTheDocument();
     expect(screen.queryByText("页数")).not.toBeInTheDocument();
   });
+
+  it("可渲染 relatedContent 相关作品区块", () => {
+    render(
+      <BookInformation media={base} relatedContent={<div data-testid="related-books">《马尔克斯作品》系列</div>} />,
+    );
+    expect(screen.getByTestId("related-books")).toHaveTextContent("《马尔克斯作品》系列");
+  });
 });

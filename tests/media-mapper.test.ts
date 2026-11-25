@@ -60,6 +60,7 @@ test(
       assert.deepEqual(card[key], full[key as keyof typeof full]);
     }
     assert.equal(card.dbType, "tv_show");
+    assert.equal("seriesPosition" in card, false);
     for (const key of ["summary", "casts", "directors", "runtime", "regions", "series"])
       assert.equal(key in card, false);
   },

@@ -1,5 +1,9 @@
 import { notFound } from "next/navigation";
+import { Suspense } from "react";
 import BookInformation from "@/components/BookInformation";
+import MediaRow from "@/components/MediaRow";
+import { RelatedMediaLoadingSkeleton } from "@/components/LoadingSkeletons";
+import { getRelatedBySeries } from "@/lib/functions/media-repo";
 import { getCachedMediaById } from "@/lib/functions/cached-media";
 import { handlePageDataError } from "@/lib/functions/page-data";
 import { getSupabasePublicServer } from "@/lib/supabase/public-server";
@@ -39,6 +43,31 @@ async function loadBookMeta(id: string): Promise<{ publisher: string | null; pag
   }
 }
 
+/** 并行读取各作品系列的相关图书，按系列分组展示横向卡片列表。 */
+async function RelatedBooks({ seriesNames, currentId }: { seriesNames: string[]; currentId: string }) {
+  const relatedGroups = await Promise.all(
+    seriesNames.map(
+      /* 读取该作品系列中除当前作品外的条目，并保留系列名作为分组标题。 */ async (seriesName) => ({
+        seriesName,
+        items: await getRelatedBySeries(seriesName, currentId),
+      }),
+    ),
+  );
+  // 系列里没有其他条目时不渲染任何节点，外层留白容器随之隐藏。
+  const groups = relatedGroups.filter(/* 只保留有其他条目的系列分组。 */ ({ items }) => items.length > 0);
+  if (groups.length === 0) return null;
+
+  return (
+    <div className="space-y-12">
+      {groups.map(
+        /* 为一个作品系列渲染相关媒体横向列表；开启系列序号角标（字段缺失时不显示）。 */ ({ seriesName, items }) => (
+          <MediaRow key={seriesName} title={`《${seriesName}》系列`} items={items} type="book" showSeriesPosition />
+        ),
+      )}
+    </div>
+  );
+}
+
 /** 读取图书详情；缺失或类型不符时 404。展示作者、出版社、页数与三态阅读状态，无进度条。 */
 export default async function BookDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -52,7 +81,18 @@ export default async function BookDetailPage({ params }: { params: Promise<{ id:
   return (
     <div className="relative text-fg selection:bg-[var(--accent-soft)] selection:text-white font-sans">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: serializeJsonLd(jsonLd) }} />
-      <BookInformation media={book} publisher={meta.publisher} pageCount={meta.pageCount} />
+      <BookInformation
+        media={book}
+        publisher={meta.publisher}
+        pageCount={meta.pageCount}
+        relatedContent={
+          book.series && book.series.length > 0 ? (
+            <Suspense fallback={<RelatedMediaLoadingSkeleton />}>
+              <RelatedBooks seriesNames={book.series} currentId={book.id} />
+            </Suspense>
+          ) : null
+        }
+      />
     </div>
   );
 }
