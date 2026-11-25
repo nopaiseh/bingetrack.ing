@@ -1,5 +1,5 @@
 import type { OwnershipStatus } from "@/lib/album-display";
-import type { Media } from "@/lib/types";
+import type { Media, MediaCard } from "@/lib/types";
 
 export type AlbumTrack = {
   id: string;
@@ -16,6 +16,18 @@ export type AlbumTrack = {
   rating: number | null;
 };
 
+/** 专辑所属的一个作品系列：名称、当前专辑序位、同系列其他条目。 */
+export type AlbumSeriesMembership = {
+  name: string;
+  /** 当前专辑在该系列中的序位（第几部）；无则为 null。 */
+  position: number | null;
+  /**
+   * 同系列其他条目（不含当前），按 seriesPosition、发行日排序。
+   * 每张卡片含 seriesPosition，供前端渲染「第几部」。
+   */
+  items: MediaCard[];
+};
+
 export type AlbumDetail = {
   media: Media;
   artists: string[];
@@ -25,4 +37,6 @@ export type AlbumDetail = {
   ratedCount: number;
   ownership: OwnershipStatus | null;
   tracks: AlbumTrack[];
+  /** 所属系列；无系列时为空数组。media.series 同步为系列名称列表。 */
+  series: AlbumSeriesMembership[];
 };

@@ -49,7 +49,14 @@ vi.mock("@/lib/report-error", async (importOriginal) => {
 });
 
 import { reportHandledError } from "@/lib/report-error";
-import { getMediaById, getRelatedBySeries, getSeasonEpisodes, MediaRepositoryError } from "@/lib/functions/media-repo";
+import {
+  getMediaById,
+  getRelatedBySeries,
+  loadMediaById,
+  loadRelatedBySeries,
+  getSeasonEpisodes,
+  MediaRepositoryError,
+} from "@/lib/functions/media-repo";
 
 const seriesId = "12345678-1234-4234-8234-123456789abc";
 const seasonId = "22345678-1234-4234-8234-123456789abc";
@@ -90,7 +97,8 @@ describe("作品详情与相关作品", () => {
       query.table === "v_all_media"
         ? { data: { id: mediaId, type: "tv_show", title: "剧" } }
         : { data: null, error: { code: "42501" } };
-    expect(await getMediaById(mediaId)).toMatchObject({ title: "剧", series: [] });
+    const degraded = await loadMediaById(mediaId);
+    expect(degraded).toMatchObject({ value: { title: "剧", series: [] }, seriesDegraded: true });
     expect(reportHandledError).toHaveBeenCalledTimes(1);
     expect(reportHandledError).toHaveBeenCalledWith(`Failed to fetch series memberships for media ${mediaId}:`, {
       code: "42501",
@@ -142,24 +150,30 @@ describe("作品详情与相关作品", () => {
     expect(await getMediaById(mediaId)).toMatchObject({ cover_url: "" });
   });
 
-  it("相关作品只读卡片列，系列查询失败或没有其他条目时返回空列表", async () => {
+  it("相关作品只读卡片列，附带 seriesPosition，按序位再按发行日排序", async () => {
     state.handle = (query) => {
       if (query.table === "media_item_series") {
-        return { data: [{ media_item_id: otherId }, { media_item_id: mediaId }] };
+        return {
+          data: [
+            { media_item_id: otherId, position: 2 },
+            { media_item_id: mediaId, position: 1 },
+          ],
+        };
       }
       return {
         data: [
+          { id: otherId, type: "tv_show", title: "后", rating: 8, sort_date: "2019-01-01" },
           { id: mediaId, type: "movie", title: "先", sort_date: "2020-01-01" },
-          { id: otherId, type: "tv_show", title: "后", rating: 8 },
         ],
       };
     };
     const cards = await getRelatedBySeries("系列", "current");
-    expect(cards.map((card) => [card.id, card.type, card.title])).toEqual([
-      [mediaId, "movies", "先"],
-      [otherId, "shows", "后"],
+    expect(cards.map((card) => [card.id, card.type, card.title, card.seriesPosition])).toEqual([
+      [mediaId, "movies", "先", 1],
+      [otherId, "shows", "后", 2],
     ]);
     const membership = state.queries[0];
+    expect(args(membership, "select")).toEqual(["media_item_id, position, media_series!inner(name)"]);
     expect(args(membership, "eq")).toEqual(["media_series.name", "系列"]);
     expect(args(membership, "neq")).toEqual(["media_item_id", "current"]);
     const cardsQuery = state.queries[1];
@@ -183,15 +197,53 @@ describe("作品详情与相关作品", () => {
     expect(state.queries.map((query) => query.table)).toEqual(["media_item_series"]);
   });
 
-  it("卡片查询失败时上报并返回空列表", async () => {
+  it("序位为空时靠后，同序位按发行日、id 排序；无日期靠后", async () => {
+    const thirdId = "52345678-1234-4234-8234-123456789abc";
+    const undatedId = "62345678-1234-4234-8234-123456789abc";
+    state.handle = (query) => {
+      if (query.table === "media_item_series") {
+        return {
+          data: [
+            { media_item_id: mediaId, position: null },
+            { media_item_id: otherId, position: 1 },
+            { media_item_id: thirdId, position: 1 },
+            { media_item_id: undatedId, position: 1 },
+          ],
+        };
+      }
+      return {
+        data: [
+          { id: mediaId, type: "album", title: "无序", sort_date: "2010-01-01" },
+          { id: thirdId, type: "album", title: "乙", sort_date: "2018-06-01" },
+          { id: otherId, type: "album", title: "甲", sort_date: "2015-01-01" },
+          { id: undatedId, type: "album", title: "未定档", sort_date: null, release_year: null },
+        ],
+      };
+    };
+    const cards = await getRelatedBySeries("系列", "current");
+    expect(cards.map((card) => [card.title, card.seriesPosition, card.date])).toEqual([
+      ["甲", 1, "2015-01-01"],
+      ["乙", 1, "2018-06-01"],
+      ["未定档", 1, ""],
+      ["无序", null, "2010-01-01"],
+    ]);
+  });
+
+  it("卡片查询失败时上报并返回空列表，且标记 seriesDegraded", async () => {
     state.handle = (query) =>
       query.table === "media_item_series"
-        ? { data: [{ media_item_id: otherId }] }
+        ? { data: [{ media_item_id: otherId, position: 3 }] }
         : { data: null, error: { message: "cards down" } };
-    expect(await getRelatedBySeries("系列", mediaId)).toEqual([]);
+    expect(await loadRelatedBySeries("系列", mediaId)).toEqual({ value: [], seriesDegraded: true });
     expect(reportHandledError).toHaveBeenCalledWith("Failed to fetch related media details for series 系列:", {
       message: "cards down",
     });
+  });
+
+  it("系列成员查询失败时 getRelatedBySeries 降级为空并标记 seriesDegraded", async () => {
+    state.handle = () => ({ data: null, error: { message: "membership down" } });
+    expect(await loadRelatedBySeries("系列", mediaId)).toEqual({ value: [], seriesDegraded: true });
+    expect(await getRelatedBySeries("系列", mediaId)).toEqual([]);
   });
 });
 

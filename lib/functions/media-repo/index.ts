@@ -2,7 +2,10 @@ export type { AlbumStats, BookStats } from "./types";
 export { MediaRepositoryError } from "./shared";
 export {
   getMediaById,
+  getMediaByIdForCache,
+  loadMediaById,
   getRelatedBySeries,
+  loadRelatedBySeries,
   getSeasonsBySeriesId,
   getSeasonEpisodes,
   getSeasonNextEpisodeNumber,
