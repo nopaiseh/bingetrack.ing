@@ -1,11 +1,12 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { clearActivityCookie } from "@/lib/auth/activity-store";
+import { isSameOrigin } from "@/lib/auth/confirm-link";
 import { getAuthServer } from "@/lib/auth/server";
-import { isStrictSiteOrigin } from "@/lib/auth/site-origin";
 
 /** 仅接受 POST 请求清理浏览器会话，避免 GET 链接预抓取或跨站图片触发登出。 */
 export async function POST(request: NextRequest) {
-  if (!isStrictSiteOrigin(request)) {
+  // 与确认提交一样走 isSameOrigin：表单 POST 需兼容 Host／站点规范地址与 nextUrl 不一致的情况。
+  if (!isSameOrigin(request)) {
     return new NextResponse("Forbidden", {
       status: 403,
       headers: { "Content-Type": "text/plain; charset=utf-8", "Cache-Control": "private, no-store" },

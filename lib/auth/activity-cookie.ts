@@ -179,6 +179,8 @@ export function verifyActivityCookie(
 export function skipsIdleEnforcement(method: string, pathname: string) {
   if (method === "POST" && pathname === "/auth/activity") return true;
   if (method === "POST" && (pathname === "/auth/confirm" || pathname === "/auth/confirm/verify")) return true;
+  // 登出本身就是结束会话；若先被空闲检查改写响应，表单 POST 到不了 route handler。
+  if (method === "POST" && pathname === "/auth/logout") return true;
   // 打开一次性链接时如果先被空闲检查重定向，查询串会丢，确认页无法提交。
   if (method === "GET" && pathname === "/auth/confirm") return true;
   if (method === "GET" && pathname === "/auth/dev-login") return true;
