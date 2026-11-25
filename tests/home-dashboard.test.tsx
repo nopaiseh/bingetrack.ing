@@ -285,6 +285,79 @@ describe("HomeDashboard", () => {
     expect(fetchMock.mock.calls.map(([input]) => String(input))).toEqual(["/api/top-media?type=movie&year=2024"]);
   });
 
+  it("重试进行中切到已缓存年份时直接显示数据，不停留在骨架屏", async () => {
+    const movie2025 = {
+      id: "m2025",
+      title: "二零二五电影",
+      date: "2025-01-01",
+      rating: 9,
+      genres: [],
+      languages: [],
+      cover_url: "/2025.jpg",
+      type: "movies",
+      dbType: "movie",
+      status: "watched",
+    };
+    let resolveRetry: ((value: Response) => void) | undefined;
+    let movie2024Attempts = 0;
+    const fetchMock = vi.fn<(input: RequestInfo | URL, init?: RequestInit) => Promise<Response>>((input) => {
+      const url = String(input);
+      if (url === "/api/top-media?type=movie&year=2025") {
+        return Promise.resolve(new Response(JSON.stringify([movie2025])));
+      }
+      if (url === "/api/top-media?type=movie&year=2024") {
+        movie2024Attempts += 1;
+        if (movie2024Attempts === 1) {
+          return Promise.resolve(new Response("boom", { status: 500 }));
+        }
+        return new Promise((resolve) => {
+          resolveRetry = resolve;
+        });
+      }
+      return Promise.resolve(new Response("[]"));
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(
+      <HomeDashboard
+        summary={[{ release_year: "2024" } as unknown as Summary, { release_year: "2025" } as unknown as Summary]}
+        topMovies={[]}
+        topSeries={[]}
+        topAlbums={[]}
+        topBooks={[]}
+        distributions={buildMediaDistributions([])}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("tab", { name: "电影" }));
+    await act(async () => {
+      fireEvent.click(screen.getByText("year-2025"));
+    });
+    expect(await screen.findByRole("heading", { name: "二零二五电影" })).toBeInTheDocument();
+
+    await act(async () => {
+      fireEvent.click(screen.getByText("year-2024"));
+    });
+    expect(await screen.findByRole("alert")).toHaveTextContent("年度精选暂时无法加载");
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: "重试" }));
+    });
+    expect(screen.getByTestId("poster-skeleton")).toBeInTheDocument();
+
+    await act(async () => {
+      fireEvent.click(screen.getByText("year-2025"));
+    });
+    expect(screen.queryByTestId("poster-skeleton")).not.toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "二零二五电影" })).toBeInTheDocument();
+
+    await act(async () => {
+      resolveRetry?.(new Response(JSON.stringify([])));
+    });
+    expect(screen.queryByTestId("poster-skeleton")).not.toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "二零二五电影" })).toBeInTheDocument();
+  });
+
   it("某年单类型失败后切回已缓存年份，不泄漏错误且仍渲染数据", async () => {
     const movie2025 = {
       id: "m2025",

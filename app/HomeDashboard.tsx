@@ -78,15 +78,14 @@ export default function HomeDashboard({
   /** 切换统计年份并同步到 URL。 */
   const setSelectedYear = (year: string) => writeDashboardParams(tabIds[activeTab], year);
 
-  // 已拉取的 (year, type) 结果；切回已见组合时直接复用，不重复请求。
+  // 缓存／错误／加载均按 (year, type) 键存，避免跨年泄漏。
   const [topMediaCache, setTopMediaCache] = useState<Partial<Record<string, MediaCard[]>>>({});
   const cacheRef = useRef(topMediaCache);
-
-  // 错误同样按 (year, type) 键存，避免某年失败污染其它年份的缓存命中视图。
   const [topMediaErrors, setTopMediaErrors] = useState<Partial<Record<string, string>>>({});
-  const [topMediaLoadingByType, setTopMediaLoadingByType] = useState<Partial<Record<TopMediaType, boolean>>>({});
+  const [topMediaLoading, setTopMediaLoading] = useState<Partial<Record<string, boolean>>>({});
+  // 同步记录在途请求键，供 effect 去重（不能只靠 loading state，cleanup 的 setState 尚未提交时会误判）。
+  const inFlightRef = useRef(new Set<string>());
   const requestIdRef = useRef(0);
-  const selectedYearRef = useRef(selectedYear);
 
   const stats = deriveDashboardStats(summary, selectedYear, distributions);
 
@@ -95,10 +94,6 @@ export default function HomeDashboard({
     cacheRef.current = topMediaCache;
   }, [topMediaCache]);
 
-  useEffect(() => {
-    selectedYearRef.current = selectedYear;
-  }, [selectedYear]);
-
   useEffect(
     /* 按当前标签按需拉取年度精选；独立处理各类型成败，并忽略过期响应。 */ () => {
       if (selectedYear === "All Time") {
@@ -106,29 +101,36 @@ export default function HomeDashboard({
       }
 
       const needed = TAB_TOP_MEDIA_TYPES[activeTab];
-      const toFetch = needed.filter((type) => cacheRef.current[topMediaCacheKey(selectedYear, type)] === undefined);
+      // 已缓存或已有同键请求在途时跳过，避免标签来回切换或与重试重复打同一接口。
+      const toFetch = needed.filter((type) => {
+        const key = topMediaCacheKey(selectedYear, type);
+        return cacheRef.current[key] === undefined && !inFlightRef.current.has(key);
+      });
       if (toFetch.length === 0) {
         return;
       }
 
       const controller = new AbortController();
       const requestId = ++requestIdRef.current;
+      const fetchKeys = toFetch.map((type) => topMediaCacheKey(selectedYear, type));
+      const inFlight = inFlightRef.current;
+      for (const key of fetchKeys) inFlight.add(key);
 
       /** 判断当前请求是否仍对应当前年份／标签视图。 */
       const isCurrent = () => !controller.signal.aborted && requestId === requestIdRef.current;
 
-      setTopMediaLoadingByType((prev) => {
+      setTopMediaLoading((prev) => {
         const next = { ...prev };
-        for (const type of toFetch) next[type] = true;
+        for (const key of fetchKeys) next[key] = true;
         return next;
       });
       setTopMediaErrors((prev) => {
         const next = { ...prev };
-        for (const type of toFetch) delete next[topMediaCacheKey(selectedYear, type)];
+        for (const key of fetchKeys) delete next[key];
         return next;
       });
 
-      /** 并行拉取缺口类型；单一失败只写入该类型错误，不清空其它类型缓存。 */
+      /** 并行拉取缺口类型；单一失败只写入该键错误，不清空其它缓存。 */
       const loadTypes = async () => {
         await Promise.allSettled(
           toFetch.map(async (type) => {
@@ -149,8 +151,10 @@ export default function HomeDashboard({
               console.error(error);
               setTopMediaErrors((prev) => ({ ...prev, [key]: TOP_MEDIA_ERROR_MESSAGE }));
             } finally {
+              // 仅当前世代清 in-flight，避免 abort 后误删后继同键请求的在途标记。
               if (isCurrent()) {
-                setTopMediaLoadingByType((prev) => ({ ...prev, [type]: false }));
+                inFlight.delete(key);
+                setTopMediaLoading((prev) => ({ ...prev, [key]: false }));
               }
             }
           }),
@@ -160,12 +164,13 @@ export default function HomeDashboard({
       void loadTypes();
       return /* 取消当前年份／标签尚未完成的榜单请求，并复位其加载标记。 */ () => {
         controller.abort();
-        setTopMediaLoadingByType((prev) => {
+        for (const key of fetchKeys) inFlight.delete(key);
+        setTopMediaLoading((prev) => {
           let changed = false;
           const next = { ...prev };
-          for (const type of toFetch) {
-            if (next[type]) {
-              next[type] = false;
+          for (const key of fetchKeys) {
+            if (next[key]) {
+              next[key] = false;
               changed = true;
             }
           }
@@ -176,7 +181,7 @@ export default function HomeDashboard({
     [selectedYear, activeTab],
   );
 
-  /** 仅重试指定类型，不触发整表 effect，以免中止同标签其它进行中的请求。 */
+  /** 仅重试指定类型；按键更新状态，不触发整表 effect，以免中止同标签其它进行中的请求。 */
   const retryTopMedia = (type: TopMediaType) => {
     if (selectedYear === "All Time") return;
     const year = selectedYear;
@@ -193,7 +198,8 @@ export default function HomeDashboard({
       delete next[key];
       return next;
     });
-    setTopMediaLoadingByType((prev) => ({ ...prev, [type]: true }));
+    inFlightRef.current.add(key);
+    setTopMediaLoading((prev) => ({ ...prev, [key]: true }));
 
     void (async () => {
       try {
@@ -202,17 +208,19 @@ export default function HomeDashboard({
           throw new Error("Failed to load top media");
         }
         const items = (await response.json()) as MediaCard[];
-        if (selectedYearRef.current !== year) return;
+        // 按键写入，即使已切走年份也保留结果，避免浪费响应。
         setTopMediaCache((prev) => ({ ...prev, [key]: items }));
       } catch (error) {
         if ((error as Error).name === "AbortError") return;
-        if (selectedYearRef.current !== year) return;
         console.error(error);
         setTopMediaErrors((prev) => ({ ...prev, [key]: TOP_MEDIA_ERROR_MESSAGE }));
       } finally {
-        if (selectedYearRef.current === year) {
-          setTopMediaLoadingByType((prev) => ({ ...prev, [type]: false }));
-        }
+        inFlightRef.current.delete(key);
+        // 始终清掉该键的加载态，避免切年后骨架屏被错误年份的 loading 卡住。
+        setTopMediaLoading((prev) => {
+          if (!prev[key]) return prev;
+          return { ...prev, [key]: false };
+        });
       }
     })();
   };
@@ -222,8 +230,16 @@ export default function HomeDashboard({
   const displayedTopAlbums = topMediaCache[topMediaCacheKey(selectedYear, "album")] ?? [];
   const displayedTopBooks = topMediaCache[topMediaCacheKey(selectedYear, "book")] ?? [];
 
-  // 请求中途切回全时段时，被取消的请求不会复位加载状态，因此只在选定年份时采用该状态。
+  // 只把当前年份的加载／错误投影成按类型的视图状态，供面板消费。
   const activeTypes = selectedYear === "All Time" ? [] : TAB_TOP_MEDIA_TYPES[activeTab];
+  const topMediaLoadingByType: Partial<Record<TopMediaType, boolean>> =
+    selectedYear === "All Time"
+      ? {}
+      : Object.fromEntries(
+          activeTypes
+            .filter((type) => topMediaLoading[topMediaCacheKey(selectedYear, type)])
+            .map((type) => [type, true]),
+        );
   const isTopMediaLoading = selectedYear !== "All Time" && activeTypes.some((type) => topMediaLoadingByType[type]);
   const visibleErrors: Partial<Record<TopMediaType, string>> =
     selectedYear === "All Time"
