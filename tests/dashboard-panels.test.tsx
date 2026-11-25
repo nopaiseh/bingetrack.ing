@@ -133,8 +133,10 @@ describe("DashboardPanels music and books tabs", () => {
         stats={stats}
         activeTab="音乐"
         selectedYear="All Time"
-        topMediaError={null}
+        topMediaErrors={{}}
         isTopMediaLoading={false}
+        topMediaLoadingByType={{}}
+        onRetryTopMedia={() => {}}
         topMovies={[]}
         displayedTopMovies={[]}
         topSeries={[]}
@@ -155,8 +157,10 @@ describe("DashboardPanels music and books tabs", () => {
         stats={stats}
         activeTab="图书"
         selectedYear="All Time"
-        topMediaError={null}
+        topMediaErrors={{}}
         isTopMediaLoading={false}
+        topMediaLoadingByType={{}}
+        onRetryTopMedia={() => {}}
         topMovies={[]}
         displayedTopMovies={[]}
         topSeries={[]}

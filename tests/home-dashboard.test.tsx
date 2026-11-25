@@ -5,8 +5,14 @@ import type { Summary } from "@/lib/types";
 
 vi.mock("next/dynamic", () => ({
   default: () =>
-    function DynamicStub(props: { title?: string }) {
-      return <div data-testid="dynamic" data-title={props.title ?? ""} />;
+    function DynamicStub(props: { title?: string; items?: Array<{ title?: string }> }) {
+      return (
+        <div data-testid="dynamic" data-title={props.title ?? ""}>
+          {(props.items ?? []).map((item, index) => (
+            <h3 key={`${item.title ?? "item"}-${index}`}>{item.title}</h3>
+          ))}
+        </div>
+      );
     },
 }));
 
@@ -67,6 +73,7 @@ const pastUpcoming: UpcomingRelease = {
 describe("HomeDashboard", () => {
   afterEach(() => {
     vi.unstubAllGlobals();
+    window.history.replaceState(null, "", "/");
   });
 
   it("年份榜单请求未完成时切回全时段，不会停留在加载骨架", async () => {
@@ -127,7 +134,7 @@ describe("HomeDashboard", () => {
     expect(screen.getByTestId("upcoming").dataset.ids).toBe("next-release");
   });
 
-  it("年份切换时并行请求电影、剧集、专辑与图书精选", async () => {
+  it("总览标签下切换年份时并行请求四类精选", async () => {
     const fetchMock = vi.fn<(input: RequestInfo | URL, init?: RequestInit) => Promise<Response>>(() =>
       Promise.resolve(new Response("[]")),
     );
@@ -158,6 +165,204 @@ describe("HomeDashboard", () => {
       ]),
     );
     expect(urls).toHaveLength(4);
+  });
+
+  it("单类型标签只请求当前标签需要的精选", async () => {
+    const fetchMock = vi.fn<(input: RequestInfo | URL, init?: RequestInit) => Promise<Response>>(() =>
+      Promise.resolve(new Response("[]")),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(
+      <HomeDashboard
+        summary={[{ release_year: "2024" } as unknown as Summary]}
+        topMovies={[]}
+        topSeries={[]}
+        topAlbums={[]}
+        topBooks={[]}
+        distributions={buildMediaDistributions([])}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("tab", { name: "电影" }));
+    await act(async () => {
+      fireEvent.click(screen.getByText("year-2024"));
+    });
+
+    const urls = fetchMock.mock.calls.map(([input]) => String(input));
+    expect(urls).toEqual(["/api/top-media?type=movie&year=2024"]);
+  });
+
+  it("某一类型失败时不影响其它类型已加载的数据", async () => {
+    const movieCard = {
+      id: "m1",
+      title: "成功电影",
+      date: "2024-01-01",
+      rating: 8,
+      genres: [],
+      languages: [],
+      cover_url: "/m.jpg",
+      type: "movies",
+      dbType: "movie",
+      status: "watched",
+    };
+    const fetchMock = vi.fn<(input: RequestInfo | URL, init?: RequestInit) => Promise<Response>>((input) => {
+      const url = String(input);
+      if (url.includes("type=movie")) {
+        return Promise.resolve(new Response(JSON.stringify([movieCard])));
+      }
+      if (url.includes("type=tv_show")) {
+        return Promise.resolve(new Response("boom", { status: 500 }));
+      }
+      return Promise.resolve(new Response("[]"));
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(
+      <HomeDashboard
+        summary={[{ release_year: "2024" } as unknown as Summary]}
+        topMovies={[]}
+        topSeries={[]}
+        topAlbums={[]}
+        topBooks={[]}
+        distributions={buildMediaDistributions([])}
+      />,
+    );
+
+    await act(async () => {
+      fireEvent.click(screen.getByText("year-2024"));
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole("tab", { name: "电影" }));
+    });
+    expect(await screen.findByRole("heading", { name: "成功电影" })).toBeInTheDocument();
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole("tab", { name: "电视节目" }));
+    });
+    expect(await screen.findByRole("alert")).toHaveTextContent("年度精选暂时无法加载");
+    expect(screen.queryByRole("heading", { name: "成功电影" })).not.toBeInTheDocument();
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole("tab", { name: "电影" }));
+    });
+    expect(screen.getByRole("heading", { name: "成功电影" })).toBeInTheDocument();
+    expect(fetchMock.mock.calls.filter(([input]) => String(input).includes("type=movie"))).toHaveLength(1);
+  });
+
+  it("已缓存的年份与类型切回时不重新请求", async () => {
+    const fetchMock = vi.fn<(input: RequestInfo | URL, init?: RequestInit) => Promise<Response>>(() =>
+      Promise.resolve(new Response("[]")),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(
+      <HomeDashboard
+        summary={[{ release_year: "2024" } as unknown as Summary]}
+        topMovies={[]}
+        topSeries={[]}
+        topAlbums={[]}
+        topBooks={[]}
+        distributions={buildMediaDistributions([])}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("tab", { name: "电影" }));
+    await act(async () => {
+      fireEvent.click(screen.getByText("year-2024"));
+    });
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+
+    await act(async () => {
+      fireEvent.click(screen.getByText("year-All Time"));
+    });
+    await act(async () => {
+      fireEvent.click(screen.getByText("year-2024"));
+    });
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(fetchMock.mock.calls.map(([input]) => String(input))).toEqual(["/api/top-media?type=movie&year=2024"]);
+  });
+
+  it("过期的年度精选响应不会覆盖当前年份视图", async () => {
+    let resolve2024: ((value: Response) => void) | undefined;
+    const fetchMock = vi.fn<(input: RequestInfo | URL, init?: RequestInit) => Promise<Response>>((input) => {
+      const url = String(input);
+      if (url.includes("year=2024")) {
+        // 故意不在 abort 时拒绝，模拟已发出的响应在切换年份后才到达。
+        return new Promise((resolve) => {
+          resolve2024 = resolve;
+        });
+      }
+      if (url.includes("year=2025")) {
+        return Promise.resolve(
+          new Response(
+            JSON.stringify([
+              {
+                id: "m2025",
+                title: "二零二五电影",
+                date: "2025-01-01",
+                rating: 9,
+                genres: [],
+                languages: [],
+                cover_url: "/2025.jpg",
+                type: "movies",
+                dbType: "movie",
+                status: "watched",
+              },
+            ]),
+          ),
+        );
+      }
+      return Promise.resolve(new Response("[]"));
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(
+      <HomeDashboard
+        summary={[{ release_year: "2024" } as unknown as Summary, { release_year: "2025" } as unknown as Summary]}
+        topMovies={[]}
+        topSeries={[]}
+        topAlbums={[]}
+        topBooks={[]}
+        distributions={buildMediaDistributions([])}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("tab", { name: "电影" }));
+    await act(async () => {
+      fireEvent.click(screen.getByText("year-2024"));
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByText("year-2025"));
+    });
+    expect(await screen.findByRole("heading", { name: "二零二五电影" })).toBeInTheDocument();
+
+    await act(async () => {
+      resolve2024?.(
+        new Response(
+          JSON.stringify([
+            {
+              id: "m2024",
+              title: "二零二四电影",
+              date: "2024-01-01",
+              rating: 8,
+              genres: [],
+              languages: [],
+              cover_url: "/2024.jpg",
+              type: "movies",
+              dbType: "movie",
+              status: "watched",
+            },
+          ]),
+        ),
+      );
+    });
+
+    expect(screen.getByRole("heading", { name: "二零二五电影" })).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "二零二四电影" })).not.toBeInTheDocument();
   });
 
   it("把在看放在看板最上方，没有条目时不占位", () => {
@@ -193,7 +398,7 @@ describe("HomeDashboard", () => {
       />,
     );
     expect(screen.getByRole("heading", { name: "在看" })).toBeInTheDocument();
-    expect(screen.getByRole("link")).toHaveAttribute("href", "/shows/show-1");
+    expect(screen.getByRole("link", { name: /跑男/ })).toHaveAttribute("href", "/shows/show-1");
   });
 
   const watchingItem: ContinueWatchingCard = {
