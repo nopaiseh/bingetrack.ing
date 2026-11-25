@@ -1,6 +1,6 @@
 begin;
 
-select plan(10);
+select plan(12);
 
 select ok(
   has_function_privilege('anon', 'public.search_media(text, text[], boolean, text[])', 'EXECUTE')
@@ -52,6 +52,12 @@ insert into public.media_item_series (media_item_id, series_id, position) values
   ('70000000-0000-4000-8000-000000000002', '72000000-0000-4000-8000-000000000001', 1),
   ('70000000-0000-4000-8000-000000000003', '72000000-0000-4000-8000-000000000001', 2);
 
+-- LIKE 通配符字面匹配：标题含 %／_ 的条目，以及不含通配符的对照条目。
+insert into public.media_items (id, type, title, release_date) values
+  ('73000000-0000-4000-8000-000000000001', 'movie', '100% 完成度', '2021-01-01'),
+  ('73000000-0000-4000-8000-000000000002', 'movie', 'under_score 片名', '2021-02-01'),
+  ('73000000-0000-4000-8000-000000000003', 'movie', '普通片名无通配', '2021-03-01');
+
 set local role anon;
 
 select is(
@@ -95,6 +101,40 @@ select ok(
   (select count(*) from public.search_media('检索上限回归 1', '{}', true)) = 0
   and (select count(*) from public.search_media('检索上限回归 2', '{}', true)) = 1,
   'series-only keyword search keeps title matches that belong to a collection'
+);
+
+select ok(
+  (select count(*)::integer from public.search_media('%')) = 1
+  and exists (
+    select 1 from public.search_media('%')
+    where id = '73000000-0000-4000-8000-000000000001'
+  )
+  and not exists (
+    select 1 from public.search_media('%')
+    where id in (
+      '73000000-0000-4000-8000-000000000002',
+      '73000000-0000-4000-8000-000000000003',
+      '70000000-0000-4000-8000-000000000001'
+    )
+  ),
+  'keyword percent matches only titles containing a literal percent sign'
+);
+
+select ok(
+  (select count(*)::integer from public.search_media('_')) = 1
+  and exists (
+    select 1 from public.search_media('_')
+    where id = '73000000-0000-4000-8000-000000000002'
+  )
+  and not exists (
+    select 1 from public.search_media('_')
+    where id in (
+      '73000000-0000-4000-8000-000000000001',
+      '73000000-0000-4000-8000-000000000003',
+      '70000000-0000-4000-8000-000000000001'
+    )
+  ),
+  'keyword underscore matches only titles containing a literal underscore'
 );
 
 reset role;
