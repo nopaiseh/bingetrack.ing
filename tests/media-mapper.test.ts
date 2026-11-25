@@ -55,10 +55,12 @@ test(
     const card = mapViewRowToMediaCard(row);
     const full = mapViewRowToMedia(row);
     for (const key of Object.keys(card) as Array<keyof typeof card>) {
-      if (key === "dbType" || key === "artists") continue;
-      assert.deepEqual(card[key], full[key]);
+      // seriesPosition 仅卡片可选；映射器不从视图填充，详情 Media 也无此字段。
+      if (key === "dbType" || key === "artists" || key === "seriesPosition") continue;
+      assert.deepEqual(card[key], full[key as keyof typeof full]);
     }
     assert.equal(card.dbType, "tv_show");
+    assert.equal("seriesPosition" in card, false);
     for (const key of ["summary", "casts", "directors", "runtime", "regions", "series"])
       assert.equal(key in card, false);
   },

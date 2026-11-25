@@ -46,6 +46,11 @@ export type MediaCard = Omit<
   authors?: string[];
   /** 数据库 media_type；搜索类型标签优先用它，避免未启用路由被归一成影视段。 */
   dbType?: string;
+  /**
+   * 所属作品系列中的顺序（media_item_series.position）。
+   * 列表／相关作品接口未带回该字段时保持缺省，卡片不显示「第 N 部」。
+   */
+  seriesPosition?: number | null;
 };
 
 // 首页倒计时展台的统一条目；以后新增音乐、书籍时只需扩展 kind 并补充对应查询。

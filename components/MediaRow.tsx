@@ -34,17 +34,43 @@ export function resolveRowDbType(item: MediaCard, rowType?: RowDbMediaType): Row
   return rowType ?? null;
 }
 
+/**
+ * 有整数系列序号时返回「第 N 部」文案；缺省／非整数不编造序号。
+ * 供 MediaRow 角标与单测共用。
+ */
+export function formatSeriesPositionLabel(position: number | null | undefined): string | null {
+  if (position == null || !Number.isInteger(position) || position < 0) return null;
+  return `第${position}部`;
+}
+
+/** 封面左上角系列序号角标；文案本身可读，不依赖颜色表意。 */
+function SeriesPositionBadge({ position }: { position: number | null | undefined }) {
+  const label = formatSeriesPositionLabel(position);
+  if (!label) return null;
+  return (
+    <span
+      data-testid="media-card-series-position"
+      className="pointer-events-none absolute top-2 left-2 z-10 inline-flex items-center rounded-full border border-[var(--border)] bg-[var(--canvas)] px-2 py-1 text-xs font-medium text-fg-muted"
+      aria-label={`系列${label}`}
+    >
+      {label}
+    </span>
+  );
+}
+
 /** 专辑方封面；正文与搜索音乐卡共用 MusicCardBody（年、评分、类型；无「专辑」角标）。 */
 function AlbumItemCard({
   item,
   eager,
   preload,
   hideStatusBadge,
+  showSeriesPosition,
 }: {
   item: MediaCard;
   eager: boolean;
   preload: boolean;
   hideStatusBadge?: boolean;
+  showSeriesPosition?: boolean;
 }) {
   const title = item.title.trim() || "未命名专辑";
 
@@ -65,6 +91,7 @@ function AlbumItemCard({
         ) : (
           <LetterTile title={title} decorative />
         )}
+        {showSeriesPosition ? <SeriesPositionBadge position={item.seriesPosition} /> : null}
         {!hideStatusBadge && <MediaCardStatusBadge status={item.status} kind="listen" />}
       </div>
       <MusicCardBody item={{ ...item, title }} headingLevel={3} artistFallback="dash" />
@@ -79,12 +106,14 @@ function PosterItemCard({
   eager,
   preload,
   hideStatusBadge,
+  showSeriesPosition,
 }: {
   item: MediaCard;
   dbType: Exclude<RowDbMediaType, "album">;
   eager: boolean;
   preload: boolean;
   hideStatusBadge?: boolean;
+  showSeriesPosition?: boolean;
 }) {
   const bodyDbType = dbType === "tv_show" ? "tv_show" : dbType === "book" ? "book" : "movie";
   return (
@@ -104,6 +133,7 @@ function PosterItemCard({
         ) : (
           <LetterTile title={item.title} decorative />
         )}
+        {showSeriesPosition ? <SeriesPositionBadge position={item.seriesPosition} /> : null}
         {!hideStatusBadge && <MediaCardStatusBadge status={item.status} kind={dbType === "book" ? "book" : "watch"} />}
       </div>
       <MediaCardBody item={item} dbType={bodyDbType} />
@@ -119,6 +149,7 @@ export default function MediaRow({
   type,
   eagerCount = 0,
   hideStatusBadge = false,
+  showSeriesPosition = false,
 }: {
   title: string;
   items: readonly MediaCard[];
@@ -127,6 +158,11 @@ export default function MediaRow({
   type?: RowDbMediaType;
   eagerCount?: number;
   hideStatusBadge?: boolean;
+  /**
+   * 为 true 时在封面左上角显示「第 N 部」（读 item.seriesPosition）。
+   * 缺省关闭，其它目录行不受影响；字段缺失时不显示角标。
+   */
+  showSeriesPosition?: boolean;
 }) {
   const scrollerRef = useRef<HTMLDivElement>(null);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
@@ -237,7 +273,13 @@ export default function MediaRow({
                     className="surface-card interactive-media-card group flex w-40 flex-none snap-start cursor-pointer flex-col overflow-hidden rounded-xl focus-ring last:snap-end sm:w-48"
                     aria-label={artist ? `${albumTitle}，${artist}` : albumTitle}
                   >
-                    <AlbumItemCard item={media} eager={eager} preload={preload} hideStatusBadge={hideStatusBadge} />
+                    <AlbumItemCard
+                      item={media}
+                      eager={eager}
+                      preload={preload}
+                      hideStatusBadge={hideStatusBadge}
+                      showSeriesPosition={showSeriesPosition}
+                    />
                   </HoverPrefetchLink>
                 );
               }
@@ -253,6 +295,7 @@ export default function MediaRow({
                     eager={eager}
                     preload={preload}
                     hideStatusBadge={hideStatusBadge}
+                    showSeriesPosition={showSeriesPosition}
                   />
                 </HoverPrefetchLink>
               );
