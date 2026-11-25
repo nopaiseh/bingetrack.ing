@@ -49,7 +49,14 @@ vi.mock("@/lib/report-error", async (importOriginal) => {
 });
 
 import { reportHandledError } from "@/lib/report-error";
-import { getMediaById, getRelatedBySeries, getSeasonEpisodes, MediaRepositoryError } from "@/lib/functions/media-repo";
+import {
+  getMediaById,
+  getRelatedBySeries,
+  loadMediaById,
+  loadRelatedBySeries,
+  getSeasonEpisodes,
+  MediaRepositoryError,
+} from "@/lib/functions/media-repo";
 
 const seriesId = "12345678-1234-4234-8234-123456789abc";
 const seasonId = "22345678-1234-4234-8234-123456789abc";
@@ -90,7 +97,8 @@ describe("作品详情与相关作品", () => {
       query.table === "v_all_media"
         ? { data: { id: mediaId, type: "tv_show", title: "剧" } }
         : { data: null, error: { code: "42501" } };
-    expect(await getMediaById(mediaId)).toMatchObject({ title: "剧", series: [] });
+    const degraded = await loadMediaById(mediaId);
+    expect(degraded).toMatchObject({ value: { title: "剧", series: [] }, degraded: true });
     expect(reportHandledError).toHaveBeenCalledTimes(1);
     expect(reportHandledError).toHaveBeenCalledWith(`Failed to fetch series memberships for media ${mediaId}:`, {
       code: "42501",
@@ -221,15 +229,21 @@ describe("作品详情与相关作品", () => {
     ]);
   });
 
-  it("卡片查询失败时上报并返回空列表", async () => {
+  it("卡片查询失败时上报并返回空列表，且标记 degraded", async () => {
     state.handle = (query) =>
       query.table === "media_item_series"
         ? { data: [{ media_item_id: otherId, position: 3 }] }
         : { data: null, error: { message: "cards down" } };
-    expect(await getRelatedBySeries("系列", mediaId)).toEqual([]);
+    expect(await loadRelatedBySeries("系列", mediaId)).toEqual({ value: [], degraded: true });
     expect(reportHandledError).toHaveBeenCalledWith("Failed to fetch related media details for series 系列:", {
       message: "cards down",
     });
+  });
+
+  it("系列成员查询失败时 getRelatedBySeries 降级为空并标记 degraded", async () => {
+    state.handle = () => ({ data: null, error: { message: "membership down" } });
+    expect(await loadRelatedBySeries("系列", mediaId)).toEqual({ value: [], degraded: true });
+    expect(await getRelatedBySeries("系列", mediaId)).toEqual([]);
   });
 });
 

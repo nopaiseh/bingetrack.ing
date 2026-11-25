@@ -44,7 +44,7 @@ vi.mock("@/lib/report-error", async (importOriginal) => {
 });
 
 import { reportHandledError } from "@/lib/report-error";
-import { getAlbumDetail } from "@/lib/functions/album-repo";
+import { getAlbumDetail, loadAlbumDetail } from "@/lib/functions/album-repo";
 import { MediaRepositoryError } from "@/lib/functions/media-repo";
 
 const albumId = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
@@ -198,7 +198,7 @@ describe("专辑详情查询 getAlbumDetail", () => {
     state.handle = () => ({ data: null });
     expect(await getAlbumDetail(albumId)).toBeNull();
     expect(state.queries.map((query) => query.table).sort()).toEqual(
-      ["music", "music_albums", "ownership", "v_all_media"].sort(),
+      ["media_item_series", "music", "music_albums", "ownership", "v_all_media"].sort(),
     );
 
     state.queries = [];
@@ -411,7 +411,7 @@ describe("专辑详情查询 getAlbumDetail", () => {
     ]);
   });
 
-  it("系列成员查询失败只上报，系列降级为空数组", async () => {
+  it("系列成员查询失败只上报，系列降级为空数组并标记 degraded", async () => {
     state.handle = (query) => {
       if (query.table === "v_all_media") return { data: albumViewRow() };
       if (query.table === "music_albums") return { data: { track_count: 0, label: null } };
@@ -421,13 +421,32 @@ describe("专辑详情查询 getAlbumDetail", () => {
       return { data: null };
     };
 
-    const detail = await getAlbumDetail(albumId);
-    expect(detail).toMatchObject({
+    const result = await loadAlbumDetail(albumId);
+    expect(result.degraded).toBe(true);
+    expect(result.value).toMatchObject({
       media: { series: [] },
       series: [],
     });
     expect(reportHandledError).toHaveBeenCalledWith(`Failed to fetch series memberships for album ${albumId}:`, {
       code: "42501",
     });
+  });
+
+  it("系列成员查询与视图等并行发起", async () => {
+    state.handle = (query) => {
+      if (query.table === "v_all_media") return { data: albumViewRow() };
+      if (query.table === "music_albums") return { data: { track_count: 0, label: null } };
+      if (query.table === "ownership") return { data: null };
+      if (query.table === "music") return { data: [] };
+      if (query.table === "media_item_series") return { data: [] };
+      return { data: null };
+    };
+
+    await getAlbumDetail(albumId);
+    const initialTables = state.queries
+      .slice(0, 5)
+      .map((query) => query.table)
+      .sort();
+    expect(initialTables).toEqual(["media_item_series", "music", "music_albums", "ownership", "v_all_media"].sort());
   });
 });

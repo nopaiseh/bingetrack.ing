@@ -13,7 +13,7 @@ vi.mock("next/cache", () => ({
   },
 }));
 vi.mock("@/lib/functions/media-repo", () => ({
-  getMediaById: vi.fn(async () => null),
+  getMediaByIdForCache: vi.fn(async () => null),
   getSeasonEpisodes: vi.fn(async () => null),
   getSeasonNextEpisodeNumber: vi.fn(async () => null),
   getSeasonsBySeriesId: vi.fn(async () => []),
@@ -24,7 +24,7 @@ vi.mock("@/lib/functions/media-repo", () => ({
   getBookStats: vi.fn(async () => ({})),
   getAlbumStats: vi.fn(async () => ({})),
 }));
-vi.mock("@/lib/functions/album-repo", () => ({ getAlbumDetail: vi.fn(async () => null) }));
+vi.mock("@/lib/functions/album-repo", () => ({ getAlbumDetailForCache: vi.fn(async () => null) }));
 vi.mock("@/lib/continue-watching", () => ({
   getHomeContinue: vi.fn(async () => ({ watching: [], listening: [], reading: [] })),
   getCurrentlyReading: vi.fn(async () => []),
@@ -67,8 +67,8 @@ describe("cached-media revalidate 策略", () => {
     await getCachedSeasonNextEpisodeNumber(mediaId, seasonId);
 
     const byKey = Object.fromEntries(cacheSpecs.map((spec) => [String((spec.keys as string[])[0]), spec.options]));
-    expect(byKey["public-media-detail-v3"]).toEqual({ revalidate: false, tags: TAGS_ITEM });
-    expect(byKey["public-album-detail-v2"]).toEqual({ revalidate: false, tags: TAGS_ITEM });
+    expect(byKey["public-media-detail-v4"]).toEqual({ revalidate: false, tags: TAGS_ITEM });
+    expect(byKey["public-album-detail-v3"]).toEqual({ revalidate: false, tags: TAGS_ITEM });
     expect(byKey["public-media-seasons-v3"]).toEqual({ revalidate: false, tags: TAGS_ITEM });
     expect(byKey["public-season-episodes-v2"]).toEqual({ revalidate: false, tags: TAGS_ITEM });
     expect(byKey["public-season-next-episode-v1"]).toEqual({ revalidate: false, tags: TAGS_ITEM });

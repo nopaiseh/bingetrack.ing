@@ -2,7 +2,7 @@ import "server-only";
 import { cache } from "react";
 import { unstable_cache } from "next/cache";
 import {
-  getMediaById,
+  getMediaByIdForCache,
   getSeasonEpisodes,
   getSeasonNextEpisodeNumber,
   getSeasonsBySeriesId,
@@ -13,7 +13,8 @@ import {
   getBookStats,
   getAlbumStats,
 } from "./media-repo";
-import { getAlbumDetail } from "./album-repo";
+import { getAlbumDetailForCache } from "./album-repo";
+import { cachedUnlessDegraded } from "./cache-degrade";
 import { reportHandledError } from "@/lib/report-error";
 import { parseMediaSearchParams } from "@/lib/api/media-params";
 import { getSupabasePublicServer } from "@/lib/supabase/public-server";
@@ -24,22 +25,27 @@ import { MEDIA_LISTS_TAG, MEDIA_TAG, mediaItemTag } from "./media-cache-tags";
 import type { Summary } from "@/lib/types";
 
 // 公开详情只靠 tag 失效（保存时 revalidateMediaItems／revalidateAllMedia）；非法 ID 不进缓存。
+// v4：子查询降级（如系列失败）抛 CacheSkipError，不把空系列等兜底结果写入缓存。
 export const getCachedMediaById = cache(async (id: string) => {
   if (!isMediaId(id)) return null;
-  return unstable_cache(getMediaById, ["public-media-detail-v3"], {
-    revalidate: false,
-    tags: [MEDIA_TAG, mediaItemTag(id)],
-  })(id);
+  return cachedUnlessDegraded(() =>
+    unstable_cache(getMediaByIdForCache, ["public-media-detail-v4"], {
+      revalidate: false,
+      tags: [MEDIA_TAG, mediaItemTag(id)],
+    })(id),
+  );
 });
 
 /** 专辑详情（元数据、拥有权、曲目、credits、系列）；写入走 media / media:item 失效。 */
 export const getCachedAlbumDetail = cache(async (id: string) => {
   if (!isMediaId(id)) return null;
-  // v2：详情附带系列名称、当前序位与同系列其他条目（含 seriesPosition）。
-  return unstable_cache(getAlbumDetail, ["public-album-detail-v2"], {
-    revalidate: false,
-    tags: [MEDIA_TAG, mediaItemTag(id)],
-  })(id);
+  // v3：系列等子查询降级时不写入缓存（CacheSkipError → cachedUnlessDegraded）。
+  return cachedUnlessDegraded(() =>
+    unstable_cache(getAlbumDetailForCache, ["public-album-detail-v3"], {
+      revalidate: false,
+      tags: [MEDIA_TAG, mediaItemTag(id)],
+    })(id),
+  );
 });
 
 // 季摘要沿用电视节目 ID 的标签，单集或季变更时随电视节目详情一起失效。
