@@ -126,10 +126,7 @@ describe("专辑详情页系列区块", () => {
           {
             name: "华语经典",
             position: null,
-            items: [
-              albumCard({ id: "a", title: "甲", seriesPosition: null }),
-              albumCard({ id: "b", title: "乙" }),
-            ],
+            items: [albumCard({ id: "a", title: "甲", seriesPosition: null }), albumCard({ id: "b", title: "乙" })],
           },
         ],
       }),
