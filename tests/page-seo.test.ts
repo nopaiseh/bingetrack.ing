@@ -85,7 +85,7 @@ describe(
           "@type": "WebSite",
           name: "bingetrack.ing",
           url: siteUrl,
-          description: "记录、检索并回顾电影与电视节目观看历程。",
+          description: "记录、检索并回顾电影、电视节目、专辑与图书。",
         });
         expect(action["@type"]).toBe("SearchAction");
         expect(action.target).toEqual({

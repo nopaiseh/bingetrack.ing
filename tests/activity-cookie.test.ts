@@ -177,6 +177,7 @@ describe("活动 Cookie 签名", () => {
     expect(skipsIdleEnforcement("POST", "/auth/agent-login")).toBe(true);
     expect(skipsIdleEnforcement("GET", "/manage")).toBe(false);
     expect(skipsIdleEnforcement("GET", "/auth/activity")).toBe(false);
+    expect(skipsIdleEnforcement("POST", "/auth/logout")).toBe(false);
     expect(skipsIdleEnforcement("POST", "/manage")).toBe(false);
   });
 });

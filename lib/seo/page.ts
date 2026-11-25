@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { SITE_URL } from "@/lib/site";
 
 const SITE_NAME = "bingetrack.ing";
-const SITE_DESCRIPTION = "记录、检索并回顾电影与电视节目观看历程。";
+const SITE_DESCRIPTION = "记录、检索并回顾电影、电视节目、专辑与图书。";
 
 // 子路由一旦声明 openGraph / twitter，会整段替换根布局的分享配置，因此带上站点身份和默认分享图。
 const DEFAULT_SHARE_IMAGE = {

@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { NextRequest } from "next/server";
 
 const { signOut } = vi.hoisted(() => ({ signOut: vi.fn() }));
 const jar = vi.hoisted(() => ({
@@ -18,6 +19,14 @@ vi.mock("next/headers", () => ({
 import { ACTIVITY_COOKIE } from "@/lib/auth/activity-cookie";
 import { GET, POST } from "@/app/auth/logout/route";
 
+const ORIGIN = "https://www.bingetrack.ing";
+
+function logoutRequest(originHeader: string | null = ORIGIN) {
+  const headers = new Headers();
+  if (originHeader !== null) headers.set("origin", originHeader);
+  return new NextRequest(new URL("/auth/logout", ORIGIN), { method: "POST", headers });
+}
+
 describe("安全登出流程与 Logout CSRF 防护", () => {
   beforeEach(() => {
     signOut.mockReset();
@@ -28,7 +37,7 @@ describe("安全登出流程与 Logout CSRF 防护", () => {
   });
 
   it("POST 请求执行正常会话清理并安全重定向至首页", async () => {
-    const response = await POST();
+    const response = await POST(logoutRequest());
     expect(signOut).toHaveBeenCalledWith({ scope: "local" });
     expect(response.status).toBe(303);
     expect(response.headers.get("location")).toBe("/");
@@ -46,12 +55,22 @@ describe("安全登出流程与 Logout CSRF 防护", () => {
       { name: "sb-project-auth-token.0", value: "abc" },
       { name: "other-cookie", value: "123" },
     ]);
-    const response = await POST();
+    const response = await POST(logoutRequest());
     expect(signOut).toHaveBeenCalled();
     expect(jar.delete).toHaveBeenCalledWith("sb-project-auth-token.0");
     expect(jar.delete).not.toHaveBeenCalledWith("other-cookie");
     expect(response.status).toBe(303);
     expect(response.headers.get("location")).toBe("/");
+  });
+
+  it("POST 缺少或错误的 Origin 时返回 403，不登出", async () => {
+    for (const origin of [null, "https://evil.example", "null", "not a url"]) {
+      const response = await POST(logoutRequest(origin));
+      expect(response.status, String(origin)).toBe(403);
+      expect(await response.text()).toBe("Forbidden");
+    }
+    expect(signOut).not.toHaveBeenCalled();
+    expect(jar.set).not.toHaveBeenCalled();
   });
 
   it("GET 请求不触发 signOut，仅作安全重定向以防御 Logout CSRF", async () => {

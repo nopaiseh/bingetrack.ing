@@ -27,9 +27,18 @@ export async function GET(request: NextRequest) {
 
   const next = request.nextUrl.searchParams.get("next");
   // 按浏览器的规则解析后再比较来源："//"、"/\\" 以及夹带制表符、换行的写法都会被解析成站外地址。
-  const resolved = next?.startsWith("/") ? new URL(next, request.nextUrl.origin) : null;
-  const target =
-    resolved?.origin === request.nextUrl.origin ? `${resolved.pathname}${resolved.search}${resolved.hash}` : "/manage";
+  // 畸形值（如 //[）会让 new URL 抛错，捕获后回落到默认目标，避免 500。
+  let target = "/manage";
+  if (next?.startsWith("/")) {
+    try {
+      const resolved = new URL(next, request.nextUrl.origin);
+      if (resolved.origin === request.nextUrl.origin) {
+        target = `${resolved.pathname}${resolved.search}${resolved.hash}`;
+      }
+    } catch {
+      // 保持 /manage
+    }
+  }
 
   return new NextResponse(null, {
     status: 303,

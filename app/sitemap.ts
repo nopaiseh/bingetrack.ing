@@ -1,16 +1,16 @@
 import type { MetadataRoute } from "next";
 import { getSitemapMediaEntries } from "@/lib/functions/media-repo";
+import { handlePageDataError } from "@/lib/functions/page-data";
 import { ENABLED_PUBLIC_CATALOG_PATHS } from "@/lib/media-types";
 import { SITE_URL } from "@/lib/site";
-import { reportHandledError } from "@/lib/report-error";
 
 // 站点地图直接查库；管理端 revalidatePath("/sitemap.xml") 按需刷新，不定时重建。
 export const revalidate = false;
 
-/** 合并固定页面和数据库中的媒体地址生成站点地图；查询失败时退回固定页面列表。 */
+/** 合并固定页面和数据库中的媒体地址生成站点地图；运行期查库失败抛出，仅构建期退回固定页面。 */
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // 不列入 /search：无参数页由导航暴露并保持可索引，筛选组合由页面 robots 标为 noindex，避免和列表页同一优先级。
-  // 目录段随 MEDIA_TYPE_DEFINITIONS.enabled 派生（当前含 /movies、/shows、/albums）。
+  // 目录段随 MEDIA_TYPE_DEFINITIONS.enabled 派生（当前含 /movies、/shows、/albums、/books）。
   const staticRoutes: MetadataRoute.Sitemap = ["", ...ENABLED_PUBLIC_CATALOG_PATHS].map(
     /* 为固定页面设置绝对地址、更新频率和优先级，首页权重最高。 */ (path) => ({
       url: `${SITE_URL}${path}`,
@@ -32,7 +32,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       ),
     ];
   } catch (error) {
-    reportHandledError("Falling back to static sitemap routes:", error);
+    handlePageDataError("sitemap", error);
     return staticRoutes;
   }
 }
