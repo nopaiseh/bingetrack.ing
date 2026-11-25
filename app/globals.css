@@ -900,60 +900,10 @@ select:is(.filter-option, .filter-option-active):focus-visible {
   animation-fill-mode: forwards;
 }
 
-/* Option A：全幅背景展台。首页数据没有 backdrop，有海报时虚化放大封面，否则品红雾面。 */
+/* 首页倒计时展台：直接落在站点画布上，无虚化底图或雾面。 */
 .upcoming-hero {
   isolation: isolate;
   min-height: min(32rem, 78vh);
-}
-
-.upcoming-hero-backdrop {
-  /* 放大再虚化，避免模糊边缘露底；饱和略抬高，让色调在深色画布上仍可读。 */
-  inset: -10%;
-  transform: scale(1.06);
-  filter: blur(40px) saturate(1.45) brightness(1.08);
-  opacity: 1;
-}
-
-.upcoming-hero-backdrop-motion {
-  animation: upcoming-hero-drift 28s ease-in-out alternate infinite;
-}
-
-@keyframes upcoming-hero-drift {
-  from {
-    transform: scale(1.08) translate3d(0, 0, 0);
-  }
-  to {
-    transform: scale(1.14) translate3d(-1.2%, 0.8%, 0);
-  }
-}
-
-.upcoming-hero-haze {
-  background:
-    radial-gradient(ellipse 70% 60% at 70% 40%, color-mix(in srgb, var(--accent) 42%, transparent), transparent 70%),
-    radial-gradient(ellipse 55% 50% at 20% 70%, color-mix(in srgb, var(--accent) 24%, transparent), transparent 65%),
-    var(--canvas);
-}
-
-.upcoming-hero-wash {
-  /* 左侧压暗保字对比，中间与右侧多留背景色，避免桌面中间出现“空黑条”。 */
-  background: linear-gradient(
-    to right,
-    var(--canvas) 0%,
-    color-mix(in srgb, var(--canvas) 82%, transparent) 18%,
-    color-mix(in srgb, var(--canvas) 38%, transparent) 42%,
-    color-mix(in srgb, var(--canvas) 8%, transparent) 68%,
-    transparent 100%
-  );
-}
-
-.upcoming-hero-fade {
-  background: linear-gradient(
-    to top,
-    var(--canvas) 0%,
-    color-mix(in srgb, var(--canvas) 62%, transparent) 16%,
-    color-mix(in srgb, var(--canvas) 8%, transparent) 48%,
-    color-mix(in srgb, var(--canvas) 28%, transparent) 100%
-  );
 }
 
 .upcoming-hero-poster {
@@ -965,22 +915,6 @@ select:is(.filter-option, .filter-option-active):focus-visible {
 @media (max-width: 1023.98px) {
   .upcoming-hero {
     min-height: 0;
-  }
-
-  .upcoming-hero-wash {
-    background: linear-gradient(
-      to bottom,
-      color-mix(in srgb, var(--canvas) 42%, transparent) 0%,
-      color-mix(in srgb, var(--canvas) 28%, transparent) 32%,
-      color-mix(in srgb, var(--canvas) 78%, transparent) 72%,
-      var(--canvas) 100%
-    );
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .upcoming-hero-backdrop-motion {
-    animation: none !important;
   }
 }
 

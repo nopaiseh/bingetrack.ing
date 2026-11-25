@@ -79,7 +79,7 @@ function countdownParts(days: number): { value: string; unit: string } {
   return { value: String(days), unit: "天" };
 }
 
-/** 首页倒计时展台：全幅背景 + 左侧文案 + 右侧大海报；没有未来条目时整块隐藏。 */
+/** 首页倒计时展台：左侧文案 + 右侧大海报，落在站点画布上；没有未来条目时整块隐藏。 */
 export default function UpcomingHero({ items, renderedOn }: UpcomingHeroProps) {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   // 用户手动暂停；悬停或键盘焦点停留在展台内时临时暂停。
@@ -110,9 +110,9 @@ export default function UpcomingHero({ items, renderedOn }: UpcomingHeroProps) {
   const days = daysUntil(currentItem.releaseDate, today);
   const countdown = countdownParts(days);
   const releaseDateLabel = formatReleaseDate(currentItem.releaseDate, today);
-  // 首页数据未带 backdrop；有海报时用放大虚化海报作背景，否则用品红雾面。
+  // 有海报时用锐利封面，否则用字块；展台直接落在站点画布上，无虚化底图。
   const hasCover = Boolean(currentItem.cover_url);
-  // 仅首帧海报抢 LCP；背景装饰图不设 high priority。
+  // 仅首帧海报抢 LCP。
   const prioritizePoster = activeIndex === 0;
 
   return (
@@ -128,31 +128,6 @@ export default function UpcomingHero({ items, renderedOn }: UpcomingHeroProps) {
         if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setInteracting(false);
       }}
     >
-      {/* 全幅装饰背景：虚化海报或品红雾面；不参与无障碍树。 */}
-      <div className="pointer-events-none absolute inset-0" aria-hidden="true">
-        {hasCover ? (
-          <div
-            key={`backdrop-${currentItem.id}`}
-            className={`upcoming-hero-backdrop absolute inset-0 ${reducedMotion ? "" : "upcoming-hero-backdrop-motion"}`}
-          >
-            <Image
-              src={currentItem.cover_url}
-              alt=""
-              fill
-              // 装饰虚化底图：小尺寸足够，避免 sizes=100vw 拉 2–3k 宽图；不抢 LCP。
-              sizes="96px"
-              quality={40}
-              loading="lazy"
-              className="object-cover object-center"
-            />
-          </div>
-        ) : (
-          <div key={`haze-${currentItem.id}`} className="upcoming-hero-haze absolute inset-0" />
-        )}
-        <div className="upcoming-hero-wash absolute inset-0" />
-        <div className="upcoming-hero-fade absolute inset-0" />
-      </div>
-
       <div className="relative z-10 container mx-auto max-w-7xl px-4 pb-8 pt-20 sm:px-6 sm:pb-10 sm:pt-22 lg:px-8 lg:pb-12 lg:pt-24">
         <div className="grid items-center gap-6 sm:gap-8 lg:grid-cols-[minmax(0,1fr)_auto] lg:gap-10 xl:gap-14">
           {/* 左侧：倒计时、标题、类型标签与简介；宽度对齐站点内容栏。 */}
