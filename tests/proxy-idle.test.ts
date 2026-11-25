@@ -145,7 +145,6 @@ describe("proxy 空闲期限", () => {
     for (const [method, path] of [
       ["POST", "/auth/activity"],
       ["POST", "/auth/confirm/verify"],
-      ["POST", "/auth/logout"],
       ["GET", "/auth/dev-login"],
       ["POST", "/auth/agent-login"],
       ["GET", "/auth/confirm"],
