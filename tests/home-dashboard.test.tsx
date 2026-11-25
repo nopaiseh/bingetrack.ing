@@ -285,6 +285,67 @@ describe("HomeDashboard", () => {
     expect(fetchMock.mock.calls.map(([input]) => String(input))).toEqual(["/api/top-media?type=movie&year=2024"]);
   });
 
+  it("某年单类型失败后切回已缓存年份，不泄漏错误且仍渲染数据", async () => {
+    const movie2025 = {
+      id: "m2025",
+      title: "二零二五电影",
+      date: "2025-01-01",
+      rating: 9,
+      genres: [],
+      languages: [],
+      cover_url: "/2025.jpg",
+      type: "movies",
+      dbType: "movie",
+      status: "watched",
+    };
+    const fetchMock = vi.fn<(input: RequestInfo | URL, init?: RequestInit) => Promise<Response>>((input) => {
+      const url = String(input);
+      if (url.includes("year=2025")) {
+        return Promise.resolve(new Response(JSON.stringify(url.includes("type=movie") ? [movie2025] : [])));
+      }
+      if (url.includes("year=2024") && url.includes("type=movie")) {
+        return Promise.resolve(new Response("boom", { status: 500 }));
+      }
+      return Promise.resolve(new Response("[]"));
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(
+      <HomeDashboard
+        summary={[{ release_year: "2024" } as unknown as Summary, { release_year: "2025" } as unknown as Summary]}
+        topMovies={[]}
+        topSeries={[]}
+        topAlbums={[]}
+        topBooks={[]}
+        distributions={buildMediaDistributions([])}
+      />,
+    );
+
+    await act(async () => {
+      fireEvent.click(screen.getByText("year-2025"));
+    });
+    await act(async () => {
+      fireEvent.click(screen.getByRole("tab", { name: "电影" }));
+    });
+    expect(await screen.findByRole("heading", { name: "二零二五电影" })).toBeInTheDocument();
+
+    await act(async () => {
+      fireEvent.click(screen.getByText("year-2024"));
+    });
+    expect(await screen.findByRole("alert")).toHaveTextContent("年度精选暂时无法加载");
+    expect(screen.queryByRole("heading", { name: "二零二五电影" })).not.toBeInTheDocument();
+
+    await act(async () => {
+      fireEvent.click(screen.getByText("year-2025"));
+    });
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "二零二五电影" })).toBeInTheDocument();
+    // 2025 电影已缓存，切回时不应再请求该组合。
+    expect(
+      fetchMock.mock.calls.filter(([input]) => String(input) === "/api/top-media?type=movie&year=2025"),
+    ).toHaveLength(1);
+  });
+
   it("过期的年度精选响应不会覆盖当前年份视图", async () => {
     let resolve2024: ((value: Response) => void) | undefined;
     const fetchMock = vi.fn<(input: RequestInfo | URL, init?: RequestInit) => Promise<Response>>((input) => {

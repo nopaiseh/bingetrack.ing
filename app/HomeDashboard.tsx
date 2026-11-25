@@ -82,11 +82,11 @@ export default function HomeDashboard({
   const [topMediaCache, setTopMediaCache] = useState<Partial<Record<string, MediaCard[]>>>({});
   const cacheRef = useRef(topMediaCache);
 
-  const [topMediaErrors, setTopMediaErrors] = useState<Partial<Record<TopMediaType, string>>>({});
+  // 错误同样按 (year, type) 键存，避免某年失败污染其它年份的缓存命中视图。
+  const [topMediaErrors, setTopMediaErrors] = useState<Partial<Record<string, string>>>({});
   const [topMediaLoadingByType, setTopMediaLoadingByType] = useState<Partial<Record<TopMediaType, boolean>>>({});
-  // 强制重试时递增，让 effect 重新评估缓存缺口。
-  const [retryEpoch, setRetryEpoch] = useState(0);
   const requestIdRef = useRef(0);
+  const selectedYearRef = useRef(selectedYear);
 
   const stats = deriveDashboardStats(summary, selectedYear, distributions);
 
@@ -94,6 +94,10 @@ export default function HomeDashboard({
   useEffect(() => {
     cacheRef.current = topMediaCache;
   }, [topMediaCache]);
+
+  useEffect(() => {
+    selectedYearRef.current = selectedYear;
+  }, [selectedYear]);
 
   useEffect(
     /* 按当前标签按需拉取年度精选；独立处理各类型成败，并忽略过期响应。 */ () => {
@@ -120,7 +124,7 @@ export default function HomeDashboard({
       });
       setTopMediaErrors((prev) => {
         const next = { ...prev };
-        for (const type of toFetch) delete next[type];
+        for (const type of toFetch) delete next[topMediaCacheKey(selectedYear, type)];
         return next;
       });
 
@@ -128,6 +132,7 @@ export default function HomeDashboard({
       const loadTypes = async () => {
         await Promise.allSettled(
           toFetch.map(async (type) => {
+            const key = topMediaCacheKey(selectedYear, type);
             try {
               const response = await fetch(`/api/top-media?type=${type}&year=${encodeURIComponent(selectedYear)}`, {
                 signal: controller.signal,
@@ -137,13 +142,12 @@ export default function HomeDashboard({
               }
               const items = (await response.json()) as MediaCard[];
               if (!isCurrent()) return;
-              const key = topMediaCacheKey(selectedYear, type);
               setTopMediaCache((prev) => ({ ...prev, [key]: items }));
             } catch (error) {
               if ((error as Error).name === "AbortError") return;
               if (!isCurrent()) return;
               console.error(error);
-              setTopMediaErrors((prev) => ({ ...prev, [type]: TOP_MEDIA_ERROR_MESSAGE }));
+              setTopMediaErrors((prev) => ({ ...prev, [key]: TOP_MEDIA_ERROR_MESSAGE }));
             } finally {
               if (isCurrent()) {
                 setTopMediaLoadingByType((prev) => ({ ...prev, [type]: false }));
@@ -169,13 +173,14 @@ export default function HomeDashboard({
         });
       };
     },
-    [selectedYear, activeTab, retryEpoch],
+    [selectedYear, activeTab],
   );
 
-  /** 丢弃该类型缓存并触发重新拉取。 */
+  /** 仅重试指定类型，不触发整表 effect，以免中止同标签其它进行中的请求。 */
   const retryTopMedia = (type: TopMediaType) => {
     if (selectedYear === "All Time") return;
-    const key = topMediaCacheKey(selectedYear, type);
+    const year = selectedYear;
+    const key = topMediaCacheKey(year, type);
     setTopMediaCache((prev) => {
       if (prev[key] === undefined) return prev;
       const next = { ...prev };
@@ -183,12 +188,33 @@ export default function HomeDashboard({
       return next;
     });
     setTopMediaErrors((prev) => {
-      if (!prev[type]) return prev;
+      if (!prev[key]) return prev;
       const next = { ...prev };
-      delete next[type];
+      delete next[key];
       return next;
     });
-    setRetryEpoch((epoch) => epoch + 1);
+    setTopMediaLoadingByType((prev) => ({ ...prev, [type]: true }));
+
+    void (async () => {
+      try {
+        const response = await fetch(`/api/top-media?type=${type}&year=${encodeURIComponent(year)}`);
+        if (!response.ok) {
+          throw new Error("Failed to load top media");
+        }
+        const items = (await response.json()) as MediaCard[];
+        if (selectedYearRef.current !== year) return;
+        setTopMediaCache((prev) => ({ ...prev, [key]: items }));
+      } catch (error) {
+        if ((error as Error).name === "AbortError") return;
+        if (selectedYearRef.current !== year) return;
+        console.error(error);
+        setTopMediaErrors((prev) => ({ ...prev, [key]: TOP_MEDIA_ERROR_MESSAGE }));
+      } finally {
+        if (selectedYearRef.current === year) {
+          setTopMediaLoadingByType((prev) => ({ ...prev, [type]: false }));
+        }
+      }
+    })();
   };
 
   const displayedTopMovies = topMediaCache[topMediaCacheKey(selectedYear, "movie")] ?? [];
@@ -199,11 +225,13 @@ export default function HomeDashboard({
   // 请求中途切回全时段时，被取消的请求不会复位加载状态，因此只在选定年份时采用该状态。
   const activeTypes = selectedYear === "All Time" ? [] : TAB_TOP_MEDIA_TYPES[activeTab];
   const isTopMediaLoading = selectedYear !== "All Time" && activeTypes.some((type) => topMediaLoadingByType[type]);
-  const visibleErrors =
+  const visibleErrors: Partial<Record<TopMediaType, string>> =
     selectedYear === "All Time"
       ? {}
       : Object.fromEntries(
-          activeTypes.filter((type) => topMediaErrors[type]).map((type) => [type, topMediaErrors[type]!]),
+          activeTypes
+            .map((type) => [type, topMediaErrors[topMediaCacheKey(selectedYear, type)]] as const)
+            .filter((entry): entry is readonly [TopMediaType, string] => Boolean(entry[1])),
         );
 
   // 放映单固定先倒计时、再在看、再在听、再在读。没有内容的那一块返回 null，这里不包额外节点，避免空区块撑出间距。
