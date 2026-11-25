@@ -90,10 +90,12 @@ export async function getRelatedBySeries(seriesName: string, currentId: string):
 
     const relatedIds = seriesItems.map(/* 提取关联作品 ID，供后续卡片查询使用。 */ (item) => item.media_item_id);
     const positionById = new Map(
-      seriesItems.map(/* 保留 media_item_series.position，供卡片「第几部」展示。 */ (item) => [
-        String(item.media_item_id),
-        typeof item.position === "number" ? item.position : null,
-      ]),
+      seriesItems.map(
+        /* 保留 media_item_series.position，供卡片「第几部」展示。 */ (item) => [
+          String(item.media_item_id),
+          typeof item.position === "number" ? item.position : null,
+        ],
+      ),
     );
 
     const { data, error } = await db
@@ -109,10 +111,12 @@ export async function getRelatedBySeries(seriesName: string, currentId: string):
     }
 
     return data
-      .map(/* 将视图行转换为轻量媒体卡片，并附带系列序位。 */ (item: ViewAllMediaRow) => ({
-        ...mapViewRowToMediaCard(item),
-        seriesPosition: positionById.get(String(item.id)) ?? null,
-      }))
+      .map(
+        /* 将视图行转换为轻量媒体卡片，并附带系列序位。 */ (item: ViewAllMediaRow) => ({
+          ...mapViewRowToMediaCard(item),
+          seriesPosition: positionById.get(String(item.id)) ?? null,
+        }),
+      )
       .sort(compareSeriesCards);
   });
 }
