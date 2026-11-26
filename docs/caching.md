@@ -47,9 +47,11 @@
 
 非法 ID 在进入数据缓存前就返回，不会写入缓存条目。电影／节目／图书详情走 `getCachedMediaById`（`public-media-detail-v4`）；专辑详情走 `getCachedAlbumDetail`（`public-album-detail-v3`）。
 
-### 系列查询降级（不写缓存）
+### 系列查询降级（不写数据缓存，也不写页面缓存）
 
-影视／图书详情与专辑详情在加载系列／同系列成员时，若查询失败，会标记 `seriesDegraded` 并在缓存回调里抛出 `SeriesDegradedError`（`throwIfSeriesDegraded`）。`unstable_cache` 因此不会把「空系列」结果写入缓存。外层 `cachedWithSeriesFallback` 接住该错误后，改走无缓存路径（`getMediaById`／`getAlbumDetail`），返回空系列并照常 `reportHandledError`。其他错误仍向上抛出。
+影视／图书详情与专辑详情在加载系列／同系列成员时，若查询失败，会标记 `seriesDegraded` 并在缓存回调里抛出 `SeriesDegradedError`（`throwIfSeriesDegraded`）。`unstable_cache` 因此不会把「空系列」结果写入数据缓存。外层 `cachedWithSeriesFallback` 接住该错误后，改走无缓存路径（`getMediaById`／`getAlbumDetail`），返回空系列并照常 `reportHandledError`。其他错误仍向上抛出。
+
+系列查询降级时，该次渲染的页面也不进入 Full Route Cache／ISR：同一回退路径在 `unstable_cache` 之外调用 `connection()`（`skipFullRouteCacheForSeriesDegrade`，见 `lib/functions/cache-degrade.ts`），仅让这一次详情页渲染走请求时动态输出；未降级时详情页原有 `revalidate` 与 tag 失效不变。不要在 `unstable_cache` 回调里调用 `connection()`／`cookies()`／`headers()`。
 
 首页继续没有查询参数，全站共用一条缓存，键为 `public-media-home-continue-v2`，读取函数是 `getHomeContinue`，返回 `{ watching, listening, reading }`（`HomeContinueData`）。只用公开 Supabase 客户端，不读 `cookies()`、`headers()` 或当前用户：进度对访客和站长是同一份公开数据，不是按人分开的。缓存回调因此可以放进 `unstable_cache`。`getCachedCurrentlyReading` 另有独立键，供单独取在读列表。
 
@@ -78,7 +80,7 @@
 - **修改 `unstable_cache` 的 key 字符串**（例如 `-v3` 改成 `-v4`）：旧条目全部作废，每个被访问的 key 重新写一次。只在缓存数据结构确实变了时才这样做。
 - **缩短 `revalidate`**：写入频率按比例上升。
 - **在公开页面读取 `cookies()`、`headers()` 或 `searchParams`**：页面会变成动态渲染。这本身不写 ISR，但失去缓存后每次访问都查询数据库。
-- **系列查询降级**：数据层已用 `SeriesDegradedError` 避免把空系列写入 `unstable_cache`。降级那一次还会在 cache 外调用 `connection()`（`lib/functions/cache-degrade.ts`），让该次详情页渲染不进入 Full Route Cache／ISR；未降级时行为与原先一致。不要改成在 `unstable_cache` 回调里调 `connection()`／`cookies()`／`headers()`。
+- **系列查询降级**：见上文「系列查询降级」；降级时数据缓存与该次页面渲染都不写入，未降级路径不要改成常驻动态。
 - **把动态页面改成静态或 ISR**：每个不同的地址都会写入缓存，要先确认地址数量有上限。
 - **把用户可以任意构造的参数放进缓存 key**：必须先把取值收敛到有限集合，参照搜索首屏的做法。
 - **扩大失效范围**：新写入操作能确定受影响条目时，用 `revalidateMediaItems`，不要默认用全站失效。
