@@ -214,7 +214,7 @@ export function BasicInfoSection({
                 aria-describedby="field-isbn-hint"
               />
               <p id="field-isbn-hint" className="edit-hint mt-1">
-                保存时可按 ISBN 自动匹配封面；已填封面不会被覆盖。
+                支持 ISBN-10 / ISBN-13，可带或不带连字符，示例 978-7-02-000220-7。
               </p>
             </div>
             <div className="span-2">
