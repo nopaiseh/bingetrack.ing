@@ -21,10 +21,11 @@ describe("poster image sizes", () => {
     // 2x of 168px (common phone card) still fits w342; 184×2 crosses into w500.
     expect(tmdbImageSizeForWidth(168 * 2)).toBe("w342");
     expect(tmdbImageSizeForWidth(184 * 2)).toBe("w500");
-    // Rail cards ~120px; 1x lands on w154, 2x on w342.
-    expect(tmdbImageSizeForWidth(120)).toBe("w154");
-    expect(tmdbImageSizeForWidth(120 * 2)).toBe("w342");
+    // Rail / MediaRow cards ~160px; 1x lands on w185, 2x on w342.
+    expect(tmdbImageSizeForWidth(160)).toBe("w185");
+    expect(tmdbImageSizeForWidth(160 * 2)).toBe("w342");
   });
+
 
   it("keeps the search above-the-fold eager window at one desktop row", () => {
     expect(SEARCH_ABOVE_FOLD_COUNT).toBe(6);

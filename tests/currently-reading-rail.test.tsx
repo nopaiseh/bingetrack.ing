@@ -45,19 +45,32 @@ describe("CurrentlyReadingRail", () => {
 
   it("滚动按钮与方向键可触发滚动", () => {
     const scrollBy = vi.fn();
+    const descriptors = {
+      scrollWidth: Object.getOwnPropertyDescriptor(Element.prototype, "scrollWidth"),
+      clientWidth: Object.getOwnPropertyDescriptor(Element.prototype, "clientWidth"),
+    };
+    Object.defineProperty(Element.prototype, "scrollWidth", { configurable: true, get: () => 900 });
+    Object.defineProperty(Element.prototype, "clientWidth", { configurable: true, get: () => 300 });
     Object.defineProperty(HTMLElement.prototype, "scrollBy", {
       configurable: true,
       value: scrollBy,
     });
-    render(<CurrentlyReadingRail items={[item, { ...item, bookId: "b2", title: "第二本" }]} />);
-    fireEvent.click(screen.getByRole("button", { name: "向右滚动在读" }));
-    fireEvent.click(screen.getByRole("button", { name: "向左滚动在读" }));
-    const scroller = screen.getByLabelText("在读列表");
-    fireEvent.keyDown(scroller, { key: "ArrowRight" });
-    fireEvent.keyDown(scroller, { key: "ArrowLeft" });
-    fireEvent.keyDown(scroller, { key: "Enter" });
-    expect(scrollBy.mock.calls.length).toBeGreaterThanOrEqual(2);
+    try {
+      render(<CurrentlyReadingRail items={[item, { ...item, bookId: "b2", title: "第二本" }]} />);
+      fireEvent.click(screen.getByRole("button", { name: "向右滚动 在读" }));
+      fireEvent.click(screen.getByRole("button", { name: "向左滚动 在读", hidden: true }));
+      const scroller = screen.getByLabelText("在读列表");
+      fireEvent.keyDown(scroller, { key: "ArrowRight" });
+      fireEvent.keyDown(scroller, { key: "ArrowLeft" });
+      fireEvent.keyDown(scroller, { key: "Enter" });
+      expect(scrollBy.mock.calls.length).toBeGreaterThanOrEqual(2);
+      expect(screen.getByRole("link", { name: /在读的书/ }).className).toContain("w-40");
+    } finally {
+      if (descriptors.scrollWidth) Object.defineProperty(Element.prototype, "scrollWidth", descriptors.scrollWidth);
+      if (descriptors.clientWidth) Object.defineProperty(Element.prototype, "clientWidth", descriptors.clientWidth);
+    }
   });
+
 
   it("辅助函数处理空白标题与作者", () => {
     expect(currentlyReadingTitle("  ")).toBe("未命名图书");

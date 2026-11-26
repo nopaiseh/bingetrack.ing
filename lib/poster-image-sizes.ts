@@ -19,8 +19,11 @@ export const SEARCH_POSTER_SIZES =
  */
 export const SEARCH_ABOVE_FOLD_COUNT = 6;
 
-/** Home continue-watching / reading rails: ~3 cards on phone, sm:w-36. */
-export const RAIL_POSTER_SIZES = "(max-width: 639px) 120px, 144px";
+/**
+ * Home continue rails and catalog MediaRow cards share w-40 / sm:w-48
+ * (~160px / 192px). Same absolute px slots keep every TMDB tier in srcset.
+ */
+export const RAIL_POSTER_SIZES = "(max-width: 639px) 160px, 192px";
 
-/** Catalog MediaRow album tiles: w-40 / sm:w-48 square covers. */
-export const ALBUM_ROW_COVER_SIZES = "(max-width: 639px) 160px, 192px";
+/** Catalog MediaRow album tiles: same card width as RAIL_POSTER_SIZES. */
+export const ALBUM_ROW_COVER_SIZES = RAIL_POSTER_SIZES;

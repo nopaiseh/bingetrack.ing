@@ -22,9 +22,14 @@ describe("ContinueListeningRail", () => {
   it("renders the 在听 heading, progress, and album link", () => {
     render(<ContinueListeningRail items={[card()]} />);
     expect(screen.getByRole("heading", { name: "在听" })).toBeInTheDocument();
-    expect(screen.getByRole("link")).toHaveAttribute("href", "/albums/album-1");
+    const link = screen.getByRole("link");
+    expect(link).toHaveAttribute("href", "/albums/album-1");
+    expect(link.className).toContain("w-40");
+    expect(link.className).toContain("sm:w-48");
     expect(screen.getByText("在听专辑")).toBeInTheDocument();
     expect(screen.getByText("2/10 首")).toBeInTheDocument();
     expect(screen.getByRole("progressbar", { name: "已听 2 首，共 10 首" })).toBeInTheDocument();
+    expect(screen.getByLabelText("在听列表")).toHaveAttribute("tabindex", "0");
   });
 });
+
