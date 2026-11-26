@@ -71,7 +71,6 @@ describe("CurrentlyReadingRail", () => {
     }
   });
 
-
   it("辅助函数处理空白标题与作者", () => {
     expect(currentlyReadingTitle("  ")).toBe("未命名图书");
     expect(currentlyReadingAuthorsLine(["", " 甲 "])).toBe("甲");

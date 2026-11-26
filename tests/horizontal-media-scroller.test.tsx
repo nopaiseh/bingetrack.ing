@@ -33,7 +33,6 @@ describe("HorizontalMediaScroller", () => {
     expect(container.querySelector("[class*='w-40']")?.className).toContain("sm:w-48");
   });
 
-
   it("shows edge controls when overflowing and scrolls ~75% width via buttons and arrow keys", () => {
     const scrollBy = vi.fn();
     const descriptors = {

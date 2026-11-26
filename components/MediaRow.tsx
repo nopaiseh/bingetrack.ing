@@ -174,9 +174,7 @@ export default function MediaRow({
     <HorizontalMediaScroller
       title={title}
       viewAllLink={viewAllLink}
-      scrollButtonTopClass={
-        squareRow ? HORIZONTAL_MEDIA_SCROLL_BTN_TOP_SQUARE : HORIZONTAL_MEDIA_SCROLL_BTN_TOP_POSTER
-      }
+      scrollButtonTopClass={squareRow ? HORIZONTAL_MEDIA_SCROLL_BTN_TOP_SQUARE : HORIZONTAL_MEDIA_SCROLL_BTN_TOP_POSTER}
       measureKey={items.length}
     >
       {items.map(

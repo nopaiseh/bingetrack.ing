@@ -26,7 +26,6 @@ describe("poster image sizes", () => {
     expect(tmdbImageSizeForWidth(160 * 2)).toBe("w342");
   });
 
-
   it("keeps the search above-the-fold eager window at one desktop row", () => {
     expect(SEARCH_ABOVE_FOLD_COUNT).toBe(6);
   });

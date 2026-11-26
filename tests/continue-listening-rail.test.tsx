@@ -32,4 +32,3 @@ describe("ContinueListeningRail", () => {
     expect(screen.getByLabelText("在听列表")).toHaveAttribute("tabindex", "0");
   });
 });
-
