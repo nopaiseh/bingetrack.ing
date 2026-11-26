@@ -59,10 +59,13 @@ export default function BookInformation({
   media,
   publisher,
   pageCount,
+  relatedContent,
 }: {
   media: Media;
   publisher?: string | null;
   pageCount?: number | null;
+  /** 同系列相关作品等异步区块，放在简介与侧栏下方。 */
+  relatedContent?: ReactNode;
 }) {
   const year = String(media.release_year || media.date || "").match(/\d{4}/)?.[0] ?? "";
   const score = media.rating == null ? null : Number(media.rating).toFixed(1);
@@ -243,6 +246,8 @@ export default function BookInformation({
             </dl>
           </aside>
         </div>
+
+        {relatedContent ? <div className="mt-12 empty:hidden">{relatedContent}</div> : null}
       </div>
     </>
   );
