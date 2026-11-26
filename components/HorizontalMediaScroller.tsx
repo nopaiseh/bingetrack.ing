@@ -1,6 +1,6 @@
 "use client";
 
-import { useId, useRef, type KeyboardEvent, type ReactNode } from "react";
+import { useId, useLayoutEffect, useRef, type KeyboardEvent, type ReactNode } from "react";
 import HoverPrefetchLink from "@/components/HoverPrefetchLink";
 import { edgeFadeMask } from "@/lib/edge-fade-mask";
 import { scrollBehavior } from "@/lib/scroll-behavior";
@@ -19,7 +19,7 @@ export const HORIZONTAL_MEDIA_SCROLL_BTN_TOP_POSTER = "top-[8.5rem] sm:top-[10re
 export const HORIZONTAL_MEDIA_SCROLL_BTN_TOP_SQUARE = "top-[6rem] sm:top-[7rem]";
 
 const SCROLL_BTN_CLASS =
-  "surface-panel focus-ring absolute z-20 size-10 -translate-y-1/2 items-center justify-center rounded-full text-fg-secondary shadow-lg shadow-black/40 transition-colors duration-200 hover:border-white/30 hover:bg-white/15 hover:text-white active:scale-95";
+  "surface-panel focus-ring absolute z-20 size-10 -translate-y-1/2 items-center justify-center rounded-full text-fg-secondary shadow-lg shadow-black/40 transition-colors duration-200 hover:border-white/30 hover:bg-white/15 hover:text-white active:scale-95 motion-reduce:active:scale-100";
 
 /** 按约一屏 75% 宽度翻动；遵守 prefers-reduced-motion。 */
 export function scrollHorizontalMediaRow(el: HTMLElement, direction: "left" | "right") {
@@ -64,7 +64,21 @@ export default function HorizontalMediaScroller({
   const resolvedScrollerId = scrollerId ?? `horizontal-media-scroller-${reactId}`;
   const label = scrollerLabel ?? `${title}列表`;
   const scrollerRef = useRef<HTMLDivElement>(null);
+  const prevBtnRef = useRef<HTMLButtonElement>(null);
+  const nextBtnRef = useRef<HTMLButtonElement>(null);
   const { canScrollLeft, canScrollRight } = useHorizontalScrollEdges(scrollerRef, measureKey);
+
+  // 翻到头／尾时对应钮会 disabled+hidden；若焦点仍在该钮上，移回可聚焦的滚动列表。
+  useLayoutEffect(() => {
+    const active = document.activeElement;
+    if (!canScrollLeft && active === prevBtnRef.current) {
+      scrollerRef.current?.focus();
+      return;
+    }
+    if (!canScrollRight && active === nextBtnRef.current) {
+      scrollerRef.current?.focus();
+    }
+  }, [canScrollLeft, canScrollRight]);
 
   const handleScroll = (direction: "left" | "right") => {
     const el = scrollerRef.current;
@@ -96,6 +110,7 @@ export default function HorizontalMediaScroller({
 
       <div className="relative min-w-0">
         <button
+          ref={prevBtnRef}
           type="button"
           onClick={() => handleScroll("left")}
           aria-label={`向左滚动 ${title}`}
@@ -109,6 +124,7 @@ export default function HorizontalMediaScroller({
           />
         </button>
         <button
+          ref={nextBtnRef}
           type="button"
           onClick={() => handleScroll("right")}
           aria-label={`向右滚动 ${title}`}
@@ -125,6 +141,7 @@ export default function HorizontalMediaScroller({
         <div
           id={resolvedScrollerId}
           ref={scrollerRef}
+          role="group"
           tabIndex={0}
           aria-label={label}
           onKeyDown={onKeyDown}
