@@ -109,7 +109,7 @@ describe("ContinueWatchingRail", () => {
     expect(screen.getByRole("link")).not.toHaveTextContent("1970");
   });
 
-  it("keeps the list keyboard scrollable and shows desktop controls only when it overflows", () => {
+  it("keeps the list keyboard scrollable and shows page controls when it overflows", () => {
     const scrollBy = vi.fn();
     const descriptors = {
       scrollWidth: Object.getOwnPropertyDescriptor(Element.prototype, "scrollWidth"),
@@ -131,15 +131,20 @@ describe("ContinueWatchingRail", () => {
       expect(posters[1]).toHaveAttribute("loading", "lazy");
       const scroller = screen.getByLabelText("在看列表");
       expect(scroller).toHaveAttribute("tabindex", "0");
+      expect(scroller.className).toContain("motion-safe:scroll-smooth");
+      expect(scroller.className).toContain("snap-x");
 
-      const next = screen.getByRole("button", { name: "向右滚动在看" });
-      expect(next.className).toContain("md:flex");
-      expect(screen.getByRole("button", { name: "向左滚动在看" }).className).not.toContain("md:flex");
+      const next = screen.getByRole("button", { name: "向右滚动 在看" });
+      expect(next.className).toContain("flex");
+      expect(next.className).not.toContain("md:flex");
+      expect(screen.getByRole("button", { name: "向左滚动 在看", hidden: true }).className).toContain("hidden");
+
+      const cardLink = screen.getByRole("link", { name: /跑男/ });
+      expect(cardLink.className).toContain("w-40");
+      expect(cardLink.className).toContain("sm:w-48");
 
       fireEvent.keyDown(scroller, { key: "ArrowRight" });
-      expect(scrollBy).toHaveBeenCalledWith(expect.objectContaining({ left: expect.any(Number) }));
-      const distance = scrollBy.mock.calls[0]?.[0].left as number;
-      expect(distance).toBeGreaterThan(0);
+      expect(scrollBy).toHaveBeenCalledWith(expect.objectContaining({ left: 225, behavior: expect.any(String) }));
 
       fireEvent.click(next);
       expect(scrollBy).toHaveBeenCalledTimes(2);

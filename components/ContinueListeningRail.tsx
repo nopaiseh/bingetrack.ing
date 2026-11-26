@@ -1,12 +1,15 @@
 "use client";
 
-import { useLayoutEffect, useRef, useState, type CSSProperties, type KeyboardEvent } from "react";
+import { useState } from "react";
 import Image from "next/image";
 import HoverPrefetchLink from "@/components/HoverPrefetchLink";
+import HorizontalMediaScroller, {
+  HORIZONTAL_MEDIA_CARD_CLASS,
+  HORIZONTAL_MEDIA_SCROLL_BTN_TOP_SQUARE,
+} from "@/components/HorizontalMediaScroller";
 import LetterTile from "@/components/LetterTile";
 import { continueWatchingPosterSrc } from "@/components/ContinueWatchingRail";
 import { RAIL_POSTER_SIZES } from "@/lib/poster-image-sizes";
-import { scrollBehavior } from "@/lib/scroll-behavior";
 
 /** 首页「在听」卡片。 */
 export type ContinueListeningCard = {
@@ -19,8 +22,6 @@ export type ContinueListeningCard = {
     total: number;
   };
 };
-
-const SCROLL_GAP = "0.75rem";
 
 export function continueListeningTitle(title: string): string {
   const trimmed = title.trim();
@@ -81,11 +82,7 @@ function ListeningCard({ item, eager }: { item: ContinueListeningCard; eager: bo
   const title = continueListeningTitle(item.title);
   const progress = item.trackProgress;
   return (
-    <HoverPrefetchLink
-      href={item.href}
-      data-continue-card=""
-      className="surface-card interactive-media-card group flex w-[calc((100%-2*var(--cw-gap))/3.05)] flex-none snap-start flex-col overflow-hidden rounded-xl focus-ring sm:w-36"
-    >
+    <HoverPrefetchLink href={item.href} className={HORIZONTAL_MEDIA_CARD_CLASS}>
       <ListeningCover item={item} eager={eager} />
       <div className="flex min-w-0 grow flex-col gap-1.5 px-3 py-3">
         <h3
@@ -116,97 +113,20 @@ function ListeningCard({ item, eager }: { item: ContinueListeningCard; eager: bo
 
 /** 首页「在听」横滑行；无条目时不渲染。 */
 export default function ContinueListeningRail({ items }: { items: readonly ContinueListeningCard[] }) {
-  const scrollerRef = useRef<HTMLDivElement>(null);
-  const [canScrollLeft, setCanScrollLeft] = useState(false);
-  const [canScrollRight, setCanScrollRight] = useState(false);
-
-  useLayoutEffect(() => {
-    const el = scrollerRef.current;
-    if (!el) return;
-    const checkScroll = () => {
-      const { scrollLeft, scrollWidth, clientWidth } = el;
-      setCanScrollLeft(scrollLeft > 4);
-      setCanScrollRight(scrollLeft + clientWidth < scrollWidth - 4);
-    };
-    checkScroll();
-    el.addEventListener("scroll", checkScroll, { passive: true });
-    const observer = typeof ResizeObserver === "undefined" ? null : new ResizeObserver(checkScroll);
-    observer?.observe(el);
-    if (!observer) window.addEventListener("resize", checkScroll);
-    return () => {
-      el.removeEventListener("scroll", checkScroll);
-      observer?.disconnect();
-      if (!observer) window.removeEventListener("resize", checkScroll);
-    };
-  }, [items]);
-
   if (items.length === 0) return null;
 
-  const scrollByCard = (direction: "left" | "right") => {
-    const el = scrollerRef.current;
-    if (!el) return;
-    const card = el.querySelector<HTMLElement>("[data-continue-card]");
-    const gap = Number.parseFloat(getComputedStyle(el).columnGap || getComputedStyle(el).gap) || 12;
-    const amount = (card?.offsetWidth ?? el.clientWidth * 0.8) + gap;
-    el.scrollBy({ left: direction === "left" ? -amount : amount, behavior: scrollBehavior() });
-  };
-
-  const onKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
-    if (event.target !== event.currentTarget) return;
-    if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return;
-    event.preventDefault();
-    scrollByCard(event.key === "ArrowLeft" ? "left" : "right");
-  };
-
-  const buttonClass =
-    "surface-panel absolute z-20 size-10 -translate-y-1/2 items-center justify-center rounded-full text-fg-secondary shadow-lg shadow-black/40 transition-colors duration-200 hover:border-white/30 hover:bg-white/15 hover:text-white active:scale-95";
-
   return (
-    <section aria-labelledby="continue-listening-heading" className="min-w-0">
-      <div className="mb-4 border-b border-[var(--border,rgba(255,255,255,0.1))] pb-3">
-        <h2 id="continue-listening-heading" className="text-xl font-bold tracking-wide text-fg">
-          在听
-        </h2>
-      </div>
-      <div className="relative min-w-0">
-        <button
-          type="button"
-          onClick={() => scrollByCard("left")}
-          aria-label="向左滚动在听"
-          aria-controls="continue-listening-scroller"
-          className={`${buttonClass} left-0 top-[6.5rem] focus-ring ${canScrollLeft ? "hidden md:flex" : "hidden"}`}
-        >
-          <span
-            className="i-material-symbols-chevron-left-rounded relative z-2 inline-block size-6"
-            aria-hidden="true"
-          />
-        </button>
-        <button
-          type="button"
-          onClick={() => scrollByCard("right")}
-          aria-label="向右滚动在听"
-          aria-controls="continue-listening-scroller"
-          className={`${buttonClass} right-0 top-[6.5rem] focus-ring ${canScrollRight ? "hidden md:flex" : "hidden"}`}
-        >
-          <span
-            className="i-material-symbols-chevron-right-rounded relative z-2 inline-block size-6"
-            aria-hidden="true"
-          />
-        </button>
-        <div
-          id="continue-listening-scroller"
-          ref={scrollerRef}
-          tabIndex={0}
-          aria-label="在听列表"
-          onKeyDown={onKeyDown}
-          style={{ "--cw-gap": SCROLL_GAP } as CSSProperties}
-          className="no-scrollbar flex snap-x snap-mandatory gap-[var(--cw-gap)] overflow-x-auto overscroll-x-contain scroll-px-1 px-1 pb-4 pt-3 focus-ring"
-        >
-          {items.map((item, index) => (
-            <ListeningCard key={item.albumId} item={item} eager={index === 0} />
-          ))}
-        </div>
-      </div>
-    </section>
+    <HorizontalMediaScroller
+      title="在听"
+      titleId="continue-listening-heading"
+      scrollerId="continue-listening-scroller"
+      scrollerLabel="在听列表"
+      scrollButtonTopClass={HORIZONTAL_MEDIA_SCROLL_BTN_TOP_SQUARE}
+      measureKey={items.length}
+    >
+      {items.map((item, index) => (
+        <ListeningCard key={item.albumId} item={item} eager={index === 0} />
+      ))}
+    </HorizontalMediaScroller>
   );
 }
