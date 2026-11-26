@@ -94,11 +94,7 @@ export function CoverSection({
             ? "粘贴完整 TMDB HTTPS 地址或文件路径。"
             : "粘贴完整网址或文件路径。路径会补成 TMDB 原图地址后再保存。"}
       </p>
-      {isBook ? (
-        <p className="edit-hint mt-1">
-          未填封面时，保存会按 ISBN 自动配封面；已填的封面不会被覆盖。
-        </p>
-      ) : null}
+      {isBook ? <p className="edit-hint mt-1">未填封面时，保存会按 ISBN 自动配封面；已填的封面不会被覆盖。</p> : null}
     </section>
   );
 }
