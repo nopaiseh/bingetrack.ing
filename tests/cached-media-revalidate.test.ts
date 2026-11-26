@@ -6,6 +6,9 @@ vi.mock("server-only", () => ({}));
 vi.mock("react", () => ({
   cache: <T extends (...args: never[]) => unknown>(fn: T) => fn,
 }));
+vi.mock("next/server", () => ({
+  connection: vi.fn(async () => undefined),
+}));
 vi.mock("next/cache", () => ({
   unstable_cache: (fn: unknown, keys: unknown, options: unknown) => {
     cacheSpecs.push({ keys, options });

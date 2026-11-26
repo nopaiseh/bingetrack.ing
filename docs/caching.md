@@ -78,6 +78,7 @@
 - **修改 `unstable_cache` 的 key 字符串**（例如 `-v3` 改成 `-v4`）：旧条目全部作废，每个被访问的 key 重新写一次。只在缓存数据结构确实变了时才这样做。
 - **缩短 `revalidate`**：写入频率按比例上升。
 - **在公开页面读取 `cookies()`、`headers()` 或 `searchParams`**：页面会变成动态渲染。这本身不写 ISR，但失去缓存后每次访问都查询数据库。
+- **系列查询降级**：数据层已用 `SeriesDegradedError` 避免把空系列写入 `unstable_cache`。降级那一次还会在 cache 外调用 `connection()`（`lib/functions/cache-degrade.ts`），让该次详情页渲染不进入 Full Route Cache／ISR；未降级时行为与原先一致。不要改成在 `unstable_cache` 回调里调 `connection()`／`cookies()`／`headers()`。
 - **把动态页面改成静态或 ISR**：每个不同的地址都会写入缓存，要先确认地址数量有上限。
 - **把用户可以任意构造的参数放进缓存 key**：必须先把取值收敛到有限集合，参照搜索首屏的做法。
 - **扩大失效范围**：新写入操作能确定受影响条目时，用 `revalidateMediaItems`，不要默认用全站失效。
