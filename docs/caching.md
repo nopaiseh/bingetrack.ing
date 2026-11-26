@@ -51,7 +51,7 @@
 
 影视／图书详情与专辑详情在加载系列／同系列成员时，若查询失败，会标记 `seriesDegraded` 并在缓存回调里抛出 `SeriesDegradedError`（`throwIfSeriesDegraded`）。`unstable_cache` 因此不会把「空系列」结果写入数据缓存。外层 `cachedWithSeriesFallback` 接住该错误后，改走无缓存路径（`getMediaById`／`getAlbumDetail`），返回空系列并照常 `reportHandledError`。其他错误仍向上抛出。
 
-系列查询降级时，该次渲染的页面也不进入 Full Route Cache／ISR：同一回退路径在 `unstable_cache` 之外调用 `connection()`（`skipFullRouteCacheForSeriesDegrade`，见 `lib/functions/cache-degrade.ts`），仅让这一次详情页渲染走请求时动态输出；未降级时详情页原有 `revalidate` 与 tag 失效不变。不要在 `unstable_cache` 回调里调用 `connection()`／`cookies()`／`headers()`。
+系列查询降级时，该次渲染的页面也不进入 Full Route Cache／ISR：回退路径在 `unstable_cache` 之外调用 `connection()`（`skipFullRouteCacheForSeriesDegrade`，见 `lib/functions/cache-degrade.ts`），仅让这一次详情页渲染走请求时动态输出。电影／剧集／书详情页的同系列横滑走 `getRelatedBySeries`（不经 `cachedWithSeriesFallback`），该函数在 `seriesDegraded: true` 时同样先调用 `skipFullRouteCacheForSeriesDegrade` 再返回空列表；专辑详情已由 `loadAlbumDetail` 路径覆盖。未降级时详情页原有 `revalidate` 与 tag 失效不变。不要在 `unstable_cache` 回调里调用 `connection()`／`cookies()`／`headers()`。
 
 首页继续没有查询参数，全站共用一条缓存，键为 `public-media-home-continue-v2`，读取函数是 `getHomeContinue`，返回 `{ watching, listening, reading }`（`HomeContinueData`）。只用公开 Supabase 客户端，不读 `cookies()`、`headers()` 或当前用户：进度对访客和站长是同一份公开数据，不是按人分开的。缓存回调因此可以放进 `unstable_cache`。`getCachedCurrentlyReading` 另有独立键，供单独取在读列表。
 
