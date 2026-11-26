@@ -21,27 +21,37 @@
 
 `npm run build` 输出的路由表标出了每条路由是 ○（静态）、●（SSG）还是 ƒ（动态），以及 revalidate 时间。改动公开页面后应对比前后的路由表，确认没有意外变化。
 
-首页倒计时天数在服务端用 Asia/Singapore 的日历日现算，页面 HTML 和 RSC 一起缓存，所以这个日期跟 `revalidate` 走，不能只缩短数据缓存。选 3600 秒是因为“今天”一天变一次，1 小时把午夜后的陈旧限制在大约一小时，再加过期后的第一次 stale-while-revalidate 请求。这是单条路由，有访问时最多大约每天 24 次 ISR 写入。年度统计、榜单、分布和即将上映候选池仍是 24 小时数据缓存，重新生成页面时通常命中它们。候选池从 UTC 昨天起取，24 小时内仍包含新加坡的今天。管理端保存照旧 `revalidatePath("/")`。
+首页倒计时天数在服务端用 Asia/Singapore 的日历日现算，页面 HTML 和 RSC 一起缓存，所以这个日期跟 `revalidate` 走，不能只缩短数据缓存。选 3600 秒是因为“今天”一天变一次，1 小时把午夜后的陈旧限制在大约一小时，再加过期后的第一次 stale-while-revalidate 请求。这是单条路由，有访问时最多大约每天 24 次 ISR 写入。年度统计、榜单、分布与首页继续等聚合数据是仅标签失效的数据缓存；即将上映候选池仍定时 24 小时重建。重新生成页面时通常命中这些数据缓存。候选池从 UTC 昨天起取，24 小时内仍包含新加坡的今天。管理端保存照旧 `revalidatePath("/")`。
 
 ## 数据缓存
 
-定义在 `lib/functions/cached-media.ts` 和 `lib/functions/search-options.ts`：
+定义在 `lib/functions/cached-media.ts` 和 `lib/functions/search-options.ts`（系列降级见 `lib/functions/cache-degrade.ts`）。`revalidate: false` 表示不定时重建，只靠后台写入时的 `revalidateTag` 失效。
 
-| 数据                         | key                                                                      | 有效期  | 标签                            |
-| ---------------------------- | ------------------------------------------------------------------------ | ------- | ------------------------------- |
-| 条目详情                     | `public-media-detail-v3` + ID                                            | 24 小时 | `media`、`media:item:<id>`      |
-| 电视节目的季摘要             | `public-media-seasons-v3` + ID                                           | 24 小时 | `media`、`media:item:<id>`      |
-| 单集分页与季统计             | `public-season-episodes-v2` + 节目 ID／季 ID／页码／每页条数／状态／排序 | 24 小时 | `media`、`media:item:<节目 ID>` |
-| 下一集                       | `public-season-next-episode-v1` + 节目 ID／季 ID                         | 24 小时 | `media`、`media:item:<节目 ID>` |
-| 搜索首屏                     | `public-media-search-v3` + 查询串                                        | 1 小时  | `media`、`media:lists`          |
-| 榜单                         | `public-media-top-v4` + 类型／年份／条数（固定 10；类型含 album／book）  | 24 小时 | `media`、`media:lists`          |
-| 即将上映、分布统计、年度统计 | `public-media-*-v2`                                                      | 24 小时 | `media`、`media:lists`          |
-| 首页继续看                   | `public-media-continue-watching-v1`                                      | 24 小时 | `media`、`media:lists`          |
-| 搜索筛选选项                 | `search-options-v2`                                                      | 24 小时 | `media`、`media:lists`          |
+| 数据                         | key                                                                      | 有效期     | 标签                            |
+| ---------------------------- | ------------------------------------------------------------------------ | ---------- | ------------------------------- |
+| 影视／图书条目详情           | `public-media-detail-v4` + ID                                            | 仅标签失效 | `media`、`media:item:<id>`      |
+| 专辑详情                     | `public-album-detail-v3` + ID                                            | 仅标签失效 | `media`、`media:item:<id>`      |
+| 电视节目的季摘要             | `public-media-seasons-v3` + ID                                           | 仅标签失效 | `media`、`media:item:<id>`      |
+| 单集分页与季统计             | `public-season-episodes-v2` + 节目 ID／季 ID／页码／每页条数／状态／排序 | 仅标签失效 | `media`、`media:item:<节目 ID>` |
+| 下一集                       | `public-season-next-episode-v1` + 节目 ID／季 ID                         | 仅标签失效 | `media`、`media:item:<节目 ID>` |
+| 搜索首屏                     | `public-media-search-v3` + 查询串                                        | 1 小时     | `media`、`media:lists`          |
+| 榜单                         | `public-media-top-v4` + 类型／年份／条数（固定 10；类型含 album／book）  | 仅标签失效 | `media`、`media:lists`          |
+| 即将上映                     | `public-media-upcoming-v2`                                               | 24 小时    | `media`、`media:lists`          |
+| 分布统计                     | `public-media-distributions-v2`                                          | 仅标签失效 | `media`、`media:lists`          |
+| 年度统计                     | `public-media-release-year-stats-v2`                                     | 仅标签失效 | `media`、`media:lists`          |
+| 首页继续（在看／在听／在读） | `public-media-home-continue-v2`                                          | 仅标签失效 | `media`、`media:lists`          |
+| 首页在读（单独入口）         | `public-media-currently-reading-v1`                                      | 仅标签失效 | `media`、`media:lists`          |
+| 图书目录统计                 | `public-book-stats-v1`                                                   | 仅标签失效 | `media`、`media:lists`          |
+| 专辑目录统计                 | `public-album-stats-v1`                                                  | 仅标签失效 | `media`、`media:lists`          |
+| 搜索筛选选项                 | `search-options-v2`                                                      | 仅标签失效 | `media`、`media:lists`          |
 
-非法 ID 在进入数据缓存前就返回，不会写入缓存条目。
+非法 ID 在进入数据缓存前就返回，不会写入缓存条目。电影／节目／图书详情走 `getCachedMediaById`（`public-media-detail-v4`）；专辑详情走 `getCachedAlbumDetail`（`public-album-detail-v3`）。
 
-首页继续看没有查询参数，全站共用一条缓存，返回形状仍是 `ContinueWatchingItem`。读取函数是 `getContinueWatching`，只用公开 Supabase 客户端，不读 `cookies()`、`headers()` 或当前用户：观看记录对访客和站长是同一份公开数据，不是按人分开的。缓存回调因此可以放进 `unstable_cache`。
+### 系列查询降级（不写缓存）
+
+影视／图书详情与专辑详情在加载系列／同系列成员时，若查询失败，会标记 `seriesDegraded` 并在缓存回调里抛出 `SeriesDegradedError`（`throwIfSeriesDegraded`）。`unstable_cache` 因此不会把「空系列」结果写入缓存。外层 `cachedWithSeriesFallback` 接住该错误后，改走无缓存路径（`getMediaById`／`getAlbumDetail`），返回空系列并照常 `reportHandledError`。其他错误仍向上抛出。
+
+首页继续没有查询参数，全站共用一条缓存，键为 `public-media-home-continue-v2`，读取函数是 `getHomeContinue`，返回 `{ watching, listening, reading }`（`HomeContinueData`）。只用公开 Supabase 客户端，不读 `cookies()`、`headers()` 或当前用户：进度对访客和站长是同一份公开数据，不是按人分开的。缓存回调因此可以放进 `unstable_cache`。`getCachedCurrentlyReading` 另有独立键，供单独取在读列表。
 
 类型、地区、语言筛选必须是现有选项：`/search` 遇到未知值返回未找到页面，`/api/media` 返回 400。
 
@@ -55,7 +65,7 @@
 | 修改或删除人物、类型、地区、语言、系列；报告批量删除；合并人物；「刷新缓存」按钮         | `revalidateAllMedia`：`media` 标签 + `revalidatePath("/", "layout")`，全站失效                                                                                      |
 | 标记「不是同一人」                                                                       | 不影响公开数据，不失效                                                                                                                                              |
 
-电影和单集的观看写入都走上面第一行，不另建标签。保存条目时评分决定已看或想看（`manage_save_media` 写 `tracking`），批量操作直接改 `tracking.status`，删除会级联去掉观看记录。成功之后 `revalidateMediaItems` 调用 `revalidateTag("media:lists", { expire: 0 })`。继续看挂着这个标签，同时首页路径被 `revalidatePath("/")` 刷新，下一次访问不会继续用旧的 HTML，也不会从 24 小时数据缓存里读回旧进度。没有写进数据库的失败请求不失效。查询受影响条目失败时退回 `revalidateAllMedia`，失效 `media` 标签，继续看同样过期。手动「刷新缓存」也走 `media` 标签。绕过网站、直接在 Supabase 里改数据（例如用 SQL 或运维脚本改 `tracking`）不会触发失效，继续看最长会显示旧进度 24 小时；这种情况下请在管理台点现有的「刷新缓存」。
+电影和单集的观看写入都走上面第一行，不另建标签。保存条目时评分决定已看或想看（`manage_save_media` 写 `tracking`），批量操作直接改 `tracking.status`，删除会级联去掉观看记录。成功之后 `revalidateMediaItems` 调用 `revalidateTag("media:lists", { expire: 0 })`。首页继续挂着这个标签，同时首页路径被 `revalidatePath("/")` 刷新，下一次访问不会继续用旧的 HTML，也不会从仅标签失效的数据缓存里读回旧进度。没有写进数据库的失败请求不失效。查询受影响条目失败时退回 `revalidateAllMedia`，失效 `media` 标签，首页继续同样过期。手动「刷新缓存」也走 `media` 标签。绕过网站、直接在 Supabase 里改数据（例如用 SQL 或运维脚本改 `tracking`）不会触发失效；首页继续是 `revalidate: false`，会一直用旧进度直到标签失效，请在管理台点现有的「刷新缓存」。
 
 受影响条目要在保存**前后**各查一次（`affectedMediaIds`），才能覆盖移出系列或更换上级的情况。查询失败时退回全站失效。
 
