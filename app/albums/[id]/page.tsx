@@ -1,7 +1,9 @@
 import { notFound } from "next/navigation";
 import AlbumDetailHeader from "@/components/AlbumDetailHeader";
 import AlbumTracklist from "@/components/AlbumTracklist";
+import MediaRow from "@/components/MediaRow";
 import { getCachedAlbumDetail } from "@/lib/functions/cached-media";
+import type { AlbumSeriesMembership } from "@/lib/types/album";
 import type { Metadata } from "next";
 import { buildMediaJsonLd, buildMediaMetadata, serializeJsonLd } from "@/lib/seo/media";
 
@@ -21,7 +23,24 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
   return buildMediaMetadata(album.media);
 }
 
-/** 专辑详情：方案 C 页头 + 曲目表。 */
+/**
+ * 同系列其他专辑：数据已在 getAlbumDetail.series 里（不含当前）。
+ * 空系列或 items 为空时不渲染；开启「第 N 部」角标（缺 seriesPosition 则隐藏）。
+ */
+function AlbumSeriesRows({ series }: { series: readonly AlbumSeriesMembership[] }) {
+  const groups = series.filter(({ items }) => items.length > 0);
+  if (groups.length === 0) return null;
+
+  return (
+    <div className="mt-12 space-y-12" data-testid="album-series-section">
+      {groups.map(({ name, items }) => (
+        <MediaRow key={name} title={`《${name}》系列`} items={items} type="album" showSeriesPosition />
+      ))}
+    </div>
+  );
+}
+
+/** 专辑详情：方案 C 页头 + 曲目表 + 同系列横向卡片。 */
 export default async function AlbumDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const album = await getCachedAlbumDetail(id);
@@ -43,6 +62,7 @@ export default async function AlbumDetailPage({ params }: { params: Promise<{ id
       <div className="container mx-auto max-w-7xl px-4 pb-8 sm:px-6 md:pb-12 lg:px-8">
         <h2 className="mb-4 text-lg font-semibold text-fg">曲目</h2>
         <AlbumTracklist tracks={album.tracks} />
+        <AlbumSeriesRows series={album.series} />
       </div>
     </div>
   );
