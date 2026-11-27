@@ -264,8 +264,16 @@ export const TV_SHOW_PUBLIC_ROUTE = MEDIA_TYPE_DEFINITIONS.tv_show.route as "sho
 /** 季详情路径正则：/shows/<showId>/seasons/<seasonId>。 */
 export const PUBLIC_SEASON_PATH_PATTERN = new RegExp(`^/${escapeRegExp(TV_SHOW_PUBLIC_ROUTE)}/[^/]+/seasons/([^/]+)`);
 
-/** 详情页路径正则：/movies|shows|albums|books/<id>。 */
-export const PUBLIC_DETAIL_PATH_PATTERN = new RegExp(`^/(?:${PUBLIC_MEDIA_TYPES.map(escapeRegExp).join("|")})/([^/]+)`);
+/**
+ * 需在 proxy 层校验 UUID 的公开详情路由段。
+ * 目录类型之外另含歌曲（/music）与人物（/people）；二者有详情页但不进顶层目录。
+ */
+export const PUBLIC_DETAIL_ROUTE_SEGMENTS = [...PUBLIC_MEDIA_TYPES, "music", "people"] as const;
+
+/** 详情页路径正则：/movies|shows|albums|books|music|people/<id>。 */
+export const PUBLIC_DETAIL_PATH_PATTERN = new RegExp(
+  `^/(?:${PUBLIC_DETAIL_ROUTE_SEGMENTS.map(escapeRegExp).join("|")})/([^/]+)`,
+);
 
 const routeToDb = new Map<string, CatalogDbMediaType>(
   CATALOG_DB_TYPES.map((key) => [MEDIA_TYPE_DEFINITIONS[key].route as string, key]),

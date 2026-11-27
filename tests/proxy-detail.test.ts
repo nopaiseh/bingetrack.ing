@@ -19,12 +19,16 @@ describe("详情路由的非法 ID", () => {
       `/shows/${id}`,
       `/albums/${id}`,
       `/books/${id}`,
+      `/music/${id}`,
+      `/people/${id}`,
       `/shows/${id.toUpperCase()}`,
       `/shows/${id}/seasons/${id}`,
       "/movies",
       "/shows",
       "/albums",
       "/books",
+      "/music",
+      "/people",
     ]) {
       expect(matches(url), url).toBe(false);
     }
@@ -41,13 +45,46 @@ describe("详情路由的非法 ID", () => {
       "/books/wp-login.php",
       `/albums/${id}x`,
       `/books/${id}x`,
+      "/music/wp-login.php",
+      "/music/abc",
+      `/music/${id}x`,
+      "/people/abc",
+      "/people/wp-login.php",
+      `/people/${id}x`,
     ]) {
       expect(matches(url), url).toBe(true);
     }
   });
 
   it("非法 ID 在渲染前返回 404，不进入页面", async () => {
-    for (const url of ["/movies/wp-login.php", "/shows/old-slug", "/albums/not-a-uuid", "/books/123"]) {
+    for (const url of [
+      "/movies/wp-login.php",
+      "/shows/old-slug",
+      "/albums/not-a-uuid",
+      "/books/123",
+      "/music/wp-login.php",
+      "/music/abc",
+      "/people/abc",
+      "/people/not-a-uuid",
+    ]) {
+      const response = await proxy(new NextRequest(`https://www.bingetrack.ing${url}`));
+      expect(response.status, url).toBe(404);
+      expect(response.headers.get("x-middleware-next"), url).toBeNull();
+    }
+  });
+
+  it("歌曲与人物：合法 UUID 不进 proxy；畸形 ID 在渲染前 404", async () => {
+    for (const url of [`/music/${id}`, `/people/${id}`, `/music/${id.toUpperCase()}`, `/people/${id.toUpperCase()}`]) {
+      expect(matches(url), url).toBe(false);
+    }
+    // 合法 UUID 即使误入 proxy 也不应 404（matcher 本就不会命中）
+    for (const url of [`/music/${id}`, `/people/${id}`]) {
+      const response = await proxy(new NextRequest(`https://www.bingetrack.ing${url}`));
+      expect(response.status, url).toBe(200);
+      expect(response.headers.get("x-middleware-next"), url).toBe("1");
+    }
+    for (const url of ["/music/wp-login.php", "/music/abc", "/people/abc", `/people/${id}x`]) {
+      expect(matches(url), url).toBe(true);
       const response = await proxy(new NextRequest(`https://www.bingetrack.ing${url}`));
       expect(response.status, url).toBe(404);
       expect(response.headers.get("x-middleware-next"), url).toBeNull();

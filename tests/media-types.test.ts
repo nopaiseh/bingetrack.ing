@@ -3,6 +3,8 @@ import {
   ADMIN_BULK_DB_TYPES,
   CATALOG_DB_TYPES,
   MEDIA_TYPE_DEFINITIONS,
+  PUBLIC_DETAIL_PATH_PATTERN,
+  PUBLIC_DETAIL_ROUTE_SEGMENTS,
   PUBLIC_MEDIA_TYPES,
   PUBLIC_SEASON_PATH_PATTERN,
   SEARCH_DB_TYPES,
@@ -70,6 +72,14 @@ describe("media type config", () => {
     expect(isPublicMediaType("albums")).toBe(true);
     expect(isPublicMediaType("books")).toBe(true);
     expect(isPublicMediaType("music")).toBe(false);
+  });
+
+  it("PUBLIC_DETAIL_PATH_PATTERN covers catalog, music, and people detail IDs", () => {
+    expect(PUBLIC_DETAIL_ROUTE_SEGMENTS).toEqual(["movies", "shows", "albums", "books", "music", "people"]);
+    expect("/music/abc".match(PUBLIC_DETAIL_PATH_PATTERN)?.[1]).toBe("abc");
+    expect("/people/abc".match(PUBLIC_DETAIL_PATH_PATTERN)?.[1]).toBe("abc");
+    expect("/albums/abc".match(PUBLIC_DETAIL_PATH_PATTERN)?.[1]).toBe("abc");
+    expect("/music".match(PUBLIC_DETAIL_PATH_PATTERN)).toBeNull();
   });
 
   it("keeps zh labels and tracking verbs per type family", () => {
