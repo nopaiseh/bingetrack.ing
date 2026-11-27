@@ -2,6 +2,10 @@
 
 应用通过 Vercel 的 Git 集成部署：拉取请求生成预览，合并到 `main` 后发布生产。数据库结构由 `supabase/migrations/` 管理；**合并进 `main` 时，Supabase GitHub 集成会自动把尚未应用的迁移推到生产库**。不要在 Supabase 控制台、MCP 或其他渠道手工改生产结构，也不要在本地对生产项目执行结构变更。
 
+## 预览构建是否跳过
+
+`vercel.json` 的 `ignoreCommand` 指向 `scripts/vercel-ignore-build.sh`，用于减少不必要的 Preview 构建费用：生产（`main`）永远构建；Preview 默认跳过，仅当提交说明含 `[preview]`，或相对 `main` 的改动包含前端界面文件（`components/`、`hooks/`、`public/`、样式配置、`app/` 下的页面／布局／组件等）时才构建；`dependabot/`／`renovate/` 分支一律跳过（除非说明含 `[preview]`）。需要强制出预览时，在提交说明里加上 `[preview]` 即可（审查人也可请作者补一个带该标记的提交）。脚本每一步会在 Vercel 构建日志里打印判断理由。
+
 ## 平台设置
 
 以下设置在 GitHub 和 Vercel 上配置，仓库文件无法证明它们已经启用，需要定期核对：
@@ -25,8 +29,8 @@
 
 ## 发布应用
 
-1. 创建拉取请求，等待质量检查、迁移卫生检查和 Vercel 预览构建完成。
-2. 运行 `DEPLOYMENT_URL=<预览地址> npm run smoke`，并实际走一遍受影响的用户流程。
+1. 创建拉取请求，等待质量检查与迁移卫生检查完成。若改动含前端界面或提交说明带 `[preview]`，再等 Vercel 预览构建；纯后端／文档／CI 类改动通常会跳过预览（见上文「预览构建是否跳过」）。
+2. 有预览时运行 `DEPLOYMENT_URL=<预览地址> npm run smoke`，并实际走一遍受影响的用户流程；无预览则依赖 CI 与本地验证。
 3. 合并，确认生产部署对应的是合并后的提交；若 PR 含迁移，确认 Supabase 集成已把迁移应用到生产。
 4. 确认正式域名指向新部署，运行 `DEPLOYMENT_URL=https://www.bingetrack.ing npm run smoke`，查看 Vercel 运行日志。
 
