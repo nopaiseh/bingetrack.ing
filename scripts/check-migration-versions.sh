@@ -36,6 +36,12 @@ migration_version() {
   fi
 }
 
+# True when path exists as a blob on the base ref (i.e. already merged / immutable).
+path_on_base() {
+  local path="$1"
+  git cat-file -e "${BASE_REF}:${path}" 2>/dev/null
+}
+
 immutable_failed=0
 while IFS= read -r line; do
   [[ -z "$line" ]] && continue
@@ -45,12 +51,18 @@ while IFS= read -r line; do
   case "$status" in
     M)
       path="$(printf '%s\n' "$line" | cut -f2)"
+      if ! path_on_base "$path"; then
+        continue
+      fi
       echo "Immutable migration modified: ${path}" >&2
       echo "  Migrations already on ${BASE_REF} must not be edited; add a new migration instead." >&2
       immutable_failed=$((immutable_failed + 1))
       ;;
     D)
       path="$(printf '%s\n' "$line" | cut -f2)"
+      if ! path_on_base "$path"; then
+        continue
+      fi
       echo "Immutable migration deleted: ${path}" >&2
       echo "  Migrations already on ${BASE_REF} must not be deleted; add a new migration instead." >&2
       immutable_failed=$((immutable_failed + 1))
@@ -58,6 +70,9 @@ while IFS= read -r line; do
     R)
       old_path="$(printf '%s\n' "$line" | cut -f2)"
       new_path="$(printf '%s\n' "$line" | cut -f3)"
+      if ! path_on_base "$old_path"; then
+        continue
+      fi
       echo "Immutable migration renamed: ${old_path} -> ${new_path}" >&2
       echo "  Migrations already on ${BASE_REF} must not be renamed; add a new migration instead." >&2
       immutable_failed=$((immutable_failed + 1))
@@ -65,10 +80,11 @@ while IFS= read -r line; do
   esac
 done < <(
   {
+    # Committed MDR vs base (three-dot): only paths that existed on the merge-base.
     git diff --diff-filter=MDR --name-status "${BASE_REF}...HEAD" -- supabase/migrations
-    # Working tree changes against HEAD (local edits before commit).
+    # Working tree / staged MDR vs HEAD: still filter with path_on_base so edits to
+    # migrations *added on this branch* are allowed until merge.
     git diff --diff-filter=MDR --name-status -- supabase/migrations
-    # Staged changes.
     git diff --diff-filter=MDR --name-status --cached -- supabase/migrations
   } | sed '/^$/d' | sort -u
 )
@@ -106,9 +122,10 @@ done < <(
   {
     # Committed additions on this branch vs the base ref.
     git diff --diff-filter=A --name-only "${BASE_REF}...HEAD" -- supabase/migrations
-    # Also catch unstaged / untracked local migration files (handy for local runs).
+    # Also catch staged / unstaged / untracked local migration files (handy for local runs).
     git ls-files --others --exclude-standard -- supabase/migrations
     git diff --diff-filter=A --name-only -- supabase/migrations
+    git diff --diff-filter=A --name-only --cached -- supabase/migrations
   } | sed '/^$/d' | sort -u
 )
 

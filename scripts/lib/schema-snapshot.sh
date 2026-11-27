@@ -34,7 +34,8 @@ normalize_schema_sql() {
 # default ACLs; we re-attach them from pg_event_trigger / pg_default_acl so the
 # snapshot tracks the rebuilt DB rather than hardcoded SQL.
 append_migration_guards() {
-  psql "$LOCAL_DB_URL" -v ON_ERROR_STOP=1 -At <<'SQL'
+  # -X ignores ~/.psqlrc so local prompts/timing/formatting cannot pollute the snapshot.
+  psql -X "$LOCAL_DB_URL" -v ON_ERROR_STOP=1 -At <<'SQL'
 -- Always-quote identifiers so output matches pg_dump --quote-all-identifier.
 -- qi(t) := '"' || replace(t, '"', '""') || '"'
 -- ---------------------------------------------------------------------------
@@ -245,7 +246,7 @@ dump_public_schema_raw() {
 }
 
 require_local_db() {
-  if ! psql "$LOCAL_DB_URL" -v ON_ERROR_STOP=1 -c 'SELECT 1' >/dev/null 2>&1; then
+  if ! psql -X "$LOCAL_DB_URL" -v ON_ERROR_STOP=1 -c 'SELECT 1' >/dev/null 2>&1; then
     echo "Local Supabase Postgres is not reachable at ${LOCAL_DB_URL}." >&2
     echo "Start it with: supabase start   (or: supabase db reset)" >&2
     exit 1
