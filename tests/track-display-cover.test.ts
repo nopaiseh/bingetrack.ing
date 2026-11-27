@@ -50,6 +50,10 @@ describe("trackDisplayCoverUrl / displayCoverUrl", () => {
   });
 });
 
+const olderAlbumCover = "https://example.com/older-album.jpg";
+const newerAlbumCover = "https://example.com/newer-album.jpg";
+const albumC = "ffffffff-ffff-4fff-8fff-ffffffffffff";
+
 describe("fetchAlbumCoversByTrackIds", () => {
   it("批量 join album_tracks.song_id → album cover_url，避免按曲目逐条查询", async () => {
     const db = fakeDb((query) => {
@@ -80,6 +84,64 @@ describe("fetchAlbumCoversByTrackIds", () => {
     expect(db.from).toHaveBeenCalledWith("album_tracks");
     expect(db.from).toHaveBeenCalledWith("media_items");
     expect(db.from).toHaveBeenCalledTimes(2);
+  });
+
+  it("一首歌多专辑时取发行日最早且有封面的专辑，不受 album_tracks 返回次序影响", async () => {
+    const db = fakeDb((query) => {
+      if (query.table === "album_tracks") {
+        // 故意把较新专辑放在前面
+        return {
+          data: [
+            { song_id: trackA, album_id: albumB },
+            { song_id: trackA, album_id: albumA },
+          ],
+          error: null,
+        };
+      }
+      if (query.table === "media_items") {
+        return {
+          data: [
+            { id: albumB, cover_url: newerAlbumCover, release_date: "2022-06-01" },
+            { id: albumA, cover_url: olderAlbumCover, release_date: "2019-03-01" },
+          ],
+          error: null,
+        };
+      }
+      return { data: [], error: null };
+    });
+
+    const map = await fetchAlbumCoversByTrackIds(db, [trackA]);
+    expect(map.get(trackA)).toBe(olderAlbumCover);
+  });
+
+  it("最早专辑无封面时回退到下一张有封面的更早候选；同日按 album_id 稳定次序", async () => {
+    const db = fakeDb((query) => {
+      if (query.table === "album_tracks") {
+        return {
+          data: [
+            { song_id: trackA, album_id: albumC },
+            { song_id: trackA, album_id: albumB },
+            { song_id: trackA, album_id: albumA },
+          ],
+          error: null,
+        };
+      }
+      if (query.table === "media_items") {
+        return {
+          data: [
+            { id: albumA, cover_url: null, release_date: "2018-01-01" },
+            { id: albumB, cover_url: newerAlbumCover, release_date: "2020-01-01" },
+            { id: albumC, cover_url: olderAlbumCover, release_date: "2020-01-01" },
+          ],
+          error: null,
+        };
+      }
+      return { data: [], error: null };
+    });
+
+    const map = await fetchAlbumCoversByTrackIds(db, [trackA]);
+    // 跳过最早无封面专辑后，同日按 album_id 升序 → albumB（dddd…）先于 albumC（ffff…）
+    expect(map.get(trackA)).toBe(newerAlbumCover);
   });
 });
 

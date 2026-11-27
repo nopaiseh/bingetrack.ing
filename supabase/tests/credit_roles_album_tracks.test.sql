@@ -1,7 +1,7 @@
 -- credit_roles 字典约束、共享曲统计、专辑删除保留共享曲、独立单曲、get_person_works 去重。
 
 begin;
-select plan(41);
+select plan(43);
 
 insert into auth.users(id,email) values
   ('c1000000-0000-4000-8000-000000000001','cr-owner@test.invalid');
@@ -547,6 +547,142 @@ begin
 end $$;
 
 select ok(true, 'get_song_detail caps related at 12 with sort/dedupe/merged relations; excludes same-album');
+
+-- 当前歌属多张专辑：任一共同专辑上的歌都不得进 related
+do $$
+declare
+  album_x uuid;
+  album_y uuid;
+  shared_song uuid;
+  only_x uuid;
+  only_y uuid;
+  related_ok uuid;
+  detail jsonb;
+begin
+  album_x := (public.admin_save_album_with_tracks(
+    jsonb_build_object(
+      'type','album','title','多专排除X','status','want_to_watch','release_kind','album',
+      'credits',jsonb_build_array(jsonb_build_object('person',jsonb_build_object('name','多专艺人'),'role','artist','order',0)),
+      'genres','[]'::jsonb,'regions','[]'::jsonb,'collections','[]'::jsonb
+    ),
+    jsonb_build_array(
+      jsonb_build_object(
+        'title','多专共享主歌','number',1,'status','want_to_watch','runtime',100,
+        'credits',jsonb_build_array(jsonb_build_object('person',jsonb_build_object('name','多专艺人'),'role','artist','order',0)),
+        'genres','[]'::jsonb,'languages','[]'::jsonb,'collections','[]'::jsonb
+      ),
+      jsonb_build_object(
+        'title','仅X专辑曲','number',2,'status','want_to_watch','runtime',80,
+        'credits',jsonb_build_array(jsonb_build_object('person',jsonb_build_object('name','多专艺人'),'role','artist','order',0)),
+        'genres','[]'::jsonb,'languages','[]'::jsonb,'collections','[]'::jsonb
+      )
+    )
+  )->>'id')::uuid;
+
+  shared_song := (select id from public.media_items where title = '多专共享主歌');
+  only_x := (select id from public.media_items where title = '仅X专辑曲');
+
+  album_y := (public.admin_save_album_with_tracks(
+    jsonb_build_object(
+      'type','album','title','多专排除Y','status','want_to_watch','release_kind','album',
+      'credits',jsonb_build_array(jsonb_build_object('person',jsonb_build_object('name','多专艺人'),'role','artist','order',0)),
+      'genres','[]'::jsonb,'regions','[]'::jsonb,'collections','[]'::jsonb
+    ),
+    jsonb_build_array(
+      jsonb_build_object(
+        'id', shared_song,
+        'title','多专共享主歌','number',1,'status','want_to_watch','runtime',100,
+        'credits',jsonb_build_array(jsonb_build_object('person',jsonb_build_object('name','多专艺人'),'role','artist','order',0)),
+        'genres','[]'::jsonb,'languages','[]'::jsonb,'collections','[]'::jsonb
+      ),
+      jsonb_build_object(
+        'title','仅Y专辑曲','number',2,'status','want_to_watch','runtime',80,
+        'credits',jsonb_build_array(jsonb_build_object('person',jsonb_build_object('name','多专艺人'),'role','artist','order',0)),
+        'genres','[]'::jsonb,'languages','[]'::jsonb,'collections','[]'::jsonb
+      )
+    )
+  )->>'id')::uuid;
+
+  only_y := (select id from public.media_items where title = '仅Y专辑曲');
+  related_ok := (public.admin_save_media(jsonb_build_object(
+    'type','music','title','多专外相关歌','status','want_to_watch','runtime',70,
+    'credits',jsonb_build_array(jsonb_build_object('person',jsonb_build_object('name','多专艺人'),'role','artist','order',0)),
+    'genres','[]'::jsonb,'languages','[]'::jsonb,'collections','[]'::jsonb
+  ))->>'id')::uuid;
+
+  if (select count(*) from public.album_tracks where song_id = shared_song) is distinct from 2 then
+    raise exception 'fixture: shared song should be on two albums';
+  end if;
+
+  detail := public.get_song_detail(shared_song);
+  if exists (
+    select 1 from jsonb_array_elements(detail->'related') r
+    where r->>'id' in (only_x::text, only_y::text)
+  ) then
+    raise exception 'multi-album song must exclude tracks from any shared album';
+  end if;
+  if not exists (
+    select 1 from jsonb_array_elements(detail->'related') r
+    where r->>'id' = related_ok::text
+  ) then
+    raise exception 'related song outside shared albums must remain';
+  end if;
+end $$;
+
+select ok(true, 'related excludes tracks from any album shared with multi-album current song');
+
+-- 当前歌不属于任何专辑：不得因其它歌有专辑而误排除
+do $$
+declare
+  standalone uuid;
+  album_z uuid;
+  on_album uuid;
+  other_standalone uuid;
+  detail jsonb;
+begin
+  standalone := (public.admin_save_media(jsonb_build_object(
+    'type','music','title','无专辑主歌','status','want_to_watch','runtime',90,
+    'credits',jsonb_build_array(jsonb_build_object('person',jsonb_build_object('name','无专艺人'),'role','artist','order',0)),
+    'genres','[]'::jsonb,'languages','[]'::jsonb,'collections','[]'::jsonb
+  ))->>'id')::uuid;
+
+  album_z := (public.admin_save_media(jsonb_build_object(
+    'type','album','title','无专对照专辑','status','want_to_watch','release_kind','album',
+    'credits',jsonb_build_array(jsonb_build_object('person',jsonb_build_object('name','无专艺人'),'role','artist','order',0)),
+    'genres','[]'::jsonb,'regions','[]'::jsonb,'collections','[]'::jsonb
+  ))->>'id')::uuid;
+  on_album := (public.admin_save_media(jsonb_build_object(
+    'type','music','title','有专辑相关歌','parent_id',album_z::text,'number',1,
+    'status','want_to_watch','runtime',60,
+    'credits',jsonb_build_array(jsonb_build_object('person',jsonb_build_object('name','无专艺人'),'role','artist','order',0)),
+    'genres','[]'::jsonb,'languages','[]'::jsonb,'collections','[]'::jsonb
+  ))->>'id')::uuid;
+  other_standalone := (public.admin_save_media(jsonb_build_object(
+    'type','music','title','另一无专辑相关歌','status','want_to_watch','runtime',55,
+    'credits',jsonb_build_array(jsonb_build_object('person',jsonb_build_object('name','无专艺人'),'role','artist','order',0)),
+    'genres','[]'::jsonb,'languages','[]'::jsonb,'collections','[]'::jsonb
+  ))->>'id')::uuid;
+
+  if exists (select 1 from public.album_tracks where song_id = standalone) then
+    raise exception 'fixture: standalone must have no album_tracks';
+  end if;
+
+  detail := public.get_song_detail(standalone);
+  if not exists (
+    select 1 from jsonb_array_elements(detail->'related') r
+    where r->>'id' = on_album::text
+  ) then
+    raise exception 'standalone current song must not exclude album-linked related songs';
+  end if;
+  if not exists (
+    select 1 from jsonb_array_elements(detail->'related') r
+    where r->>'id' = other_standalone::text
+  ) then
+    raise exception 'standalone current song must keep other standalone related songs';
+  end if;
+end $$;
+
+select ok(true, 'standalone current song does not falsely exclude related songs');
 
 select * from finish();
 rollback;

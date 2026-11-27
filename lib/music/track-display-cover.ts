@@ -50,7 +50,6 @@ export async function fetchAlbumCoversByTrackIds(
   const albumIds = [
     ...new Set((links ?? []).map((row) => row.album_id as string | null).filter((id): id is string => Boolean(id))),
   ];
-  const coverByAlbum = new Map<string, string | null>();
   if (albumIds.length === 0) {
     for (const trackId of unique) result.set(trackId, null);
     return result;
@@ -63,25 +62,40 @@ export async function fetchAlbumCoversByTrackIds(
     .eq("type", "album");
   if (albumError) throw new Error("无法读取专辑封面。");
 
-  // 按发行日排序后写入，使「先遇到的有封面专辑」偏早
-  const sorted = [...(albums ?? [])].sort((a, b) => {
-    const da = (a.release_date as string | null) ?? "9999";
-    const dbDate = (b.release_date as string | null) ?? "9999";
-    return da.localeCompare(dbDate);
-  });
-  for (const row of sorted) {
-    coverByAlbum.set(row.id as string, trackDisplayCoverUrl(row.cover_url as string | null));
+  // album_id → 发行日与封面；多专辑时按发行日升序（null 最后）、同日按 album_id 稳定次序，取第一张有封面的
+  type AlbumMeta = { releaseDate: string | null; cover: string | null };
+  const albumMeta = new Map<string, AlbumMeta>();
+  for (const row of albums ?? []) {
+    albumMeta.set(row.id as string, {
+      releaseDate: (row.release_date as string | null) ?? null,
+      cover: trackDisplayCoverUrl(row.cover_url as string | null),
+    });
   }
 
   for (const trackId of unique) {
-    const albumIdsForTrack = (links ?? [])
+    const albumsForTrack = (links ?? [])
       .filter((row) => row.song_id === trackId)
-      .map((row) => row.album_id as string);
+      .map((row) => {
+        const albumId = row.album_id as string;
+        const meta = albumMeta.get(albumId);
+        return {
+          albumId,
+          releaseDate: meta?.releaseDate ?? null,
+          cover: meta?.cover ?? null,
+        };
+      })
+      .sort((a, b) => {
+        const da = a.releaseDate ?? "9999-99-99";
+        const dbDate = b.releaseDate ?? "9999-99-99";
+        const byDate = da.localeCompare(dbDate);
+        if (byDate !== 0) return byDate;
+        return a.albumId.localeCompare(b.albumId);
+      });
+
     let cover: string | null = null;
-    for (const albumId of albumIdsForTrack) {
-      const candidate = coverByAlbum.get(albumId) ?? null;
-      if (candidate) {
-        cover = candidate;
+    for (const album of albumsForTrack) {
+      if (album.cover) {
+        cover = album.cover;
         break;
       }
     }
