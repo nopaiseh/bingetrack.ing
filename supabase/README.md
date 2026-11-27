@@ -2,11 +2,16 @@
 
 `migrations/` 是应用 `public` schema 的唯一结构来源，Supabase CLI 按文件名顺序应用。`20260925000000_initial_schema.sql` 是基线，等同于引入迁移机制时生产库的完整结构：类型、表、约束、索引、RLS、视图、函数、事件触发器和权限。迁移不包含 Supabase 托管的 schema，也不包含业务数据。
 
+**合并进 `main` 时，Supabase GitHub 集成会自动把迁移应用到生产库。** 不要在 Dashboard、MCP、SQL 编辑器里直接改生产结构，也不要在本地对生产项目推送结构。
+
+`schema_snapshot.sql` 是从「按迁移从零重建」的本地库导出的 `public` schema 快照（另含迁移里的 `ensure_rls` 事件触发器与全局 `ALTER DEFAULT PRIVILEGES`）。CI 会核对它与当前迁移一致。
+
 ## 目录
 
 | 路径                          | 内容                                                                |
 | ----------------------------- | ------------------------------------------------------------------- |
 | `migrations/`                 | 版本化结构迁移。新环境、本地和 CI 都从这里重建                      |
+| `schema_snapshot.sql`         | 迁移重建后的 `public` schema 快照；结构变更后需重新生成             |
 | `fixtures/e2e_seed.sql`       | 固定的浏览器测试数据（影视／图书），只用于本地和 CI，不要导入生产库 |
 | `fixtures/e2e_album_seed.sql` | 专辑／曲目夹具；CI 在生产构建后载入，以保留 `/albums` 空状态 ISR    |
 | `tests/`                      | pgTAP 测试：公开数据语义、站长权限、事务行为、管理视图与报告        |
@@ -31,13 +36,13 @@ supabase test db
 
 ## 权限模型
 
-- 所有 `public` 表都启用 RLS；事件触发器 `rls_auto_enable` 会给新建的表自动启用。
+- 所有 `public` 表都启用 RLS；事件触发器 `ensure_rls`（函数 `rls_auto_enable`）会给新建的表自动启用。
 - 匿名和登录用户对影视数据只有 `SELECT` 权限，这是公开网站的预期行为。今后如果要加私密字段或多用户数据，需要先重新设计行列权限，公开缓存也不能照搬。
 - 写入权限只授予 `authenticated`，并由 `is_site_owner()` 策略限定为站长。
 - 业务函数都是 `security invoker`，不使用 `SECURITY DEFINER`。写入函数开头会检查 `is_site_owner()`，并撤销匿名角色的执行权限。
 - 管理视图（`v_manage_media_order`、`v_report_*`）只授权给登录用户读取。
 
-`postgres` 角色新建的函数默认不授予 `PUBLIC` 执行权（`20260930000000_revoke_public_function_execute.sql`）。新增函数时要显式 `grant execute` 给需要的角色：公开页面用的给 `anon, authenticated`，管理端用的只给 `authenticated`。
+`postgres` 角色新建的函数默认不授予 `PUBLIC` 执行权（`20260930000000_revoke_public_function_execute.sql` 里的 `ALTER DEFAULT PRIVILEGES`）。新增函数时要显式 `grant execute` 给需要的角色：公开页面用的给 `anon, authenticated`，管理端用的只给 `authenticated`。
 
 ## 查询约定
 
@@ -50,7 +55,18 @@ supabase test db
 
 ## 结构变更流程
 
-1. `supabase migration new <名称>` 新建迁移，写入增量 SQL。已提交的迁移不再修改。
+1. `supabase migration new <名称>` 新建迁移，写入增量 SQL。已提交的迁移不再修改。时间戳须严格大于 `main` 上最大迁移版本。
 2. `supabase db reset` 验证全部迁移能从零应用，载入测试数据，运行 `supabase test db`。
-3. 拉取请求附上验证结果和回滚方案（修复迁移、应用回滚或备份恢复）。
-4. 按 [部署说明](../docs/deployment.md) 用 `supabase db push` 发布。站长初始化与恢复见 [单人管理说明](../docs/single-owner-admin.md)。
+3. `npm run db:schema:snapshot` 更新 `schema_snapshot.sql`。
+4. 拉取请求附上验证结果和回滚方案（修复迁移、应用回滚或备份恢复）。合并进 `main` 后由 Supabase GitHub 集成自动应用到生产。
+5. 站长初始化与恢复见 [单人管理说明](../docs/single-owner-admin.md)；部署顺序见 [部署说明](../docs/deployment.md)。
+
+## 重新生成 schema 快照
+
+```sh
+supabase start                 # 若尚未启动
+npm run db:schema:snapshot     # 等价于 RESET=1 ./scripts/regenerate-schema-snapshot.sh
+npm run db:schema:check        # 可选：确认与提交文件一致
+```
+
+快照必须包含 `ensure_rls` 与 `ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" REVOKE ALL ON FUNCTIONS FROM PUBLIC`。CI 的 Migration hygiene 工作流会做同样的比对。

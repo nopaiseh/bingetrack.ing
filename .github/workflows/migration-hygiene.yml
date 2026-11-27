@@ -1,0 +1,59 @@
+name: Migration hygiene
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: migration-hygiene-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  migration-version-order:
+    name: Migration versions after main
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+
+      - name: Ensure base branch is available
+        if: github.event_name == 'pull_request'
+        run: git fetch --no-tags origin "${{ github.base_ref }}"
+
+      - name: Check new migration versions are newer than the base branch
+        env:
+          BASE_REF: ${{ github.event_name == 'pull_request' && format('origin/{0}', github.base_ref) || 'origin/main' }}
+        run: ./scripts/check-migration-versions.sh
+
+  schema-snapshot:
+    name: Schema snapshot matches migrations
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Set up Supabase CLI
+        uses: supabase/setup-cli@689adcfb80d947100a1eab127289b97d1fb07b13 # v3.2.0
+        with:
+          version: 2.115.0
+
+      # supabase start applies supabase/migrations/ from scratch.
+      - name: Start local Supabase and apply migrations
+        run: supabase start
+
+      - name: Compare schema snapshot to a fresh public-schema dump
+        env:
+          RESET: "0"
+        run: ./scripts/check-schema-snapshot.sh

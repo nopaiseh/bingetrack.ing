@@ -1,12 +1,12 @@
 # 部署与回滚
 
-应用通过 Vercel 的 Git 集成部署：拉取请求生成预览，合并到 `main` 后发布生产。数据库结构由 `supabase/migrations/` 管理，需要手动推送。
+应用通过 Vercel 的 Git 集成部署：拉取请求生成预览，合并到 `main` 后发布生产。数据库结构由 `supabase/migrations/` 管理；**合并进 `main` 时，Supabase GitHub 集成会自动把尚未应用的迁移推到生产库**。不要在 Supabase 控制台、MCP 或其他渠道手工改生产结构，也不要在本地对生产项目执行结构变更。
 
 ## 平台设置
 
 以下设置在 GitHub 和 Vercel 上配置，仓库文件无法证明它们已经启用，需要定期核对：
 
-1. GitHub 保护 `main`：只能通过拉取请求合并，并要求 `Application quality checks` 工作流的 `Lint, types, build, unit, browser & database tests` 检查通过；不允许绕过必要检查。
+1. GitHub 保护 `main`：只能通过拉取请求合并，并要求 `Application quality checks` 的 `Lint, types, build, unit, browser & database tests`，以及 `Migration hygiene` 的 `Migration versions after main` 与 `Schema snapshot matches migrations` 通过；不允许绕过必要检查。
 2. Vercel 生产发布等待必要检查通过。如果账户不支持这个门槛，保留自动预览，手动提升已验证的部署。
 3. Development、Preview、Production 分别配置环境变量。公开页面和 `/auth/confirm` 只用 `NEXT_PUBLIC_SUPABASE_URL` 与 `NEXT_PUBLIC_SUPABASE_ANON_KEY`。服务端生成一次性登录链接时读取 `SUPABASE_SECRET_KEY`，未设置则使用 `SUPABASE_SERVICE_ROLE_KEY`。生产环境配置的是 `SUPABASE_SERVICE_ROLE_KEY`，不设置 `SUPABASE_SECRET_KEY` 或 `AGENT_LOGIN_TOKEN`。预览和测试环境不得持有生产的 `SUPABASE_SERVICE_ROLE_KEY`。
 
@@ -14,15 +14,20 @@
 
 `.github/workflows/test.yml` 在每个拉取请求和 `main` 推送时运行：生产依赖审计 → ESLint → 类型检查 → Vitest → 启动本地 Supabase 并应用迁移 → 载入 `supabase/fixtures/e2e_seed.sql` → 环境检查 → 生产构建 → 载入 `supabase/fixtures/e2e_album_seed.sql`（构建后载入以保留 `/albums` 空状态）→ Playwright → pgTAP。第三方 Action 都固定到提交 SHA。
 
+`.github/workflows/migration-hygiene.yml` 额外检查：
+
+1. **Migration versions after main**：PR 里新增的迁移文件，版本／时间戳必须严格大于 base 分支（通常是 `main`）上已有的最大迁移版本，避免并行 PR 乱序。
+2. **Schema snapshot matches migrations**：本地从迁移重建数据库后，导出的 `public` schema（含 `ensure_rls` 事件触发器与 `ALTER DEFAULT PRIVILEGES`）必须与 `supabase/schema_snapshot.sql` 一致。结构变更后用 `npm run db:schema:snapshot` 重新生成并一并提交。
+
 `.github/workflows/deployment-smoke.yml` 在 Vercel 报告部署成功时，对部署地址运行 `npm run smoke`；也可以手动输入地址触发。受保护的预览需要仓库密钥 `VERCEL_AUTOMATION_BYPASS_SECRET`。工作流总是从默认分支检出检查脚本，不会用被部署提交里的代码处理密钥；`scripts/smoke-deployment.mjs` 只会把这个密钥发给 `bingetrack.ing`、`www.bingetrack.ing` 和 `*.vercel.app` 的 HTTPS 地址，并且每次跳转都重新判断。
 
 `.github/workflows/database-backup.yml` 每天导出一次生产数据库，加密后保存为构建产物，见下文「数据库备份」。
 
 ## 发布应用
 
-1. 创建拉取请求，等待质量检查和 Vercel 预览构建完成。
+1. 创建拉取请求，等待质量检查、迁移卫生检查和 Vercel 预览构建完成。
 2. 运行 `DEPLOYMENT_URL=<预览地址> npm run smoke`，并实际走一遍受影响的用户流程。
-3. 合并，确认生产部署对应的是合并后的提交。
+3. 合并，确认生产部署对应的是合并后的提交；若 PR 含迁移，确认 Supabase 集成已把迁移应用到生产。
 4. 确认正式域名指向新部署，运行 `DEPLOYMENT_URL=https://www.bingetrack.ing npm run smoke`，查看 Vercel 运行日志。
 
 每次生产部署后，ISR 页面会在首次访问时重新生成并计入 Vercel 写入用量。相关改动尽量合进一次发布，不要连续多次小部署。改动涉及缓存时，先读 [缓存与 Vercel 写入用量](caching.md)。
@@ -33,13 +38,15 @@
 
 每次结构变更新增一个迁移文件：
 
-1. `supabase migration new <名称>`。优先做兼容的增量变更（新增字段、表、索引、函数、权限、RLS），让新旧两个应用版本都能运行。
+1. `supabase migration new <名称>`。优先做兼容的增量变更（新增字段、表、索引、函数、权限、RLS），让新旧两个应用版本都能运行。文件名时间戳须严格大于 `main` 上已有的最大版本。
 2. `supabase db reset` 在本地从全部迁移重建，载入测试数据，再运行 `supabase test db`。
-3. 拉取请求里写明验证结果和回滚方案。
-4. 应用依赖新结构时，先 `supabase db push` 并验证，再发布应用。
+3. `npm run db:schema:snapshot` 更新 `supabase/schema_snapshot.sql`，并与迁移一并提交。
+4. 拉取请求里写明验证结果和回滚方案。合并进 `main` 后由 Supabase GitHub 集成自动应用到生产；应用依赖新结构时，等迁移完成后再发布或确认应用版本与结构兼容。
 5. 旧代码不再使用的结构，在之后的版本里用新迁移移除。
 
 已提交且已应用的迁移不能修改，修正一律通过新迁移完成。破坏性变更前先备份受影响的数据。
+
+**禁止**：在 Supabase Dashboard 里改生产 schema、用 MCP／SQL 编辑器直接改生产结构、或对已 link 的生产项目在本地执行结构推送。生产结构变更的唯一入口是合并到 `main` 的迁移文件。
 
 新环境第一次接入迁移机制时，生产库已经有基线结构，只登记不执行：
 
@@ -79,6 +86,8 @@ supabase migration repair --status applied <已包含在备份里的迁移版本
 2. 重新运行正式站点的 smoke 检查，查看运行日志。
 3. 涉及数据库时，按拉取请求中已审查的方案处理（修复迁移、应用回滚或备份恢复），不要直接手工反向执行结构变更。
 4. 记录出问题的提交、部署地址、现象和恢复操作。
+
+仅文档／CI／快照类改动回滚：还原该 PR 即可，不会改生产库。
 
 ## 环境变量
 

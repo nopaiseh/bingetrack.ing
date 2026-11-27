@@ -132,7 +132,7 @@
 
 pgTAP：优先使用 `select plan(N)`，且 **N 与断言条数一致**；只有沿用既有风格时才用 `no_plan()`（如部分 `admin_schema`／`manage_reports`）。改断言数时同步改 `plan`。
 
-CI：`.github/workflows/test.yml`（工作流名 `Application quality checks`，任务名含 Lint／types／build／unit／browser／database）在每个 PR 与 `main` 推送时运行大致顺序：生产依赖审计 → Prettier → ESLint → `tsc` → Vitest 覆盖率 → 本地 Supabase 并应用迁移 → 载入 fixtures → `env:check` → 生产构建 → Playwright → pgTAP。
+CI：`.github/workflows/test.yml`（工作流名 `Application quality checks`，任务名含 Lint／types／build／unit／browser／database）在每个 PR 与 `main` 推送时运行大致顺序：生产依赖审计 → Prettier → ESLint → `tsc` → Vitest 覆盖率 → 本地 Supabase 并应用迁移 → 载入 fixtures → `env:check` → 生产构建 → Playwright → pgTAP。`.github/workflows/migration-hygiene.yml` 另检：新增迁移版本须严格大于 base 分支最大版本；`supabase/schema_snapshot.sql` 须与从迁移重建后的 `public` schema 一致（见 `npm run db:schema:snapshot`）。
 
 **CI 全绿才能请求审查。** 覆盖率门槛见 `vitest.config.mts`（lines／statements／functions／branches）。改公开页或缓存逻辑前先读 [caching.md](caching.md)；部署与 smoke 见 [deployment.md](deployment.md)。仅测试用的 mock、样例构造与口径辅助放 `tests/helpers/`，保持 `lib/` 可被生产构建引用的代码干净。本地跑 Vitest 前须确认依赖补丁已由 `postinstall` 打上；若安装跳过了 scripts，见 [README 命令说明中的 postinstall 段](../README.md#命令)。
 

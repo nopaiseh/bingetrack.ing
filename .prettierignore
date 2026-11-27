@@ -23,6 +23,9 @@ next-env.d.ts
 # Supabase migrations are applied in order and must stay byte-for-byte.
 supabase/migrations
 
+# Schema snapshot is compared byte-for-byte (after light normalization) in CI.
+supabase/schema_snapshot.sql
+
 # Generated Supabase types (none are committed today; keep them unformatted if added).
 database.types.ts
 **/types/supabase.ts
