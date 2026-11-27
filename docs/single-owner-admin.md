@@ -17,7 +17,7 @@
 
 ## 首次上线步骤
 
-1. 用 `supabase db push` 应用迁移（单人管理所需的结构已包含在基线迁移中），然后部署应用。
+1. 确认基线与后续迁移已通过合并进 `main` 由 Supabase GitHub 集成应用到生产（单人管理所需的结构已包含在基线迁移中），然后部署应用。
 2. 在 Supabase Authentication 中：
    - 关闭新用户注册、匿名登录和所有不用的登录方式，启用 Passkey。
    - RP display name 填 `bingetrack.ing`，RP ID 填 `bingetrack.ing`；Origins 只列 `https://bingetrack.ing` 和 `https://www.bingetrack.ing`。
