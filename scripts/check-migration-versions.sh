@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
-# Fail when a newly added migration's version is not strictly greater than the
-# highest migration version on the base branch (usually main).
+# Fail when:
+#   - a newly added migration's version is not strictly greater than the highest
+#     migration version on the base branch (usually main), or
+#   - any migration that already exists on the base branch is Modified, Deleted,
+#     or Renamed (migrations are append-only once merged).
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -32,6 +35,48 @@ migration_version() {
     return 1
   fi
 }
+
+immutable_failed=0
+while IFS= read -r line; do
+  [[ -z "$line" ]] && continue
+  # name-status: "M\tpath", "D\tpath", or "R100\told\tnew"
+  status_field="$(printf '%s\n' "$line" | cut -f1)"
+  status="${status_field:0:1}"
+  case "$status" in
+    M)
+      path="$(printf '%s\n' "$line" | cut -f2)"
+      echo "Immutable migration modified: ${path}" >&2
+      echo "  Migrations already on ${BASE_REF} must not be edited; add a new migration instead." >&2
+      immutable_failed=$((immutable_failed + 1))
+      ;;
+    D)
+      path="$(printf '%s\n' "$line" | cut -f2)"
+      echo "Immutable migration deleted: ${path}" >&2
+      echo "  Migrations already on ${BASE_REF} must not be deleted; add a new migration instead." >&2
+      immutable_failed=$((immutable_failed + 1))
+      ;;
+    R)
+      old_path="$(printf '%s\n' "$line" | cut -f2)"
+      new_path="$(printf '%s\n' "$line" | cut -f3)"
+      echo "Immutable migration renamed: ${old_path} -> ${new_path}" >&2
+      echo "  Migrations already on ${BASE_REF} must not be renamed; add a new migration instead." >&2
+      immutable_failed=$((immutable_failed + 1))
+      ;;
+  esac
+done < <(
+  {
+    git diff --diff-filter=MDR --name-status "${BASE_REF}...HEAD" -- supabase/migrations
+    # Working tree changes against HEAD (local edits before commit).
+    git diff --diff-filter=MDR --name-status -- supabase/migrations
+    # Staged changes.
+    git diff --diff-filter=MDR --name-status --cached -- supabase/migrations
+  } | sed '/^$/d' | sort -u
+)
+
+if [[ "$immutable_failed" -gt 0 ]]; then
+  echo "${immutable_failed} immutable migration path(s) were Modified, Deleted, or Renamed." >&2
+  exit 1
+fi
 
 max_base_version="0"
 while IFS= read -r path; do
@@ -67,14 +112,14 @@ done < <(
   } | sed '/^$/d' | sort -u
 )
 
-if [[ "$added" -eq 0 ]]; then
-  echo "No new migration files vs ${BASE_REF}; version order check skipped."
-  exit 0
-fi
-
 if [[ "$failed" -gt 0 ]]; then
   echo "${failed} migration(s) are not strictly newer than ${BASE_REF} (max ${max_base_version})." >&2
   exit 1
+fi
+
+if [[ "$added" -eq 0 ]]; then
+  echo "No new migration files vs ${BASE_REF}; immutable paths unchanged; version order check skipped."
+  exit 0
 fi
 
 echo "All ${added} new migration(s) are newer than ${BASE_REF} (max ${max_base_version})."
