@@ -7,8 +7,8 @@
 #
 # 规则（已批准）：
 #   1. 生产（VERCEL_ENV=production，即 main）永远构建
-#   2. 预览默认跳过；仅当提交说明含 [preview]，或相对 main 的改动含前端界面文件时才构建
-#   3. dependabot/、renovate/ 分支一律跳过，除非提交说明含 [preview]
+#   2. 预览默认跳过；仅当提交标题（首行）含 [preview]，或相对 main 的改动含前端界面文件时才构建
+#   3. dependabot/、renovate/ 分支一律跳过，除非提交标题含 [preview]
 #   4. 判断不了（浅克隆、fetch 失败、无 merge-base）时保守构建，并打印原因
 #
 # 前端界面路径（本仓库）：
@@ -41,19 +41,22 @@ COMMIT_REF="${VERCEL_GIT_COMMIT_REF:-}"
 COMMIT_MSG="${VERCEL_GIT_COMMIT_MESSAGE:-}"
 PREVIOUS_SHA="${VERCEL_GIT_PREVIOUS_SHA:-}"
 
+# 只看提交标题（首行）。正文里提到 [preview]（例如文档说明）不应误触发构建。
+COMMIT_SUBJECT="${COMMIT_MSG%%$'\n'*}"
+
 log "vercel-ignore-build：VERCEL_ENV=${VERCEL_ENV:-<unset>} REF=${COMMIT_REF:-<unset>}"
-log "提交说明：${COMMIT_MSG:-<empty>}"
+log "提交标题：${COMMIT_SUBJECT:-<empty>}"
 
 # --- 1. 生产永远构建 ---
 if [[ "$VERCEL_ENV" == "production" ]]; then
   build "生产环境（VERCEL_ENV=production）"
 fi
 
-# --- 提交说明是否要求强制预览 ---
+# --- 提交标题是否要求强制预览 ---
 has_preview_tag=0
-if [[ "$COMMIT_MSG" == *"[preview]"* ]]; then
+if [[ "$COMMIT_SUBJECT" == *"[preview]"* ]]; then
   has_preview_tag=1
-  log "检测到提交说明含 [preview]"
+  log "检测到提交标题含 [preview]"
 fi
 
 if [[ "$has_preview_tag" -eq 1 ]]; then
@@ -63,7 +66,7 @@ fi
 # --- 3. 依赖升级机器人：默认跳过（[preview] 已在上面处理）---
 case "$COMMIT_REF" in
   dependabot/* | renovate/*)
-    skip "依赖升级分支（${COMMIT_REF}），且提交说明无 [preview]"
+    skip "依赖升级分支（${COMMIT_REF}），且提交标题无 [preview]"
     ;;
 esac
 
@@ -204,4 +207,4 @@ if [[ "${#frontend_hits[@]}" -gt 0 ]]; then
   build "检测到 ${#frontend_hits[@]} 个前端界面相关改动"
 fi
 
-skip "预览部署且无前端界面改动、提交说明无 [preview]"
+skip "预览部署且无前端界面改动、提交标题无 [preview]"
