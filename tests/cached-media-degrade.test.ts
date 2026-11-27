@@ -7,10 +7,14 @@ const mediaForCache = vi.hoisted(() => vi.fn());
 const mediaUncached = vi.hoisted(() => vi.fn());
 const albumForCache = vi.hoisted(() => vi.fn());
 const albumUncached = vi.hoisted(() => vi.fn());
+const connection = vi.hoisted(() => vi.fn(async () => undefined));
 
 vi.mock("server-only", () => ({}));
 vi.mock("react", () => ({
   cache: <T extends (...args: never[]) => unknown>(fn: T) => fn,
+}));
+vi.mock("next/server", () => ({
+  connection: () => connection(),
 }));
 vi.mock("next/cache", () => ({
   unstable_cache: (fn: unknown, keys: unknown, options: unknown) => {
@@ -73,9 +77,10 @@ describe("系列降级不写入缓存，成功后可正常命中", () => {
     mediaUncached.mockReset();
     albumForCache.mockReset();
     albumUncached.mockReset();
+    connection.mockClear();
   });
 
-  it("影视：(a) 系列降级抛错不写缓存并无缓存重跑返回空系列；(b) 下次成功返回系列并缓存", async () => {
+  it("影视：(a) 系列降级抛错不写数据缓存、connection 退出页面缓存、无缓存重跑；(b) 下次成功返回系列并缓存且不调 connection", async () => {
     const emptySeries = { id: mediaId, title: "影片", series: [] as string[] };
     const withSeries = { id: mediaId, title: "影片", series: ["系列甲"] };
 
@@ -84,20 +89,24 @@ describe("系列降级不写入缓存，成功后可正常命中", () => {
 
     expect(await getCachedMediaById(mediaId)).toEqual(emptySeries);
     expect(cacheStore.size).toBe(0);
+    expect(connection).toHaveBeenCalledTimes(1);
     expect(mediaForCache).toHaveBeenCalledTimes(1);
     expect(mediaUncached).toHaveBeenCalledTimes(1);
 
+    connection.mockClear();
     mediaForCache.mockResolvedValueOnce(withSeries);
     expect(await getCachedMediaById(mediaId)).toEqual(withSeries);
     expect(cacheStore.size).toBe(1);
+    expect(connection).not.toHaveBeenCalled();
     expect(mediaForCache).toHaveBeenCalledTimes(2);
     expect(mediaUncached).toHaveBeenCalledTimes(1);
 
     expect(await getCachedMediaById(mediaId)).toEqual(withSeries);
     expect(mediaForCache).toHaveBeenCalledTimes(2);
+    expect(connection).not.toHaveBeenCalled();
   });
 
-  it("专辑：(a) 系列降级不写缓存；(b) 下次成功返回系列并缓存", async () => {
+  it("专辑：(a) 系列降级不写数据缓存且 connection 退出页面缓存；(b) 下次成功返回系列并缓存", async () => {
     const emptySeries = {
       media: { id: mediaId, title: "专辑", series: [] as string[] },
       series: [] as Array<{ name: string; position: number | null; items: unknown[] }>,
@@ -119,15 +128,19 @@ describe("系列降级不写入缓存，成功后可正常命中", () => {
 
     expect(await getCachedAlbumDetail(mediaId)).toEqual(emptySeries);
     expect(cacheStore.size).toBe(0);
+    expect(connection).toHaveBeenCalledTimes(1);
     expect(albumForCache).toHaveBeenCalledTimes(1);
     expect(albumUncached).toHaveBeenCalledTimes(1);
 
+    connection.mockClear();
     albumForCache.mockResolvedValueOnce(withSeries);
     expect(await getCachedAlbumDetail(mediaId)).toEqual(withSeries);
     expect(cacheStore.size).toBe(1);
+    expect(connection).not.toHaveBeenCalled();
 
     expect(await getCachedAlbumDetail(mediaId)).toEqual(withSeries);
     expect(albumForCache).toHaveBeenCalledTimes(2);
     expect(albumUncached).toHaveBeenCalledTimes(1);
+    expect(connection).not.toHaveBeenCalled();
   });
 });

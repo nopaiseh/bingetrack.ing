@@ -7,7 +7,7 @@ import { EpisodeInfo, MediaCard, Media, SeasonEpisodePage, SeasonInfo, ViewAllMe
 import { reportHandledError } from "@/lib/report-error";
 import { nextUnwatchedEpisodeNumber } from "@/lib/season-browse";
 import type { DetailFetchResult } from "@/lib/functions/cache-degrade";
-import { throwIfSeriesDegraded } from "@/lib/functions/cache-degrade";
+import { skipFullRouteCacheForSeriesDegrade, throwIfSeriesDegraded } from "@/lib/functions/cache-degrade";
 import { MEDIA_CARD_COLUMNS, MediaRepositoryError, firstRelated, formatYearRange } from "./shared";
 
 /**
@@ -150,9 +150,16 @@ export async function loadRelatedBySeries(
   });
 }
 
-/** 公开读取；降级时仍返回空列表。 */
+/**
+ * 公开读取；降级时仍返回空列表。
+ * 电影／剧集／书详情页直接调用本函数（不经 cachedWithSeriesFallback），故在
+ * seriesDegraded 时于 unstable_cache 之外调用 skipFullRouteCacheForSeriesDegrade，
+ * 避免空同系列卡片行写入 Full Route Cache／ISR。专辑详情走 loadAlbumDetail，不经此路径。
+ */
 export async function getRelatedBySeries(seriesName: string, currentId: string): Promise<MediaCard[]> {
-  return (await loadRelatedBySeries(seriesName, currentId)).value;
+  const result = await loadRelatedBySeries(seriesName, currentId);
+  if (result.seriesDegraded) await skipFullRouteCacheForSeriesDegrade();
+  return result.value;
 }
 
 /** 读取 v_media_season_summaries 中的季摘要。查询失败一律抛出 MediaRepositoryError。 */

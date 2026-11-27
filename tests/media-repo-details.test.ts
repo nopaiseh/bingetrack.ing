@@ -12,6 +12,11 @@ const state = vi.hoisted(() => {
     handle: (() => ({ data: null, error: null })) as (query: RowQuery) => RowResult,
   };
 });
+const connection = vi.hoisted(() => vi.fn(async () => undefined));
+
+vi.mock("next/server", () => ({
+  connection: () => connection(),
+}));
 
 vi.mock("@/lib/supabase/public-server", () => ({
   getSupabasePublicServer: () => {
@@ -72,6 +77,7 @@ describe("作品详情与相关作品", () => {
     state.builds = 0;
     state.queries = [];
     state.handle = () => ({ data: null, error: null });
+    connection.mockClear();
     vi.mocked(reportHandledError).mockClear();
   });
 
@@ -172,6 +178,7 @@ describe("作品详情与相关作品", () => {
       [mediaId, "movies", "先", 1],
       [otherId, "shows", "后", 2],
     ]);
+    expect(connection).not.toHaveBeenCalled();
     const membership = state.queries[0];
     expect(args(membership, "select")).toEqual(["media_item_id, position, media_series!inner(name)"]);
     expect(args(membership, "eq")).toEqual(["media_series.name", "系列"]);
@@ -187,6 +194,7 @@ describe("作品详情与相关作品", () => {
     state.handle = () => ({ data: [], error: null });
     expect(await getRelatedBySeries("系列", mediaId)).toEqual([]);
     expect(state.queries.map((query) => query.table)).toEqual(["media_item_series"]);
+    expect(connection).not.toHaveBeenCalled();
 
     state.queries = [];
     state.handle = () => ({ data: null, error: { message: "membership down" } });
@@ -195,6 +203,28 @@ describe("作品详情与相关作品", () => {
       message: "membership down",
     });
     expect(state.queries.map((query) => query.table)).toEqual(["media_item_series"]);
+    expect(connection).toHaveBeenCalledTimes(1);
+  });
+
+  it("同系列查询失败时 getRelatedBySeries 调用 connection，成功时不调用", async () => {
+    state.handle = (query) =>
+      query.table === "media_item_series"
+        ? { data: [{ media_item_id: otherId, position: 3 }] }
+        : { data: null, error: { message: "cards down" } };
+    expect(await getRelatedBySeries("系列", mediaId)).toEqual([]);
+    expect(connection).toHaveBeenCalledTimes(1);
+
+    connection.mockClear();
+    state.handle = (query) => {
+      if (query.table === "media_item_series") {
+        return { data: [{ media_item_id: otherId, position: 2 }] };
+      }
+      return { data: [{ id: otherId, type: "movie", title: "续作", sort_date: "2021-01-01" }] };
+    };
+    expect(await getRelatedBySeries("系列", mediaId)).toEqual([
+      expect.objectContaining({ id: otherId, title: "续作", seriesPosition: 2 }),
+    ]);
+    expect(connection).not.toHaveBeenCalled();
   });
 
   it("序位为空时靠后，同序位按发行日、id 排序；无日期靠后", async () => {
@@ -243,7 +273,10 @@ describe("作品详情与相关作品", () => {
   it("系列成员查询失败时 getRelatedBySeries 降级为空并标记 seriesDegraded", async () => {
     state.handle = () => ({ data: null, error: { message: "membership down" } });
     expect(await loadRelatedBySeries("系列", mediaId)).toEqual({ value: [], seriesDegraded: true });
+    // loadRelatedBySeries 只标记，不调 connection；公开入口 getRelatedBySeries 才会退出页面缓存。
+    expect(connection).not.toHaveBeenCalled();
     expect(await getRelatedBySeries("系列", mediaId)).toEqual([]);
+    expect(connection).toHaveBeenCalledTimes(1);
   });
 });
 

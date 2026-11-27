@@ -26,7 +26,8 @@ import { MEDIA_LISTS_TAG, MEDIA_TAG, mediaItemTag } from "./media-cache-tags";
 import type { Summary } from "@/lib/types";
 
 // 公开详情只靠 tag 失效（保存时 revalidateMediaItems／revalidateAllMedia）；非法 ID 不进缓存。
-// v4：系列查询失败时缓存回调抛 SeriesDegradedError；外层无缓存重跑并返回空系列。
+// v4：系列查询失败时缓存回调抛 SeriesDegradedError；外层无缓存重跑并返回空系列，
+// 同时 connection() 退出本请求 Full Route Cache（键未变，无需升版）。
 export const getCachedMediaById = cache(async (id: string) => {
   if (!isMediaId(id)) return null;
   return cachedWithSeriesFallback(
@@ -42,7 +43,7 @@ export const getCachedMediaById = cache(async (id: string) => {
 /** 专辑详情（元数据、拥有权、曲目、credits、系列）；写入走 media / media:item 失效。 */
 export const getCachedAlbumDetail = cache(async (id: string) => {
   if (!isMediaId(id)) return null;
-  // v3：系列／同系列失败 → SeriesDegradedError，外层无缓存重跑。
+  // v3：系列／同系列失败 → SeriesDegradedError，外层无缓存重跑并退出 Full Route Cache。
   return cachedWithSeriesFallback(
     () =>
       unstable_cache(getAlbumDetailForCache, ["public-album-detail-v3"], {
