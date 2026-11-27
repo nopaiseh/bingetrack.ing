@@ -39,7 +39,8 @@ append_migration_guards() {
 -- Always-quote identifiers so output matches pg_dump --quote-all-identifier.
 -- qi(t) := '"' || replace(t, '"', '""') || '"'
 -- ---------------------------------------------------------------------------
--- Event triggers whose handler lives in public (app migrations such as ensure_rls).
+-- Event triggers: only tracked when the handler function is in schema public
+-- (platform triggers in extensions/etc. are intentionally omitted).
 -- Columns used: name, event, tags, function, owner. Sorted by name.
 -- ---------------------------------------------------------------------------
 SELECT format(
@@ -178,6 +179,8 @@ grant_grouped AS (
     priv_order,
     grantee_key,
     grantee_sql,
+    -- WITH GRANT OPTION on the whole group if any privilege in it is grantable
+    -- (none today; split per-privilege later if mixed grant options appear).
     bool_or(is_grantable) AS any_grant_option,
     array_agg(upper(privilege_type) ORDER BY array_position(priv_order, upper(privilege_type))) AS privs
   FROM grants
