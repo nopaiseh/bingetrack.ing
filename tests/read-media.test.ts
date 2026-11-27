@@ -6,7 +6,7 @@ vi.mock("server-only", () => ({}));
 
 type QueryResult = { data: unknown; error: unknown };
 
-/** eq() 后链：album_tracks 需要 order().order().limit().maybeSingle()。 */
+/** eq() 后链：album_tracks 需要 order().order().limit().maybeSingle()；credits 需要 order×N.range()。 */
 function afterEq(
   table: string,
   handlers: {
@@ -20,6 +20,14 @@ function afterEq(
     chain.order = () => chain;
     chain.limit = () => chain;
     chain.maybeSingle = async () => handlers.maybeSingle?.() ?? { data: null, error: null };
+    return chain;
+  }
+  if (table === "media_credits") {
+    const chain: Record<string, unknown> = {};
+    chain.order = () => chain;
+    chain.range = async () => handlers.orderResult?.() ?? { data: [], error: null };
+    chain.then = (resolve: (val: unknown) => void, reject?: (reason: unknown) => void) =>
+      Promise.resolve(handlers.orderResult?.() ?? { data: [], error: null }).then(resolve, reject);
     return chain;
   }
   return {

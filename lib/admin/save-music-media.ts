@@ -4,6 +4,7 @@ import type { MediaInput } from "@/lib/admin/media-form";
 import { affectedPersonIds, buildCreditsPayload, savedMediaId } from "@/lib/admin/credits-payload";
 import { findMusicDuplicateId, isDuplicateMusicEntry } from "@/lib/music/dedupe";
 import { resolveMusicCover } from "@/lib/music/resolve-cover";
+import { fetchAllPages } from "@/lib/supabase/fetch-all-pages";
 
 const WRITE_ERROR = "保存失败，请检查字段或数据库配置后重试。";
 const PERMISSION_ERROR = "没有写入权限，请检查站长账号配置。";
@@ -103,15 +104,29 @@ async function findDuplicateTrackInAlbum(
     .filter((row) => row.id && row.id !== excludeId);
   if (candidates.length === 0) return null;
 
-  const { data: creditRows, error: creditError } = await db
-    .from("media_credits")
-    .select("media_item_id, people(name)")
-    .in(
-      "media_item_id",
-      candidates.map((row) => row.id),
-    )
-    .eq("role", "artist");
-  assertOk(creditError);
+  const { data: creditRows, error: creditError } = await fetchAllPages<{
+    media_item_id: string;
+    people: { name: string } | { name: string }[] | null;
+  }>((from, to) =>
+    db
+      .from("media_credits")
+      .select("media_item_id, people(name)")
+      .in(
+        "media_item_id",
+        candidates.map((row) => row.id),
+      )
+      .eq("role", "artist")
+      .order("media_item_id", { ascending: true })
+      .order("person_id", { ascending: true })
+      .range(from, to),
+  );
+  assertOk(
+    creditError && typeof creditError === "object"
+      ? (creditError as { code?: string; message?: string })
+      : creditError
+        ? { message: String(creditError) }
+        : null,
+  );
 
   const artistsById = new Map<string, string[]>();
   for (const row of creditRows ?? []) {

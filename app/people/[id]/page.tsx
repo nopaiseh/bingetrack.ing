@@ -5,7 +5,7 @@ import { PersonRoleWorksSection } from "@/components/PersonWorksGrid";
 import { getCachedPersonDetail } from "@/lib/functions/cached-media";
 import { SITE_URL } from "@/lib/site";
 
-// 按需生成；人物／credits 变更靠 MEDIA_TAG／person:item 失效。
+// 按需生成；人物／credits 变更靠 MEDIA_TAG／PERSON_TAG／person:item 失效。
 export const revalidate = false;
 
 /** 构建时不枚举人物 ID。 */

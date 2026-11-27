@@ -28,27 +28,27 @@
 
 定义在 `lib/functions/cached-media.ts` 和 `lib/functions/search-options.ts`（系列降级见 `lib/functions/cache-degrade.ts`）。`revalidate: false` 表示不定时重建，只靠后台写入时的 `revalidateTag` 失效。
 
-| 数据                         | key                                                                      | 有效期     | 标签                            |
-| ---------------------------- | ------------------------------------------------------------------------ | ---------- | ------------------------------- |
-| 影视／图书条目详情           | `public-media-detail-v4` + ID                                            | 仅标签失效 | `media`、`media:item:<id>`      |
-| 专辑详情                     | `public-album-detail-v3` + ID                                            | 仅标签失效 | `media`、`media:item:<id>`      |
-| 歌曲详情                     | `public-song-detail-v1` + ID                                             | 仅标签失效 | `media`、`media:item:<id>`      |
-| 人物详情                     | `public-person-detail-v1` + ID                                           | 仅标签失效 | `media`、`person:item:<id>`     |
-| 电视节目的季摘要             | `public-media-seasons-v3` + ID                                           | 仅标签失效 | `media`、`media:item:<id>`      |
-| 单集分页与季统计             | `public-season-episodes-v2` + 节目 ID／季 ID／页码／每页条数／状态／排序 | 仅标签失效 | `media`、`media:item:<节目 ID>` |
-| 下一集                       | `public-season-next-episode-v1` + 节目 ID／季 ID                         | 仅标签失效 | `media`、`media:item:<节目 ID>` |
-| 搜索首屏                     | `public-media-search-v3` + 查询串                                        | 1 小时     | `media`、`media:lists`          |
-| 榜单                         | `public-media-top-v4` + 类型／年份／条数（固定 10；类型含 album／book）  | 仅标签失效 | `media`、`media:lists`          |
-| 即将上映                     | `public-media-upcoming-v2`                                               | 24 小时    | `media`、`media:lists`          |
-| 分布统计                     | `public-media-distributions-v2`                                          | 仅标签失效 | `media`、`media:lists`          |
-| 年度统计                     | `public-media-release-year-stats-v2`                                     | 仅标签失效 | `media`、`media:lists`          |
-| 首页继续（在看／在听／在读） | `public-media-home-continue-v2`                                          | 仅标签失效 | `media`、`media:lists`          |
-| 首页在读（单独入口）         | `public-media-currently-reading-v1`                                      | 仅标签失效 | `media`、`media:lists`          |
-| 图书目录统计                 | `public-book-stats-v1`                                                   | 仅标签失效 | `media`、`media:lists`          |
-| 专辑目录统计                 | `public-album-stats-v1`                                                  | 仅标签失效 | `media`、`media:lists`          |
-| 搜索筛选选项                 | `search-options-v2`                                                      | 仅标签失效 | `media`、`media:lists`          |
+| 数据                         | key                                                                      | 有效期     | 标签                                  |
+| ---------------------------- | ------------------------------------------------------------------------ | ---------- | ------------------------------------- |
+| 影视／图书条目详情           | `public-media-detail-v4` + ID                                            | 仅标签失效 | `media`、`media:item:<id>`            |
+| 专辑详情                     | `public-album-detail-v3` + ID                                            | 仅标签失效 | `media`、`media:item:<id>`            |
+| 歌曲详情                     | `public-song-detail-v1` + ID                                             | 仅标签失效 | `media`、`media:item:<id>`            |
+| 人物详情                     | `public-person-detail-v2` + ID                                           | 仅标签失效 | `media`、`person`、`person:item:<id>` |
+| 电视节目的季摘要             | `public-media-seasons-v3` + ID                                           | 仅标签失效 | `media`、`media:item:<id>`            |
+| 单集分页与季统计             | `public-season-episodes-v2` + 节目 ID／季 ID／页码／每页条数／状态／排序 | 仅标签失效 | `media`、`media:item:<节目 ID>`       |
+| 下一集                       | `public-season-next-episode-v1` + 节目 ID／季 ID                         | 仅标签失效 | `media`、`media:item:<节目 ID>`       |
+| 搜索首屏                     | `public-media-search-v3` + 查询串                                        | 1 小时     | `media`、`media:lists`                |
+| 榜单                         | `public-media-top-v4` + 类型／年份／条数（固定 10；类型含 album／book）  | 仅标签失效 | `media`、`media:lists`                |
+| 即将上映                     | `public-media-upcoming-v2`                                               | 24 小时    | `media`、`media:lists`                |
+| 分布统计                     | `public-media-distributions-v2`                                          | 仅标签失效 | `media`、`media:lists`                |
+| 年度统计                     | `public-media-release-year-stats-v2`                                     | 仅标签失效 | `media`、`media:lists`                |
+| 首页继续（在看／在听／在读） | `public-media-home-continue-v2`                                          | 仅标签失效 | `media`、`media:lists`                |
+| 首页在读（单独入口）         | `public-media-currently-reading-v1`                                      | 仅标签失效 | `media`、`media:lists`                |
+| 图书目录统计                 | `public-book-stats-v1`                                                   | 仅标签失效 | `media`、`media:lists`                |
+| 专辑目录统计                 | `public-album-stats-v1`                                                  | 仅标签失效 | `media`、`media:lists`                |
+| 搜索筛选选项                 | `search-options-v2`                                                      | 仅标签失效 | `media`、`media:lists`                |
 
-非法 ID 在进入数据缓存前就返回，不会写入缓存条目。电影／节目／图书详情走 `getCachedMediaById`（`public-media-detail-v4`）；专辑详情走 `getCachedAlbumDetail`（`public-album-detail-v3`）；歌曲详情走 `getCachedSongDetail`（`public-song-detail-v1`，RPC `get_song_detail`）；人物详情走 `getCachedPersonDetail`（`public-person-detail-v1`，people 行 + RPC `get_person_works`）。
+非法 ID 在进入数据缓存前就返回，不会写入缓存条目。电影／节目／图书详情走 `getCachedMediaById`（`public-media-detail-v4`）；专辑详情走 `getCachedAlbumDetail`（`public-album-detail-v3`）；歌曲详情走 `getCachedSongDetail`（`public-song-detail-v1`，RPC `get_song_detail`）；人物详情走 `getCachedPersonDetail`（`public-person-detail-v2`，people 行 + RPC `get_person_works`）。
 
 ### 系列查询降级（不写数据缓存，也不写页面缓存）
 
@@ -64,17 +64,19 @@
 
 ## 写入后的失效
 
-| 操作                                                                                   | 失效范围                                                                                                                                                 |
-| -------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 保存、删除影视／音乐／图书条目（含级联删掉的观看记录），批量修改观看状态，修改系列成员 | `revalidateMediaItems`：条目本身、所属电视节目、曲目所属专辑、专辑下曲目、同系列其他作品各自的 `media:item:<id>`，加上 `media:lists`，再按路径刷新目录页 |
-| 保存媒体（credits／作者变更）                                                          | 同上，另用 RPC 返回的 `affected_person_ids` 调用 `revalidatePersonItems`（专辑／曲目／图书／影视均如此）                                                 |
-| 删除媒体                                                                               | 同上，删除前经 `creditedPersonIds` 查出演职员（专辑含其曲目），再 `revalidatePersonItems`                                                                |
-| 修改或删除人物；合并人物                                                               | `revalidateMediaItems`（经 `referenceMediaIds` 找关联作品）+ `revalidatePersonItems`（编辑／删除用该人物 id；合并用保留与被删双方 id）                   |
-| 修改或删除类型、地区、语言、系列；报告批量删除闲置资料                                 | `revalidateMediaItems`（关联作品或空列表刷新聚合）；闲置资料无详情页波及                                                                                 |
-| 「刷新缓存」按钮                                                                       | `revalidateAllMedia`：`media` 标签 + `revalidatePath("/", "layout")`，全站失效                                                                           |
-| 标记「不是同一人」                                                                     | 不影响公开数据，不失效                                                                                                                                   |
+| 操作                                                                                   | 失效范围                                                                                                                                                                                         |
+| -------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 保存、删除影视／音乐／图书条目（含级联删掉的观看记录），批量修改观看状态，修改系列成员 | `revalidateMediaItems`：条目本身、所属电视节目、曲目所属专辑、专辑下曲目、同系列其他作品各自的 `media:item:<id>`，加上 `media:lists`，再按路径刷新目录页                                         |
+| 保存媒体（credits／作者变更）                                                          | 同上，另用 RPC 返回的 `affected_person_ids` 调用 `revalidatePersonItems`（专辑／曲目／图书／影视均如此）                                                                                         |
+| 删除媒体                                                                               | 同上，删除前经 `creditedPersonIds` 查出演职员（专辑含其曲目），再 `revalidatePersonItems`；查询失败（返回 `null`）时退回 `person` 全站标签，与 `revalidateMediaItems(null)` 对称，避免漏刷人物页 |
+| 修改或删除人物；合并人物                                                               | `revalidateMediaItems`（经 `referenceMediaIds` 找关联作品）+ `revalidatePersonItems`（编辑／删除用该人物 id；合并用保留与被删双方 id）                                                           |
+| 修改或删除类型、地区、语言、系列；报告批量删除闲置资料                                 | `revalidateMediaItems`（关联作品或空列表刷新聚合）；闲置资料无详情页波及                                                                                                                         |
+| 「刷新缓存」按钮                                                                       | `revalidateAllMedia`：`media` 标签 + `revalidatePath("/", "layout")`，全站失效                                                                                                                   |
+| 标记「不是同一人」                                                                     | 不影响公开数据，不失效                                                                                                                                                                           |
 
-人物公开详情挂 `person:item:<id>`。保存／删除作品或编辑／删除／合并人物后会失效；若未走到上述路径，人物页「歌曲」区可能仍显示旧专辑封面，直到该人物标签失效或手动「刷新缓存」。
+人物公开详情挂 `person`（全站）与 `person:item:<id>`。保存／删除作品或编辑／删除／合并人物后会失效；删除媒体时若 `creditedPersonIds` 失败则失效 `person` 全站标签。若未走到上述路径，人物页「歌曲」区可能仍显示旧专辑封面，直到该人物标签失效或手动「刷新缓存」。
+
+读取 `media_credits`（及删除前的 `album_tracks` 扩展）时用 `.range` 翻页读完，避免 PostgREST 默认 1000 行上限静默截断演职员列表，导致人物页漏刷或专辑／编辑页 credits 不完整。
 
 电影和单集的观看写入都走上面第一行，不另建标签。保存条目时评分决定已看或想看（`manage_save_media` 写 `tracking`），批量操作直接改 `tracking.status`，删除会级联去掉观看记录。成功之后 `revalidateMediaItems` 调用 `revalidateTag("media:lists", { expire: 0 })`。首页继续挂着这个标签，同时首页路径被 `revalidatePath("/")` 刷新，下一次访问不会继续用旧的 HTML，也不会从仅标签失效的数据缓存里读回旧进度。没有写进数据库的失败请求不失效。查询受影响条目失败时退回 `revalidateAllMedia`，失效 `media` 标签，首页继续同样过期。手动「刷新缓存」也走 `media` 标签。绕过网站、直接在 Supabase 里改数据（例如用 SQL 或运维脚本改 `tracking`）不会触发失效；首页继续是 `revalidate: false`，会一直用旧进度直到标签失效，请在管理台点现有的「刷新缓存」。
 
