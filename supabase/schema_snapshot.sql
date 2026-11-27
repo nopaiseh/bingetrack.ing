@@ -3883,46 +3883,42 @@ GRANT USAGE ON SCHEMA "public" TO "service_role";
 
 REVOKE ALL ON FUNCTION "public"."admin_delete_media"("p_id" "uuid", "p_confirm_title" "text") FROM PUBLIC;
 GRANT ALL ON FUNCTION "public"."admin_delete_media"("p_id" "uuid", "p_confirm_title" "text") TO "authenticated";
-GRANT ALL ON FUNCTION "public"."admin_delete_media"("p_id" "uuid", "p_confirm_title" "text") TO "service_role";
 
 REVOKE ALL ON FUNCTION "public"."admin_save_album_with_tracks"("p_album" "jsonb", "p_tracks" "jsonb") FROM PUBLIC;
-GRANT ALL ON FUNCTION "public"."admin_save_album_with_tracks"("p_album" "jsonb", "p_tracks" "jsonb") TO "service_role";
 GRANT ALL ON FUNCTION "public"."admin_save_album_with_tracks"("p_album" "jsonb", "p_tracks" "jsonb") TO "authenticated";
 
 REVOKE ALL ON FUNCTION "public"."admin_save_media"("p_data" "jsonb") FROM PUBLIC;
-GRANT ALL ON FUNCTION "public"."admin_save_media"("p_data" "jsonb") TO "service_role";
 GRANT ALL ON FUNCTION "public"."admin_save_media"("p_data" "jsonb") TO "authenticated";
 
 REVOKE ALL ON FUNCTION "public"."album_average_rating"("p_album_id" "uuid") FROM PUBLIC;
-GRANT ALL ON FUNCTION "public"."album_average_rating"("p_album_id" "uuid") TO "service_role";
 GRANT ALL ON FUNCTION "public"."album_average_rating"("p_album_id" "uuid") TO "anon";
 GRANT ALL ON FUNCTION "public"."album_average_rating"("p_album_id" "uuid") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."album_average_rating"("p_album_id" "uuid") TO "service_role";
 
 REVOKE ALL ON FUNCTION "public"."enforce_tracking_status_for_media_type"() FROM PUBLIC;
-GRANT ALL ON FUNCTION "public"."enforce_tracking_status_for_media_type"() TO "service_role";
 
 REVOKE ALL ON FUNCTION "public"."find_book_by_title_and_authors"("p_title" "text", "p_author_names" "text"[], "p_exclude_id" "uuid") FROM PUBLIC;
-GRANT ALL ON FUNCTION "public"."find_book_by_title_and_authors"("p_title" "text", "p_author_names" "text"[], "p_exclude_id" "uuid") TO "service_role";
 GRANT ALL ON FUNCTION "public"."find_book_by_title_and_authors"("p_title" "text", "p_author_names" "text"[], "p_exclude_id" "uuid") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."find_book_by_title_and_authors"("p_title" "text", "p_author_names" "text"[], "p_exclude_id" "uuid") TO "service_role";
 
 REVOKE ALL ON FUNCTION "public"."find_music_by_title_and_artists"("p_type" "public"."media_type", "p_title" "text", "p_artist_names" "text"[]) FROM PUBLIC;
-GRANT ALL ON FUNCTION "public"."find_music_by_title_and_artists"("p_type" "public"."media_type", "p_title" "text", "p_artist_names" "text"[]) TO "service_role";
 GRANT ALL ON FUNCTION "public"."find_music_by_title_and_artists"("p_type" "public"."media_type", "p_title" "text", "p_artist_names" "text"[]) TO "authenticated";
+GRANT ALL ON FUNCTION "public"."find_music_by_title_and_artists"("p_type" "public"."media_type", "p_title" "text", "p_artist_names" "text"[]) TO "service_role";
 
 REVOKE ALL ON FUNCTION "public"."get_media_distribution_counts"() FROM PUBLIC;
-GRANT ALL ON FUNCTION "public"."get_media_distribution_counts"() TO "service_role";
 GRANT ALL ON FUNCTION "public"."get_media_distribution_counts"() TO "anon";
 GRANT ALL ON FUNCTION "public"."get_media_distribution_counts"() TO "authenticated";
+GRANT ALL ON FUNCTION "public"."get_media_distribution_counts"() TO "service_role";
 
 REVOKE ALL ON FUNCTION "public"."get_media_stats"("p_media_type" "text") FROM PUBLIC;
-GRANT ALL ON FUNCTION "public"."get_media_stats"("p_media_type" "text") TO "service_role";
 GRANT ALL ON FUNCTION "public"."get_media_stats"("p_media_type" "text") TO "anon";
 GRANT ALL ON FUNCTION "public"."get_media_stats"("p_media_type" "text") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."get_media_stats"("p_media_type" "text") TO "service_role";
 
 REVOKE ALL ON FUNCTION "public"."get_person_works"("p_person_id" "uuid") FROM PUBLIC;
-GRANT ALL ON FUNCTION "public"."get_person_works"("p_person_id" "uuid") TO "service_role";
 GRANT ALL ON FUNCTION "public"."get_person_works"("p_person_id" "uuid") TO "anon";
 GRANT ALL ON FUNCTION "public"."get_person_works"("p_person_id" "uuid") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."get_person_works"("p_person_id" "uuid") TO "service_role";
 
 REVOKE ALL ON FUNCTION "public"."get_season_episode_page"("p_series_id" "uuid", "p_season_id" "uuid", "p_status" "text", "p_order" "text", "p_limit" integer, "p_offset" integer) FROM PUBLIC;
 GRANT ALL ON FUNCTION "public"."get_season_episode_page"("p_series_id" "uuid", "p_season_id" "uuid", "p_status" "text", "p_order" "text", "p_limit" integer, "p_offset" integer) TO "anon";
@@ -3930,9 +3926,9 @@ GRANT ALL ON FUNCTION "public"."get_season_episode_page"("p_series_id" "uuid", "
 GRANT ALL ON FUNCTION "public"."get_season_episode_page"("p_series_id" "uuid", "p_season_id" "uuid", "p_status" "text", "p_order" "text", "p_limit" integer, "p_offset" integer) TO "service_role";
 
 REVOKE ALL ON FUNCTION "public"."get_song_detail"("p_song_id" "uuid") FROM PUBLIC;
-GRANT ALL ON FUNCTION "public"."get_song_detail"("p_song_id" "uuid") TO "service_role";
 GRANT ALL ON FUNCTION "public"."get_song_detail"("p_song_id" "uuid") TO "anon";
 GRANT ALL ON FUNCTION "public"."get_song_detail"("p_song_id" "uuid") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."get_song_detail"("p_song_id" "uuid") TO "service_role";
 
 REVOKE ALL ON FUNCTION "public"."get_top_tv_shows_by_year"("p_year" integer, "p_limit" integer) FROM PUBLIC;
 GRANT ALL ON FUNCTION "public"."get_top_tv_shows_by_year"("p_year" integer, "p_limit" integer) TO "anon";
@@ -3941,53 +3937,42 @@ GRANT ALL ON FUNCTION "public"."get_top_tv_shows_by_year"("p_year" integer, "p_l
 
 REVOKE ALL ON FUNCTION "public"."is_site_owner"() FROM PUBLIC;
 GRANT ALL ON FUNCTION "public"."is_site_owner"() TO "authenticated";
-GRANT ALL ON FUNCTION "public"."is_site_owner"() TO "service_role";
 
 REVOKE ALL ON FUNCTION "public"."manage_delete_unused"("p_kind" "text") FROM PUBLIC;
-GRANT ALL ON FUNCTION "public"."manage_delete_unused"("p_kind" "text") TO "service_role";
 GRANT ALL ON FUNCTION "public"."manage_delete_unused"("p_kind" "text") TO "authenticated";
 
 REVOKE ALL ON FUNCTION "public"."manage_merge_people"("p_keep" "uuid", "p_remove" "uuid"[]) FROM PUBLIC;
-GRANT ALL ON FUNCTION "public"."manage_merge_people"("p_keep" "uuid", "p_remove" "uuid"[]) TO "service_role";
 GRANT ALL ON FUNCTION "public"."manage_merge_people"("p_keep" "uuid", "p_remove" "uuid"[]) TO "authenticated";
 
 REVOKE ALL ON FUNCTION "public"."manage_name_issue_credit_item_id"("p_media" "uuid", "p_person" "uuid", "p_character" "text") FROM PUBLIC;
-GRANT ALL ON FUNCTION "public"."manage_name_issue_credit_item_id"("p_media" "uuid", "p_person" "uuid", "p_character" "text") TO "service_role";
 GRANT ALL ON FUNCTION "public"."manage_name_issue_credit_item_id"("p_media" "uuid", "p_person" "uuid", "p_character" "text") TO "authenticated";
 
 REVOKE ALL ON FUNCTION "public"."manage_name_issue_people_item_id"("p_person" "uuid") FROM PUBLIC;
-GRANT ALL ON FUNCTION "public"."manage_name_issue_people_item_id"("p_person" "uuid") TO "service_role";
 GRANT ALL ON FUNCTION "public"."manage_name_issue_people_item_id"("p_person" "uuid") TO "authenticated";
 
 REVOKE ALL ON FUNCTION "public"."manage_name_issues"("p_name" "text", "p_character" boolean) FROM PUBLIC;
-GRANT ALL ON FUNCTION "public"."manage_name_issues"("p_name" "text", "p_character" boolean) TO "service_role";
 GRANT ALL ON FUNCTION "public"."manage_name_issues"("p_name" "text", "p_character" boolean) TO "authenticated";
 
 REVOKE ALL ON FUNCTION "public"."manage_name_key"("p_name" "text") FROM PUBLIC;
-GRANT ALL ON FUNCTION "public"."manage_name_key"("p_name" "text") TO "service_role";
 GRANT ALL ON FUNCTION "public"."manage_name_key"("p_name" "text") TO "authenticated";
 
 REVOKE ALL ON FUNCTION "public"."manage_save_media"("p_data" "jsonb") FROM PUBLIC;
-GRANT ALL ON FUNCTION "public"."manage_save_media"("p_data" "jsonb") TO "service_role";
 GRANT ALL ON FUNCTION "public"."manage_save_media"("p_data" "jsonb") TO "authenticated";
 
 REVOKE ALL ON FUNCTION "public"."media_credits_enforce_allowed_types"() FROM PUBLIC;
-GRANT ALL ON FUNCTION "public"."media_credits_enforce_allowed_types"() TO "service_role";
 
 REVOKE ALL ON FUNCTION "public"."media_credits_enforce_character"() FROM PUBLIC;
-GRANT ALL ON FUNCTION "public"."media_credits_enforce_character"() TO "service_role";
 
 REVOKE ALL ON FUNCTION "public"."name_issue_confirmations_sync_keys"() FROM PUBLIC;
-GRANT ALL ON FUNCTION "public"."name_issue_confirmations_sync_keys"() TO "service_role";
 
 REVOKE ALL ON FUNCTION "public"."normalize_book_isbn"("p_raw" "text") FROM PUBLIC;
-GRANT ALL ON FUNCTION "public"."normalize_book_isbn"("p_raw" "text") TO "service_role";
 GRANT ALL ON FUNCTION "public"."normalize_book_isbn"("p_raw" "text") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."normalize_book_isbn"("p_raw" "text") TO "service_role";
 
 REVOKE ALL ON FUNCTION "public"."normalize_media_title"("p_title" "text") FROM PUBLIC;
-GRANT ALL ON FUNCTION "public"."normalize_media_title"("p_title" "text") TO "service_role";
 GRANT ALL ON FUNCTION "public"."normalize_media_title"("p_title" "text") TO "anon";
 GRANT ALL ON FUNCTION "public"."normalize_media_title"("p_title" "text") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."normalize_media_title"("p_title" "text") TO "service_role";
 
 REVOKE ALL ON FUNCTION "public"."rls_auto_enable"() FROM PUBLIC;
 GRANT ALL ON FUNCTION "public"."rls_auto_enable"() TO "service_role";
@@ -3997,9 +3982,9 @@ GRANT SELECT ON TABLE "public"."v_all_media" TO "anon";
 GRANT SELECT ON TABLE "public"."v_all_media" TO "authenticated";
 
 REVOKE ALL ON FUNCTION "public"."search_media"("p_query" "text", "p_types" "text"[], "p_series_only" boolean, "p_credit_roles" "text"[]) FROM PUBLIC;
-GRANT ALL ON FUNCTION "public"."search_media"("p_query" "text", "p_types" "text"[], "p_series_only" boolean, "p_credit_roles" "text"[]) TO "service_role";
 GRANT ALL ON FUNCTION "public"."search_media"("p_query" "text", "p_types" "text"[], "p_series_only" boolean, "p_credit_roles" "text"[]) TO "anon";
 GRANT ALL ON FUNCTION "public"."search_media"("p_query" "text", "p_types" "text"[], "p_series_only" boolean, "p_credit_roles" "text"[]) TO "authenticated";
+GRANT ALL ON FUNCTION "public"."search_media"("p_query" "text", "p_types" "text"[], "p_series_only" boolean, "p_credit_roles" "text"[]) TO "service_role";
 
 GRANT ALL ON TABLE "public"."album_tracks" TO "service_role";
 GRANT SELECT ON TABLE "public"."album_tracks" TO "anon";
@@ -4143,13 +4128,12 @@ GRANT ALL ON TABLE "public"."v_report_unused_references" TO "service_role";
 GRANT SELECT ON TABLE "public"."v_report_unused_references" TO "authenticated";
 
 ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON SEQUENCES TO "postgres";
-ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON SEQUENCES TO "service_role";
+ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT UPDATE ON SEQUENCES TO "service_role";
 
 ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON FUNCTIONS TO "postgres";
-ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON FUNCTIONS TO "service_role";
 
 ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON TABLES TO "postgres";
-ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON TABLES TO "service_role";
+ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT REFERENCES,TRIGGER,TRUNCATE,MAINTAIN ON TABLES TO "service_role";
 
 CREATE EVENT TRIGGER "ensure_rls" ON "ddl_command_end"
          WHEN TAG IN ('CREATE TABLE', 'CREATE TABLE AS', 'SELECT INTO')
