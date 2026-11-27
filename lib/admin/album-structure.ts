@@ -63,9 +63,7 @@ async function readTracks(db: SupabaseClient, albumId: string): Promise<AlbumTra
   for (let offset = 0; ; offset += TRACK_CHUNK) {
     const { data, error } = await db
       .from("album_tracks")
-      .select(
-        "song_id,track_number,media:media_items!album_tracks_song_id_fkey(title,runtime,tracking(status))",
-      )
+      .select("song_id,track_number,media:media_items!album_tracks_song_id_fkey(title,runtime,tracking(status))")
       .eq("album_id", albumId)
       .order("disc_number")
       .order("track_number")

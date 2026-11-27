@@ -9,7 +9,8 @@ export async function readEditableMedia(db: SupabaseClient, id: string): Promise
     db.from("tracking").select("status,rating").eq("media_item_id", id).maybeSingle(),
     db.from("tv_seasons").select("series_id,season_number").eq("id", id).maybeSingle(),
     db.from("tv_episodes").select("season_id,episode_number").eq("id", id).maybeSingle(),
-    db.from("album_tracks")
+    db
+      .from("album_tracks")
       .select("album_id,disc_number,track_number")
       .eq("song_id", id)
       .order("disc_number", { ascending: true })
