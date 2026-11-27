@@ -471,6 +471,18 @@ begin
     ));
   end loop;
 
+  -- 三关系合并样本：artist + composer + lyricist → relations 合并去重固定序
+  perform public.admin_save_media(jsonb_build_object(
+    'type','music','title','三关系相关歌','status','want_to_watch','runtime',55,
+    'release_date','2099-12-31',
+    'credits',jsonb_build_array(
+      jsonb_build_object('person',jsonb_build_object('name','上限艺人'),'role','artist','order',0),
+      jsonb_build_object('person',jsonb_build_object('name','上限词曲'),'role','composer','order',0),
+      jsonb_build_object('person',jsonb_build_object('name','上限词曲'),'role','lyricist','order',0)
+    ),
+    'genres','[]'::jsonb,'languages','[]'::jsonb,'collections','[]'::jsonb
+  ));
+
   detail := public.get_song_detail(song_id);
   other_count := jsonb_array_length(detail->'albums'->0->'other_tracks');
   related_count := jsonb_array_length(detail->'related');
@@ -493,7 +505,7 @@ begin
   ) then
     raise exception 'related songs must be deduped by id';
   end if;
-  -- 排序：effective date desc then id（相关歌无自有日期时为 null，nulls last → 按 id）
+  -- 排序：effective date desc then id
   if exists (
     select 1
     from generate_series(0, related_count - 2) as g(i)
@@ -503,9 +515,31 @@ begin
   ) then
     raise exception 'related songs must be ordered by release_date desc';
   end if;
+  -- 每项必须有 relations 数组；多关系合并为固定序 artist → composer → lyricist
+  if exists (
+    select 1 from jsonb_array_elements(detail->'related') r
+    where jsonb_typeof(r->'relations') is distinct from 'array'
+       or jsonb_array_length(r->'relations') < 1
+  ) then
+    raise exception 'each related song must have non-empty relations[]';
+  end if;
+  if not exists (
+    select 1 from jsonb_array_elements(detail->'related') r
+    where r->>'title' = '三关系相关歌'
+      and r->'relations' = '["artist","composer","lyricist"]'::jsonb
+  ) then
+    raise exception 'merged relations must be ["artist","composer","lyricist"] for 三关系相关歌';
+  end if;
+  if not exists (
+    select 1 from jsonb_array_elements(detail->'related') r
+    where r->>'title' like '相关歌%'
+      and r->'relations' = '["artist","composer"]'::jsonb
+  ) then
+    raise exception 'artist+composer related songs must merge relations to ["artist","composer"]';
+  end if;
 end $$;
 
-select ok(true, 'get_song_detail caps other_tracks at 20 and related at 12 with sort/dedupe');
+select ok(true, 'get_song_detail caps related at 12 with sort/dedupe/merged relations');
 
 select * from finish();
 rollback;

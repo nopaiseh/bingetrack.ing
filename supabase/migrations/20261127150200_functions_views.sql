@@ -1797,6 +1797,7 @@ begin
   ), related_credit_people as (
     select person_id from credit_rows where role in ('artist', 'composer', 'lyricist')
   ), related_candidates as (
+    -- 按歌去重；relations = 与当前曲共享人物时，相关曲上实际出现的 artist／composer／lyricist（固定顺序、去重）
     select
       mi.id,
       mi.title,
@@ -1815,7 +1816,12 @@ begin
       coalesce(mi.release_date, (
         select min(ai.release_date) from public.album_tracks at
         join public.media_items ai on ai.id = at.album_id where at.song_id = mi.id
-      )) as release_date
+      )) as release_date,
+      array_remove(array[
+        case when bool_or(mc.role = 'artist') then 'artist' end,
+        case when bool_or(mc.role = 'composer') then 'composer' end,
+        case when bool_or(mc.role = 'lyricist') then 'lyricist' end
+      ], null)::text[] as relations
     from public.media_credits mc
     join public.media_items mi on mi.id = mc.media_item_id
     where mc.person_id in (select person_id from related_credit_people)
@@ -1824,7 +1830,7 @@ begin
       and mi.id <> p_song_id
     group by mi.id, mi.title, mi.cover_url, mi.release_date
   ), related_songs as (
-    select id, title, cover_url, release_date
+    select id, title, cover_url, release_date, relations
     from related_candidates
     order by release_date desc nulls last, id
     limit 12
@@ -1876,7 +1882,11 @@ begin
     'related', coalesce((
       select jsonb_agg(
         jsonb_build_object(
-          'id', id, 'title', title, 'cover_url', cover_url, 'release_date', release_date
+          'id', id,
+          'title', title,
+          'cover_url', cover_url,
+          'release_date', release_date,
+          'relations', to_jsonb(relations)
         )
         order by release_date desc nulls last, id
       )
@@ -1895,5 +1905,5 @@ revoke all on function public.get_song_detail(uuid) from public;
 grant execute on function public.get_song_detail(uuid) to anon, authenticated, service_role;
 
 comment on function public.get_song_detail(uuid) is
-  '歌曲详情：元数据、按角色 credits、所属专辑与同专其他曲（每专最多 20）、相关歌曲（艺人／词曲合并去重最多 12）、封面回退专辑、tracking（受 RLS）。';
+  '歌曲详情：元数据、按角色 credits、所属专辑与同专其他曲（每专最多 20）、相关歌曲扁平数组（艺人／词曲合并去重最多 12，含 relations text[]）、封面回退专辑、tracking（受 RLS）。';
 
