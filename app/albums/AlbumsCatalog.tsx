@@ -20,7 +20,7 @@ export default function AlbumsCatalog({
 
   const statItems = [
     { label: "专辑总数量", value: stats.total, href: "/search?type=album" },
-    { label: "单曲总数量", value: stats.trackTotal, href: "/search?type=music" },
+    { label: "歌曲总数量", value: stats.trackTotal, href: "/search?type=music" },
     { label: "已听的专辑", value: stats.watched, href: "/search?type=album&status=watched" },
     { label: "在听的专辑", value: stats.watching, href: "/search?type=album&status=watching" },
     { label: "想听的专辑", value: stats.want, href: "/search?type=album&status=want_to_watch" },

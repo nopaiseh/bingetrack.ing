@@ -109,6 +109,7 @@ it("曲目表单要求曲序与所属专辑，时长为整数秒，创作人员�
         ...blank,
         parent_id: "a1",
         number: 5,
+        disc_number: null,
         runtime: 313,
         languages: ["国语"],
         artists: [{ id: "p1", name: "周杰伦", alternate_name: null }],
@@ -117,11 +118,16 @@ it("曲目表单要求曲序与所属专辑，时长为整数秒，创作人员�
           { id: "p1", name: "周杰伦", alternate_name: null },
         ],
         composers: [{ id: "p1", name: "周杰伦", alternate_name: null }],
+        arrangers: [],
+        producers: [],
+        featured: [],
       }}
     />,
   );
   expect(screen.getByLabelText("曲序")).toHaveValue(5);
   expect(screen.getByText(/同一专辑内曲序不能重复/)).toBeInTheDocument();
+  // 盘号可见；null／新建时为空，不默认成 1
+  expect(screen.getByLabelText("盘号")).toHaveValue(null);
   expect(screen.getByLabelText("时长（秒）")).toHaveValue(313);
   expect(screen.getByText("5:13")).toBeInTheDocument();
   expect(screen.getByRole("heading", { name: "创作人员" })).toBeInTheDocument();
@@ -143,6 +149,27 @@ it("曲目表单要求曲序与所属专辑，时长为整数秒，创作人员�
   expect(artists.value).toContain("p1\t周杰伦");
   const lyricists = document.querySelector('input[name="lyricists"]') as HTMLInputElement;
   expect(lyricists.value).toContain("p2\t方文山");
+});
+
+it("编辑曲目时盘号显示已有值，不为空也不强制成 1", () => {
+  render(
+    <MediaForm
+      initialType="music"
+      lockType
+      parent={{ id: "a1", name: "叶惠美", type: "album", detail: "专辑", cover_url: null }}
+      item={{
+        id: "t6",
+        type: "music",
+        title: "第二碟曲目",
+        ...blank,
+        parent_id: "a1",
+        number: 1,
+        disc_number: 2,
+        artists: [{ id: "p1", name: "周杰伦", alternate_name: null }],
+      }}
+    />,
+  );
+  expect(screen.getByLabelText("盘号")).toHaveValue(2);
 });
 
 it("专辑删除提示包含下属曲目数量", () => {

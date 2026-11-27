@@ -1,6 +1,8 @@
+import Link from "next/link";
 import MediaRatingBadge from "@/components/MediaRatingBadge";
 import { MUSIC_GENRE_CHIP_CLASS } from "@/components/MusicCardBody";
 import { formatTrackDuration } from "@/lib/album-display";
+import { publicPathForDbType } from "@/lib/media-types";
 import type { AlbumTrack } from "@/lib/types/album";
 import { listenStatusLabel } from "@/lib/listen-status";
 
@@ -27,8 +29,15 @@ function GenreChips({ genres }: { genres: readonly string[] }) {
   );
 }
 
-/** 专辑曲目表：桌面完整列含「类型」；手机把类型芯片收到曲名下，无类型时手机不占位。 */
-export default function AlbumTracklist({ tracks }: { tracks: readonly AlbumTrack[] }) {
+/** 专辑曲目表：桌面完整列含「类型」；手机把类型芯片收到曲名下，无类型时手机不占位。曲名链到歌曲详情。 */
+export default function AlbumTracklist({
+  tracks,
+  albumId,
+}: {
+  tracks: readonly AlbumTrack[];
+  /** 用于歌曲详情的 from= 返回专辑。 */
+  albumId?: string;
+}) {
   if (tracks.length === 0) {
     return (
       <div className="rounded-2xl border border-dashed border-[var(--border)] px-6 py-12 text-center">
@@ -85,11 +94,23 @@ export default function AlbumTracklist({ tracks }: { tracks: readonly AlbumTrack
             const genres = track.genres ?? [];
             const hasGenres = genres.length > 0;
 
+            const songHref = publicPathForDbType("music", track.id);
+            const songLink =
+              songHref && albumId ? `${songHref}?from=${encodeURIComponent(`/albums/${albumId}`)}` : songHref;
+
             return (
               <tr key={track.id} className="border-b border-[var(--border)] last:border-b-0 hover:bg-white/[0.03]">
                 <td className="px-3 py-3 align-top font-mono text-fg-muted sm:px-4">{track.trackNumber ?? "—"}</td>
                 <td className="min-w-0 px-3 py-3 align-top sm:px-4">
-                  <div className="font-medium text-fg">{track.title}</div>
+                  <div className="font-medium text-fg">
+                    {songLink ? (
+                      <Link href={songLink} className="focus-ring rounded underline-offset-4 hover:underline">
+                        {track.title}
+                      </Link>
+                    ) : (
+                      track.title
+                    )}
+                  </div>
                   <div className="mt-0.5 text-xs text-fg-muted md:hidden">{joinNames(track.singers)}</div>
                   {hasGenres ? (
                     <div className="mt-1 sm:hidden">

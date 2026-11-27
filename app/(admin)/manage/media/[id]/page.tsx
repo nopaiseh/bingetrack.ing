@@ -108,8 +108,8 @@ export default async function EditMediaPage({
             ? { href: `/shows/${ancestor.id}/seasons/${parent.id}`, label: "公开季页面" }
             : item.type === "album"
               ? { href: `/albums/${id}`, label: "公开页面" }
-              : item.type === "music" && parent
-                ? { href: `/albums/${parent.id}`, label: "公开专辑页面" }
+              : item.type === "music"
+                ? { href: `/music/${id}`, label: "公开歌曲页面" }
                 : item.type === "book" && MEDIA_TYPE_DEFINITIONS.book.enabled
                   ? { href: `/books/${id}`, label: "公开页面" }
                   : null;

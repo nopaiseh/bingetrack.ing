@@ -21,10 +21,20 @@ describe("MediaBackLink from 参数校验", () => {
   );
 
   it.each([
+    ["/music/aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee", /返回歌曲/],
+    ["/people/aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee", /返回人物/],
+  ])("合法歌曲／人物 from=%s 用作返回地址", (from, label) => {
+    navigation.search = `?from=${encodeURIComponent(from)}`;
+    render(<MediaBackLink type="albums" />);
+    expect(screen.getByRole("link", { name: label })).toHaveAttribute("href", from);
+  });
+
+  it.each([
     ["外部绝对地址", "https://evil.example/search"],
     ["协议相对地址", "//evil.example/search"],
     ["站内非搜索路径", "/movies"],
     ["搜索路径伪装前缀", "/searching"],
+    ["音乐路径伪装前缀", "/musician"],
     ["javascript 伪协议", "javascript:alert(1)"],
     ["空字符串", ""],
   ])("非法或外部 from（%s）回退到默认目录链接", (_label, from) => {

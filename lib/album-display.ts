@@ -32,3 +32,23 @@ export function ownershipLabel(status: OwnershipStatus | null | undefined): stri
   if (status === "want_to_own") return "想拥有";
   return null;
 }
+
+/** 与 public.album_release_kind 枚举对齐。 */
+export type AlbumReleaseKind = "album" | "ep" | "single" | "compilation";
+
+/** 发行形态中文／惯用标签；未知值返回 null（不原样露出英文枚举）。 */
+export const ALBUM_RELEASE_KIND_LABELS: Record<AlbumReleaseKind, string> = {
+  album: "专辑",
+  ep: "EP",
+  single: "单曲",
+  compilation: "精选集",
+};
+
+/** music_albums.release_kind → 展示文案。 */
+export function albumReleaseKindLabel(kind: string | null | undefined): string | null {
+  if (!kind) return null;
+  if (Object.hasOwn(ALBUM_RELEASE_KIND_LABELS, kind)) {
+    return ALBUM_RELEASE_KIND_LABELS[kind as AlbumReleaseKind];
+  }
+  return null;
+}

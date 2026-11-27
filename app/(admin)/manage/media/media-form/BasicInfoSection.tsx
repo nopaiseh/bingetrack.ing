@@ -88,14 +88,6 @@ export function BasicInfoSection({
             {isMusicTrack ? (
               <input type="hidden" name="previous_parent_id" value={item?.parent_id ?? parent?.id ?? ""} />
             ) : null}
-            {/* 原样回传盘号；无可见控件时必须隐藏提交，否则解析层拿不到值会被当成未传。 */}
-            {isMusicTrack ? (
-              <input
-                type="hidden"
-                name="disc_number"
-                value={item?.disc_number != null ? String(item.disc_number) : ""}
-              />
-            ) : null}
           </div>
         ) : null}
         {isChild ? (
@@ -124,6 +116,28 @@ export function BasicInfoSection({
                 同一专辑内曲序不能重复；若已占用，保存时会提示更换。
               </p>
             ) : null}
+          </div>
+        ) : null}
+        {isMusicTrack ? (
+          <div className="span-1">
+            <div className="mb-1.5 flex items-center justify-between gap-2">
+              <label htmlFor="field-disc-number">盘号</label>
+            </div>
+            <input
+              id="field-disc-number"
+              type="number"
+              name="disc_number"
+              min="1"
+              max="100"
+              step="1"
+              {...field("disc_number", item?.disc_number)}
+              placeholder="1"
+              className="font-mono"
+              aria-describedby="field-disc-number-hint"
+            />
+            <p id="field-disc-number-hint" className="edit-hint mt-1">
+              多碟专辑用盘号区分；留空则保存时保留原盘号（新建默认 1）。
+            </p>
           </div>
         ) : null}
         <div className={type === "tv_episode" ? "span-2" : "span-3"}>

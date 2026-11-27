@@ -126,7 +126,7 @@ export const MEDIA_TYPE_DEFINITIONS = {
   music: {
     db: "music",
     route: "music",
-    label: "单曲",
+    label: "歌曲",
     coverAspect: "1/1",
     metadataFields: [
       "release_date",
@@ -139,7 +139,7 @@ export const MEDIA_TYPE_DEFINITIONS = {
     trackingLabels: { done: "听过", want: "想听" },
     schemaType: "MusicRecording",
     defaultDescription: "查看《{title}》的收听记录与详细信息。",
-    // 单曲暂无公开详情路由；管理端挂在专辑下编辑。公开搜索经 SEARCH_DB_TYPES 接受 type=music。
+    // 有公开详情 /music/[id]，但不进顶层目录（无 /music 列表页）；搜索经 SEARCH_DB_TYPES 筛选。
     enabled: false,
     adminManaged: true,
     adminBulkOps: false,
@@ -220,11 +220,11 @@ export const CATALOG_DB_TYPES = ALL_KEYS.filter(
 
 /**
  * 公开搜索 `type=` 可接受的数据库类型。
- * 含目录类型，以及尚无公开详情路由、但可按 type=music 筛选的单曲。
+ * 含目录类型，以及可按 type=music 筛选的歌曲（有详情页，无顶层目录）。
  */
 export type SearchDbMediaType = CatalogDbMediaType | "music";
 
-/** 搜索筛选白名单：目录类型 + music（单曲）。不把 music 推进公开目录路由。 */
+/** 搜索筛选白名单：目录类型 + music（歌曲）。不把 music 推进公开目录路由。 */
 export const SEARCH_DB_TYPES = [...CATALOG_DB_TYPES, "music"] as const satisfies readonly SearchDbMediaType[];
 
 /** 公开路由段列表，顺序与 CATALOG_DB_TYPES 一致。 */
@@ -264,8 +264,16 @@ export const TV_SHOW_PUBLIC_ROUTE = MEDIA_TYPE_DEFINITIONS.tv_show.route as "sho
 /** 季详情路径正则：/shows/<showId>/seasons/<seasonId>。 */
 export const PUBLIC_SEASON_PATH_PATTERN = new RegExp(`^/${escapeRegExp(TV_SHOW_PUBLIC_ROUTE)}/[^/]+/seasons/([^/]+)`);
 
-/** 详情页路径正则：/movies|shows|albums|books/<id>。 */
-export const PUBLIC_DETAIL_PATH_PATTERN = new RegExp(`^/(?:${PUBLIC_MEDIA_TYPES.map(escapeRegExp).join("|")})/([^/]+)`);
+/**
+ * 需在 proxy 层校验 UUID 的公开详情路由段。
+ * 目录类型之外另含歌曲（/music）与人物（/people）；二者有详情页但不进顶层目录。
+ */
+export const PUBLIC_DETAIL_ROUTE_SEGMENTS = [...PUBLIC_MEDIA_TYPES, "music", "people"] as const;
+
+/** 详情页路径正则：/movies|shows|albums|books|music|people/<id>。 */
+export const PUBLIC_DETAIL_PATH_PATTERN = new RegExp(
+  `^/(?:${PUBLIC_DETAIL_ROUTE_SEGMENTS.map(escapeRegExp).join("|")})/([^/]+)`,
+);
 
 const routeToDb = new Map<string, CatalogDbMediaType>(
   CATALOG_DB_TYPES.map((key) => [MEDIA_TYPE_DEFINITIONS[key].route as string, key]),
@@ -380,8 +388,14 @@ export function publicMediaDetailPath(route: PublicMediaType, id: string): strin
   return `/${route}/${encodeURIComponent(id)}`;
 }
 
-/** 由数据库类型构造公开详情路径；无公开路由时返回 null。 */
+/** 公开人物详情路径。 */
+export function publicPersonDetailPath(id: string): string {
+  return `/people/${encodeURIComponent(id)}`;
+}
+
+/** 由数据库类型构造公开详情路径；无公开路由时返回 null。歌曲虽未进目录，仍有 /music/[id]。 */
 export function publicPathForDbType(dbType: string, id: string): string | null {
+  if (dbType === "music") return `/music/${encodeURIComponent(id)}`;
   const route = dbTypeToPublicRoute(dbType);
   return route ? publicMediaDetailPath(route, id) : null;
 }

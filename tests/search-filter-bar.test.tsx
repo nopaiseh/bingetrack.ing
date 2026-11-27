@@ -35,7 +35,7 @@ describe("SearchFilterPanel", () => {
     expect(screen.queryByRole("button", { name: "音乐" })).not.toBeInTheDocument();
     const typeRow = screen.getByRole("group", { name: "分类" });
     const typeLabels = Array.from(typeRow.querySelectorAll("button")).map((button) => button.textContent?.trim());
-    expect(typeLabels).toEqual(["全部", "电影", "电视节目", "专辑", "单曲", "图书", "系列"]);
+    expect(typeLabels).toEqual(["全部", "电影", "电视节目", "专辑", "歌曲", "图书", "系列"]);
     const personRow = screen.getByRole("group", { name: "人物" });
     const personLabels = Array.from(personRow.querySelectorAll("button")).map((button) => button.textContent?.trim());
     expect(personLabels).toEqual(["全部", "导演", "演员", "歌手", "作词", "作曲", "作者"]);

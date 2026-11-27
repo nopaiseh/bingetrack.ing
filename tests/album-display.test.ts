@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { formatTrackDuration, ownershipLabel, resolveAlbumTrackCount } from "@/lib/album-display";
+import {
+  albumReleaseKindLabel,
+  formatTrackDuration,
+  ownershipLabel,
+  resolveAlbumTrackCount,
+} from "@/lib/album-display";
 import { listenStatusLabel } from "@/lib/listen-status";
 
 describe("album display helpers", () => {
@@ -18,6 +23,15 @@ describe("album display helpers", () => {
     expect(listenStatusLabel("want_to_watch")).toBe("想听");
     expect(listenStatusLabel("watching")).toBe("在听");
     expect(listenStatusLabel(null)).toBeNull();
+  });
+
+  it("maps album_release_kind to Chinese／惯用标签", () => {
+    expect(albumReleaseKindLabel("album")).toBe("专辑");
+    expect(albumReleaseKindLabel("ep")).toBe("EP");
+    expect(albumReleaseKindLabel("single")).toBe("单曲");
+    expect(albumReleaseKindLabel("compilation")).toBe("精选集");
+    expect(albumReleaseKindLabel(null)).toBeNull();
+    expect(albumReleaseKindLabel("unknown")).toBeNull();
   });
 
   it("resolves album track count from actual tracks first", () => {
