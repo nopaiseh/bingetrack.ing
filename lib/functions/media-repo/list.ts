@@ -4,7 +4,7 @@ import { buildMediaDistributions, type DistributionCountRow } from "@/lib/functi
 import { withRetry } from "@/lib/functions/retry";
 import { withAlbumCoversForTracks } from "@/lib/music/track-display-cover";
 import { MediaCard, MediaDistributions, UpcomingRelease, ViewAllMediaRow, FetchMediaListOptions } from "@/lib/types";
-import { CATALOG_DB_TYPES, publicMediaDetailPath, publicPathForDbType } from "@/lib/media-types";
+import { SEARCH_DB_TYPES, publicMediaDetailPath, publicPathForDbType, publicPersonDetailPath } from "@/lib/media-types";
 import type { AlbumStats, BookStats } from "./types";
 import {
   MEDIA_CARD_COLUMNS,
@@ -21,17 +21,21 @@ type SitemapMediaEntry = {
 
 const SITEMAP_PAGE_SIZE = 1_000;
 
-// 按 ID 分批读取电影、电视节目和季的地址，避免单次查询行数上限截断站点地图。
+// get_person_works 可公开展示的媒体类型（与 SEARCH_DB_TYPES 一致：影视／专辑／歌曲／图书）。
+const SITEMAP_PERSON_MEDIA_TYPES = [...SEARCH_DB_TYPES];
+
+// 按 ID 分批读取目录媒体、歌曲、季与有公开作品的人物地址，避免单次查询行数上限截断站点地图。
 export async function getSitemapMediaEntries(): Promise<SitemapMediaEntry[]> {
   return withRetry(async () => {
     const db = getSupabasePublicServer();
     const entries: SitemapMediaEntry[] = [];
 
+    // 目录类型 + music：与公开搜索／详情路径一致；v_all_media 中 type=music 即可打开 /music/<id>。
     for (let offset = 0; ; offset += SITEMAP_PAGE_SIZE) {
       const { data, error } = await db
         .from("v_all_media")
         .select("id, type")
-        .in("type", [...CATALOG_DB_TYPES])
+        .in("type", [...SEARCH_DB_TYPES])
         .order("id", { ascending: true })
         .range(offset, offset + SITEMAP_PAGE_SIZE - 1);
 
@@ -70,6 +74,33 @@ export async function getSitemapMediaEntries(): Promise<SitemapMediaEntry[]> {
         ...rows.map(
           /* 对电视节目和季 ID 编码后构造季详情路径。 */ (row) => ({
             path: `/shows/${encodeURIComponent(String(row.series_id))}/seasons/${encodeURIComponent(String(row.id))}`,
+          }),
+        ),
+      );
+
+      if (rows.length < SITEMAP_PAGE_SIZE) break;
+    }
+
+    // 人物：至少一条可公开展示作品（挂在 movie／tv_show／album／music／book 上的 credits）。
+    // people 为根表 + !inner，按人物 ID 分页，避免按 credits 行分页时重复／漏人。
+    for (let offset = 0; ; offset += SITEMAP_PAGE_SIZE) {
+      const { data, error } = await db
+        .from("people")
+        .select("id, media_credits!inner(media_item_id, media_items!inner(type))")
+        .in("media_credits.media_items.type", SITEMAP_PERSON_MEDIA_TYPES)
+        .order("id", { ascending: true })
+        .range(offset, offset + SITEMAP_PAGE_SIZE - 1);
+
+      if (error) {
+        console.error("Failed to fetch people routes for sitemap:", error);
+        throw new MediaRepositoryError("fetch sitemap people routes", error);
+      }
+
+      const rows = data ?? [];
+      entries.push(
+        ...rows.map(
+          /* 对人物 ID 编码后构造公开人物页路径。 */ (row) => ({
+            path: publicPersonDetailPath(String(row.id)),
           }),
         ),
       );
