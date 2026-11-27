@@ -125,9 +125,8 @@ export async function readEditableMedia(db: SupabaseClient, id: string): Promise
     status = (tracking.data?.status as "watched" | "want_to_watch") ?? "want_to_watch";
     rating = tracking.data?.rating ?? null;
   }
-  const personOnly = (
-    role: "artist" | "lyricist" | "composer" | "arranger" | "producer" | "featured" | "author",
-  ) => people(credits.data, role).map(({ id, name, alternate_name }) => ({ id, name, alternate_name }));
+  const personOnly = (role: "artist" | "lyricist" | "composer" | "arranger" | "producer" | "featured" | "author") =>
+    people(credits.data, role).map(({ id, name, alternate_name }) => ({ id, name, alternate_name }));
   const parentId = season.data?.series_id ?? episode.data?.season_id ?? track.data?.album_id ?? null;
   return {
     ...media.data,
