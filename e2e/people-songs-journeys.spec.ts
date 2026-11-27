@@ -5,7 +5,6 @@ const ALBUM_ID = "50000000-0000-4000-8000-000000000020";
 const ARTIST_ID = "40000000-0000-4000-8000-000000000004";
 const LYRICIST_ID = "40000000-0000-4000-8000-000000000005";
 
-/** #296 的 get_song_detail／get_person_works 未部署时跳过（本 PR 须紧随 #296 合并）。 */
 async function backendReady(page: Page): Promise<boolean> {
   const response = await page.goto(`/music/${SONG_ID}`);
   if (!response || response.status() >= 500) return false;
@@ -18,19 +17,24 @@ async function backendReady(page: Page): Promise<boolean> {
 test.describe("people / songs public pages", () => {
   test("song detail shows credits albums related and links people", async ({ page }, testInfo) => {
     const ready = await backendReady(page);
-    testInfo.skip(!ready, "requires #296 get_song_detail backend");
+    testInfo.skip(!ready, "requires get_song_detail + seed data");
 
     await expect(page.getByRole("heading", { level: 1, name: "夜航序曲" })).toBeVisible();
     await expect(page.getByText("听过", { exact: true })).toBeVisible();
     await expect(page.getByRole("heading", { level: 2, name: "演职" })).toBeVisible();
-    await expect(page.getByRole("link", { name: "测试艺人" })).toHaveAttribute("href", `/people/${ARTIST_ID}`);
+    await expect(page.getByRole("link", { name: "测试艺人" })).toHaveAttribute(
+      "href",
+      `/people/${ARTIST_ID}?from=${encodeURIComponent(`/music/${SONG_ID}`)}`,
+    );
     await expect(page.getByRole("heading", { level: 2, name: "收录于" })).toBeVisible();
-    await expect(page.getByRole("link", { name: "测试专辑：夜航电台" })).toBeVisible();
+    // 封面链 aria-label 也含子串「测试专辑：夜航电台」；用 exact 命中标题链
+    await expect(page.getByRole("link", { name: "测试专辑：夜航电台", exact: true })).toBeVisible();
     await expect(page.getByRole("heading", { level: 2, name: "相关歌曲" })).toBeVisible();
 
     await page.getByRole("link", { name: "测试词人" }).click();
     await expect(page).toHaveURL(new RegExp(`/people/${LYRICIST_ID}`));
     await expect(page.getByRole("heading", { level: 1, name: "测试词人" })).toBeVisible();
+    await expect(page.getByRole("link", { name: /返回歌曲/ })).toBeVisible();
   });
 
   test("person page shows song grid for music-only credit", async ({ page }, testInfo) => {
@@ -39,7 +43,7 @@ test.describe("people / songs public pages", () => {
       .getByRole("heading", { level: 1, name: "测试词人" })
       .isVisible()
       .catch(() => false);
-    testInfo.skip(!ready, "requires #296 get_person_works backend");
+    testInfo.skip(!ready, "requires get_person_works + seed data");
 
     await expect(page.getByRole("heading", { level: 2, name: "歌曲" })).toBeVisible();
     await expect(page.getByRole("heading", { level: 2, name: "影视" })).toHaveCount(0);
@@ -58,7 +62,7 @@ test.describe("people / songs public pages", () => {
       .getByRole("heading", { level: 1, name: "夜航序曲" })
       .isVisible()
       .catch(() => false);
-    testInfo.skip(!ready, "requires #296 get_song_detail backend");
+    testInfo.skip(!ready, "requires get_song_detail + seed data");
     await expect(page).toHaveURL(new RegExp(`/music/${SONG_ID}`));
   });
 
