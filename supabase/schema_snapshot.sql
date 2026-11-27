@@ -3977,155 +3977,155 @@ GRANT ALL ON FUNCTION "public"."normalize_media_title"("p_title" "text") TO "ser
 REVOKE ALL ON FUNCTION "public"."rls_auto_enable"() FROM PUBLIC;
 GRANT ALL ON FUNCTION "public"."rls_auto_enable"() TO "service_role";
 
-GRANT ALL ON TABLE "public"."v_all_media" TO "service_role";
 GRANT SELECT ON TABLE "public"."v_all_media" TO "anon";
 GRANT SELECT ON TABLE "public"."v_all_media" TO "authenticated";
+GRANT SELECT,REFERENCES,TRIGGER,TRUNCATE,MAINTAIN ON TABLE "public"."v_all_media" TO "service_role";
 
 REVOKE ALL ON FUNCTION "public"."search_media"("p_query" "text", "p_types" "text"[], "p_series_only" boolean, "p_credit_roles" "text"[]) FROM PUBLIC;
 GRANT ALL ON FUNCTION "public"."search_media"("p_query" "text", "p_types" "text"[], "p_series_only" boolean, "p_credit_roles" "text"[]) TO "anon";
 GRANT ALL ON FUNCTION "public"."search_media"("p_query" "text", "p_types" "text"[], "p_series_only" boolean, "p_credit_roles" "text"[]) TO "authenticated";
 GRANT ALL ON FUNCTION "public"."search_media"("p_query" "text", "p_types" "text"[], "p_series_only" boolean, "p_credit_roles" "text"[]) TO "service_role";
 
-GRANT ALL ON TABLE "public"."album_tracks" TO "service_role";
 GRANT SELECT ON TABLE "public"."album_tracks" TO "anon";
 GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE "public"."album_tracks" TO "authenticated";
+GRANT ALL ON TABLE "public"."album_tracks" TO "service_role";
 
-GRANT ALL ON TABLE "public"."books" TO "service_role";
 GRANT SELECT ON TABLE "public"."books" TO "anon";
 GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE "public"."books" TO "authenticated";
+GRANT REFERENCES,TRIGGER,TRUNCATE,MAINTAIN ON TABLE "public"."books" TO "service_role";
 
-GRANT ALL ON TABLE "public"."credit_roles" TO "service_role";
 GRANT SELECT ON TABLE "public"."credit_roles" TO "anon";
 GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE "public"."credit_roles" TO "authenticated";
+GRANT ALL ON TABLE "public"."credit_roles" TO "service_role";
 
-GRANT ALL ON TABLE "public"."genres" TO "service_role";
 GRANT SELECT ON TABLE "public"."genres" TO "anon";
 GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE "public"."genres" TO "authenticated";
+GRANT ALL ON TABLE "public"."genres" TO "service_role";
 
-GRANT ALL ON TABLE "public"."languages" TO "service_role";
 GRANT SELECT ON TABLE "public"."languages" TO "anon";
 GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE "public"."languages" TO "authenticated";
+GRANT ALL ON TABLE "public"."languages" TO "service_role";
 
-GRANT ALL ON TABLE "public"."media_credits" TO "service_role";
 GRANT SELECT ON TABLE "public"."media_credits" TO "anon";
 GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE "public"."media_credits" TO "authenticated";
+GRANT ALL ON TABLE "public"."media_credits" TO "service_role";
 
-GRANT ALL ON TABLE "public"."media_genres" TO "service_role";
 GRANT SELECT ON TABLE "public"."media_genres" TO "anon";
 GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE "public"."media_genres" TO "authenticated";
+GRANT ALL ON TABLE "public"."media_genres" TO "service_role";
 
-GRANT ALL ON TABLE "public"."media_item_series" TO "service_role";
 GRANT SELECT ON TABLE "public"."media_item_series" TO "anon";
 GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE "public"."media_item_series" TO "authenticated";
+GRANT ALL ON TABLE "public"."media_item_series" TO "service_role";
 
-GRANT ALL ON TABLE "public"."media_items" TO "service_role";
 GRANT SELECT ON TABLE "public"."media_items" TO "anon";
 GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE "public"."media_items" TO "authenticated";
+GRANT ALL ON TABLE "public"."media_items" TO "service_role";
 
-GRANT ALL ON TABLE "public"."media_languages" TO "service_role";
 GRANT SELECT ON TABLE "public"."media_languages" TO "anon";
 GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE "public"."media_languages" TO "authenticated";
+GRANT ALL ON TABLE "public"."media_languages" TO "service_role";
 
-GRANT ALL ON TABLE "public"."media_regions" TO "service_role";
 GRANT SELECT ON TABLE "public"."media_regions" TO "anon";
 GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE "public"."media_regions" TO "authenticated";
+GRANT ALL ON TABLE "public"."media_regions" TO "service_role";
 
-GRANT ALL ON TABLE "public"."media_series" TO "service_role";
 GRANT SELECT ON TABLE "public"."media_series" TO "anon";
 GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE "public"."media_series" TO "authenticated";
+GRANT ALL ON TABLE "public"."media_series" TO "service_role";
 
-GRANT ALL ON TABLE "public"."music" TO "service_role";
 GRANT SELECT ON TABLE "public"."music" TO "anon";
 GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE "public"."music" TO "authenticated";
+GRANT ALL ON TABLE "public"."music" TO "service_role";
 
-GRANT ALL ON TABLE "public"."music_albums" TO "service_role";
 GRANT SELECT ON TABLE "public"."music_albums" TO "anon";
 GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE "public"."music_albums" TO "authenticated";
+GRANT ALL ON TABLE "public"."music_albums" TO "service_role";
 
-GRANT ALL ON TABLE "public"."name_issue_confirmations" TO "service_role";
 GRANT SELECT,INSERT,DELETE ON TABLE "public"."name_issue_confirmations" TO "authenticated";
+GRANT REFERENCES,TRIGGER,TRUNCATE,MAINTAIN ON TABLE "public"."name_issue_confirmations" TO "service_role";
 
-GRANT ALL ON TABLE "public"."ownership" TO "service_role";
 GRANT SELECT ON TABLE "public"."ownership" TO "anon";
 GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE "public"."ownership" TO "authenticated";
+GRANT REFERENCES,TRIGGER,TRUNCATE,MAINTAIN ON TABLE "public"."ownership" TO "service_role";
 
-GRANT ALL ON TABLE "public"."people" TO "service_role";
 GRANT SELECT ON TABLE "public"."people" TO "anon";
 GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE "public"."people" TO "authenticated";
+GRANT ALL ON TABLE "public"."people" TO "service_role";
 
-GRANT ALL ON TABLE "public"."people_distinct_pairs" TO "service_role";
 GRANT SELECT,INSERT,DELETE ON TABLE "public"."people_distinct_pairs" TO "authenticated";
+GRANT REFERENCES,TRIGGER,TRUNCATE,MAINTAIN ON TABLE "public"."people_distinct_pairs" TO "service_role";
 
-GRANT ALL ON TABLE "public"."regions" TO "service_role";
 GRANT SELECT ON TABLE "public"."regions" TO "anon";
 GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE "public"."regions" TO "authenticated";
+GRANT ALL ON TABLE "public"."regions" TO "service_role";
 
-GRANT ALL ON TABLE "public"."release_year_stats" TO "service_role";
 GRANT SELECT ON TABLE "public"."release_year_stats" TO "anon";
 GRANT SELECT ON TABLE "public"."release_year_stats" TO "authenticated";
+GRANT SELECT,REFERENCES,TRIGGER,TRUNCATE,MAINTAIN ON TABLE "public"."release_year_stats" TO "service_role";
 
-GRANT ALL ON TABLE "public"."site_owner" TO "service_role";
 GRANT SELECT ON TABLE "public"."site_owner" TO "authenticated";
+GRANT ALL ON TABLE "public"."site_owner" TO "service_role";
 
-GRANT ALL ON TABLE "public"."tracking" TO "service_role";
 GRANT SELECT ON TABLE "public"."tracking" TO "anon";
 GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE "public"."tracking" TO "authenticated";
+GRANT ALL ON TABLE "public"."tracking" TO "service_role";
 
-GRANT ALL ON TABLE "public"."tv_episodes" TO "service_role";
 GRANT SELECT ON TABLE "public"."tv_episodes" TO "anon";
 GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE "public"."tv_episodes" TO "authenticated";
+GRANT ALL ON TABLE "public"."tv_episodes" TO "service_role";
 
-GRANT ALL ON TABLE "public"."tv_seasons" TO "service_role";
 GRANT SELECT ON TABLE "public"."tv_seasons" TO "anon";
 GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE "public"."tv_seasons" TO "authenticated";
+GRANT ALL ON TABLE "public"."tv_seasons" TO "service_role";
 
-GRANT ALL ON TABLE "public"."v_continue_listening" TO "service_role";
 GRANT SELECT ON TABLE "public"."v_continue_listening" TO "anon";
 GRANT SELECT ON TABLE "public"."v_continue_listening" TO "authenticated";
+GRANT SELECT,REFERENCES,TRIGGER,TRUNCATE,MAINTAIN ON TABLE "public"."v_continue_listening" TO "service_role";
 
-GRANT ALL ON TABLE "public"."v_manage_media_order" TO "service_role";
 GRANT SELECT ON TABLE "public"."v_manage_media_order" TO "authenticated";
+GRANT REFERENCES,TRIGGER,TRUNCATE,MAINTAIN ON TABLE "public"."v_manage_media_order" TO "service_role";
 
-GRANT ALL ON TABLE "public"."v_media_season_summaries" TO "service_role";
 GRANT SELECT ON TABLE "public"."v_media_season_summaries" TO "anon";
 GRANT SELECT ON TABLE "public"."v_media_season_summaries" TO "authenticated";
+GRANT REFERENCES,TRIGGER,TRUNCATE,MAINTAIN ON TABLE "public"."v_media_season_summaries" TO "service_role";
 
-GRANT ALL ON TABLE "public"."v_media_series_years" TO "service_role";
 GRANT SELECT ON TABLE "public"."v_media_series_years" TO "anon";
 GRANT SELECT ON TABLE "public"."v_media_series_years" TO "authenticated";
+GRANT REFERENCES,TRIGGER,TRUNCATE,MAINTAIN ON TABLE "public"."v_media_series_years" TO "service_role";
 
-GRANT ALL ON TABLE "public"."v_report_media_context" TO "service_role";
 GRANT SELECT ON TABLE "public"."v_report_media_context" TO "authenticated";
+GRANT REFERENCES,TRIGGER,TRUNCATE,MAINTAIN ON TABLE "public"."v_report_media_context" TO "service_role";
 
-GRANT ALL ON TABLE "public"."v_report_credit_order" TO "service_role";
 GRANT SELECT ON TABLE "public"."v_report_credit_order" TO "authenticated";
+GRANT REFERENCES,TRIGGER,TRUNCATE,MAINTAIN ON TABLE "public"."v_report_credit_order" TO "service_role";
 
-GRANT ALL ON TABLE "public"."v_report_incomplete_media" TO "service_role";
 GRANT SELECT ON TABLE "public"."v_report_incomplete_media" TO "authenticated";
+GRANT REFERENCES,TRIGGER,TRUNCATE,MAINTAIN ON TABLE "public"."v_report_incomplete_media" TO "service_role";
 
-GRANT ALL ON TABLE "public"."v_report_missing_alias" TO "service_role";
 GRANT SELECT ON TABLE "public"."v_report_missing_alias" TO "authenticated";
+GRANT REFERENCES,TRIGGER,TRUNCATE,MAINTAIN ON TABLE "public"."v_report_missing_alias" TO "service_role";
 
-GRANT ALL ON TABLE "public"."v_report_missing_character" TO "service_role";
 GRANT SELECT ON TABLE "public"."v_report_missing_character" TO "authenticated";
+GRANT REFERENCES,TRIGGER,TRUNCATE,MAINTAIN ON TABLE "public"."v_report_missing_character" TO "service_role";
 
-GRANT ALL ON TABLE "public"."v_report_orphan_people" TO "service_role";
 GRANT SELECT ON TABLE "public"."v_report_orphan_people" TO "authenticated";
+GRANT REFERENCES,TRIGGER,TRUNCATE,MAINTAIN ON TABLE "public"."v_report_orphan_people" TO "service_role";
 
-GRANT ALL ON TABLE "public"."v_report_similar_people" TO "service_role";
 GRANT SELECT ON TABLE "public"."v_report_similar_people" TO "authenticated";
+GRANT REFERENCES,TRIGGER,TRUNCATE,MAINTAIN ON TABLE "public"."v_report_similar_people" TO "service_role";
 
-GRANT ALL ON TABLE "public"."v_report_suspicious_names" TO "service_role";
 GRANT SELECT ON TABLE "public"."v_report_suspicious_names" TO "authenticated";
+GRANT REFERENCES,TRIGGER,TRUNCATE,MAINTAIN ON TABLE "public"."v_report_suspicious_names" TO "service_role";
 
-GRANT ALL ON TABLE "public"."v_report_tracking_conflicts" TO "service_role";
 GRANT SELECT ON TABLE "public"."v_report_tracking_conflicts" TO "authenticated";
+GRANT REFERENCES,TRIGGER,TRUNCATE,MAINTAIN ON TABLE "public"."v_report_tracking_conflicts" TO "service_role";
 
-GRANT ALL ON TABLE "public"."v_report_tv_structure" TO "service_role";
 GRANT SELECT ON TABLE "public"."v_report_tv_structure" TO "authenticated";
+GRANT REFERENCES,TRIGGER,TRUNCATE,MAINTAIN ON TABLE "public"."v_report_tv_structure" TO "service_role";
 
-GRANT ALL ON TABLE "public"."v_report_unused_references" TO "service_role";
 GRANT SELECT ON TABLE "public"."v_report_unused_references" TO "authenticated";
+GRANT REFERENCES,TRIGGER,TRUNCATE,MAINTAIN ON TABLE "public"."v_report_unused_references" TO "service_role";
 
 ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON SEQUENCES TO "postgres";
 ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT UPDATE ON SEQUENCES TO "service_role";
