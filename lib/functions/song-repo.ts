@@ -1,7 +1,6 @@
 import "server-only";
 import { getSupabasePublicServer } from "@/lib/supabase/public-server";
 import { isMediaId } from "@/lib/functions/media-id";
-import { reportHandledError } from "@/lib/report-error";
 import type {
   RelatedSong,
   SongAlbumMembership,
@@ -181,7 +180,7 @@ export function parseSongDetail(data: unknown): SongDetail | null {
 
 /**
  * 调用 get_song_detail。
- * 歌曲不存在（P0002）或 RPC 尚未部署时返回 null；其它错误上抛。
+ * 歌曲不存在（P0002）时返回 null；其它错误上抛。
  */
 export async function getSongDetail(id: string): Promise<SongDetail | null> {
   if (!isMediaId(id)) return null;
@@ -190,16 +189,7 @@ export async function getSongDetail(id: string): Promise<SongDetail | null> {
   if (error) {
     const code = typeof error === "object" && error && "code" in error ? String((error as { code?: string }).code) : "";
     const message = error.message ?? "";
-    // 未找到，或尚未合并 #296（函数不存在）。
     if (code === "P0002" || /Song not found/i.test(message)) return null;
-    if (
-      code === "42883" ||
-      /function public\.get_song_detail/i.test(message) ||
-      /Could not find the function/i.test(message)
-    ) {
-      reportHandledError("get_song_detail unavailable (merge after #296):", error);
-      return null;
-    }
     throw error;
   }
   return parseSongDetail(data);

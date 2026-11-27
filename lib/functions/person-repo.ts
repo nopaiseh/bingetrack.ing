@@ -1,7 +1,6 @@
 import "server-only";
 import { getSupabasePublicServer } from "@/lib/supabase/public-server";
 import { isMediaId } from "@/lib/functions/media-id";
-import { reportHandledError } from "@/lib/report-error";
 import type { PersonDetail, PersonRoleGroup, PersonWorkItem, PersonWorksPayload } from "@/lib/types/person";
 
 function asString(value: unknown): string | null {
@@ -69,7 +68,7 @@ export function parsePersonWorks(data: unknown): PersonWorksPayload | null {
 
 /**
  * 人物详情：people 行 + get_person_works。
- * 人物不存在或 RPC 未部署时返回 null。
+ * 人物不存在（P0002）时返回 null。
  */
 export async function getPersonDetail(id: string): Promise<PersonDetail | null> {
   if (!isMediaId(id)) return null;
@@ -84,14 +83,6 @@ export async function getPersonDetail(id: string): Promise<PersonDetail | null> 
     const code = typeof error === "object" && error && "code" in error ? String((error as { code?: string }).code) : "";
     const message = error.message ?? "";
     if (code === "P0002" || /Person not found/i.test(message)) return null;
-    if (
-      code === "42883" ||
-      /function public\.get_person_works/i.test(message) ||
-      /Could not find the function/i.test(message)
-    ) {
-      reportHandledError("get_person_works unavailable (merge after #296):", error);
-      return null;
-    }
     throw error;
   }
 
