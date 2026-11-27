@@ -7,6 +7,8 @@ const mediaForCache = vi.hoisted(() => vi.fn());
 const mediaUncached = vi.hoisted(() => vi.fn());
 const albumForCache = vi.hoisted(() => vi.fn());
 const albumUncached = vi.hoisted(() => vi.fn());
+const upcomingServer = vi.hoisted(() => vi.fn());
+const reportHandledError = vi.hoisted(() => vi.fn());
 const connection = vi.hoisted(() => vi.fn(async () => undefined));
 
 vi.mock("server-only", () => ({}));
@@ -38,7 +40,7 @@ vi.mock("@/lib/functions/media-repo", () => ({
   searchMediaServer: vi.fn(async () => ({ rows: [], total: 0 })),
   fetchTopMediaServer: vi.fn(async () => []),
   fetchMediaDistributionsServer: vi.fn(async () => ({})),
-  fetchUpcomingReleasesServer: vi.fn(async () => []),
+  fetchUpcomingReleasesServer: (...args: unknown[]) => upcomingServer(...args),
   getBookStats: vi.fn(async () => ({})),
   getAlbumStats: vi.fn(async () => ({})),
 }));
@@ -59,7 +61,7 @@ vi.mock("@/lib/supabase/public-server", () => ({
     }),
   }),
 }));
-vi.mock("@/lib/report-error", () => ({ reportHandledError: vi.fn() }));
+vi.mock("@/lib/report-error", () => ({ reportHandledError: (...args: unknown[]) => reportHandledError(...args) }));
 vi.mock("@/lib/api/media-params", () => ({
   parseMediaSearchParams: vi.fn(() => ({})),
 }));
@@ -67,7 +69,8 @@ vi.mock("@/lib/functions/retry", () => ({ withRetry: <T>(fn: () => T) => fn() })
 
 const mediaId = "11111111-1111-4111-8111-111111111111";
 
-const { getCachedMediaById, getCachedAlbumDetail } = await import("@/lib/functions/cached-media");
+const { getCachedMediaById, getCachedAlbumDetail, getCachedUpcomingReleasesServer } =
+  await import("@/lib/functions/cached-media");
 
 describe("系列降级不写入缓存，成功后可正常命中", () => {
   beforeEach(() => {
@@ -77,6 +80,8 @@ describe("系列降级不写入缓存，成功后可正常命中", () => {
     mediaUncached.mockReset();
     albumForCache.mockReset();
     albumUncached.mockReset();
+    upcomingServer.mockReset();
+    reportHandledError.mockReset();
     connection.mockClear();
   });
 
@@ -142,5 +147,45 @@ describe("系列降级不写入缓存，成功后可正常命中", () => {
     expect(albumForCache).toHaveBeenCalledTimes(2);
     expect(albumUncached).toHaveBeenCalledTimes(1);
     expect(connection).not.toHaveBeenCalled();
+  });
+});
+
+describe("即将上映降级：失败不写入缓存，返回空列表并上报", () => {
+  beforeEach(() => {
+    cacheStore.clear();
+    cacheSpecs.length = 0;
+    upcomingServer.mockReset();
+    reportHandledError.mockReset();
+  });
+
+  it("查询超时抛错时返回 []、不上缓存、reportHandledError；下次成功才写入缓存", async () => {
+    const timeout = Object.assign(new Error("canceling statement due to statement timeout"), { code: "57014" });
+    upcomingServer.mockRejectedValueOnce(timeout);
+
+    expect(await getCachedUpcomingReleasesServer()).toEqual([]);
+    expect(cacheStore.size).toBe(0);
+    expect(reportHandledError).toHaveBeenCalledWith("Failed to fetch upcoming releases:", timeout);
+    expect(upcomingServer).toHaveBeenCalledTimes(1);
+
+    const releases = [
+      {
+        id: "m1",
+        kind: "movie" as const,
+        groupId: "m1",
+        title: "Dune",
+        releaseDate: "2026-12-01",
+        cover_url: "",
+        href: "/movies/m1",
+        genres: [],
+        languages: [],
+      },
+    ];
+    upcomingServer.mockResolvedValueOnce(releases);
+    expect(await getCachedUpcomingReleasesServer()).toEqual(releases);
+    expect(cacheStore.size).toBe(1);
+    expect(upcomingServer).toHaveBeenCalledTimes(2);
+
+    expect(await getCachedUpcomingReleasesServer()).toEqual(releases);
+    expect(upcomingServer).toHaveBeenCalledTimes(2);
   });
 });

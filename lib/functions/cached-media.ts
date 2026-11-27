@@ -117,12 +117,20 @@ export const getCachedTopMediaServer = cache(
 
 // 即将上映候选池：查询下限取 UTC 昨天且带 limit，跨日不重建会挤掉真正的即将上映条目，故保留 24 小时定时。
 // 候选池留有余量，缓存滞后时由浏览器按当天过滤；倒计时天数在页面重新生成时按新加坡日历现算。
-export const getCachedUpcomingReleasesServer = cache(
-  unstable_cache(fetchUpcomingReleasesServer, ["public-media-upcoming-v2"], {
-    revalidate: 86400,
-    tags: [MEDIA_TAG, MEDIA_LISTS_TAG],
-  }),
-);
+// 查询失败时在 unstable_cache 外接住：不把空列表写入数据缓存，首页其它区块仍可渲染。
+const loadUpcomingReleasesCached = unstable_cache(fetchUpcomingReleasesServer, ["public-media-upcoming-v2"], {
+  revalidate: 86400,
+  tags: [MEDIA_TAG, MEDIA_LISTS_TAG],
+});
+
+export const getCachedUpcomingReleasesServer = cache(async () => {
+  try {
+    return await loadUpcomingReleasesCached();
+  } catch (error) {
+    reportHandledError("Failed to fetch upcoming releases:", error);
+    return [];
+  }
+});
 
 // 全时段分布统计；写入走 media:lists。
 export const getCachedMediaDistributionsServer = cache(
