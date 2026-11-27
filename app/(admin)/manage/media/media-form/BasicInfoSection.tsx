@@ -118,28 +118,6 @@ export function BasicInfoSection({
             ) : null}
           </div>
         ) : null}
-        {isMusicTrack ? (
-          <div className="span-1">
-            <div className="mb-1.5 flex items-center justify-between gap-2">
-              <label htmlFor="field-disc-number">盘号</label>
-            </div>
-            <input
-              id="field-disc-number"
-              type="number"
-              name="disc_number"
-              min="1"
-              max="100"
-              step="1"
-              {...field("disc_number", item?.disc_number)}
-              placeholder="1"
-              className="font-mono"
-              aria-describedby="field-disc-number-hint"
-            />
-            <p id="field-disc-number-hint" className="edit-hint mt-1">
-              多碟专辑用盘号区分；留空则保存时保留原盘号（新建默认 1）。
-            </p>
-          </div>
-        ) : null}
         <div className={type === "tv_episode" ? "span-2" : "span-3"}>
           <div className="mb-1.5 flex items-center justify-between gap-2">
             <label htmlFor="field-title">中文标题</label>
