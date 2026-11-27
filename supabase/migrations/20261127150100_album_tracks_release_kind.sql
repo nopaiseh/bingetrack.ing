@@ -51,8 +51,8 @@ comment on table public.album_tracks is
 
 alter table public.album_tracks enable row level security;
 
-grant select on public.album_tracks to anon, authenticated;
-grant insert, update, delete on public.album_tracks to authenticated;
+grant select on public.album_tracks to anon, authenticated, service_role;
+grant insert, update, delete on public.album_tracks to authenticated, service_role;
 
 create policy "Allow SELECT from website" on public.album_tracks
   for select to anon, authenticated using (true);

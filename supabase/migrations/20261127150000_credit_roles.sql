@@ -30,8 +30,8 @@ comment on column public.credit_roles.allows_character is
 
 alter table public.credit_roles enable row level security;
 
-grant select on public.credit_roles to anon, authenticated;
-grant insert, update, delete on public.credit_roles to authenticated;
+grant select on public.credit_roles to anon, authenticated, service_role;
+grant insert, update, delete on public.credit_roles to authenticated, service_role;
 
 create policy "Allow SELECT from website" on public.credit_roles
   for select to anon, authenticated using (true);

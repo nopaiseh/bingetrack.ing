@@ -1561,7 +1561,7 @@ begin
 end $$;
 
 revoke all on function public.get_person_works(uuid) from public;
-grant execute on function public.get_person_works(uuid) to anon, authenticated;
+grant execute on function public.get_person_works(uuid) to anon, authenticated, service_role;
 
 comment on function public.get_person_works(uuid) is
   '人物作品：影视仅 tv_show／movie；音乐分 albums／songs（歌去重）；图书。按角色分组。';
@@ -1751,7 +1751,7 @@ begin
 end $$;
 
 revoke all on function public.get_song_detail(uuid) from public;
-grant execute on function public.get_song_detail(uuid) to anon, authenticated;
+grant execute on function public.get_song_detail(uuid) to anon, authenticated, service_role;
 
 comment on function public.get_song_detail(uuid) is
   '歌曲详情：元数据、按角色 credits、所属专辑与同专其他曲、相关歌曲（艺人／词曲各最多 12）、封面回退专辑、tracking（受 RLS）。';
