@@ -2730,6 +2730,8 @@ CREATE INDEX "idx_media_items_title_trgm" ON "public"."media_items" USING "gin" 
 
 CREATE INDEX "idx_media_items_type" ON "public"."media_items" USING "btree" ("type");
 
+CREATE INDEX "idx_media_items_type_release_date_id" ON "public"."media_items" USING "btree" ("type", "release_date", "id");
+
 CREATE INDEX "idx_media_series_name_trgm" ON "public"."media_series" USING "gin" ("name" "extensions"."gin_trgm_ops");
 
 CREATE INDEX "idx_people_alternate_name_trgm" ON "public"."people" USING "gin" ("alternate_name" "extensions"."gin_trgm_ops");

@@ -600,5 +600,22 @@ test(
       summary: "Office.",
     });
     expect(releases[1]).toMatchObject({ kind: "movie", href: "/movies/m1", releaseDate: "2026-10-09" });
+
+    const movieQuery = state.executed.find((req) => req.table === "v_all_media" && (req.gtes?.length ?? 0) > 0);
+    const seriesQuery = state.executed.find((req) => req.table === "v_all_media" && (req.ins?.length ?? 0) > 0);
+    expect(movieQuery?.columns).toBe("id,type,title,sort_date,genres,languages,cover_url,summary");
+    expect(seriesQuery?.columns).toBe("id,type,title,sort_date,genres,languages,cover_url,summary");
+    expect(movieQuery?.columns).not.toMatch(/rating|status|artists|authors|release_year/);
+  },
+);
+
+test(
+  "upcoming releases propagate repository errors so callers can degrade without caching empties",
+  /* 验证查询失败仍抛 MediaRepositoryError，由缓存层在 unstable_cache 外接住。 */ async () => {
+    state.results.v_all_media = { data: null, error: { code: "57014" } };
+    state.results.media_items = { data: [], error: null };
+
+    await expect(fetchUpcomingReleasesServer()).rejects.toBeInstanceOf(MediaRepositoryError);
+    await expect(fetchUpcomingReleasesServer()).rejects.toThrow(/fetch upcoming releases/);
   },
 );

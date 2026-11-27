@@ -214,6 +214,8 @@ export async function fetchTopMediaServer(
 const UPCOMING_MOVIE_LIMIT = 12;
 const UPCOMING_EPISODE_POOL = 60;
 const UPCOMING_EPISODES_PER_SHOW = 3;
+// 倒计时展台只要标题／封面／类型／语言／简介与上映日；不拉榜单用的评分、状态、作者等列。
+const UPCOMING_VIEW_COLUMNS = "id,type,title,sort_date,genres,languages,cover_url,summary";
 
 type UpcomingEpisodeRow = {
   id: string;
@@ -249,7 +251,7 @@ export async function fetchUpcomingReleasesServer(): Promise<UpcomingRelease[]> 
     const [moviesRes, episodesRes] = await Promise.all([
       db
         .from("v_all_media")
-        .select(TOP_MEDIA_COLUMNS)
+        .select(UPCOMING_VIEW_COLUMNS)
         .eq("type", "movie")
         .gte("sort_date", since)
         .order("sort_date", { ascending: true })
@@ -317,7 +319,7 @@ export async function fetchUpcomingReleasesServer(): Promise<UpcomingRelease[]> 
     if (seriesIds.length > 0) {
       const { data, error } = await db
         .from("v_all_media")
-        .select(TOP_MEDIA_COLUMNS)
+        .select(UPCOMING_VIEW_COLUMNS)
         .eq("type", "tv_show")
         .in("id", seriesIds);
       if (error) {
