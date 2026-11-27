@@ -101,10 +101,23 @@ function trackPayload(overrides: Partial<MediaInput> = {}): MediaInput {
 
 function chainResult(result: { data?: unknown; error?: unknown }) {
   const builder: Record<string, unknown> = {};
-  const finish = async () => result;
+  const finish = async () => {
+    if (Array.isArray(result.data)) {
+      const rangeCall = (builder as { __range?: [number, number] }).__range;
+      if (rangeCall) {
+        const [from, to] = rangeCall;
+        return { ...result, data: result.data.slice(from, to + 1) };
+      }
+    }
+    return result;
+  };
   for (const method of ["select", "eq", "neq", "is", "in", "order", "limit", "not"]) {
     builder[method] = () => builder;
   }
+  builder.range = (from: number, to: number) => {
+    (builder as { __range?: [number, number] }).__range = [from, to];
+    return builder;
+  };
   builder.maybeSingle = finish;
   builder.single = finish;
   builder.then = (resolve: (value: unknown) => unknown, reject?: (reason: unknown) => unknown) =>
@@ -469,6 +482,15 @@ describe("saveMusicMedia", () => {
             });
             return chain;
           }
+          if (table === "media_credits") {
+            const chain: Record<string, unknown> = {};
+            chain.eq = () => chain;
+            chain.order = () => chain;
+            chain.range = async () => ({ data: creditRows, error: null });
+            chain.then = (resolve: (val: unknown) => void, reject?: (reason: unknown) => void) =>
+              Promise.resolve({ data: creditRows, error: null }).then(resolve, reject);
+            return chain;
+          }
           return {
             eq: vi.fn(() => ({
               maybeSingle: async () => {
@@ -492,8 +514,7 @@ describe("saveMusicMedia", () => {
                 }
                 return { data: null, error: null };
               },
-              order: async () =>
-                table === "media_credits" ? { data: creditRows, error: null } : { data: [], error: null },
+              order: async () => ({ data: [], error: null }),
               then: (resolve: (val: unknown) => void) => resolve({ data: [], error: null }),
             })),
           };

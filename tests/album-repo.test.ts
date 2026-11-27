@@ -27,8 +27,16 @@ vi.mock("@/lib/supabase/public-server", () => ({
             query.calls.push({ method, args });
             return builder;
           };
-        for (const method of ["select", "eq", "neq", "in", "order"]) builder[method] = chain(method);
-        const finish = () => ({ data: null, error: null, ...state.handle(query) });
+        for (const method of ["select", "eq", "neq", "in", "order", "range"]) builder[method] = chain(method);
+        const finish = () => {
+          const result = { data: null, error: null, ...state.handle(query) };
+          const rangeCall = query.calls.find((call) => call.method === "range");
+          if (rangeCall && Array.isArray(result.data)) {
+            const [from, to] = rangeCall.args as [number, number];
+            return { ...result, data: result.data.slice(from, to + 1) };
+          }
+          return result;
+        };
         builder.maybeSingle = () => Promise.resolve(finish());
         builder.then = (resolve: (value: Result) => unknown, reject?: (reason: unknown) => unknown) =>
           Promise.resolve(finish()).then(resolve, reject);
@@ -280,6 +288,53 @@ describe("专辑详情查询 getAlbumDetail", () => {
     } finally {
       log.mockRestore();
     }
+  });
+
+  it("曲目 credits 超过 PostgREST 1000 行时翻页读全", async () => {
+    const pageSize = 1000;
+    const creditRows = Array.from({ length: pageSize + 3 }, (_, index) => ({
+      media_item_id: index < pageSize ? trackA : trackB,
+      role: index % 3 === 0 ? "artist" : index % 3 === 1 ? "lyricist" : "composer",
+      credit_order: index,
+      people: { name: `人${index}` },
+    }));
+    state.handle = (query) => {
+      if (query.table === "v_all_media") return { data: albumViewRow() };
+      if (query.table === "music_albums") return { data: { track_count: 2, label: null } };
+      if (query.table === "ownership") return { data: null };
+      if (query.table === "album_tracks") {
+        return {
+          data: [
+            {
+              song_id: trackA,
+              track_number: 1,
+              media: { id: trackA, title: "A", runtime: 100, tracking: null },
+            },
+            {
+              song_id: trackB,
+              track_number: 2,
+              media: { id: trackB, title: "B", runtime: 100, tracking: null },
+            },
+          ],
+        };
+      }
+      if (query.table === "media_credits") return { data: creditRows };
+      if (query.table === "media_genres") return { data: [] };
+      return { data: null };
+    };
+
+    const detail = await getAlbumDetail(albumId);
+    const creditQueries = state.queries.filter((query) => query.table === "media_credits");
+    expect(creditQueries.length).toBeGreaterThanOrEqual(2);
+    expect(detail?.tracks[0]?.singers.length).toBeGreaterThan(0);
+    const totalCredits =
+      (detail?.tracks[0]?.singers.length ?? 0) +
+      (detail?.tracks[0]?.lyricists.length ?? 0) +
+      (detail?.tracks[0]?.composers.length ?? 0) +
+      (detail?.tracks[1]?.singers.length ?? 0) +
+      (detail?.tracks[1]?.lyricists.length ?? 0) +
+      (detail?.tracks[1]?.composers.length ?? 0);
+    expect(totalCredits).toBe(pageSize + 3);
   });
 
   it("ownership 与 credits 失败只上报，仍返回详情", async () => {

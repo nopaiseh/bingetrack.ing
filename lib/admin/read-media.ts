@@ -1,6 +1,7 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { ActorCredit, MediaInput, PersonRef } from "./media-form";
+import { fetchAllPages } from "@/lib/supabase/fetch-all-pages";
 
 /** 并行读取编辑字段和关系，任何失败都终止，避免用空表单覆盖真实关联。 */
 export async function readEditableMedia(db: SupabaseClient, id: string): Promise<MediaInput | null> {
@@ -23,11 +24,17 @@ export async function readEditableMedia(db: SupabaseClient, id: string): Promise
     db.from("media_languages").select("languages(name)").eq("media_item_id", id),
     db.from("media_regions").select("regions(name)").eq("media_item_id", id),
     db.from("media_item_series").select("media_series(name)").eq("media_item_id", id),
-    db
-      .from("media_credits")
-      .select("role,character_name,people(id,name,alternate_name)")
-      .eq("media_item_id", id)
-      .order("credit_order"),
+    // 多角色合计可能超过 PostgREST 1000 行，翻页读完。
+    fetchAllPages((from, to) =>
+      db
+        .from("media_credits")
+        .select("role,character_name,people(id,name,alternate_name)")
+        .eq("media_item_id", id)
+        .order("credit_order", { ascending: true, nullsFirst: false })
+        .order("role", { ascending: true })
+        .order("person_id", { ascending: true })
+        .range(from, to),
+    ),
   ]);
   if (results.some(/* 任一失败均禁止继续编辑。 */ (result) => result.error))
     throw new Error("无法完整读取媒体资料，请重试。");

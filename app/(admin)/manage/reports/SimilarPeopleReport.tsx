@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { reports } from "@/lib/admin/reports";
+import { fetchAllPages } from "@/lib/supabase/fetch-all-pages";
 import StatusModal from "../StatusModal";
 import SimilarPeopleGroup, { type SimilarPerson } from "./SimilarPeopleGroup";
 import PageHeader from "../../PageHeader";
@@ -31,11 +32,20 @@ export default async function SimilarPeopleReport({
   const rows = (data ?? []) as { link_id: string; title: string; detail: string; group_key: string }[];
   const ids = rows.map((row) => row.link_id);
   const credits = ids.length
-    ? await db.from("media_credits").select("person_id,media_item_id").in("person_id", ids)
-    : { data: [], error: null };
+    ? await fetchAllPages<{ person_id: string; media_item_id: string }>((from, to) =>
+        db
+          .from("media_credits")
+          .select("person_id,media_item_id")
+          .in("person_id", ids)
+          .order("person_id")
+          .order("media_item_id")
+          .order("role")
+          .range(from, to),
+      )
+    : { data: [] as { person_id: string; media_item_id: string }[], error: null };
   if (credits.error) throw new Error("无法读取人物的作品数量，请重试。");
   const works = new Map<string, Set<string>>();
-  for (const credit of (credits.data ?? []) as { person_id: string; media_item_id: string }[])
+  for (const credit of credits.data ?? [])
     works.set(credit.person_id, (works.get(credit.person_id) ?? new Set()).add(credit.media_item_id));
   const groups = new Map<string, SimilarPerson[]>();
   for (const row of rows)

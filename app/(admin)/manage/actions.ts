@@ -161,7 +161,8 @@ export async function deleteMedia(_previous: ActionResult, form: FormData): Prom
   }
 
   revalidateMediaItems(affected);
-  if (creditedPeople?.length) revalidatePersonItems(creditedPeople);
+  // creditedPeople 为 null 表示查询失败：退回人物全站失效，不能跳过。
+  revalidatePersonItems(creditedPeople);
   redirect(`/manage?type=${listTypeAfterDelete(target?.type)}&deleted=1&n=${Date.now()}`);
 }
 
