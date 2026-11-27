@@ -3,13 +3,7 @@ import { SONG_CREDIT_ROLE_ORDER, SONG_CREDIT_SECTION_LABELS } from "@/lib/song/c
 import { publicPersonDetailPath } from "@/lib/media-types";
 import type { SongCreditPerson, SongDetail } from "@/lib/types/song";
 
-function PersonLinks({
-  people,
-  currentSongId,
-}: {
-  people: readonly SongCreditPerson[];
-  currentSongId: string;
-}) {
+function PersonLinks({ people, currentSongId }: { people: readonly SongCreditPerson[]; currentSongId: string }) {
   const from = encodeURIComponent(`/music/${currentSongId}`);
   return (
     <ul className="flex flex-wrap gap-x-3 gap-y-1">
