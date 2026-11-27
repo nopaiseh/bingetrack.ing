@@ -36,7 +36,11 @@ create table public.album_tracks (
   constraint album_tracks_track_number_nonnegative_check check (track_number >= 0),
   constraint album_tracks_album_id_fkey
     foreign key (album_id) references public.music_albums(media_item_id) on delete cascade,
+  -- media_items FK：PostgREST embed（media:media_items!album_tracks_song_id_fkey）需要直接关系。
   constraint album_tracks_song_id_fkey
+    foreign key (song_id) references public.media_items(id) on delete cascade,
+  -- music FK：保证 song_id 一定是曲目扩展行，而不仅是任意 media_items。
+  constraint album_tracks_song_id_music_fkey
     foreign key (song_id) references public.music(media_item_id) on delete cascade
 );
 
