@@ -17,8 +17,12 @@ describe("sitemap", () => {
     vi.restoreAllMocks();
   });
 
-  it("固定页面不含搜索页，并附上媒体地址", async () => {
-    vi.mocked(getSitemapMediaEntries).mockResolvedValue([{ path: "/movies/abc" }]);
+  it("固定页面不含搜索页，并附上媒体、歌曲与人物地址", async () => {
+    vi.mocked(getSitemapMediaEntries).mockResolvedValue([
+      { path: "/movies/abc" },
+      { path: "/music/song-1" },
+      { path: "/people/person-1" },
+    ]);
     const urls = (await sitemap()).map(/* 只比较地址，忽略更新频率和优先级。 */ (entry) => entry.url);
     expect(urls).toEqual([
       `${SITE_URL}`,
@@ -27,6 +31,8 @@ describe("sitemap", () => {
       `${SITE_URL}/albums`,
       `${SITE_URL}/books`,
       `${SITE_URL}/movies/abc`,
+      `${SITE_URL}/music/song-1`,
+      `${SITE_URL}/people/person-1`,
     ]);
   });
 

@@ -11,6 +11,7 @@ export const revalidate = false;
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // 不列入 /search：无参数页由导航暴露并保持可索引，筛选组合由页面 robots 标为 noindex，避免和列表页同一优先级。
   // 目录段随 MEDIA_TYPE_DEFINITIONS.enabled 派生（当前含 /movies、/shows、/albums、/books）。
+  // 歌曲／人物无顶层目录，详情路径由 getSitemapMediaEntries 从库中追加（/music/<id>、/people/<id>）。
   const staticRoutes: MetadataRoute.Sitemap = ["", ...ENABLED_PUBLIC_CATALOG_PATHS].map(
     /* 为固定页面设置绝对地址、更新频率和优先级，首页权重最高。 */ (path) => ({
       url: `${SITE_URL}${path}`,
