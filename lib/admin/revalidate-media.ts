@@ -29,7 +29,7 @@ export async function affectedMediaIds(db: SupabaseClient, ids: string[]): Promi
   const [episodeRows, seasonRows, trackRows] = await Promise.all([
     db.from("tv_episodes").select("season_id").in("id", targets),
     db.from("tv_seasons").select("series_id").in("id", targets),
-    db.from("music").select("album_id").in("media_item_id", targets),
+    db.from("album_tracks").select("album_id").in("song_id", targets),
   ]);
   const episodeSeasons = column(episodeRows, "season_id");
   const seasonShows = column(seasonRows, "series_id");

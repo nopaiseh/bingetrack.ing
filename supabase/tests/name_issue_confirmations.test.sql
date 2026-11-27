@@ -169,11 +169,11 @@ select lives_ok(
     'genres','[]'::jsonb,
     'languages','[]'::jsonb,
     'regions','[]'::jsonb,
-    'directors','[]'::jsonb,
-    'actors',jsonb_build_array(jsonb_build_object(
-      'id','fd000000-0000-4000-8000-000000000201',
-      'name','Confirm Actor',
-      'character','警察/卧底'
+    'credits',jsonb_build_array(jsonb_build_object(
+      'person',jsonb_build_object('id','fd000000-0000-4000-8000-000000000201'),
+      'role','actor',
+      'character','警察/卧底',
+      'order',0
     ))
   ))$$,
   'owner can re-save the same cast through admin_save_media'

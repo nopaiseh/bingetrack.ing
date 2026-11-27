@@ -1,7 +1,6 @@
 begin;
 select plan(20);
 
--- 虚构站长与外人，事务结束回滚。
 insert into auth.users(id,email) values
   ('b1000000-0000-4000-8000-000000000001','music-owner@test.invalid'),
   ('b1000000-0000-4000-8000-000000000002','music-outsider@test.invalid');
@@ -12,11 +11,9 @@ returns jsonb language sql as $$
   select jsonb_build_object(
     'type','album','title',title,'status','want_to_watch','rating',null,
     'runtime',null,'label','测试厂牌','genres','[]'::jsonb,
-    'artists',jsonb_build_array(jsonb_build_object('name','原子艺人')),
+    'credits',jsonb_build_array(jsonb_build_object('person',jsonb_build_object('name','原子艺人'),'role','artist','order',0)),
     'collections','[]'::jsonb,
-    'languages','[]'::jsonb,'regions','[]'::jsonb,
-    'actors','[]'::jsonb,'directors','[]'::jsonb,
-    'lyricists','[]'::jsonb,'composers','[]'::jsonb
+    'languages','[]'::jsonb,'regions','[]'::jsonb
   );
 $$;
 
@@ -25,10 +22,8 @@ returns jsonb language sql as $$
   select jsonb_build_object(
     'type','music','title',title,'number',track_no,'runtime',runtime,
     'status','want_to_watch','rating',null,
-    'artists',jsonb_build_array(jsonb_build_object('name','原子艺人')),
-    'lyricists','[]'::jsonb,'composers','[]'::jsonb,
+    'credits',jsonb_build_array(jsonb_build_object('person',jsonb_build_object('name','原子艺人'),'role','artist','order',0)),
     'genres','[]'::jsonb,'languages','[]'::jsonb,'regions','[]'::jsonb,
-    'actors','[]'::jsonb,'directors','[]'::jsonb,
     'collections','[]'::jsonb
   );
 $$;
@@ -52,10 +47,10 @@ select ok(
 select ok(
   exists (
     select 1 from pg_constraint
-    where conrelid = 'public.music'::regclass
-      and conname = 'music_album_id_track_number_key'
+    where conrelid = 'public.album_tracks'::regclass
+      and conname = 'album_tracks_pkey'
   ),
-  'music has unique (album_id, track_number)'
+  'album_tracks has primary key (album_id, disc_number, track_number)'
 );
 
 select ok(
@@ -78,7 +73,6 @@ select throws_ok(
 
 do $$ begin perform set_config('request.jwt.claim.sub','b1000000-0000-4000-8000-000000000001',true); end $$;
 
--- 原子回滚：第二首曲目 runtime 非法时，专辑也不应留下。
 select throws_ok(
   $$select public.admin_save_album_with_tracks(
       pg_temp.album_payload('Rollback album'),
@@ -102,7 +96,6 @@ select is(
   'failed track save leaves no track rows'
 );
 
--- 合法边界：1 与 7200 秒
 select lives_ok(
   $$select public.admin_save_album_with_tracks(
       pg_temp.album_payload('Boundary album'),
@@ -114,14 +107,13 @@ select lives_ok(
   'runtimes 1 and 7200 are accepted'
 );
 select is(
-  (select count(*)::integer from public.music m
-    join public.media_items a on a.id = m.album_id
+  (select count(*)::integer from public.album_tracks at
+    join public.media_items a on a.id = at.album_id
     where a.title = 'Boundary album'),
   2,
   'boundary album keeps both tracks'
 );
 
--- 重复曲序被拒绝
 select throws_ok(
   $$select public.admin_save_media(
       pg_temp.track_payload('Dup number', 1, 120)
@@ -134,7 +126,6 @@ select throws_ok(
   'duplicate track number within album is rejected'
 );
 
--- runtime 7201 拒绝；电影仍可超过 7200（分钟语义）
 select throws_ok(
   $$select public.admin_save_media(
       pg_temp.track_payload('Too long', 3, 7201)
@@ -151,12 +142,11 @@ select lives_ok(
   $$select public.admin_save_media(jsonb_build_object(
       'type','movie','title','Long movie','status','want_to_watch','rating',null,
       'runtime',9000,'genres','[]'::jsonb,'languages','[]'::jsonb,'regions','[]'::jsonb,
-      'actors','[]'::jsonb,'directors','[]'::jsonb
+      'credits','[]'::jsonb,'collections','[]'::jsonb
     ))$$,
   'movie runtime above 7200 remains allowed'
 );
 
--- CHECK 约束直接拦截非法 update
 select throws_ok(
   $$update public.media_items set runtime = 0
     where title = 'One second' and type = 'music'$$,
@@ -186,7 +176,6 @@ select is(
   'album_with_tracks writes music_albums.track_count from actual rows'
 );
 
--- 仅保存专辑（空 tracks）不得把已有曲目数写成 0。
 select lives_ok(
   $$select public.admin_save_album_with_tracks(
       pg_temp.album_payload('Boundary album')

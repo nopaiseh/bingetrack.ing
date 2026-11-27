@@ -9,7 +9,13 @@ export async function readEditableMedia(db: SupabaseClient, id: string): Promise
     db.from("tracking").select("status,rating").eq("media_item_id", id).maybeSingle(),
     db.from("tv_seasons").select("series_id,season_number").eq("id", id).maybeSingle(),
     db.from("tv_episodes").select("season_id,episode_number").eq("id", id).maybeSingle(),
-    db.from("music").select("album_id,track_number").eq("media_item_id", id).maybeSingle(),
+    db.from("album_tracks")
+      .select("album_id,disc_number,track_number")
+      .eq("song_id", id)
+      .order("disc_number", { ascending: true })
+      .order("track_number", { ascending: true })
+      .limit(1)
+      .maybeSingle(),
     db.from("music_albums").select("label").eq("media_item_id", id).maybeSingle(),
     db.from("books").select("page_count,publisher,isbn").eq("media_item_id", id).maybeSingle(),
     db.from("media_genres").select("genres(name)").eq("media_item_id", id),

@@ -10,16 +10,16 @@ set search_path = ''
 as $$
 begin
   insert into public.media_languages (media_item_id, language_id)
-  select mu.media_item_id, ml.language_id
+  select at.song_id, ml.language_id
   from public.media_languages ml
   join public.media_items album_item
     on album_item.id = ml.media_item_id
    and album_item.type = 'album'::public.media_type
-  join public.music mu on mu.album_id = album_item.id
+  join public.album_tracks at on at.album_id = album_item.id
   where not exists (
     select 1
     from public.media_languages existing
-    where existing.media_item_id = mu.media_item_id
+    where existing.media_item_id = at.song_id
   )
   on conflict do nothing;
 
@@ -54,11 +54,9 @@ returns jsonb language sql as $$
   select jsonb_build_object(
     'type','album','title',title,'status','want_to_watch','rating',null,
     'runtime',null,'label','语言测试厂牌','genres','[]'::jsonb,
-    'artists',jsonb_build_array(jsonb_build_object('name','语言测试艺人')),
+    'credits',jsonb_build_array(jsonb_build_object('person',jsonb_build_object('name','语言测试艺人'),'role','artist','order',0)),
     'collections','[]'::jsonb,
-    'languages',languages,'regions',regions,
-    'actors','[]'::jsonb,'directors','[]'::jsonb,
-    'lyricists','[]'::jsonb,'composers','[]'::jsonb
+    'languages',languages,'regions',regions
   );
 $$;
 
@@ -72,10 +70,8 @@ returns jsonb language sql as $$
   select jsonb_build_object(
     'type','music','title',title,'number',track_no,'runtime',180,
     'status','want_to_watch','rating',null,
-    'artists',jsonb_build_array(jsonb_build_object('name','语言测试艺人')),
-    'lyricists','[]'::jsonb,'composers','[]'::jsonb,
+    'credits',jsonb_build_array(jsonb_build_object('person',jsonb_build_object('name','语言测试艺人'),'role','artist','order',0)),
     'genres',genres,'languages',languages,'regions','[]'::jsonb,
-    'actors','[]'::jsonb,'directors','[]'::jsonb,
     'collections','[]'::jsonb
   );
 $$;
@@ -91,13 +87,13 @@ select lives_ok(
   $$insert into track_lang_ids(name, id)
     values (
       'album_inherit',
-      public.admin_save_album_with_tracks(
+      (public.admin_save_album_with_tracks(
         pg_temp.album_payload('继承语言专辑', '[]'::jsonb, '["台湾"]'::jsonb),
         jsonb_build_array(
           pg_temp.track_payload('无语言曲目', 1),
           pg_temp.track_payload('已有语言曲目', 2)
         )
-      )
+      )->>'id')::uuid
     )$$,
   'seed album with two tracks for language inheritance'
 );
@@ -106,13 +102,13 @@ select lives_ok(
   $$insert into track_lang_ids(name, id)
     values (
       'album_union',
-      public.admin_save_album_with_tracks(
+      (public.admin_save_album_with_tracks(
         pg_temp.album_payload('并集语言专辑'),
         jsonb_build_array(
           pg_temp.track_payload('并集曲目甲', 1, '["日语"]'::jsonb),
           pg_temp.track_payload('并集曲目乙', 2, '["英语","日语"]'::jsonb)
         )
-      )
+      )->>'id')::uuid
     )$$,
   'seed album whose tracks already have languages'
 );
@@ -133,9 +129,9 @@ where name in ('专辑遗留国语', '专辑遗留粤语');
 insert into public.media_languages (media_item_id, language_id)
 select m.id, l.id
 from public.media_items m
-join public.music mu on mu.media_item_id = m.id
+join public.album_tracks at on at.song_id = m.id
 cross join public.languages l
-where mu.album_id = (select id from track_lang_ids where name = 'album_inherit')
+where at.album_id = (select id from track_lang_ids where name = 'album_inherit')
   and m.title = '已有语言曲目'
   and l.name = '曲目自带闽南语';
 
@@ -147,9 +143,9 @@ select is(
     select array_agg(l.name order by l.name)
     from public.media_languages ml
     join public.languages l on l.id = ml.language_id
-    join public.music mu on mu.media_item_id = ml.media_item_id
-    join public.media_items t on t.id = mu.media_item_id
-    where mu.album_id = (select id from track_lang_ids where name = 'album_inherit')
+    join public.album_tracks at on at.song_id = ml.media_item_id
+    join public.media_items t on t.id = at.song_id
+    where at.album_id = (select id from track_lang_ids where name = 'album_inherit')
       and t.title = '无语言曲目'
   ),
   array['专辑遗留国语','专辑遗留粤语'],
@@ -172,9 +168,9 @@ select is(
     select array_agg(l.name order by l.name)
     from public.media_languages ml
     join public.languages l on l.id = ml.language_id
-    join public.music mu on mu.media_item_id = ml.media_item_id
-    join public.media_items t on t.id = mu.media_item_id
-    where mu.album_id = (select id from track_lang_ids where name = 'album_inherit')
+    join public.album_tracks at on at.song_id = ml.media_item_id
+    join public.media_items t on t.id = at.song_id
+    where at.album_id = (select id from track_lang_ids where name = 'album_inherit')
       and t.title = '已有语言曲目'
   ),
   array['曲目自带闽南语'],

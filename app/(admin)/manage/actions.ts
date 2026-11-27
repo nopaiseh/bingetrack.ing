@@ -13,6 +13,7 @@ import {
 } from "@/lib/admin/revalidate-media";
 import { deleteMusicTree, SaveMusicMediaError, saveMusicMedia } from "@/lib/admin/save-music-media";
 import { SaveBookMediaError, saveBookMedia } from "@/lib/admin/save-book-media";
+import { buildCreditsPayload, savedMediaId } from "@/lib/admin/credits-payload";
 import { isExpectedDbError, isExpectedValidationCode, reportHandledError } from "@/lib/report-error";
 
 export type ActionResult = { error?: string; saved?: boolean; id?: string };
@@ -81,14 +82,29 @@ export async function saveMedia(_previous: ActionResult, form: FormData): Promis
       return { error: writeError() };
     }
   } else {
-    const { data, error } = await db.rpc("manage_save_media", { p_data: payload });
+    const rpcPayload = {
+      ...payload,
+      credits: buildCreditsPayload({
+        actors: payload.actors,
+        directors: payload.directors,
+      }),
+      actors: undefined,
+      directors: undefined,
+      artists: undefined,
+      lyricists: undefined,
+      composers: undefined,
+      authors: undefined,
+    };
+    const { data, error } = await db.rpc("manage_save_media", { p_data: rpcPayload });
     if (error) {
       if (!isExpectedValidationCode(error.code) && !isExpectedDbError(error.code)) {
         reportHandledError(`manage saveMedia failed for media ${payload.id ?? "new"}:`, error);
       }
       return { error: writeError(error.code) };
     }
-    savedId = String(data);
+    const id = savedMediaId(data);
+    if (!id) return { error: writeError() };
+    savedId = id;
   }
 
   revalidateMediaItems(mergeAffected(before, await affectedMediaIds(db, [savedId])));

@@ -1,6 +1,7 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import type { MediaInput, PersonRef } from "@/lib/admin/media-form";
+import type { MediaInput } from "@/lib/admin/media-form";
+import { buildCreditsPayload, savedMediaId } from "@/lib/admin/credits-payload";
 import { findBookDuplicateId } from "@/lib/books/dedupe";
 import { normalizeIsbn, resolveBookCover } from "@/lib/books/resolve-cover";
 import { isBookTrackingStatus } from "@/lib/read-status";
@@ -34,10 +35,6 @@ export class SaveBookMediaError extends Error {
   }
 }
 
-function creditPayload(people: PersonRef[]) {
-  return people.map(({ id, name }) => ({ id, name }));
-}
-
 /** 组装 manage_save_media／admin_save_media 可接受的图书 jsonb 负载。 */
 function bookRpcPayload(payload: MediaInput) {
   const status = isBookTrackingStatus(payload.status) ? payload.status : "want_to_watch";
@@ -56,7 +53,7 @@ function bookRpcPayload(payload: MediaInput) {
     languages: payload.languages,
     // 与 admin_save_media 图书 related_fields 对齐。
     regions: payload.regions,
-    authors: creditPayload(payload.authors),
+    credits: buildCreditsPayload({ authors: payload.authors }),
     page_count: payload.page_count,
     publisher: payload.publisher,
     isbn: payload.isbn,
@@ -122,6 +119,7 @@ export async function saveBookMedia(db: SupabaseClient, payload: MediaInput): Pr
   const prepared = await prepareBookPayload(payload);
   const { data, error } = await db.rpc("manage_save_media", { p_data: bookRpcPayload(prepared) });
   assertOk(error);
-  if (!data) throw new SaveBookMediaError(WRITE_ERROR);
-  return String(data);
+  const id = savedMediaId(data);
+  if (!id) throw new SaveBookMediaError(WRITE_ERROR);
+  return id;
 }

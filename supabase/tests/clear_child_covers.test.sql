@@ -62,12 +62,12 @@ select lives_ok(
   $$insert into child_cover_ids(name, id)
     values (
       'show',
-      public.admin_save_media(jsonb_build_object(
+      (public.admin_save_media(jsonb_build_object(
         'type','tv_show','title','Child cover test show','status','want_to_watch',
         'genres','[]'::jsonb,'languages','[]'::jsonb,'regions','[]'::jsonb,
-        'actors','[]'::jsonb,'directors','[]'::jsonb,'collections','[]'::jsonb,
+        'credits','[]'::jsonb,'collections','[]'::jsonb,
         'cover_url','https://image.tmdb.org/t/p/w500/show.jpg'
-      ))
+      ))->>'id')::uuid
     )$$,
   'owner creates dedicated show parent'
 );
@@ -76,14 +76,14 @@ select lives_ok(
   $$insert into child_cover_ids(name, id)
     values (
       'season',
-      public.admin_save_media(jsonb_build_object(
+      (public.admin_save_media(jsonb_build_object(
         'type','tv_season','title','Child cover test season','status','want_to_watch',
         'parent_id',(select id from child_cover_ids where name = 'show'),
         'number',1,
         'genres','[]'::jsonb,'languages','[]'::jsonb,'regions','[]'::jsonb,
-        'actors','[]'::jsonb,'directors','[]'::jsonb,'collections','[]'::jsonb,
+        'credits','[]'::jsonb,'collections','[]'::jsonb,
         'cover_url','https://image.tmdb.org/t/p/w500/season.jpg'
-      ))
+      ))->>'id')::uuid
     )$$,
   'owner creates season under dedicated show'
 );
@@ -98,14 +98,14 @@ select lives_ok(
   $$insert into child_cover_ids(name, id)
     values (
       'episode',
-      public.admin_save_media(jsonb_build_object(
+      (public.admin_save_media(jsonb_build_object(
         'type','tv_episode','title','Child cover test episode','status','want_to_watch','rating',null,
         'parent_id',(select id from child_cover_ids where name = 'season'),
         'number',1,
         'genres','[]'::jsonb,'languages','[]'::jsonb,'regions','[]'::jsonb,
-        'actors','[]'::jsonb,'directors','[]'::jsonb,'collections','[]'::jsonb,
+        'credits','[]'::jsonb,'collections','[]'::jsonb,
         'cover_url','https://image.tmdb.org/t/p/w500/ep.jpg'
-      ))
+      ))->>'id')::uuid
     )$$,
   'owner creates episode under dedicated season'
 );

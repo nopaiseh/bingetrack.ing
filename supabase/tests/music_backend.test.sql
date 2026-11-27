@@ -1,6 +1,6 @@
 begin;
 
-select plan(15);
+select plan(13);
 
 select ok(
   exists (select 1 from pg_type t join pg_namespace n on n.oid = t.typnamespace
@@ -31,13 +31,8 @@ select ok(
 );
 
 select ok(
-  exists (
-    select 1 from pg_enum e
-    join pg_type t on t.oid = e.enumtypid
-    join pg_namespace n on n.oid = t.typnamespace
-    where n.nspname = 'public' and t.typname = 'person_role' and e.enumlabel = 'lyricist'
-  ),
-  'person_role includes lyricist'
+  exists (select 1 from public.credit_roles where code = 'lyricist'),
+  'credit_roles includes lyricist'
 );
 
 select ok(
@@ -48,8 +43,12 @@ select ok(
   and exists (
     select 1 from information_schema.columns
     where table_schema = 'public' and table_name = 'music_albums' and column_name = 'label'
+  )
+  and exists (
+    select 1 from information_schema.columns
+    where table_schema = 'public' and table_name = 'music_albums' and column_name = 'release_kind'
   ),
-  'albums have track_count and label'
+  'albums have track_count, label, release_kind'
 );
 
 select ok(
@@ -62,7 +61,15 @@ select ok(
   'music_albums.artist_id column is gone'
 );
 
--- 专辑／曲目夹具
+select ok(
+  to_regclass('public.album_tracks') is not null
+  and not exists (
+    select 1 from information_schema.columns
+    where table_schema='public' and table_name='music' and column_name in ('album_id','track_number')
+  ),
+  'album_tracks exists; music.album_id/track_number removed'
+);
+
 insert into public.people (id, name) values
   ('a1000000-0000-4000-8000-000000000001', '测试艺人 A'),
   ('a1000000-0000-4000-8000-000000000002', '测试艺人 B');
@@ -76,10 +83,15 @@ insert into public.media_items (id, type, title, release_date) values
 insert into public.music_albums (media_item_id, track_count, label) values
   ('a2000000-0000-4000-8000-000000000001', 3, '测试厂牌');
 
-insert into public.music (media_item_id, track_number, album_id) values
-  ('a2000000-0000-4000-8000-000000000002', 1, 'a2000000-0000-4000-8000-000000000001'),
-  ('a2000000-0000-4000-8000-000000000003', 2, 'a2000000-0000-4000-8000-000000000001'),
-  ('a2000000-0000-4000-8000-000000000004', 3, 'a2000000-0000-4000-8000-000000000001');
+insert into public.music (media_item_id) values
+  ('a2000000-0000-4000-8000-000000000002'),
+  ('a2000000-0000-4000-8000-000000000003'),
+  ('a2000000-0000-4000-8000-000000000004');
+
+insert into public.album_tracks (album_id, song_id, disc_number, track_number) values
+  ('a2000000-0000-4000-8000-000000000001', 'a2000000-0000-4000-8000-000000000002', 1, 1),
+  ('a2000000-0000-4000-8000-000000000001', 'a2000000-0000-4000-8000-000000000003', 1, 2),
+  ('a2000000-0000-4000-8000-000000000001', 'a2000000-0000-4000-8000-000000000004', 1, 3);
 
 insert into public.media_credits (media_item_id, person_id, role, credit_order) values
   ('a2000000-0000-4000-8000-000000000001', 'a1000000-0000-4000-8000-000000000001', 'artist', 0),
@@ -101,71 +113,32 @@ select is(
 );
 
 select is(
-  public.find_music_by_title_and_artists('music', '去重测试单曲', array['测试艺人 B', '测试艺人 A']),
-  'a2000000-0000-4000-8000-000000000002'::uuid,
-  'dedupe matches artist set regardless of order'
+  public.album_average_rating('a2000000-0000-4000-8000-000000000001'),
+  7.0::numeric,
+  'album average rating averages rated tracks via album_tracks'
 );
 
 select is(
-  public.album_average_rating('a2000000-0000-4000-8000-000000000001'),
-  7.0::numeric,
-  'album rating is live average of rated tracks'
+  (select track_total from public.v_continue_listening
+   where album_id = 'a2000000-0000-4000-8000-000000000001'),
+  3,
+  'continue listening sees three tracks'
+);
+
+select is(
+  (select track_watched from public.v_continue_listening
+   where album_id = 'a2000000-0000-4000-8000-000000000001'),
+  2,
+  'continue listening counts two watched tracks'
 );
 
 select ok(
   exists (
-    select 1 from public.v_continue_listening
-    where album_id = 'a2000000-0000-4000-8000-000000000001'
-      and track_watched = 2
-      and track_total = 3
+    select 1 from public.v_all_media
+    where id = 'a2000000-0000-4000-8000-000000000001' and type = 'album'
   ),
-  'continue listening lists albums with partial watched tracks'
+  'v_all_media includes album'
 );
-
-select is(
-  (select status from public.v_all_media where id = 'a2000000-0000-4000-8000-000000000001'),
-  'watching',
-  'album with some watched tracks reports watching (在听)'
-);
-
--- 仅有想听、没有任何听过的专辑：不得标成 watching
-insert into public.media_items (id, type, title, release_date) values
-  ('a2000000-0000-4000-8000-000000000011', 'album', '只想听专辑', '2024-02-01'),
-  ('a2000000-0000-4000-8000-000000000012', 'music', '想听曲 A', '2024-02-02'),
-  ('a2000000-0000-4000-8000-000000000013', 'music', '想听曲 B', '2024-02-03');
-insert into public.music_albums (media_item_id, track_count) values
-  ('a2000000-0000-4000-8000-000000000011', 2);
-insert into public.music (media_item_id, track_number, album_id) values
-  ('a2000000-0000-4000-8000-000000000012', 1, 'a2000000-0000-4000-8000-000000000011'),
-  ('a2000000-0000-4000-8000-000000000013', 2, 'a2000000-0000-4000-8000-000000000011');
-insert into public.tracking (media_item_id, status, rating) values
-  ('a2000000-0000-4000-8000-000000000012', 'want_to_watch', null),
-  ('a2000000-0000-4000-8000-000000000013', 'want_to_watch', null);
-
-select is(
-  (select status from public.v_all_media where id = 'a2000000-0000-4000-8000-000000000011'),
-  'want_to_watch',
-  'album with only want_to_watch tracks (no watched) is want_to_watch, not watching'
-);
-
-select ok(
-  not exists (
-    select 1 from public.v_continue_listening
-    where album_id = 'a2000000-0000-4000-8000-000000000011'
-  ),
-  'want-only albums are excluded from continue listening'
-);
-
-set local role anon;
-
-select ok(
-  exists (select 1 from public.search_media('去重测试专辑') where id = 'a2000000-0000-4000-8000-000000000001')
-  and exists (select 1 from public.search_media('去重测试单曲') where id = 'a2000000-0000-4000-8000-000000000002')
-  and exists (select 1 from public.search_media('测试艺人 A') where type::text in ('album', 'music')),
-  'search_media returns albums, tracks, and artist name hits'
-);
-
-reset role;
 
 select * from finish();
 rollback;

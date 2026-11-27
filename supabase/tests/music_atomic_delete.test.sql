@@ -12,11 +12,9 @@ returns jsonb language sql as $$
   select jsonb_build_object(
     'type','album','title',title,'status','want_to_watch','rating',null,
     'runtime',null,'label','删除测试厂牌','genres','[]'::jsonb,
-    'artists',jsonb_build_array(jsonb_build_object('name','删除测试艺人')),
+    'credits',jsonb_build_array(jsonb_build_object('person',jsonb_build_object('name','删除测试艺人'),'role','artist','order',0)),
     'collections','[]'::jsonb,
-    'languages','[]'::jsonb,'regions','[]'::jsonb,
-    'actors','[]'::jsonb,'directors','[]'::jsonb,
-    'lyricists','[]'::jsonb,'composers','[]'::jsonb
+    'languages','[]'::jsonb,'regions','[]'::jsonb
   );
 $$;
 
@@ -25,10 +23,8 @@ returns jsonb language sql as $$
   select jsonb_build_object(
     'type','music','title',title,'number',track_no,'runtime',runtime,
     'status','want_to_watch','rating',null,
-    'artists',jsonb_build_array(jsonb_build_object('name','删除测试艺人')),
-    'lyricists','[]'::jsonb,'composers','[]'::jsonb,
+    'credits',jsonb_build_array(jsonb_build_object('person',jsonb_build_object('name','删除测试艺人'),'role','artist','order',0)),
     'genres','[]'::jsonb,'languages','[]'::jsonb,'regions','[]'::jsonb,
-    'actors','[]'::jsonb,'directors','[]'::jsonb,
     'collections','[]'::jsonb
   );
 $$;
@@ -56,8 +52,8 @@ select lives_ok(
 );
 
 select is(
-  (select count(*)::integer from public.music m
-    join public.media_items a on a.id = m.album_id
+  (select count(*)::integer from public.album_tracks at
+    join public.media_items a on a.id = at.album_id
     where a.title = 'Atomic delete album'),
   2,
   'seed album has two track rows'
@@ -92,8 +88,8 @@ select is(
   'failed confirmation leaves album intact'
 );
 select is(
-  (select count(*)::integer from public.music m
-    join public.media_items a on a.id = m.album_id
+  (select count(*)::integer from public.album_tracks at
+    join public.media_items a on a.id = at.album_id
     where a.title = 'Atomic delete album'),
   2,
   'failed confirmation leaves tracks intact'

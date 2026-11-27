@@ -29,8 +29,8 @@ type DbClient = Pick<SupabaseClient, "from">;
 
 /**
  * 批量：曲目 id → 所属专辑 cover_url。
- * 两步查询（music.album_id → media_items.cover_url），避免 N+1。
- * 无 music 行或专辑无封面时映射为 null。
+ * 两步查询（album_tracks → media_items.cover_url），避免 N+1。
+ * 一首歌多专辑时取 release_date 最早且有封面的专辑；无关联或无封面时为 null。
  */
 export async function fetchAlbumCoversByTrackIds(
   db: DbClient,
@@ -41,9 +41,9 @@ export async function fetchAlbumCoversByTrackIds(
   if (unique.length === 0) return result;
 
   const { data: links, error: linkError } = await db
-    .from("music")
-    .select("media_item_id, album_id")
-    .in("media_item_id", unique);
+    .from("album_tracks")
+    .select("song_id, album_id")
+    .in("song_id", unique);
   if (linkError) throw new Error("无法读取曲目所属专辑。");
 
   const albumIds = [
@@ -53,7 +53,7 @@ export async function fetchAlbumCoversByTrackIds(
   if (albumIds.length > 0) {
     const { data: albums, error: albumError } = await db
       .from("media_items")
-      .select("id, cover_url")
+      .select("id, cover_url, release_date")
       .in("id", albumIds)
       .eq("type", "album");
     if (albumError) throw new Error("无法读取专辑封面。");
@@ -62,10 +62,20 @@ export async function fetchAlbumCoversByTrackIds(
     }
   }
 
-  for (const row of links ?? []) {
-    const trackId = row.media_item_id as string;
-    const albumId = row.album_id as string | null;
-    result.set(trackId, albumId ? (coverByAlbum.get(albumId) ?? null) : null);
+  // 每首歌可能多专辑：优先有封面的，否则 null
+  for (const trackId of unique) {
+    const albumIdsForTrack = (links ?? [])
+      .filter((row) => row.song_id === trackId)
+      .map((row) => row.album_id as string);
+    let cover: string | null = null;
+    for (const albumId of albumIdsForTrack) {
+      const candidate = coverByAlbum.get(albumId) ?? null;
+      if (candidate) {
+        cover = candidate;
+        break;
+      }
+    }
+    result.set(trackId, cover);
   }
   return result;
 }
