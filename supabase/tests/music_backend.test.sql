@@ -75,11 +75,12 @@ insert into public.people (id, name) values
   ('a1000000-0000-4000-8000-000000000001', '测试艺人 A'),
   ('a1000000-0000-4000-8000-000000000002', '测试艺人 B');
 
+-- 发行年用 2087：避开 e2e seed／其它套件的 2024，便于 release_year_stats 精确断言
 insert into public.media_items (id, type, title, release_date, cover_url) values
-  ('a2000000-0000-4000-8000-000000000001', 'album', '去重测试专辑', '2024-01-01', 'https://example.com/a.jpg'),
-  ('a2000000-0000-4000-8000-000000000002', 'music', '去重测试单曲', '2024-01-02', null),
-  ('a2000000-0000-4000-8000-000000000003', 'music', '另一首歌', '2024-01-03', null),
-  ('a2000000-0000-4000-8000-000000000004', 'music', '第三首歌', '2024-01-04', null),
+  ('a2000000-0000-4000-8000-000000000001', 'album', '去重测试专辑', '2087-01-01', 'https://example.com/a.jpg'),
+  ('a2000000-0000-4000-8000-000000000002', 'music', '去重测试单曲', '2087-01-02', null),
+  ('a2000000-0000-4000-8000-000000000003', 'music', '另一首歌', '2087-01-03', null),
+  ('a2000000-0000-4000-8000-000000000004', 'music', '第三首歌', '2087-01-04', null),
   ('a2000000-0000-4000-8000-000000000020', 'album', '专辑B仅共享', '2023-06-01', 'https://example.com/b.jpg'),
   ('a2000000-0000-4000-8000-000000000021', 'music', '只在B的歌', null, null);
 
@@ -177,9 +178,9 @@ select is(
 
 -- 仅有想听、没有任何听过的专辑：不得标成 watching
 insert into public.media_items (id, type, title, release_date) values
-  ('a2000000-0000-4000-8000-000000000011', 'album', '只想听专辑', '2024-02-01'),
-  ('a2000000-0000-4000-8000-000000000012', 'music', '想听曲 A', '2024-02-02'),
-  ('a2000000-0000-4000-8000-000000000013', 'music', '想听曲 B', '2024-02-03');
+  ('a2000000-0000-4000-8000-000000000011', 'album', '只想听专辑', '2087-02-01'),
+  ('a2000000-0000-4000-8000-000000000012', 'music', '想听曲 A', '2087-02-02'),
+  ('a2000000-0000-4000-8000-000000000013', 'music', '想听曲 B', '2087-02-03');
 insert into public.music_albums (media_item_id, track_count) values
   ('a2000000-0000-4000-8000-000000000011', 2);
 insert into public.music (media_item_id) values
@@ -229,17 +230,17 @@ select is(
   'song cover falls back to earliest-dated album cover'
 );
 
--- 此刻夹具：2024 有专辑 A + 只想听专辑；曲目 002／003／004／012／013（共用歌 002 只计一次；021 归 2023）
+-- 此刻夹具：2087 有专辑 A + 只想听专辑；曲目 002／003／004／012／013（共用歌 002 只计一次；021 归 2023）
 select is(
-  (select total_albums from public.release_year_stats where release_year = '2024'),
+  (select total_albums from public.release_year_stats where release_year = '2087'),
   2::bigint,
-  'release_year_stats 2024 total_albums is exact'
+  'release_year_stats 2087 total_albums is exact'
 );
 
 select is(
-  (select total_tracks from public.release_year_stats where release_year = '2024'),
+  (select total_tracks from public.release_year_stats where release_year = '2087'),
   5::bigint,
-  'release_year_stats 2024 total_tracks counts shared song once'
+  'release_year_stats 2087 total_tracks counts shared song once'
 );
 
 set local role anon;
