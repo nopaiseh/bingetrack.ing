@@ -15,6 +15,8 @@ import {
   getAlbumStats,
 } from "./media-repo";
 import { getAlbumDetail, getAlbumDetailForCache } from "./album-repo";
+import { getSongDetailForCache } from "./song-repo";
+import { getPersonDetailForCache } from "./person-repo";
 import { cachedWithSeriesFallback } from "./cache-degrade";
 import { reportHandledError } from "@/lib/report-error";
 import { parseMediaSearchParams } from "@/lib/api/media-params";
@@ -22,7 +24,7 @@ import { getSupabasePublicServer } from "@/lib/supabase/public-server";
 import { withRetry } from "./retry";
 import { isMediaId } from "./media-id";
 import { getCurrentlyReading, getHomeContinue } from "@/lib/continue-watching";
-import { MEDIA_LISTS_TAG, MEDIA_TAG, mediaItemTag } from "./media-cache-tags";
+import { MEDIA_LISTS_TAG, MEDIA_TAG, mediaItemTag, personItemTag } from "./media-cache-tags";
 import type { Summary } from "@/lib/types";
 
 // 公开详情只靠 tag 失效（保存时 revalidateMediaItems／revalidateAllMedia）；非法 ID 不进缓存。
@@ -185,3 +187,21 @@ export const getCachedAlbumStats = cache(
     tags: [MEDIA_TAG, MEDIA_LISTS_TAG],
   }),
 );
+
+/** 歌曲详情（get_song_detail）；写入走 media / media:item 失效。非法 ID 不进缓存。 */
+export const getCachedSongDetail = cache(async (id: string) => {
+  if (!isMediaId(id)) return null;
+  return unstable_cache(getSongDetailForCache, ["public-song-detail-v1"], {
+    revalidate: false,
+    tags: [MEDIA_TAG, mediaItemTag(id)],
+  })(id);
+});
+
+/** 人物详情（people 行 + get_person_works）；写入走 media / person:item 失效。 */
+export const getCachedPersonDetail = cache(async (id: string) => {
+  if (!isMediaId(id)) return null;
+  return unstable_cache(getPersonDetailForCache, ["public-person-detail-v1"], {
+    revalidate: false,
+    tags: [MEDIA_TAG, personItemTag(id)],
+  })(id);
+});

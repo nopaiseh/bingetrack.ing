@@ -42,10 +42,11 @@ describe("media type config", () => {
     expect(publicPathForDbType("tv_show", "abc")).toBe("/shows/abc");
     expect(publicPathForDbType("album", "abc")).toBe("/albums/abc");
     expect(publicPathForDbType("book", "abc")).toBe("/books/abc");
+    expect(publicPathForDbType("music", "abc")).toBe("/music/abc");
     expect(publicPathForDbType("tv_season", "abc")).toBeNull();
   });
 
-  it("keeps music singles off the public catalog while allowing search type=music", () => {
+  it("keeps music songs off the public catalog while allowing search type=music and /music/[id]", () => {
     expect(MEDIA_TYPE_DEFINITIONS.movie.enabled).toBe(true);
     expect(MEDIA_TYPE_DEFINITIONS.tv_show.enabled).toBe(true);
     expect(MEDIA_TYPE_DEFINITIONS.tv_season.enabled).toBe(true);
@@ -77,7 +78,7 @@ describe("media type config", () => {
       tv_show: "电视节目",
       tv_season: "季",
       tv_episode: "单集",
-      music: "单曲",
+      music: "歌曲",
       album: "音乐",
       book: "图书",
     });

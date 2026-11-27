@@ -60,7 +60,7 @@ it("专辑表单展示厂牌、艺人选择器与正方形无封面占位", () =
   expect(screen.getByLabelText("厂牌")).toHaveValue("阿尔发音乐");
   expect(screen.getByRole("heading", { name: "封面图片" })).toBeInTheDocument();
   expect(screen.getByText("无封面")).toBeInTheDocument();
-  expect(screen.getByRole("heading", { name: "艺人" })).toBeInTheDocument();
+  expect(screen.getByRole("heading", { name: "艺人与制作" })).toBeInTheDocument();
   expect(screen.getByText("周杰伦")).toBeInTheDocument();
   expect(screen.getByLabelText("发行日期")).toBeInTheDocument();
   expect(screen.getByLabelText("类型标签")).toBeInTheDocument();
@@ -109,6 +109,7 @@ it("曲目表单要求曲序与所属专辑，时长为整数秒，创作人员�
         ...blank,
         parent_id: "a1",
         number: 5,
+        disc_number: null,
         runtime: 313,
         languages: ["国语"],
         artists: [{ id: "p1", name: "周杰伦", alternate_name: null }],
@@ -117,6 +118,9 @@ it("曲目表单要求曲序与所属专辑，时长为整数秒，创作人员�
           { id: "p1", name: "周杰伦", alternate_name: null },
         ],
         composers: [{ id: "p1", name: "周杰伦", alternate_name: null }],
+        arrangers: [],
+        producers: [],
+        featured: [],
       }}
     />,
   );

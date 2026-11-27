@@ -35,9 +35,9 @@ describe("search model helpers", () => {
       "book",
       "series",
     ]);
-    expect(TYPE_OPTIONS.map((option) => option.label)).toEqual(["电影", "电视节目", "专辑", "单曲", "图书", "系列"]);
+    expect(TYPE_OPTIONS.map((option) => option.label)).toEqual(["电影", "电视节目", "专辑", "歌曲", "图书", "系列"]);
     expect(TYPE_OPTIONS.some((option) => option.value === "album" && option.label === "专辑")).toBe(true);
-    expect(TYPE_OPTIONS.some((option) => option.value === "music" && option.label === "单曲")).toBe(true);
+    expect(TYPE_OPTIONS.some((option) => option.value === "music" && option.label === "歌曲")).toBe(true);
     expect(CREDIT_ROLE_OPTIONS.map((option) => option.value)).toEqual([
       "director",
       "actor",
