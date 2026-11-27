@@ -20,6 +20,7 @@ vi.mock("@/lib/admin/revalidate-media", () => ({
   mergeAffected: (...groups: (string[] | null)[]) => groups.flatMap((group) => group ?? []),
   referenceMediaIds: vi.fn(async () => []),
   revalidateMediaItems: vi.fn(),
+  revalidatePersonItems: vi.fn(),
   revalidateAllMedia: vi.fn(),
 }));
 vi.mock("@/lib/admin/save-music-media", async (importOriginal) => {

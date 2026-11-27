@@ -224,6 +224,9 @@ describe("管理媒体输入", () => {
         lyricists: "\t作词人",
         languages: "英语",
         composers: "\t作曲人",
+        arrangers: "\t编曲人",
+        producers: "\t制作人",
+        featured: "\t合唱人",
         genres: "流行",
       }),
     );
@@ -242,6 +245,9 @@ describe("管理媒体输入", () => {
       artists: [{ id: null, name: "主唱" }],
       lyricists: [{ id: null, name: "作词人" }],
       composers: [{ id: null, name: "作曲人" }],
+      arrangers: [{ id: null, name: "编曲人" }],
+      producers: [{ id: null, name: "制作人" }],
+      featured: [{ id: null, name: "合唱人" }],
     });
     expect(
       parseMediaForm(

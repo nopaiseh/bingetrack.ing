@@ -63,9 +63,12 @@
 
 | 操作                                                                                     | 失效范围                                                                                                                                                            |
 | ---------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 保存、删除影视条目（含级联删掉的观看记录），批量修改电影或电视节目观看状态，修改系列成员 | `revalidateMediaItems`：条目本身、所属电视节目、同系列的其他作品各自的 `media:item:<id>`，加上 `media:lists`，再按路径刷新 `/`、`/movies`、`/shows`、`/sitemap.xml` |
-| 修改或删除人物、类型、地区、语言、系列；报告批量删除；合并人物；「刷新缓存」按钮         | `revalidateAllMedia`：`media` 标签 + `revalidatePath("/", "layout")`，全站失效                                                                                      |
-| 标记「不是同一人」                                                                       | 不影响公开数据，不失效                                                                                                                                              |
+| 保存、删除影视／音乐条目（含级联删掉的观看记录），批量修改观看状态，修改系列成员 | `revalidateMediaItems`：条目本身、所属电视节目、曲目所属专辑、专辑下曲目、同系列其他作品各自的 `media:item:<id>`，加上 `media:lists`，再按路径刷新目录页 |
+| 保存曲目（credits 变更）                                                         | 同上，另用 RPC 返回的 `affected_person_ids` 调用 `revalidatePersonItems`，失效 `person:item:<id>`                                                                    |
+| 修改或删除人物；合并人物                                                         | `revalidateMediaItems`（经 `referenceMediaIds` 找关联作品）+ `revalidatePersonItems`（编辑用该人物 id；合并用保留与被删双方 id）                                      |
+| 修改或删除类型、地区、语言、系列；报告批量删除闲置资料                           | `revalidateMediaItems`（关联作品或空列表刷新聚合）；闲置资料无详情页波及                                                                                              |
+| 「刷新缓存」按钮                                                                 | `revalidateAllMedia`：`media` 标签 + `revalidatePath("/", "layout")`，全站失效                                                                                        |
+| 标记「不是同一人」                                                               | 不影响公开数据，不失效                                                                                                                                              |
 
 电影和单集的观看写入都走上面第一行，不另建标签。保存条目时评分决定已看或想看（`manage_save_media` 写 `tracking`），批量操作直接改 `tracking.status`，删除会级联去掉观看记录。成功之后 `revalidateMediaItems` 调用 `revalidateTag("media:lists", { expire: 0 })`。首页继续挂着这个标签，同时首页路径被 `revalidatePath("/")` 刷新，下一次访问不会继续用旧的 HTML，也不会从仅标签失效的数据缓存里读回旧进度。没有写进数据库的失败请求不失效。查询受影响条目失败时退回 `revalidateAllMedia`，失效 `media` 标签，首页继续同样过期。手动「刷新缓存」也走 `media` 标签。绕过网站、直接在 Supabase 里改数据（例如用 SQL 或运维脚本改 `tracking`）不会触发失效；首页继续是 `revalidate: false`，会一直用旧进度直到标签失效，请在管理台点现有的「刷新缓存」。
 

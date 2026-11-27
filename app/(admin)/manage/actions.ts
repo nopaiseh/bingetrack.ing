@@ -10,6 +10,7 @@ import {
   mergeAffected,
   revalidateAllMedia,
   revalidateMediaItems,
+  revalidatePersonItems,
 } from "@/lib/admin/revalidate-media";
 import { deleteMusicTree, SaveMusicMediaError, saveMusicMedia } from "@/lib/admin/save-music-media";
 import { SaveBookMediaError, saveBookMedia } from "@/lib/admin/save-book-media";
@@ -58,10 +59,14 @@ export async function saveMedia(_previous: ActionResult, form: FormData): Promis
   const before = payload.id ? await affectedMediaIds(db, [payload.id]) : [];
 
   let savedId: string;
+  let savedAffectedPersonIds: string[] = [];
   if (payload.type === "album" || payload.type === "music") {
     // 专辑／曲目：查重与封面在 saveMusicMedia，写入走 admin_save_album_with_tracks／admin_save_media。
     try {
-      savedId = await saveMusicMedia(db, payload);
+      const saved = await saveMusicMedia(db, payload);
+      savedId = saved.id;
+      // 曲目 credits 变更波及人物页；专辑艺人／制作人同理。
+      if (payload.type === "music") savedAffectedPersonIds = saved.affectedPersonIds;
     } catch (error) {
       if (error instanceof SaveMusicMediaError) {
         reportSaveDomainError("manage saveMedia", payload.id, error);
@@ -93,6 +98,9 @@ export async function saveMedia(_previous: ActionResult, form: FormData): Promis
       artists: undefined,
       lyricists: undefined,
       composers: undefined,
+      arrangers: undefined,
+      producers: undefined,
+      featured: undefined,
       authors: undefined,
     };
     const { data, error } = await db.rpc("manage_save_media", { p_data: rpcPayload });
@@ -108,6 +116,7 @@ export async function saveMedia(_previous: ActionResult, form: FormData): Promis
   }
 
   revalidateMediaItems(mergeAffected(before, await affectedMediaIds(db, [savedId])));
+  if (savedAffectedPersonIds.length > 0) revalidatePersonItems(savedAffectedPersonIds);
   if (form.get("after") === "continue") {
     refresh();
     return { saved: true, id: savedId };

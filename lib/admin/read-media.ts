@@ -60,7 +60,7 @@ export async function readEditableMedia(db: SupabaseClient, id: string): Promise
   /** 人物连同 ID 和别名读取，重新保存时仍关联原人物，不会被同名人物替换。 */
   function people(
     data: unknown,
-    role: "actor" | "director" | "artist" | "lyricist" | "composer" | "author",
+    role: "actor" | "director" | "artist" | "lyricist" | "composer" | "arranger" | "producer" | "featured" | "author",
   ): (PersonRef & { character_name?: unknown })[] {
     if (!Array.isArray(data)) return [];
     return data.flatMap(
@@ -125,8 +125,9 @@ export async function readEditableMedia(db: SupabaseClient, id: string): Promise
     status = (tracking.data?.status as "watched" | "want_to_watch") ?? "want_to_watch";
     rating = tracking.data?.rating ?? null;
   }
-  const personOnly = (role: "artist" | "lyricist" | "composer" | "author") =>
-    people(credits.data, role).map(({ id, name, alternate_name }) => ({ id, name, alternate_name }));
+  const personOnly = (
+    role: "artist" | "lyricist" | "composer" | "arranger" | "producer" | "featured" | "author",
+  ) => people(credits.data, role).map(({ id, name, alternate_name }) => ({ id, name, alternate_name }));
   const parentId = season.data?.series_id ?? episode.data?.season_id ?? track.data?.album_id ?? null;
   return {
     ...media.data,
@@ -145,6 +146,9 @@ export async function readEditableMedia(db: SupabaseClient, id: string): Promise
     artists: personOnly("artist"),
     lyricists: personOnly("lyricist"),
     composers: personOnly("composer"),
+    arrangers: personOnly("arranger"),
+    producers: personOnly("producer"),
+    featured: personOnly("featured"),
     authors: personOnly("author"),
     label: albumMeta.data?.label ?? null,
     page_count: bookMeta.data?.page_count != null ? Number(bookMeta.data.page_count) : null,

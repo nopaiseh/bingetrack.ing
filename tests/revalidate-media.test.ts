@@ -1,7 +1,13 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { revalidatePath, revalidateTag } from "next/cache";
-import { affectedMediaIds, mergeAffected, referenceMediaIds, revalidateMediaItems } from "@/lib/admin/revalidate-media";
+import {
+  affectedMediaIds,
+  mergeAffected,
+  referenceMediaIds,
+  revalidateMediaItems,
+  revalidatePersonItems,
+} from "@/lib/admin/revalidate-media";
 vi.mock("server-only", () => ({}));
 vi.mock("next/cache", () => ({ revalidatePath: vi.fn(), revalidateTag: vi.fn() }));
 
@@ -63,6 +69,9 @@ describe("按条目失效公开缓存", () => {
   it("单曲变更包含所属专辑", async () => {
     expect(new Set(await affectedMediaIds(fakeDb(), [track]))).toEqual(new Set([track, album]));
   });
+  it("专辑变更包含其下曲目", async () => {
+    expect(new Set(await affectedMediaIds(fakeDb(), [album]))).toEqual(new Set([album, track]));
+  });
   it("单曲查询失败时返回 null", async () => {
     expect(await affectedMediaIds(fakeDb("album_tracks"), [track])).toBeNull();
   });
@@ -116,5 +125,13 @@ describe("按条目失效公开缓存", () => {
       ["/sitemap.xml"],
     ]);
     expect(revalidateTag).not.toHaveBeenCalledWith("media", expect.anything());
+  });
+
+  it("人物详情按 person:item:<id> 失效，忽略非法 ID", () => {
+    revalidatePersonItems([person, "not-a-uuid", person]);
+    expect(vi.mocked(revalidateTag).mock.calls).toEqual([
+      [`person:item:${person}`, { expire: 0 }],
+      [`person:item:${person}`, { expire: 0 }],
+    ]);
   });
 });

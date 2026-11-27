@@ -37,6 +37,22 @@ export function MusicPeopleSection({
           detail: person.alternate_name ?? undefined,
         }))}
       />
+      {isAlbum ? (
+        <ChoicePicker
+          key={`${resetKey}-producers`}
+          kind="people"
+          name="producers"
+          label="制作人"
+          allowCreate
+          sortable
+          rows
+          initial={(item?.producers ?? []).map((person) => ({
+            id: person.id ?? `new:${person.name}`,
+            name: person.name,
+            detail: person.alternate_name ?? undefined,
+          }))}
+        />
+      ) : null}
       {isMusicTrack ? (
         <>
           <ChoicePicker
@@ -62,6 +78,48 @@ export function MusicPeopleSection({
             sortable
             rows
             initial={(item?.composers ?? []).map((person) => ({
+              id: person.id ?? `new:${person.name}`,
+              name: person.name,
+              detail: person.alternate_name ?? undefined,
+            }))}
+          />
+          <ChoicePicker
+            key={`${resetKey}-arrangers`}
+            kind="people"
+            name="arrangers"
+            label="编曲"
+            allowCreate
+            sortable
+            rows
+            initial={(item?.arrangers ?? []).map((person) => ({
+              id: person.id ?? `new:${person.name}`,
+              name: person.name,
+              detail: person.alternate_name ?? undefined,
+            }))}
+          />
+          <ChoicePicker
+            key={`${resetKey}-producers`}
+            kind="people"
+            name="producers"
+            label="制作人"
+            allowCreate
+            sortable
+            rows
+            initial={(item?.producers ?? []).map((person) => ({
+              id: person.id ?? `new:${person.name}`,
+              name: person.name,
+              detail: person.alternate_name ?? undefined,
+            }))}
+          />
+          <ChoicePicker
+            key={`${resetKey}-featured`}
+            kind="people"
+            name="featured"
+            label="合唱"
+            allowCreate
+            sortable
+            rows
+            initial={(item?.featured ?? []).map((person) => ({
               id: person.id ?? `new:${person.name}`,
               name: person.name,
               detail: person.alternate_name ?? undefined,

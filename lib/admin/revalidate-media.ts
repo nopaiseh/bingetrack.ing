@@ -2,7 +2,7 @@ import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { revalidatePath, revalidateTag } from "next/cache";
 import { isMediaId } from "@/lib/functions/media-id";
-import { MEDIA_LISTS_TAG, MEDIA_TAG, mediaItemTag } from "@/lib/functions/media-cache-tags";
+import { MEDIA_LISTS_TAG, MEDIA_TAG, mediaItemTag, personItemTag } from "@/lib/functions/media-cache-tags";
 import { referenceTypes, type ReferenceType } from "@/lib/admin/catalog";
 import { ENABLED_PUBLIC_CATALOG_PATHS } from "@/lib/media-types";
 
@@ -19,22 +19,27 @@ function column<K extends string>(
 }
 
 /**
- * 找出条目变更会波及的公开详情页：条目本身、季或单集所属的电视节目、单曲所属的专辑，以及这些条目所在作品系列的其他成员（详情页内嵌相关作品卡片）。
+ * 找出条目变更会波及的公开详情页：条目本身、季或单集所属的电视节目、
+ * 单曲所属的专辑、专辑下的曲目，以及这些条目所在作品系列的其他成员（详情页内嵌相关作品卡片）。
  * 保存前后各调用一次，才能覆盖移出系列或改换上级的情况。查询失败时返回 null，由调用方退回全站失效。
  */
 export async function affectedMediaIds(db: SupabaseClient, ids: string[]): Promise<string[] | null> {
   const targets = ids.filter(isMediaId);
   if (targets.length === 0) return [];
 
-  const [episodeRows, seasonRows, trackRows] = await Promise.all([
+  const [episodeRows, seasonRows, trackAlbumRows, albumTrackRows] = await Promise.all([
     db.from("tv_episodes").select("season_id").in("id", targets),
     db.from("tv_seasons").select("series_id").in("id", targets),
+    // 曲目 → 所属专辑
     db.from("album_tracks").select("album_id").in("song_id", targets),
+    // 专辑 → 其下曲目（改专辑名／封面时曲目页也要刷新）
+    db.from("album_tracks").select("song_id").in("album_id", targets),
   ]);
   const episodeSeasons = column(episodeRows, "season_id");
   const seasonShows = column(seasonRows, "series_id");
-  const trackAlbums = column(trackRows, "album_id");
-  if (!episodeSeasons || !seasonShows || !trackAlbums) return null;
+  const trackAlbums = column(trackAlbumRows, "album_id");
+  const albumSongs = column(albumTrackRows, "song_id");
+  if (!episodeSeasons || !seasonShows || !trackAlbums || !albumSongs) return null;
 
   const episodeShows =
     episodeSeasons.length > 0
@@ -42,7 +47,7 @@ export async function affectedMediaIds(db: SupabaseClient, ids: string[]): Promi
       : [];
   if (!episodeShows) return null;
 
-  const pages = [...new Set([...targets, ...seasonShows, ...episodeShows, ...trackAlbums])];
+  const pages = [...new Set([...targets, ...seasonShows, ...episodeShows, ...trackAlbums, ...albumSongs])];
   const collections = column(
     await db.from("media_item_series").select("series_id").in("media_item_id", pages),
     "series_id",
@@ -93,6 +98,13 @@ export function revalidateMediaItems(ids: string[] | null) {
   for (const id of ids) revalidateTag(mediaItemTag(id), { expire: 0 });
   revalidateTag(MEDIA_LISTS_TAG, { expire: 0 });
   for (const path of UNTAGGED_PUBLIC_PATHS) revalidatePath(path);
+}
+
+/** 失效人物公开详情缓存（`person:item:<id>`）；忽略非法 ID。 */
+export function revalidatePersonItems(ids: readonly string[]) {
+  for (const id of ids) {
+    if (isMediaId(id)) revalidateTag(personItemTag(id), { expire: 0 });
+  }
 }
 
 /** 使全部公开数据与页面失效；用于影响面无法界定的写入，例如批量清理。 */

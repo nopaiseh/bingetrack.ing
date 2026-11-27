@@ -1,7 +1,7 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { MediaInput } from "@/lib/admin/media-form";
-import { buildCreditsPayload, savedMediaId } from "@/lib/admin/credits-payload";
+import { affectedPersonIds, buildCreditsPayload, savedMediaId } from "@/lib/admin/credits-payload";
 import { findMusicDuplicateId, isDuplicateMusicEntry } from "@/lib/music/dedupe";
 import { resolveMusicCover } from "@/lib/music/resolve-cover";
 
@@ -67,6 +67,9 @@ function mediaRpcPayload(payload: MediaInput) {
       artists: payload.artists,
       lyricists: payload.lyricists,
       composers: payload.composers,
+      arrangers: payload.arrangers,
+      producers: payload.producers,
+      featured: payload.featured,
     }),
     label: payload.label,
     collections: payload.collections ?? [],
@@ -206,12 +209,15 @@ async function prepareMusicPayload(
   return { ...payload, cover_url: coverUrl };
 }
 
+/** 保存结果：条目 id，以及 credits 变更波及的人物（供 person:item 失效）。 */
+export type SaveMusicMediaResult = { id: string; affectedPersonIds: string[] };
+
 /**
  * 保存专辑或曲目。
  * 专辑走 admin_save_album_with_tracks；单曲走 admin_save_media。
  * 查重与封面解析仍在应用层；写入在单个数据库事务中完成。
  */
-export async function saveMusicMedia(db: SupabaseClient, payload: MediaInput): Promise<string> {
+export async function saveMusicMedia(db: SupabaseClient, payload: MediaInput): Promise<SaveMusicMediaResult> {
   const prepared = await prepareMusicPayload(db, payload);
 
   if (prepared.type === "album") {
@@ -222,14 +228,14 @@ export async function saveMusicMedia(db: SupabaseClient, payload: MediaInput): P
     assertOk(error);
     const id = savedMediaId(data);
     if (!id) throw new SaveMusicMediaError(WRITE_ERROR);
-    return id;
+    return { id, affectedPersonIds: affectedPersonIds(data) };
   }
 
   const { data, error } = await db.rpc("admin_save_media", { p_data: mediaRpcPayload(prepared) });
   assertOk(error);
   const id = savedMediaId(data);
   if (!id) throw new SaveMusicMediaError(WRITE_ERROR);
-  return id;
+  return { id, affectedPersonIds: affectedPersonIds(data) };
 }
 
 /**

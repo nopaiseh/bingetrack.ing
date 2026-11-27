@@ -17,10 +17,14 @@ vi.mock("@/lib/admin/revalidate-media", () => ({
   affectedMediaIds: vi.fn(async (_db: unknown, ids: string[]) => ids),
   mergeAffected: (...groups: (string[] | null)[]) => groups.flatMap((group) => group ?? []),
   revalidateMediaItems: vi.fn(),
+  revalidatePersonItems: vi.fn(),
   revalidateAllMedia: vi.fn(),
 }));
 vi.mock("@/lib/admin/save-music-media", () => ({
-  saveMusicMedia: vi.fn(async () => "44444444-4444-4444-8444-444444444444"),
+  saveMusicMedia: vi.fn(async () => ({
+    id: "44444444-4444-4444-8444-444444444444",
+    affectedPersonIds: [],
+  })),
   deleteMusicTree: vi.fn(async () => "album"),
   SaveMusicMediaError: class SaveMusicMediaError extends Error {
     code?: string;

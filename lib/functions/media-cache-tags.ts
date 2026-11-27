@@ -8,3 +8,8 @@ export const MEDIA_LISTS_TAG = "media:lists";
 export function mediaItemTag(id: string): string {
   return `media:item:${id}`;
 }
+
+/** 单个人物公开详情的标签；保存曲目 credits 或编辑／合并人物时失效。 */
+export function personItemTag(id: string): string {
+  return `person:item:${id}`;
+}

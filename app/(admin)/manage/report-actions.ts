@@ -2,7 +2,7 @@
 import { requireOwner } from "@/lib/auth/server";
 import { isNameIssueItemId, normalizeNameIssueItemId } from "@/lib/admin/name-issue-item-id";
 import { isReportKind, reports } from "@/lib/admin/reports";
-import { referenceMediaIds, revalidateMediaItems } from "@/lib/admin/revalidate-media";
+import { referenceMediaIds, revalidateMediaItems, revalidatePersonItems } from "@/lib/admin/revalidate-media";
 import { isMediaId } from "@/lib/functions/media-id";
 import { isExpectedDbError, reportHandledError } from "@/lib/report-error";
 import { redirect } from "next/navigation";
@@ -66,6 +66,8 @@ export async function mergePeople(_previous: ActionResult, form: FormData): Prom
     return { error: "合并失败，请重试。" };
   }
   revalidateMediaItems(affected);
+  // 保留与被删人物的详情页都要失效。
+  revalidatePersonItems([keep, ...remove]);
   redirect(`/manage/reports/similar-people?merged=${remove.length}&n=${Date.now()}`);
 }
 

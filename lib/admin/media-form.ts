@@ -72,6 +72,12 @@ export type MediaInput = {
   lyricists: PersonRef[];
   /** 曲目作曲（media_credits.role=composer）。 */
   composers: PersonRef[];
+  /** 曲目编曲（media_credits.role=arranger）。 */
+  arrangers: PersonRef[];
+  /** 专辑／曲目制作人（media_credits.role=producer）。 */
+  producers: PersonRef[];
+  /** 曲目合唱／客串（media_credits.role=featured）。 */
+  featured: PersonRef[];
   /** 图书作者（media_credits.role=author）。 */
   authors: PersonRef[];
   /** 唱片公司；仅专辑写入 music_albums.label。 */
@@ -256,6 +262,9 @@ export function parseMediaForm(form: FormData): MediaInput {
   const artists = isAlbum || isMusicTrack ? credits("artists").map(({ id, name }) => ({ id, name })) : [];
   const lyricists = isMusicTrack ? credits("lyricists").map(({ id, name }) => ({ id, name })) : [];
   const composers = isMusicTrack ? credits("composers").map(({ id, name }) => ({ id, name })) : [];
+  const arrangers = isMusicTrack ? credits("arrangers").map(({ id, name }) => ({ id, name })) : [];
+  const producers = isAlbum || isMusicTrack ? credits("producers").map(({ id, name }) => ({ id, name })) : [];
+  const featured = isMusicTrack ? credits("featured").map(({ id, name }) => ({ id, name })) : [];
   const authors = isBook ? credits("authors").map(({ id, name }) => ({ id, name })) : [];
   const label = isAlbum ? string("label", 200) : null;
   const publisher = isBook ? string("publisher", 200) : null;
@@ -306,6 +315,9 @@ export function parseMediaForm(form: FormData): MediaInput {
     artists,
     lyricists,
     composers,
+    arrangers,
+    producers,
+    featured,
     authors,
     label,
     page_count,
