@@ -1,5 +1,5 @@
--- album_tracks：曲目与专辑多对多；music_albums.release_kind；移除 music.album_id／track_number。
--- 依赖视图在删列前卸下，functions_views 迁移再按 album_tracks 重建。
+-- album_tracks：曲目与专辑多对多；music_albums.release_kind；从 music 回填。
+-- 本文件不卸视图／函数、不删 music.album_id／track_number（见 502／503）。
 -- 合并后会通过 Supabase GitHub 集成自动上 prod。
 
 -- ---------------------------------------------------------------------------
@@ -140,8 +140,8 @@ insert into public.album_tracks (album_id, song_id, disc_number, track_number)
 select album_id, media_item_id, 1, track_number
 from public.music;
 
--- 依赖视图／函数的卸下与 music.album_id／track_number 删列改由
--- 20261127150200_functions_views.sql 同事务完成，避免中间态公开页／搜索／统计不可用。
+-- music.album_id／track_number 仍保留至 20261127150300_drop_legacy.sql；
+-- 公开页／搜索／统计仍可用旧对象，直至 502 同事务切换到 album_tracks。
 
 comment on table public.music is
-  '曲目扩展表；所属专辑与曲序见 album_tracks（列迁移在 functions_views）。允许无专辑的独立单曲。';
+  '曲目扩展表；album_tracks 已回填。所属专辑与曲序列在 drop_legacy 迁移中移除。允许无专辑的独立单曲。';

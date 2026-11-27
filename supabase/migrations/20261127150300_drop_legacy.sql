@@ -1,6 +1,23 @@
--- 删除 person_role 枚举及过渡用隐式 cast；所有角色比较已改为 text／credit_roles。
+-- 删除 music.album_id／track_number（502 已切到 album_tracks）与 person_role 枚举／过渡 cast。
+-- 本文件失败只回滚自身；公开页／搜索／统计已由 502 使用 album_tracks，不受影响。
 -- 合并后会通过 Supabase GitHub 集成自动上 prod。
 
+-- ---------------------------------------------------------------------------
+-- 1) 移除 music 旧父级／曲序列（依赖已在 502 卸下并重建）
+-- ---------------------------------------------------------------------------
+alter table public.music drop constraint if exists music_album_id_track_number_key;
+alter table public.music drop constraint if exists music_album_id_fkey;
+drop index if exists public.music_album_id_idx;
+
+alter table public.music drop column if exists album_id;
+alter table public.music drop column if exists track_number;
+
+comment on table public.music is
+  '曲目扩展表；所属专辑与曲序见 album_tracks。允许无专辑的独立单曲。';
+
+-- ---------------------------------------------------------------------------
+-- 2) 删除 person_role 枚举及过渡用隐式 cast
+-- ---------------------------------------------------------------------------
 -- 卸掉过渡 cast（若存在）。系统内置 IO cast 不会出现在 pg_cast 的可删条目中。
 do $$
 begin

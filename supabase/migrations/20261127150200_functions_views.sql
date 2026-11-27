@@ -1,9 +1,10 @@
 -- 重建依赖 album_tracks 的视图／函数；通用 credits 保存 API；get_person_works／get_song_detail。
--- 同事务：卸下旧依赖对象 → 删除 music.album_id／track_number → 重建。保证中间态不会缺公开页／搜索／统计。
+-- 同事务：卸下仍读 music.album_id／track_number 的旧视图／函数 → 按 album_tracks 重建。
+-- 本文件不删 music 列（见 503）；失败则整文件回滚，公开页／搜索／统计保持旧对象可用。
 -- 合并后会通过 Supabase GitHub 集成自动上 prod。
 
 -- ---------------------------------------------------------------------------
--- 0) 卸下仍引用 music.album_id／track_number 的对象，再删列
+-- 0) 卸下仍引用 music.album_id／track_number 的对象（同事务内立即重建）
 -- ---------------------------------------------------------------------------
 drop function if exists public.search_media(text, text[], boolean, text[]);
 drop function if exists public.get_media_stats(text);
@@ -18,16 +19,6 @@ drop view if exists public.v_all_media;
 drop view if exists public.v_continue_listening;
 drop view if exists public.release_year_stats;
 drop function if exists public.album_average_rating(uuid);
-
-alter table public.music drop constraint if exists music_album_id_track_number_key;
-alter table public.music drop constraint if exists music_album_id_fkey;
-drop index if exists public.music_album_id_idx;
-
-alter table public.music drop column if exists album_id;
-alter table public.music drop column if exists track_number;
-
-comment on table public.music is
-  '曲目扩展表；所属专辑与曲序见 album_tracks。允许无专辑的独立单曲。';
 
 -- ---------------------------------------------------------------------------
 -- 1) 专辑评分／在听
