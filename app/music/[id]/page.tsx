@@ -47,7 +47,7 @@ export default async function SongDetailPage({ params }: { params: Promise<{ id:
     <div className="relative text-fg selection:bg-[var(--accent-soft)] selection:text-white font-sans">
       <SongDetailHeader song={song} />
       <div className="container mx-auto max-w-7xl px-4 pb-8 sm:px-6 md:pb-12 lg:px-8">
-        <SongCreditsSection credits={song.credits} />
+        <SongCreditsSection credits={song.credits} currentSongId={song.id} />
         <SongAlbumsSection albums={song.albums} currentSongId={song.id} />
         <SongRelatedSection related={song.related} currentSongId={song.id} />
       </div>

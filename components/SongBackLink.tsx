@@ -1,17 +1,7 @@
 "use client";
 
 import { useSearchParams } from "next/navigation";
-import { BackLink } from "@/components/MediaBackLink";
-
-/**
- * 仅接受站内相对路径：以 `/` 开头、非协议相对（`//`）、无 scheme。
- * `base` 须精确匹配，或后接 `/`／`?`，避免 `/music` 误匹配 `/musician`。
- */
-function isSafeInternalFrom(from: string | null, ...bases: string[]): from is string {
-  if (!from || !from.startsWith("/") || from.startsWith("//")) return false;
-  if (from.includes("://") || from.includes("\\")) return false;
-  return bases.some((base) => from === base || from.startsWith(`${base}/`) || from.startsWith(`${base}?`));
-}
+import { BackLink, isSafeInternalFrom } from "@/components/MediaBackLink";
 
 /** 歌曲详情返回：优先搜索／来源专辑／歌曲／人物，否则音乐目录。 */
 export default function SongBackLink() {

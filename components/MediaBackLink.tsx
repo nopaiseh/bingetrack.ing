@@ -22,12 +22,27 @@ export function BackLink({ href, label, className = "mb-6" }: { href: string; la
   );
 }
 
-/** 仅接受站内搜索页作为来源返回地址，其余情况返回对应媒体目录。 */
+/**
+ * 仅接受站内相对路径：以 `/` 开头、非协议相对（`//`）、无 scheme。
+ * `base` 须精确匹配，或后接 `/`／`?`，避免 `/music` 误匹配 `/musician`。
+ */
+export function isSafeInternalFrom(from: string | null, ...bases: string[]): from is string {
+  if (!from || !from.startsWith("/") || from.startsWith("//")) return false;
+  if (from.includes("://") || from.includes("\\")) return false;
+  return bases.some((base) => from === base || from.startsWith(`${base}/`) || from.startsWith(`${base}?`));
+}
+
+/** 站内搜索／歌曲／人物来源返回；其余回退对应媒体目录。 */
 export default function MediaBackLink({ type }: { type: PublicMediaType }) {
   const from = useSearchParams().get("from");
-  return from === "/search" || from?.startsWith("/search?") ? (
-    <BackLink href={from} label="返回搜索页" />
-  ) : (
-    <DefaultMediaBackLink type={type} />
-  );
+  if (isSafeInternalFrom(from, "/search")) {
+    return <BackLink href={from} label="返回搜索页" />;
+  }
+  if (isSafeInternalFrom(from, "/music")) {
+    return <BackLink href={from} label="返回歌曲" />;
+  }
+  if (isSafeInternalFrom(from, "/people")) {
+    return <BackLink href={from} label="返回人物" />;
+  }
+  return <DefaultMediaBackLink type={type} />;
 }

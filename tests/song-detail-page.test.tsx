@@ -97,7 +97,7 @@ describe("歌曲详情页", () => {
     expect(screen.queryByText("不应展示")).not.toBeInTheDocument();
 
     const artist = screen.getByRole("link", { name: "测试艺人" });
-    expect(artist).toHaveAttribute("href", `/people/${personId}`);
+    expect(artist).toHaveAttribute("href", `/people/${personId}?from=${encodeURIComponent(`/music/${songId}`)}`);
 
     expect(screen.getByRole("heading", { level: 2, name: "收录于" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "测试专辑：夜航电台" })).toHaveAttribute(
