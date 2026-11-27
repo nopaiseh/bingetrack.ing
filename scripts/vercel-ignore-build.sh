@@ -9,11 +9,12 @@
 #   1. 生产（VERCEL_ENV=production，即 main）永远构建
 #   2. 预览默认跳过；仅当提交标题（首行）含 [preview]，或相对 main 的改动含前端界面文件时才构建
 #   3. dependabot/、renovate/ 分支一律跳过，除非提交标题含 [preview]
-#   4. 判断不了（浅克隆、fetch 失败、无 merge-base）时保守构建，并打印原因
+#   4. 判断不了（浅克隆、fetch 失败、无 merge-base、git diff 失败）时保守构建，并打印原因
 #
 # 前端界面路径（本仓库）：
 #   - components/**、hooks/**、public/**
 #   - 样式配置：uno.config.ts、postcss.config.*、tailwind.config.*
+#   - next.config.ts、proxy.ts（根目录；改动即构建）
 #   - app/ 下的页面／布局／组件（*.tsx／*.jsx）、样式（*.css 等）、静态资源
 #   - 不算前端：app/api/**、**/route.ts、**/actions.ts、**/*-actions.ts、
 #     lib/**、supabase/**、docs／*.md、tests／e2e、.github、依赖 lockfile
@@ -79,6 +80,9 @@ is_frontend_ui_path() {
     components/* | hooks/* | public/*)
       return 0
       ;;
+    next.config.ts | next.config.js | next.config.mjs | proxy.ts)
+      return 0
+      ;;
     uno.config.ts | postcss.config.mjs | postcss.config.js | postcss.config.cjs | \
     tailwind.config.ts | tailwind.config.js | tailwind.config.mjs | tailwind.config.cjs)
       return 0
@@ -116,73 +120,130 @@ is_frontend_ui_path() {
   return 1
 }
 
-# --- 确保能看到 origin/main（Vercel 默认浅克隆）---
-ensure_main_available() {
-  if git rev-parse --verify origin/main >/dev/null 2>&1; then
-    log "已有本地 origin/main"
+# 解析用于对比的 main ref（优先 origin/main，其次本地 main）
+resolve_main_ref() {
+  if git rev-parse --verify --quiet origin/main >/dev/null 2>&1; then
+    printf '%s\n' "origin/main"
+    return 0
+  fi
+  if git rev-parse --verify --quiet main >/dev/null 2>&1; then
+    printf '%s\n' "main"
+    return 0
+  fi
+  return 1
+}
+
+# Vercel 浅克隆常无 remotes；用环境变量补上 origin 再 fetch main（对齐 dashboard #15）
+ensure_origin_main() {
+  local existing=""
+  if existing="$(resolve_main_ref)"; then
+    log "已有本地 ${existing}"
     return 0
   fi
 
-  log "本地缺少 origin/main，尝试 git fetch（浅克隆加深）…"
-  if git fetch --no-tags --depth=50 origin main 2>&1; then
-    if git rev-parse --verify origin/main >/dev/null 2>&1; then
-      log "fetch origin main 成功"
-      return 0
+  local owner="${VERCEL_GIT_REPO_OWNER:-}"
+  local slug="${VERCEL_GIT_REPO_SLUG:-}"
+  if [[ -n "$owner" && -n "$slug" ]]; then
+    if ! git remote get-url origin >/dev/null 2>&1; then
+      log "无 origin remote，添加 https://github.com/${owner}/${slug}.git"
+      git remote add origin "https://github.com/${owner}/${slug}.git" || true
+    fi
+  fi
+
+  if git remote get-url origin >/dev/null 2>&1; then
+    log "尝试 git fetch --depth=50 origin main…"
+    if git fetch --no-tags --depth=50 origin main 2>&1; then
+      if resolve_main_ref >/dev/null; then
+        log "fetch origin main 成功"
+        return 0
+      fi
+    else
+      log "fetch origin main 失败（可能无凭据／网络限制）"
     fi
   else
-    log "git fetch origin main 失败（可能无凭据／网络限制）"
+    log "无可用 git remote，无法 fetch main"
   fi
   return 1
 }
 
 # 在浅历史上寻找与 main 的 merge-base；必要时加深历史
 find_merge_base() {
+  local main_ref="$1"
   local base=""
   local attempt
   for attempt in 1 2 3; do
-    if base="$(git merge-base HEAD origin/main 2>/dev/null)"; then
+    if base="$(git merge-base HEAD "$main_ref" 2>/dev/null)"; then
       printf '%s\n' "$base"
       return 0
     fi
     log "merge-base 失败（第 ${attempt} 次），加深历史再试…"
-    # 同时加深当前 HEAD 与 main，避免只有一侧有足够祖先
-    git fetch --no-tags --deepen=100 origin main 2>&1 || true
-    git fetch --no-tags --deepen=100 origin HEAD 2>&1 || \
-      git fetch --no-tags --deepen=100 2>&1 || true
+    if git remote get-url origin >/dev/null 2>&1; then
+      git fetch --no-tags --deepen=100 origin main 2>&1 || true
+      git fetch --no-tags --deepen=100 origin HEAD 2>&1 || \
+        git fetch --no-tags --deepen=100 2>&1 || true
+      # deepen 后优先用 origin/main
+      if git rev-parse --verify --quiet origin/main >/dev/null 2>&1; then
+        main_ref="origin/main"
+      fi
+    else
+      break
+    fi
   done
   return 1
 }
 
-list_changed_files() {
-  local range="$1"
-  git diff --name-only "$range"
+# 尝试拿到改动列表：main merge-base → PREVIOUS_SHA；任一步 git diff 失败则不采纳该来源。
+# 诊断日志走 stdout（与现有 echo 风格一致）；成功时通过全局 CHANGED_FILES / DIFF_SOURCE 传出。
+# 返回 0 = 已取得列表（可为空白）；返回 1 = 所有退路失败，调用方应保守构建。
+collect_changed_files() {
+  CHANGED_FILES=""
+  DIFF_SOURCE=""
+
+  ensure_origin_main || true
+  local main_ref=""
+  main_ref="$(resolve_main_ref || true)"
+
+  if [[ -n "$main_ref" ]]; then
+    local merge_base=""
+    if merge_base="$(find_merge_base "$main_ref")"; then
+      log "merge-base with ${main_ref}: ${merge_base}"
+      local range="${merge_base}...HEAD"
+      local files=""
+      if files="$(git diff --name-only "$range" 2>/dev/null)"; then
+        CHANGED_FILES="$files"
+        DIFF_SOURCE="merge-base(${merge_base})...HEAD"
+        return 0
+      fi
+      log "git diff ${range} 失败，不采用此来源"
+    else
+      log "无法计算与 ${main_ref} 的 merge-base（浅历史仍不足）"
+    fi
+  else
+    log "仍无 main / origin/main"
+  fi
+
+  # 退路：相对上一部署提交的 diff（仅覆盖最近一次推送，不完整但优于瞎猜）
+  if [[ -n "$PREVIOUS_SHA" && "$PREVIOUS_SHA" != "null" ]]; then
+    if git cat-file -e "${PREVIOUS_SHA}^{commit}" 2>/dev/null; then
+      log "退回使用 VERCEL_GIT_PREVIOUS_SHA=${PREVIOUS_SHA}"
+      local files=""
+      if files="$(git diff --name-only "${PREVIOUS_SHA}...HEAD" 2>/dev/null)"; then
+        CHANGED_FILES="$files"
+        DIFF_SOURCE="previous-sha(${PREVIOUS_SHA})...HEAD"
+        return 0
+      fi
+      log "git diff previous-sha(${PREVIOUS_SHA})...HEAD 失败，不采用此来源"
+    else
+      log "VERCEL_GIT_PREVIOUS_SHA=${PREVIOUS_SHA} 在本地不可用"
+    fi
+  else
+    log "无可用的 VERCEL_GIT_PREVIOUS_SHA"
+  fi
+
+  return 1
 }
 
-CHANGED_FILES=""
-DIFF_SOURCE=""
-
-if ensure_main_available; then
-  if MERGE_BASE="$(find_merge_base)"; then
-    log "merge-base with origin/main: ${MERGE_BASE}"
-    CHANGED_FILES="$(list_changed_files "${MERGE_BASE}...HEAD" || true)"
-    DIFF_SOURCE="merge-base(${MERGE_BASE})...HEAD"
-  else
-    log "无法计算与 origin/main 的 merge-base（浅历史仍不足）"
-  fi
-fi
-
-# 退路：相对上一部署提交的 diff（仅覆盖最近一次推送，不完整但优于瞎猜）
-if [[ -z "$DIFF_SOURCE" && -n "$PREVIOUS_SHA" ]]; then
-  if git cat-file -e "${PREVIOUS_SHA}^{commit}" 2>/dev/null; then
-    log "退回使用 VERCEL_GIT_PREVIOUS_SHA=${PREVIOUS_SHA}"
-    CHANGED_FILES="$(list_changed_files "${PREVIOUS_SHA}...HEAD" || true)"
-    DIFF_SOURCE="previous-sha(${PREVIOUS_SHA})...HEAD"
-  else
-    log "VERCEL_GIT_PREVIOUS_SHA=${PREVIOUS_SHA} 在本地不可用"
-  fi
-fi
-
-if [[ -z "$DIFF_SOURCE" ]]; then
+if ! collect_changed_files; then
   build "无法取得相对 main（或 previous SHA）的改动列表，保守构建"
 fi
 

@@ -4,7 +4,7 @@
 
 ## 预览构建是否跳过
 
-`vercel.json` 的 `ignoreCommand` 指向 `scripts/vercel-ignore-build.sh`，用于减少不必要的 Preview 构建费用：生产（`main`）永远构建；Preview 默认跳过，仅当**提交标题（首行）**含 `[preview]`，或相对 `main` 的改动包含前端界面文件（`components/`、`hooks/`、`public/`、样式配置、`app/` 下的页面／布局／组件等）时才构建；`dependabot/`／`renovate/` 分支一律跳过（除非标题含 `[preview]`）。需要强制出预览时，在提交标题里加上 `[preview]` 即可（审查人也可请作者补一个带该标记的提交）。只检查首行，避免正文文档提到该标记时误触发。脚本每一步会在 Vercel 构建日志里打印判断理由。
+`vercel.json` 的 `ignoreCommand` 指向 `scripts/vercel-ignore-build.sh`，用于减少不必要的 Preview 构建费用：生产（`main`）永远构建；Preview 默认跳过，仅当**提交标题（首行）**含 `[preview]`，或相对 `main` 的改动包含前端界面文件（`components/`、`hooks/`、`public/`、样式配置、`next.config.ts`、`proxy.ts`、`app/` 下的页面／布局／组件等）时才构建；`dependabot/`／`renovate/` 分支一律跳过（除非标题含 `[preview]`）。需要强制出预览时，在提交标题里加上 `[preview]` 即可（审查人也可请作者补一个带该标记的提交）。只检查首行，避免正文文档提到该标记时误触发。浅克隆缺少 remote 时会用 `VERCEL_GIT_REPO_OWNER`／`VERCEL_GIT_REPO_SLUG` 补 `origin` 再 fetch；`git diff`／merge-base／fetch 都失败则保守构建。脚本每一步会在 Vercel 构建日志里打印判断理由。
 
 ## 平台设置
 
