@@ -30,7 +30,7 @@ export default async function NewMediaPage({
     nextNumber = Math.min(100000, ((data as unknown as Record<string, number>[])?.[0]?.[column] ?? 0) + 1);
   } else if (parent && type === "music" && parent.type === "album") {
     const { data, error } = await db
-      .from("music")
+      .from("album_tracks")
       .select("track_number")
       .eq("album_id", parent.id)
       .order("track_number", { ascending: false })
