@@ -1,6 +1,6 @@
 import * as Sentry from "@sentry/nextjs";
 import { parseSentryTracesSampleRate } from "./lib/sentry-sampling";
-import { scrubSentryBreadcrumb, scrubSentryEvent } from "./lib/sentry-scrub";
+import { getSentryPrivacyHooks } from "./lib/sentry-scrub";
 import { SENTRY_DSN } from "./lib/sentry-dsn";
 
 Sentry.init({
@@ -13,15 +13,8 @@ Sentry.init({
   tracesSampleRate: parseSentryTracesSampleRate(process.env.SENTRY_TRACES_SAMPLE_RATE),
 
   // 确认页的一次性凭证会留在地址栏，直到用户点击继续；上报前去掉。
-  beforeSend(event) {
-    return scrubSentryEvent(event);
-  },
-  beforeSendTransaction(event) {
-    return scrubSentryEvent(event);
-  },
-  beforeBreadcrumb(breadcrumb) {
-    return scrubSentryBreadcrumb(breadcrumb);
-  },
+  // stream 模式下用 beforeSendSpan 清理 span；beforeSendTransaction 会被 SDK 忽略。
+  ...getSentryPrivacyHooks(),
 
   // 不上报 Cookie 与请求／响应正文：Supabase 会话令牌存放在 Cookie 中，正文可能包含观看记录等个人数据。
   dataCollection: {

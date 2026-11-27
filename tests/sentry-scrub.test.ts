@@ -1,6 +1,13 @@
 import { describe, expect, it } from "vitest";
+import type { StreamedSpanJSON } from "@sentry/core";
 import type { Event } from "@sentry/nextjs";
-import { scrubSentryBreadcrumb, scrubSentryEvent, scrubSensitiveUrl } from "@/lib/sentry-scrub";
+import {
+  getSentryPrivacyHooks,
+  scrubSentryBreadcrumb,
+  scrubSentryEvent,
+  scrubSentrySpan,
+  scrubSensitiveUrl,
+} from "@/lib/sentry-scrub";
 
 const SECRET = "one-time-secret";
 
@@ -133,5 +140,75 @@ describe("scrubSentryEvent", () => {
     expect(breadcrumb.message).toBe("https://www.bingetrack.ing/auth/confirm");
     expect(breadcrumb.data?.from).toBe("/auth/confirm");
     expect(breadcrumb.data?.to).toBe("/settings");
+  });
+});
+
+describe("scrubSentrySpan", () => {
+  it("清理 streamed span 的 name 与 attributes 中的一次性凭证", () => {
+    const span: StreamedSpanJSON = {
+      trace_id: "trace",
+      span_id: "span",
+      name: `GET /auth/confirm?token_hash=${SECRET}&type=magiclink`,
+      start_timestamp: 0,
+      end_timestamp: 1,
+      status: "ok",
+      is_segment: true,
+      attributes: {
+        "sentry.op": "http.server",
+        "url.full": `https://www.bingetrack.ing/auth/confirm?token_hash=${SECRET}&type=magiclink`,
+        "http.query": `token_hash=${SECRET}&type=magiclink`,
+        "url.list": [`/auth/confirm?token=${SECRET}`, "/settings"],
+        "http.status_code": 200,
+      },
+    };
+
+    expect(scrubSentrySpan(span)).toBe(span);
+    expect(span.name).toBe("GET /auth/confirm?type=magiclink");
+    expect(span.attributes["url.full"]).toBe("https://www.bingetrack.ing/auth/confirm?type=magiclink");
+    expect(span.attributes["http.query"]).toBe("type=magiclink");
+    expect(span.attributes["url.list"]).toEqual(["/auth/confirm", "/settings"]);
+    expect(span.attributes["http.status_code"]).toBe(200);
+    expect(span.attributes["sentry.op"]).toBe("http.server");
+    expect(JSON.stringify(span)).not.toContain(SECRET);
+  });
+
+  it("子 span（非 segment）同样清理 name 与 attributes", () => {
+    const span: StreamedSpanJSON = {
+      trace_id: "trace",
+      span_id: "child",
+      parent_span_id: "root",
+      name: `GET https://www.bingetrack.ing/auth/confirm?code=${SECRET}`,
+      start_timestamp: 0,
+      end_timestamp: 1,
+      status: "ok",
+      is_segment: false,
+      attributes: {
+        url: `/auth/confirm?token_hash=${SECRET}`,
+      },
+    };
+
+    scrubSentrySpan(span);
+    expect(span.name).toBe("GET https://www.bingetrack.ing/auth/confirm");
+    expect(span.attributes.url).toBe("/auth/confirm");
+  });
+});
+
+describe("getSentryPrivacyHooks", () => {
+  it("暴露 beforeSend / beforeSendSpan / beforeBreadcrumb，且不含 beforeSendTransaction", () => {
+    const hooks = getSentryPrivacyHooks();
+    expect(Object.keys(hooks).sort()).toEqual(["beforeBreadcrumb", "beforeSend", "beforeSendSpan"]);
+    expect("beforeSendTransaction" in hooks).toBe(false);
+
+    const span: StreamedSpanJSON = {
+      trace_id: "trace",
+      span_id: "span",
+      name: `/auth/confirm?token_hash=${SECRET}`,
+      start_timestamp: 0,
+      status: "ok",
+      is_segment: true,
+      attributes: {},
+    };
+    hooks.beforeSendSpan(span);
+    expect(span.name).toBe("/auth/confirm");
   });
 });
