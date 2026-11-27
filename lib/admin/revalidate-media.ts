@@ -83,6 +83,23 @@ export async function referenceMediaIds(
   return linked && affectedMediaIds(db, [...new Set(linked)]);
 }
 
+/**
+ * 删除前查出条目演职员人物 id：含专辑本身及其 album_tracks 曲目上的 credits。
+ * 级联删除会先清掉 media_credits，必须在删除前调用。查询失败时返回 null。
+ */
+export async function creditedPersonIds(db: SupabaseClient, ids: string[]): Promise<string[] | null> {
+  const targets = ids.filter(isMediaId);
+  if (targets.length === 0) return [];
+
+  const albumSongs = column(await db.from("album_tracks").select("song_id").in("album_id", targets), "song_id");
+  if (!albumSongs) return null;
+
+  const mediaIds = [...new Set([...targets, ...albumSongs])];
+  const people = column(await db.from("media_credits").select("person_id").in("media_item_id", mediaIds), "person_id");
+  if (!people) return null;
+  return [...new Set(people)];
+}
+
 /** 合并保存前后的受影响条目；任一侧未知时整体视为未知。 */
 export function mergeAffected(...groups: (string[] | null)[]): string[] | null {
   if (groups.some(/* 检查是否有查询失败的一侧。 */ (group) => group === null)) return null;

@@ -1,7 +1,7 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { MediaInput } from "@/lib/admin/media-form";
-import { buildCreditsPayload, savedMediaId } from "@/lib/admin/credits-payload";
+import { affectedPersonIds, buildCreditsPayload, savedMediaId } from "@/lib/admin/credits-payload";
 import { findBookDuplicateId } from "@/lib/books/dedupe";
 import { normalizeIsbn, resolveBookCover } from "@/lib/books/resolve-cover";
 import { isBookTrackingStatus } from "@/lib/read-status";
@@ -91,12 +91,15 @@ export async function prepareBookPayload(payload: MediaInput): Promise<MediaInpu
   return { ...payload, cover_url: coverUrl };
 }
 
+/** 保存结果：条目 id，以及 credits 变更波及的人物（供 person:item 失效）。 */
+export type SaveBookMediaResult = { id: string; affectedPersonIds: string[] };
+
 /**
  * 保存图书：应用层先查重、校验页数／ISBN，并在封面留空时按 ISBN 解析封面，
  * 再经 manage_save_media（含系列）一次事务写入。
  * RPC 内仍会校验作者上限与标题＋作者去重。
  */
-export async function saveBookMedia(db: SupabaseClient, payload: MediaInput): Promise<string> {
+export async function saveBookMedia(db: SupabaseClient, payload: MediaInput): Promise<SaveBookMediaResult> {
   if (payload.type !== "book") throw new SaveBookMediaError("只支持图书。");
   assertBookPageCount(payload.page_count);
   assertBookIsbn(payload.isbn);
@@ -121,5 +124,5 @@ export async function saveBookMedia(db: SupabaseClient, payload: MediaInput): Pr
   assertOk(error);
   const id = savedMediaId(data);
   if (!id) throw new SaveBookMediaError(WRITE_ERROR);
-  return id;
+  return { id, affectedPersonIds: affectedPersonIds(data) };
 }

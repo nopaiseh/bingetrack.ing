@@ -3,6 +3,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { revalidatePath, revalidateTag } from "next/cache";
 import {
   affectedMediaIds,
+  creditedPersonIds,
   mergeAffected,
   referenceMediaIds,
   revalidateMediaItems,
@@ -133,5 +134,15 @@ describe("按条目失效公开缓存", () => {
       [`person:item:${person}`, { expire: 0 }],
       [`person:item:${person}`, { expire: 0 }],
     ]);
+  });
+
+  it("creditedPersonIds：专辑含曲目演职员，曲目只含自身", async () => {
+    expect(new Set(await creditedPersonIds(fakeDb(), [album]))).toEqual(new Set([person]));
+    expect(await creditedPersonIds(fakeDb(), [track])).toEqual([person]);
+    expect(await creditedPersonIds(fakeDb(), [show])).toEqual([]);
+  });
+
+  it("creditedPersonIds：credits 查询失败时返回 null", async () => {
+    expect(await creditedPersonIds(fakeDb("media_credits"), [track])).toBeNull();
   });
 });

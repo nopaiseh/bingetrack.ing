@@ -128,6 +128,8 @@ export async function deleteReference(_previous: ActionResult, form: FormData): 
   // 确认名称不符是用户可预期的校验，不上报。
   if (!data?.length) return { error: "名称不匹配或资料已被删除，请刷新确认。" };
   revalidateMediaItems(affected);
+  // 人物详情不得残留在公开缓存（隐私）。
+  if (kind === "people") revalidatePersonItems([id]);
   redirect(`/manage/references/${kind}?deleted=1&n=${Date.now()}`);
 }
 

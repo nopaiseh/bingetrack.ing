@@ -64,15 +64,25 @@ describe("saveBookMedia", () => {
   });
 
   it("查重后调用 manage_save_media 写入图书", async () => {
+    const authorId = "a1000000-0000-4000-8000-000000000001";
     const db = rpcDb({
       find_book_by_title_and_authors: () => ({ data: null, error: null }),
       manage_save_media: () => ({
-        data: { id: "b1000000-0000-4000-8000-000000000099", affected_person_ids: [] },
+        data: { id: "b1000000-0000-4000-8000-000000000099", affected_person_ids: [authorId] },
         error: null,
       }),
     });
-    const id = await saveBookMedia(db as never, bookPayload({ status: "in_progress" }));
-    expect(id).toBe("b1000000-0000-4000-8000-000000000099");
+    const saved = await saveBookMedia(
+      db as never,
+      bookPayload({
+        status: "in_progress",
+        authors: [{ id: authorId, name: "作者" }],
+      }),
+    );
+    expect(saved).toEqual({
+      id: "b1000000-0000-4000-8000-000000000099",
+      affectedPersonIds: [authorId],
+    });
     expect(db.rpc).toHaveBeenCalledWith("find_book_by_title_and_authors", {
       p_title: "测试图书",
       p_author_names: ["作者"],
@@ -87,7 +97,7 @@ describe("saveBookMedia", () => {
           publisher: "出版社",
           languages: ["汉语"],
           regions: ["中国"],
-          credits: [{ person: { name: "作者" }, role: "author", order: 0 }],
+          credits: [{ person: { id: authorId }, role: "author", order: 0 }],
         }),
       }),
     );

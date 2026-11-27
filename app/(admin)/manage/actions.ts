@@ -7,6 +7,7 @@ import { parseMediaForm } from "@/lib/admin/media-form";
 import { isMediaId } from "@/lib/functions/media-id";
 import {
   affectedMediaIds,
+  creditedPersonIds,
   mergeAffected,
   revalidateAllMedia,
   revalidateMediaItems,
@@ -14,7 +15,7 @@ import {
 } from "@/lib/admin/revalidate-media";
 import { deleteMusicTree, SaveMusicMediaError, saveMusicMedia } from "@/lib/admin/save-music-media";
 import { SaveBookMediaError, saveBookMedia } from "@/lib/admin/save-book-media";
-import { buildCreditsPayload, savedMediaId } from "@/lib/admin/credits-payload";
+import { affectedPersonIds, buildCreditsPayload, savedMediaId } from "@/lib/admin/credits-payload";
 import { isExpectedDbError, isExpectedValidationCode, reportHandledError } from "@/lib/report-error";
 
 export type ActionResult = { error?: string; saved?: boolean; id?: string };
@@ -65,8 +66,8 @@ export async function saveMedia(_previous: ActionResult, form: FormData): Promis
     try {
       const saved = await saveMusicMedia(db, payload);
       savedId = saved.id;
-      // 曲目 credits 变更波及人物页；专辑艺人／制作人同理。
-      if (payload.type === "music") savedAffectedPersonIds = saved.affectedPersonIds;
+      // 专辑艺人／制作人与曲目 credits 变更都波及人物页。
+      savedAffectedPersonIds = saved.affectedPersonIds;
     } catch (error) {
       if (error instanceof SaveMusicMediaError) {
         reportSaveDomainError("manage saveMedia", payload.id, error);
@@ -77,7 +78,9 @@ export async function saveMedia(_previous: ActionResult, form: FormData): Promis
     }
   } else if (payload.type === "book") {
     try {
-      savedId = await saveBookMedia(db, payload);
+      const saved = await saveBookMedia(db, payload);
+      savedId = saved.id;
+      savedAffectedPersonIds = saved.affectedPersonIds;
     } catch (error) {
       if (error instanceof SaveBookMediaError) {
         reportSaveDomainError("manage saveMedia", payload.id, error);
@@ -113,6 +116,7 @@ export async function saveMedia(_previous: ActionResult, form: FormData): Promis
     const id = savedMediaId(data);
     if (!id) return { error: writeError() };
     savedId = id;
+    savedAffectedPersonIds = affectedPersonIds(data);
   }
 
   revalidateMediaItems(mergeAffected(before, await affectedMediaIds(db, [savedId])));
@@ -130,8 +134,9 @@ export async function deleteMedia(_previous: ActionResult, form: FormData): Prom
   const id = String(form.get("id") ?? "");
   const title = String(form.get("confirm_title") ?? "");
   if (!isMediaId(id) || !title) return { error: "请输入要删除的完整标题。" };
-  // 删除会级联移除关联，必须在删除前查出受影响的上级与系列成员，以及条目类型（删除后回到所属列表）。
+  // 删除会级联移除关联，必须在删除前查出受影响的上级／系列成员与演职员人物，以及条目类型（删除后回到所属列表）。
   const affected = await affectedMediaIds(db, [id]);
+  const creditedPeople = await creditedPersonIds(db, [id]);
   const { data: target } = await db.from("media_items").select("type").eq("id", id).maybeSingle();
 
   if (target?.type === "album" || target?.type === "music") {
@@ -156,6 +161,7 @@ export async function deleteMedia(_previous: ActionResult, form: FormData): Prom
   }
 
   revalidateMediaItems(affected);
+  if (creditedPeople?.length) revalidatePersonItems(creditedPeople);
   redirect(`/manage?type=${listTypeAfterDelete(target?.type)}&deleted=1&n=${Date.now()}`);
 }
 
