@@ -180,6 +180,7 @@ export async function loadAlbumDetail(id: string): Promise<DetailFetchResult<Alb
             .order("media_item_id", { ascending: true })
             .order("credit_order", { ascending: true, nullsFirst: false })
             .order("role", { ascending: true })
+            .order("person_id", { ascending: true })
             .range(from, to),
         ),
         fetchAllPages<GenreJoinRow>((from, to) =>
@@ -188,6 +189,7 @@ export async function loadAlbumDetail(id: string): Promise<DetailFetchResult<Alb
             .select("media_item_id,genres(name)")
             .in("media_item_id", trackIds)
             .order("media_item_id", { ascending: true })
+            .order("genre_id", { ascending: true })
             .range(from, to),
         ),
       ]);

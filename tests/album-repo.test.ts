@@ -193,8 +193,18 @@ describe("专辑详情查询 getAlbumDetail", () => {
     ]);
     const credits = state.queries.find((query) => query.table === "media_credits");
     expect(args(credits!, "in")).toEqual(["media_item_id", [trackA, trackB]]);
+    expect(credits!.calls.filter((call) => call.method === "order").map((call) => call.args)).toEqual([
+      ["media_item_id", { ascending: true }],
+      ["credit_order", { ascending: true, nullsFirst: false }],
+      ["role", { ascending: true }],
+      ["person_id", { ascending: true }],
+    ]);
     const genres = state.queries.find((query) => query.table === "media_genres");
     expect(args(genres!, "in")).toEqual(["media_item_id", [trackA, trackB]]);
+    expect(genres!.calls.filter((call) => call.method === "order").map((call) => call.args)).toEqual([
+      ["media_item_id", { ascending: true }],
+      ["genre_id", { ascending: true }],
+    ]);
     const membership = state.queries.find((query) => query.table === "media_item_series");
     expect(args(membership!, "select")).toEqual(["position, media_series(name)"]);
     expect(args(membership!, "eq")).toEqual(["media_item_id", albumId]);

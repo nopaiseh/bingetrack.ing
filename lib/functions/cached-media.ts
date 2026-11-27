@@ -200,7 +200,7 @@ export const getCachedSongDetail = cache(async (id: string) => {
 /** 人物详情（people 行 + get_person_works）；写入走 media / person / person:item 失效。 */
 export const getCachedPersonDetail = cache(async (id: string) => {
   if (!isMediaId(id)) return null;
-  return unstable_cache(getPersonDetailForCache, ["public-person-detail-v1"], {
+  return unstable_cache(getPersonDetailForCache, ["public-person-detail-v2"], {
     revalidate: false,
     tags: [MEDIA_TAG, PERSON_TAG, personItemTag(id)],
   })(id);

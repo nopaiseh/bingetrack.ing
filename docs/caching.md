@@ -33,7 +33,7 @@
 | 影视／图书条目详情           | `public-media-detail-v4` + ID                                            | 仅标签失效 | `media`、`media:item:<id>`            |
 | 专辑详情                     | `public-album-detail-v3` + ID                                            | 仅标签失效 | `media`、`media:item:<id>`            |
 | 歌曲详情                     | `public-song-detail-v1` + ID                                             | 仅标签失效 | `media`、`media:item:<id>`            |
-| 人物详情                     | `public-person-detail-v1` + ID                                           | 仅标签失效 | `media`、`person`、`person:item:<id>` |
+| 人物详情                     | `public-person-detail-v2` + ID                                           | 仅标签失效 | `media`、`person`、`person:item:<id>` |
 | 电视节目的季摘要             | `public-media-seasons-v3` + ID                                           | 仅标签失效 | `media`、`media:item:<id>`            |
 | 单集分页与季统计             | `public-season-episodes-v2` + 节目 ID／季 ID／页码／每页条数／状态／排序 | 仅标签失效 | `media`、`media:item:<节目 ID>`       |
 | 下一集                       | `public-season-next-episode-v1` + 节目 ID／季 ID                         | 仅标签失效 | `media`、`media:item:<节目 ID>`       |
@@ -48,7 +48,7 @@
 | 专辑目录统计                 | `public-album-stats-v1`                                                  | 仅标签失效 | `media`、`media:lists`                |
 | 搜索筛选选项                 | `search-options-v2`                                                      | 仅标签失效 | `media`、`media:lists`                |
 
-非法 ID 在进入数据缓存前就返回，不会写入缓存条目。电影／节目／图书详情走 `getCachedMediaById`（`public-media-detail-v4`）；专辑详情走 `getCachedAlbumDetail`（`public-album-detail-v3`）；歌曲详情走 `getCachedSongDetail`（`public-song-detail-v1`，RPC `get_song_detail`）；人物详情走 `getCachedPersonDetail`（`public-person-detail-v1`，people 行 + RPC `get_person_works`）。
+非法 ID 在进入数据缓存前就返回，不会写入缓存条目。电影／节目／图书详情走 `getCachedMediaById`（`public-media-detail-v4`）；专辑详情走 `getCachedAlbumDetail`（`public-album-detail-v3`）；歌曲详情走 `getCachedSongDetail`（`public-song-detail-v1`，RPC `get_song_detail`）；人物详情走 `getCachedPersonDetail`（`public-person-detail-v2`，people 行 + RPC `get_person_works`）。
 
 ### 系列查询降级（不写数据缓存，也不写页面缓存）
 
