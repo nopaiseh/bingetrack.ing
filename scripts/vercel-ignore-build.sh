@@ -41,7 +41,7 @@ COMMIT_REF="${VERCEL_GIT_COMMIT_REF:-}"
 COMMIT_MSG="${VERCEL_GIT_COMMIT_MESSAGE:-}"
 PREVIOUS_SHA="${VERCEL_GIT_PREVIOUS_SHA:-}"
 
-# 只看提交标题（首行）。正文里提到 [preview]（例如文档说明）不应误触发构建。
+# 只看提交标题（首行）。正文或标题里“描述”该标记的句子若写出字面量也会触发，故说明性提交标题勿写入该字面量。
 COMMIT_SUBJECT="${COMMIT_MSG%%$'\n'*}"
 
 log "vercel-ignore-build：VERCEL_ENV=${VERCEL_ENV:-<unset>} REF=${COMMIT_REF:-<unset>}"
