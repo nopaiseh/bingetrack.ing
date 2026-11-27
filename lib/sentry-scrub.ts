@@ -1,4 +1,5 @@
-import type { Breadcrumb, Event } from "@sentry/nextjs";
+import type { StreamedSpanJSON } from "@sentry/core";
+import type { Breadcrumb, ErrorEvent, Event } from "@sentry/nextjs";
 
 /** 一次性登录凭证和常见 OAuth 查询参数，不能进入 Sentry。 */
 const SENSITIVE_QUERY_KEYS = new Set(["token_hash", "token", "code"]);
@@ -84,7 +85,7 @@ export function scrubSentryBreadcrumb<T extends Breadcrumb>(breadcrumb: T): T {
   return breadcrumb;
 }
 
-/** span.data 与根 span contexts.trace.data 共用同一套属性清理。 */
+/** span.data、streamed span.attributes 与根 span contexts.trace.data 共用同一套属性清理。 */
 function scrubSpanData(data: { [key: string]: unknown }): void {
   for (const key of Object.keys(data)) {
     const value = data[key];
@@ -99,14 +100,24 @@ function scrubSpanData(data: { [key: string]: unknown }): void {
   }
 }
 
-function scrubSpan(span: NonNullable<Event["spans"]>[number]): void {
+function scrubStaticSpan(span: NonNullable<Event["spans"]>[number]): void {
   if (typeof span.description === "string") span.description = scrubSensitiveUrl(span.description);
   const named = span as { name?: unknown };
   if (typeof named.name === "string") named.name = scrubSensitiveUrl(named.name);
   if (span.data) scrubSpanData(span.data);
 }
 
-/** 错误事件和性能事务共用：请求 URL、事务名、面包屑和 span 里的凭证都去掉。 */
+/**
+ * stream 模式下 beforeSendSpan 收到的 StreamedSpanJSON：清理 name 与 attributes 中的一次性凭证。
+ * 替代已失效的 beforeSendTransaction（traceLifecycle 默认为 stream 时会被 SDK 忽略）。
+ */
+export function scrubSentrySpan<T extends StreamedSpanJSON>(span: T): T {
+  if (typeof span.name === "string") span.name = scrubSensitiveUrl(span.name);
+  if (span.attributes) scrubSpanData(span.attributes as { [key: string]: unknown });
+  return span;
+}
+
+/** 错误事件：请求 URL、事务名、面包屑和嵌套 span 里的凭证都去掉。 */
 export function scrubSentryEvent<T extends Event>(event: T): T {
   if (event.request) {
     if (typeof event.request.url === "string") event.request.url = scrubSensitiveUrl(event.request.url);
@@ -124,8 +135,23 @@ export function scrubSentryEvent<T extends Event>(event: T): T {
     for (const breadcrumb of event.breadcrumbs) scrubSentryBreadcrumb(breadcrumb);
   }
   if (event.spans) {
-    for (const span of event.spans) scrubSpan(span);
+    for (const span of event.spans) scrubStaticSpan(span);
   }
   if (event.contexts?.trace?.data) scrubSpanData(event.contexts.trace.data);
   return event;
+}
+
+/** client / server / edge 三处 Sentry.init 共用的隐私钩子。 */
+export function getSentryPrivacyHooks() {
+  return {
+    beforeSend(event: ErrorEvent): ErrorEvent {
+      return scrubSentryEvent(event);
+    },
+    beforeSendSpan(span: StreamedSpanJSON): StreamedSpanJSON {
+      return scrubSentrySpan(span);
+    },
+    beforeBreadcrumb(breadcrumb: Breadcrumb): Breadcrumb {
+      return scrubSentryBreadcrumb(breadcrumb);
+    },
+  };
 }
