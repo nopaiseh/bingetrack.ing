@@ -147,7 +147,7 @@ export async function listAdminMedia(
   const storedTrackCountByAlbum = new Map<string, number | null>();
   if (mediaType === "album" && ids.length > 0) {
     const [trackResult, albumMetaResult] = await Promise.all([
-      db.from("music").select("album_id").in("album_id", ids),
+      db.from("album_tracks").select("album_id").in("album_id", ids),
       db.from("music_albums").select("media_item_id,track_count").in("media_item_id", ids),
     ]);
     const trackRows = readRows<{ album_id: string }>(trackResult, LIST_READ_ERROR);
@@ -342,7 +342,8 @@ export async function listAdminChildren(
 }
 
 type TrackListRow = {
-  media_item_id: string;
+  song_id: string;
+  disc_number: number | null;
   track_number: number | null;
   media:
     | {
@@ -396,13 +397,14 @@ export async function listAdminTracks(
 
   const rows = readRows<TrackListRow>(
     await db
-      .from("music")
+      .from("album_tracks")
       .select(
-        "media_item_id,track_number,media:media_items!music_media_item_id_fkey(id,title,alternate_title,cover_url,release_date,tracking(status,rating))",
+        "song_id,disc_number,track_number,media:media_items!album_tracks_song_id_fkey(id,title,alternate_title,cover_url,release_date,tracking(status,rating))",
       )
       .eq("album_id", query.parent)
+      .order("disc_number", { ascending: true })
       .order("track_number", { ascending: true, nullsFirst: false })
-      .order("media_item_id", { ascending: true }),
+      .order("song_id", { ascending: true }),
     CHILD_LIST_READ_ERROR,
   );
 
@@ -411,7 +413,7 @@ export async function listAdminTracks(
     const media = Array.isArray(row.media) ? row.media[0] : row.media;
     const tracking = Array.isArray(media?.tracking) ? media?.tracking[0] : media?.tracking;
     return {
-      id: row.media_item_id,
+      id: row.song_id,
       type: "music" as const,
       title: media?.title ?? "",
       alternate_title: media?.alternate_title ?? null,

@@ -11,7 +11,13 @@ import {
   type MediaChoiceRow,
 } from "@/lib/admin/catalog";
 import { isMediaId } from "@/lib/functions/media-id";
-import { affectedMediaIds, mergeAffected, referenceMediaIds, revalidateMediaItems } from "@/lib/admin/revalidate-media";
+import {
+  affectedMediaIds,
+  mergeAffected,
+  referenceMediaIds,
+  revalidateMediaItems,
+  revalidatePersonItems,
+} from "@/lib/admin/revalidate-media";
 import { withAlbumCoversForTracks } from "@/lib/music/track-display-cover";
 import { isExpectedDbError, reportHandledError } from "@/lib/report-error";
 import { redirect } from "next/navigation";
@@ -98,6 +104,7 @@ export async function saveReference(_previous: ActionResult, form: FormData): Pr
   }
   // 只失效引用这条资料的详情页；聚合数据与搜索选项随 lists 标签一起刷新，新建资料也会出现在筛选项中。
   revalidateMediaItems(await referenceMediaIds(db, kind, [data.id]));
+  if (kind === "people") revalidatePersonItems([data.id]);
   if (form.get("return_list") === "1") return { saved: true };
   redirect(`/manage/references/${kind}/${data.id}?saved=1&n=${Date.now()}`);
 }
@@ -121,6 +128,8 @@ export async function deleteReference(_previous: ActionResult, form: FormData): 
   // 确认名称不符是用户可预期的校验，不上报。
   if (!data?.length) return { error: "名称不匹配或资料已被删除，请刷新确认。" };
   revalidateMediaItems(affected);
+  // 人物详情不得残留在公开缓存（隐私）。
+  if (kind === "people") revalidatePersonItems([id]);
   redirect(`/manage/references/${kind}?deleted=1&n=${Date.now()}`);
 }
 

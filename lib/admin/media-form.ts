@@ -48,7 +48,17 @@ export type MediaInput = {
   release_date: string | null;
   runtime: number | null;
   parent_id: string | null;
+  /**
+   * 表单加载时的所属专辑 id。保存时传给 admin_save_media；
+   * 仅当与新 parent_id 不同时才删除旧 album_tracks 关联（共用歌不丢其它专辑）。
+   */
+  previous_parent_id: string | null;
   number: number | null;
+  /**
+   * 曲目盘号（album_tracks.disc_number）；其它类型为 null。
+   * 未传（null）时数据库保留原盘号／新建默认 1，勿在解析层补成 1。
+   */
+  disc_number: number | null;
   status: "watched" | "watching" | "want_to_watch" | "in_progress";
   rating: number | null;
   genres: string[];
@@ -62,6 +72,12 @@ export type MediaInput = {
   lyricists: PersonRef[];
   /** 曲目作曲（media_credits.role=composer）。 */
   composers: PersonRef[];
+  /** 曲目编曲（media_credits.role=arranger）。 */
+  arrangers: PersonRef[];
+  /** 专辑／曲目制作人（media_credits.role=producer）。 */
+  producers: PersonRef[];
+  /** 曲目合唱／客串（media_credits.role=featured）。 */
+  featured: PersonRef[];
   /** 图书作者（media_credits.role=author）。 */
   authors: PersonRef[];
   /** 唱片公司；仅专辑写入 music_albums.label。 */
@@ -191,7 +207,13 @@ export function parseMediaForm(form: FormData): MediaInput {
   const type = string("type");
   const title = string("title");
   const parent_id = string("parent_id");
-  if ((id && !isMediaId(id)) || (parent_id && !isMediaId(parent_id))) throw new Error("媒体 ID 格式不正确。");
+  const previous_parent_id = string("previous_parent_id");
+  if (
+    (id && !isMediaId(id)) ||
+    (parent_id && !isMediaId(parent_id)) ||
+    (previous_parent_id && !isMediaId(previous_parent_id))
+  )
+    throw new Error("媒体 ID 格式不正确。");
   if (!type || !Object.hasOwn(mediaTypes, type)) throw new Error("不支持的媒体类型。");
   if (!title) throw new Error("请填写标题。");
   const number = numeric("number", 100000, true);
@@ -199,6 +221,12 @@ export function parseMediaForm(form: FormData): MediaInput {
   if (needsParentNumber && (!parent_id || number === null))
     throw new Error(type === "music" ? "请指定所属专辑和曲序。" : "请指定上级条目和季／集编号。");
   if (id && id === parent_id) throw new Error("不能把条目设为自己的上级。");
+  let disc_number: number | null = null;
+  if (type === "music") {
+    // 原样回传：未提交则 null（RPC 保留原盘号）；勿默认成 1，否则第 2 盘以后会被写回第 1 盘。
+    disc_number = numeric("disc_number", 100, true);
+    if (disc_number !== null && disc_number < 1) throw new Error("盘号须为 1–100 的整数。");
+  }
   // 曲目／季／单集不设自身封面。不读取、不校验提交的 cover_url，新建和更新都写入 null。
   // 这里不改已有行；只有之后再次保存时，数据库才会按这份 payload 把封面写成 null。
   const skipOwnCover = type === "tv_season" || type === "tv_episode" || type === "music";
@@ -234,6 +262,9 @@ export function parseMediaForm(form: FormData): MediaInput {
   const artists = isAlbum || isMusicTrack ? credits("artists").map(({ id, name }) => ({ id, name })) : [];
   const lyricists = isMusicTrack ? credits("lyricists").map(({ id, name }) => ({ id, name })) : [];
   const composers = isMusicTrack ? credits("composers").map(({ id, name }) => ({ id, name })) : [];
+  const arrangers = isMusicTrack ? credits("arrangers").map(({ id, name }) => ({ id, name })) : [];
+  const producers = isAlbum || isMusicTrack ? credits("producers").map(({ id, name }) => ({ id, name })) : [];
+  const featured = isMusicTrack ? credits("featured").map(({ id, name }) => ({ id, name })) : [];
   const authors = isBook ? credits("authors").map(({ id, name }) => ({ id, name })) : [];
   const label = isAlbum ? string("label", 200) : null;
   const publisher = isBook ? string("publisher", 200) : null;
@@ -268,7 +299,9 @@ export function parseMediaForm(form: FormData): MediaInput {
     release_date: type === "tv_show" || type === "tv_season" ? null : release_date,
     runtime,
     parent_id,
+    previous_parent_id: type === "music" ? previous_parent_id : null,
     number,
+    disc_number,
     status: effectiveStatus,
     rating,
     // 曲目可有最多 2 个类型；季／集仍不写类型。专辑／影视／图书上限仍为 MAX_NAMES。
@@ -282,6 +315,9 @@ export function parseMediaForm(form: FormData): MediaInput {
     artists,
     lyricists,
     composers,
+    arrangers,
+    producers,
+    featured,
     authors,
     label,
     page_count,

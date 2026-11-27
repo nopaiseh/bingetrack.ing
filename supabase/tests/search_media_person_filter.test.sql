@@ -29,8 +29,10 @@ insert into public.books (media_item_id, page_count, publisher) values
 insert into public.music_albums (media_item_id, track_count, label) values
   ('d2000000-0000-4000-8000-000000000004', 1, '测验厂牌');
 
-insert into public.music (media_item_id, track_number, album_id) values
-  ('d2000000-0000-4000-8000-000000000003', 1, 'd2000000-0000-4000-8000-000000000004');
+insert into public.music (media_item_id) values
+  ('d2000000-0000-4000-8000-000000000003');
+insert into public.album_tracks (album_id, song_id, disc_number, track_number) values
+  ('d2000000-0000-4000-8000-000000000004', 'd2000000-0000-4000-8000-000000000003', 1, 1);
 
 insert into public.media_series (id, name) values
   ('d3000000-0000-4000-8000-000000000001', '人物筛选诺兰系列'),

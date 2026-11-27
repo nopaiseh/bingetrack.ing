@@ -17,11 +17,9 @@ returns jsonb language sql as $$
   select jsonb_build_object(
     'type','album','title',title,'status','want_to_watch','rating',null,
     'runtime',null,'label','类型测试厂牌','genres',genres,
-    'artists',jsonb_build_array(jsonb_build_object('name','类型测试艺人')),
+    'credits',jsonb_build_array(jsonb_build_object('person',jsonb_build_object('name','类型测试艺人'),'role','artist','order',0)),
     'collections','[]'::jsonb,
-    'languages','[]'::jsonb,'regions','[]'::jsonb,
-    'actors','[]'::jsonb,'directors','[]'::jsonb,
-    'lyricists','[]'::jsonb,'composers','[]'::jsonb
+    'languages','[]'::jsonb,'regions','[]'::jsonb
   );
 $$;
 
@@ -30,10 +28,8 @@ returns jsonb language sql as $$
   select jsonb_build_object(
     'type','music','title',title,'number',track_no,'runtime',180,
     'status','want_to_watch','rating',null,
-    'artists',jsonb_build_array(jsonb_build_object('name','类型测试艺人')),
-    'lyricists','[]'::jsonb,'composers','[]'::jsonb,
+    'credits',jsonb_build_array(jsonb_build_object('person',jsonb_build_object('name','类型测试艺人'),'role','artist','order',0)),
     'genres',genres,'languages','[]'::jsonb,'regions','[]'::jsonb,
-    'actors','[]'::jsonb,'directors','[]'::jsonb,
     'collections','[]'::jsonb
   );
 $$;
@@ -49,14 +45,14 @@ select lives_ok(
   $$insert into track_genre_ids(name, id)
     values (
       'album',
-      public.admin_save_album_with_tracks(
+      (public.admin_save_album_with_tracks(
         pg_temp.album_payload('Track genre album', '["专辑流行"]'::jsonb),
         jsonb_build_array(
           pg_temp.track_payload('Zero genres', 1, '[]'::jsonb),
           pg_temp.track_payload('One genre', 2, '["曲目流行"]'::jsonb),
           pg_temp.track_payload('Two genres', 3, '["曲目流行","曲目说唱"]'::jsonb)
         )
-      )
+      )->>'id')::uuid
     )$$,
   'album with tracks of 0/1/2 genres saves'
 );
@@ -66,9 +62,9 @@ select is(
     select array_agg(g.name order by g.name)
     from public.media_genres mg
     join public.genres g on g.id = mg.genre_id
-    join public.music mu on mu.media_item_id = mg.media_item_id
-    join public.media_items t on t.id = mu.media_item_id
-    where mu.album_id = (select id from track_genre_ids where name = 'album')
+    join public.album_tracks at on at.song_id = mg.media_item_id
+    join public.media_items t on t.id = at.song_id
+    where at.album_id = (select id from track_genre_ids where name = 'album')
       and t.title = 'Zero genres'
   ),
   null,
@@ -80,9 +76,9 @@ select is(
     select array_agg(g.name order by g.name)
     from public.media_genres mg
     join public.genres g on g.id = mg.genre_id
-    join public.music mu on mu.media_item_id = mg.media_item_id
-    join public.media_items t on t.id = mu.media_item_id
-    where mu.album_id = (select id from track_genre_ids where name = 'album')
+    join public.album_tracks at on at.song_id = mg.media_item_id
+    join public.media_items t on t.id = at.song_id
+    where at.album_id = (select id from track_genre_ids where name = 'album')
       and t.title = 'One genre'
   ),
   array['曲目流行'],
@@ -94,9 +90,9 @@ select is(
     select array_agg(g.name order by g.name)
     from public.media_genres mg
     join public.genres g on g.id = mg.genre_id
-    join public.music mu on mu.media_item_id = mg.media_item_id
-    join public.media_items t on t.id = mu.media_item_id
-    where mu.album_id = (select id from track_genre_ids where name = 'album')
+    join public.album_tracks at on at.song_id = mg.media_item_id
+    join public.media_items t on t.id = at.song_id
+    where at.album_id = (select id from track_genre_ids where name = 'album')
       and t.title = 'Two genres'
   ),
   array['曲目流行','曲目说唱'],

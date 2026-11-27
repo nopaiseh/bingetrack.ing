@@ -44,7 +44,7 @@ const TRACK_CHUNK = 1000;
 /** 分块读取专辑曲目；失败即抛错，不把空结果当成真实结构。 */
 async function readTracks(db: SupabaseClient, albumId: string): Promise<AlbumTrackItem[]> {
   type Row = {
-    media_item_id: string;
+    song_id: string;
     track_number: number;
     media:
       | {
@@ -62,17 +62,18 @@ async function readTracks(db: SupabaseClient, albumId: string): Promise<AlbumTra
   const tracks: AlbumTrackItem[] = [];
   for (let offset = 0; ; offset += TRACK_CHUNK) {
     const { data, error } = await db
-      .from("music")
-      .select("media_item_id,track_number,media:media_items!music_media_item_id_fkey(title,runtime,tracking(status))")
+      .from("album_tracks")
+      .select("song_id,track_number,media:media_items!album_tracks_song_id_fkey(title,runtime,tracking(status))")
       .eq("album_id", albumId)
+      .order("disc_number")
       .order("track_number")
-      .order("media_item_id")
+      .order("song_id")
       .range(offset, offset + TRACK_CHUNK - 1);
     if (error) throw new Error("无法读取曲目结构，请重试。");
     for (const row of data as unknown as Row[]) {
       const media = one(row.media);
       tracks.push({
-        id: row.media_item_id,
+        id: row.song_id,
         number: Number(row.track_number),
         title: media?.title ?? "",
         durationSeconds: media?.runtime != null ? Number(media.runtime) : null,

@@ -13,11 +13,13 @@ insert into public.media_items (id, type, title, release_date, runtime) values
 insert into public.music_albums (media_item_id, track_count, label) values
   ('f1000000-0000-4000-8000-000000000010', 1, 'Fixture');
 
-insert into public.music (media_item_id, track_number, album_id) values
-  ('f1000000-0000-4000-8000-000000000020', 1, 'f1000000-0000-4000-8000-000000000010'),
-  ('f1000000-0000-4000-8000-000000000021', null, null),
-  ('f1000000-0000-4000-8000-000000000022', null, null),
-  ('f1000000-0000-4000-8000-000000000023', null, null);
+insert into public.music (media_item_id) values
+  ('f1000000-0000-4000-8000-000000000020'),
+  ('f1000000-0000-4000-8000-000000000021'),
+  ('f1000000-0000-4000-8000-000000000022'),
+  ('f1000000-0000-4000-8000-000000000023');
+insert into public.album_tracks (album_id, song_id, disc_number, track_number) values
+  ('f1000000-0000-4000-8000-000000000010', 'f1000000-0000-4000-8000-000000000020', 1, 1);
 
 insert into public.tracking (media_item_id, status, rating) values
   ('f1000000-0000-4000-8000-000000000020', 'watched', 8),

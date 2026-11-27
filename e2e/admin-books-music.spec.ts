@@ -146,9 +146,14 @@ test("后台新建专辑并添加曲目，可编辑曲目后删除专辑及下�
     await expect(page).not.toHaveURL(new RegExp(`/manage/media/${albumId}\\?`));
     trackId = new URL(page.url()).pathname.split("/").at(-1)!;
     expect(trackId).not.toBe(albumId);
-    const added = await db.from("music").select("media_item_id").eq("album_id", albumId).eq("track_number", 1).single();
+    const added = await db
+      .from("album_tracks")
+      .select("song_id")
+      .eq("album_id", albumId)
+      .eq("track_number", 1)
+      .single();
     expect(added.error).toBeNull();
-    expect(added.data!.media_item_id).toBe(trackId);
+    expect(added.data!.song_id).toBe(trackId);
 
     await page.getByLabel("中文标题", { exact: true }).fill(trackRenamed);
     await saveMedia(page, db, trackRenamed);
@@ -162,7 +167,7 @@ test("后台新建专辑并添加曲目，可编辑曲目后删除专辑及下�
     const descendants = await db.from("media_items").select("id").in("id", [albumId, trackId]);
     expect(descendants.error).toBeNull();
     expect(descendants.data).toEqual([]);
-    const tracksLeft = await db.from("music").select("media_item_id").eq("album_id", albumId);
+    const tracksLeft = await db.from("album_tracks").select("song_id").eq("album_id", albumId);
     expect(tracksLeft.error).toBeNull();
     expect(tracksLeft.data).toEqual([]);
   } finally {

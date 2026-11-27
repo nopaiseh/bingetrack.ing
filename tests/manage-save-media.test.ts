@@ -3,8 +3,9 @@ import { deleteMedia, saveMedia } from "@/app/(admin)/manage/actions";
 import { requireOwner } from "@/lib/auth/server";
 import { refresh } from "next/cache";
 import { redirect } from "next/navigation";
-import { revalidateMediaItems } from "@/lib/admin/revalidate-media";
+import { creditedPersonIds, revalidateMediaItems, revalidatePersonItems } from "@/lib/admin/revalidate-media";
 import { deleteMusicTree, saveMusicMedia } from "@/lib/admin/save-music-media";
+import { saveBookMedia } from "@/lib/admin/save-book-media";
 
 vi.mock("@/lib/report-error", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@/lib/report-error")>();
@@ -15,14 +16,32 @@ vi.mock("next/cache", () => ({ refresh: vi.fn(), revalidatePath: vi.fn(), revali
 vi.mock("next/navigation", () => ({ redirect: vi.fn() }));
 vi.mock("@/lib/admin/revalidate-media", () => ({
   affectedMediaIds: vi.fn(async (_db: unknown, ids: string[]) => ids),
+  creditedPersonIds: vi.fn(async () => []),
   mergeAffected: (...groups: (string[] | null)[]) => groups.flatMap((group) => group ?? []),
   revalidateMediaItems: vi.fn(),
+  revalidatePersonItems: vi.fn(),
   revalidateAllMedia: vi.fn(),
 }));
 vi.mock("@/lib/admin/save-music-media", () => ({
-  saveMusicMedia: vi.fn(async () => "44444444-4444-4444-8444-444444444444"),
+  saveMusicMedia: vi.fn(async () => ({
+    id: "44444444-4444-4444-8444-444444444444",
+    affectedPersonIds: [],
+  })),
   deleteMusicTree: vi.fn(async () => "album"),
   SaveMusicMediaError: class SaveMusicMediaError extends Error {
+    code?: string;
+    constructor(message: string, code?: string) {
+      super(message);
+      this.code = code;
+    }
+  },
+}));
+vi.mock("@/lib/admin/save-book-media", () => ({
+  saveBookMedia: vi.fn(async () => ({
+    id: "44444444-4444-4444-8444-444444444444",
+    affectedPersonIds: [],
+  })),
+  SaveBookMediaError: class SaveBookMediaError extends Error {
     code?: string;
     constructor(message: string, code?: string) {
       super(message);
@@ -33,6 +52,8 @@ vi.mock("@/lib/admin/save-music-media", () => ({
 
 const saved = "44444444-4444-4444-8444-444444444444";
 const season = "22222222-2222-4222-8222-222222222222";
+const personA = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
+const personB = "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb";
 const rpc = vi.fn();
 
 function episodeForm(extra: Record<string, string> = {}) {
@@ -87,6 +108,18 @@ describe("deleteMedia", () => {
       expect.stringMatching(new RegExp(`^/manage\\?type=${list}&deleted=1&n=\\d+$`)),
     );
   });
+
+  it("删除前查出演职员并失效人物页", async () => {
+    vi.mocked(creditedPersonIds).mockResolvedValueOnce([personA, personB]);
+    target.mockResolvedValue({ data: { type: "movie" }, error: null });
+    const form = new FormData();
+    form.set("id", saved);
+    form.set("confirm_title", "标题");
+    await deleteMedia({}, form);
+    expect(creditedPersonIds).toHaveBeenCalledWith(expect.anything(), [saved]);
+    expect(vi.mocked(creditedPersonIds).mock.invocationCallOrder[0]).toBeLessThan(rpc.mock.invocationCallOrder[0]);
+    expect(revalidatePersonItems).toHaveBeenCalledExactlyOnceWith([personA, personB]);
+  });
 });
 
 describe("saveMedia 专辑／曲目", () => {
@@ -103,6 +136,67 @@ describe("saveMedia 专辑／曲目", () => {
     expect(result).toEqual({ saved: true, id: saved });
     expect(saveMusicMedia).toHaveBeenCalled();
     expect(rpc).not.toHaveBeenCalled();
+  });
+
+  it("专辑保存用 RPC affected_person_ids 失效人物页", async () => {
+    vi.mocked(saveMusicMedia).mockResolvedValueOnce({ id: saved, affectedPersonIds: [personA, personB] });
+    const form = new FormData();
+    for (const [key, value] of Object.entries({
+      type: "album",
+      title: "测试专辑",
+      release_date: "2024-01-01",
+      after: "continue",
+    }))
+      form.set(key, value);
+    await saveMedia({}, form);
+    expect(revalidatePersonItems).toHaveBeenCalledExactlyOnceWith([personA, personB]);
+  });
+
+  it("曲目保存用 RPC affected_person_ids 失效人物页", async () => {
+    vi.mocked(saveMusicMedia).mockResolvedValueOnce({ id: saved, affectedPersonIds: [personA] });
+    const form = new FormData();
+    for (const [key, value] of Object.entries({
+      type: "music",
+      title: "测试曲目",
+      parent_id: "cccccccc-cccc-4ccc-8ccc-cccccccccccc",
+      number: "1",
+      after: "continue",
+    }))
+      form.set(key, value);
+    await saveMedia({}, form);
+    expect(revalidatePersonItems).toHaveBeenCalledExactlyOnceWith([personA]);
+  });
+});
+
+describe("saveMedia 影视／图书人物失效", () => {
+  it("电影保存用 manage_save_media 的 affected_person_ids 失效人物页", async () => {
+    rpc.mockResolvedValue({
+      data: { id: saved, affected_person_ids: [personA] },
+      error: null,
+    });
+    const form = new FormData();
+    for (const [key, value] of Object.entries({
+      type: "movie",
+      title: "测试电影",
+      after: "continue",
+    }))
+      form.set(key, value);
+    await saveMedia({}, form);
+    expect(revalidatePersonItems).toHaveBeenCalledExactlyOnceWith([personA]);
+  });
+
+  it("图书保存用 saveBookMedia 的 affectedPersonIds 失效人物页", async () => {
+    vi.mocked(saveBookMedia).mockResolvedValueOnce({ id: saved, affectedPersonIds: [personB] });
+    const form = new FormData();
+    for (const [key, value] of Object.entries({
+      type: "book",
+      title: "测试图书",
+      after: "continue",
+    }))
+      form.set(key, value);
+    await saveMedia({}, form);
+    expect(saveBookMedia).toHaveBeenCalled();
+    expect(revalidatePersonItems).toHaveBeenCalledExactlyOnceWith([personB]);
   });
 });
 

@@ -12,8 +12,16 @@ create function pg_temp.book_payload(title text, authors jsonb, extras jsonb def
 returns jsonb language sql as $$
   select jsonb_build_object(
     'type','book','title',title,'status','want_to_watch','rating',null,
-    'genres','[]'::jsonb,'languages','[]'::jsonb,'regions','[]'::jsonb,'authors',authors,
-    'page_count',200,'publisher','测验出版社','collections','[]'::jsonb
+    'genres','[]'::jsonb,'languages','[]'::jsonb,'regions','[]'::jsonb,
+    'page_count',200,'publisher','测验出版社','collections','[]'::jsonb,
+    'credits', (
+      select coalesce(jsonb_agg(jsonb_build_object(
+        'person', person,
+        'role', 'author',
+        'order', ord - 1
+      ) order by ord), '[]'::jsonb)
+      from jsonb_array_elements(authors) with ordinality as t(person, ord)
+    )
   ) || extras;
 $$;
 grant execute on function pg_temp.book_payload(text, jsonb, jsonb) to authenticated;
@@ -193,7 +201,7 @@ select throws_ok(
   $$select public.admin_save_media(jsonb_build_object(
     'type','movie','title','伪在读电影','status','in_progress','rating',null,
     'genres','[]'::jsonb,'languages','[]'::jsonb,'regions','[]'::jsonb,
-    'actors','[]'::jsonb,'directors','[]'::jsonb
+    'credits','[]'::jsonb
   ))$$,
   '22023',
   null,

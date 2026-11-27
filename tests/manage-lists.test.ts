@@ -300,7 +300,7 @@ describe("人物与影视列表查询", () => {
           data: [{ id: albumA, cover_url: null, release_date: "2024-01-01", runtime: null, seasons: [] }],
         };
       }
-      if (query.table === "music") {
+      if (query.table === "album_tracks") {
         return { data: [{ album_id: albumA }, { album_id: albumA }, { album_id: null }] };
       }
       if (query.table === "music_albums") {
@@ -311,7 +311,7 @@ describe("人物与影视列表查询", () => {
     const page = await listAdminMedia(db, "album", {});
     // 有实际曲目时以实际数为准，忽略过期的 music_albums.track_count
     expect(page.items[0]).toMatchObject({ type: "album", track_count: 2, season_count: 0, episode_count: 0 });
-    expect(queries.some((query) => query.table === "music")).toBe(true);
+    expect(queries.some((query) => query.table === "album_tracks")).toBe(true);
     expect(queries.some((query) => query.table === "music_albums")).toBe(true);
   });
 });
@@ -848,11 +848,11 @@ describe("专辑曲目列表", () => {
     const { db, queries } = fakeDb((query) => {
       if (query.table === "media_items")
         return { data: { title: "所属专辑", cover_url: "https://is1-ssl.mzstatic.com/album.jpg" } };
-      if (query.table === "music") {
+      if (query.table === "album_tracks") {
         return {
           data: [
             {
-              media_item_id: trackB,
+              song_id: trackB,
               track_number: 2,
               media: {
                 id: trackB,
@@ -864,7 +864,7 @@ describe("专辑曲目列表", () => {
               },
             },
             {
-              media_item_id: trackA,
+              song_id: trackA,
               track_number: 1,
               media: [
                 {
@@ -895,7 +895,7 @@ describe("专辑曲目列表", () => {
       track: { albumTitle: "所属专辑", trackNumber: 1 },
     });
     expect(queries[0].table).toBe("media_items");
-    expect(queries[1].table).toBe("music");
+    expect(queries[1].table).toBe("album_tracks");
     expect(calls(queries[1], "eq")[0].args).toEqual(["album_id", albumA]);
   });
 });

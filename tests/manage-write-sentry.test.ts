@@ -17,9 +17,11 @@ vi.mock("next/cache", () => ({ refresh: vi.fn(), revalidatePath: vi.fn(), revali
 vi.mock("next/navigation", () => ({ redirect: vi.fn() }));
 vi.mock("@/lib/admin/revalidate-media", () => ({
   affectedMediaIds: vi.fn(async (_db: unknown, ids: string[]) => ids),
+  creditedPersonIds: vi.fn(async () => []),
   mergeAffected: (...groups: (string[] | null)[]) => groups.flatMap((group) => group ?? []),
   referenceMediaIds: vi.fn(async () => []),
   revalidateMediaItems: vi.fn(),
+  revalidatePersonItems: vi.fn(),
   revalidateAllMedia: vi.fn(),
 }));
 vi.mock("@/lib/admin/save-music-media", async (importOriginal) => {

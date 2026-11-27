@@ -103,8 +103,15 @@ describe("关联资料服务端操作", () => {
     );
     expect(revalidateTag).toHaveBeenCalledWith(`media:item:${linked}`, { expire: 0 });
     expect(revalidateTag).toHaveBeenCalledWith("media:lists", { expire: 0 });
+    expect(revalidateTag).toHaveBeenCalledWith(`person:item:${id}`, { expire: 0 });
     expect(revalidateTag).not.toHaveBeenCalledWith("media", expect.anything());
     expect(revalidatePath).not.toHaveBeenCalledWith("/", "layout");
+  });
+  it("删除非人物资料不失效 person:item", async () => {
+    chain.select.mockResolvedValue({ data: [{ id }], error: null });
+    await deleteReference({}, form({ kind: "genres", id, confirm_name: "剧情" }));
+    expect(revalidateTag).toHaveBeenCalledWith(`media:item:${linked}`, { expire: 0 });
+    expect(revalidateTag).not.toHaveBeenCalledWith(`person:item:${id}`, expect.anything());
   });
   it("保存资料只失效引用它的条目与聚合数据，不清空全站缓存", async () => {
     chain.single.mockResolvedValue({ data: { id }, error: null });
@@ -112,6 +119,11 @@ describe("关联资料服务端操作", () => {
     expect(referenceMediaIds).toHaveBeenCalledWith(expect.anything(), "genres", [id]);
     expect(revalidateTag).toHaveBeenCalledWith(`media:item:${linked}`, { expire: 0 });
     expect(revalidateTag).not.toHaveBeenCalledWith("media", expect.anything());
+  });
+  it("保存人物时额外失效 person:item", async () => {
+    chain.single.mockResolvedValue({ data: { id }, error: null });
+    await saveReference({}, form({ kind: "people", id, name: "Jane" }));
+    expect(revalidateTag).toHaveBeenCalledWith(`person:item:${id}`, { expire: 0 });
   });
   it("系列顺序必须是范围内整数", async () => {
     expect(await saveCollectionMember({}, form({ series_id: id, media_item_id: id, position: "1.5" }))).toHaveProperty(

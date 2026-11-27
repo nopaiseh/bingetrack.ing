@@ -30,7 +30,7 @@ function fakeDb(handle: (query: Query) => Result) {
         query.calls.push({ method, args });
         return builder;
       };
-    for (const method of ["select", "eq", "gt", "lt", "order", "limit"]) builder[method] = chain(method);
+    for (const method of ["select", "eq", "gt", "lt", "or", "order", "limit"]) builder[method] = chain(method);
     const finish = () => ({ data: null, error: null, count: null, ...handle(query) });
     builder.maybeSingle = () => Promise.resolve(finish());
     builder.then = (resolve: (value: Result) => unknown, reject?: (reason: unknown) => unknown) =>
@@ -89,7 +89,7 @@ describe("删除范围", () => {
     const { db, queries } = fakeDb(() => ({ count: 12 }));
     expect(await readImpact(db, show, "album")).toEqual({ seasons: 0, episodes: 0, tracks: 12 });
     expect(queries).toHaveLength(1);
-    expect(queries[0].table).toBe("music");
+    expect(queries[0].table).toBe("album_tracks");
     expect(callArgs(queries[0], "eq")).toEqual(["album_id", show]);
   });
 
@@ -127,26 +127,29 @@ describe("相邻条目", () => {
     expect(from).not.toHaveBeenCalled();
   });
 
-  it("曲目在同一专辑内按曲序找前后", async () => {
+  it("曲目在同一专辑内按盘号＋曲序找前后", async () => {
     const trackPrev = "77777777-7777-4777-8777-777777777777";
     const trackNext = "88888888-8888-4888-8888-888888888888";
     const { db, queries } = fakeDb((query) => {
-      const earlier = query.calls.some((call) => call.method === "lt");
+      const orArgs = callArgs(query, "or");
+      const earlier = typeof orArgs?.[0] === "string" && String(orArgs[0]).includes("lt");
       return {
         data: {
-          media_item_id: earlier ? trackPrev : trackNext,
+          song_id: earlier ? trackPrev : trackNext,
+          disc_number: 1,
           track_number: earlier ? 1 : 3,
           media: earlier ? { title: "上一首" } : [{ title: "下一首" }],
         },
       };
     });
-    expect(await readSiblings(db, "music", show, 2)).toEqual({
+    expect(await readSiblings(db, "music", show, 2, 1)).toEqual({
       previous: { id: trackPrev, title: "上一首", number: 1 },
       next: { id: trackNext, title: "下一首", number: 3 },
     });
     expect(queries).toHaveLength(2);
-    expect(queries.every((query) => query.table === "music")).toBe(true);
+    expect(queries.every((query) => query.table === "album_tracks")).toBe(true);
     expect(callArgs(queries[0], "eq")).toEqual(["album_id", show]);
+    expect(String(callArgs(queries[0], "or")?.[0])).toContain("disc_number");
   });
 
   it("同一季内找到前后集时不再跨季", async () => {

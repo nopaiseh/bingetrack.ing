@@ -16,6 +16,15 @@ ALTER SCHEMA "public" OWNER TO "pg_database_owner";
 
 COMMENT ON SCHEMA "public" IS 'standard public schema';
 
+CREATE TYPE "public"."album_release_kind" AS ENUM (
+    'album',
+    'ep',
+    'single',
+    'compilation'
+);
+
+ALTER TYPE "public"."album_release_kind" OWNER TO "postgres";
+
 CREATE TYPE "public"."media_type" AS ENUM (
     'movie',
     'tv_show',
@@ -35,17 +44,6 @@ CREATE TYPE "public"."ownership_status" AS ENUM (
 
 ALTER TYPE "public"."ownership_status" OWNER TO "postgres";
 
-CREATE TYPE "public"."person_role" AS ENUM (
-    'actor',
-    'director',
-    'author',
-    'artist',
-    'composer',
-    'lyricist'
-);
-
-ALTER TYPE "public"."person_role" OWNER TO "postgres";
-
 CREATE TYPE "public"."tracking_status" AS ENUM (
     'watched',
     'want_to_watch',
@@ -58,7 +56,11 @@ CREATE OR REPLACE FUNCTION "public"."admin_delete_media"("p_id" "uuid", "p_confi
     LANGUAGE "plpgsql"
     SET "search_path" TO ''
     AS $$
-declare current_title text; item_type public.media_type; descendants uuid[];
+declare
+  current_title text;
+  item_type public.media_type;
+  descendants uuid[];
+  orphan_songs uuid[];
 begin
   if not public.is_site_owner() then raise insufficient_privilege; end if;
   perform pg_catalog.pg_advisory_xact_lock(73489126);
@@ -70,9 +72,19 @@ begin
   end if;
 
   if item_type = 'album' then
-    -- 先删下属曲目（级联清 music 行），再删专辑（级联清 music_albums）。
-    delete from public.media_items
-      where id in (select m.media_item_id from public.music m where m.album_id = p_id);
+    select coalesce(array_agg(at.song_id), '{}'::uuid[]) into orphan_songs
+    from public.album_tracks at
+    where at.album_id = p_id
+      and not exists (
+        select 1 from public.album_tracks other
+        where other.song_id = at.song_id and other.album_id is distinct from p_id
+      );
+    delete from public.media_items where id = any(orphan_songs);
+    delete from public.media_items where id = p_id;
+    return;
+  end if;
+
+  if item_type = 'music' then
     delete from public.media_items where id = p_id;
     return;
   end if;
@@ -90,19 +102,29 @@ end $$;
 
 ALTER FUNCTION "public"."admin_delete_media"("p_id" "uuid", "p_confirm_title" "text") OWNER TO "postgres";
 
-COMMENT ON FUNCTION "public"."admin_delete_media"("p_id" "uuid", "p_confirm_title" "text") IS '站长按标题确认删除媒体树；支持 movie／tv_*／book／album／music。专辑同事务删下属曲目。';
+COMMENT ON FUNCTION "public"."admin_delete_media"("p_id" "uuid", "p_confirm_title" "text") IS '站长按标题确认删除；删专辑时只删除不再属于任何其他专辑的曲目。';
 
-CREATE OR REPLACE FUNCTION "public"."admin_save_album_with_tracks"("p_album" "jsonb", "p_tracks" "jsonb") RETURNS "uuid"
+CREATE OR REPLACE FUNCTION "public"."admin_save_album_with_tracks"("p_album" "jsonb", "p_tracks" "jsonb") RETURNS "jsonb"
     LANGUAGE "plpgsql"
     SET "search_path" TO ''
     AS $$
 declare
+  album_result jsonb;
   saved_album_id uuid;
   track jsonb;
   track_payload jsonb;
   track_parent uuid;
+  track_result jsonb;
   tracks_len integer;
   actual_track_count integer;
+  affected uuid[] := '{}';
+  keep_song_ids uuid[] := '{}';
+  unbound_song_ids uuid[] := '{}';
+  saved_song_id uuid;
+  existing_song uuid;
+  disc_no integer;
+  track_no integer;
+  existing_type public.media_type;
 begin
   if not public.is_site_owner() then raise insufficient_privilege; end if;
 
@@ -117,8 +139,10 @@ begin
     raise exception 'Too many tracks' using errcode = '22023';
   end if;
 
-  -- collections 走 manage_save_media；专辑本体与艺人／类型落在扩展后的 admin_save_media。
-  saved_album_id := public.manage_save_media(p_album);
+  album_result := public.manage_save_media(p_album);
+  saved_album_id := (album_result->>'id')::uuid;
+  select coalesce(array_agg(x::uuid), '{}'::uuid[]) into affected
+  from jsonb_array_elements_text(album_result->'affected_person_ids') as x;
 
   for track in select value from jsonb_array_elements(p_tracks) loop
     if jsonb_typeof(track) is distinct from 'object' then
@@ -128,33 +152,104 @@ begin
     if track_parent is not null and track_parent is distinct from saved_album_id then
       raise exception 'Track parent must match album' using errcode = '22023';
     end if;
-    track_payload := track
-      || jsonb_build_object(
-        'type', 'music',
-        'parent_id', saved_album_id::text
-      );
-    if coalesce(track_payload->>'status', '') = '' then
-      track_payload := track_payload || jsonb_build_object('status', 'want_to_watch');
+
+    existing_song := nullif(track->>'id', '')::uuid;
+    disc_no := coalesce(nullif(track->>'disc_number', '')::integer, 1);
+    track_no := (track->>'number')::integer;
+    if track_no is null or track_no < 0 or track_no > 100000
+       or disc_no is null or disc_no < 1 or disc_no > 100 then
+      raise exception 'Invalid parent or number' using errcode = '22023';
     end if;
-    perform public.admin_save_media(track_payload);
+
+    if existing_song is not null then
+      -- 引用已有曲目：只挂 album_tracks，绝不重置 status／credits／元数据
+      select type into existing_type from public.media_items where id = existing_song;
+      if not found or existing_type is distinct from 'music'::public.media_type then
+        raise exception 'Referenced song not found' using errcode = 'P0002';
+      end if;
+      if not exists (select 1 from public.music where media_item_id = existing_song) then
+        raise exception 'Referenced song not found' using errcode = 'P0002';
+      end if;
+      if exists (
+        select 1 from public.album_tracks
+        where album_id = saved_album_id
+          and disc_number = disc_no
+          and track_number = track_no
+          and song_id is distinct from existing_song
+      ) then
+        raise exception 'duplicate key value violates unique constraint'
+          using errcode = '23505';
+      end if;
+      delete from public.album_tracks
+      where album_id = saved_album_id and song_id = existing_song;
+      insert into public.album_tracks(album_id, song_id, disc_number, track_number)
+      values(saved_album_id, existing_song, disc_no, track_no)
+      on conflict on constraint album_tracks_pkey do update
+        set song_id = excluded.song_id;
+      saved_song_id := existing_song;
+    else
+      -- 新建曲目：经 admin_save_media（含 status／credits）
+      track_payload := track
+        || jsonb_build_object(
+          'type', 'music',
+          'parent_id', saved_album_id::text
+        );
+      if coalesce(track_payload->>'status', '') = '' then
+        track_payload := track_payload || jsonb_build_object('status', 'want_to_watch');
+      end if;
+      if track_payload->'credits' is null then
+        track_payload := track_payload || jsonb_build_object('credits', '[]'::jsonb);
+      end if;
+      track_result := public.admin_save_media(track_payload);
+      saved_song_id := (track_result->>'id')::uuid;
+      select coalesce(affected || array_agg(x::uuid), affected) into affected
+      from jsonb_array_elements_text(track_result->'affected_person_ids') as x;
+    end if;
+    keep_song_ids := array_append(keep_song_ids, saved_song_id);
   end loop;
 
-  -- 按库中实际曲目数回写；空 tracks 数组保存专辑时不得把已有曲目数清成 0。
+  -- 非空曲目列表视为完整清单：解绑未列出曲；仅当曲目不再属于任何专辑时删除本体
+  if tracks_len > 0 then
+    select coalesce(array_agg(at.song_id), '{}'::uuid[]) into unbound_song_ids
+    from public.album_tracks at
+    where at.album_id = saved_album_id
+      and not (at.song_id = any(keep_song_ids));
+
+    delete from public.album_tracks at
+    where at.album_id = saved_album_id
+      and not (at.song_id = any(keep_song_ids));
+
+    if cardinality(unbound_song_ids) > 0 then
+      delete from public.media_items m
+      where m.id = any(unbound_song_ids)
+        and m.type = 'music'::public.media_type
+        and not exists (
+          select 1 from public.album_tracks other where other.song_id = m.id
+        );
+    end if;
+  end if;
+
   select count(*)::integer into actual_track_count
-  from public.music
+  from public.album_tracks
   where album_id = saved_album_id;
   update public.music_albums
   set track_count = actual_track_count
   where media_item_id = saved_album_id;
 
-  return saved_album_id;
+  select coalesce(array_agg(distinct x order by x), '{}'::uuid[]) into affected
+  from unnest(affected) as x;
+
+  return jsonb_build_object(
+    'id', saved_album_id,
+    'affected_person_ids', to_jsonb(affected)
+  );
 end $$;
 
 ALTER FUNCTION "public"."admin_save_album_with_tracks"("p_album" "jsonb", "p_tracks" "jsonb") OWNER TO "postgres";
 
-COMMENT ON FUNCTION "public"."admin_save_album_with_tracks"("p_album" "jsonb", "p_tracks" "jsonb") IS '站长在同一事务中保存专辑及其曲目；任一曲目失败则整笔回滚。匿名不可执行。';
+COMMENT ON FUNCTION "public"."admin_save_album_with_tracks"("p_album" "jsonb", "p_tracks" "jsonb") IS '站长同事务保存专辑与曲目；引用已有 song 只挂链不改 status／credits；非空 p_tracks 为完整清单（解绑未列曲，孤儿曲删除）；回写 track_count。返回 {id,affected_person_ids}。';
 
-CREATE OR REPLACE FUNCTION "public"."admin_save_media"("p_data" "jsonb") RETURNS "uuid"
+CREATE OR REPLACE FUNCTION "public"."admin_save_media"("p_data" "jsonb") RETURNS "jsonb"
     LANGUAGE "plpgsql"
     SET "search_path" TO ''
     AS $_$
@@ -162,13 +257,15 @@ declare
   item_id uuid := nullif(p_data->>'id', '')::uuid;
   item_type public.media_type := (p_data->>'type')::public.media_type;
   parent_id uuid := nullif(p_data->>'parent_id', '')::uuid;
+  previous_parent_id uuid := nullif(p_data->>'previous_parent_id', '')::uuid;
   item_number integer := (p_data->>'number')::integer;
+  -- disc_number：显式传入用传入值；未传（null）时编辑保留原盘号，新建默认 1。
+  disc_no integer := nullif(p_data->>'disc_number', '')::integer;
   old_type public.media_type;
   target text;
   link_table text;
   key_column text;
   field text;
-  person_kind public.person_role;
   entry jsonb;
   item_name text;
   item_character text;
@@ -180,23 +277,40 @@ declare
   runtime_value numeric := (p_data->>'runtime')::numeric;
   runtime_ok boolean;
   album_label text;
+  release_kind_text text;
+  release_kind_value public.album_release_kind;
   related_fields text[];
-  is_credit_field boolean;
   status_text text := coalesce(p_data->>'status', '');
   page_count_value integer;
   publisher_value text;
   isbn_value text;
   author_names text[] := '{}';
   duplicate_id uuid;
+  credit_entry jsonb;
+  credit_role text;
+  credit_order integer;
+  role_row record;
+  person_obj jsonb;
+  person_alt text;
+  affected uuid[] := '{}';
+  old_person uuid;
+  link_album boolean;
+  old_album_ids uuid[] := '{}';
 begin
   if not public.is_site_owner() then raise insufficient_privilege; end if;
-  -- 串行化管理事务，避免删除父条目与新增季集／曲目同时执行。
   perform pg_catalog.pg_advisory_xact_lock(73489126);
+
   if item_type is null
     or item_type not in ('movie','tv_show','tv_season','tv_episode','album','music','book')
     or nullif(btrim(p_data->>'title'), '') is null
     or length(p_data->>'title') > 300 then
     raise exception 'Invalid media input' using errcode = '22023';
+  end if;
+
+  -- 拒绝旧版角色字段，强制走 credits[]
+  if p_data ? 'actors' or p_data ? 'directors' or p_data ? 'artists'
+     or p_data ? 'lyricists' or p_data ? 'composers' or p_data ? 'authors' then
+    raise exception 'Legacy credit fields are not supported; use credits[]' using errcode = '22023';
   end if;
 
   if item_type = 'book' then
@@ -212,7 +326,6 @@ begin
     raise exception 'Invalid numeric input' using errcode = '22023';
   end if;
 
-  -- 曲目时长 1–7200 秒；影视仍为 0–100000（分钟语义由应用层约定）；图书不写 runtime。
   if item_type = 'music' then
     runtime_ok := runtime_value is null
       or (runtime_value >= 1 and runtime_value <= 7200 and runtime_value = trunc(runtime_value));
@@ -226,7 +339,7 @@ begin
     raise exception 'Invalid numeric input' using errcode = '22023';
   end if;
 
-  if item_type in ('tv_season','tv_episode','music') then
+  if item_type in ('tv_season','tv_episode') then
     if parent_id is null or item_number is null or item_number < 0 or item_number > 100000 or parent_id = item_id then
       raise exception 'Invalid parent or number' using errcode = '22023';
     end if;
@@ -236,17 +349,38 @@ begin
       raise exception 'Show not found' using errcode = 'P0002';
     end if;
     if item_type = 'tv_episode' and not exists(
-      select 1
-      from public.tv_seasons s
+      select 1 from public.tv_seasons s
       join public.media_items m on m.id = s.id
       where s.id = parent_id and m.type = 'tv_season'::public.media_type
     ) then
       raise exception 'Season not found' using errcode = 'P0002';
     end if;
-    if item_type = 'music' and not exists(
-      select 1 from public.media_items where id = parent_id and type = 'album'::public.media_type
-    ) then
-      raise exception 'Album not found' using errcode = 'P0002';
+  end if;
+
+  -- 曲目：可独立；若带 parent_id 则写入 album_tracks（须同时给 number）
+  link_album := false;
+  if item_type = 'music' then
+    if parent_id is not null or item_number is not null then
+      if parent_id is null or item_number is null or item_number < 0 or item_number > 100000 or parent_id = item_id then
+        raise exception 'Invalid parent or number' using errcode = '22023';
+      end if;
+      -- 未传 disc_number：优先取 previous_parent（挪专辑）或当前 parent 上原盘号；新建默认 1
+      if disc_no is null and item_id is not null then
+        select at.disc_number into disc_no
+        from public.album_tracks at
+        where at.song_id = item_id
+          and at.album_id = coalesce(previous_parent_id, parent_id);
+      end if;
+      disc_no := coalesce(disc_no, 1);
+      if disc_no < 1 or disc_no > 100 then
+        raise exception 'Invalid disc_number' using errcode = '22023';
+      end if;
+      if not exists(
+        select 1 from public.media_items where id = parent_id and type = 'album'::public.media_type
+      ) then
+        raise exception 'Album not found' using errcode = 'P0002';
+      end if;
+      link_album := true;
     end if;
   end if;
 
@@ -255,6 +389,12 @@ begin
     if album_label is not null and length(album_label) > 200 then
       raise exception 'Invalid label' using errcode = '22023';
     end if;
+    release_kind_text := coalesce(nullif(btrim(p_data->>'release_kind'), ''), 'album');
+    begin
+      release_kind_value := release_kind_text::public.album_release_kind;
+    exception when others then
+      raise exception 'Invalid release_kind' using errcode = '22023';
+    end;
   end if;
 
   if item_type = 'book' then
@@ -313,11 +453,45 @@ begin
     insert into public.tv_episodes(id,season_id,episode_number) values(item_id,parent_id,item_number)
     on conflict(id) do update set season_id = excluded.season_id, episode_number = excluded.episode_number;
   elsif item_type = 'album' then
-    insert into public.music_albums(media_item_id, label) values(item_id, album_label)
-    on conflict(media_item_id) do update set label = excluded.label;
+    insert into public.music_albums(media_item_id, label, release_kind)
+    values(item_id, album_label, release_kind_value)
+    on conflict(media_item_id) do update set label = excluded.label, release_kind = excluded.release_kind;
   elsif item_type = 'music' then
-    insert into public.music(media_item_id, album_id, track_number) values(item_id, parent_id, item_number)
-    on conflict(media_item_id) do update set album_id = excluded.album_id, track_number = excluded.track_number;
+    insert into public.music(media_item_id) values(item_id)
+    on conflict(media_item_id) do nothing;
+    if link_album then
+      -- 表单单父级语义：仅当 previous_parent_id 与新 parent 不同时，删除那一条旧关联；
+      -- 其它专辑关联（共用歌）保持不变。仅改标题／评分且 previous=parent 时不删任何关联。
+      -- 多专辑挂载请走 admin_save_album_with_tracks 引用已有 song id。
+      if previous_parent_id is not null
+         and previous_parent_id is distinct from parent_id then
+        delete from public.album_tracks
+        where song_id = item_id
+          and album_id = previous_parent_id;
+        old_album_ids := array[previous_parent_id];
+      end if;
+
+      delete from public.album_tracks where album_id = parent_id and song_id = item_id;
+      -- 曲位已被其它歌占用则拒绝（保留 23505，与旧 music.album_id/track_number 唯一约束一致）
+      if exists (
+        select 1 from public.album_tracks
+        where album_id = parent_id
+          and disc_number = disc_no
+          and track_number = item_number
+          and song_id is distinct from item_id
+      ) then
+        raise exception 'duplicate key value violates unique constraint'
+          using errcode = '23505';
+      end if;
+      insert into public.album_tracks(album_id, song_id, disc_number, track_number)
+      values(parent_id, item_id, disc_no, item_number)
+      on conflict on constraint album_tracks_pkey do update
+        set song_id = excluded.song_id;
+      update public.music_albums a
+      set track_count = (select count(*)::integer from public.album_tracks t where t.album_id = a.media_item_id)
+      where a.media_item_id = parent_id
+         or a.media_item_id = any(old_album_ids);
+    end if;
   elsif item_type = 'book' then
     insert into public.books(media_item_id, page_count, publisher, isbn)
     values(item_id, page_count_value, publisher_value, isbn_value)
@@ -334,24 +508,21 @@ begin
   end if;
 
   if item_type = 'album' then
-    -- 语言改记在单曲上；专辑 payload 若仍带 languages 不在 related_fields 中，自然忽略。
-    related_fields := array['genres','artists','regions'];
+    related_fields := array['genres','regions'];
   elsif item_type = 'music' then
-    related_fields := array['genres','artists','lyricists','composers','languages'];
-    -- 曲目类型最多 2 个；专辑类型仍走上方 genres 分支（上限 100）。
+    related_fields := array['genres','languages'];
     if jsonb_typeof(p_data->'genres') = 'array'
       and jsonb_array_length(p_data->'genres') > 2 then
       raise exception 'Music tracks allow at most 2 genres' using errcode = '22023';
     end if;
   elsif item_type = 'book' then
-    related_fields := array['genres','languages','regions','authors'];
+    related_fields := array['genres','languages','regions'];
   else
-    related_fields := array['genres','languages','regions','actors','directors'];
+    related_fields := array['genres','languages','regions'];
   end if;
 
   foreach field in array related_fields loop
-    is_credit_field := field in ('actors','directors','artists','lyricists','composers','authors');
-    related_limit := case when is_credit_field then 300 else 100 end;
+    related_limit := 100;
     if jsonb_typeof(p_data->field) is distinct from 'array'
       or jsonb_array_length(p_data->field) > related_limit then
       raise exception 'Invalid related names' using errcode = '22023';
@@ -359,77 +530,119 @@ begin
     case field
       when 'genres' then target := 'genres'; link_table := 'media_genres'; key_column := 'genre_id';
       when 'languages' then target := 'languages'; link_table := 'media_languages'; key_column := 'language_id';
-      when 'regions' then target := 'regions'; link_table := 'media_regions'; key_column := 'region_id';
-      else target := 'people'; link_table := 'media_credits'; key_column := 'person_id';
+      else target := 'regions'; link_table := 'media_regions'; key_column := 'region_id';
     end case;
-    if target = 'people' then
-      person_kind := case field
-        when 'actors' then 'actor'::public.person_role
-        when 'directors' then 'director'::public.person_role
-        when 'artists' then 'artist'::public.person_role
-        when 'lyricists' then 'lyricist'::public.person_role
-        when 'authors' then 'author'::public.person_role
-        else 'composer'::public.person_role
-      end;
-      delete from public.media_credits where media_item_id = item_id and role = person_kind;
-    else
-      execute format('delete from public.%I where media_item_id=$1', link_table) using item_id;
-    end if;
-    position := 0;
+    execute format('delete from public.%I where media_item_id=$1', link_table) using item_id;
     for entry in select value from jsonb_array_elements(p_data->field) loop
-      item_character := null;
-      chosen_person := null;
-      -- 人物字段只接受对象；genres／languages／regions 仍接受纯字符串。
-      if target <> 'people' and jsonb_typeof(entry) = 'string' then
+      if jsonb_typeof(entry) = 'string' then
         item_name := btrim(entry #>> '{}');
-      elsif target = 'people' and jsonb_typeof(entry) = 'object'
-        and jsonb_typeof(entry->'name') = 'string'
-        and coalesce(jsonb_typeof(entry->'id'), 'null') in ('string','null')
-        and coalesce(jsonb_typeof(entry->'character'), 'null') in ('string','null')
-        and (field = 'actors' or entry->'character' is null) then
-        if nullif(entry->>'id', '') is not null
-          and entry->>'id' !~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$' then
-          raise exception 'Invalid person id' using errcode = '22023';
-        end if;
-        item_name := btrim(entry->>'name');
-        chosen_person := nullif(entry->>'id', '')::uuid;
-        item_character := nullif(btrim(entry->>'character'), '');
       else
         raise exception 'Invalid related name' using errcode = '22023';
       end if;
-      if item_name is null or item_name = '' or length(item_name) > 200 or length(item_character) > 200 then
+      if item_name is null or item_name = '' or length(item_name) > 200 then
         raise exception 'Invalid related name' using errcode = '22023';
       end if;
-      if target = 'people' then
-        if chosen_person is not null then
-          select id into related_id from public.people where id = chosen_person;
-          if not found then raise exception 'Person not found' using errcode = 'P0002'; end if;
-        else
-          insert into public.people(name) values(item_name)
-          on conflict(name, alternate_name) do update set name = excluded.name
-          returning id into related_id;
-        end if;
-        insert into public.media_credits(media_item_id,person_id,role,credit_order,character_name)
-        values(item_id,related_id,person_kind,position,item_character) on conflict do nothing;
-        if field = 'authors' then
-          author_names := array_append(author_names, item_name);
-        end if;
-      else
-        execute format(
-          'insert into public.%I(name) values($1) on conflict(name) do update set name=excluded.name returning id',
-          target
-        ) into related_id using item_name;
-        execute format(
-          'insert into public.%I(media_item_id,%I) values($1,$2) on conflict do nothing',
-          link_table, key_column
-        ) using item_id, related_id;
-      end if;
-      position := position + 1;
+      execute format(
+        'insert into public.%I(name) values($1) on conflict(name) do update set name=excluded.name returning id',
+        target
+      ) into related_id using item_name;
+      execute format(
+        'insert into public.%I(media_item_id,%I) values($1,$2) on conflict do nothing',
+        link_table, key_column
+      ) using item_id, related_id;
     end loop;
   end loop;
 
+  -- credits[]：每角色最多 300 条（与旧 actors／directors 等分字段上限一致）
+  if jsonb_typeof(p_data->'credits') is distinct from 'array' then
+    raise exception 'Invalid credits' using errcode = '22023';
+  end if;
+  if exists (
+    select 1
+    from jsonb_array_elements(p_data->'credits') c
+    group by nullif(btrim(c->>'role'), '')
+    having count(*) > 300
+  ) then
+    raise exception 'Invalid credits' using errcode = '22023';
+  end if;
+
+  for old_person in
+    select person_id from public.media_credits where media_item_id = item_id
+  loop
+    affected := array_append(affected, old_person);
+  end loop;
+
+  delete from public.media_credits where media_item_id = item_id;
+
+  for credit_entry in select value from jsonb_array_elements(p_data->'credits') loop
+    if jsonb_typeof(credit_entry) is distinct from 'object' then
+      raise exception 'Invalid credit entry' using errcode = '22023';
+    end if;
+    credit_role := nullif(btrim(credit_entry->>'role'), '');
+    if credit_role is null then
+      raise exception 'Invalid credit role' using errcode = '22023';
+    end if;
+    select * into role_row from public.credit_roles where code = credit_role;
+    if not found then
+      raise exception 'Unknown credit role' using errcode = '22023';
+    end if;
+    if not (item_type = any(role_row.allowed_types)) then
+      raise exception 'Credit role not allowed for media type' using errcode = '22023';
+    end if;
+
+    item_character := nullif(btrim(credit_entry->>'character'), '');
+    if item_character is not null and not role_row.allows_character then
+      raise exception 'character not allowed for role' using errcode = '22023';
+    end if;
+    if length(item_character) > 200 then
+      raise exception 'Invalid character' using errcode = '22023';
+    end if;
+
+    begin
+      credit_order := coalesce((credit_entry->>'order')::integer, 0);
+    exception when others then
+      raise exception 'Invalid credit order' using errcode = '22023';
+    end;
+    if credit_order < 0 then
+      raise exception 'Invalid credit order' using errcode = '22023';
+    end if;
+
+    person_obj := credit_entry->'person';
+    if jsonb_typeof(person_obj) is distinct from 'object' then
+      raise exception 'Invalid credit person' using errcode = '22023';
+    end if;
+    chosen_person := null;
+    if nullif(person_obj->>'id', '') is not null then
+      if person_obj->>'id' !~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$' then
+        raise exception 'Invalid person id' using errcode = '22023';
+      end if;
+      chosen_person := (person_obj->>'id')::uuid;
+      select id into related_id from public.people where id = chosen_person;
+      if not found then raise exception 'Person not found' using errcode = 'P0002'; end if;
+    else
+      item_name := btrim(coalesce(person_obj->>'name', ''));
+      person_alt := nullif(btrim(coalesce(person_obj->>'alternate_name', '')), '');
+      if item_name is null or item_name = '' or length(item_name) > 200
+         or length(person_alt) > 200 then
+        raise exception 'Invalid person name' using errcode = '22023';
+      end if;
+      insert into public.people(name, alternate_name) values(item_name, person_alt)
+      on conflict(name, alternate_name) do update set name = excluded.name
+      returning id into related_id;
+    end if;
+
+    insert into public.media_credits(media_item_id,person_id,role,credit_order,character_name)
+    values(item_id, related_id, credit_role, credit_order, item_character)
+    on conflict do nothing;
+
+    affected := array_append(affected, related_id);
+    if credit_role = 'author' then
+      select name into item_name from public.people where id = related_id;
+      author_names := array_append(author_names, item_name);
+    end if;
+  end loop;
+
   if item_type = 'book' then
-    -- 排除刚写入的自身：否则 order by id 可能命中本行，去重失效。
     duplicate_id := public.find_book_by_title_and_authors(
       btrim(p_data->>'title'), author_names, item_id
     );
@@ -438,27 +651,34 @@ begin
     end if;
   end if;
 
-  return item_id;
+  select coalesce(array_agg(distinct x order by x), '{}'::uuid[])
+  into affected
+  from unnest(affected) as x;
+
+  return jsonb_build_object(
+    'id', item_id,
+    'affected_person_ids', to_jsonb(affected)
+  );
 end $_$;
 
 ALTER FUNCTION "public"."admin_save_media"("p_data" "jsonb") OWNER TO "postgres";
 
-COMMENT ON FUNCTION "public"."admin_save_media"("p_data" "jsonb") IS '站长原子保存媒体及关联；支持 movie／tv_*／album／music／book。人物字段仅接受对象；genres／languages／regions 仍接受字符串。图书含页数／出版社／ISBN／作者去重；in_progress 仅图书。music／tv_season／tv_episode 的 cover_url 强制为 NULL。music 曲目类型最多 2 个。语言记在 music 单曲上；album 的 languages 字段忽略；地区仍在专辑。';
+COMMENT ON FUNCTION "public"."admin_save_media"("p_data" "jsonb") IS '站长原子保存媒体。credits:[{person:{id}|{name,alternate_name},role,character?,order}]；返回 {id,affected_person_ids}。不再接受 actors／directors 等旧字段。music 可无专辑；带 parent_id+number 时写入 album_tracks。';
 
 CREATE OR REPLACE FUNCTION "public"."album_average_rating"("p_album_id" "uuid") RETURNS numeric
     LANGUAGE "sql" STABLE PARALLEL SAFE
     SET "search_path" TO ''
     AS $$
   select round(avg(t.rating), 1)
-  from public.music mu
-  join public.tracking t on t.media_item_id = mu.media_item_id
-  where mu.album_id = p_album_id
+  from public.album_tracks at
+  join public.tracking t on t.media_item_id = at.song_id
+  where at.album_id = p_album_id
     and t.rating is not null;
 $$;
 
 ALTER FUNCTION "public"."album_average_rating"("p_album_id" "uuid") OWNER TO "postgres";
 
-COMMENT ON FUNCTION "public"."album_average_rating"("p_album_id" "uuid") IS '专辑评分 = 下属已评分单曲 rating 的实时平均；不存储。';
+COMMENT ON FUNCTION "public"."album_average_rating"("p_album_id" "uuid") IS '专辑评分 = 本专辑 album_tracks 下属已评分曲目的实时平均；共享曲目只计入本专辑。';
 
 CREATE OR REPLACE FUNCTION "public"."enforce_tracking_status_for_media_type"() RETURNS "trigger"
     LANGUAGE "plpgsql"
@@ -503,7 +723,7 @@ CREATE OR REPLACE FUNCTION "public"."find_book_by_title_and_authors"("p_title" "
         from public.media_credits mc
         join public.people p on p.id = mc.person_id
         where mc.media_item_id = m.id
-          and mc.role = 'author'::public.person_role
+          and mc.role = 'author'
       ) as author_keys
     from public.media_items m
     cross join wanted
@@ -544,7 +764,7 @@ CREATE OR REPLACE FUNCTION "public"."find_music_by_title_and_artists"("p_type" "
         from public.media_credits mc
         join public.people p on p.id = mc.person_id
         where mc.media_item_id = m.id
-          and mc.role = 'artist'::public.person_role
+          and mc.role = 'artist'
       ) as artist_keys
     from public.media_items m
     cross join wanted
@@ -673,6 +893,173 @@ ALTER FUNCTION "public"."get_media_stats"("p_media_type" "text") OWNER TO "postg
 
 COMMENT ON FUNCTION "public"."get_media_stats"("p_media_type" "text") IS '按媒体类型统计 total／watched／watching／want／upcoming／in_progress；图书用 in_progress（在读），影视该列为 0。';
 
+CREATE OR REPLACE FUNCTION "public"."get_person_works"("p_person_id" "uuid") RETURNS "jsonb"
+    LANGUAGE "plpgsql" STABLE
+    SET "search_path" TO ''
+    AS $$
+declare
+  result jsonb;
+begin
+  if p_person_id is null or not exists (select 1 from public.people where id = p_person_id) then
+    raise exception 'Person not found' using errcode = 'P0002';
+  end if;
+
+  with credits as (
+    select
+      mc.role,
+      cr.label as role_label,
+      cr.sort_order as role_sort,
+      mc.character_name,
+      mc.credit_order,
+      mi.id as media_id,
+      mi.type,
+      mi.title,
+      mi.alternate_title,
+      case
+        when mi.type = 'music'::public.media_type then coalesce(
+          nullif(mi.cover_url, ''),
+          (
+            select ai.cover_url
+            from public.album_tracks at
+            join public.media_items ai on ai.id = at.album_id
+            where at.song_id = mi.id
+              and ai.cover_url is not null
+              and nullif(ai.cover_url, '') is not null
+            order by ai.release_date asc nulls last, at.disc_number, at.track_number
+            limit 1
+          )
+        )
+        else mi.cover_url
+      end as cover_url,
+      mi.release_date,
+      case
+        when mi.type = 'music'::public.media_type then coalesce(
+          mi.release_date,
+          (
+            select min(ai.release_date)
+            from public.album_tracks at
+            join public.media_items ai on ai.id = at.album_id
+            where at.song_id = mi.id
+          )
+        )
+        else mi.release_date
+      end as effective_release_date
+    from public.media_credits mc
+    join public.credit_roles cr on cr.code = mc.role
+    join public.media_items mi on mi.id = mc.media_item_id
+    where mc.person_id = p_person_id
+      and mi.type in (
+        'movie'::public.media_type,
+        'tv_show'::public.media_type,
+        'album'::public.media_type,
+        'music'::public.media_type,
+        'book'::public.media_type
+      )
+  ), film_tv as (
+    select role, role_label, role_sort,
+      jsonb_agg(
+        jsonb_build_object(
+          'id', media_id,
+          'type', type,
+          'title', title,
+          'alternate_title', alternate_title,
+          'cover_url', cover_url,
+          'release_date', effective_release_date,
+          'character', character_name
+        )
+        order by effective_release_date desc nulls last, title, media_id
+      ) as items
+    from credits
+    where type in ('movie'::public.media_type, 'tv_show'::public.media_type)
+    group by role, role_label, role_sort
+  ), albums as (
+    select role, role_label, role_sort,
+      jsonb_agg(
+        jsonb_build_object(
+          'id', media_id,
+          'type', type,
+          'title', title,
+          'alternate_title', alternate_title,
+          'cover_url', cover_url,
+          'release_date', effective_release_date,
+          'release_kind', (
+            select a.release_kind::text from public.music_albums a where a.media_item_id = media_id
+          )
+        )
+        order by effective_release_date desc nulls last, title, media_id
+      ) as items
+    from credits
+    where type = 'album'::public.media_type
+    group by role, role_label, role_sort
+  ), songs as (
+    -- 每首歌只出现一次（跨角色取 sort_order 最小的角色分组仍按角色列出时，同一首歌可在不同角色下各出现一次；
+    -- 需求：music split into albums and songs；each song appearing once → 按 media_id 去重，保留 credit_order／角色优先）
+    select distinct on (media_id)
+      role, role_label, role_sort, media_id, title, alternate_title, cover_url, effective_release_date, character_name
+    from credits
+    where type = 'music'::public.media_type
+    order by media_id, role_sort, credit_order
+  ), songs_by_role as (
+    select role, role_label, role_sort,
+      jsonb_agg(
+        jsonb_build_object(
+          'id', media_id,
+          'type', 'music',
+          'title', title,
+          'alternate_title', alternate_title,
+          'cover_url', cover_url,
+          'release_date', effective_release_date
+        )
+        order by effective_release_date desc nulls last, title, media_id
+      ) as items
+    from songs
+    group by role, role_label, role_sort
+  ), books as (
+    select role, role_label, role_sort,
+      jsonb_agg(
+        jsonb_build_object(
+          'id', media_id,
+          'type', type,
+          'title', title,
+          'alternate_title', alternate_title,
+          'cover_url', cover_url,
+          'release_date', effective_release_date
+        )
+        order by effective_release_date desc nulls last, title, media_id
+      ) as items
+    from credits
+    where type = 'book'::public.media_type
+    group by role, role_label, role_sort
+  )
+  select jsonb_build_object(
+    'person_id', p_person_id,
+    'film_tv', coalesce((
+      select jsonb_agg(jsonb_build_object('role', role, 'label', role_label, 'items', items) order by role_sort)
+      from film_tv
+    ), '[]'::jsonb),
+    'music', jsonb_build_object(
+      'albums', coalesce((
+        select jsonb_agg(jsonb_build_object('role', role, 'label', role_label, 'items', items) order by role_sort)
+        from albums
+      ), '[]'::jsonb),
+      'songs', coalesce((
+        select jsonb_agg(jsonb_build_object('role', role, 'label', role_label, 'items', items) order by role_sort)
+        from songs_by_role
+      ), '[]'::jsonb)
+    ),
+    'books', coalesce((
+      select jsonb_agg(jsonb_build_object('role', role, 'label', role_label, 'items', items) order by role_sort)
+      from books
+    ), '[]'::jsonb)
+  ) into result;
+
+  return result;
+end $$;
+
+ALTER FUNCTION "public"."get_person_works"("p_person_id" "uuid") OWNER TO "postgres";
+
+COMMENT ON FUNCTION "public"."get_person_works"("p_person_id" "uuid") IS '人物作品：影视仅 tv_show／movie；音乐分 albums／songs（歌去重）；图书。按角色分组。';
+
 CREATE OR REPLACE FUNCTION "public"."get_season_episode_page"("p_series_id" "uuid", "p_season_id" "uuid", "p_status" "text" DEFAULT 'all'::"text", "p_order" "text" DEFAULT 'asc'::"text", "p_limit" integer DEFAULT 10, "p_offset" integer DEFAULT 0) RETURNS "jsonb"
     LANGUAGE "sql" STABLE PARALLEL SAFE
     SET "search_path" TO ''
@@ -752,6 +1139,222 @@ CREATE OR REPLACE FUNCTION "public"."get_season_episode_page"("p_series_id" "uui
 $$;
 
 ALTER FUNCTION "public"."get_season_episode_page"("p_series_id" "uuid", "p_season_id" "uuid", "p_status" "text", "p_order" "text", "p_limit" integer, "p_offset" integer) OWNER TO "postgres";
+
+CREATE OR REPLACE FUNCTION "public"."get_song_detail"("p_song_id" "uuid") RETURNS "jsonb"
+    LANGUAGE "plpgsql" STABLE
+    SET "search_path" TO ''
+    AS $$
+declare
+  song record;
+  cover text;
+  result jsonb;
+begin
+  select
+    m.id, m.title, m.alternate_title, m.runtime, m.release_date, m.summary, m.cover_url,
+    coalesce(
+      m.release_date,
+      (
+        select min(ai.release_date)
+        from public.album_tracks at
+        join public.media_items ai on ai.id = at.album_id
+        where at.song_id = m.id
+      )
+    ) as effective_release_date
+  into song
+  from public.media_items m
+  join public.music mu on mu.media_item_id = m.id
+  where m.id = p_song_id and m.type = 'music'::public.media_type;
+
+  if not found then
+    raise exception 'Song not found' using errcode = 'P0002';
+  end if;
+
+  cover := song.cover_url;
+  if cover is null then
+    select ai.cover_url into cover
+    from public.album_tracks at
+    join public.media_items ai on ai.id = at.album_id
+    where at.song_id = p_song_id
+      and ai.cover_url is not null
+    order by ai.release_date asc nulls last, at.disc_number, at.track_number
+    limit 1;
+  end if;
+
+  with credit_rows as (
+    select mc.role, mc.credit_order, p.id as person_id, p.name, p.alternate_name
+    from public.media_credits mc
+    join public.people p on p.id = mc.person_id
+    where mc.media_item_id = p_song_id
+      and mc.role in ('artist','composer','lyricist','arranger','producer','featured')
+  ), credits_by_role as (
+    select role,
+      jsonb_agg(
+        jsonb_build_object(
+          'id', person_id,
+          'name', name,
+          'alternate_name', alternate_name
+        ) order by credit_order, name
+      ) as people
+    from credit_rows
+    group by role
+  ), albums as (
+    select
+      ai.id, ai.title, ai.cover_url, ai.release_date,
+      a.release_kind::text as release_kind,
+      at.disc_number, at.track_number
+    from public.album_tracks at
+    join public.media_items ai on ai.id = at.album_id
+    join public.music_albums a on a.media_item_id = at.album_id
+    where at.song_id = p_song_id
+  ), album_other_tracks_ranked as (
+    select
+      alb.id as album_id,
+      ot.song_id,
+      om.title,
+      ot.disc_number,
+      ot.track_number,
+      om.runtime,
+      row_number() over (
+        partition by alb.id
+        order by ot.disc_number, ot.track_number, ot.song_id
+      ) as rn
+    from albums alb
+    join public.album_tracks ot on ot.album_id = alb.id and ot.song_id <> p_song_id
+    join public.media_items om on om.id = ot.song_id
+  ), album_other_tracks as (
+    select
+      album_id,
+      jsonb_agg(
+        jsonb_build_object(
+          'id', song_id,
+          'title', title,
+          'disc_number', disc_number,
+          'track_number', track_number,
+          'duration_seconds', runtime
+        )
+        order by disc_number, track_number, song_id
+      ) as tracks
+    from album_other_tracks_ranked
+    where rn <= 20
+    group by album_id
+  ), related_credit_people as (
+    select person_id from credit_rows where role in ('artist', 'composer', 'lyricist')
+  ), related_candidates as (
+    -- 按歌去重；relations = 与当前曲共享人物时，相关曲上实际出现的 artist／composer／lyricist（固定顺序、去重）
+    select
+      mi.id,
+      mi.title,
+      coalesce(
+        nullif(mi.cover_url, ''),
+        (
+          select ai.cover_url
+          from public.album_tracks at
+          join public.media_items ai on ai.id = at.album_id
+          where at.song_id = mi.id
+            and ai.cover_url is not null
+          order by ai.release_date asc nulls last, at.disc_number, at.track_number
+          limit 1
+        )
+      ) as cover_url,
+      coalesce(mi.release_date, (
+        select min(ai.release_date) from public.album_tracks at
+        join public.media_items ai on ai.id = at.album_id where at.song_id = mi.id
+      )) as release_date,
+      array_remove(array[
+        case when bool_or(mc.role = 'artist') then 'artist' end,
+        case when bool_or(mc.role = 'composer') then 'composer' end,
+        case when bool_or(mc.role = 'lyricist') then 'lyricist' end
+      ], null)::text[] as relations
+    from public.media_credits mc
+    join public.media_items mi on mi.id = mc.media_item_id
+    where mc.person_id in (select person_id from related_credit_people)
+      and mc.role in ('artist', 'composer', 'lyricist')
+      and mi.type = 'music'::public.media_type
+      and mi.id <> p_song_id
+      -- 同专辑曲目已在 albums[].other_tracks；共用歌任一共同专辑即排除（在 LIMIT 之前）
+      and not exists (
+        select 1
+        from public.album_tracks cur
+        join public.album_tracks oth on oth.album_id = cur.album_id
+        where cur.song_id = p_song_id
+          and oth.song_id = mi.id
+      )
+    group by mi.id, mi.title, mi.cover_url, mi.release_date
+  ), related_songs as (
+    select id, title, cover_url, release_date, relations
+    from related_candidates
+    order by release_date desc nulls last, id
+    limit 12
+  )
+  select jsonb_build_object(
+    'id', song.id,
+    'title', song.title,
+    'alternate_title', song.alternate_title,
+    'duration_seconds', song.runtime,
+    'release_date', song.effective_release_date,
+    'summary', song.summary,
+    'cover_url', cover,
+    'genres', coalesce((
+      select jsonb_agg(g.name order by g.name)
+      from public.media_genres mg join public.genres g on g.id = mg.genre_id
+      where mg.media_item_id = p_song_id
+    ), '[]'::jsonb),
+    'languages', coalesce((
+      select jsonb_agg(l.name order by l.name)
+      from public.media_languages ml join public.languages l on l.id = ml.language_id
+      where ml.media_item_id = p_song_id
+    ), '[]'::jsonb),
+    'series', coalesce((
+      select jsonb_agg(jsonb_build_object('id', ms.id, 'name', ms.name) order by mis.position nulls last, ms.name)
+      from public.media_item_series mis
+      join public.media_series ms on ms.id = mis.series_id
+      where mis.media_item_id = p_song_id
+    ), '[]'::jsonb),
+    'credits', coalesce((
+      select jsonb_object_agg(role, people) from credits_by_role
+    ), '{}'::jsonb),
+    'albums', coalesce((
+      select jsonb_agg(
+        jsonb_build_object(
+          'id', a.id,
+          'title', a.title,
+          'cover_url', a.cover_url,
+          'release_date', a.release_date,
+          'release_kind', a.release_kind,
+          'disc_number', a.disc_number,
+          'track_number', a.track_number,
+          'other_tracks', coalesce(ot.tracks, '[]'::jsonb)
+        )
+        order by a.release_date desc nulls last, a.title
+      )
+      from albums a
+      left join album_other_tracks ot on ot.album_id = a.id
+    ), '[]'::jsonb),
+    'related', coalesce((
+      select jsonb_agg(
+        jsonb_build_object(
+          'id', id,
+          'title', title,
+          'cover_url', cover_url,
+          'release_date', release_date,
+          'relations', to_jsonb(relations)
+        )
+        order by release_date desc nulls last, id
+      )
+      from related_songs
+    ), '[]'::jsonb),
+    'tracking', (
+      select jsonb_build_object('status', t.status, 'rating', t.rating)
+      from public.tracking t where t.media_item_id = p_song_id
+    )
+  ) into result;
+
+  return result;
+end $$;
+
+ALTER FUNCTION "public"."get_song_detail"("p_song_id" "uuid") OWNER TO "postgres";
+
+COMMENT ON FUNCTION "public"."get_song_detail"("p_song_id" "uuid") IS '歌曲详情：元数据、按角色 credits、所属专辑与同专其他曲（每专最多 20）、相关歌曲扁平数组（排除同专辑／共用专辑歌后艺人／词曲合并去重最多 12，含 relations text[]）、封面回退专辑、tracking（受 RLS）。';
 
 CREATE OR REPLACE FUNCTION "public"."get_top_tv_shows_by_year"("p_year" integer, "p_limit" integer DEFAULT 10) RETURNS TABLE("series_id" "uuid", "year_rating" numeric)
     LANGUAGE "sql" STABLE PARALLEL SAFE
@@ -912,11 +1515,12 @@ CREATE OR REPLACE FUNCTION "public"."manage_name_key"("p_name" "text") RETURNS "
 
 ALTER FUNCTION "public"."manage_name_key"("p_name" "text") OWNER TO "postgres";
 
-CREATE OR REPLACE FUNCTION "public"."manage_save_media"("p_data" "jsonb") RETURNS "uuid"
+CREATE OR REPLACE FUNCTION "public"."manage_save_media"("p_data" "jsonb") RETURNS "jsonb"
     LANGUAGE "plpgsql"
     SET "search_path" TO ''
     AS $$
 declare
+  result jsonb;
   item_id uuid;
   item_name text;
   collection_id uuid;
@@ -926,7 +1530,8 @@ begin
   if jsonb_typeof(p_data->'collections') is distinct from 'array' or jsonb_array_length(p_data->'collections') > 100 then
     raise exception 'Invalid collection names' using errcode = '22023';
   end if;
-  item_id := public.admin_save_media(p_data);
+  result := public.admin_save_media(p_data);
+  item_id := (result->>'id')::uuid;
   for item_name in select btrim(value) from jsonb_array_elements_text(p_data->'collections') loop
     if item_name is null or item_name = '' or length(item_name) > 200 then
       raise exception 'Invalid collection name' using errcode = '22023';
@@ -934,16 +1539,72 @@ begin
     insert into public.media_series(name) values(item_name)
       on conflict(name) do update set name=excluded.name returning id into collection_id;
     collection_ids := array_append(collection_ids, collection_id);
-    -- 已有成员保留其在系列中的顺序，新增成员默认排在末尾。
     insert into public.media_item_series(media_item_id,series_id,position)
       select item_id,collection_id,coalesce(max(position),0)+1 from public.media_item_series where series_id=collection_id
       on conflict(media_item_id,series_id) do nothing;
   end loop;
   delete from public.media_item_series where media_item_id=item_id and not (series_id=any(collection_ids));
-  return item_id;
+  return result;
 end $$;
 
 ALTER FUNCTION "public"."manage_save_media"("p_data" "jsonb") OWNER TO "postgres";
+
+CREATE OR REPLACE FUNCTION "public"."media_credits_enforce_allowed_types"() RETURNS "trigger"
+    LANGUAGE "plpgsql"
+    SET "search_path" TO ''
+    AS $$
+declare
+  media_type public.media_type;
+  allowed public.media_type[];
+begin
+  select m.type into media_type
+  from public.media_items m
+  where m.id = new.media_item_id;
+  if media_type is null then
+    raise exception 'media_item not found for credit'
+      using errcode = '23514';
+  end if;
+  select cr.allowed_types into allowed
+  from public.credit_roles cr
+  where cr.code = new.role;
+  if allowed is null then
+    raise exception 'unknown credit role'
+      using errcode = '23514';
+  end if;
+  if not (media_type = any(allowed)) then
+    raise exception 'credit role not allowed for media type'
+      using errcode = '23514';
+  end if;
+  return new;
+end $$;
+
+ALTER FUNCTION "public"."media_credits_enforce_allowed_types"() OWNER TO "postgres";
+
+COMMENT ON FUNCTION "public"."media_credits_enforce_allowed_types"() IS 'media_credits.role 必须属于 credit_roles.allowed_types 对应该媒体类型；media_item_id 变更时亦校验。';
+
+CREATE OR REPLACE FUNCTION "public"."media_credits_enforce_character"() RETURNS "trigger"
+    LANGUAGE "plpgsql"
+    SET "search_path" TO ''
+    AS $$
+declare
+  role_allows boolean;
+begin
+  if new.character_name is null then
+    return new;
+  end if;
+  select cr.allows_character into role_allows
+  from public.credit_roles cr
+  where cr.code = new.role;
+  if role_allows is distinct from true then
+    raise exception 'character_name only allowed for roles with allows_character'
+      using errcode = '23514';
+  end if;
+  return new;
+end $$;
+
+ALTER FUNCTION "public"."media_credits_enforce_character"() OWNER TO "postgres";
+
+COMMENT ON FUNCTION "public"."media_credits_enforce_character"() IS '仅 allows_character=true 的角色可写 character_name；替代旧的 actor-only check。';
 
 CREATE OR REPLACE FUNCTION "public"."name_issue_confirmations_sync_keys"() RETURNS "trigger"
     LANGUAGE "plpgsql"
@@ -1063,10 +1724,12 @@ CREATE OR REPLACE FUNCTION "public"."search_media"("p_query" "text" DEFAULT NULL
       coalesce(p_types, '{}') as types,
       coalesce(p_credit_roles, '{}') as roles,
       coalesce(p_series_only, false) as series_only
+  ), all_role_codes as (
+    select coalesce(array_agg(cr.code order by cr.sort_order), '{}'::text[]) as codes
+    from public.credit_roles cr
   ), scope as (
     select
       term,
-      -- 与 lib/admin/catalog.ts escapeLikePattern 一致：\ → \\，% → \%，_ → \_
       '%' || replace(replace(replace(term, E'\\', E'\\\\'), '%', E'\\%'), '_', E'\\_') || '%' as pattern,
       series_only,
       all_categories,
@@ -1075,13 +1738,11 @@ CREATE OR REPLACE FUNCTION "public"."search_media"("p_query" "text" DEFAULT NULL
         else types
       end as searched_types,
       all_categories or series_only as searches_series,
-      -- 无分类：全部人物角色；显式角色：用传入值；仅类型：仍搜该类型下全部演职。
       case
         when all_categories or (cardinality(roles) = 0 and cardinality(types) > 0)
-          then array['director', 'actor', 'artist', 'author', 'lyricist', 'composer']
+          then (select codes from all_role_codes)
         else roles
       end as searched_roles,
-      -- 显式人物角色时要求人名命中（与类型／系列组合为 AND，关闭纯标题与系列名命中）。
       cardinality(roles) > 0 as require_person
     from (
       select *, term is not null and cardinality(types) = 0 and not series_only and cardinality(roles) = 0 as all_categories
@@ -1121,13 +1782,12 @@ CREATE OR REPLACE FUNCTION "public"."search_media"("p_query" "text" DEFAULT NULL
     cross join scope
     where scope.term is not null
       and cardinality(scope.searched_roles) > 0
-      and mc.role::text = any(scope.searched_roles)
+      and mc.role = any(scope.searched_roles)
       and (p.name ilike scope.pattern escape E'\\' or p.alternate_name ilike scope.pattern escape E'\\')
       and (
         cardinality(scope.searched_types) = 0
         or mi.type::text = any(scope.searched_types)
       )
-      -- 系列模式 + 人物：仅保留系列成员上的演职命中。
       and (
         not scope.series_only
         or exists (select 1 from public.media_item_series s where s.media_item_id = mc.media_item_id)
@@ -1151,6 +1811,19 @@ SET default_tablespace = '';
 
 SET default_table_access_method = "heap";
 
+CREATE TABLE IF NOT EXISTS "public"."album_tracks" (
+    "album_id" "uuid" NOT NULL,
+    "song_id" "uuid" NOT NULL,
+    "disc_number" integer DEFAULT 1 NOT NULL,
+    "track_number" integer NOT NULL,
+    CONSTRAINT "album_tracks_disc_number_positive_check" CHECK (("disc_number" >= 1)),
+    CONSTRAINT "album_tracks_track_number_nonnegative_check" CHECK (("track_number" >= 0))
+);
+
+ALTER TABLE "public"."album_tracks" OWNER TO "postgres";
+
+COMMENT ON TABLE "public"."album_tracks" IS '专辑曲目关联：同一首歌可出现在多张专辑；盘号＋曲序在专辑内唯一。';
+
 CREATE TABLE IF NOT EXISTS "public"."books" (
     "media_item_id" "uuid" NOT NULL,
     "page_count" integer,
@@ -1173,6 +1846,25 @@ COMMENT ON COLUMN "public"."books"."isbn" IS '规范化 ISBN：10 位（末位�
 
 COMMENT ON CONSTRAINT "books_isbn_format_check" ON "public"."books" IS 'ISBN 须为规范化后的 10 位（末位可 X）或 13 位数字；与 lib/books/resolve-cover normalizeIsbn 一致。';
 
+CREATE TABLE IF NOT EXISTS "public"."credit_roles" (
+    "code" "text" NOT NULL,
+    "label" "text" NOT NULL,
+    "sort_order" integer NOT NULL,
+    "allowed_types" "public"."media_type"[] NOT NULL,
+    "allows_character" boolean DEFAULT false NOT NULL,
+    CONSTRAINT "credit_roles_allowed_types_nonempty_check" CHECK (("cardinality"("allowed_types") > 0)),
+    CONSTRAINT "credit_roles_label_length_check" CHECK ((("length"("label") >= 1) AND ("length"("label") <= 100))),
+    CONSTRAINT "credit_roles_sort_order_nonnegative_check" CHECK (("sort_order" >= 0))
+);
+
+ALTER TABLE "public"."credit_roles" OWNER TO "postgres";
+
+COMMENT ON TABLE "public"."credit_roles" IS '演职角色字典（person_role 枚举已移除）。media_credits.role → credit_roles.code。';
+
+COMMENT ON COLUMN "public"."credit_roles"."allowed_types" IS '该角色允许挂载的 media_items.type。由 media_credits_enforce_allowed_types 触发器强制；保存 RPC 亦预检。';
+
+COMMENT ON COLUMN "public"."credit_roles"."allows_character" IS '为 true 时可写 media_credits.character_name（当前 actor／voice_actor）。';
+
 CREATE TABLE IF NOT EXISTS "public"."genres" (
     "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
     "name" "text" NOT NULL
@@ -1190,10 +1882,9 @@ ALTER TABLE "public"."languages" OWNER TO "postgres";
 CREATE TABLE IF NOT EXISTS "public"."media_credits" (
     "media_item_id" "uuid" NOT NULL,
     "person_id" "uuid" NOT NULL,
-    "role" "public"."person_role" NOT NULL,
+    "role" "text" NOT NULL,
     "credit_order" integer DEFAULT 0,
     "character_name" "text",
-    CONSTRAINT "media_credits_character_actor_only_check" CHECK ((("character_name" IS NULL) OR ("role" = 'actor'::"public"."person_role"))),
     CONSTRAINT "media_credits_character_name_length_check" CHECK ((("character_name" IS NULL) OR (("length"("character_name") >= 1) AND ("length"("character_name") <= 200)))),
     CONSTRAINT "media_credits_order_nonnegative_check" CHECK ((("credit_order" IS NULL) OR ("credit_order" >= 0)))
 );
@@ -1271,17 +1962,18 @@ ALTER TABLE "public"."media_series" OWNER TO "postgres";
 COMMENT ON CONSTRAINT "media_series_alternate_name_length_check" ON "public"."media_series" IS '系列别名最多 300 字；与 saveReference 校验一致。';
 
 CREATE TABLE IF NOT EXISTS "public"."music" (
-    "media_item_id" "uuid" NOT NULL,
-    "track_number" integer,
-    "album_id" "uuid"
+    "media_item_id" "uuid" NOT NULL
 );
 
 ALTER TABLE "public"."music" OWNER TO "postgres";
+
+COMMENT ON TABLE "public"."music" IS '曲目扩展表；所属专辑与曲序见 album_tracks。允许无专辑的独立单曲。';
 
 CREATE TABLE IF NOT EXISTS "public"."music_albums" (
     "media_item_id" "uuid" NOT NULL,
     "track_count" integer,
     "label" "text",
+    "release_kind" "public"."album_release_kind" DEFAULT 'album'::"public"."album_release_kind" NOT NULL,
     CONSTRAINT "music_albums_label_length_check" CHECK ((("label" IS NULL) OR (("length"("label") >= 1) AND ("length"("label") <= 200)))),
     CONSTRAINT "music_albums_track_count_nonnegative_check" CHECK ((("track_count" IS NULL) OR ("track_count" >= 0)))
 );
@@ -1291,6 +1983,8 @@ ALTER TABLE "public"."music_albums" OWNER TO "postgres";
 COMMENT ON COLUMN "public"."music_albums"."track_count" IS '专辑曲目数（导入／编辑写入，非实时聚合）。';
 
 COMMENT ON COLUMN "public"."music_albums"."label" IS '唱片公司。';
+
+COMMENT ON COLUMN "public"."music_albums"."release_kind" IS '发行形态：album／ep／single／compilation；默认 album。';
 
 CREATE TABLE IF NOT EXISTS "public"."name_issue_confirmations" (
     "item_id" "text" NOT NULL,
@@ -1343,6 +2037,57 @@ CREATE TABLE IF NOT EXISTS "public"."regions" (
 
 ALTER TABLE "public"."regions" OWNER TO "postgres";
 
+CREATE OR REPLACE VIEW "public"."release_year_stats" AS
+SELECT
+    NULL::"text" AS "release_year",
+    NULL::numeric AS "total_runtime",
+    NULL::numeric AS "total_watched_runtime",
+    NULL::numeric AS "total_unwatched_runtime",
+    NULL::bigint AS "total_movies",
+    NULL::bigint AS "watched_movies",
+    NULL::bigint AS "unwatched_movies",
+    NULL::numeric AS "total_movies_runtime",
+    NULL::numeric AS "movies_watched_runtime",
+    NULL::numeric AS "movies_unwatched_runtime",
+    NULL::numeric AS "movie_avg_rating",
+    NULL::bigint AS "total_series",
+    NULL::bigint AS "watched_series",
+    NULL::bigint AS "watching_series",
+    NULL::bigint AS "unwatched_series",
+    NULL::numeric AS "total_series_runtime",
+    NULL::numeric AS "series_watched_runtime",
+    NULL::numeric AS "series_unwatched_runtime",
+    NULL::numeric AS "series_avg_rating",
+    NULL::numeric AS "total_seasons",
+    NULL::numeric AS "watched_seasons",
+    NULL::numeric AS "watching_seasons",
+    NULL::numeric AS "unwatched_seasons",
+    NULL::numeric AS "total_series_episodes",
+    NULL::numeric AS "watched_series_episodes",
+    NULL::numeric AS "unwatched_episodes",
+    NULL::bigint AS "total_albums",
+    NULL::bigint AS "listened_albums",
+    NULL::bigint AS "total_books",
+    NULL::bigint AS "read_books",
+    NULL::bigint AS "reading_books",
+    NULL::bigint AS "want_albums",
+    NULL::bigint AS "want_books",
+    NULL::bigint AS "total_tracks",
+    NULL::bigint AS "listened_tracks",
+    NULL::bigint AS "want_tracks",
+    NULL::numeric AS "album_avg_rating",
+    NULL::numeric AS "book_avg_rating";
+
+ALTER VIEW "public"."release_year_stats" OWNER TO "postgres";
+
+CREATE TABLE IF NOT EXISTS "public"."site_owner" (
+    "singleton" boolean DEFAULT true NOT NULL,
+    "user_id" "uuid" NOT NULL,
+    CONSTRAINT "site_owner_singleton_check" CHECK ("singleton")
+);
+
+ALTER TABLE "public"."site_owner" OWNER TO "postgres";
+
 CREATE TABLE IF NOT EXISTS "public"."tracking" (
     "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
     "media_item_id" "uuid" NOT NULL,
@@ -1371,545 +2116,25 @@ CREATE TABLE IF NOT EXISTS "public"."tv_seasons" (
 
 ALTER TABLE "public"."tv_seasons" OWNER TO "postgres";
 
-CREATE OR REPLACE VIEW "public"."release_year_stats" WITH ("security_invoker"='true') AS
- WITH "ep_raw" AS (
-         SELECT "series"."id" AS "series_id",
-            "seasons"."id" AS "season_id",
-            "episodes"."id" AS "episode_id",
-            "episode_media"."release_date",
-            (EXTRACT(year FROM "episode_media"."release_date"))::integer AS "release_year",
-            COALESCE("episode_media"."runtime", (0)::numeric) AS "runtime",
-            COALESCE(("episode_tracking"."status" = 'watched'::"public"."tracking_status"), false) AS "is_watched",
-            "episode_tracking"."rating"
-           FROM (((("public"."media_items" "series"
-             JOIN "public"."tv_seasons" "seasons" ON (("seasons"."series_id" = "series"."id")))
-             JOIN "public"."tv_episodes" "episodes" ON (("episodes"."season_id" = "seasons"."id")))
-             JOIN "public"."media_items" "episode_media" ON (("episode_media"."id" = "episodes"."id")))
-             LEFT JOIN "public"."tracking" "episode_tracking" ON (("episode_tracking"."media_item_id" = "episodes"."id")))
-          WHERE ("series"."type" = 'tv_show'::"public"."media_type")
-        ), "season_year_agg" AS (
-         SELECT "ep_raw"."series_id",
-            "ep_raw"."release_year",
-            "ep_raw"."season_id",
-            "count"("ep_raw"."episode_id") AS "total_eps",
-            "count"("ep_raw"."episode_id") FILTER (WHERE "ep_raw"."is_watched") AS "watched_eps",
-                CASE
-                    WHEN ("count"("ep_raw"."episode_id") = "count"("ep_raw"."episode_id") FILTER (WHERE "ep_raw"."is_watched")) THEN 'watched'::"text"
-                    WHEN ("count"("ep_raw"."episode_id") FILTER (WHERE "ep_raw"."is_watched") = 0) THEN 'unwatched'::"text"
-                    ELSE 'watching'::"text"
-                END AS "season_status"
-           FROM "ep_raw"
-          WHERE ("ep_raw"."release_year" IS NOT NULL)
-          GROUP BY "ep_raw"."series_id", "ep_raw"."release_year", "ep_raw"."season_id"
-        ), "series_seasons_year_agg" AS (
-         SELECT "season_year_agg"."series_id",
-            "season_year_agg"."release_year",
-            "count"("season_year_agg"."season_id") AS "total_seasons",
-            "count"("season_year_agg"."season_id") FILTER (WHERE ("season_year_agg"."season_status" = 'watched'::"text")) AS "watched_seasons",
-            "count"("season_year_agg"."season_id") FILTER (WHERE ("season_year_agg"."season_status" = 'watching'::"text")) AS "watching_seasons",
-            "count"("season_year_agg"."season_id") FILTER (WHERE ("season_year_agg"."season_status" = 'unwatched'::"text")) AS "unwatched_seasons"
-           FROM "season_year_agg"
-          GROUP BY "season_year_agg"."series_id", "season_year_agg"."release_year"
-        ), "series_year_agg" AS (
-         SELECT "ep_raw"."series_id",
-            "ep_raw"."release_year",
-            "count"("ep_raw"."episode_id") AS "total_episodes",
-            "count"("ep_raw"."episode_id") FILTER (WHERE "ep_raw"."is_watched") AS "watched_episodes",
-            "count"("ep_raw"."episode_id") FILTER (WHERE (NOT "ep_raw"."is_watched")) AS "unwatched_episodes",
-            "sum"("ep_raw"."runtime") AS "total_runtime",
-            COALESCE("sum"("ep_raw"."runtime") FILTER (WHERE "ep_raw"."is_watched"), (0)::numeric) AS "watched_runtime",
-            COALESCE("sum"("ep_raw"."runtime") FILTER (WHERE (NOT "ep_raw"."is_watched")), (0)::numeric) AS "unwatched_runtime",
-            "avg"("ep_raw"."rating") FILTER (WHERE ("ep_raw"."rating" IS NOT NULL)) AS "rating",
-                CASE
-                    WHEN ("count"("ep_raw"."episode_id") = "count"("ep_raw"."episode_id") FILTER (WHERE "ep_raw"."is_watched")) THEN 'watched'::"text"
-                    WHEN ("count"("ep_raw"."episode_id") FILTER (WHERE "ep_raw"."is_watched") = 0) THEN 'unwatched'::"text"
-                    ELSE 'watching'::"text"
-                END AS "status"
-           FROM "ep_raw"
-          WHERE ("ep_raw"."release_year" IS NOT NULL)
-          GROUP BY "ep_raw"."series_id", "ep_raw"."release_year"
-        ), "tv_stats_year" AS (
-         SELECT "s"."series_id" AS "id",
-            "s"."release_year",
-            'tv_show'::"text" AS "media_type",
-            "s"."status",
-            "s"."rating",
-            "s"."total_runtime",
-            "s"."watched_runtime",
-            "s"."unwatched_runtime",
-            "s"."total_episodes",
-            "s"."watched_episodes",
-            "s"."unwatched_episodes",
-            "ss"."total_seasons",
-            "ss"."watched_seasons",
-            "ss"."watching_seasons",
-            "ss"."unwatched_seasons"
-           FROM ("series_year_agg" "s"
-             JOIN "series_seasons_year_agg" "ss" ON ((("ss"."series_id" = "s"."series_id") AND ("ss"."release_year" = "s"."release_year"))))
-        ), "season_all_agg" AS (
-         SELECT "ep_raw"."series_id",
-            "ep_raw"."season_id",
-            "count"("ep_raw"."episode_id") AS "total_eps",
-            "count"("ep_raw"."episode_id") FILTER (WHERE "ep_raw"."is_watched") AS "watched_eps",
-                CASE
-                    WHEN ("count"("ep_raw"."episode_id") = "count"("ep_raw"."episode_id") FILTER (WHERE "ep_raw"."is_watched")) THEN 'watched'::"text"
-                    WHEN ("count"("ep_raw"."episode_id") FILTER (WHERE "ep_raw"."is_watched") = 0) THEN 'unwatched'::"text"
-                    ELSE 'watching'::"text"
-                END AS "season_status"
-           FROM "ep_raw"
-          GROUP BY "ep_raw"."series_id", "ep_raw"."season_id"
-        ), "series_seasons_all_agg" AS (
-         SELECT "season_all_agg"."series_id",
-            "count"("season_all_agg"."season_id") AS "total_seasons",
-            "count"("season_all_agg"."season_id") FILTER (WHERE ("season_all_agg"."season_status" = 'watched'::"text")) AS "watched_seasons",
-            "count"("season_all_agg"."season_id") FILTER (WHERE ("season_all_agg"."season_status" = 'watching'::"text")) AS "watching_seasons",
-            "count"("season_all_agg"."season_id") FILTER (WHERE ("season_all_agg"."season_status" = 'unwatched'::"text")) AS "unwatched_seasons"
-           FROM "season_all_agg"
-          GROUP BY "season_all_agg"."series_id"
-        ), "series_all_agg" AS (
-         SELECT "ep_raw"."series_id",
-            "count"("ep_raw"."episode_id") AS "total_episodes",
-            "count"("ep_raw"."episode_id") FILTER (WHERE "ep_raw"."is_watched") AS "watched_episodes",
-            "count"("ep_raw"."episode_id") FILTER (WHERE (NOT "ep_raw"."is_watched")) AS "unwatched_episodes",
-            "sum"("ep_raw"."runtime") AS "total_runtime",
-            COALESCE("sum"("ep_raw"."runtime") FILTER (WHERE "ep_raw"."is_watched"), (0)::numeric) AS "watched_runtime",
-            COALESCE("sum"("ep_raw"."runtime") FILTER (WHERE (NOT "ep_raw"."is_watched")), (0)::numeric) AS "unwatched_runtime",
-            "avg"("ep_raw"."rating") FILTER (WHERE ("ep_raw"."rating" IS NOT NULL)) AS "rating",
-                CASE
-                    WHEN ("count"("ep_raw"."episode_id") = "count"("ep_raw"."episode_id") FILTER (WHERE "ep_raw"."is_watched")) THEN 'watched'::"text"
-                    WHEN ("count"("ep_raw"."episode_id") FILTER (WHERE "ep_raw"."is_watched") = 0) THEN 'unwatched'::"text"
-                    ELSE 'watching'::"text"
-                END AS "status"
-           FROM "ep_raw"
-          GROUP BY "ep_raw"."series_id"
-        ), "tv_stats_all" AS (
-         SELECT "s"."series_id" AS "id",
-            NULL::integer AS "release_year",
-            'tv_show'::"text" AS "media_type",
-            "s"."status",
-            "s"."rating",
-            "s"."total_runtime",
-            "s"."watched_runtime",
-            "s"."unwatched_runtime",
-            "s"."total_episodes",
-            "s"."watched_episodes",
-            "s"."unwatched_episodes",
-            "ss"."total_seasons",
-            "ss"."watched_seasons",
-            "ss"."watching_seasons",
-            "ss"."unwatched_seasons"
-           FROM ("series_all_agg" "s"
-             JOIN "series_seasons_all_agg" "ss" ON (("ss"."series_id" = "s"."series_id")))
-        ), "movie_base" AS (
-         SELECT "m"."id",
-            (EXTRACT(year FROM "m"."release_date"))::integer AS "release_year",
-            'movie'::"text" AS "media_type",
-                CASE
-                    WHEN ("t"."status" = 'watched'::"public"."tracking_status") THEN 'watched'::"text"
-                    ELSE 'unwatched'::"text"
-                END AS "status",
-            "t"."rating",
-            COALESCE("m"."runtime", (0)::numeric) AS "total_runtime",
-                CASE
-                    WHEN ("t"."status" = 'watched'::"public"."tracking_status") THEN COALESCE("m"."runtime", (0)::numeric)
-                    ELSE (0)::numeric
-                END AS "watched_runtime",
-                CASE
-                    WHEN ("t"."status" IS DISTINCT FROM 'watched'::"public"."tracking_status") THEN COALESCE("m"."runtime", (0)::numeric)
-                    ELSE (0)::numeric
-                END AS "unwatched_runtime",
-            (0)::bigint AS "total_episodes",
-            (0)::bigint AS "watched_episodes",
-            (0)::bigint AS "unwatched_episodes",
-            (0)::bigint AS "total_seasons",
-            (0)::bigint AS "watched_seasons",
-            (0)::bigint AS "watching_seasons",
-            (0)::bigint AS "unwatched_seasons"
-           FROM ("public"."media_items" "m"
-             LEFT JOIN "public"."tracking" "t" ON (("t"."media_item_id" = "m"."id")))
-          WHERE (("m"."type" = 'movie'::"public"."media_type") AND ("m"."release_date" IS NOT NULL))
-        ), "movie_stats" AS (
-         SELECT "movie_base"."id",
-            "movie_base"."release_year",
-            "movie_base"."media_type",
-            "movie_base"."status",
-            "movie_base"."rating",
-            "movie_base"."total_runtime",
-            "movie_base"."watched_runtime",
-            "movie_base"."unwatched_runtime",
-            "movie_base"."total_episodes",
-            "movie_base"."watched_episodes",
-            "movie_base"."unwatched_episodes",
-            "movie_base"."total_seasons",
-            "movie_base"."watched_seasons",
-            "movie_base"."watching_seasons",
-            "movie_base"."unwatched_seasons"
-           FROM "movie_base"
-        UNION ALL
-         SELECT "movie_base"."id",
-            NULL::integer AS "int4",
-            "movie_base"."media_type",
-            "movie_base"."status",
-            "movie_base"."rating",
-            "movie_base"."total_runtime",
-            "movie_base"."watched_runtime",
-            "movie_base"."unwatched_runtime",
-            "movie_base"."total_episodes",
-            "movie_base"."watched_episodes",
-            "movie_base"."unwatched_episodes",
-            "movie_base"."total_seasons",
-            "movie_base"."watched_seasons",
-            "movie_base"."watching_seasons",
-            "movie_base"."unwatched_seasons"
-           FROM "movie_base"
-        ), "album_base" AS (
-         SELECT "m"."id",
-            (EXTRACT(year FROM "m"."release_date"))::integer AS "release_year",
-            'album'::"text" AS "media_type",
-                CASE
-                    WHEN ("t"."status" = 'watched'::"public"."tracking_status") THEN 'watched'::"text"
-                    WHEN ("t"."status" = 'want_to_watch'::"public"."tracking_status") THEN 'want_to_watch'::"text"
-                    ELSE 'unwatched'::"text"
-                END AS "status",
-            "t"."rating",
-            (0)::numeric AS "total_runtime",
-            (0)::numeric AS "watched_runtime",
-            (0)::numeric AS "unwatched_runtime",
-            (0)::bigint AS "total_episodes",
-            (0)::bigint AS "watched_episodes",
-            (0)::bigint AS "unwatched_episodes",
-            (0)::bigint AS "total_seasons",
-            (0)::bigint AS "watched_seasons",
-            (0)::bigint AS "watching_seasons",
-            (0)::bigint AS "unwatched_seasons"
-           FROM ("public"."media_items" "m"
-             LEFT JOIN "public"."tracking" "t" ON (("t"."media_item_id" = "m"."id")))
-          WHERE (("m"."type" = 'album'::"public"."media_type") AND ("m"."release_date" IS NOT NULL))
-        ), "album_stats" AS (
-         SELECT "album_base"."id",
-            "album_base"."release_year",
-            "album_base"."media_type",
-            "album_base"."status",
-            "album_base"."rating",
-            "album_base"."total_runtime",
-            "album_base"."watched_runtime",
-            "album_base"."unwatched_runtime",
-            "album_base"."total_episodes",
-            "album_base"."watched_episodes",
-            "album_base"."unwatched_episodes",
-            "album_base"."total_seasons",
-            "album_base"."watched_seasons",
-            "album_base"."watching_seasons",
-            "album_base"."unwatched_seasons"
-           FROM "album_base"
-        UNION ALL
-         SELECT "album_base"."id",
-            NULL::integer AS "int4",
-            "album_base"."media_type",
-            "album_base"."status",
-            "album_base"."rating",
-            "album_base"."total_runtime",
-            "album_base"."watched_runtime",
-            "album_base"."unwatched_runtime",
-            "album_base"."total_episodes",
-            "album_base"."watched_episodes",
-            "album_base"."unwatched_episodes",
-            "album_base"."total_seasons",
-            "album_base"."watched_seasons",
-            "album_base"."watching_seasons",
-            "album_base"."unwatched_seasons"
-           FROM "album_base"
-        ), "book_base" AS (
-         SELECT "m"."id",
-            (EXTRACT(year FROM "m"."release_date"))::integer AS "release_year",
-            'book'::"text" AS "media_type",
-                CASE
-                    WHEN ("t"."status" = 'watched'::"public"."tracking_status") THEN 'watched'::"text"
-                    WHEN ("t"."status" = 'in_progress'::"public"."tracking_status") THEN 'in_progress'::"text"
-                    WHEN ("t"."status" = 'want_to_watch'::"public"."tracking_status") THEN 'want_to_watch'::"text"
-                    ELSE 'unwatched'::"text"
-                END AS "status",
-            "t"."rating",
-            (0)::numeric AS "total_runtime",
-            (0)::numeric AS "watched_runtime",
-            (0)::numeric AS "unwatched_runtime",
-            (0)::bigint AS "total_episodes",
-            (0)::bigint AS "watched_episodes",
-            (0)::bigint AS "unwatched_episodes",
-            (0)::bigint AS "total_seasons",
-            (0)::bigint AS "watched_seasons",
-            (0)::bigint AS "watching_seasons",
-            (0)::bigint AS "unwatched_seasons"
-           FROM ("public"."media_items" "m"
-             LEFT JOIN "public"."tracking" "t" ON (("t"."media_item_id" = "m"."id")))
-          WHERE (("m"."type" = 'book'::"public"."media_type") AND ("m"."release_date" IS NOT NULL))
-        ), "book_stats" AS (
-         SELECT "book_base"."id",
-            "book_base"."release_year",
-            "book_base"."media_type",
-            "book_base"."status",
-            "book_base"."rating",
-            "book_base"."total_runtime",
-            "book_base"."watched_runtime",
-            "book_base"."unwatched_runtime",
-            "book_base"."total_episodes",
-            "book_base"."watched_episodes",
-            "book_base"."unwatched_episodes",
-            "book_base"."total_seasons",
-            "book_base"."watched_seasons",
-            "book_base"."watching_seasons",
-            "book_base"."unwatched_seasons"
-           FROM "book_base"
-        UNION ALL
-         SELECT "book_base"."id",
-            NULL::integer AS "int4",
-            "book_base"."media_type",
-            "book_base"."status",
-            "book_base"."rating",
-            "book_base"."total_runtime",
-            "book_base"."watched_runtime",
-            "book_base"."unwatched_runtime",
-            "book_base"."total_episodes",
-            "book_base"."watched_episodes",
-            "book_base"."unwatched_episodes",
-            "book_base"."total_seasons",
-            "book_base"."watched_seasons",
-            "book_base"."watching_seasons",
-            "book_base"."unwatched_seasons"
-           FROM "book_base"
-        ), "track_base" AS (
-         SELECT "m"."id",
-            (EXTRACT(year FROM COALESCE("m"."release_date", "album_item"."release_date")))::integer AS "release_year",
-            'music'::"text" AS "media_type",
-                CASE
-                    WHEN ("t"."status" = 'watched'::"public"."tracking_status") THEN 'watched'::"text"
-                    WHEN ("t"."status" = 'want_to_watch'::"public"."tracking_status") THEN 'want_to_watch'::"text"
-                    ELSE 'unwatched'::"text"
-                END AS "status",
-            "t"."rating",
-            (0)::numeric AS "total_runtime",
-            (0)::numeric AS "watched_runtime",
-            (0)::numeric AS "unwatched_runtime",
-            (0)::bigint AS "total_episodes",
-            (0)::bigint AS "watched_episodes",
-            (0)::bigint AS "unwatched_episodes",
-            (0)::bigint AS "total_seasons",
-            (0)::bigint AS "watched_seasons",
-            (0)::bigint AS "watching_seasons",
-            (0)::bigint AS "unwatched_seasons"
-           FROM ((("public"."media_items" "m"
-             LEFT JOIN "public"."music" "mu" ON (("mu"."media_item_id" = "m"."id")))
-             LEFT JOIN "public"."media_items" "album_item" ON (("album_item"."id" = "mu"."album_id")))
-             LEFT JOIN "public"."tracking" "t" ON (("t"."media_item_id" = "m"."id")))
-          WHERE (("m"."type" = 'music'::"public"."media_type") AND (COALESCE("m"."release_date", "album_item"."release_date") IS NOT NULL))
-        ), "track_stats" AS (
-         SELECT "track_base"."id",
-            "track_base"."release_year",
-            "track_base"."media_type",
-            "track_base"."status",
-            "track_base"."rating",
-            "track_base"."total_runtime",
-            "track_base"."watched_runtime",
-            "track_base"."unwatched_runtime",
-            "track_base"."total_episodes",
-            "track_base"."watched_episodes",
-            "track_base"."unwatched_episodes",
-            "track_base"."total_seasons",
-            "track_base"."watched_seasons",
-            "track_base"."watching_seasons",
-            "track_base"."unwatched_seasons"
-           FROM "track_base"
-        UNION ALL
-         SELECT "track_base"."id",
-            NULL::integer AS "int4",
-            "track_base"."media_type",
-            "track_base"."status",
-            "track_base"."rating",
-            "track_base"."total_runtime",
-            "track_base"."watched_runtime",
-            "track_base"."unwatched_runtime",
-            "track_base"."total_episodes",
-            "track_base"."watched_episodes",
-            "track_base"."unwatched_episodes",
-            "track_base"."total_seasons",
-            "track_base"."watched_seasons",
-            "track_base"."watching_seasons",
-            "track_base"."unwatched_seasons"
-           FROM "track_base"
-        ), "combined_stats" AS (
-         SELECT "movie_stats"."id",
-            "movie_stats"."release_year",
-            "movie_stats"."media_type",
-            "movie_stats"."status",
-            "movie_stats"."rating",
-            "movie_stats"."total_runtime",
-            "movie_stats"."watched_runtime",
-            "movie_stats"."unwatched_runtime",
-            "movie_stats"."total_episodes",
-            "movie_stats"."watched_episodes",
-            "movie_stats"."unwatched_episodes",
-            "movie_stats"."total_seasons",
-            "movie_stats"."watched_seasons",
-            "movie_stats"."watching_seasons",
-            "movie_stats"."unwatched_seasons"
-           FROM "movie_stats"
-        UNION ALL
-         SELECT "tv_stats_year"."id",
-            "tv_stats_year"."release_year",
-            "tv_stats_year"."media_type",
-            "tv_stats_year"."status",
-            "tv_stats_year"."rating",
-            "tv_stats_year"."total_runtime",
-            "tv_stats_year"."watched_runtime",
-            "tv_stats_year"."unwatched_runtime",
-            "tv_stats_year"."total_episodes",
-            "tv_stats_year"."watched_episodes",
-            "tv_stats_year"."unwatched_episodes",
-            "tv_stats_year"."total_seasons",
-            "tv_stats_year"."watched_seasons",
-            "tv_stats_year"."watching_seasons",
-            "tv_stats_year"."unwatched_seasons"
-           FROM "tv_stats_year"
-        UNION ALL
-         SELECT "tv_stats_all"."id",
-            "tv_stats_all"."release_year",
-            "tv_stats_all"."media_type",
-            "tv_stats_all"."status",
-            "tv_stats_all"."rating",
-            "tv_stats_all"."total_runtime",
-            "tv_stats_all"."watched_runtime",
-            "tv_stats_all"."unwatched_runtime",
-            "tv_stats_all"."total_episodes",
-            "tv_stats_all"."watched_episodes",
-            "tv_stats_all"."unwatched_episodes",
-            "tv_stats_all"."total_seasons",
-            "tv_stats_all"."watched_seasons",
-            "tv_stats_all"."watching_seasons",
-            "tv_stats_all"."unwatched_seasons"
-           FROM "tv_stats_all"
-        UNION ALL
-         SELECT "album_stats"."id",
-            "album_stats"."release_year",
-            "album_stats"."media_type",
-            "album_stats"."status",
-            "album_stats"."rating",
-            "album_stats"."total_runtime",
-            "album_stats"."watched_runtime",
-            "album_stats"."unwatched_runtime",
-            "album_stats"."total_episodes",
-            "album_stats"."watched_episodes",
-            "album_stats"."unwatched_episodes",
-            "album_stats"."total_seasons",
-            "album_stats"."watched_seasons",
-            "album_stats"."watching_seasons",
-            "album_stats"."unwatched_seasons"
-           FROM "album_stats"
-        UNION ALL
-         SELECT "book_stats"."id",
-            "book_stats"."release_year",
-            "book_stats"."media_type",
-            "book_stats"."status",
-            "book_stats"."rating",
-            "book_stats"."total_runtime",
-            "book_stats"."watched_runtime",
-            "book_stats"."unwatched_runtime",
-            "book_stats"."total_episodes",
-            "book_stats"."watched_episodes",
-            "book_stats"."unwatched_episodes",
-            "book_stats"."total_seasons",
-            "book_stats"."watched_seasons",
-            "book_stats"."watching_seasons",
-            "book_stats"."unwatched_seasons"
-           FROM "book_stats"
-        UNION ALL
-         SELECT "track_stats"."id",
-            "track_stats"."release_year",
-            "track_stats"."media_type",
-            "track_stats"."status",
-            "track_stats"."rating",
-            "track_stats"."total_runtime",
-            "track_stats"."watched_runtime",
-            "track_stats"."unwatched_runtime",
-            "track_stats"."total_episodes",
-            "track_stats"."watched_episodes",
-            "track_stats"."unwatched_episodes",
-            "track_stats"."total_seasons",
-            "track_stats"."watched_seasons",
-            "track_stats"."watching_seasons",
-            "track_stats"."unwatched_seasons"
-           FROM "track_stats"
-        )
- SELECT COALESCE(("release_year")::"text", 'All Time'::"text") AS "release_year",
-    COALESCE("sum"("total_runtime"), (0)::numeric) AS "total_runtime",
-    COALESCE("sum"("watched_runtime"), (0)::numeric) AS "total_watched_runtime",
-    COALESCE("sum"("unwatched_runtime"), (0)::numeric) AS "total_unwatched_runtime",
-    "count"("id") FILTER (WHERE ("media_type" = 'movie'::"text")) AS "total_movies",
-    "count"("id") FILTER (WHERE (("media_type" = 'movie'::"text") AND ("status" = 'watched'::"text"))) AS "watched_movies",
-    "count"("id") FILTER (WHERE (("media_type" = 'movie'::"text") AND ("status" = 'unwatched'::"text"))) AS "unwatched_movies",
-    COALESCE("sum"("total_runtime") FILTER (WHERE ("media_type" = 'movie'::"text")), (0)::numeric) AS "total_movies_runtime",
-    COALESCE("sum"("watched_runtime") FILTER (WHERE ("media_type" = 'movie'::"text")), (0)::numeric) AS "movies_watched_runtime",
-    COALESCE("sum"("unwatched_runtime") FILTER (WHERE ("media_type" = 'movie'::"text")), (0)::numeric) AS "movies_unwatched_runtime",
-    "round"("avg"("rating") FILTER (WHERE (("media_type" = 'movie'::"text") AND ("status" = 'watched'::"text"))), 1) AS "movie_avg_rating",
-    "count"("id") FILTER (WHERE ("media_type" = 'tv_show'::"text")) AS "total_series",
-    "count"("id") FILTER (WHERE (("media_type" = 'tv_show'::"text") AND ("status" = 'watched'::"text"))) AS "watched_series",
-    "count"("id") FILTER (WHERE (("media_type" = 'tv_show'::"text") AND ("status" = 'watching'::"text"))) AS "watching_series",
-    "count"("id") FILTER (WHERE (("media_type" = 'tv_show'::"text") AND ("status" = 'unwatched'::"text"))) AS "unwatched_series",
-    COALESCE("sum"("total_runtime") FILTER (WHERE ("media_type" = 'tv_show'::"text")), (0)::numeric) AS "total_series_runtime",
-    COALESCE("sum"("watched_runtime") FILTER (WHERE ("media_type" = 'tv_show'::"text")), (0)::numeric) AS "series_watched_runtime",
-    COALESCE("sum"("unwatched_runtime") FILTER (WHERE ("media_type" = 'tv_show'::"text")), (0)::numeric) AS "series_unwatched_runtime",
-    "round"("avg"("rating") FILTER (WHERE (("media_type" = 'tv_show'::"text") AND ("rating" IS NOT NULL))), 1) AS "series_avg_rating",
-    COALESCE("sum"("total_seasons") FILTER (WHERE ("media_type" = 'tv_show'::"text")), (0)::numeric) AS "total_seasons",
-    COALESCE("sum"("watched_seasons") FILTER (WHERE ("media_type" = 'tv_show'::"text")), (0)::numeric) AS "watched_seasons",
-    COALESCE("sum"("watching_seasons") FILTER (WHERE ("media_type" = 'tv_show'::"text")), (0)::numeric) AS "watching_seasons",
-    COALESCE("sum"("unwatched_seasons") FILTER (WHERE ("media_type" = 'tv_show'::"text")), (0)::numeric) AS "unwatched_seasons",
-    COALESCE("sum"("total_episodes") FILTER (WHERE ("media_type" = 'tv_show'::"text")), (0)::numeric) AS "total_series_episodes",
-    COALESCE("sum"("watched_episodes") FILTER (WHERE ("media_type" = 'tv_show'::"text")), (0)::numeric) AS "watched_series_episodes",
-    COALESCE("sum"("unwatched_episodes") FILTER (WHERE ("media_type" = 'tv_show'::"text")), (0)::numeric) AS "unwatched_episodes",
-    "count"("id") FILTER (WHERE ("media_type" = 'album'::"text")) AS "total_albums",
-    "count"("id") FILTER (WHERE (("media_type" = 'album'::"text") AND ("status" = 'watched'::"text"))) AS "listened_albums",
-    "count"("id") FILTER (WHERE ("media_type" = 'book'::"text")) AS "total_books",
-    "count"("id") FILTER (WHERE (("media_type" = 'book'::"text") AND ("status" = 'watched'::"text"))) AS "read_books",
-    "count"("id") FILTER (WHERE (("media_type" = 'book'::"text") AND ("status" = 'in_progress'::"text"))) AS "reading_books",
-    "count"("id") FILTER (WHERE (("media_type" = 'album'::"text") AND ("status" = 'want_to_watch'::"text"))) AS "want_albums",
-    "count"("id") FILTER (WHERE (("media_type" = 'book'::"text") AND ("status" = 'want_to_watch'::"text"))) AS "want_books",
-    "count"("id") FILTER (WHERE ("media_type" = 'music'::"text")) AS "total_tracks",
-    "count"("id") FILTER (WHERE (("media_type" = 'music'::"text") AND ("status" = 'watched'::"text"))) AS "listened_tracks",
-    "count"("id") FILTER (WHERE (("media_type" = 'music'::"text") AND ("status" = 'want_to_watch'::"text"))) AS "want_tracks",
-    "round"("avg"("rating") FILTER (WHERE (("media_type" = 'album'::"text") AND ("status" = 'watched'::"text"))), 1) AS "album_avg_rating",
-    "round"("avg"("rating") FILTER (WHERE (("media_type" = 'book'::"text") AND ("status" = 'watched'::"text"))), 1) AS "book_avg_rating"
-   FROM "combined_stats"
-  GROUP BY "release_year"
-  ORDER BY ("release_year" IS NULL) DESC, COALESCE(("release_year")::"text", 'All Time'::"text") DESC;
-
-ALTER VIEW "public"."release_year_stats" OWNER TO "postgres";
-
-CREATE TABLE IF NOT EXISTS "public"."site_owner" (
-    "singleton" boolean DEFAULT true NOT NULL,
-    "user_id" "uuid" NOT NULL,
-    CONSTRAINT "site_owner_singleton_check" CHECK ("singleton")
-);
-
-ALTER TABLE "public"."site_owner" OWNER TO "postgres";
-
 CREATE OR REPLACE VIEW "public"."v_continue_listening" WITH ("security_invoker"='true') AS
  SELECT "album"."media_item_id" AS "album_id",
     "item"."title",
     "item"."cover_url",
     "item"."release_date",
-    ("count"("mu"."media_item_id"))::integer AS "track_total",
+    ("count"("at"."song_id"))::integer AS "track_total",
     ("count"("t"."media_item_id") FILTER (WHERE ("t"."status" = 'watched'::"public"."tracking_status")))::integer AS "track_watched",
     "max"("item_track"."release_date") FILTER (WHERE ("t"."status" = 'watched'::"public"."tracking_status")) AS "latest_watched_track_release_date"
    FROM (((("public"."music_albums" "album"
      JOIN "public"."media_items" "item" ON (("item"."id" = "album"."media_item_id")))
-     JOIN "public"."music" "mu" ON (("mu"."album_id" = "album"."media_item_id")))
-     JOIN "public"."media_items" "item_track" ON (("item_track"."id" = "mu"."media_item_id")))
-     LEFT JOIN "public"."tracking" "t" ON (("t"."media_item_id" = "mu"."media_item_id")))
+     JOIN "public"."album_tracks" "at" ON (("at"."album_id" = "album"."media_item_id")))
+     JOIN "public"."media_items" "item_track" ON (("item_track"."id" = "at"."song_id")))
+     LEFT JOIN "public"."tracking" "t" ON (("t"."media_item_id" = "at"."song_id")))
   GROUP BY "album"."media_item_id", "item"."title", "item"."cover_url", "item"."release_date"
- HAVING (("count"("t"."media_item_id") FILTER (WHERE ("t"."status" = 'watched'::"public"."tracking_status")) > 0) AND ("count"("t"."media_item_id") FILTER (WHERE ("t"."status" = 'watched'::"public"."tracking_status")) < "count"("mu"."media_item_id")));
+ HAVING (("count"("t"."media_item_id") FILTER (WHERE ("t"."status" = 'watched'::"public"."tracking_status")) > 0) AND ("count"("t"."media_item_id") FILTER (WHERE ("t"."status" = 'watched'::"public"."tracking_status")) < "count"("at"."song_id")));
 
 ALTER VIEW "public"."v_continue_listening" OWNER TO "postgres";
 
-COMMENT ON VIEW "public"."v_continue_listening" IS '在听专辑：至少一首曲目 status=watched，但并非全部曲目都已 watched。排序键 latest_watched_track_release_date 是已听曲目上映日，不是收听时间。';
+COMMENT ON VIEW "public"."v_continue_listening" IS '在听专辑：至少一首曲目 watched，但未全部 watched。共享曲目的收听状态对包含它的每张专辑生效。';
 
 CREATE OR REPLACE VIEW "public"."v_manage_media_order" WITH ("security_invoker"='true') AS
  SELECT "m"."id",
@@ -2025,7 +2250,7 @@ CREATE OR REPLACE VIEW "public"."v_report_credit_order" WITH ("security_invoker"
     "c"."id" AS "link_id",
     "c"."title",
     "c"."context" AS "detail",
-    "array_agg"((("o"."role")::"text" || '_order'::"text") ORDER BY "o"."role") AS "tags",
+    "array_agg"(("o"."role" || '_order'::"text") ORDER BY "o"."role") AS "tags",
     0 AS "weight",
     "c"."title" AS "sort_key"
    FROM (( SELECT "mc"."media_item_id",
@@ -2093,13 +2318,13 @@ CREATE OR REPLACE VIEW "public"."v_report_incomplete_media" WITH ("security_invo
                     CASE
                         WHEN (NOT (EXISTS ( SELECT 1
                            FROM "public"."media_credits" "x"
-                          WHERE (("x"."media_item_id" = "m"."id") AND ("x"."role" = 'actor'::"public"."person_role"))))) THEN 'no_actors'::"text"
+                          WHERE (("x"."media_item_id" = "m"."id") AND ("x"."role" = 'actor'::"text"))))) THEN 'no_actors'::"text"
                         ELSE NULL::"text"
                     END,
                     CASE
                         WHEN (NOT (EXISTS ( SELECT 1
                            FROM "public"."media_credits" "x"
-                          WHERE (("x"."media_item_id" = "m"."id") AND ("x"."role" = 'director'::"public"."person_role"))))) THEN 'no_directors'::"text"
+                          WHERE (("x"."media_item_id" = "m"."id") AND ("x"."role" = 'director'::"text"))))) THEN 'no_directors'::"text"
                         ELSE NULL::"text"
                     END]
                 END, NULL::"text") AS "tags",
@@ -2143,7 +2368,7 @@ CREATE OR REPLACE VIEW "public"."v_report_missing_character" WITH ("security_inv
    FROM (("public"."media_credits" "mc"
      JOIN "public"."people" "p" ON (("p"."id" = "mc"."person_id")))
      JOIN "public"."v_report_media_context" "c" ON (("c"."id" = "mc"."media_item_id")))
-  WHERE (("mc"."role" = 'actor'::"public"."person_role") AND ("mc"."character_name" IS NULL))
+  WHERE (("mc"."role" = 'actor'::"text") AND ("mc"."character_name" IS NULL))
   GROUP BY "c"."id", "c"."type", "c"."title", "c"."context";
 
 ALTER VIEW "public"."v_report_missing_character" OWNER TO "postgres";
@@ -2393,8 +2618,17 @@ UNION ALL
 
 ALTER VIEW "public"."v_report_unused_references" OWNER TO "postgres";
 
+ALTER TABLE ONLY "public"."album_tracks"
+    ADD CONSTRAINT "album_tracks_album_song_key" UNIQUE ("album_id", "song_id");
+
+ALTER TABLE ONLY "public"."album_tracks"
+    ADD CONSTRAINT "album_tracks_pkey" PRIMARY KEY ("album_id", "disc_number", "track_number");
+
 ALTER TABLE ONLY "public"."books"
     ADD CONSTRAINT "books_pkey" PRIMARY KEY ("media_item_id");
+
+ALTER TABLE ONLY "public"."credit_roles"
+    ADD CONSTRAINT "credit_roles_pkey" PRIMARY KEY ("code");
 
 ALTER TABLE ONLY "public"."genres"
     ADD CONSTRAINT "genres_name_key" UNIQUE ("name");
@@ -2431,11 +2665,6 @@ ALTER TABLE ONLY "public"."media_series"
 
 ALTER TABLE ONLY "public"."media_series"
     ADD CONSTRAINT "media_series_pkey" PRIMARY KEY ("id");
-
-ALTER TABLE ONLY "public"."music"
-    ADD CONSTRAINT "music_album_id_track_number_key" UNIQUE ("album_id", "track_number");
-
-COMMENT ON CONSTRAINT "music_album_id_track_number_key" ON "public"."music" IS '同一专辑内曲序唯一；与 tv_episodes(season_id, episode_number) 同口径。';
 
 ALTER TABLE ONLY "public"."music_albums"
     ADD CONSTRAINT "music_albums_pkey" PRIMARY KEY ("media_item_id");
@@ -2491,6 +2720,8 @@ ALTER TABLE ONLY "public"."tv_seasons"
 ALTER TABLE ONLY "public"."tv_seasons"
     ADD CONSTRAINT "tv_seasons_series_id_season_number_key" UNIQUE ("series_id", "season_number");
 
+CREATE INDEX "album_tracks_song_id_idx" ON "public"."album_tracks" USING "btree" ("song_id");
+
 CREATE INDEX "idx_media_items_alternate_title_trgm" ON "public"."media_items" USING "gin" ("alternate_title" "extensions"."gin_trgm_ops");
 
 CREATE INDEX "idx_media_items_release_date" ON "public"."media_items" USING "btree" ("release_date" DESC);
@@ -2505,7 +2736,7 @@ CREATE INDEX "idx_people_alternate_name_trgm" ON "public"."people" USING "gin" (
 
 CREATE INDEX "idx_people_name_trgm" ON "public"."people" USING "gin" ("name" "extensions"."gin_trgm_ops");
 
-CREATE INDEX "media_credits_person_id_idx" ON "public"."media_credits" USING "btree" ("person_id");
+CREATE INDEX "media_credits_person_id_role_media_item_id_idx" ON "public"."media_credits" USING "btree" ("person_id", "role", "media_item_id");
 
 CREATE INDEX "media_genres_genre_id_media_item_id_idx" ON "public"."media_genres" USING "btree" ("genre_id", "media_item_id");
 
@@ -2515,13 +2746,528 @@ CREATE INDEX "media_languages_language_id_media_item_id_idx" ON "public"."media_
 
 CREATE INDEX "media_regions_region_id_media_item_id_idx" ON "public"."media_regions" USING "btree" ("region_id", "media_item_id");
 
-CREATE INDEX "music_album_id_idx" ON "public"."music" USING "btree" ("album_id");
-
 CREATE INDEX "name_issue_confirmations_media_item_id_idx" ON "public"."name_issue_confirmations" USING "btree" ("media_item_id") WHERE ("media_item_id" IS NOT NULL);
+
+CREATE INDEX "name_issue_confirmations_person_id_idx" ON "public"."name_issue_confirmations" USING "btree" ("person_id");
 
 CREATE INDEX "ownership_status_idx" ON "public"."ownership" USING "btree" ("status");
 
 CREATE INDEX "people_distinct_pairs_person_b_idx" ON "public"."people_distinct_pairs" USING "btree" ("person_b");
+
+CREATE OR REPLACE VIEW "public"."release_year_stats" WITH ("security_invoker"='true') AS
+ WITH "ep_raw" AS (
+         SELECT "series"."id" AS "series_id",
+            "seasons"."id" AS "season_id",
+            "episodes"."id" AS "episode_id",
+            "episode_media"."release_date",
+            (EXTRACT(year FROM "episode_media"."release_date"))::integer AS "release_year",
+            COALESCE("episode_media"."runtime", (0)::numeric) AS "runtime",
+            COALESCE(("episode_tracking"."status" = 'watched'::"public"."tracking_status"), false) AS "is_watched",
+            "episode_tracking"."rating"
+           FROM (((("public"."media_items" "series"
+             JOIN "public"."tv_seasons" "seasons" ON (("seasons"."series_id" = "series"."id")))
+             JOIN "public"."tv_episodes" "episodes" ON (("episodes"."season_id" = "seasons"."id")))
+             JOIN "public"."media_items" "episode_media" ON (("episode_media"."id" = "episodes"."id")))
+             LEFT JOIN "public"."tracking" "episode_tracking" ON (("episode_tracking"."media_item_id" = "episodes"."id")))
+          WHERE ("series"."type" = 'tv_show'::"public"."media_type")
+        ), "season_year_agg" AS (
+         SELECT "ep_raw"."series_id",
+            "ep_raw"."release_year",
+            "ep_raw"."season_id",
+            "count"("ep_raw"."episode_id") AS "total_eps",
+            "count"("ep_raw"."episode_id") FILTER (WHERE "ep_raw"."is_watched") AS "watched_eps",
+                CASE
+                    WHEN ("count"("ep_raw"."episode_id") = "count"("ep_raw"."episode_id") FILTER (WHERE "ep_raw"."is_watched")) THEN 'watched'::"text"
+                    WHEN ("count"("ep_raw"."episode_id") FILTER (WHERE "ep_raw"."is_watched") = 0) THEN 'unwatched'::"text"
+                    ELSE 'watching'::"text"
+                END AS "season_status"
+           FROM "ep_raw"
+          WHERE ("ep_raw"."release_year" IS NOT NULL)
+          GROUP BY "ep_raw"."series_id", "ep_raw"."release_year", "ep_raw"."season_id"
+        ), "series_seasons_year_agg" AS (
+         SELECT "season_year_agg"."series_id",
+            "season_year_agg"."release_year",
+            "count"("season_year_agg"."season_id") AS "total_seasons",
+            "count"("season_year_agg"."season_id") FILTER (WHERE ("season_year_agg"."season_status" = 'watched'::"text")) AS "watched_seasons",
+            "count"("season_year_agg"."season_id") FILTER (WHERE ("season_year_agg"."season_status" = 'watching'::"text")) AS "watching_seasons",
+            "count"("season_year_agg"."season_id") FILTER (WHERE ("season_year_agg"."season_status" = 'unwatched'::"text")) AS "unwatched_seasons"
+           FROM "season_year_agg"
+          GROUP BY "season_year_agg"."series_id", "season_year_agg"."release_year"
+        ), "series_year_agg" AS (
+         SELECT "ep_raw"."series_id",
+            "ep_raw"."release_year",
+            "count"("ep_raw"."episode_id") AS "total_episodes",
+            "count"("ep_raw"."episode_id") FILTER (WHERE "ep_raw"."is_watched") AS "watched_episodes",
+            "count"("ep_raw"."episode_id") FILTER (WHERE (NOT "ep_raw"."is_watched")) AS "unwatched_episodes",
+            "sum"("ep_raw"."runtime") AS "total_runtime",
+            COALESCE("sum"("ep_raw"."runtime") FILTER (WHERE "ep_raw"."is_watched"), (0)::numeric) AS "watched_runtime",
+            COALESCE("sum"("ep_raw"."runtime") FILTER (WHERE (NOT "ep_raw"."is_watched")), (0)::numeric) AS "unwatched_runtime",
+            "avg"("ep_raw"."rating") FILTER (WHERE ("ep_raw"."rating" IS NOT NULL)) AS "rating",
+                CASE
+                    WHEN ("count"("ep_raw"."episode_id") = "count"("ep_raw"."episode_id") FILTER (WHERE "ep_raw"."is_watched")) THEN 'watched'::"text"
+                    WHEN ("count"("ep_raw"."episode_id") FILTER (WHERE "ep_raw"."is_watched") = 0) THEN 'unwatched'::"text"
+                    ELSE 'watching'::"text"
+                END AS "status"
+           FROM "ep_raw"
+          WHERE ("ep_raw"."release_year" IS NOT NULL)
+          GROUP BY "ep_raw"."series_id", "ep_raw"."release_year"
+        ), "tv_stats_year" AS (
+         SELECT "s"."series_id" AS "id",
+            "s"."release_year",
+            'tv_show'::"text" AS "media_type",
+            "s"."status",
+            "s"."rating",
+            "s"."total_runtime",
+            "s"."watched_runtime",
+            "s"."unwatched_runtime",
+            "s"."total_episodes",
+            "s"."watched_episodes",
+            "s"."unwatched_episodes",
+            "ss"."total_seasons",
+            "ss"."watched_seasons",
+            "ss"."watching_seasons",
+            "ss"."unwatched_seasons"
+           FROM ("series_year_agg" "s"
+             JOIN "series_seasons_year_agg" "ss" ON ((("ss"."series_id" = "s"."series_id") AND ("ss"."release_year" = "s"."release_year"))))
+        ), "season_all_agg" AS (
+         SELECT "ep_raw"."series_id",
+            "ep_raw"."season_id",
+            "count"("ep_raw"."episode_id") AS "total_eps",
+            "count"("ep_raw"."episode_id") FILTER (WHERE "ep_raw"."is_watched") AS "watched_eps",
+                CASE
+                    WHEN ("count"("ep_raw"."episode_id") = "count"("ep_raw"."episode_id") FILTER (WHERE "ep_raw"."is_watched")) THEN 'watched'::"text"
+                    WHEN ("count"("ep_raw"."episode_id") FILTER (WHERE "ep_raw"."is_watched") = 0) THEN 'unwatched'::"text"
+                    ELSE 'watching'::"text"
+                END AS "season_status"
+           FROM "ep_raw"
+          GROUP BY "ep_raw"."series_id", "ep_raw"."season_id"
+        ), "series_seasons_all_agg" AS (
+         SELECT "season_all_agg"."series_id",
+            "count"("season_all_agg"."season_id") AS "total_seasons",
+            "count"("season_all_agg"."season_id") FILTER (WHERE ("season_all_agg"."season_status" = 'watched'::"text")) AS "watched_seasons",
+            "count"("season_all_agg"."season_id") FILTER (WHERE ("season_all_agg"."season_status" = 'watching'::"text")) AS "watching_seasons",
+            "count"("season_all_agg"."season_id") FILTER (WHERE ("season_all_agg"."season_status" = 'unwatched'::"text")) AS "unwatched_seasons"
+           FROM "season_all_agg"
+          GROUP BY "season_all_agg"."series_id"
+        ), "series_all_agg" AS (
+         SELECT "ep_raw"."series_id",
+            "count"("ep_raw"."episode_id") AS "total_episodes",
+            "count"("ep_raw"."episode_id") FILTER (WHERE "ep_raw"."is_watched") AS "watched_episodes",
+            "count"("ep_raw"."episode_id") FILTER (WHERE (NOT "ep_raw"."is_watched")) AS "unwatched_episodes",
+            "sum"("ep_raw"."runtime") AS "total_runtime",
+            COALESCE("sum"("ep_raw"."runtime") FILTER (WHERE "ep_raw"."is_watched"), (0)::numeric) AS "watched_runtime",
+            COALESCE("sum"("ep_raw"."runtime") FILTER (WHERE (NOT "ep_raw"."is_watched")), (0)::numeric) AS "unwatched_runtime",
+            "avg"("ep_raw"."rating") FILTER (WHERE ("ep_raw"."rating" IS NOT NULL)) AS "rating",
+                CASE
+                    WHEN ("count"("ep_raw"."episode_id") = "count"("ep_raw"."episode_id") FILTER (WHERE "ep_raw"."is_watched")) THEN 'watched'::"text"
+                    WHEN ("count"("ep_raw"."episode_id") FILTER (WHERE "ep_raw"."is_watched") = 0) THEN 'unwatched'::"text"
+                    ELSE 'watching'::"text"
+                END AS "status"
+           FROM "ep_raw"
+          GROUP BY "ep_raw"."series_id"
+        ), "tv_stats_all" AS (
+         SELECT "s"."series_id" AS "id",
+            NULL::integer AS "release_year",
+            'tv_show'::"text" AS "media_type",
+            "s"."status",
+            "s"."rating",
+            "s"."total_runtime",
+            "s"."watched_runtime",
+            "s"."unwatched_runtime",
+            "s"."total_episodes",
+            "s"."watched_episodes",
+            "s"."unwatched_episodes",
+            "ss"."total_seasons",
+            "ss"."watched_seasons",
+            "ss"."watching_seasons",
+            "ss"."unwatched_seasons"
+           FROM ("series_all_agg" "s"
+             JOIN "series_seasons_all_agg" "ss" ON (("ss"."series_id" = "s"."series_id")))
+        ), "movie_base" AS (
+         SELECT "m"."id",
+            (EXTRACT(year FROM "m"."release_date"))::integer AS "release_year",
+            'movie'::"text" AS "media_type",
+                CASE
+                    WHEN ("t"."status" = 'watched'::"public"."tracking_status") THEN 'watched'::"text"
+                    ELSE 'unwatched'::"text"
+                END AS "status",
+            "t"."rating",
+            COALESCE("m"."runtime", (0)::numeric) AS "total_runtime",
+                CASE
+                    WHEN ("t"."status" = 'watched'::"public"."tracking_status") THEN COALESCE("m"."runtime", (0)::numeric)
+                    ELSE (0)::numeric
+                END AS "watched_runtime",
+                CASE
+                    WHEN ("t"."status" IS DISTINCT FROM 'watched'::"public"."tracking_status") THEN COALESCE("m"."runtime", (0)::numeric)
+                    ELSE (0)::numeric
+                END AS "unwatched_runtime",
+            (0)::bigint AS "total_episodes",
+            (0)::bigint AS "watched_episodes",
+            (0)::bigint AS "unwatched_episodes",
+            (0)::bigint AS "total_seasons",
+            (0)::bigint AS "watched_seasons",
+            (0)::bigint AS "watching_seasons",
+            (0)::bigint AS "unwatched_seasons"
+           FROM ("public"."media_items" "m"
+             LEFT JOIN "public"."tracking" "t" ON (("t"."media_item_id" = "m"."id")))
+          WHERE (("m"."type" = 'movie'::"public"."media_type") AND ("m"."release_date" IS NOT NULL))
+        ), "movie_stats" AS (
+         SELECT "movie_base"."id",
+            "movie_base"."release_year",
+            "movie_base"."media_type",
+            "movie_base"."status",
+            "movie_base"."rating",
+            "movie_base"."total_runtime",
+            "movie_base"."watched_runtime",
+            "movie_base"."unwatched_runtime",
+            "movie_base"."total_episodes",
+            "movie_base"."watched_episodes",
+            "movie_base"."unwatched_episodes",
+            "movie_base"."total_seasons",
+            "movie_base"."watched_seasons",
+            "movie_base"."watching_seasons",
+            "movie_base"."unwatched_seasons"
+           FROM "movie_base"
+        UNION ALL
+         SELECT "movie_base"."id",
+            NULL::integer AS "int4",
+            "movie_base"."media_type",
+            "movie_base"."status",
+            "movie_base"."rating",
+            "movie_base"."total_runtime",
+            "movie_base"."watched_runtime",
+            "movie_base"."unwatched_runtime",
+            "movie_base"."total_episodes",
+            "movie_base"."watched_episodes",
+            "movie_base"."unwatched_episodes",
+            "movie_base"."total_seasons",
+            "movie_base"."watched_seasons",
+            "movie_base"."watching_seasons",
+            "movie_base"."unwatched_seasons"
+           FROM "movie_base"
+        ), "album_base" AS (
+         SELECT "m"."id",
+            (EXTRACT(year FROM "m"."release_date"))::integer AS "release_year",
+            'album'::"text" AS "media_type",
+                CASE
+                    WHEN (("count"("at"."song_id") > 0) AND ("count"("t"."media_item_id") FILTER (WHERE ("t"."status" = 'watched'::"public"."tracking_status")) = "count"("at"."song_id"))) THEN 'watched'::"text"
+                    WHEN ("count"("t"."media_item_id") FILTER (WHERE ("t"."status" = 'watched'::"public"."tracking_status")) > 0) THEN 'watching'::"text"
+                    WHEN ("count"("t"."media_item_id") FILTER (WHERE ("t"."status" = 'want_to_watch'::"public"."tracking_status")) > 0) THEN 'want_to_watch'::"text"
+                    ELSE 'unwatched'::"text"
+                END AS "status",
+            "public"."album_average_rating"("m"."id") AS "rating",
+            (0)::numeric AS "total_runtime",
+            (0)::numeric AS "watched_runtime",
+            (0)::numeric AS "unwatched_runtime",
+            (0)::bigint AS "total_episodes",
+            (0)::bigint AS "watched_episodes",
+            (0)::bigint AS "unwatched_episodes",
+            (0)::bigint AS "total_seasons",
+            (0)::bigint AS "watched_seasons",
+            (0)::bigint AS "watching_seasons",
+            (0)::bigint AS "unwatched_seasons"
+           FROM (("public"."media_items" "m"
+             LEFT JOIN "public"."album_tracks" "at" ON (("at"."album_id" = "m"."id")))
+             LEFT JOIN "public"."tracking" "t" ON (("t"."media_item_id" = "at"."song_id")))
+          WHERE (("m"."type" = 'album'::"public"."media_type") AND ("m"."release_date" IS NOT NULL))
+          GROUP BY "m"."id"
+        ), "album_stats" AS (
+         SELECT "album_base"."id",
+            "album_base"."release_year",
+            "album_base"."media_type",
+            "album_base"."status",
+            "album_base"."rating",
+            "album_base"."total_runtime",
+            "album_base"."watched_runtime",
+            "album_base"."unwatched_runtime",
+            "album_base"."total_episodes",
+            "album_base"."watched_episodes",
+            "album_base"."unwatched_episodes",
+            "album_base"."total_seasons",
+            "album_base"."watched_seasons",
+            "album_base"."watching_seasons",
+            "album_base"."unwatched_seasons"
+           FROM "album_base"
+        UNION ALL
+         SELECT "album_base"."id",
+            NULL::integer AS "int4",
+            "album_base"."media_type",
+            "album_base"."status",
+            "album_base"."rating",
+            "album_base"."total_runtime",
+            "album_base"."watched_runtime",
+            "album_base"."unwatched_runtime",
+            "album_base"."total_episodes",
+            "album_base"."watched_episodes",
+            "album_base"."unwatched_episodes",
+            "album_base"."total_seasons",
+            "album_base"."watched_seasons",
+            "album_base"."watching_seasons",
+            "album_base"."unwatched_seasons"
+           FROM "album_base"
+        ), "book_base" AS (
+         SELECT "m"."id",
+            (EXTRACT(year FROM "m"."release_date"))::integer AS "release_year",
+            'book'::"text" AS "media_type",
+                CASE
+                    WHEN ("t"."status" = 'watched'::"public"."tracking_status") THEN 'watched'::"text"
+                    WHEN ("t"."status" = 'in_progress'::"public"."tracking_status") THEN 'in_progress'::"text"
+                    WHEN ("t"."status" = 'want_to_watch'::"public"."tracking_status") THEN 'want_to_watch'::"text"
+                    ELSE 'unwatched'::"text"
+                END AS "status",
+            "t"."rating",
+            (0)::numeric AS "total_runtime",
+            (0)::numeric AS "watched_runtime",
+            (0)::numeric AS "unwatched_runtime",
+            (0)::bigint AS "total_episodes",
+            (0)::bigint AS "watched_episodes",
+            (0)::bigint AS "unwatched_episodes",
+            (0)::bigint AS "total_seasons",
+            (0)::bigint AS "watched_seasons",
+            (0)::bigint AS "watching_seasons",
+            (0)::bigint AS "unwatched_seasons"
+           FROM ("public"."media_items" "m"
+             LEFT JOIN "public"."tracking" "t" ON (("t"."media_item_id" = "m"."id")))
+          WHERE (("m"."type" = 'book'::"public"."media_type") AND ("m"."release_date" IS NOT NULL))
+        ), "book_stats" AS (
+         SELECT "book_base"."id",
+            "book_base"."release_year",
+            "book_base"."media_type",
+            "book_base"."status",
+            "book_base"."rating",
+            "book_base"."total_runtime",
+            "book_base"."watched_runtime",
+            "book_base"."unwatched_runtime",
+            "book_base"."total_episodes",
+            "book_base"."watched_episodes",
+            "book_base"."unwatched_episodes",
+            "book_base"."total_seasons",
+            "book_base"."watched_seasons",
+            "book_base"."watching_seasons",
+            "book_base"."unwatched_seasons"
+           FROM "book_base"
+        UNION ALL
+         SELECT "book_base"."id",
+            NULL::integer AS "int4",
+            "book_base"."media_type",
+            "book_base"."status",
+            "book_base"."rating",
+            "book_base"."total_runtime",
+            "book_base"."watched_runtime",
+            "book_base"."unwatched_runtime",
+            "book_base"."total_episodes",
+            "book_base"."watched_episodes",
+            "book_base"."unwatched_episodes",
+            "book_base"."total_seasons",
+            "book_base"."watched_seasons",
+            "book_base"."watching_seasons",
+            "book_base"."unwatched_seasons"
+           FROM "book_base"
+        ), "track_base" AS (
+         SELECT "m"."id",
+            (EXTRACT(year FROM COALESCE("m"."release_date", "album_dates"."earliest_album_release")))::integer AS "release_year",
+            'music'::"text" AS "media_type",
+                CASE
+                    WHEN ("t"."status" = 'watched'::"public"."tracking_status") THEN 'watched'::"text"
+                    WHEN ("t"."status" = 'want_to_watch'::"public"."tracking_status") THEN 'want_to_watch'::"text"
+                    ELSE 'unwatched'::"text"
+                END AS "status",
+            "t"."rating",
+            (0)::numeric AS "total_runtime",
+            (0)::numeric AS "watched_runtime",
+            (0)::numeric AS "unwatched_runtime",
+            (0)::bigint AS "total_episodes",
+            (0)::bigint AS "watched_episodes",
+            (0)::bigint AS "unwatched_episodes",
+            (0)::bigint AS "total_seasons",
+            (0)::bigint AS "watched_seasons",
+            (0)::bigint AS "watching_seasons",
+            (0)::bigint AS "unwatched_seasons"
+           FROM (("public"."media_items" "m"
+             LEFT JOIN LATERAL ( SELECT "min"("ai"."release_date") AS "earliest_album_release"
+                   FROM ("public"."album_tracks" "at"
+                     JOIN "public"."media_items" "ai" ON (("ai"."id" = "at"."album_id")))
+                  WHERE ("at"."song_id" = "m"."id")) "album_dates" ON (true))
+             LEFT JOIN "public"."tracking" "t" ON (("t"."media_item_id" = "m"."id")))
+          WHERE (("m"."type" = 'music'::"public"."media_type") AND (COALESCE("m"."release_date", "album_dates"."earliest_album_release") IS NOT NULL))
+        ), "track_stats" AS (
+         SELECT "track_base"."id",
+            "track_base"."release_year",
+            "track_base"."media_type",
+            "track_base"."status",
+            "track_base"."rating",
+            "track_base"."total_runtime",
+            "track_base"."watched_runtime",
+            "track_base"."unwatched_runtime",
+            "track_base"."total_episodes",
+            "track_base"."watched_episodes",
+            "track_base"."unwatched_episodes",
+            "track_base"."total_seasons",
+            "track_base"."watched_seasons",
+            "track_base"."watching_seasons",
+            "track_base"."unwatched_seasons"
+           FROM "track_base"
+        UNION ALL
+         SELECT "track_base"."id",
+            NULL::integer AS "int4",
+            "track_base"."media_type",
+            "track_base"."status",
+            "track_base"."rating",
+            "track_base"."total_runtime",
+            "track_base"."watched_runtime",
+            "track_base"."unwatched_runtime",
+            "track_base"."total_episodes",
+            "track_base"."watched_episodes",
+            "track_base"."unwatched_episodes",
+            "track_base"."total_seasons",
+            "track_base"."watched_seasons",
+            "track_base"."watching_seasons",
+            "track_base"."unwatched_seasons"
+           FROM "track_base"
+        ), "combined_stats" AS (
+         SELECT "movie_stats"."id",
+            "movie_stats"."release_year",
+            "movie_stats"."media_type",
+            "movie_stats"."status",
+            "movie_stats"."rating",
+            "movie_stats"."total_runtime",
+            "movie_stats"."watched_runtime",
+            "movie_stats"."unwatched_runtime",
+            "movie_stats"."total_episodes",
+            "movie_stats"."watched_episodes",
+            "movie_stats"."unwatched_episodes",
+            "movie_stats"."total_seasons",
+            "movie_stats"."watched_seasons",
+            "movie_stats"."watching_seasons",
+            "movie_stats"."unwatched_seasons"
+           FROM "movie_stats"
+        UNION ALL
+         SELECT "tv_stats_year"."id",
+            "tv_stats_year"."release_year",
+            "tv_stats_year"."media_type",
+            "tv_stats_year"."status",
+            "tv_stats_year"."rating",
+            "tv_stats_year"."total_runtime",
+            "tv_stats_year"."watched_runtime",
+            "tv_stats_year"."unwatched_runtime",
+            "tv_stats_year"."total_episodes",
+            "tv_stats_year"."watched_episodes",
+            "tv_stats_year"."unwatched_episodes",
+            "tv_stats_year"."total_seasons",
+            "tv_stats_year"."watched_seasons",
+            "tv_stats_year"."watching_seasons",
+            "tv_stats_year"."unwatched_seasons"
+           FROM "tv_stats_year"
+        UNION ALL
+         SELECT "tv_stats_all"."id",
+            "tv_stats_all"."release_year",
+            "tv_stats_all"."media_type",
+            "tv_stats_all"."status",
+            "tv_stats_all"."rating",
+            "tv_stats_all"."total_runtime",
+            "tv_stats_all"."watched_runtime",
+            "tv_stats_all"."unwatched_runtime",
+            "tv_stats_all"."total_episodes",
+            "tv_stats_all"."watched_episodes",
+            "tv_stats_all"."unwatched_episodes",
+            "tv_stats_all"."total_seasons",
+            "tv_stats_all"."watched_seasons",
+            "tv_stats_all"."watching_seasons",
+            "tv_stats_all"."unwatched_seasons"
+           FROM "tv_stats_all"
+        UNION ALL
+         SELECT "album_stats"."id",
+            "album_stats"."release_year",
+            "album_stats"."media_type",
+            "album_stats"."status",
+            "album_stats"."rating",
+            "album_stats"."total_runtime",
+            "album_stats"."watched_runtime",
+            "album_stats"."unwatched_runtime",
+            "album_stats"."total_episodes",
+            "album_stats"."watched_episodes",
+            "album_stats"."unwatched_episodes",
+            "album_stats"."total_seasons",
+            "album_stats"."watched_seasons",
+            "album_stats"."watching_seasons",
+            "album_stats"."unwatched_seasons"
+           FROM "album_stats"
+        UNION ALL
+         SELECT "book_stats"."id",
+            "book_stats"."release_year",
+            "book_stats"."media_type",
+            "book_stats"."status",
+            "book_stats"."rating",
+            "book_stats"."total_runtime",
+            "book_stats"."watched_runtime",
+            "book_stats"."unwatched_runtime",
+            "book_stats"."total_episodes",
+            "book_stats"."watched_episodes",
+            "book_stats"."unwatched_episodes",
+            "book_stats"."total_seasons",
+            "book_stats"."watched_seasons",
+            "book_stats"."watching_seasons",
+            "book_stats"."unwatched_seasons"
+           FROM "book_stats"
+        UNION ALL
+         SELECT "track_stats"."id",
+            "track_stats"."release_year",
+            "track_stats"."media_type",
+            "track_stats"."status",
+            "track_stats"."rating",
+            "track_stats"."total_runtime",
+            "track_stats"."watched_runtime",
+            "track_stats"."unwatched_runtime",
+            "track_stats"."total_episodes",
+            "track_stats"."watched_episodes",
+            "track_stats"."unwatched_episodes",
+            "track_stats"."total_seasons",
+            "track_stats"."watched_seasons",
+            "track_stats"."watching_seasons",
+            "track_stats"."unwatched_seasons"
+           FROM "track_stats"
+        )
+ SELECT COALESCE(("release_year")::"text", 'All Time'::"text") AS "release_year",
+    COALESCE("sum"("total_runtime"), (0)::numeric) AS "total_runtime",
+    COALESCE("sum"("watched_runtime"), (0)::numeric) AS "total_watched_runtime",
+    COALESCE("sum"("unwatched_runtime"), (0)::numeric) AS "total_unwatched_runtime",
+    "count"("id") FILTER (WHERE ("media_type" = 'movie'::"text")) AS "total_movies",
+    "count"("id") FILTER (WHERE (("media_type" = 'movie'::"text") AND ("status" = 'watched'::"text"))) AS "watched_movies",
+    "count"("id") FILTER (WHERE (("media_type" = 'movie'::"text") AND ("status" = 'unwatched'::"text"))) AS "unwatched_movies",
+    COALESCE("sum"("total_runtime") FILTER (WHERE ("media_type" = 'movie'::"text")), (0)::numeric) AS "total_movies_runtime",
+    COALESCE("sum"("watched_runtime") FILTER (WHERE ("media_type" = 'movie'::"text")), (0)::numeric) AS "movies_watched_runtime",
+    COALESCE("sum"("unwatched_runtime") FILTER (WHERE ("media_type" = 'movie'::"text")), (0)::numeric) AS "movies_unwatched_runtime",
+    "round"("avg"("rating") FILTER (WHERE (("media_type" = 'movie'::"text") AND ("status" = 'watched'::"text"))), 1) AS "movie_avg_rating",
+    "count"("id") FILTER (WHERE ("media_type" = 'tv_show'::"text")) AS "total_series",
+    "count"("id") FILTER (WHERE (("media_type" = 'tv_show'::"text") AND ("status" = 'watched'::"text"))) AS "watched_series",
+    "count"("id") FILTER (WHERE (("media_type" = 'tv_show'::"text") AND ("status" = 'watching'::"text"))) AS "watching_series",
+    "count"("id") FILTER (WHERE (("media_type" = 'tv_show'::"text") AND ("status" = 'unwatched'::"text"))) AS "unwatched_series",
+    COALESCE("sum"("total_runtime") FILTER (WHERE ("media_type" = 'tv_show'::"text")), (0)::numeric) AS "total_series_runtime",
+    COALESCE("sum"("watched_runtime") FILTER (WHERE ("media_type" = 'tv_show'::"text")), (0)::numeric) AS "series_watched_runtime",
+    COALESCE("sum"("unwatched_runtime") FILTER (WHERE ("media_type" = 'tv_show'::"text")), (0)::numeric) AS "series_unwatched_runtime",
+    "round"("avg"("rating") FILTER (WHERE (("media_type" = 'tv_show'::"text") AND ("rating" IS NOT NULL))), 1) AS "series_avg_rating",
+    COALESCE("sum"("total_seasons") FILTER (WHERE ("media_type" = 'tv_show'::"text")), (0)::numeric) AS "total_seasons",
+    COALESCE("sum"("watched_seasons") FILTER (WHERE ("media_type" = 'tv_show'::"text")), (0)::numeric) AS "watched_seasons",
+    COALESCE("sum"("watching_seasons") FILTER (WHERE ("media_type" = 'tv_show'::"text")), (0)::numeric) AS "watching_seasons",
+    COALESCE("sum"("unwatched_seasons") FILTER (WHERE ("media_type" = 'tv_show'::"text")), (0)::numeric) AS "unwatched_seasons",
+    COALESCE("sum"("total_episodes") FILTER (WHERE ("media_type" = 'tv_show'::"text")), (0)::numeric) AS "total_series_episodes",
+    COALESCE("sum"("watched_episodes") FILTER (WHERE ("media_type" = 'tv_show'::"text")), (0)::numeric) AS "watched_series_episodes",
+    COALESCE("sum"("unwatched_episodes") FILTER (WHERE ("media_type" = 'tv_show'::"text")), (0)::numeric) AS "unwatched_episodes",
+    "count"("id") FILTER (WHERE ("media_type" = 'album'::"text")) AS "total_albums",
+    "count"("id") FILTER (WHERE (("media_type" = 'album'::"text") AND ("status" = 'watched'::"text"))) AS "listened_albums",
+    "count"("id") FILTER (WHERE ("media_type" = 'book'::"text")) AS "total_books",
+    "count"("id") FILTER (WHERE (("media_type" = 'book'::"text") AND ("status" = 'watched'::"text"))) AS "read_books",
+    "count"("id") FILTER (WHERE (("media_type" = 'book'::"text") AND ("status" = 'in_progress'::"text"))) AS "reading_books",
+    "count"("id") FILTER (WHERE (("media_type" = 'album'::"text") AND ("status" = 'want_to_watch'::"text"))) AS "want_albums",
+    "count"("id") FILTER (WHERE (("media_type" = 'book'::"text") AND ("status" = 'want_to_watch'::"text"))) AS "want_books",
+    "count"("id") FILTER (WHERE ("media_type" = 'music'::"text")) AS "total_tracks",
+    "count"("id") FILTER (WHERE (("media_type" = 'music'::"text") AND ("status" = 'watched'::"text"))) AS "listened_tracks",
+    "count"("id") FILTER (WHERE (("media_type" = 'music'::"text") AND ("status" = 'want_to_watch'::"text"))) AS "want_tracks",
+    "round"("avg"("rating") FILTER (WHERE (("media_type" = 'album'::"text") AND ("status" = 'watched'::"text"))), 1) AS "album_avg_rating",
+    "round"("avg"("rating") FILTER (WHERE (("media_type" = 'book'::"text") AND ("status" = 'watched'::"text"))), 1) AS "book_avg_rating"
+   FROM "combined_stats"
+  GROUP BY "release_year"
+  ORDER BY ("release_year" IS NULL) DESC, COALESCE(("release_year")::"text", 'All Time'::"text") DESC;
 
 CREATE OR REPLACE VIEW "public"."v_all_media" WITH ("security_invoker"='true') AS
  SELECT "m"."id",
@@ -2552,26 +3298,26 @@ CREATE OR REPLACE VIEW "public"."v_all_media" WITH ("security_invoker"='true') A
     ( SELECT "array_agg"("p"."name" ORDER BY "mc"."credit_order") AS "array_agg"
            FROM ("public"."media_credits" "mc"
              JOIN "public"."people" "p" ON (("p"."id" = "mc"."person_id")))
-          WHERE (("mc"."media_item_id" = "m"."id") AND ("mc"."role" = 'actor'::"public"."person_role"))) AS "casts",
+          WHERE (("mc"."media_item_id" = "m"."id") AND ("mc"."role" = 'actor'::"text"))) AS "casts",
     ( SELECT "array_agg"("p"."name" ORDER BY "mc"."credit_order") AS "array_agg"
            FROM ("public"."media_credits" "mc"
              JOIN "public"."people" "p" ON (("p"."id" = "mc"."person_id")))
-          WHERE (("mc"."media_item_id" = "m"."id") AND ("mc"."role" = 'director'::"public"."person_role"))) AS "directors",
+          WHERE (("mc"."media_item_id" = "m"."id") AND ("mc"."role" = 'director'::"text"))) AS "directors",
     "m"."alternate_title",
     "m"."release_date" AS "first_air_date",
     "m"."release_date" AS "last_air_date",
     ( SELECT "array_agg"("mc"."character_name" ORDER BY "mc"."credit_order") AS "array_agg"
            FROM ("public"."media_credits" "mc"
              JOIN "public"."people" "p" ON (("p"."id" = "mc"."person_id")))
-          WHERE (("mc"."media_item_id" = "m"."id") AND ("mc"."role" = 'actor'::"public"."person_role"))) AS "characters",
+          WHERE (("mc"."media_item_id" = "m"."id") AND ("mc"."role" = 'actor'::"text"))) AS "characters",
     ( SELECT "array_agg"("p"."name" ORDER BY "mc"."credit_order") AS "array_agg"
            FROM ("public"."media_credits" "mc"
              JOIN "public"."people" "p" ON (("p"."id" = "mc"."person_id")))
-          WHERE (("mc"."media_item_id" = "m"."id") AND ("mc"."role" = 'artist'::"public"."person_role"))) AS "artists",
+          WHERE (("mc"."media_item_id" = "m"."id") AND ("mc"."role" = 'artist'::"text"))) AS "artists",
     ( SELECT "array_agg"("p"."name" ORDER BY "mc"."credit_order") AS "array_agg"
            FROM ("public"."media_credits" "mc"
              JOIN "public"."people" "p" ON (("p"."id" = "mc"."person_id")))
-          WHERE (("mc"."media_item_id" = "m"."id") AND ("mc"."role" = 'author'::"public"."person_role"))) AS "authors"
+          WHERE (("mc"."media_item_id" = "m"."id") AND ("mc"."role" = 'author'::"text"))) AS "authors"
    FROM ("public"."media_items" "m"
      LEFT JOIN "public"."tracking" "t" ON (("t"."media_item_id" = "m"."id")))
   WHERE ("m"."type" = 'movie'::"public"."media_type")
@@ -2616,26 +3362,26 @@ UNION ALL
     ( SELECT "array_agg"("p"."name" ORDER BY "mc"."credit_order") AS "array_agg"
            FROM ("public"."media_credits" "mc"
              JOIN "public"."people" "p" ON (("p"."id" = "mc"."person_id")))
-          WHERE (("mc"."media_item_id" = "series"."id") AND ("mc"."role" = 'actor'::"public"."person_role"))) AS "casts",
+          WHERE (("mc"."media_item_id" = "series"."id") AND ("mc"."role" = 'actor'::"text"))) AS "casts",
     ( SELECT "array_agg"("p"."name" ORDER BY "mc"."credit_order") AS "array_agg"
            FROM ("public"."media_credits" "mc"
              JOIN "public"."people" "p" ON (("p"."id" = "mc"."person_id")))
-          WHERE (("mc"."media_item_id" = "series"."id") AND ("mc"."role" = 'director'::"public"."person_role"))) AS "directors",
+          WHERE (("mc"."media_item_id" = "series"."id") AND ("mc"."role" = 'director'::"text"))) AS "directors",
     "series"."alternate_title",
     "min"("episode_media"."release_date") AS "first_air_date",
     "max"("episode_media"."release_date") AS "last_air_date",
     ( SELECT "array_agg"("mc"."character_name" ORDER BY "mc"."credit_order") AS "array_agg"
            FROM ("public"."media_credits" "mc"
              JOIN "public"."people" "p" ON (("p"."id" = "mc"."person_id")))
-          WHERE (("mc"."media_item_id" = "series"."id") AND ("mc"."role" = 'actor'::"public"."person_role"))) AS "characters",
+          WHERE (("mc"."media_item_id" = "series"."id") AND ("mc"."role" = 'actor'::"text"))) AS "characters",
     ( SELECT "array_agg"("p"."name" ORDER BY "mc"."credit_order") AS "array_agg"
            FROM ("public"."media_credits" "mc"
              JOIN "public"."people" "p" ON (("p"."id" = "mc"."person_id")))
-          WHERE (("mc"."media_item_id" = "series"."id") AND ("mc"."role" = 'artist'::"public"."person_role"))) AS "artists",
+          WHERE (("mc"."media_item_id" = "series"."id") AND ("mc"."role" = 'artist'::"text"))) AS "artists",
     ( SELECT "array_agg"("p"."name" ORDER BY "mc"."credit_order") AS "array_agg"
            FROM ("public"."media_credits" "mc"
              JOIN "public"."people" "p" ON (("p"."id" = "mc"."person_id")))
-          WHERE (("mc"."media_item_id" = "series"."id") AND ("mc"."role" = 'author'::"public"."person_role"))) AS "authors"
+          WHERE (("mc"."media_item_id" = "series"."id") AND ("mc"."role" = 'author'::"text"))) AS "authors"
    FROM (((("public"."media_items" "series"
      LEFT JOIN "public"."tv_seasons" "seasons" ON (("seasons"."series_id" = "series"."id")))
      LEFT JOIN "public"."tv_episodes" "episodes" ON (("episodes"."season_id" = "seasons"."id")))
@@ -2654,7 +3400,7 @@ UNION ALL
     "public"."album_average_rating"("album_item"."id") AS "rating",
     NULL::integer AS "runtime",
         CASE
-            WHEN (("count"("mu"."media_item_id") > 0) AND ("count"("t"."media_item_id") FILTER (WHERE ("t"."status" = 'watched'::"public"."tracking_status")) = "count"("mu"."media_item_id"))) THEN 'watched'::"text"
+            WHEN (("count"("mu"."song_id") > 0) AND ("count"("t"."media_item_id") FILTER (WHERE ("t"."status" = 'watched'::"public"."tracking_status")) = "count"("mu"."song_id"))) THEN 'watched'::"text"
             WHEN ("count"("t"."media_item_id") FILTER (WHERE ("t"."status" = 'watched'::"public"."tracking_status")) > 0) THEN 'watching'::"text"
             WHEN ("count"("t"."media_item_id") FILTER (WHERE ("t"."status" = 'want_to_watch'::"public"."tracking_status")) > 0) THEN 'want_to_watch'::"text"
             ELSE NULL::"text"
@@ -2664,8 +3410,8 @@ UNION ALL
              JOIN "public"."genres" "g" ON (("g"."id" = "mg"."genre_id")))
           WHERE ("mg"."media_item_id" = "album_item"."id")) AS "genres",
     ( SELECT "array_agg"(DISTINCT "l"."name" ORDER BY "l"."name") AS "array_agg"
-           FROM (("public"."music" "track"
-             JOIN "public"."media_languages" "ml" ON (("ml"."media_item_id" = "track"."media_item_id")))
+           FROM (("public"."album_tracks" "track"
+             JOIN "public"."media_languages" "ml" ON (("ml"."media_item_id" = "track"."song_id")))
              JOIN "public"."languages" "l" ON (("l"."id" = "ml"."language_id")))
           WHERE ("track"."album_id" = "album_item"."id")) AS "languages",
     ( SELECT "array_agg"("r"."name") AS "array_agg"
@@ -2675,30 +3421,30 @@ UNION ALL
     ( SELECT "array_agg"("p"."name" ORDER BY "mc"."credit_order") AS "array_agg"
            FROM ("public"."media_credits" "mc"
              JOIN "public"."people" "p" ON (("p"."id" = "mc"."person_id")))
-          WHERE (("mc"."media_item_id" = "album_item"."id") AND ("mc"."role" = 'actor'::"public"."person_role"))) AS "casts",
+          WHERE (("mc"."media_item_id" = "album_item"."id") AND ("mc"."role" = 'actor'::"text"))) AS "casts",
     ( SELECT "array_agg"("p"."name" ORDER BY "mc"."credit_order") AS "array_agg"
            FROM ("public"."media_credits" "mc"
              JOIN "public"."people" "p" ON (("p"."id" = "mc"."person_id")))
-          WHERE (("mc"."media_item_id" = "album_item"."id") AND ("mc"."role" = 'director'::"public"."person_role"))) AS "directors",
+          WHERE (("mc"."media_item_id" = "album_item"."id") AND ("mc"."role" = 'director'::"text"))) AS "directors",
     "album_item"."alternate_title",
     "album_item"."release_date" AS "first_air_date",
     "album_item"."release_date" AS "last_air_date",
     ( SELECT "array_agg"("mc"."character_name" ORDER BY "mc"."credit_order") AS "array_agg"
            FROM ("public"."media_credits" "mc"
              JOIN "public"."people" "p" ON (("p"."id" = "mc"."person_id")))
-          WHERE (("mc"."media_item_id" = "album_item"."id") AND ("mc"."role" = 'actor'::"public"."person_role"))) AS "characters",
+          WHERE (("mc"."media_item_id" = "album_item"."id") AND ("mc"."role" = 'actor'::"text"))) AS "characters",
     ( SELECT "array_agg"("p"."name" ORDER BY "mc"."credit_order") AS "array_agg"
            FROM ("public"."media_credits" "mc"
              JOIN "public"."people" "p" ON (("p"."id" = "mc"."person_id")))
-          WHERE (("mc"."media_item_id" = "album_item"."id") AND ("mc"."role" = 'artist'::"public"."person_role"))) AS "artists",
+          WHERE (("mc"."media_item_id" = "album_item"."id") AND ("mc"."role" = 'artist'::"text"))) AS "artists",
     ( SELECT "array_agg"("p"."name" ORDER BY "mc"."credit_order") AS "array_agg"
            FROM ("public"."media_credits" "mc"
              JOIN "public"."people" "p" ON (("p"."id" = "mc"."person_id")))
-          WHERE (("mc"."media_item_id" = "album_item"."id") AND ("mc"."role" = 'author'::"public"."person_role"))) AS "authors"
+          WHERE (("mc"."media_item_id" = "album_item"."id") AND ("mc"."role" = 'author'::"text"))) AS "authors"
    FROM ((("public"."media_items" "album_item"
      JOIN "public"."music_albums" "album" ON (("album"."media_item_id" = "album_item"."id")))
-     LEFT JOIN "public"."music" "mu" ON (("mu"."album_id" = "album"."media_item_id")))
-     LEFT JOIN "public"."tracking" "t" ON (("t"."media_item_id" = "mu"."media_item_id")))
+     LEFT JOIN "public"."album_tracks" "mu" ON (("mu"."album_id" = "album"."media_item_id")))
+     LEFT JOIN "public"."tracking" "t" ON (("t"."media_item_id" = "mu"."song_id")))
   WHERE ("album_item"."type" = 'album'::"public"."media_type")
   GROUP BY "album_item"."id"
 UNION ALL
@@ -2706,9 +3452,14 @@ UNION ALL
     "m"."type",
     "m"."title",
     "m"."summary",
-    "m"."cover_url",
-    COALESCE("m"."release_date", "album_item"."release_date") AS "sort_date",
-    (EXTRACT(year FROM COALESCE("m"."release_date", "album_item"."release_date")))::"text" AS "release_year",
+    COALESCE(NULLIF("m"."cover_url", ''::"text"), ( SELECT "ai"."cover_url"
+           FROM ("public"."album_tracks" "at"
+             JOIN "public"."media_items" "ai" ON (("ai"."id" = "at"."album_id")))
+          WHERE (("at"."song_id" = "m"."id") AND ("ai"."cover_url" IS NOT NULL) AND (NULLIF("ai"."cover_url", ''::"text") IS NOT NULL))
+          ORDER BY "ai"."release_date", "at"."disc_number", "at"."track_number"
+         LIMIT 1)) AS "cover_url",
+    COALESCE("m"."release_date", "album_dates"."earliest_album_release") AS "sort_date",
+    (EXTRACT(year FROM COALESCE("m"."release_date", "album_dates"."earliest_album_release")))::"text" AS "release_year",
     "round"("avg"("t"."rating"), 1) AS "rating",
     ("m"."runtime")::integer AS "runtime",
     ( SELECT ("t1"."status")::"text" AS "status"
@@ -2730,32 +3481,34 @@ UNION ALL
     ( SELECT "array_agg"("p"."name" ORDER BY "mc"."credit_order") AS "array_agg"
            FROM ("public"."media_credits" "mc"
              JOIN "public"."people" "p" ON (("p"."id" = "mc"."person_id")))
-          WHERE (("mc"."media_item_id" = "m"."id") AND ("mc"."role" = 'actor'::"public"."person_role"))) AS "casts",
+          WHERE (("mc"."media_item_id" = "m"."id") AND ("mc"."role" = 'actor'::"text"))) AS "casts",
     ( SELECT "array_agg"("p"."name" ORDER BY "mc"."credit_order") AS "array_agg"
            FROM ("public"."media_credits" "mc"
              JOIN "public"."people" "p" ON (("p"."id" = "mc"."person_id")))
-          WHERE (("mc"."media_item_id" = "m"."id") AND ("mc"."role" = 'director'::"public"."person_role"))) AS "directors",
+          WHERE (("mc"."media_item_id" = "m"."id") AND ("mc"."role" = 'director'::"text"))) AS "directors",
     "m"."alternate_title",
-    COALESCE("m"."release_date", "album_item"."release_date") AS "first_air_date",
-    COALESCE("m"."release_date", "album_item"."release_date") AS "last_air_date",
+    COALESCE("m"."release_date", "album_dates"."earliest_album_release") AS "first_air_date",
+    COALESCE("m"."release_date", "album_dates"."earliest_album_release") AS "last_air_date",
     ( SELECT "array_agg"("mc"."character_name" ORDER BY "mc"."credit_order") AS "array_agg"
            FROM ("public"."media_credits" "mc"
              JOIN "public"."people" "p" ON (("p"."id" = "mc"."person_id")))
-          WHERE (("mc"."media_item_id" = "m"."id") AND ("mc"."role" = 'actor'::"public"."person_role"))) AS "characters",
+          WHERE (("mc"."media_item_id" = "m"."id") AND ("mc"."role" = 'actor'::"text"))) AS "characters",
     ( SELECT "array_agg"("p"."name" ORDER BY "mc"."credit_order") AS "array_agg"
            FROM ("public"."media_credits" "mc"
              JOIN "public"."people" "p" ON (("p"."id" = "mc"."person_id")))
-          WHERE (("mc"."media_item_id" = "m"."id") AND ("mc"."role" = 'artist'::"public"."person_role"))) AS "artists",
+          WHERE (("mc"."media_item_id" = "m"."id") AND ("mc"."role" = 'artist'::"text"))) AS "artists",
     ( SELECT "array_agg"("p"."name" ORDER BY "mc"."credit_order") AS "array_agg"
            FROM ("public"."media_credits" "mc"
              JOIN "public"."people" "p" ON (("p"."id" = "mc"."person_id")))
-          WHERE (("mc"."media_item_id" = "m"."id") AND ("mc"."role" = 'author'::"public"."person_role"))) AS "authors"
-   FROM ((("public"."media_items" "m"
-     LEFT JOIN "public"."music" "mu" ON (("mu"."media_item_id" = "m"."id")))
-     LEFT JOIN "public"."media_items" "album_item" ON (("album_item"."id" = "mu"."album_id")))
+          WHERE (("mc"."media_item_id" = "m"."id") AND ("mc"."role" = 'author'::"text"))) AS "authors"
+   FROM (("public"."media_items" "m"
+     LEFT JOIN LATERAL ( SELECT "min"("ai"."release_date") AS "earliest_album_release"
+           FROM ("public"."album_tracks" "at"
+             JOIN "public"."media_items" "ai" ON (("ai"."id" = "at"."album_id")))
+          WHERE ("at"."song_id" = "m"."id")) "album_dates" ON (true))
      LEFT JOIN "public"."tracking" "t" ON (("t"."media_item_id" = "m"."id")))
   WHERE ("m"."type" = 'music'::"public"."media_type")
-  GROUP BY "m"."id", "m"."runtime", "album_item"."release_date"
+  GROUP BY "m"."id", "m"."runtime", "album_dates"."earliest_album_release"
 UNION ALL
  SELECT "m"."id",
     "m"."type",
@@ -2785,35 +3538,48 @@ UNION ALL
     ( SELECT "array_agg"("p"."name" ORDER BY "mc"."credit_order") AS "array_agg"
            FROM ("public"."media_credits" "mc"
              JOIN "public"."people" "p" ON (("p"."id" = "mc"."person_id")))
-          WHERE (("mc"."media_item_id" = "m"."id") AND ("mc"."role" = 'actor'::"public"."person_role"))) AS "casts",
+          WHERE (("mc"."media_item_id" = "m"."id") AND ("mc"."role" = 'actor'::"text"))) AS "casts",
     ( SELECT "array_agg"("p"."name" ORDER BY "mc"."credit_order") AS "array_agg"
            FROM ("public"."media_credits" "mc"
              JOIN "public"."people" "p" ON (("p"."id" = "mc"."person_id")))
-          WHERE (("mc"."media_item_id" = "m"."id") AND ("mc"."role" = 'director'::"public"."person_role"))) AS "directors",
+          WHERE (("mc"."media_item_id" = "m"."id") AND ("mc"."role" = 'director'::"text"))) AS "directors",
     "m"."alternate_title",
     "m"."release_date" AS "first_air_date",
     "m"."release_date" AS "last_air_date",
     ( SELECT "array_agg"("mc"."character_name" ORDER BY "mc"."credit_order") AS "array_agg"
            FROM ("public"."media_credits" "mc"
              JOIN "public"."people" "p" ON (("p"."id" = "mc"."person_id")))
-          WHERE (("mc"."media_item_id" = "m"."id") AND ("mc"."role" = 'actor'::"public"."person_role"))) AS "characters",
+          WHERE (("mc"."media_item_id" = "m"."id") AND ("mc"."role" = 'actor'::"text"))) AS "characters",
     ( SELECT "array_agg"("p"."name" ORDER BY "mc"."credit_order") AS "array_agg"
            FROM ("public"."media_credits" "mc"
              JOIN "public"."people" "p" ON (("p"."id" = "mc"."person_id")))
-          WHERE (("mc"."media_item_id" = "m"."id") AND ("mc"."role" = 'artist'::"public"."person_role"))) AS "artists",
+          WHERE (("mc"."media_item_id" = "m"."id") AND ("mc"."role" = 'artist'::"text"))) AS "artists",
     ( SELECT "array_agg"("p"."name" ORDER BY "mc"."credit_order") AS "array_agg"
            FROM ("public"."media_credits" "mc"
              JOIN "public"."people" "p" ON (("p"."id" = "mc"."person_id")))
-          WHERE (("mc"."media_item_id" = "m"."id") AND ("mc"."role" = 'author'::"public"."person_role"))) AS "authors"
+          WHERE (("mc"."media_item_id" = "m"."id") AND ("mc"."role" = 'author'::"text"))) AS "authors"
    FROM (("public"."media_items" "m"
      JOIN "public"."books" "b" ON (("b"."media_item_id" = "m"."id")))
      LEFT JOIN "public"."tracking" "t" ON (("t"."media_item_id" = "m"."id")))
   WHERE ("m"."type" = 'book'::"public"."media_type")
   GROUP BY "m"."id";
 
+CREATE OR REPLACE TRIGGER "media_credits_enforce_allowed_types" BEFORE INSERT OR UPDATE OF "role", "media_item_id" ON "public"."media_credits" FOR EACH ROW EXECUTE FUNCTION "public"."media_credits_enforce_allowed_types"();
+
+CREATE OR REPLACE TRIGGER "media_credits_enforce_character" BEFORE INSERT OR UPDATE OF "role", "character_name" ON "public"."media_credits" FOR EACH ROW EXECUTE FUNCTION "public"."media_credits_enforce_character"();
+
 CREATE OR REPLACE TRIGGER "name_issue_confirmations_sync_keys" BEFORE INSERT OR UPDATE OF "item_id" ON "public"."name_issue_confirmations" FOR EACH ROW EXECUTE FUNCTION "public"."name_issue_confirmations_sync_keys"();
 
 CREATE OR REPLACE TRIGGER "tracking_status_media_type_check" BEFORE INSERT OR UPDATE OF "status", "media_item_id" ON "public"."tracking" FOR EACH ROW EXECUTE FUNCTION "public"."enforce_tracking_status_for_media_type"();
+
+ALTER TABLE ONLY "public"."album_tracks"
+    ADD CONSTRAINT "album_tracks_album_id_fkey" FOREIGN KEY ("album_id") REFERENCES "public"."music_albums"("media_item_id") ON DELETE CASCADE;
+
+ALTER TABLE ONLY "public"."album_tracks"
+    ADD CONSTRAINT "album_tracks_song_id_fkey" FOREIGN KEY ("song_id") REFERENCES "public"."media_items"("id") ON DELETE CASCADE;
+
+ALTER TABLE ONLY "public"."album_tracks"
+    ADD CONSTRAINT "album_tracks_song_id_music_fkey" FOREIGN KEY ("song_id") REFERENCES "public"."music"("media_item_id") ON DELETE CASCADE;
 
 ALTER TABLE ONLY "public"."books"
     ADD CONSTRAINT "books_media_item_id_fkey" FOREIGN KEY ("media_item_id") REFERENCES "public"."media_items"("id") ON DELETE CASCADE;
@@ -2823,6 +3589,9 @@ ALTER TABLE ONLY "public"."media_credits"
 
 ALTER TABLE ONLY "public"."media_credits"
     ADD CONSTRAINT "media_credits_person_id_fkey" FOREIGN KEY ("person_id") REFERENCES "public"."people"("id") ON DELETE CASCADE;
+
+ALTER TABLE ONLY "public"."media_credits"
+    ADD CONSTRAINT "media_credits_role_fkey" FOREIGN KEY ("role") REFERENCES "public"."credit_roles"("code");
 
 ALTER TABLE ONLY "public"."media_genres"
     ADD CONSTRAINT "media_genres_genre_id_fkey" FOREIGN KEY ("genre_id") REFERENCES "public"."genres"("id") ON DELETE CASCADE;
@@ -2847,9 +3616,6 @@ ALTER TABLE ONLY "public"."media_regions"
 
 ALTER TABLE ONLY "public"."media_regions"
     ADD CONSTRAINT "media_regions_region_id_fkey" FOREIGN KEY ("region_id") REFERENCES "public"."regions"("id") ON DELETE CASCADE;
-
-ALTER TABLE ONLY "public"."music"
-    ADD CONSTRAINT "music_album_id_fkey" FOREIGN KEY ("album_id") REFERENCES "public"."music_albums"("media_item_id");
 
 ALTER TABLE ONLY "public"."music_albums"
     ADD CONSTRAINT "music_albums_media_item_id_fkey" FOREIGN KEY ("media_item_id") REFERENCES "public"."media_items"("id") ON DELETE CASCADE;
@@ -2890,7 +3656,11 @@ ALTER TABLE ONLY "public"."tv_seasons"
 ALTER TABLE ONLY "public"."tv_seasons"
     ADD CONSTRAINT "tv_seasons_series_id_fkey" FOREIGN KEY ("series_id") REFERENCES "public"."media_items"("id") ON DELETE CASCADE;
 
+CREATE POLICY "Allow SELECT from website" ON "public"."album_tracks" FOR SELECT TO "authenticated", "anon" USING (true);
+
 CREATE POLICY "Allow SELECT from website" ON "public"."books" FOR SELECT TO "authenticated", "anon" USING (true);
+
+CREATE POLICY "Allow SELECT from website" ON "public"."credit_roles" FOR SELECT TO "authenticated", "anon" USING (true);
 
 CREATE POLICY "Allow SELECT from website" ON "public"."genres" FOR SELECT TO "authenticated", "anon" USING (true);
 
@@ -2926,7 +3696,11 @@ CREATE POLICY "Allow SELECT from website" ON "public"."tv_episodes" FOR SELECT T
 
 CREATE POLICY "Allow SELECT from website" ON "public"."tv_seasons" FOR SELECT TO "authenticated", "anon" USING (true);
 
+CREATE POLICY "Owner delete" ON "public"."album_tracks" FOR DELETE TO "authenticated" USING (( SELECT "public"."is_site_owner"() AS "is_site_owner"));
+
 CREATE POLICY "Owner delete" ON "public"."books" FOR DELETE TO "authenticated" USING (( SELECT "public"."is_site_owner"() AS "is_site_owner"));
+
+CREATE POLICY "Owner delete" ON "public"."credit_roles" FOR DELETE TO "authenticated" USING (( SELECT "public"."is_site_owner"() AS "is_site_owner"));
 
 CREATE POLICY "Owner delete" ON "public"."genres" FOR DELETE TO "authenticated" USING (( SELECT "public"."is_site_owner"() AS "is_site_owner"));
 
@@ -2966,7 +3740,11 @@ CREATE POLICY "Owner delete" ON "public"."tv_episodes" FOR DELETE TO "authentica
 
 CREATE POLICY "Owner delete" ON "public"."tv_seasons" FOR DELETE TO "authenticated" USING (( SELECT "public"."is_site_owner"() AS "is_site_owner"));
 
+CREATE POLICY "Owner insert" ON "public"."album_tracks" FOR INSERT TO "authenticated" WITH CHECK (( SELECT "public"."is_site_owner"() AS "is_site_owner"));
+
 CREATE POLICY "Owner insert" ON "public"."books" FOR INSERT TO "authenticated" WITH CHECK (( SELECT "public"."is_site_owner"() AS "is_site_owner"));
+
+CREATE POLICY "Owner insert" ON "public"."credit_roles" FOR INSERT TO "authenticated" WITH CHECK (( SELECT "public"."is_site_owner"() AS "is_site_owner"));
 
 CREATE POLICY "Owner insert" ON "public"."genres" FOR INSERT TO "authenticated" WITH CHECK (( SELECT "public"."is_site_owner"() AS "is_site_owner"));
 
@@ -3012,7 +3790,11 @@ CREATE POLICY "Owner select" ON "public"."name_issue_confirmations" FOR SELECT T
 
 CREATE POLICY "Owner select" ON "public"."people_distinct_pairs" FOR SELECT TO "authenticated" USING (( SELECT "public"."is_site_owner"() AS "is_site_owner"));
 
+CREATE POLICY "Owner update" ON "public"."album_tracks" FOR UPDATE TO "authenticated" USING (( SELECT "public"."is_site_owner"() AS "is_site_owner")) WITH CHECK (( SELECT "public"."is_site_owner"() AS "is_site_owner"));
+
 CREATE POLICY "Owner update" ON "public"."books" FOR UPDATE TO "authenticated" USING (( SELECT "public"."is_site_owner"() AS "is_site_owner")) WITH CHECK (( SELECT "public"."is_site_owner"() AS "is_site_owner"));
+
+CREATE POLICY "Owner update" ON "public"."credit_roles" FOR UPDATE TO "authenticated" USING (( SELECT "public"."is_site_owner"() AS "is_site_owner")) WITH CHECK (( SELECT "public"."is_site_owner"() AS "is_site_owner"));
 
 CREATE POLICY "Owner update" ON "public"."genres" FOR UPDATE TO "authenticated" USING (( SELECT "public"."is_site_owner"() AS "is_site_owner")) WITH CHECK (( SELECT "public"."is_site_owner"() AS "is_site_owner"));
 
@@ -3048,7 +3830,11 @@ CREATE POLICY "Owner update" ON "public"."tv_episodes" FOR UPDATE TO "authentica
 
 CREATE POLICY "Owner update" ON "public"."tv_seasons" FOR UPDATE TO "authenticated" USING (( SELECT "public"."is_site_owner"() AS "is_site_owner")) WITH CHECK (( SELECT "public"."is_site_owner"() AS "is_site_owner"));
 
+ALTER TABLE "public"."album_tracks" ENABLE ROW LEVEL SECURITY;
+
 ALTER TABLE "public"."books" ENABLE ROW LEVEL SECURITY;
+
+ALTER TABLE "public"."credit_roles" ENABLE ROW LEVEL SECURITY;
 
 ALTER TABLE "public"."genres" ENABLE ROW LEVEL SECURITY;
 
@@ -3129,10 +3915,20 @@ GRANT ALL ON FUNCTION "public"."get_media_stats"("p_media_type" "text") TO "anon
 GRANT ALL ON FUNCTION "public"."get_media_stats"("p_media_type" "text") TO "authenticated";
 GRANT ALL ON FUNCTION "public"."get_media_stats"("p_media_type" "text") TO "service_role";
 
+REVOKE ALL ON FUNCTION "public"."get_person_works"("p_person_id" "uuid") FROM PUBLIC;
+GRANT ALL ON FUNCTION "public"."get_person_works"("p_person_id" "uuid") TO "anon";
+GRANT ALL ON FUNCTION "public"."get_person_works"("p_person_id" "uuid") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."get_person_works"("p_person_id" "uuid") TO "service_role";
+
 REVOKE ALL ON FUNCTION "public"."get_season_episode_page"("p_series_id" "uuid", "p_season_id" "uuid", "p_status" "text", "p_order" "text", "p_limit" integer, "p_offset" integer) FROM PUBLIC;
 GRANT ALL ON FUNCTION "public"."get_season_episode_page"("p_series_id" "uuid", "p_season_id" "uuid", "p_status" "text", "p_order" "text", "p_limit" integer, "p_offset" integer) TO "anon";
 GRANT ALL ON FUNCTION "public"."get_season_episode_page"("p_series_id" "uuid", "p_season_id" "uuid", "p_status" "text", "p_order" "text", "p_limit" integer, "p_offset" integer) TO "authenticated";
 GRANT ALL ON FUNCTION "public"."get_season_episode_page"("p_series_id" "uuid", "p_season_id" "uuid", "p_status" "text", "p_order" "text", "p_limit" integer, "p_offset" integer) TO "service_role";
+
+REVOKE ALL ON FUNCTION "public"."get_song_detail"("p_song_id" "uuid") FROM PUBLIC;
+GRANT ALL ON FUNCTION "public"."get_song_detail"("p_song_id" "uuid") TO "anon";
+GRANT ALL ON FUNCTION "public"."get_song_detail"("p_song_id" "uuid") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."get_song_detail"("p_song_id" "uuid") TO "service_role";
 
 REVOKE ALL ON FUNCTION "public"."get_top_tv_shows_by_year"("p_year" integer, "p_limit" integer) FROM PUBLIC;
 GRANT ALL ON FUNCTION "public"."get_top_tv_shows_by_year"("p_year" integer, "p_limit" integer) TO "anon";
@@ -3163,6 +3959,10 @@ GRANT ALL ON FUNCTION "public"."manage_name_key"("p_name" "text") TO "authentica
 REVOKE ALL ON FUNCTION "public"."manage_save_media"("p_data" "jsonb") FROM PUBLIC;
 GRANT ALL ON FUNCTION "public"."manage_save_media"("p_data" "jsonb") TO "authenticated";
 
+REVOKE ALL ON FUNCTION "public"."media_credits_enforce_allowed_types"() FROM PUBLIC;
+
+REVOKE ALL ON FUNCTION "public"."media_credits_enforce_character"() FROM PUBLIC;
+
 REVOKE ALL ON FUNCTION "public"."name_issue_confirmations_sync_keys"() FROM PUBLIC;
 
 REVOKE ALL ON FUNCTION "public"."normalize_book_isbn"("p_raw" "text") FROM PUBLIC;
@@ -3177,7 +3977,7 @@ GRANT ALL ON FUNCTION "public"."normalize_media_title"("p_title" "text") TO "ser
 REVOKE ALL ON FUNCTION "public"."rls_auto_enable"() FROM PUBLIC;
 GRANT ALL ON FUNCTION "public"."rls_auto_enable"() TO "service_role";
 
-GRANT ALL ON TABLE "public"."v_all_media" TO "service_role";
+GRANT SELECT,REFERENCES,TRIGGER,TRUNCATE,MAINTAIN ON TABLE "public"."v_all_media" TO "service_role";
 GRANT SELECT ON TABLE "public"."v_all_media" TO "anon";
 GRANT SELECT ON TABLE "public"."v_all_media" TO "authenticated";
 
@@ -3186,9 +3986,17 @@ GRANT ALL ON FUNCTION "public"."search_media"("p_query" "text", "p_types" "text"
 GRANT ALL ON FUNCTION "public"."search_media"("p_query" "text", "p_types" "text"[], "p_series_only" boolean, "p_credit_roles" "text"[]) TO "authenticated";
 GRANT ALL ON FUNCTION "public"."search_media"("p_query" "text", "p_types" "text"[], "p_series_only" boolean, "p_credit_roles" "text"[]) TO "service_role";
 
+GRANT ALL ON TABLE "public"."album_tracks" TO "service_role";
+GRANT SELECT ON TABLE "public"."album_tracks" TO "anon";
+GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE "public"."album_tracks" TO "authenticated";
+
 GRANT REFERENCES,TRIGGER,TRUNCATE,MAINTAIN ON TABLE "public"."books" TO "service_role";
 GRANT SELECT ON TABLE "public"."books" TO "anon";
 GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE "public"."books" TO "authenticated";
+
+GRANT ALL ON TABLE "public"."credit_roles" TO "service_role";
+GRANT SELECT ON TABLE "public"."credit_roles" TO "anon";
+GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE "public"."credit_roles" TO "authenticated";
 
 GRANT ALL ON TABLE "public"."genres" TO "service_role";
 GRANT SELECT ON TABLE "public"."genres" TO "anon";
@@ -3252,6 +4060,13 @@ GRANT ALL ON TABLE "public"."regions" TO "service_role";
 GRANT SELECT ON TABLE "public"."regions" TO "anon";
 GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE "public"."regions" TO "authenticated";
 
+GRANT SELECT,REFERENCES,TRIGGER,TRUNCATE,MAINTAIN ON TABLE "public"."release_year_stats" TO "service_role";
+GRANT SELECT ON TABLE "public"."release_year_stats" TO "anon";
+GRANT SELECT ON TABLE "public"."release_year_stats" TO "authenticated";
+
+GRANT ALL ON TABLE "public"."site_owner" TO "service_role";
+GRANT SELECT ON TABLE "public"."site_owner" TO "authenticated";
+
 GRANT ALL ON TABLE "public"."tracking" TO "service_role";
 GRANT SELECT ON TABLE "public"."tracking" TO "anon";
 GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE "public"."tracking" TO "authenticated";
@@ -3263,13 +4078,6 @@ GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE "public"."tv_episodes" TO "authentica
 GRANT ALL ON TABLE "public"."tv_seasons" TO "service_role";
 GRANT SELECT ON TABLE "public"."tv_seasons" TO "anon";
 GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE "public"."tv_seasons" TO "authenticated";
-
-GRANT ALL ON TABLE "public"."release_year_stats" TO "service_role";
-GRANT SELECT ON TABLE "public"."release_year_stats" TO "anon";
-GRANT SELECT ON TABLE "public"."release_year_stats" TO "authenticated";
-
-GRANT ALL ON TABLE "public"."site_owner" TO "service_role";
-GRANT SELECT ON TABLE "public"."site_owner" TO "authenticated";
 
 GRANT SELECT,REFERENCES,TRIGGER,TRUNCATE,MAINTAIN ON TABLE "public"."v_continue_listening" TO "service_role";
 GRANT SELECT ON TABLE "public"."v_continue_listening" TO "anon";

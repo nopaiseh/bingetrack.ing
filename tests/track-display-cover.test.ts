@@ -36,26 +36,32 @@ function fakeDb(handle: (query: Query) => Result) {
 }
 
 describe("trackDisplayCoverUrl / displayCoverUrl", () => {
-  it("曲目只用专辑封面，绝不回退到曲目自身封面", () => {
+  it("曲目自身无封面时回退专辑封面；有自身封面时保留", () => {
     expect(trackDisplayCoverUrl(albumCover)).toBe(albumCover);
     expect(trackDisplayCoverUrl("  ")).toBeNull();
     expect(trackDisplayCoverUrl(null)).toBeNull();
-    expect(displayCoverUrl("music", trackOwnCover, albumCover)).toBe(albumCover);
-    expect(displayCoverUrl("music", trackOwnCover, null)).toBeNull();
-    expect(displayCoverUrl("music", trackOwnCover, "")).toBeNull();
+    expect(displayCoverUrl("music", null, albumCover)).toBe(albumCover);
+    expect(displayCoverUrl("music", "", albumCover)).toBe(albumCover);
+    expect(displayCoverUrl("music", trackOwnCover, albumCover)).toBe(trackOwnCover);
+    expect(displayCoverUrl("music", trackOwnCover, null)).toBe(trackOwnCover);
+    expect(displayCoverUrl("music", null, null)).toBeNull();
     expect(displayCoverUrl("album", albumCover, null)).toBe(albumCover);
     expect(displayCoverUrl("movie", "/poster.jpg", albumCover)).toBe("/poster.jpg");
   });
 });
 
+const olderAlbumCover = "https://example.com/older-album.jpg";
+const newerAlbumCover = "https://example.com/newer-album.jpg";
+const albumC = "ffffffff-ffff-4fff-8fff-ffffffffffff";
+
 describe("fetchAlbumCoversByTrackIds", () => {
-  it("批量 join music.album_id → album cover_url，避免按曲目逐条查询", async () => {
+  it("批量 join album_tracks.song_id → album cover_url，避免按曲目逐条查询", async () => {
     const db = fakeDb((query) => {
-      if (query.table === "music") {
+      if (query.table === "album_tracks") {
         return {
           data: [
-            { media_item_id: trackA, album_id: albumA },
-            { media_item_id: trackB, album_id: albumB },
+            { song_id: trackA, album_id: albumA },
+            { song_id: trackB, album_id: albumB },
           ],
           error: null,
         };
@@ -63,8 +69,8 @@ describe("fetchAlbumCoversByTrackIds", () => {
       if (query.table === "media_items") {
         return {
           data: [
-            { id: albumA, cover_url: albumCover },
-            { id: albumB, cover_url: null },
+            { id: albumA, cover_url: albumCover, release_date: "2020-01-01" },
+            { id: albumB, cover_url: null, release_date: "2021-01-01" },
           ],
           error: null,
         };
@@ -75,33 +81,96 @@ describe("fetchAlbumCoversByTrackIds", () => {
     const map = await fetchAlbumCoversByTrackIds(db, [trackA, trackB, trackA]);
     expect(map.get(trackA)).toBe(albumCover);
     expect(map.get(trackB)).toBeNull();
-    expect(db.from).toHaveBeenCalledWith("music");
+    expect(db.from).toHaveBeenCalledWith("album_tracks");
     expect(db.from).toHaveBeenCalledWith("media_items");
     expect(db.from).toHaveBeenCalledTimes(2);
+  });
+
+  it("一首歌多专辑时取发行日最早且有封面的专辑，不受 album_tracks 返回次序影响", async () => {
+    const db = fakeDb((query) => {
+      if (query.table === "album_tracks") {
+        // 故意把较新专辑放在前面
+        return {
+          data: [
+            { song_id: trackA, album_id: albumB },
+            { song_id: trackA, album_id: albumA },
+          ],
+          error: null,
+        };
+      }
+      if (query.table === "media_items") {
+        return {
+          data: [
+            { id: albumB, cover_url: newerAlbumCover, release_date: "2022-06-01" },
+            { id: albumA, cover_url: olderAlbumCover, release_date: "2019-03-01" },
+          ],
+          error: null,
+        };
+      }
+      return { data: [], error: null };
+    });
+
+    const map = await fetchAlbumCoversByTrackIds(db, [trackA]);
+    expect(map.get(trackA)).toBe(olderAlbumCover);
+  });
+
+  it("最早专辑无封面时回退到下一张有封面的更早候选；同日按 album_id 稳定次序", async () => {
+    const db = fakeDb((query) => {
+      if (query.table === "album_tracks") {
+        return {
+          data: [
+            { song_id: trackA, album_id: albumC },
+            { song_id: trackA, album_id: albumB },
+            { song_id: trackA, album_id: albumA },
+          ],
+          error: null,
+        };
+      }
+      if (query.table === "media_items") {
+        return {
+          data: [
+            { id: albumA, cover_url: null, release_date: "2018-01-01" },
+            { id: albumB, cover_url: newerAlbumCover, release_date: "2020-01-01" },
+            { id: albumC, cover_url: olderAlbumCover, release_date: "2020-01-01" },
+          ],
+          error: null,
+        };
+      }
+      return { data: [], error: null };
+    });
+
+    const map = await fetchAlbumCoversByTrackIds(db, [trackA]);
+    // 跳过最早无封面专辑后，同日按 album_id 升序 → albumB（dddd…）先于 albumC（ffff…）
+    expect(map.get(trackA)).toBe(newerAlbumCover);
   });
 });
 
 describe("withAlbumCoversForTracks", () => {
-  it("仅替换 music 条目的 cover_url，其它类型保留原值", async () => {
+  it("仅给无自身封面的 music 条目补专辑封面；已有封面与其它类型保留", async () => {
     const db = fakeDb((query) => {
-      if (query.table === "music") {
-        return { data: [{ media_item_id: trackA, album_id: albumA }], error: null };
+      if (query.table === "album_tracks") {
+        return {
+          data: [
+            { song_id: trackA, album_id: albumA },
+            { song_id: "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee", album_id: albumA },
+          ],
+          error: null,
+        };
       }
       if (query.table === "media_items") {
-        return { data: [{ id: albumA, cover_url: albumCover }], error: null };
+        return { data: [{ id: albumA, cover_url: albumCover, release_date: "2020-01-01" }], error: null };
       }
       return { data: [], error: null };
     });
 
     const rows = await withAlbumCoversForTracks(db, [
-      { id: trackA, type: "music", cover_url: trackOwnCover },
+      { id: trackA, type: "music", cover_url: null },
       { id: albumA, type: "album", cover_url: albumCover },
       { id: "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee", dbType: "music", cover_url: trackOwnCover },
     ]);
 
     expect(rows[0]?.cover_url).toBe(albumCover);
     expect(rows[1]?.cover_url).toBe(albumCover);
-    // 无 music 行时专辑封面映射缺失 → null，不回退自身封面
-    expect(rows[2]?.cover_url).toBeNull();
+    expect(rows[2]?.cover_url).toBe(trackOwnCover);
   });
 });

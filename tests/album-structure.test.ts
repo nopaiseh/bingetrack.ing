@@ -45,11 +45,11 @@ describe("readAlbumStructure", () => {
           data: { id: albumId, title: "叶惠美", alternate_title: "Ye Hui Mei", cover_url: null },
         };
       if (query.table === "v_all_media") return { data: { status: "watching", rating: 8.5 } };
-      if (query.table === "music")
+      if (query.table === "album_tracks")
         return {
           data: [
             {
-              media_item_id: trackId,
+              song_id: trackId,
               track_number: 3,
               media: { title: "晴天", runtime: 269, tracking: { status: "watched" } },
             },
@@ -86,11 +86,11 @@ describe("readAlbumStructure", () => {
       if (query.table === "media_items")
         return { data: { id: albumId, title: "叶惠美", alternate_title: null, cover_url: null } };
       if (query.table === "v_all_media") return { data: { status: "want_to_watch", rating: null } };
-      if (query.table === "music")
+      if (query.table === "album_tracks")
         return {
           data: [
             {
-              media_item_id: trackId,
+              song_id: trackId,
               track_number: 1,
               media: { title: "简单爱", runtime: 200, tracking: null },
             },
@@ -114,7 +114,7 @@ describe("readAlbumStructure", () => {
       if (query.table === "media_items")
         return { data: { id: albumId, title: "叶惠美", alternate_title: null, cover_url: null } };
       if (query.table === "v_all_media") return { data: { status: "want_to_watch", rating: null } };
-      if (query.table === "music") return { data: [] };
+      if (query.table === "album_tracks") return { data: [] };
       if (query.table === "media_credits") return { data: [] };
       if (query.table === "music_albums") return { data: { track_count: 10 } };
       return { data: null };

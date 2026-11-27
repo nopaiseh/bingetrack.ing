@@ -84,6 +84,18 @@ export function BasicInfoSection({
                   : []
               }
             />
+            {/* 加载时的所属专辑：RPC 仅在与新 parent 不同时删除该条 album_tracks，共用歌其它关联保留。 */}
+            {isMusicTrack ? (
+              <input type="hidden" name="previous_parent_id" value={item?.parent_id ?? parent?.id ?? ""} />
+            ) : null}
+            {/* 原样回传盘号；无可见控件时必须隐藏提交，否则解析层拿不到值会被当成未传。 */}
+            {isMusicTrack ? (
+              <input
+                type="hidden"
+                name="disc_number"
+                value={item?.disc_number != null ? String(item.disc_number) : ""}
+              />
+            ) : null}
           </div>
         ) : null}
         {isChild ? (

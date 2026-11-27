@@ -1,36 +1,37 @@
 /**
- * 曲目展示封面：一律用所属专辑的 cover_url，忽略曲目自身存储的 cover_url。
- * 专辑无封面时返回 null／空串，走现有色块首字占位，不回退到曲目封面、不额外抓取。
+ * 曲目展示封面：有自身 cover_url 时用自身；否则回退所属专辑封面。
+ * 专辑亦无封面时返回 null／空串，走现有色块首字占位，不额外抓取。
  */
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 
-/** 曲目展示用封面：仅取专辑封面；无图则为 null。 */
-export function trackDisplayCoverUrl(albumCoverUrl: string | null | undefined): string | null {
-  const trimmed = albumCoverUrl?.trim();
+/** 规范化封面 URL：空白视为无封面。 */
+export function trackDisplayCoverUrl(coverUrl: string | null | undefined): string | null {
+  const trimmed = coverUrl?.trim();
   return trimmed ? trimmed : null;
 }
 
 /**
  * 按类型决定展示封面。
- * type === "music" 时只用 albumCoverUrl；其它类型用自身 cover_url。
+ * type === "music"：自身封面优先，否则用 albumCoverUrl；其它类型只用自身 cover_url。
  */
 export function displayCoverUrl(
   type: string | null | undefined,
   ownCoverUrl: string | null | undefined,
   albumCoverUrl: string | null | undefined,
 ): string | null {
-  if (type === "music") return trackDisplayCoverUrl(albumCoverUrl);
-  const own = ownCoverUrl?.trim();
-  return own ? own : null;
+  if (type === "music") {
+    return trackDisplayCoverUrl(ownCoverUrl) ?? trackDisplayCoverUrl(albumCoverUrl);
+  }
+  return trackDisplayCoverUrl(ownCoverUrl);
 }
 
 type DbClient = Pick<SupabaseClient, "from">;
 
 /**
  * 批量：曲目 id → 所属专辑 cover_url。
- * 两步查询（music.album_id → media_items.cover_url），避免 N+1。
- * 无 music 行或专辑无封面时映射为 null。
+ * 两步查询（album_tracks → media_items.cover_url），避免 N+1。
+ * 一首歌多专辑时取 release_date 最早且有封面的专辑；无关联或无封面时为 null。
  */
 export async function fetchAlbumCoversByTrackIds(
   db: DbClient,
@@ -41,31 +42,64 @@ export async function fetchAlbumCoversByTrackIds(
   if (unique.length === 0) return result;
 
   const { data: links, error: linkError } = await db
-    .from("music")
-    .select("media_item_id, album_id")
-    .in("media_item_id", unique);
+    .from("album_tracks")
+    .select("song_id, album_id")
+    .in("song_id", unique);
   if (linkError) throw new Error("无法读取曲目所属专辑。");
 
   const albumIds = [
     ...new Set((links ?? []).map((row) => row.album_id as string | null).filter((id): id is string => Boolean(id))),
   ];
-  const coverByAlbum = new Map<string, string | null>();
-  if (albumIds.length > 0) {
-    const { data: albums, error: albumError } = await db
-      .from("media_items")
-      .select("id, cover_url")
-      .in("id", albumIds)
-      .eq("type", "album");
-    if (albumError) throw new Error("无法读取专辑封面。");
-    for (const row of albums ?? []) {
-      coverByAlbum.set(row.id as string, trackDisplayCoverUrl(row.cover_url as string | null));
-    }
+  if (albumIds.length === 0) {
+    for (const trackId of unique) result.set(trackId, null);
+    return result;
   }
 
-  for (const row of links ?? []) {
-    const trackId = row.media_item_id as string;
-    const albumId = row.album_id as string | null;
-    result.set(trackId, albumId ? (coverByAlbum.get(albumId) ?? null) : null);
+  const { data: albums, error: albumError } = await db
+    .from("media_items")
+    .select("id, cover_url, release_date")
+    .in("id", albumIds)
+    .eq("type", "album");
+  if (albumError) throw new Error("无法读取专辑封面。");
+
+  // album_id → 发行日与封面；多专辑时按发行日升序（null 最后）、同日按 album_id 稳定次序，取第一张有封面的
+  type AlbumMeta = { releaseDate: string | null; cover: string | null };
+  const albumMeta = new Map<string, AlbumMeta>();
+  for (const row of albums ?? []) {
+    albumMeta.set(row.id as string, {
+      releaseDate: (row.release_date as string | null) ?? null,
+      cover: trackDisplayCoverUrl(row.cover_url as string | null),
+    });
+  }
+
+  for (const trackId of unique) {
+    const albumsForTrack = (links ?? [])
+      .filter((row) => row.song_id === trackId)
+      .map((row) => {
+        const albumId = row.album_id as string;
+        const meta = albumMeta.get(albumId);
+        return {
+          albumId,
+          releaseDate: meta?.releaseDate ?? null,
+          cover: meta?.cover ?? null,
+        };
+      })
+      .sort((a, b) => {
+        const da = a.releaseDate ?? "9999-99-99";
+        const dbDate = b.releaseDate ?? "9999-99-99";
+        const byDate = da.localeCompare(dbDate);
+        if (byDate !== 0) return byDate;
+        return a.albumId.localeCompare(b.albumId);
+      });
+
+    let cover: string | null = null;
+    for (const album of albumsForTrack) {
+      if (album.cover) {
+        cover = album.cover;
+        break;
+      }
+    }
+    result.set(trackId, cover);
   }
   return result;
 }
@@ -83,8 +117,8 @@ export function isMusicTrackItem(item: CoverBearing): boolean {
 }
 
 /**
- * 就地为曲目条目替换 cover_url 为所属专辑封面；非曲目不动。
- * 专辑无封面时写 null（调用方若需空串可再规范化）。
+ * 就地为曲目条目补封面：自身无封面时写入所属专辑封面；已有自身封面则保留。
+ * 非曲目不动。
  */
 export async function withAlbumCoversForTracks<T extends CoverBearing>(
   db: DbClient,
@@ -96,6 +130,8 @@ export async function withAlbumCoversForTracks<T extends CoverBearing>(
   const covers = await fetchAlbumCoversByTrackIds(db, trackIds);
   return items.map((item) => {
     if (!isTrack(item)) return item;
+    const own = trackDisplayCoverUrl(item.cover_url);
+    if (own) return { ...item, cover_url: own };
     return { ...item, cover_url: trackDisplayCoverUrl(covers.get(item.id)) };
   });
 }

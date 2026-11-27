@@ -44,8 +44,10 @@ insert into public.music_albums (media_item_id) values
   ('e2000000-0000-4000-8000-000000000002'),
   ('e2000000-0000-4000-8000-000000000003');
 
-insert into public.music (media_item_id, album_id, track_number) values
-  ('e2000000-0000-4000-8000-000000000010', 'e2000000-0000-4000-8000-000000000001', 1);
+insert into public.music (media_item_id) values
+  ('e2000000-0000-4000-8000-000000000010');
+insert into public.album_tracks (album_id, song_id, disc_number, track_number) values
+  ('e2000000-0000-4000-8000-000000000001', 'e2000000-0000-4000-8000-000000000010', 1, 1);
 
 insert into public.books (media_item_id) values
   ('e2000000-0000-4000-8000-000000000020'),

@@ -1,7 +1,14 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { revalidatePath, revalidateTag } from "next/cache";
-import { affectedMediaIds, mergeAffected, referenceMediaIds, revalidateMediaItems } from "@/lib/admin/revalidate-media";
+import {
+  affectedMediaIds,
+  creditedPersonIds,
+  mergeAffected,
+  referenceMediaIds,
+  revalidateMediaItems,
+  revalidatePersonItems,
+} from "@/lib/admin/revalidate-media";
 vi.mock("server-only", () => ({}));
 vi.mock("next/cache", () => ({ revalidatePath: vi.fn(), revalidateTag: vi.fn() }));
 
@@ -19,7 +26,7 @@ type Row = Record<string, string>;
 const tables: Record<string, Row[]> = {
   tv_seasons: [{ id: season, series_id: show }],
   tv_episodes: [{ id: episode, season_id: season }],
-  music: [{ media_item_id: track, album_id: album }],
+  album_tracks: [{ song_id: track, album_id: album }],
   media_item_series: [
     { media_item_id: show, series_id: collection },
     { media_item_id: sequel, series_id: collection },
@@ -63,8 +70,11 @@ describe("按条目失效公开缓存", () => {
   it("单曲变更包含所属专辑", async () => {
     expect(new Set(await affectedMediaIds(fakeDb(), [track]))).toEqual(new Set([track, album]));
   });
+  it("专辑变更包含其下曲目", async () => {
+    expect(new Set(await affectedMediaIds(fakeDb(), [album]))).toEqual(new Set([album, track]));
+  });
   it("单曲查询失败时返回 null", async () => {
-    expect(await affectedMediaIds(fakeDb("music"), [track])).toBeNull();
+    expect(await affectedMediaIds(fakeDb("album_tracks"), [track])).toBeNull();
   });
   it("忽略非法 ID，不发起查询", async () => {
     expect(await affectedMediaIds(fakeDb("tv_episodes"), ["not-a-uuid"])).toEqual([]);
@@ -116,5 +126,23 @@ describe("按条目失效公开缓存", () => {
       ["/sitemap.xml"],
     ]);
     expect(revalidateTag).not.toHaveBeenCalledWith("media", expect.anything());
+  });
+
+  it("人物详情按 person:item:<id> 失效，忽略非法 ID", () => {
+    revalidatePersonItems([person, "not-a-uuid", person]);
+    expect(vi.mocked(revalidateTag).mock.calls).toEqual([
+      [`person:item:${person}`, { expire: 0 }],
+      [`person:item:${person}`, { expire: 0 }],
+    ]);
+  });
+
+  it("creditedPersonIds：专辑含曲目演职员，曲目只含自身", async () => {
+    expect(new Set(await creditedPersonIds(fakeDb(), [album]))).toEqual(new Set([person]));
+    expect(await creditedPersonIds(fakeDb(), [track])).toEqual([person]);
+    expect(await creditedPersonIds(fakeDb(), [show])).toEqual([]);
+  });
+
+  it("creditedPersonIds：credits 查询失败时返回 null", async () => {
+    expect(await creditedPersonIds(fakeDb("media_credits"), [track])).toBeNull();
   });
 });

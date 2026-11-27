@@ -1,6 +1,7 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import type { MediaInput, PersonRef } from "@/lib/admin/media-form";
+import type { MediaInput } from "@/lib/admin/media-form";
+import { affectedPersonIds, buildCreditsPayload, savedMediaId } from "@/lib/admin/credits-payload";
 import { findMusicDuplicateId, isDuplicateMusicEntry } from "@/lib/music/dedupe";
 import { resolveMusicCover } from "@/lib/music/resolve-cover";
 
@@ -38,12 +39,7 @@ function relatedOne<T>(value: T | T[] | null | undefined): T | null {
   return Array.isArray(value) ? (value[0] ?? null) : value;
 }
 
-/** RPC 用的演职员：仅 id／name，避免把 character 传给非演员角色。 */
-function creditPayload(people: PersonRef[]) {
-  return people.map(({ id, name }) => ({ id, name }));
-}
-
-/** 组装 manage_save_media／admin_save_media 可接受的 jsonb 负载。 */
+/** 组装 manage_save_media／admin_save_media 可接受的 jsonb 负载（credits[]）。 */
 function mediaRpcPayload(payload: MediaInput) {
   const isAlbum = payload.type === "album";
   const isMusic = payload.type === "music";
@@ -57,7 +53,9 @@ function mediaRpcPayload(payload: MediaInput) {
     release_date: payload.release_date,
     runtime: payload.runtime,
     parent_id: payload.parent_id,
+    previous_parent_id: payload.previous_parent_id,
     number: payload.number,
+    disc_number: payload.disc_number,
     status: payload.status === "watched" ? "watched" : "want_to_watch",
     rating: payload.rating,
     genres: payload.genres,
@@ -65,11 +63,14 @@ function mediaRpcPayload(payload: MediaInput) {
     languages: isAlbum ? [] : payload.languages,
     // 地区仍在专辑；单曲不发 regions。
     regions: isMusic ? [] : payload.regions,
-    actors: payload.actors,
-    directors: payload.directors,
-    artists: creditPayload(payload.artists),
-    lyricists: creditPayload(payload.lyricists),
-    composers: creditPayload(payload.composers),
+    credits: buildCreditsPayload({
+      artists: payload.artists,
+      lyricists: payload.lyricists,
+      composers: payload.composers,
+      arrangers: payload.arrangers,
+      producers: payload.producers,
+      featured: payload.featured,
+    }),
     label: payload.label,
     collections: payload.collections ?? [],
   };
@@ -87,15 +88,15 @@ async function findDuplicateTrackInAlbum(
   excludeId: string | null,
 ): Promise<string | null> {
   const { data: rows, error } = await db
-    .from("music")
-    .select("media_item_id, media:media_items!music_media_item_id_fkey(id, title)")
+    .from("album_tracks")
+    .select("song_id, media:media_items!album_tracks_song_id_fkey(id, title)")
     .eq("album_id", albumId);
   assertOk(error);
   const candidates = (rows ?? [])
     .map((row) => {
       const media = relatedOne(row.media as { id: string; title: string } | { id: string; title: string }[] | null);
       return {
-        id: row.media_item_id as string,
+        id: row.song_id as string,
         title: media?.title ?? "",
       };
     })
@@ -161,7 +162,8 @@ async function prepareMusicPayload(
     if (payload.genres.length > 2) {
       throw new SaveMusicMediaError(GENRE_LIMIT_ERROR, "22023");
     }
-    if (!options.skipAlbumExistsCheck) {
+    // 独立单曲可不挂专辑；挂专辑时校验专辑存在。
+    if (payload.parent_id && !options.skipAlbumExistsCheck) {
       const { data: album, error } = await db
         .from("media_items")
         .select("id")
@@ -207,12 +209,15 @@ async function prepareMusicPayload(
   return { ...payload, cover_url: coverUrl };
 }
 
+/** 保存结果：条目 id，以及 credits 变更波及的人物（供 person:item 失效）。 */
+export type SaveMusicMediaResult = { id: string; affectedPersonIds: string[] };
+
 /**
  * 保存专辑或曲目。
  * 专辑走 admin_save_album_with_tracks；单曲走 admin_save_media。
  * 查重与封面解析仍在应用层；写入在单个数据库事务中完成。
  */
-export async function saveMusicMedia(db: SupabaseClient, payload: MediaInput): Promise<string> {
+export async function saveMusicMedia(db: SupabaseClient, payload: MediaInput): Promise<SaveMusicMediaResult> {
   const prepared = await prepareMusicPayload(db, payload);
 
   if (prepared.type === "album") {
@@ -221,14 +226,16 @@ export async function saveMusicMedia(db: SupabaseClient, payload: MediaInput): P
       p_tracks: [],
     });
     assertOk(error);
-    if (!data) throw new SaveMusicMediaError(WRITE_ERROR);
-    return String(data);
+    const id = savedMediaId(data);
+    if (!id) throw new SaveMusicMediaError(WRITE_ERROR);
+    return { id, affectedPersonIds: affectedPersonIds(data) };
   }
 
   const { data, error } = await db.rpc("admin_save_media", { p_data: mediaRpcPayload(prepared) });
   assertOk(error);
-  if (!data) throw new SaveMusicMediaError(WRITE_ERROR);
-  return String(data);
+  const id = savedMediaId(data);
+  if (!id) throw new SaveMusicMediaError(WRITE_ERROR);
+  return { id, affectedPersonIds: affectedPersonIds(data) };
 }
 
 /**
@@ -271,11 +278,12 @@ export async function saveAlbumWithTracks(
     p_tracks: preparedTracks,
   });
   assertOk(error);
-  if (!data) throw new SaveMusicMediaError(WRITE_ERROR);
-  return String(data);
+  const id = savedMediaId(data);
+  if (!id) throw new SaveMusicMediaError(WRITE_ERROR);
+  return id;
 }
 
-/** 删除曲目或专辑。经 admin_delete_media 同事务处理：专辑会连同下属曲目一起删。 */
+/** 删除曲目或专辑。经 admin_delete_media 同事务处理：仅删除不再属于其他专辑的曲目。 */
 export async function deleteMusicTree(
   db: SupabaseClient,
   id: string,

@@ -127,13 +127,13 @@ describe("作品详情与相关作品", () => {
         return { data: { id: mediaId, type: "music", title: "晴天", cover_url: trackOwn } };
       }
       if (query.table === "media_item_series") return { data: [] };
-      if (query.table === "music") return { data: [{ media_item_id: mediaId, album_id: albumId }] };
+      if (query.table === "album_tracks") return { data: [{ song_id: mediaId, album_id: albumId }] };
       if (query.table === "media_items") return { data: [{ id: albumId, cover_url: albumCover }] };
       return { data: null, error: null };
     };
     const media = await getMediaById(mediaId);
     expect(media).toMatchObject({ id: mediaId, title: "晴天", cover_url: albumCover });
-    expect(state.queries.some((query) => query.table === "music")).toBe(true);
+    expect(state.queries.some((query) => query.table === "album_tracks")).toBe(true);
   });
 
   it("曲目所属专辑无封面时详情 cover_url 为空，不回退曲目自身封面", async () => {
@@ -149,7 +149,7 @@ describe("作品详情与相关作品", () => {
         };
       }
       if (query.table === "media_item_series") return { data: [] };
-      if (query.table === "music") return { data: [{ media_item_id: mediaId, album_id: otherId }] };
+      if (query.table === "album_tracks") return { data: [{ song_id: mediaId, album_id: otherId }] };
       if (query.table === "media_items") return { data: [{ id: otherId, cover_url: null }] };
       return { data: null, error: null };
     };

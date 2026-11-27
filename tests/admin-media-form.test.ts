@@ -224,13 +224,18 @@ describe("管理媒体输入", () => {
         lyricists: "\t作词人",
         languages: "英语",
         composers: "\t作曲人",
+        arrangers: "\t编曲人",
+        producers: "\t制作人",
+        featured: "\t合唱人",
         genres: "流行",
       }),
     );
     expect(track).toMatchObject({
       type: "music",
       parent_id: albumId,
+      previous_parent_id: null,
       number: 3,
+      disc_number: null,
       runtime: 215,
       status: "watched",
       rating: 8.5,
@@ -240,7 +245,75 @@ describe("管理媒体输入", () => {
       artists: [{ id: null, name: "主唱" }],
       lyricists: [{ id: null, name: "作词人" }],
       composers: [{ id: null, name: "作曲人" }],
+      arrangers: [{ id: null, name: "编曲人" }],
+      producers: [{ id: null, name: "制作人" }],
+      featured: [{ id: null, name: "合唱人" }],
     });
+    expect(
+      parseMediaForm(
+        form({
+          type: "music",
+          title: "第二盘",
+          parent_id: albumId,
+          previous_parent_id: albumId,
+          number: "1",
+          disc_number: "2",
+          artists: "\t主唱",
+        }),
+      ),
+    ).toMatchObject({
+      disc_number: 2,
+      previous_parent_id: albumId,
+    });
+    expect(
+      parseMediaForm(
+        form({
+          type: "music",
+          title: "保留盘号",
+          parent_id: albumId,
+          previous_parent_id: albumId,
+          number: "1",
+          artists: "\t主唱",
+        }),
+      ).disc_number,
+    ).toBeNull();
+    // 空字符串／纯空白也解析为 null：RPC 编辑时保留原盘号，新建时默认 1；TS 层绝不补成 0／1。
+    expect(
+      parseMediaForm(
+        form({
+          type: "music",
+          title: "空盘号",
+          parent_id: albumId,
+          number: "1",
+          disc_number: "",
+          artists: "\t主唱",
+        }),
+      ).disc_number,
+    ).toBeNull();
+    expect(
+      parseMediaForm(
+        form({
+          type: "music",
+          title: "空白盘号",
+          parent_id: albumId,
+          number: "1",
+          disc_number: "   ",
+          artists: "\t主唱",
+        }),
+      ).disc_number,
+    ).toBeNull();
+    expect(() =>
+      parseMediaForm(
+        form({
+          type: "music",
+          title: "零盘号",
+          parent_id: albumId,
+          number: "1",
+          disc_number: "0",
+          artists: "\t主唱",
+        }),
+      ),
+    ).toThrow(/盘号须为 1–100/);
     expect(
       parseMediaForm(
         form({

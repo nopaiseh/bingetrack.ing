@@ -11,8 +11,8 @@ select is(
       and c.relkind in ('r', 'p')
       and c.relrowsecurity
   ),
-  -- 含 people_distinct_pairs、name_issue_confirmations、ownership 与 books。
-  21,
+  -- 含 people_distinct_pairs、name_issue_confirmations、ownership、books、credit_roles、album_tracks。
+  23,
   'all public tables have RLS enabled'
 );
 
@@ -47,7 +47,7 @@ select is(
     where schemaname = 'public'
       and roles = array['anon', 'authenticated']::name[]
   ),
-  18,
+  20,
   'all public-read policies target anon and authenticated'
 );
 

@@ -9,7 +9,14 @@ export async function readEditableMedia(db: SupabaseClient, id: string): Promise
     db.from("tracking").select("status,rating").eq("media_item_id", id).maybeSingle(),
     db.from("tv_seasons").select("series_id,season_number").eq("id", id).maybeSingle(),
     db.from("tv_episodes").select("season_id,episode_number").eq("id", id).maybeSingle(),
-    db.from("music").select("album_id,track_number").eq("media_item_id", id).maybeSingle(),
+    db
+      .from("album_tracks")
+      .select("album_id,disc_number,track_number")
+      .eq("song_id", id)
+      .order("disc_number", { ascending: true })
+      .order("track_number", { ascending: true })
+      .limit(1)
+      .maybeSingle(),
     db.from("music_albums").select("label").eq("media_item_id", id).maybeSingle(),
     db.from("books").select("page_count,publisher,isbn").eq("media_item_id", id).maybeSingle(),
     db.from("media_genres").select("genres(name)").eq("media_item_id", id),
@@ -53,7 +60,7 @@ export async function readEditableMedia(db: SupabaseClient, id: string): Promise
   /** 人物连同 ID 和别名读取，重新保存时仍关联原人物，不会被同名人物替换。 */
   function people(
     data: unknown,
-    role: "actor" | "director" | "artist" | "lyricist" | "composer" | "author",
+    role: "actor" | "director" | "artist" | "lyricist" | "composer" | "arranger" | "producer" | "featured" | "author",
   ): (PersonRef & { character_name?: unknown })[] {
     if (!Array.isArray(data)) return [];
     return data.flatMap(
@@ -118,12 +125,15 @@ export async function readEditableMedia(db: SupabaseClient, id: string): Promise
     status = (tracking.data?.status as "watched" | "want_to_watch") ?? "want_to_watch";
     rating = tracking.data?.rating ?? null;
   }
-  const personOnly = (role: "artist" | "lyricist" | "composer" | "author") =>
+  const personOnly = (role: "artist" | "lyricist" | "composer" | "arranger" | "producer" | "featured" | "author") =>
     people(credits.data, role).map(({ id, name, alternate_name }) => ({ id, name, alternate_name }));
+  const parentId = season.data?.series_id ?? episode.data?.season_id ?? track.data?.album_id ?? null;
   return {
     ...media.data,
-    parent_id: season.data?.series_id ?? episode.data?.season_id ?? track.data?.album_id ?? null,
+    parent_id: parentId,
+    previous_parent_id: media.data.type === "music" ? parentId : null,
     number: season.data?.season_number ?? episode.data?.episode_number ?? track.data?.track_number ?? null,
+    disc_number: media.data.type === "music" && track.data?.disc_number != null ? Number(track.data.disc_number) : null,
     status,
     rating,
     genres: names(genres.data, "genres"),
@@ -135,6 +145,9 @@ export async function readEditableMedia(db: SupabaseClient, id: string): Promise
     artists: personOnly("artist"),
     lyricists: personOnly("lyricist"),
     composers: personOnly("composer"),
+    arrangers: personOnly("arranger"),
+    producers: personOnly("producer"),
+    featured: personOnly("featured"),
     authors: personOnly("author"),
     label: albumMeta.data?.label ?? null,
     page_count: bookMeta.data?.page_count != null ? Number(bookMeta.data.page_count) : null,

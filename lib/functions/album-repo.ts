@@ -30,7 +30,8 @@ type OwnershipRow = {
 };
 
 type TrackJoinRow = {
-  media_item_id: string;
+  song_id: string;
+  disc_number: number | null;
   track_number: number | null;
   media:
     | {
@@ -99,13 +100,14 @@ export async function loadAlbumDetail(id: string): Promise<DetailFetchResult<Alb
       db.from("music_albums").select("track_count,label").eq("media_item_id", id).maybeSingle(),
       db.from("ownership").select("status").eq("media_item_id", id).maybeSingle(),
       db
-        .from("music")
+        .from("album_tracks")
         .select(
-          "media_item_id,track_number,media:media_items!music_media_item_id_fkey(id,title,runtime,tracking(status,rating))",
+          "song_id,disc_number,track_number,media:media_items!album_tracks_song_id_fkey(id,title,runtime,tracking(status,rating))",
         )
         .eq("album_id", id)
+        .order("disc_number", { ascending: true })
         .order("track_number", { ascending: true, nullsFirst: false })
-        .order("media_item_id", { ascending: true }),
+        .order("song_id", { ascending: true }),
       // 仅依赖 album id，与视图／元数据并行；失败只上报，系列降级为空。
       db
         .from("media_item_series")
@@ -156,7 +158,7 @@ export async function loadAlbumDetail(id: string): Promise<DetailFetchResult<Alb
     const ownership = (ownershipResult.data as OwnershipRow | null)?.status ?? null;
 
     const trackRows = (tracksResult.data ?? []) as TrackJoinRow[];
-    const trackIds = trackRows.map((row) => row.media_item_id);
+    const trackIds = trackRows.map((row) => row.song_id);
 
     const creditsByTrack = new Map<string, { singers: string[]; lyricists: string[]; composers: string[] }>();
     const genresByTrack = new Map<string, string[]>();
@@ -207,15 +209,15 @@ export async function loadAlbumDetail(id: string): Promise<DetailFetchResult<Alb
       const tracking = firstRelated(item?.tracking);
       const rating = tracking?.rating == null ? null : Number(tracking.rating);
       if (rating != null && Number.isFinite(rating)) ratedCount += 1;
-      const credits = creditsByTrack.get(row.media_item_id) ?? { singers: [], lyricists: [], composers: [] };
+      const credits = creditsByTrack.get(row.song_id) ?? { singers: [], lyricists: [], composers: [] };
       return {
-        id: row.media_item_id,
+        id: row.song_id,
         trackNumber: row.track_number,
         title: (item?.title ?? "").trim() || "未命名曲目",
         singers: credits.singers,
         lyricists: credits.lyricists,
         composers: credits.composers,
-        genres: genresByTrack.get(row.media_item_id) ?? [],
+        genres: genresByTrack.get(row.song_id) ?? [],
         durationSeconds: item?.runtime == null ? null : Number(item.runtime),
         status: tracking?.status ?? null,
         rating,

@@ -24,10 +24,14 @@ returns jsonb language sql as $$
   select jsonb_build_object(
     'type','album','title',title,'status','want_to_watch','rating',null,
     'runtime',null,'label','语区测试厂牌','genres',genres,
-    'artists',artists,'languages',languages,'regions',regions,
+    'languages',languages,'regions',regions,
     'collections','[]'::jsonb,
-    'actors','[]'::jsonb,'directors','[]'::jsonb,
-    'lyricists','[]'::jsonb,'composers','[]'::jsonb
+    'credits', (
+      select coalesce(jsonb_agg(jsonb_build_object(
+        'person', person, 'role', 'artist', 'order', ord - 1
+      ) order by ord), '[]'::jsonb)
+      from jsonb_array_elements(artists) with ordinality as t(person, ord)
+    )
   );
 $$;
 
@@ -41,8 +45,14 @@ create function pg_temp.book_payload(
 returns jsonb language sql as $$
   select jsonb_build_object(
     'type','book','title',title,'status','want_to_watch','rating',null,
-    'genres',genres,'languages',languages,'regions',regions,'authors',authors,
-    'page_count',180,'publisher','语区测验社','collections','[]'::jsonb
+    'genres',genres,'languages',languages,'regions',regions,
+    'page_count',180,'publisher','语区测验社','collections','[]'::jsonb,
+    'credits', (
+      select coalesce(jsonb_agg(jsonb_build_object(
+        'person', person, 'role', 'author', 'order', ord - 1
+      ) order by ord), '[]'::jsonb)
+      from jsonb_array_elements(authors) with ordinality as t(person, ord)
+    )
   );
 $$;
 
@@ -57,12 +67,12 @@ select lives_ok(
   $$insert into album_book_lr_ids(name, id)
     values (
       'album',
-      public.admin_save_media(pg_temp.album_payload(
+      (public.admin_save_media(pg_temp.album_payload(
         '语区专辑',
         '["专辑流行"]'::jsonb,
         '["日语","英语"]'::jsonb,
         '["日本","美国"]'::jsonb
-      ))
+      ))->>'id')::uuid
     )$$,
   'album saves with regions; languages in payload ignored'
 );
@@ -84,7 +94,7 @@ select is(
     from public.media_credits mc
     join public.people p on p.id = mc.person_id
     where mc.media_item_id = (select id from album_book_lr_ids where name = 'album')
-      and mc.role = 'artist'::public.person_role
+      and mc.role = 'artist'
   ),
   array['语区测试艺人'],
   'album artists still persist'
@@ -116,13 +126,13 @@ select lives_ok(
   $$insert into album_book_lr_ids(name, id)
     values (
       'book',
-      public.admin_save_media(pg_temp.book_payload(
+      (public.admin_save_media(pg_temp.book_payload(
         '语区图书',
         '[{"name":"作者甲"},{"name":"作者乙"}]'::jsonb,
         '["小说"]'::jsonb,
         '["中文"]'::jsonb,
         '["中国","香港"]'::jsonb
-      ))
+      ))->>'id')::uuid
     )$$,
   'book saves with regions'
 );
@@ -155,7 +165,7 @@ select is(
     from public.media_credits mc
     join public.people p on p.id = mc.person_id
     where mc.media_item_id = (select id from album_book_lr_ids where name = 'book')
-      and mc.role = 'author'::public.person_role
+      and mc.role = 'author'
   ),
   array['作者甲','作者乙'],
   'book authors still persist'

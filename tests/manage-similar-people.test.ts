@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { dismissSimilarPeople, mergePeople } from "@/app/(admin)/manage/report-actions";
 import { requireOwner } from "@/lib/auth/server";
 import { redirect } from "next/navigation";
-import { referenceMediaIds, revalidateMediaItems } from "@/lib/admin/revalidate-media";
+import { referenceMediaIds, revalidateMediaItems, revalidatePersonItems } from "@/lib/admin/revalidate-media";
 
 vi.mock("@/lib/report-error", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@/lib/report-error")>();
@@ -12,6 +12,7 @@ vi.mock("@/lib/auth/server", () => ({ requireOwner: vi.fn() }));
 vi.mock("@/lib/admin/revalidate-media", () => ({
   referenceMediaIds: vi.fn(async () => [movie]),
   revalidateMediaItems: vi.fn(),
+  revalidatePersonItems: vi.fn(),
 }));
 vi.mock("next/navigation", () => ({ redirect: vi.fn() }));
 
@@ -54,6 +55,7 @@ describe("合并疑似重复人物", () => {
     expect(referenceMediaIds).toHaveBeenCalledWith(expect.anything(), "people", [keep, other]);
     expect(vi.mocked(referenceMediaIds).mock.invocationCallOrder[0]).toBeLessThan(rpc.mock.invocationCallOrder[0]);
     expect(revalidateMediaItems).toHaveBeenCalledExactlyOnceWith([movie]);
+    expect(revalidatePersonItems).toHaveBeenCalledExactlyOnceWith([keep, other]);
     expect(redirect).toHaveBeenCalledWith(expect.stringMatching(/^\/manage\/reports\/similar-people\?merged=1&n=\d+$/));
   });
 

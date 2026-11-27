@@ -7,12 +7,15 @@ import { parseMediaForm } from "@/lib/admin/media-form";
 import { isMediaId } from "@/lib/functions/media-id";
 import {
   affectedMediaIds,
+  creditedPersonIds,
   mergeAffected,
   revalidateAllMedia,
   revalidateMediaItems,
+  revalidatePersonItems,
 } from "@/lib/admin/revalidate-media";
 import { deleteMusicTree, SaveMusicMediaError, saveMusicMedia } from "@/lib/admin/save-music-media";
 import { SaveBookMediaError, saveBookMedia } from "@/lib/admin/save-book-media";
+import { affectedPersonIds, buildCreditsPayload, savedMediaId } from "@/lib/admin/credits-payload";
 import { isExpectedDbError, isExpectedValidationCode, reportHandledError } from "@/lib/report-error";
 
 export type ActionResult = { error?: string; saved?: boolean; id?: string };
@@ -57,10 +60,14 @@ export async function saveMedia(_previous: ActionResult, form: FormData): Promis
   const before = payload.id ? await affectedMediaIds(db, [payload.id]) : [];
 
   let savedId: string;
+  let savedAffectedPersonIds: string[] = [];
   if (payload.type === "album" || payload.type === "music") {
     // 专辑／曲目：查重与封面在 saveMusicMedia，写入走 admin_save_album_with_tracks／admin_save_media。
     try {
-      savedId = await saveMusicMedia(db, payload);
+      const saved = await saveMusicMedia(db, payload);
+      savedId = saved.id;
+      // 专辑艺人／制作人与曲目 credits 变更都波及人物页。
+      savedAffectedPersonIds = saved.affectedPersonIds;
     } catch (error) {
       if (error instanceof SaveMusicMediaError) {
         reportSaveDomainError("manage saveMedia", payload.id, error);
@@ -71,7 +78,9 @@ export async function saveMedia(_previous: ActionResult, form: FormData): Promis
     }
   } else if (payload.type === "book") {
     try {
-      savedId = await saveBookMedia(db, payload);
+      const saved = await saveBookMedia(db, payload);
+      savedId = saved.id;
+      savedAffectedPersonIds = saved.affectedPersonIds;
     } catch (error) {
       if (error instanceof SaveBookMediaError) {
         reportSaveDomainError("manage saveMedia", payload.id, error);
@@ -81,17 +90,37 @@ export async function saveMedia(_previous: ActionResult, form: FormData): Promis
       return { error: writeError() };
     }
   } else {
-    const { data, error } = await db.rpc("manage_save_media", { p_data: payload });
+    const rpcPayload = {
+      ...payload,
+      credits: buildCreditsPayload({
+        actors: payload.actors,
+        directors: payload.directors,
+      }),
+      actors: undefined,
+      directors: undefined,
+      artists: undefined,
+      lyricists: undefined,
+      composers: undefined,
+      arrangers: undefined,
+      producers: undefined,
+      featured: undefined,
+      authors: undefined,
+    };
+    const { data, error } = await db.rpc("manage_save_media", { p_data: rpcPayload });
     if (error) {
       if (!isExpectedValidationCode(error.code) && !isExpectedDbError(error.code)) {
         reportHandledError(`manage saveMedia failed for media ${payload.id ?? "new"}:`, error);
       }
       return { error: writeError(error.code) };
     }
-    savedId = String(data);
+    const id = savedMediaId(data);
+    if (!id) return { error: writeError() };
+    savedId = id;
+    savedAffectedPersonIds = affectedPersonIds(data);
   }
 
   revalidateMediaItems(mergeAffected(before, await affectedMediaIds(db, [savedId])));
+  if (savedAffectedPersonIds.length > 0) revalidatePersonItems(savedAffectedPersonIds);
   if (form.get("after") === "continue") {
     refresh();
     return { saved: true, id: savedId };
@@ -105,8 +134,9 @@ export async function deleteMedia(_previous: ActionResult, form: FormData): Prom
   const id = String(form.get("id") ?? "");
   const title = String(form.get("confirm_title") ?? "");
   if (!isMediaId(id) || !title) return { error: "请输入要删除的完整标题。" };
-  // 删除会级联移除关联，必须在删除前查出受影响的上级与系列成员，以及条目类型（删除后回到所属列表）。
+  // 删除会级联移除关联，必须在删除前查出受影响的上级／系列成员与演职员人物，以及条目类型（删除后回到所属列表）。
   const affected = await affectedMediaIds(db, [id]);
+  const creditedPeople = await creditedPersonIds(db, [id]);
   const { data: target } = await db.from("media_items").select("type").eq("id", id).maybeSingle();
 
   if (target?.type === "album" || target?.type === "music") {
@@ -131,6 +161,7 @@ export async function deleteMedia(_previous: ActionResult, form: FormData): Prom
   }
 
   revalidateMediaItems(affected);
+  if (creditedPeople?.length) revalidatePersonItems(creditedPeople);
   redirect(`/manage?type=${listTypeAfterDelete(target?.type)}&deleted=1&n=${Date.now()}`);
 }
 

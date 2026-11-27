@@ -36,7 +36,9 @@ function albumPayload(overrides: Partial<MediaInput> = {}): MediaInput {
     release_date: "2024-05-01",
     runtime: null,
     parent_id: null,
+    previous_parent_id: null,
     number: null,
+    disc_number: null,
     status: "want_to_watch",
     rating: null,
     genres: ["流行"],
@@ -47,6 +49,9 @@ function albumPayload(overrides: Partial<MediaInput> = {}): MediaInput {
     artists: [{ id: null, name: "艺人" }],
     lyricists: [],
     composers: [],
+    arrangers: [],
+    producers: [],
+    featured: [],
     authors: [],
     page_count: null,
     publisher: null,
@@ -68,7 +73,9 @@ function trackPayload(overrides: Partial<MediaInput> = {}): MediaInput {
     release_date: "2024-05-01",
     runtime: 200,
     parent_id: albumId,
+    previous_parent_id: albumId,
     number: 1,
+    disc_number: null,
     status: "watched",
     rating: 8,
     genres: [],
@@ -79,6 +86,9 @@ function trackPayload(overrides: Partial<MediaInput> = {}): MediaInput {
     artists: [{ id: null, name: "主唱" }],
     lyricists: [{ id: null, name: "作词" }],
     composers: [{ id: null, name: "作曲" }],
+    arrangers: [],
+    producers: [],
+    featured: [],
     authors: [],
     page_count: null,
     publisher: null,
@@ -115,12 +125,12 @@ function trackGuardFrom(options?: {
         select: () => chainResult({ data: albumExists ? { id: albumId } : null, error: null }),
       };
     }
-    if (table === "music") {
+    if (table === "album_tracks") {
       return {
         select: () =>
           chainResult({
             data: siblings.map((row) => ({
-              media_item_id: row.media_item_id,
+              song_id: row.media_item_id,
               media: { id: row.media_item_id, title: row.title },
             })),
             error: null,
@@ -169,8 +179,8 @@ describe("saveMusicMedia", () => {
   });
 
   it("新建专辑时解析封面并调用 admin_save_album_with_tracks", async () => {
-    const db = dbWithRpc(async () => ({ data: albumId, error: null }));
-    const id = await saveMusicMedia(db as never, albumPayload({ languages: ["国语"], regions: ["台湾"] }));
+    const db = dbWithRpc(async () => ({ data: { id: albumId, affected_person_ids: [] }, error: null }));
+    const { id } = await saveMusicMedia(db as never, albumPayload({ languages: ["国语"], regions: ["台湾"] }));
     expect(id).toBe(albumId);
     expect(db.rpc).toHaveBeenCalledWith(
       "admin_save_album_with_tracks",
@@ -180,7 +190,7 @@ describe("saveMusicMedia", () => {
           title: "新专辑",
           cover_url: "https://is1-ssl.mzstatic.com/image/thumb/Music/auto.jpg",
           label: "厂牌",
-          artists: [{ id: null, name: "艺人" }],
+          credits: [{ person: { name: "艺人" }, role: "artist", order: 0 }],
           // 语言记在单曲上；专辑 RPC 负载不发 languages。
           languages: [],
           regions: ["台湾"],
@@ -195,8 +205,8 @@ describe("saveMusicMedia", () => {
   });
 
   it("更新已有专辑：附带 collections 写入 RPC", async () => {
-    const db = dbWithRpc(async () => ({ data: albumId, error: null }));
-    const id = await saveMusicMedia(
+    const db = dbWithRpc(async () => ({ data: { id: albumId, affected_person_ids: [] }, error: null }));
+    const { id } = await saveMusicMedia(
       db as never,
       albumPayload({
         id: albumId,
@@ -221,8 +231,8 @@ describe("saveMusicMedia", () => {
 
   it("新建曲目前校验所属专辑存在，并调用 admin_save_media", async () => {
     const from = vi.fn(trackGuardFrom());
-    const db = dbWithRpc(async () => ({ data: trackId, error: null }), from);
-    const id = await saveMusicMedia(db as never, trackPayload());
+    const db = dbWithRpc(async () => ({ data: { id: trackId, affected_person_ids: [] }, error: null }), from);
+    const { id } = await saveMusicMedia(db as never, trackPayload());
     expect(id).toBe(trackId);
     expect(findMusicDuplicateId).not.toHaveBeenCalled();
     expect(db.rpc).toHaveBeenCalledWith(
@@ -242,7 +252,7 @@ describe("saveMusicMedia", () => {
 
   it("曲目不调用 resolveMusicCover；提交封面也强制写入 null", async () => {
     const from = vi.fn(trackGuardFrom());
-    const db = dbWithRpc(async () => ({ data: trackId, error: null }), from);
+    const db = dbWithRpc(async () => ({ data: { id: trackId, affected_person_ids: [] }, error: null }), from);
     await saveMusicMedia(db as never, trackPayload({ cover_url: null }));
     expect(resolveMusicCover).not.toHaveBeenCalled();
     expect(db.rpc).toHaveBeenCalledWith(
@@ -253,7 +263,10 @@ describe("saveMusicMedia", () => {
     );
 
     vi.mocked(resolveMusicCover).mockClear();
-    const db2 = dbWithRpc(async () => ({ data: trackId, error: null }), vi.fn(trackGuardFrom()));
+    const db2 = dbWithRpc(
+      async () => ({ data: { id: trackId, affected_person_ids: [] }, error: null }),
+      vi.fn(trackGuardFrom()),
+    );
     const submitted = "https://coverartarchive.org/release/x/front-500";
     await saveMusicMedia(db2 as never, trackPayload({ cover_url: submitted }));
     expect(resolveMusicCover).not.toHaveBeenCalled();
@@ -288,8 +301,11 @@ describe("saveMusicMedia", () => {
     );
 
     const from = vi.fn(trackGuardFrom({ albumExists: true, siblingTracks: [] }));
-    const db = dbWithRpc(async () => ({ data: trackId, error: null }), from);
-    await expect(saveMusicMedia(db as never, trackPayload({ parent_id: albumB }))).resolves.toBe(trackId);
+    const db = dbWithRpc(async () => ({ data: { id: trackId, affected_person_ids: [] }, error: null }), from);
+    await expect(saveMusicMedia(db as never, trackPayload({ parent_id: albumB }))).resolves.toEqual({
+      id: trackId,
+      affectedPersonIds: [],
+    });
     expect(findMusicDuplicateId).not.toHaveBeenCalled();
   });
 
@@ -328,7 +344,7 @@ describe("saveMusicMedia", () => {
 
   it("曲目带 0／1／2 个类型写入 admin_save_media 负载", async () => {
     const from = vi.fn(trackGuardFrom());
-    const db = dbWithRpc(async () => ({ data: trackId, error: null }), from);
+    const db = dbWithRpc(async () => ({ data: { id: trackId, affected_person_ids: [] }, error: null }), from);
     await saveMusicMedia(db as never, trackPayload({ genres: [] }));
     expect(db.rpc).toHaveBeenLastCalledWith(
       "admin_save_media",
@@ -348,7 +364,7 @@ describe("saveMusicMedia", () => {
 
   it("曲目语言写入 RPC；地区不发；专辑不发语言", async () => {
     const from = vi.fn(trackGuardFrom());
-    const db = dbWithRpc(async () => ({ data: trackId, error: null }), from);
+    const db = dbWithRpc(async () => ({ data: { id: trackId, affected_person_ids: [] }, error: null }), from);
     await saveMusicMedia(db as never, trackPayload({ languages: ["国语", "粤语"], regions: ["台湾"] }));
     expect(db.rpc).toHaveBeenCalledWith(
       "admin_save_media",
@@ -361,7 +377,7 @@ describe("saveMusicMedia", () => {
       }),
     );
 
-    const albumDb = dbWithRpc(async () => ({ data: albumId, error: null }));
+    const albumDb = dbWithRpc(async () => ({ data: { id: albumId, affected_person_ids: [] }, error: null }));
     await saveMusicMedia(albumDb as never, albumPayload({ languages: ["日语"], regions: ["日本"] }));
     expect(albumDb.rpc).toHaveBeenCalledWith(
       "admin_save_album_with_tracks",
@@ -384,6 +400,117 @@ describe("saveMusicMedia", () => {
     const db = dbWithRpc(async () => ({ data: null, error: { code: "42501" } }));
     await expect(saveMusicMedia(db as never, albumPayload())).rejects.toThrow(/没有写入权限/);
   });
+
+  it("六种曲目角色写入 RPC 后经 readEditableMedia 读回全部保留", async () => {
+    const { readEditableMedia } = await import("@/lib/admin/read-media");
+    const people = {
+      artist: { id: "a1111111-1111-4111-8111-111111111111", name: "主唱" },
+      lyricist: { id: "a2222222-2222-4222-8222-222222222222", name: "作词" },
+      composer: { id: "a3333333-3333-4333-8333-333333333333", name: "作曲" },
+      arranger: { id: "a4444444-4444-4444-8444-444444444444", name: "编曲" },
+      producer: { id: "a5555555-5555-4555-8555-555555555555", name: "制作" },
+      featured: { id: "a6666666-6666-4666-8666-666666666666", name: "合唱" },
+    };
+    let writtenCredits: { person: { id: string }; role: string; order: number }[] = [];
+    const from = vi.fn(trackGuardFrom());
+    const db = dbWithRpc(async (_fn, args) => {
+      writtenCredits = (args as { p_data: { credits: typeof writtenCredits } }).p_data.credits;
+      return {
+        data: {
+          id: trackId,
+          affected_person_ids: Object.values(people).map((p) => p.id),
+        },
+        error: null,
+      };
+    }, from);
+
+    const saved = await saveMusicMedia(
+      db as never,
+      trackPayload({
+        artists: [{ id: people.artist.id, name: people.artist.name }],
+        lyricists: [{ id: people.lyricist.id, name: people.lyricist.name }],
+        composers: [{ id: people.composer.id, name: people.composer.name }],
+        arrangers: [{ id: people.arranger.id, name: people.arranger.name }],
+        producers: [{ id: people.producer.id, name: people.producer.name }],
+        featured: [{ id: people.featured.id, name: people.featured.name }],
+      }),
+    );
+    expect(saved.affectedPersonIds).toHaveLength(6);
+    expect(writtenCredits.map((c) => c.role).sort()).toEqual([
+      "arranger",
+      "artist",
+      "composer",
+      "featured",
+      "lyricist",
+      "producer",
+    ]);
+
+    const creditRows = writtenCredits.map((c) => ({
+      role: c.role,
+      character_name: null,
+      people: {
+        id: c.person.id,
+        name: Object.values(people).find((p) => p.id === c.person.id)?.name ?? "",
+        alternate_name: null,
+      },
+    }));
+
+    const readDb = {
+      from: vi.fn((table: string) => ({
+        select: vi.fn(() => {
+          if (table === "album_tracks") {
+            const chain: Record<string, unknown> = {};
+            chain.eq = () => chain;
+            chain.order = () => chain;
+            chain.limit = () => chain;
+            chain.maybeSingle = async () => ({
+              data: { album_id: albumId, disc_number: 1, track_number: 1 },
+              error: null,
+            });
+            return chain;
+          }
+          return {
+            eq: vi.fn(() => ({
+              maybeSingle: async () => {
+                if (table === "media_items") {
+                  return {
+                    data: {
+                      id: trackId,
+                      type: "music",
+                      title: "新曲目",
+                      alternate_title: null,
+                      summary: null,
+                      cover_url: null,
+                      release_date: "2024-05-01",
+                      runtime: 200,
+                    },
+                    error: null,
+                  };
+                }
+                if (table === "tracking") {
+                  return { data: { status: "watched", rating: 8 }, error: null };
+                }
+                return { data: null, error: null };
+              },
+              order: async () =>
+                table === "media_credits" ? { data: creditRows, error: null } : { data: [], error: null },
+              then: (resolve: (val: unknown) => void) => resolve({ data: [], error: null }),
+            })),
+          };
+        }),
+      })),
+    };
+
+    const readBack = await readEditableMedia(readDb as never, trackId);
+    expect(readBack).toMatchObject({
+      artists: [{ id: people.artist.id, name: people.artist.name }],
+      lyricists: [{ id: people.lyricist.id, name: people.lyricist.name }],
+      composers: [{ id: people.composer.id, name: people.composer.name }],
+      arrangers: [{ id: people.arranger.id, name: people.arranger.name }],
+      producers: [{ id: people.producer.id, name: people.producer.name }],
+      featured: [{ id: people.featured.id, name: people.featured.name }],
+    });
+  });
 });
 
 describe("saveAlbumWithTracks", () => {
@@ -394,7 +521,7 @@ describe("saveAlbumWithTracks", () => {
   });
 
   it("新建专辑时跳过曲目所属专辑存在检查，一次 RPC 提交全部曲目", async () => {
-    const db = dbWithRpc(async () => ({ data: albumId, error: null }));
+    const db = dbWithRpc(async () => ({ data: { id: albumId, affected_person_ids: [] }, error: null }));
     const id = await saveAlbumWithTracks(db as never, albumPayload(), [
       trackPayload({ number: 1, parent_id: null, cover_url: null }),
       trackPayload({ number: 2, title: "第二首", parent_id: null, runtime: 7200, cover_url: null }),
