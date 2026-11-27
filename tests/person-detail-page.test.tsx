@@ -87,6 +87,44 @@ describe("人物详情页", () => {
     expect(screen.queryByRole("heading", { level: 2, name: "图书" })).not.toBeInTheDocument();
   });
 
+  it("专辑作品副标题将 release_kind 译为中文，不露出英文枚举", async () => {
+    const albumId = "50000000-0000-4000-8000-000000000020";
+    vi.mocked(getCachedPersonDetail).mockResolvedValue(
+      lyricistOnly({
+        works: {
+          person_id: personId,
+          film_tv: [],
+          music: {
+            albums: [
+              {
+                role: "artist",
+                label: "艺人",
+                items: [
+                  {
+                    id: albumId,
+                    type: "album",
+                    title: "夜航电台",
+                    alternate_title: null,
+                    cover_url: null,
+                    release_date: "2024-05-20",
+                    release_kind: "album",
+                  },
+                ],
+              },
+            ],
+            songs: [],
+          },
+          books: [],
+        },
+      }),
+    );
+    render(await PersonDetailPage({ params: Promise.resolve({ id: personId }) }));
+
+    expect(screen.getByRole("heading", { level: 2, name: "专辑" })).toBeInTheDocument();
+    expect(screen.getByText(/专辑 · 2024/)).toBeInTheDocument();
+    expect(screen.queryByText(/\balbum\b/)).not.toBeInTheDocument();
+  });
+
   it("无记录时 notFound", async () => {
     vi.mocked(getCachedPersonDetail).mockResolvedValue(null);
     await expect(PersonDetailPage({ params: Promise.resolve({ id: personId }) })).rejects.toThrow("NOT_FOUND");

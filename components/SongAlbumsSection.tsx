@@ -1,12 +1,37 @@
 import Image from "next/image";
 import Link from "next/link";
 import LetterTile from "@/components/LetterTile";
-import { formatTrackDuration } from "@/lib/album-display";
+import { albumReleaseKindLabel, formatTrackDuration } from "@/lib/album-display";
 import { publicMediaDetailPath, publicPathForDbType } from "@/lib/media-types";
 import type { SongAlbumMembership } from "@/lib/types/song";
 
 function yearOf(date: string | null): string {
   return String(date ?? "").match(/\d{4}/)?.[0] ?? "";
+}
+
+/** 与页头一致：元信息项之间用「·」分隔。 */
+function MetaLine({ items }: { items: readonly (string | null | undefined)[] }) {
+  const visible = items.filter((item): item is string => Boolean(item));
+  if (visible.length === 0) return null;
+  return (
+    <p className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-fg-muted">
+      {visible.flatMap((item, index) => {
+        const mono = /^\d{4}$/.test(item) || item.startsWith("曲序");
+        const node = (
+          <span key={`item-${index}`} className={mono ? "font-mono" : undefined}>
+            {item}
+          </span>
+        );
+        if (index === 0) return [node];
+        return [
+          <span key={`dot-${index}`} aria-hidden="true" className="text-fg-subtle">
+            ·
+          </span>,
+          node,
+        ];
+      })}
+    </p>
+  );
 }
 
 /** 「收录于」专辑列表，并嵌套同专其他曲目（每专最多 20，后端已截断）。 */
@@ -28,6 +53,7 @@ export default function SongAlbumsSection({
         {albums.map((album) => {
           const albumHref = `${publicMediaDetailPath("albums", album.id)}?from=${encodeURIComponent(`/music/${currentSongId}`)}`;
           const year = yearOf(album.release_date);
+          const kindLabel = albumReleaseKindLabel(album.release_kind);
           const trackPos =
             album.track_number != null
               ? album.disc_number != null && album.disc_number > 1
@@ -56,11 +82,7 @@ export default function SongAlbumsSection({
                   >
                     {album.title}
                   </Link>
-                  <p className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-fg-muted">
-                    {year ? <span className="font-mono">{year}</span> : null}
-                    {album.release_kind ? <span>{album.release_kind}</span> : null}
-                    {trackPos ? <span className="font-mono">曲序 {trackPos}</span> : null}
-                  </p>
+                  <MetaLine items={[year || null, kindLabel, trackPos != null ? `曲序 ${trackPos}` : null]} />
                 </div>
               </div>
 

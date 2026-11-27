@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import LetterTile from "@/components/LetterTile";
+import { albumReleaseKindLabel } from "@/lib/album-display";
 import { publicPathForDbType } from "@/lib/media-types";
 import type { PersonRoleGroup, PersonWorkItem } from "@/lib/types/person";
 
@@ -17,7 +18,8 @@ function workHref(item: PersonWorkItem, personId: string): string | null {
 function WorkCard({ item, personId }: { item: PersonWorkItem; personId: string }) {
   const href = workHref(item, personId);
   const year = yearOf(item.release_date);
-  const subtitle = [item.character, item.release_kind, year].filter(Boolean).join(" · ");
+  const kindLabel = albumReleaseKindLabel(item.release_kind);
+  const subtitle = [item.character, kindLabel, year].filter(Boolean).join(" · ");
   const isSquare = item.type === "album" || item.type === "music";
 
   const body = (

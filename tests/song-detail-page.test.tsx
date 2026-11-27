@@ -104,6 +104,9 @@ describe("歌曲详情页", () => {
       "href",
       expect.stringContaining(`/albums/${albumId}`),
     );
+    expect(screen.getByText("专辑", { exact: true })).toBeInTheDocument();
+    expect(screen.getByText("曲序 1")).toBeInTheDocument();
+    expect(screen.queryByText(/\balbum\b/)).not.toBeInTheDocument();
     expect(screen.getByRole("heading", { level: 3, name: "同专其他曲目" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "回港信号" })).toHaveAttribute(
       "href",
