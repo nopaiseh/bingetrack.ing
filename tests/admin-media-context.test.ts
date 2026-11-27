@@ -89,7 +89,7 @@ describe("删除范围", () => {
     const { db, queries } = fakeDb(() => ({ count: 12 }));
     expect(await readImpact(db, show, "album")).toEqual({ seasons: 0, episodes: 0, tracks: 12 });
     expect(queries).toHaveLength(1);
-    expect(queries[0].table).toBe("music");
+    expect(queries[0].table).toBe("album_tracks");
     expect(callArgs(queries[0], "eq")).toEqual(["album_id", show]);
   });
 
@@ -134,7 +134,7 @@ describe("相邻条目", () => {
       const earlier = query.calls.some((call) => call.method === "lt");
       return {
         data: {
-          media_item_id: earlier ? trackPrev : trackNext,
+          song_id: earlier ? trackPrev : trackNext,
           track_number: earlier ? 1 : 3,
           media: earlier ? { title: "上一首" } : [{ title: "下一首" }],
         },
@@ -145,7 +145,7 @@ describe("相邻条目", () => {
       next: { id: trackNext, title: "下一首", number: 3 },
     });
     expect(queries).toHaveLength(2);
-    expect(queries.every((query) => query.table === "music")).toBe(true);
+    expect(queries.every((query) => query.table === "album_tracks")).toBe(true);
     expect(callArgs(queries[0], "eq")).toEqual(["album_id", show]);
   });
 

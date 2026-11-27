@@ -61,7 +61,10 @@ describe("saveBookMedia", () => {
   it("查重后调用 manage_save_media 写入图书", async () => {
     const db = rpcDb({
       find_book_by_title_and_authors: () => ({ data: null, error: null }),
-      manage_save_media: () => ({ data: "b1000000-0000-4000-8000-000000000099", error: null }),
+      manage_save_media: () => ({
+        data: { id: "b1000000-0000-4000-8000-000000000099", affected_person_ids: [] },
+        error: null,
+      }),
     });
     const id = await saveBookMedia(db as never, bookPayload({ status: "in_progress" }));
     expect(id).toBe("b1000000-0000-4000-8000-000000000099");
@@ -79,7 +82,7 @@ describe("saveBookMedia", () => {
           publisher: "出版社",
           languages: ["汉语"],
           regions: ["中国"],
-          authors: [{ id: null, name: "作者" }],
+          credits: [{ person: { name: "作者" }, role: "author", order: 0 }],
         }),
       }),
     );
@@ -101,7 +104,10 @@ describe("saveBookMedia", () => {
   it("封面留空且有 ISBN 时自动解析封面", async () => {
     const db = rpcDb({
       find_book_by_title_and_authors: () => ({ data: null, error: null }),
-      manage_save_media: () => ({ data: "b1000000-0000-4000-8000-000000000099", error: null }),
+      manage_save_media: () => ({
+        data: { id: "b1000000-0000-4000-8000-000000000099", affected_person_ids: [] },
+        error: null,
+      }),
     });
     await saveBookMedia(db as never, bookPayload({ isbn: "9780306406157", cover_url: null }));
     expect(resolveBookCover).toHaveBeenCalledWith({ isbn: "9780306406157" });
@@ -119,7 +125,10 @@ describe("saveBookMedia", () => {
   it("用户已填封面时不覆盖", async () => {
     const db = rpcDb({
       find_book_by_title_and_authors: () => ({ data: null, error: null }),
-      manage_save_media: () => ({ data: "b1000000-0000-4000-8000-000000000099", error: null }),
+      manage_save_media: () => ({
+        data: { id: "b1000000-0000-4000-8000-000000000099", affected_person_ids: [] },
+        error: null,
+      }),
     });
     const manual = "https://covers.openlibrary.org/b/isbn/9780306406157-L.jpg";
     await saveBookMedia(db as never, bookPayload({ isbn: "9780306406157", cover_url: manual }));

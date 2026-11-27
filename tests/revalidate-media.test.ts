@@ -19,7 +19,7 @@ type Row = Record<string, string>;
 const tables: Record<string, Row[]> = {
   tv_seasons: [{ id: season, series_id: show }],
   tv_episodes: [{ id: episode, season_id: season }],
-  music: [{ media_item_id: track, album_id: album }],
+  album_tracks: [{ song_id: track, album_id: album }],
   media_item_series: [
     { media_item_id: show, series_id: collection },
     { media_item_id: sequel, series_id: collection },
@@ -64,7 +64,7 @@ describe("按条目失效公开缓存", () => {
     expect(new Set(await affectedMediaIds(fakeDb(), [track]))).toEqual(new Set([track, album]));
   });
   it("单曲查询失败时返回 null", async () => {
-    expect(await affectedMediaIds(fakeDb("music"), [track])).toBeNull();
+    expect(await affectedMediaIds(fakeDb("album_tracks"), [track])).toBeNull();
   });
   it("忽略非法 ID，不发起查询", async () => {
     expect(await affectedMediaIds(fakeDb("tv_episodes"), ["not-a-uuid"])).toEqual([]);

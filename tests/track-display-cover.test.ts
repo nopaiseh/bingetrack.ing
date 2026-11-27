@@ -49,13 +49,13 @@ describe("trackDisplayCoverUrl / displayCoverUrl", () => {
 });
 
 describe("fetchAlbumCoversByTrackIds", () => {
-  it("批量 join music.album_id → album cover_url，避免按曲目逐条查询", async () => {
+  it("批量 join album_tracks.song_id → album cover_url，避免按曲目逐条查询", async () => {
     const db = fakeDb((query) => {
-      if (query.table === "music") {
+      if (query.table === "album_tracks") {
         return {
           data: [
-            { media_item_id: trackA, album_id: albumA },
-            { media_item_id: trackB, album_id: albumB },
+            { song_id: trackA, album_id: albumA },
+            { song_id: trackB, album_id: albumB },
           ],
           error: null,
         };
@@ -75,7 +75,7 @@ describe("fetchAlbumCoversByTrackIds", () => {
     const map = await fetchAlbumCoversByTrackIds(db, [trackA, trackB, trackA]);
     expect(map.get(trackA)).toBe(albumCover);
     expect(map.get(trackB)).toBeNull();
-    expect(db.from).toHaveBeenCalledWith("music");
+    expect(db.from).toHaveBeenCalledWith("album_tracks");
     expect(db.from).toHaveBeenCalledWith("media_items");
     expect(db.from).toHaveBeenCalledTimes(2);
   });
@@ -84,8 +84,8 @@ describe("fetchAlbumCoversByTrackIds", () => {
 describe("withAlbumCoversForTracks", () => {
   it("仅替换 music 条目的 cover_url，其它类型保留原值", async () => {
     const db = fakeDb((query) => {
-      if (query.table === "music") {
-        return { data: [{ media_item_id: trackA, album_id: albumA }], error: null };
+      if (query.table === "album_tracks") {
+        return { data: [{ song_id: trackA, album_id: albumA }], error: null };
       }
       if (query.table === "media_items") {
         return { data: [{ id: albumA, cover_url: albumCover }], error: null };

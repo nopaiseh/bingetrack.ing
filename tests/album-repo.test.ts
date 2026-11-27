@@ -88,11 +88,11 @@ describe("专辑详情查询 getAlbumDetail", () => {
       if (query.table === "v_all_media") return { data: albumViewRow() };
       if (query.table === "music_albums") return { data: { track_count: 11, label: " 阿尔发音乐 " } };
       if (query.table === "ownership") return { data: { status: "owned" } };
-      if (query.table === "music") {
+      if (query.table === "album_tracks") {
         return {
           data: [
             {
-              media_item_id: trackA,
+              song_id: trackA,
               track_number: 1,
               media: {
                 id: trackA,
@@ -102,7 +102,7 @@ describe("专辑详情查询 getAlbumDetail", () => {
               },
             },
             {
-              media_item_id: trackB,
+              song_id: trackB,
               track_number: 2,
               media: [
                 {
@@ -176,11 +176,12 @@ describe("专辑详情查询 getAlbumDetail", () => {
       },
     ]);
 
-    const music = state.queries.find((query) => query.table === "music");
+    const music = state.queries.find((query) => query.table === "album_tracks");
     expect(args(music!, "eq")).toEqual(["album_id", albumId]);
     expect(music!.calls.filter((call) => call.method === "order").map((call) => call.args)).toEqual([
+      ["disc_number", { ascending: true }],
       ["track_number", { ascending: true, nullsFirst: false }],
-      ["media_item_id", { ascending: true }],
+      ["song_id", { ascending: true }],
     ]);
     const credits = state.queries.find((query) => query.table === "media_credits");
     expect(args(credits!, "in")).toEqual(["media_item_id", [trackA, trackB]]);
@@ -198,7 +199,7 @@ describe("专辑详情查询 getAlbumDetail", () => {
     state.handle = () => ({ data: null });
     expect(await getAlbumDetail(albumId)).toBeNull();
     expect(state.queries.map((query) => query.table).sort()).toEqual(
-      ["media_item_series", "music", "music_albums", "ownership", "v_all_media"].sort(),
+      ["media_item_series", "album_tracks", "music_albums", "ownership", "v_all_media"].sort(),
     );
 
     state.queries = [];
@@ -213,11 +214,11 @@ describe("专辑详情查询 getAlbumDetail", () => {
       if (query.table === "v_all_media") return { data: albumViewRow({ artists: null, title: "空专辑" }) };
       if (query.table === "music_albums") return { data: { track_count: 12, label: null } };
       if (query.table === "ownership") return { data: null };
-      if (query.table === "music") {
+      if (query.table === "album_tracks") {
         return {
           data: [
             {
-              media_item_id: trackA,
+              song_id: trackA,
               track_number: null,
               media: { id: trackA, title: "  ", runtime: 0, tracking: null },
             },
@@ -270,7 +271,7 @@ describe("专辑详情查询 getAlbumDetail", () => {
         if (query.table === "v_all_media") return { data: albumViewRow() };
         if (query.table === "music_albums") return { data: { track_count: 1, label: null } };
         if (query.table === "ownership") return { data: null };
-        if (query.table === "music") return { data: null, error: { message: "tracks down" } };
+        if (query.table === "album_tracks") return { data: null, error: { message: "tracks down" } };
         return { data: null };
       };
       await expect(getAlbumDetail(albumId)).rejects.toMatchObject({
@@ -286,11 +287,11 @@ describe("专辑详情查询 getAlbumDetail", () => {
       if (query.table === "v_all_media") return { data: albumViewRow() };
       if (query.table === "music_albums") return { data: { track_count: null, label: "索尼" } };
       if (query.table === "ownership") return { data: null, error: { code: "42501" } };
-      if (query.table === "music") {
+      if (query.table === "album_tracks") {
         return {
           data: [
             {
-              media_item_id: trackA,
+              song_id: trackA,
               track_number: 1,
               media: { id: trackA, title: "轨道", runtime: 120, tracking: { status: null, rating: 8 } },
             },
@@ -349,7 +350,7 @@ describe("专辑详情查询 getAlbumDetail", () => {
       }
       if (query.table === "music_albums") return { data: { track_count: 0, label: null } };
       if (query.table === "ownership") return { data: null };
-      if (query.table === "music") return { data: [] };
+      if (query.table === "album_tracks") return { data: [] };
       if (query.table === "media_item_series") {
         membershipPass += 1;
         // 第一次：当前专辑的成员关系；之后是 getRelatedBySeries 的同系列查询。
@@ -416,7 +417,7 @@ describe("专辑详情查询 getAlbumDetail", () => {
       if (query.table === "v_all_media") return { data: albumViewRow() };
       if (query.table === "music_albums") return { data: { track_count: 0, label: null } };
       if (query.table === "ownership") return { data: null };
-      if (query.table === "music") return { data: [] };
+      if (query.table === "album_tracks") return { data: [] };
       if (query.table === "media_item_series") return { data: null, error: { code: "42501" } };
       return { data: null };
     };
@@ -437,7 +438,7 @@ describe("专辑详情查询 getAlbumDetail", () => {
       if (query.table === "v_all_media") return { data: albumViewRow() };
       if (query.table === "music_albums") return { data: { track_count: 0, label: null } };
       if (query.table === "ownership") return { data: null };
-      if (query.table === "music") return { data: [] };
+      if (query.table === "album_tracks") return { data: [] };
       if (query.table === "media_item_series") return { data: [] };
       return { data: null };
     };
@@ -447,6 +448,8 @@ describe("专辑详情查询 getAlbumDetail", () => {
       .slice(0, 5)
       .map((query) => query.table)
       .sort();
-    expect(initialTables).toEqual(["media_item_series", "music", "music_albums", "ownership", "v_all_media"].sort());
+    expect(initialTables).toEqual(
+      ["media_item_series", "album_tracks", "music_albums", "ownership", "v_all_media"].sort(),
+    );
   });
 });
