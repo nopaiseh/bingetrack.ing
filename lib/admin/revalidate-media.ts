@@ -9,13 +9,16 @@ import { ENABLED_PUBLIC_CATALOG_PATHS } from "@/lib/media-types";
 // 目录页与站点地图直接查询数据库、不带数据缓存标签，只能按路径失效。
 const UNTAGGED_PUBLIC_PATHS = ["/", ...ENABLED_PUBLIC_CATALOG_PATHS, "/sitemap.xml"];
 
-/** 从查询结果中取出非空 ID 列；任一查询失败时返回 null。 */
+/** 从查询结果中取出非空 ID 列；查询失败或 data 非数组时返回 null。 */
 function column<K extends string>(
   result: { data: Record<K, string | null>[] | null; error: unknown },
   key: K,
 ): string[] | null {
   if (result.error) return null;
-  return (result.data ?? []).flatMap(/* 保留非空 ID。 */ (row) => (row[key] ? [row[key] as string] : []));
+  const rows = result.data;
+  if (rows == null) return [];
+  if (!Array.isArray(rows)) return null;
+  return rows.flatMap(/* 保留非空 ID。 */ (row) => (row[key] ? [row[key] as string] : []));
 }
 
 /**

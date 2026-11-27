@@ -30,6 +30,8 @@ vi.mock("@/lib/admin/revalidate-media", async (importOriginal) => {
   return {
     ...actual,
     affectedMediaIds: vi.fn(async (_db: unknown, ids: string[]) => ids),
+    // 删除前查演职员；本文件的 fakeDb 对所有表返回同一形状，不模拟 credits 查询。
+    creditedPersonIds: vi.fn(async () => []),
   };
 });
 
