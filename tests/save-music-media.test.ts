@@ -255,6 +255,7 @@ describe("saveMusicMedia", () => {
           type: "music",
           parent_id: albumId,
           number: 1,
+          disc_number: null,
           runtime: 200,
           status: "watched",
           rating: 8,

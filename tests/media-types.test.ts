@@ -3,6 +3,8 @@ import {
   ADMIN_BULK_DB_TYPES,
   CATALOG_DB_TYPES,
   MEDIA_TYPE_DEFINITIONS,
+  PUBLIC_DETAIL_PATH_PATTERN,
+  PUBLIC_DETAIL_ROUTE_SEGMENTS,
   PUBLIC_MEDIA_TYPES,
   PUBLIC_SEASON_PATH_PATTERN,
   SEARCH_DB_TYPES,
@@ -42,10 +44,11 @@ describe("media type config", () => {
     expect(publicPathForDbType("tv_show", "abc")).toBe("/shows/abc");
     expect(publicPathForDbType("album", "abc")).toBe("/albums/abc");
     expect(publicPathForDbType("book", "abc")).toBe("/books/abc");
+    expect(publicPathForDbType("music", "abc")).toBe("/music/abc");
     expect(publicPathForDbType("tv_season", "abc")).toBeNull();
   });
 
-  it("keeps music singles off the public catalog while allowing search type=music", () => {
+  it("keeps music songs off the public catalog while allowing search type=music and /music/[id]", () => {
     expect(MEDIA_TYPE_DEFINITIONS.movie.enabled).toBe(true);
     expect(MEDIA_TYPE_DEFINITIONS.tv_show.enabled).toBe(true);
     expect(MEDIA_TYPE_DEFINITIONS.tv_season.enabled).toBe(true);
@@ -71,13 +74,21 @@ describe("media type config", () => {
     expect(isPublicMediaType("music")).toBe(false);
   });
 
+  it("PUBLIC_DETAIL_PATH_PATTERN covers catalog, music, and people detail IDs", () => {
+    expect(PUBLIC_DETAIL_ROUTE_SEGMENTS).toEqual(["movies", "shows", "albums", "books", "music", "people"]);
+    expect("/music/abc".match(PUBLIC_DETAIL_PATH_PATTERN)?.[1]).toBe("abc");
+    expect("/people/abc".match(PUBLIC_DETAIL_PATH_PATTERN)?.[1]).toBe("abc");
+    expect("/albums/abc".match(PUBLIC_DETAIL_PATH_PATTERN)?.[1]).toBe("abc");
+    expect("/music".match(PUBLIC_DETAIL_PATH_PATTERN)).toBeNull();
+  });
+
   it("keeps zh labels and tracking verbs per type family", () => {
     expect(mediaTypes).toEqual({
       movie: "电影",
       tv_show: "电视节目",
       tv_season: "季",
       tv_episode: "单集",
-      music: "单曲",
+      music: "歌曲",
       album: "音乐",
       book: "图书",
     });

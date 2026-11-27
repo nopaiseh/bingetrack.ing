@@ -61,7 +61,7 @@ export default async function AlbumDetailPage({ params }: { params: Promise<{ id
       />
       <div className="container mx-auto max-w-7xl px-4 pb-8 sm:px-6 md:pb-12 lg:px-8">
         <h2 className="mb-4 text-lg font-semibold text-fg">曲目</h2>
-        <AlbumTracklist tracks={album.tracks} />
+        <AlbumTracklist tracks={album.tracks} albumId={album.media.id} />
         <AlbumSeriesRows series={album.series} />
       </div>
     </div>

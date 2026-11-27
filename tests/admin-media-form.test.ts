@@ -249,6 +249,31 @@ describe("管理媒体输入", () => {
       producers: [{ id: null, name: "制作人" }],
       featured: [{ id: null, name: "合唱人" }],
     });
+    // 空盘号／未提交 → null（不默认 1）；显式值原样解析
+    expect(
+      parseMediaForm(
+        form({
+          type: "music",
+          title: "空盘号",
+          parent_id: albumId,
+          number: "1",
+          artists: "\t主唱",
+          disc_number: "",
+        }),
+      ).disc_number,
+    ).toBeNull();
+    expect(
+      parseMediaForm(
+        form({
+          type: "music",
+          title: "第二碟",
+          parent_id: albumId,
+          number: "1",
+          artists: "\t主唱",
+          disc_number: "2",
+        }),
+      ).disc_number,
+    ).toBe(2);
     expect(
       parseMediaForm(
         form({

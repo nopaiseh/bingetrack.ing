@@ -76,7 +76,7 @@ test("album scheme A links five independent stats including music track total", 
   );
 
   expect(screen.getByRole("link", { name: /专辑总数量/ })).toHaveAttribute("href", "/search?type=album");
-  expect(screen.getByRole("link", { name: /单曲总数量/ })).toHaveAttribute("href", "/search?type=music");
+  expect(screen.getByRole("link", { name: /歌曲总数量/ })).toHaveAttribute("href", "/search?type=music");
   expect(screen.getByRole("link", { name: /已听的专辑/ })).toHaveAttribute("href", "/search?type=album&status=watched");
   expect(screen.getByRole("link", { name: /在听的专辑/ })).toHaveAttribute(
     "href",
@@ -102,7 +102,7 @@ test("an empty album catalog keeps the muted total and hides zero-value cards", 
 
   expect(screen.getByRole("heading", { name: "专辑总数量" })).toBeInTheDocument();
   expect(screen.queryByRole("link", { name: /专辑总数量/ })).not.toBeInTheDocument();
-  expect(screen.queryByText("单曲总数量")).not.toBeInTheDocument();
+  expect(screen.queryByText("歌曲总数量")).not.toBeInTheDocument();
   expect(screen.queryByText("已听的专辑")).not.toBeInTheDocument();
   expect(screen.getByText("还没有专辑。")).toBeInTheDocument();
 });

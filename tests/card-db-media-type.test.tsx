@@ -36,7 +36,7 @@ describe("卡片只认数据库类型", () => {
     expect(publicPathForDbType("tv_show", "s1")).toBe("/shows/s1");
     expect(publicPathForDbType("album", "a1")).toBe("/albums/a1");
     expect(publicPathForDbType("book", "b1")).toBe("/books/b1");
-    expect(publicPathForDbType("music", "t1")).toBeNull();
+    expect(publicPathForDbType("music", "t1")).toBe("/music/t1");
   });
 
   it("SearchMediaCard：仅有 dbType 时链接与形态正确，不依赖路由段 type", () => {
@@ -62,7 +62,7 @@ describe("卡片只认数据库类型", () => {
     expect(screen.getByRole("article", { name: "无库类型" })).toBeInTheDocument();
   });
 
-  it("SearchMediaCard：专辑／单曲按 dbType 用方封面；单曲无公开详情", () => {
+  it("SearchMediaCard：专辑／歌曲按 dbType 用方封面；歌曲链到 /music", () => {
     const { container, rerender } = render(
       <SearchMediaCard
         item={card({ id: "a1", title: "专辑", dbType: "album", artists: ["艺人"] })}
@@ -74,12 +74,12 @@ describe("卡片只认数据库类型", () => {
 
     rerender(
       <SearchMediaCard
-        item={card({ id: "t1", title: "单曲", dbType: "music", artists: ["艺人"] })}
+        item={card({ id: "t1", title: "歌曲", dbType: "music", artists: ["艺人"] })}
         returnHref="/search"
       />,
     );
     expect(container.querySelector("[class*='aspect-square']")).toBeTruthy();
-    expect(screen.queryByRole("link")).not.toBeInTheDocument();
+    expect(screen.getByRole("link")).toHaveAttribute("href", expect.stringContaining("/music/t1"));
   });
 
   it("MediaRow：行级与单卡均用数据库类型映射链接", () => {
@@ -192,7 +192,7 @@ describe("卡片只认数据库类型", () => {
       />,
     );
     expect(screen.getByText("周杰伦")).toBeInTheDocument();
-    expect(screen.getByText("单曲")).toBeInTheDocument();
+    expect(screen.getByText("歌曲")).toBeInTheDocument();
     expect(screen.getByTestId("media-card-status-badge")).toHaveTextContent("想听");
   });
 });

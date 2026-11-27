@@ -26,11 +26,12 @@ describe("sortedTrackGenres", () => {
 
 describe("AlbumTracklist", () => {
   it("renders track columns, genre column, and listening labels", () => {
-    render(<AlbumTracklist tracks={[track]} />);
+    render(<AlbumTracklist tracks={[track]} albumId="a1" />);
     const table = screen.getByRole("table", { name: "曲目列表" });
     expect(table).toBeInTheDocument();
     expect(screen.getByRole("columnheader", { name: "类型" })).toBeInTheDocument();
-    expect(screen.getByText("第一首")).toBeInTheDocument();
+    const titleLink = screen.getByRole("link", { name: "第一首" });
+    expect(titleLink).toHaveAttribute("href", "/music/t1?from=%2Falbums%2Fa1");
     expect(screen.getAllByText("流行").length).toBeGreaterThan(0);
     expect(screen.getAllByText("歌手 A、歌手 B").length).toBeGreaterThan(0);
     expect(screen.getByText("词人")).toBeInTheDocument();
