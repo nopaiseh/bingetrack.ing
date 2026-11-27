@@ -231,6 +231,7 @@ describe("管理媒体输入", () => {
       type: "music",
       parent_id: albumId,
       number: 3,
+      disc_number: 1,
       runtime: 215,
       status: "watched",
       rating: 8.5,

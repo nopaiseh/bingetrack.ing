@@ -131,6 +131,7 @@ export async function readEditableMedia(db: SupabaseClient, id: string): Promise
     ...media.data,
     parent_id: season.data?.series_id ?? episode.data?.season_id ?? track.data?.album_id ?? null,
     number: season.data?.season_number ?? episode.data?.episode_number ?? track.data?.track_number ?? null,
+    disc_number: media.data.type === "music" && track.data?.disc_number != null ? Number(track.data.disc_number) : null,
     status,
     rating,
     genres: names(genres.data, "genres"),

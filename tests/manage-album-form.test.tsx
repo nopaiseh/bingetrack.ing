@@ -20,6 +20,7 @@ const blank = {
   runtime: null,
   parent_id: null,
   number: null,
+  disc_number: null,
   status: "want_to_watch" as const,
   rating: null,
   genres: [] as string[],

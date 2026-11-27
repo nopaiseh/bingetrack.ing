@@ -140,26 +140,8 @@ insert into public.album_tracks (album_id, song_id, disc_number, track_number)
 select album_id, media_item_id, 1, track_number
 from public.music;
 
--- ---------------------------------------------------------------------------
--- 4) 卸下仍引用 music.album_id／track_number 的对象，再删列
--- ---------------------------------------------------------------------------
-drop function if exists public.search_media(text, text[], boolean, text[]);
-drop function if exists public.get_media_stats(text);
-drop function if exists public.get_media_distribution_counts();
-drop function if exists public.admin_save_album_with_tracks(jsonb, jsonb);
--- 先卸视图，再卸 album_average_rating（v_all_media 依赖它）
-drop view if exists public.v_all_media;
-drop view if exists public.v_continue_listening;
-drop view if exists public.release_year_stats;
-drop function if exists public.album_average_rating(uuid);
--- admin_save_media／admin_delete_media 由 functions_views 迁移替换
-
-alter table public.music drop constraint if exists music_album_id_track_number_key;
-alter table public.music drop constraint if exists music_album_id_fkey;
-drop index if exists public.music_album_id_idx;
-
-alter table public.music drop column if exists album_id;
-alter table public.music drop column if exists track_number;
+-- 依赖视图／函数的卸下与 music.album_id／track_number 删列改由
+-- 20261127150200_functions_views.sql 同事务完成，避免中间态公开页／搜索／统计不可用。
 
 comment on table public.music is
-  '曲目扩展表；所属专辑与曲序见 album_tracks。允许无专辑的独立单曲。';
+  '曲目扩展表；所属专辑与曲序见 album_tracks（列迁移在 functions_views）。允许无专辑的独立单曲。';

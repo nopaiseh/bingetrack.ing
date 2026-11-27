@@ -23,7 +23,7 @@ comment on table public.credit_roles is
   '演职角色字典。media_credits.role 外键指向 code；allowed_types 限制可用媒体类型；allows_character 控制是否可填角色名。';
 
 comment on column public.credit_roles.allowed_types is
-  '该角色允许挂载的 media_items.type。校验在保存 RPC 中执行。';
+  '该角色允许挂载的 media_items.type。由 media_credits_enforce_allowed_types 触发器强制；保存 RPC 亦预检。';
 
 comment on column public.credit_roles.allows_character is
   '为 true 时可写 media_credits.character_name（当前 actor／voice_actor）。';
@@ -136,6 +136,47 @@ revoke all on function public.media_credits_enforce_character() from public, ano
 
 comment on function public.media_credits_enforce_character() is
   '仅 allows_character=true 的角色可写 character_name；替代旧的 actor-only check。';
+
+create or replace function public.media_credits_enforce_allowed_types()
+returns trigger
+language plpgsql
+security invoker
+set search_path = ''
+as $$
+declare
+  media_type public.media_type;
+  allowed public.media_type[];
+begin
+  select m.type into media_type
+  from public.media_items m
+  where m.id = new.media_item_id;
+  if media_type is null then
+    raise exception 'media_item not found for credit'
+      using errcode = '23514';
+  end if;
+  select cr.allowed_types into allowed
+  from public.credit_roles cr
+  where cr.code = new.role;
+  if allowed is null then
+    raise exception 'unknown credit role'
+      using errcode = '23514';
+  end if;
+  if not (media_type = any(allowed)) then
+    raise exception 'credit role not allowed for media type'
+      using errcode = '23514';
+  end if;
+  return new;
+end $$;
+
+drop trigger if exists media_credits_enforce_allowed_types on public.media_credits;
+create trigger media_credits_enforce_allowed_types
+  before insert or update of role, media_item_id on public.media_credits
+  for each row execute function public.media_credits_enforce_allowed_types();
+
+revoke all on function public.media_credits_enforce_allowed_types() from public, anon, authenticated;
+
+comment on function public.media_credits_enforce_allowed_types() is
+  'media_credits.role 必须属于 credit_roles.allowed_types 对应该媒体类型；media_item_id 变更时亦校验。';
 
 -- ---------------------------------------------------------------------------
 -- 4) 索引

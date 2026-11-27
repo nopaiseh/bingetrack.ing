@@ -49,6 +49,8 @@ export type MediaInput = {
   runtime: number | null;
   parent_id: string | null;
   number: number | null;
+  /** 曲目盘号（album_tracks.disc_number）；其它类型为 null。 */
+  disc_number: number | null;
   status: "watched" | "watching" | "want_to_watch" | "in_progress";
   rating: number | null;
   genres: string[];
@@ -199,6 +201,12 @@ export function parseMediaForm(form: FormData): MediaInput {
   if (needsParentNumber && (!parent_id || number === null))
     throw new Error(type === "music" ? "请指定所属专辑和曲序。" : "请指定上级条目和季／集编号。");
   if (id && id === parent_id) throw new Error("不能把条目设为自己的上级。");
+  let disc_number: number | null = null;
+  if (type === "music") {
+    disc_number = numeric("disc_number", 100, true);
+    if (disc_number === null) disc_number = 1;
+    if (disc_number < 1) throw new Error("盘号须为 1–100 的整数。");
+  }
   // 曲目／季／单集不设自身封面。不读取、不校验提交的 cover_url，新建和更新都写入 null。
   // 这里不改已有行；只有之后再次保存时，数据库才会按这份 payload 把封面写成 null。
   const skipOwnCover = type === "tv_season" || type === "tv_episode" || type === "music";
@@ -269,6 +277,7 @@ export function parseMediaForm(form: FormData): MediaInput {
     runtime,
     parent_id,
     number,
+    disc_number,
     status: effectiveStatus,
     rating,
     // 曲目可有最多 2 个类型；季／集仍不写类型。专辑／影视／图书上限仍为 MAX_NAMES。

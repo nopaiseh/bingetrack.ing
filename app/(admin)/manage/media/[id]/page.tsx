@@ -31,7 +31,7 @@ export default async function EditMediaPage({
   const [parent, impact, siblings, structure, albumStructure] = await Promise.all([
     readParent(db, item.parent_id ?? ""),
     readImpact(db, id, item.type),
-    readSiblings(db, item.type, item.parent_id, item.number),
+    readSiblings(db, item.type, item.parent_id, item.number, item.disc_number),
     readSeriesStructure(db, { id, type: item.type, parent_id: item.parent_id }),
     readAlbumStructure(db, { id, type: item.type, parent_id: item.parent_id }),
   ]);

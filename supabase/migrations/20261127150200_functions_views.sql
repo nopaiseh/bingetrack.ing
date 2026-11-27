@@ -1,5 +1,33 @@
 -- 重建依赖 album_tracks 的视图／函数；通用 credits 保存 API；get_person_works／get_song_detail。
+-- 同事务：卸下旧依赖对象 → 删除 music.album_id／track_number → 重建。保证中间态不会缺公开页／搜索／统计。
 -- 合并后会通过 Supabase GitHub 集成自动上 prod。
+
+-- ---------------------------------------------------------------------------
+-- 0) 卸下仍引用 music.album_id／track_number 的对象，再删列
+-- ---------------------------------------------------------------------------
+drop function if exists public.search_media(text, text[], boolean, text[]);
+drop function if exists public.get_media_stats(text);
+drop function if exists public.get_media_distribution_counts();
+drop function if exists public.admin_save_album_with_tracks(jsonb, jsonb);
+drop function if exists public.admin_save_media(jsonb);
+drop function if exists public.manage_save_media(jsonb);
+drop function if exists public.get_person_works(uuid);
+drop function if exists public.get_song_detail(uuid);
+-- 先卸视图，再卸 album_average_rating（v_all_media 依赖它）
+drop view if exists public.v_all_media;
+drop view if exists public.v_continue_listening;
+drop view if exists public.release_year_stats;
+drop function if exists public.album_average_rating(uuid);
+
+alter table public.music drop constraint if exists music_album_id_track_number_key;
+alter table public.music drop constraint if exists music_album_id_fkey;
+drop index if exists public.music_album_id_idx;
+
+alter table public.music drop column if exists album_id;
+alter table public.music drop column if exists track_number;
+
+comment on table public.music is
+  '曲目扩展表；所属专辑与曲序见 album_tracks。允许无专辑的独立单曲。';
 
 -- ---------------------------------------------------------------------------
 -- 1) 专辑评分／在听
@@ -178,7 +206,19 @@ select
   m.type,
   m.title,
   m.summary,
-  m.cover_url,
+  coalesce(
+    nullif(m.cover_url, ''),
+    (
+      select ai.cover_url
+      from public.album_tracks at
+      join public.media_items ai on ai.id = at.album_id
+      where at.song_id = m.id
+        and ai.cover_url is not null
+        and nullif(ai.cover_url, '') is not null
+      order by ai.release_date asc nulls last, at.disc_number, at.track_number
+      limit 1
+    )
+  ) as cover_url,
   -- 与 release_year_stats 曲目年份一致：自身 release_date，否则所属专辑。
   coalesce(m.release_date, album_dates.earliest_album_release) as sort_date,
   extract(year from coalesce(m.release_date, album_dates.earliest_album_release))::text as release_year,
@@ -791,6 +831,7 @@ declare
   affected uuid[] := '{}';
   old_person uuid;
   link_album boolean;
+  old_album_ids uuid[] := '{}';
 begin
   if not public.is_site_owner() then raise insufficient_privilege; end if;
   perform pg_catalog.pg_advisory_xact_lock(73489126);
@@ -947,7 +988,16 @@ begin
     insert into public.music(media_item_id) values(item_id)
     on conflict(media_item_id) do nothing;
     if link_album then
-      -- 先清本曲在该专辑的旧位，再写入（同曲不可重复挂同一专辑）
+      -- 表单单父级语义：改 parent 视为挪专辑，卸下其它专辑关联并刷新双方 track_count。
+      -- 多专辑挂载请走 admin_save_album_with_tracks 引用已有 song id（不经此路径清链）。
+      select coalesce(array_agg(at.album_id), '{}'::uuid[]) into old_album_ids
+      from public.album_tracks at
+      where at.song_id = item_id
+        and at.album_id is distinct from parent_id;
+      delete from public.album_tracks
+      where song_id = item_id
+        and album_id is distinct from parent_id;
+
       delete from public.album_tracks where album_id = parent_id and song_id = item_id;
       -- 曲位已被其它歌占用则拒绝（保留 23505，与旧 music.album_id/track_number 唯一约束一致）
       if exists (
@@ -966,7 +1016,8 @@ begin
         set song_id = excluded.song_id;
       update public.music_albums a
       set track_count = (select count(*)::integer from public.album_tracks t where t.album_id = a.media_item_id)
-      where a.media_item_id = parent_id;
+      where a.media_item_id = parent_id
+         or a.media_item_id = any(old_album_ids);
     end if;
   elsif item_type = 'book' then
     insert into public.books(media_item_id, page_count, publisher, isbn)
@@ -1029,9 +1080,16 @@ begin
     end loop;
   end loop;
 
-  -- credits[]
-  if jsonb_typeof(p_data->'credits') is distinct from 'array'
-    or jsonb_array_length(p_data->'credits') > 300 then
+  -- credits[]：每角色最多 300 条（与旧 actors／directors 等分字段上限一致）
+  if jsonb_typeof(p_data->'credits') is distinct from 'array' then
+    raise exception 'Invalid credits' using errcode = '22023';
+  end if;
+  if exists (
+    select 1
+    from jsonb_array_elements(p_data->'credits') c
+    group by nullif(btrim(c->>'role'), '')
+    having count(*) > 300
+  ) then
     raise exception 'Invalid credits' using errcode = '22023';
   end if;
 
@@ -1185,8 +1243,12 @@ declare
   actual_track_count integer;
   affected uuid[] := '{}';
   keep_song_ids uuid[] := '{}';
+  unbound_song_ids uuid[] := '{}';
   saved_song_id uuid;
   existing_song uuid;
+  disc_no integer;
+  track_no integer;
+  existing_type public.media_type;
 begin
   if not public.is_site_owner() then raise insufficient_privilege; end if;
 
@@ -1216,30 +1278,79 @@ begin
     end if;
 
     existing_song := nullif(track->>'id', '')::uuid;
-    -- 可引用已有曲目：仅挂到本专辑（仍走 admin_save_media 以更新元数据／credits）
-    track_payload := track
-      || jsonb_build_object(
-        'type', 'music',
-        'parent_id', saved_album_id::text
-      );
-    if coalesce(track_payload->>'status', '') = '' then
-      track_payload := track_payload || jsonb_build_object('status', 'want_to_watch');
+    disc_no := coalesce(nullif(track->>'disc_number', '')::integer, 1);
+    track_no := (track->>'number')::integer;
+    if track_no is null or track_no < 0 or track_no > 100000
+       or disc_no is null or disc_no < 1 or disc_no > 100 then
+      raise exception 'Invalid parent or number' using errcode = '22023';
     end if;
-    if track_payload->'credits' is null then
-      track_payload := track_payload || jsonb_build_object('credits', '[]'::jsonb);
+
+    if existing_song is not null then
+      -- 引用已有曲目：只挂 album_tracks，绝不重置 status／credits／元数据
+      select type into existing_type from public.media_items where id = existing_song;
+      if not found or existing_type is distinct from 'music'::public.media_type then
+        raise exception 'Referenced song not found' using errcode = 'P0002';
+      end if;
+      if not exists (select 1 from public.music where media_item_id = existing_song) then
+        raise exception 'Referenced song not found' using errcode = 'P0002';
+      end if;
+      if exists (
+        select 1 from public.album_tracks
+        where album_id = saved_album_id
+          and disc_number = disc_no
+          and track_number = track_no
+          and song_id is distinct from existing_song
+      ) then
+        raise exception 'duplicate key value violates unique constraint'
+          using errcode = '23505';
+      end if;
+      delete from public.album_tracks
+      where album_id = saved_album_id and song_id = existing_song;
+      insert into public.album_tracks(album_id, song_id, disc_number, track_number)
+      values(saved_album_id, existing_song, disc_no, track_no)
+      on conflict on constraint album_tracks_pkey do update
+        set song_id = excluded.song_id;
+      saved_song_id := existing_song;
+    else
+      -- 新建曲目：经 admin_save_media（含 status／credits）
+      track_payload := track
+        || jsonb_build_object(
+          'type', 'music',
+          'parent_id', saved_album_id::text
+        );
+      if coalesce(track_payload->>'status', '') = '' then
+        track_payload := track_payload || jsonb_build_object('status', 'want_to_watch');
+      end if;
+      if track_payload->'credits' is null then
+        track_payload := track_payload || jsonb_build_object('credits', '[]'::jsonb);
+      end if;
+      track_result := public.admin_save_media(track_payload);
+      saved_song_id := (track_result->>'id')::uuid;
+      select coalesce(affected || array_agg(x::uuid), affected) into affected
+      from jsonb_array_elements_text(track_result->'affected_person_ids') as x;
     end if;
-    track_result := public.admin_save_media(track_payload);
-    saved_song_id := (track_result->>'id')::uuid;
     keep_song_ids := array_append(keep_song_ids, saved_song_id);
-    select coalesce(affected || array_agg(x::uuid), affected) into affected
-    from jsonb_array_elements_text(track_result->'affected_person_ids') as x;
   end loop;
 
-  -- 从本专辑移除未再列出的曲目关联；仅当曲目不再属于任何专辑时删除曲目本体
+  -- 非空曲目列表视为完整清单：解绑未列出曲；仅当曲目不再属于任何专辑时删除本体
   if tracks_len > 0 then
+    select coalesce(array_agg(at.song_id), '{}'::uuid[]) into unbound_song_ids
+    from public.album_tracks at
+    where at.album_id = saved_album_id
+      and not (at.song_id = any(keep_song_ids));
+
     delete from public.album_tracks at
     where at.album_id = saved_album_id
       and not (at.song_id = any(keep_song_ids));
+
+    if cardinality(unbound_song_ids) > 0 then
+      delete from public.media_items m
+      where m.id = any(unbound_song_ids)
+        and m.type = 'music'::public.media_type
+        and not exists (
+          select 1 from public.album_tracks other where other.song_id = m.id
+        );
+    end if;
   end if;
 
   select count(*)::integer into actual_track_count
@@ -1262,7 +1373,7 @@ revoke all on function public.admin_save_album_with_tracks(jsonb, jsonb) from pu
 grant execute on function public.admin_save_album_with_tracks(jsonb, jsonb) to authenticated;
 
 comment on function public.admin_save_album_with_tracks(jsonb, jsonb) is
-  '站长同事务保存专辑与曲目；曲目可引用已有 song id；按 album_tracks 回写 track_count。返回 {id,affected_person_ids}。';
+  '站长同事务保存专辑与曲目；引用已有 song 只挂链不改 status／credits；非空 p_tracks 为完整清单（解绑未列曲，孤儿曲删除）；回写 track_count。返回 {id,affected_person_ids}。';
 
 create or replace function public.admin_delete_media(p_id uuid, p_confirm_title text) returns void
 language plpgsql security invoker set search_path = ''
@@ -1635,54 +1746,70 @@ begin
     join public.media_items ai on ai.id = at.album_id
     join public.music_albums a on a.media_item_id = at.album_id
     where at.song_id = p_song_id
-  ), album_other_tracks as (
+  ), album_other_tracks_ranked as (
     select
       alb.id as album_id,
-      jsonb_agg(
-        jsonb_build_object(
-          'id', ot.song_id,
-          'title', om.title,
-          'disc_number', ot.disc_number,
-          'track_number', ot.track_number,
-          'duration_seconds', om.runtime
-        )
-        order by ot.disc_number, ot.track_number
-      ) as tracks
+      ot.song_id,
+      om.title,
+      ot.disc_number,
+      ot.track_number,
+      om.runtime,
+      row_number() over (
+        partition by alb.id
+        order by ot.disc_number, ot.track_number, ot.song_id
+      ) as rn
     from albums alb
     join public.album_tracks ot on ot.album_id = alb.id and ot.song_id <> p_song_id
     join public.media_items om on om.id = ot.song_id
-    group by alb.id
-  ), artist_ids as (
-    select person_id from credit_rows where role = 'artist'
-  ), composer_ids as (
-    select person_id from credit_rows where role in ('composer','lyricist')
-  ), related_by_artist as (
-    select distinct mi.id, mi.title, mi.cover_url,
+  ), album_other_tracks as (
+    select
+      album_id,
+      jsonb_agg(
+        jsonb_build_object(
+          'id', song_id,
+          'title', title,
+          'disc_number', disc_number,
+          'track_number', track_number,
+          'duration_seconds', runtime
+        )
+        order by disc_number, track_number, song_id
+      ) as tracks
+    from album_other_tracks_ranked
+    where rn <= 20
+    group by album_id
+  ), related_credit_people as (
+    select person_id from credit_rows where role in ('artist', 'composer', 'lyricist')
+  ), related_candidates as (
+    select
+      mi.id,
+      mi.title,
+      coalesce(
+        nullif(mi.cover_url, ''),
+        (
+          select ai.cover_url
+          from public.album_tracks at
+          join public.media_items ai on ai.id = at.album_id
+          where at.song_id = mi.id
+            and ai.cover_url is not null
+          order by ai.release_date asc nulls last, at.disc_number, at.track_number
+          limit 1
+        )
+      ) as cover_url,
       coalesce(mi.release_date, (
         select min(ai.release_date) from public.album_tracks at
         join public.media_items ai on ai.id = at.album_id where at.song_id = mi.id
       )) as release_date
     from public.media_credits mc
     join public.media_items mi on mi.id = mc.media_item_id
-    where mc.person_id in (select person_id from artist_ids)
-      and mc.role = 'artist'
+    where mc.person_id in (select person_id from related_credit_people)
+      and mc.role in ('artist', 'composer', 'lyricist')
       and mi.type = 'music'::public.media_type
       and mi.id <> p_song_id
-    order by release_date desc nulls last
-    limit 12
-  ), related_by_writer as (
-    select distinct mi.id, mi.title, mi.cover_url,
-      coalesce(mi.release_date, (
-        select min(ai.release_date) from public.album_tracks at
-        join public.media_items ai on ai.id = at.album_id where at.song_id = mi.id
-      )) as release_date
-    from public.media_credits mc
-    join public.media_items mi on mi.id = mc.media_item_id
-    where mc.person_id in (select person_id from composer_ids)
-      and mc.role in ('composer','lyricist')
-      and mi.type = 'music'::public.media_type
-      and mi.id <> p_song_id
-    order by release_date desc nulls last
+    group by mi.id, mi.title, mi.cover_url, mi.release_date
+  ), related_songs as (
+    select id, title, cover_url, release_date
+    from related_candidates
+    order by release_date desc nulls last, id
     limit 12
   )
   select jsonb_build_object(
@@ -1729,18 +1856,15 @@ begin
       from albums a
       left join album_other_tracks ot on ot.album_id = a.id
     ), '[]'::jsonb),
-    'related', jsonb_build_object(
-      'by_artist', coalesce((
-        select jsonb_agg(jsonb_build_object(
+    'related', coalesce((
+      select jsonb_agg(
+        jsonb_build_object(
           'id', id, 'title', title, 'cover_url', cover_url, 'release_date', release_date
-        )) from related_by_artist
-      ), '[]'::jsonb),
-      'by_composer_lyricist', coalesce((
-        select jsonb_agg(jsonb_build_object(
-          'id', id, 'title', title, 'cover_url', cover_url, 'release_date', release_date
-        )) from related_by_writer
-      ), '[]'::jsonb)
-    ),
+        )
+        order by release_date desc nulls last, id
+      )
+      from related_songs
+    ), '[]'::jsonb),
     'tracking', (
       select jsonb_build_object('status', t.status, 'rating', t.rating)
       from public.tracking t where t.media_item_id = p_song_id
@@ -1754,5 +1878,5 @@ revoke all on function public.get_song_detail(uuid) from public;
 grant execute on function public.get_song_detail(uuid) to anon, authenticated, service_role;
 
 comment on function public.get_song_detail(uuid) is
-  '歌曲详情：元数据、按角色 credits、所属专辑与同专其他曲、相关歌曲（艺人／词曲各最多 12）、封面回退专辑、tracking（受 RLS）。';
+  '歌曲详情：元数据、按角色 credits、所属专辑与同专其他曲（每专最多 20）、相关歌曲（艺人／词曲合并去重最多 12）、封面回退专辑、tracking（受 RLS）。';
 

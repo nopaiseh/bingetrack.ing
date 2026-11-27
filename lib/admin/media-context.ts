@@ -75,19 +75,26 @@ async function readNeighbour(
   return { id: record.id, title: media?.title ?? "", number: Number(record[numberColumn]) };
 }
 
-/** 同一专辑内按曲序相邻的曲目。 */
+/** 同一专辑内按盘号＋曲序相邻的曲目。 */
 async function readTrackNeighbour(
   db: SupabaseClient,
   albumId: string,
   ascending: boolean,
-  number?: number,
+  discNumber: number,
+  trackNumber: number,
 ): Promise<Sibling | undefined> {
-  let query = db
+  const positionFilter = ascending
+    ? `disc_number.gt.${discNumber},and(disc_number.eq.${discNumber},track_number.gt.${trackNumber})`
+    : `disc_number.lt.${discNumber},and(disc_number.eq.${discNumber},track_number.lt.${trackNumber})`;
+  const { data, error } = await db
     .from("album_tracks")
-    .select("song_id,track_number,media:media_items!album_tracks_song_id_fkey(title)")
-    .eq("album_id", albumId);
-  if (number != null) query = ascending ? query.gt("track_number", number) : query.lt("track_number", number);
-  const { data, error } = await query.order("track_number", { ascending }).limit(1).maybeSingle();
+    .select("song_id,disc_number,track_number,media:media_items!album_tracks_song_id_fkey(title)")
+    .eq("album_id", albumId)
+    .or(positionFilter)
+    .order("disc_number", { ascending })
+    .order("track_number", { ascending })
+    .limit(1)
+    .maybeSingle();
   if (error) throw new Error("无法读取相邻条目。");
   if (!data) return undefined;
   const record = data as unknown as {
@@ -112,18 +119,20 @@ async function readAcrossSeasons(
   return undefined;
 }
 
-/** 读取紧邻的前后条目方便连续编辑：季限同一电视节目，单集可跨季衔接，曲目限同一专辑。 */
+/** 读取紧邻的前后条目方便连续编辑：季限同一电视节目，单集可跨季衔接，曲目限同一专辑（按盘号＋曲序）。 */
 export async function readSiblings(
   db: SupabaseClient,
   type: string,
   parentId: string | null | undefined,
   number: number | null | undefined,
+  discNumber: number | null | undefined = null,
 ): Promise<{ previous?: Sibling; next?: Sibling }> {
   if (type === "music") {
     if (!parentId || number == null) return {};
+    const disc = discNumber == null || !Number.isFinite(discNumber) ? 1 : Number(discNumber);
     const [previous, next] = await Promise.all([
-      readTrackNeighbour(db, parentId, false, number),
-      readTrackNeighbour(db, parentId, true, number),
+      readTrackNeighbour(db, parentId, false, disc, number),
+      readTrackNeighbour(db, parentId, true, disc, number),
     ]);
     return { previous, next };
   }

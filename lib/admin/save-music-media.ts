@@ -54,6 +54,7 @@ function mediaRpcPayload(payload: MediaInput) {
     runtime: payload.runtime,
     parent_id: payload.parent_id,
     number: payload.number,
+    disc_number: payload.disc_number,
     status: payload.status === "watched" ? "watched" : "want_to_watch",
     rating: payload.rating,
     genres: payload.genres,

@@ -1,7 +1,7 @@
 -- credit_roles 字典约束、共享曲统计、专辑删除保留共享曲、独立单曲、get_person_works 去重。
 
 begin;
-select plan(19);
+select plan(29);
 
 insert into auth.users(id,email) values
   ('c1000000-0000-4000-8000-000000000001','cr-owner@test.invalid');
@@ -121,16 +121,40 @@ select is(
   'shared song appears on two albums'
 );
 
--- 听过共享曲 → 两张专辑在 v_all_media 都算 watching／watched 口径受曲目影响
-select ok(
-  (select status from public.v_all_media where id = (select id from cr_ids where name='album_b')) in ('watched','watching'),
-  'album B reflects listened shared song'
+-- 专辑 B 仅共享已听曲 → 精确为 watched；专辑 A 另有未听曲 → watching
+select is(
+  (select status from public.v_all_media where id = (select id from cr_ids where name='album_b')),
+  'watched',
+  'album B with only watched shared song is watched'
+);
+
+select is(
+  (select status from public.v_all_media where id = (select id from cr_ids where name='album_a')),
+  'watching',
+  'album A with mixed listen status is watching'
+);
+
+-- 仅挂在专辑 B 的另一首歌（评分 9）证明 A 平均不含它
+select lives_ok(
+  $$insert into cr_ids values ('b_only', (public.admin_save_media(jsonb_build_object(
+    'type','music','title','仅B评分曲','parent_id',(select id from cr_ids where name='album_b')::text,
+    'number',2,'status','watched','rating',9,'runtime',90,
+    'credits',jsonb_build_array(jsonb_build_object('person',jsonb_build_object('name','共享艺人'),'role','artist','order',0)),
+    'genres','[]'::jsonb,'languages','[]'::jsonb,'collections','[]'::jsonb
+  ))->>'id')::uuid)$$,
+  'song only on album B with rating 9'
 );
 
 select is(
   public.album_average_rating((select id from cr_ids where name='album_a')),
   8.0::numeric,
   'album A average uses only its own tracks ratings'
+);
+
+select is(
+  public.album_average_rating((select id from cr_ids where name='album_b')),
+  8.5::numeric,
+  'album B average is (8+9)/2 and excludes album-A-only tracks'
 );
 
 -- 删专辑 B：共享曲应保留
@@ -177,6 +201,148 @@ select ok(
   not exists (select 1 from pg_type where typname = 'person_role'),
   'person_role enum dropped'
 );
+
+-- 无效 release_kind
+select throws_ok(
+  $$select public.admin_save_media(jsonb_build_object(
+    'type','album','title','坏形态','status','want_to_watch','release_kind','lp',
+    'credits','[]'::jsonb,'genres','[]'::jsonb,'regions','[]'::jsonb,'collections','[]'::jsonb
+  ))$$,
+  '22023',
+  null,
+  'invalid release_kind rejected'
+);
+
+-- 直接插入：未知角色／类型不允许的角色／非演员角色名
+select throws_ok(
+  $$insert into public.media_credits(media_item_id, person_id, role, credit_order)
+    values(
+      (select id from cr_ids where name='album_a'),
+      (select id from public.people where name='共享艺人'),
+      'not_a_role', 0
+    )$$,
+  '23514',
+  null,
+  'unknown role rejected'
+);
+
+select throws_ok(
+  $$insert into public.media_credits(media_item_id, person_id, role, credit_order)
+    values(
+      (select id from cr_ids where name='album_a'),
+      (select id from public.people where name='共享艺人'),
+      'author', 0
+    )$$,
+  '23514',
+  null,
+  'disallowed-type role rejected by trigger'
+);
+
+select throws_ok(
+  $$insert into public.media_credits(media_item_id, person_id, role, credit_order, character_name)
+    values(
+      (select id from cr_ids where name='shared'),
+      (select id from public.people where name='共享艺人'),
+      'artist', 0, '角色名'
+    )$$,
+  '23514',
+  null,
+  'character name on non-actor role rejected'
+);
+
+reset role;
+
+-- anon：可读 RPC；不可写字典／album_tracks；不可调 admin
+set local role anon;
+
+select throws_ok(
+  $$insert into public.credit_roles(code,label,sort_order,allowed_types)
+    values('x','x',999,array['movie']::public.media_type[])$$,
+  '42501',
+  null,
+  'anon cannot insert credit_roles'
+);
+
+select throws_ok(
+  $$insert into public.album_tracks(album_id,song_id,disc_number,track_number)
+    values(
+      'a2000000-0000-4000-8000-000000000001',
+      'a2000000-0000-4000-8000-000000000002',
+      1, 99
+    )$$,
+  '42501',
+  null,
+  'anon cannot insert album_tracks'
+);
+
+reset role;
+
+-- get_song_detail：同专其他曲上限 20；相关歌曲合并去重上限 12
+set local role authenticated;
+do $$ begin perform set_config('request.jwt.claim.sub','c1000000-0000-4000-8000-000000000001',true); end $$;
+
+do $$
+declare
+  album_id uuid;
+  song_id uuid;
+  i integer;
+  detail jsonb;
+  other_count integer;
+  related_count integer;
+begin
+  album_id := (public.admin_save_media(jsonb_build_object(
+    'type','album','title','上限专辑','status','want_to_watch','release_kind','album',
+    'credits',jsonb_build_array(jsonb_build_object('person',jsonb_build_object('name','上限艺人'),'role','artist','order',0)),
+    'genres','[]'::jsonb,'regions','[]'::jsonb,'collections','[]'::jsonb
+  ))->>'id')::uuid;
+
+  song_id := (public.admin_save_media(jsonb_build_object(
+    'type','music','title','上限主歌','parent_id',album_id::text,'number',1,
+    'status','want_to_watch','runtime',100,
+    'credits',jsonb_build_array(
+      jsonb_build_object('person',jsonb_build_object('name','上限艺人'),'role','artist','order',0),
+      jsonb_build_object('person',jsonb_build_object('name','上限词曲'),'role','composer','order',0),
+      jsonb_build_object('person',jsonb_build_object('name','上限词曲'),'role','lyricist','order',0)
+    ),
+    'genres','[]'::jsonb,'languages','[]'::jsonb,'collections','[]'::jsonb
+  ))->>'id')::uuid;
+
+  for i in 2..25 loop
+    perform public.admin_save_media(jsonb_build_object(
+      'type','music','title','同专曲'||i,'parent_id',album_id::text,'number',i,
+      'status','want_to_watch','runtime',60,
+      'credits',jsonb_build_array(jsonb_build_object('person',jsonb_build_object('name','上限艺人'),'role','artist','order',0)),
+      'genres','[]'::jsonb,'languages','[]'::jsonb,'collections','[]'::jsonb
+    ));
+  end loop;
+
+  -- 再造 15 首相关歌（同一艺人／词曲），确保去重后仍能触达 12 上限
+  for i in 1..15 loop
+    perform public.admin_save_media(jsonb_build_object(
+      'type','music','title','相关歌'||i,'status','want_to_watch','runtime',50,
+      'credits',jsonb_build_array(
+        jsonb_build_object('person',jsonb_build_object('name','上限艺人'),'role','artist','order',0),
+        jsonb_build_object('person',jsonb_build_object('name','上限词曲'),'role','composer','order',0)
+      ),
+      'genres','[]'::jsonb,'languages','[]'::jsonb,'collections','[]'::jsonb
+    ));
+  end loop;
+
+  detail := public.get_song_detail(song_id);
+  other_count := jsonb_array_length(detail->'albums'->0->'other_tracks');
+  related_count := jsonb_array_length(detail->'related');
+  if other_count is distinct from 20 then
+    raise exception 'expected other_tracks=20 got %', other_count;
+  end if;
+  if related_count is distinct from 12 then
+    raise exception 'expected related=12 got %', related_count;
+  end if;
+  if jsonb_typeof(detail->'related') is distinct from 'array' then
+    raise exception 'related must be a flat array';
+  end if;
+end $$;
+
+select ok(true, 'get_song_detail caps other_tracks at 20 and related at 12');
 
 select * from finish();
 rollback;

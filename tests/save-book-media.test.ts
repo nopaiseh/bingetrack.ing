@@ -23,6 +23,7 @@ function bookPayload(overrides: Partial<MediaInput> = {}): MediaInput {
     runtime: null,
     parent_id: null,
     number: null,
+    disc_number: null,
     status: "want_to_watch",
     rating: null,
     genres: ["小说"],
