@@ -277,6 +277,43 @@ describe("管理媒体输入", () => {
         }),
       ).disc_number,
     ).toBeNull();
+    // 空字符串／纯空白也解析为 null：RPC 编辑时保留原盘号，新建时默认 1；TS 层绝不补成 0／1。
+    expect(
+      parseMediaForm(
+        form({
+          type: "music",
+          title: "空盘号",
+          parent_id: albumId,
+          number: "1",
+          disc_number: "",
+          artists: "\t主唱",
+        }),
+      ).disc_number,
+    ).toBeNull();
+    expect(
+      parseMediaForm(
+        form({
+          type: "music",
+          title: "空白盘号",
+          parent_id: albumId,
+          number: "1",
+          disc_number: "   ",
+          artists: "\t主唱",
+        }),
+      ).disc_number,
+    ).toBeNull();
+    expect(() =>
+      parseMediaForm(
+        form({
+          type: "music",
+          title: "零盘号",
+          parent_id: albumId,
+          number: "1",
+          disc_number: "0",
+          artists: "\t主唱",
+        }),
+      ),
+    ).toThrow(/盘号须为 1–100/);
     expect(
       parseMediaForm(
         form({
