@@ -10,6 +10,7 @@ import type { ViewAllMediaRow } from "@/lib/types";
 import { reportHandledError } from "@/lib/report-error";
 import type { DetailFetchResult } from "@/lib/functions/cache-degrade";
 import { throwIfSeriesDegraded } from "@/lib/functions/cache-degrade";
+import { fetchAllPages } from "@/lib/supabase/fetch-all-pages";
 
 export type { OwnershipStatus } from "@/lib/album-display";
 export type { AlbumDetail, AlbumSeriesMembership, AlbumTrack } from "@/lib/types/album";
@@ -169,19 +170,34 @@ export async function loadAlbumDetail(id: string): Promise<DetailFetchResult<Alb
 
     if (trackIds.length > 0) {
       const [creditsResult, genresResult] = await Promise.all([
-        db
-          .from("media_credits")
-          .select("media_item_id,role,credit_order,people(name)")
-          .in("media_item_id", trackIds)
-          .in("role", ["artist", "lyricist", "composer"])
-          .order("credit_order", { ascending: true, nullsFirst: false }),
-        db.from("media_genres").select("media_item_id,genres(name)").in("media_item_id", trackIds),
+        // 多曲目 × 多角色可能超过 PostgREST 1000 行上限，翻页读完。
+        fetchAllPages<CreditJoinRow>((from, to) =>
+          db
+            .from("media_credits")
+            .select("media_item_id,role,credit_order,people(name)")
+            .in("media_item_id", trackIds)
+            .in("role", ["artist", "lyricist", "composer"])
+            .order("media_item_id", { ascending: true })
+            .order("credit_order", { ascending: true, nullsFirst: false })
+            .order("role", { ascending: true })
+            .order("person_id", { ascending: true })
+            .range(from, to),
+        ),
+        fetchAllPages<GenreJoinRow>((from, to) =>
+          db
+            .from("media_genres")
+            .select("media_item_id,genres(name)")
+            .in("media_item_id", trackIds)
+            .order("media_item_id", { ascending: true })
+            .order("genre_id", { ascending: true })
+            .range(from, to),
+        ),
       ]);
 
       if (creditsResult.error) {
         reportHandledError(`Failed to fetch track credits for album ${id}:`, creditsResult.error);
       } else {
-        for (const row of (creditsResult.data ?? []) as CreditJoinRow[]) {
+        for (const row of creditsResult.data ?? []) {
           const bucket = creditsByTrack.get(row.media_item_id);
           const name = personName(row.people);
           if (!bucket || !name) continue;
@@ -194,7 +210,7 @@ export async function loadAlbumDetail(id: string): Promise<DetailFetchResult<Alb
       if (genresResult.error) {
         reportHandledError(`Failed to fetch track genres for album ${id}:`, genresResult.error);
       } else {
-        for (const row of (genresResult.data ?? []) as GenreJoinRow[]) {
+        for (const row of genresResult.data ?? []) {
           const bucket = genresByTrack.get(row.media_item_id);
           const name = genreName(row.genres);
           if (!bucket || !name) continue;

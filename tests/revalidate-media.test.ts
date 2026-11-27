@@ -9,6 +9,7 @@ import {
   revalidateMediaItems,
   revalidatePersonItems,
 } from "@/lib/admin/revalidate-media";
+import { POSTGREST_PAGE_SIZE } from "@/lib/supabase/fetch-all-pages";
 vi.mock("server-only", () => ({}));
 vi.mock("next/cache", () => ({ revalidatePath: vi.fn(), revalidateTag: vi.fn() }));
 
@@ -32,30 +33,60 @@ const tables: Record<string, Row[]> = {
     { media_item_id: sequel, series_id: collection },
   ],
   media_credits: [
-    { media_item_id: episode, person_id: person },
-    { media_item_id: episode, person_id: person },
-    { media_item_id: track, person_id: person },
+    { media_item_id: episode, person_id: person, role: "actor" },
+    { media_item_id: episode, person_id: person, role: "actor" },
+    { media_item_id: track, person_id: person, role: "artist" },
   ],
   media_genres: [],
 };
 
-/** 只实现 from().select().in() 的内存数据库替身，可让指定表返回错误。 */
-function fakeDb(failing?: string) {
-  return {
-    from: (table: string) => ({
-      select: (columns: string) => ({
-        in: async (key: string, values: string[]) =>
-          failing === table
-            ? { data: null, error: { message: "boom" } }
-            : {
-                data: tables[table]
-                  .filter(/* 按 in 条件筛选。 */ (row) => values.includes(row[key]))
-                  .map(/* 只返回所选列。 */ (row) => ({ [columns]: row[columns] })),
-                error: null,
+type QueryCall = { table: string; ranges: Array<[number, number]> };
+
+/** 只实现 from().select().in().order().range() 的内存数据库替身，可让指定表返回错误。 */
+function fakeDb(failing?: string, overrides: Record<string, Row[]> = {}) {
+  const data: Record<string, Row[]> = { ...tables, ...overrides };
+  const calls: QueryCall[] = [];
+  const db = {
+    from: (table: string) => {
+      const call: QueryCall = { table, ranges: [] };
+      calls.push(call);
+      let columns = "";
+      let filterKey = "";
+      let filterValues: string[] = [];
+      const builder = {
+        select: (selected: string) => {
+          columns = selected;
+          return builder;
+        },
+        in: (key: string, values: string[]) => {
+          filterKey = key;
+          filterValues = values;
+          return builder;
+        },
+        order: () => builder,
+        range: async (from: number, to: number) => {
+          call.ranges.push([from, to]);
+          if (failing === table) return { data: null, error: { message: "boom" } };
+          const rows = data[table]
+            .filter(/* 按 in 条件筛选。 */ (row) => filterValues.includes(row[filterKey]))
+            .map(
+              /* 只返回所选列（含逗号分隔的多列时取首列以兼容旧断言）。 */ (row) => {
+                const keys = columns.split(",").map((part) => part.trim());
+                const out: Row = {};
+                for (const key of keys) out[key] = row[key];
+                return out;
               },
-      }),
-    }),
-  } as unknown as SupabaseClient;
+            );
+          return { data: rows.slice(from, to + 1), error: null };
+        },
+        then: (resolve: (value: unknown) => unknown, reject?: (reason: unknown) => unknown) =>
+          builder.range(0, Number.MAX_SAFE_INTEGER).then(resolve, reject),
+      };
+      return builder;
+    },
+    calls,
+  };
+  return db as unknown as SupabaseClient & { calls: QueryCall[] };
 }
 
 beforeEach(() => vi.clearAllMocks());
@@ -136,6 +167,11 @@ describe("按条目失效公开缓存", () => {
     ]);
   });
 
+  it("revalidatePersonItems(null) 退回 person 全站标签", () => {
+    revalidatePersonItems(null);
+    expect(revalidateTag).toHaveBeenCalledExactlyOnceWith("person", { expire: 0 });
+  });
+
   it("creditedPersonIds：专辑含曲目演职员，曲目只含自身", async () => {
     expect(new Set(await creditedPersonIds(fakeDb(), [album]))).toEqual(new Set([person]));
     expect(await creditedPersonIds(fakeDb(), [track])).toEqual([person]);
@@ -144,5 +180,31 @@ describe("按条目失效公开缓存", () => {
 
   it("creditedPersonIds：credits 查询失败时返回 null", async () => {
     expect(await creditedPersonIds(fakeDb("media_credits"), [track])).toBeNull();
+  });
+
+  it("creditedPersonIds：超过 PostgREST 1000 行时翻页读全", async () => {
+    const pageSize = POSTGREST_PAGE_SIZE;
+    const people = Array.from({ length: pageSize + 5 }, (_, index) => {
+      const hex = (index + 1).toString(16).padStart(12, "0");
+      return `aaaaaaaa-aaaa-4aaa-8aaa-${hex}`;
+    });
+    const creditRows = people.map((personId, index) => ({
+      media_item_id: track,
+      person_id: personId,
+      role: `r${index}`,
+    }));
+    const db = fakeDb(undefined, { media_credits: creditRows });
+    const ids = await creditedPersonIds(db, [track]);
+    expect(ids).toHaveLength(people.length);
+    expect(new Set(ids)).toEqual(new Set(people));
+    const creditCalls = (db as unknown as { calls: QueryCall[] }).calls.filter(
+      (call) => call.table === "media_credits",
+    );
+    // 每一页各建一次 from()；翻页时应至少两次 media_credits 查询。
+    expect(creditCalls.length).toBeGreaterThanOrEqual(2);
+    expect(creditCalls.flatMap((call) => call.ranges)).toEqual([
+      [0, POSTGREST_PAGE_SIZE - 1],
+      [POSTGREST_PAGE_SIZE, POSTGREST_PAGE_SIZE * 2 - 1],
+    ]);
   });
 });

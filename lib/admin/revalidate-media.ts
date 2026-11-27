@@ -2,9 +2,10 @@ import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { revalidatePath, revalidateTag } from "next/cache";
 import { isMediaId } from "@/lib/functions/media-id";
-import { MEDIA_LISTS_TAG, MEDIA_TAG, mediaItemTag, personItemTag } from "@/lib/functions/media-cache-tags";
+import { MEDIA_LISTS_TAG, MEDIA_TAG, mediaItemTag, PERSON_TAG, personItemTag } from "@/lib/functions/media-cache-tags";
 import { referenceTypes, type ReferenceType } from "@/lib/admin/catalog";
 import { ENABLED_PUBLIC_CATALOG_PATHS } from "@/lib/media-types";
+import { fetchAllPages } from "@/lib/supabase/fetch-all-pages";
 
 // 目录页与站点地图直接查询数据库、不带数据缓存标签，只能按路径失效。
 const UNTAGGED_PUBLIC_PATHS = ["/", ...ENABLED_PUBLIC_CATALOG_PATHS, "/sitemap.xml"];
@@ -82,23 +83,46 @@ export async function referenceMediaIds(
   ids: string[],
 ): Promise<string[] | null> {
   const { link, key } = referenceTypes[kind];
-  const linked = column(await db.from(link).select("media_item_id").in(key, ids), "media_item_id");
+  // media_credits 等关联表可能超过 PostgREST 默认 1000 行，翻页读完。
+  const linked = column(
+    await fetchAllPages((from, to) =>
+      db.from(link).select("media_item_id").in(key, ids).order("media_item_id").range(from, to),
+    ),
+    "media_item_id",
+  );
   return linked && affectedMediaIds(db, [...new Set(linked)]);
 }
 
 /**
  * 删除前查出条目演职员人物 id：含专辑本身及其 album_tracks 曲目上的 credits。
- * 级联删除会先清掉 media_credits，必须在删除前调用。查询失败时返回 null。
+ * 级联删除会先清掉 media_credits，必须在删除前调用。查询失败时返回 null（调用方应退回人物全站失效）。
  */
 export async function creditedPersonIds(db: SupabaseClient, ids: string[]): Promise<string[] | null> {
   const targets = ids.filter(isMediaId);
   if (targets.length === 0) return [];
 
-  const albumSongs = column(await db.from("album_tracks").select("song_id").in("album_id", targets), "song_id");
+  const albumSongs = column(
+    await fetchAllPages((from, to) =>
+      db.from("album_tracks").select("song_id").in("album_id", targets).order("song_id").range(from, to),
+    ),
+    "song_id",
+  );
   if (!albumSongs) return null;
 
   const mediaIds = [...new Set([...targets, ...albumSongs])];
-  const people = column(await db.from("media_credits").select("person_id").in("media_item_id", mediaIds), "person_id");
+  const people = column(
+    await fetchAllPages((from, to) =>
+      db
+        .from("media_credits")
+        .select("person_id")
+        .in("media_item_id", mediaIds)
+        .order("person_id")
+        .order("media_item_id")
+        .order("role")
+        .range(from, to),
+    ),
+    "person_id",
+  );
   if (!people) return null;
   return [...new Set(people)];
 }
@@ -120,8 +144,15 @@ export function revalidateMediaItems(ids: string[] | null) {
   for (const path of UNTAGGED_PUBLIC_PATHS) revalidatePath(path);
 }
 
-/** 失效人物公开详情缓存（`person:item:<id>`）；忽略非法 ID。 */
-export function revalidatePersonItems(ids: readonly string[]) {
+/**
+ * 失效人物公开详情缓存（`person:item:<id>`）；忽略非法 ID。
+ * 传入 null 时退回 `person` 全站标签（与 `revalidateMediaItems(null)` 对称），避免查询失败漏刷。
+ */
+export function revalidatePersonItems(ids: readonly string[] | null) {
+  if (ids === null) {
+    revalidateTag(PERSON_TAG, { expire: 0 });
+    return;
+  }
   for (const id of ids) {
     if (isMediaId(id)) revalidateTag(personItemTag(id), { expire: 0 });
   }

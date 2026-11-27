@@ -2738,6 +2738,8 @@ CREATE INDEX "idx_people_name_trgm" ON "public"."people" USING "gin" ("name" "ex
 
 CREATE INDEX "media_credits_person_id_role_media_item_id_idx" ON "public"."media_credits" USING "btree" ("person_id", "role", "media_item_id");
 
+CREATE INDEX "media_credits_role_idx" ON "public"."media_credits" USING "btree" ("role");
+
 CREATE INDEX "media_genres_genre_id_media_item_id_idx" ON "public"."media_genres" USING "btree" ("genre_id", "media_item_id");
 
 CREATE INDEX "media_item_series_series_id_media_item_id_idx" ON "public"."media_item_series" USING "btree" ("series_id", "media_item_id");

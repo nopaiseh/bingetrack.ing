@@ -120,6 +120,16 @@ describe("deleteMedia", () => {
     expect(vi.mocked(creditedPersonIds).mock.invocationCallOrder[0]).toBeLessThan(rpc.mock.invocationCallOrder[0]);
     expect(revalidatePersonItems).toHaveBeenCalledExactlyOnceWith([personA, personB]);
   });
+
+  it("删除时 creditedPersonIds 失败则 revalidatePersonItems(null) 兜底全量人物失效", async () => {
+    vi.mocked(creditedPersonIds).mockResolvedValueOnce(null);
+    target.mockResolvedValue({ data: { type: "movie" }, error: null });
+    const form = new FormData();
+    form.set("id", saved);
+    form.set("confirm_title", "标题");
+    await deleteMedia({}, form);
+    expect(revalidatePersonItems).toHaveBeenCalledExactlyOnceWith(null);
+  });
 });
 
 describe("saveMedia 专辑／曲目", () => {

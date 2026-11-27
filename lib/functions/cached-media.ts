@@ -24,7 +24,7 @@ import { getSupabasePublicServer } from "@/lib/supabase/public-server";
 import { withRetry } from "./retry";
 import { isMediaId } from "./media-id";
 import { getCurrentlyReading, getHomeContinue } from "@/lib/continue-watching";
-import { MEDIA_LISTS_TAG, MEDIA_TAG, mediaItemTag, personItemTag } from "./media-cache-tags";
+import { MEDIA_LISTS_TAG, MEDIA_TAG, mediaItemTag, PERSON_TAG, personItemTag } from "./media-cache-tags";
 import type { Summary } from "@/lib/types";
 
 // 公开详情只靠 tag 失效（保存时 revalidateMediaItems／revalidateAllMedia）；非法 ID 不进缓存。
@@ -197,11 +197,11 @@ export const getCachedSongDetail = cache(async (id: string) => {
   })(id);
 });
 
-/** 人物详情（people 行 + get_person_works）；写入走 media / person:item 失效。 */
+/** 人物详情（people 行 + get_person_works）；写入走 media / person / person:item 失效。 */
 export const getCachedPersonDetail = cache(async (id: string) => {
   if (!isMediaId(id)) return null;
-  return unstable_cache(getPersonDetailForCache, ["public-person-detail-v1"], {
+  return unstable_cache(getPersonDetailForCache, ["public-person-detail-v2"], {
     revalidate: false,
-    tags: [MEDIA_TAG, personItemTag(id)],
+    tags: [MEDIA_TAG, PERSON_TAG, personItemTag(id)],
   })(id);
 });
