@@ -537,9 +537,16 @@ begin
   ) then
     raise exception 'artist+composer related songs must merge relations to ["artist","composer"]';
   end if;
+  -- 同专辑曲目不得进入 related（已在 other_tracks）
+  if exists (
+    select 1 from jsonb_array_elements(detail->'related') r
+    where r->>'title' like '同专曲%'
+  ) then
+    raise exception 'same-album tracks must not appear in related';
+  end if;
 end $$;
 
-select ok(true, 'get_song_detail caps related at 12 with sort/dedupe/merged relations');
+select ok(true, 'get_song_detail caps related at 12 with sort/dedupe/merged relations; excludes same-album');
 
 select * from finish();
 rollback;

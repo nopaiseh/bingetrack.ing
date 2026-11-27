@@ -1828,6 +1828,14 @@ begin
       and mc.role in ('artist', 'composer', 'lyricist')
       and mi.type = 'music'::public.media_type
       and mi.id <> p_song_id
+      -- 同专辑曲目已在 albums[].other_tracks；共用歌任一共同专辑即排除（在 LIMIT 之前）
+      and not exists (
+        select 1
+        from public.album_tracks cur
+        join public.album_tracks oth on oth.album_id = cur.album_id
+        where cur.song_id = p_song_id
+          and oth.song_id = mi.id
+      )
     group by mi.id, mi.title, mi.cover_url, mi.release_date
   ), related_songs as (
     select id, title, cover_url, release_date, relations
@@ -1905,5 +1913,5 @@ revoke all on function public.get_song_detail(uuid) from public;
 grant execute on function public.get_song_detail(uuid) to anon, authenticated, service_role;
 
 comment on function public.get_song_detail(uuid) is
-  '歌曲详情：元数据、按角色 credits、所属专辑与同专其他曲（每专最多 20）、相关歌曲扁平数组（艺人／词曲合并去重最多 12，含 relations text[]）、封面回退专辑、tracking（受 RLS）。';
+  '歌曲详情：元数据、按角色 credits、所属专辑与同专其他曲（每专最多 20）、相关歌曲扁平数组（排除同专辑／共用专辑歌后艺人／词曲合并去重最多 12，含 relations text[]）、封面回退专辑、tracking（受 RLS）。';
 
