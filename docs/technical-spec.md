@@ -94,6 +94,10 @@
 
 页面 Server Component 同样只通过 `lib/functions/`（或管理侧 `lib/admin/`）取数，不在页面文件里散落 Supabase 查询。
 
+### 数据缓存键
+
+改缓存结构（`unstable_cache` 包装函数的返回字段或形状）时，须同步升级缓存键版本后缀（如 `-v3` → `-v4`），并同步更新 [caching.md](caching.md) 中的键表。键表、时效、标签与系列降级不写缓存的机制见该文档。
+
 ### 权限与安全
 
 - **站长**：每个管理页与写入 Action 调用 `requireOwner()`（Auth + 空闲 Cookie + `is_site_owner()`）。细节：[single-owner-admin.md](single-owner-admin.md)。
