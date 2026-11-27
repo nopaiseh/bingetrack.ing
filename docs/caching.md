@@ -28,25 +28,25 @@
 
 定义在 `lib/functions/cached-media.ts` 和 `lib/functions/search-options.ts`（系列降级见 `lib/functions/cache-degrade.ts`）。`revalidate: false` 表示不定时重建，只靠后台写入时的 `revalidateTag` 失效。
 
-| 数据                         | key                                                                      | 有效期     | 标签                            |
-| ---------------------------- | ------------------------------------------------------------------------ | ---------- | ------------------------------- |
-| 影视／图书条目详情           | `public-media-detail-v4` + ID                                            | 仅标签失效 | `media`、`media:item:<id>`      |
-| 专辑详情                     | `public-album-detail-v3` + ID                                            | 仅标签失效 | `media`、`media:item:<id>`      |
-| 歌曲详情                     | `public-song-detail-v1` + ID                                             | 仅标签失效 | `media`、`media:item:<id>`      |
-| 人物详情                     | `public-person-detail-v1` + ID                                           | 仅标签失效 | `media`、`person:item:<id>`     |
-| 电视节目的季摘要             | `public-media-seasons-v3` + ID                                           | 仅标签失效 | `media`、`media:item:<id>`      |
-| 单集分页与季统计             | `public-season-episodes-v2` + 节目 ID／季 ID／页码／每页条数／状态／排序 | 仅标签失效 | `media`、`media:item:<节目 ID>` |
-| 下一集                       | `public-season-next-episode-v1` + 节目 ID／季 ID                         | 仅标签失效 | `media`、`media:item:<节目 ID>` |
-| 搜索首屏                     | `public-media-search-v3` + 查询串                                        | 1 小时     | `media`、`media:lists`          |
-| 榜单                         | `public-media-top-v4` + 类型／年份／条数（固定 10；类型含 album／book）  | 仅标签失效 | `media`、`media:lists`          |
-| 即将上映                     | `public-media-upcoming-v2`                                               | 24 小时    | `media`、`media:lists`          |
-| 分布统计                     | `public-media-distributions-v2`                                          | 仅标签失效 | `media`、`media:lists`          |
-| 年度统计                     | `public-media-release-year-stats-v2`                                     | 仅标签失效 | `media`、`media:lists`          |
-| 首页继续（在看／在听／在读） | `public-media-home-continue-v2`                                          | 仅标签失效 | `media`、`media:lists`          |
-| 首页在读（单独入口）         | `public-media-currently-reading-v1`                                      | 仅标签失效 | `media`、`media:lists`          |
-| 图书目录统计                 | `public-book-stats-v1`                                                   | 仅标签失效 | `media`、`media:lists`          |
-| 专辑目录统计                 | `public-album-stats-v1`                                                  | 仅标签失效 | `media`、`media:lists`          |
-| 搜索筛选选项                 | `search-options-v2`                                                      | 仅标签失效 | `media`、`media:lists`          |
+| 数据                         | key                                                                      | 有效期     | 标签                                  |
+| ---------------------------- | ------------------------------------------------------------------------ | ---------- | ------------------------------------- |
+| 影视／图书条目详情           | `public-media-detail-v4` + ID                                            | 仅标签失效 | `media`、`media:item:<id>`            |
+| 专辑详情                     | `public-album-detail-v3` + ID                                            | 仅标签失效 | `media`、`media:item:<id>`            |
+| 歌曲详情                     | `public-song-detail-v1` + ID                                             | 仅标签失效 | `media`、`media:item:<id>`            |
+| 人物详情                     | `public-person-detail-v1` + ID                                           | 仅标签失效 | `media`、`person`、`person:item:<id>` |
+| 电视节目的季摘要             | `public-media-seasons-v3` + ID                                           | 仅标签失效 | `media`、`media:item:<id>`            |
+| 单集分页与季统计             | `public-season-episodes-v2` + 节目 ID／季 ID／页码／每页条数／状态／排序 | 仅标签失效 | `media`、`media:item:<节目 ID>`       |
+| 下一集                       | `public-season-next-episode-v1` + 节目 ID／季 ID                         | 仅标签失效 | `media`、`media:item:<节目 ID>`       |
+| 搜索首屏                     | `public-media-search-v3` + 查询串                                        | 1 小时     | `media`、`media:lists`                |
+| 榜单                         | `public-media-top-v4` + 类型／年份／条数（固定 10；类型含 album／book）  | 仅标签失效 | `media`、`media:lists`                |
+| 即将上映                     | `public-media-upcoming-v2`                                               | 24 小时    | `media`、`media:lists`                |
+| 分布统计                     | `public-media-distributions-v2`                                          | 仅标签失效 | `media`、`media:lists`                |
+| 年度统计                     | `public-media-release-year-stats-v2`                                     | 仅标签失效 | `media`、`media:lists`                |
+| 首页继续（在看／在听／在读） | `public-media-home-continue-v2`                                          | 仅标签失效 | `media`、`media:lists`                |
+| 首页在读（单独入口）         | `public-media-currently-reading-v1`                                      | 仅标签失效 | `media`、`media:lists`                |
+| 图书目录统计                 | `public-book-stats-v1`                                                   | 仅标签失效 | `media`、`media:lists`                |
+| 专辑目录统计                 | `public-album-stats-v1`                                                  | 仅标签失效 | `media`、`media:lists`                |
+| 搜索筛选选项                 | `search-options-v2`                                                      | 仅标签失效 | `media`、`media:lists`                |
 
 非法 ID 在进入数据缓存前就返回，不会写入缓存条目。电影／节目／图书详情走 `getCachedMediaById`（`public-media-detail-v4`）；专辑详情走 `getCachedAlbumDetail`（`public-album-detail-v3`）；歌曲详情走 `getCachedSongDetail`（`public-song-detail-v1`，RPC `get_song_detail`）；人物详情走 `getCachedPersonDetail`（`public-person-detail-v1`，people 行 + RPC `get_person_works`）。
 
