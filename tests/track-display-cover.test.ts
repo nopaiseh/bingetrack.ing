@@ -36,13 +36,15 @@ function fakeDb(handle: (query: Query) => Result) {
 }
 
 describe("trackDisplayCoverUrl / displayCoverUrl", () => {
-  it("曲目只用专辑封面，绝不回退到曲目自身封面", () => {
+  it("曲目自身无封面时回退专辑封面；有自身封面时保留", () => {
     expect(trackDisplayCoverUrl(albumCover)).toBe(albumCover);
     expect(trackDisplayCoverUrl("  ")).toBeNull();
     expect(trackDisplayCoverUrl(null)).toBeNull();
-    expect(displayCoverUrl("music", trackOwnCover, albumCover)).toBe(albumCover);
-    expect(displayCoverUrl("music", trackOwnCover, null)).toBeNull();
-    expect(displayCoverUrl("music", trackOwnCover, "")).toBeNull();
+    expect(displayCoverUrl("music", null, albumCover)).toBe(albumCover);
+    expect(displayCoverUrl("music", "", albumCover)).toBe(albumCover);
+    expect(displayCoverUrl("music", trackOwnCover, albumCover)).toBe(trackOwnCover);
+    expect(displayCoverUrl("music", trackOwnCover, null)).toBe(trackOwnCover);
+    expect(displayCoverUrl("music", null, null)).toBeNull();
     expect(displayCoverUrl("album", albumCover, null)).toBe(albumCover);
     expect(displayCoverUrl("movie", "/poster.jpg", albumCover)).toBe("/poster.jpg");
   });
@@ -63,8 +65,8 @@ describe("fetchAlbumCoversByTrackIds", () => {
       if (query.table === "media_items") {
         return {
           data: [
-            { id: albumA, cover_url: albumCover },
-            { id: albumB, cover_url: null },
+            { id: albumA, cover_url: albumCover, release_date: "2020-01-01" },
+            { id: albumB, cover_url: null, release_date: "2021-01-01" },
           ],
           error: null,
         };
@@ -82,26 +84,31 @@ describe("fetchAlbumCoversByTrackIds", () => {
 });
 
 describe("withAlbumCoversForTracks", () => {
-  it("仅替换 music 条目的 cover_url，其它类型保留原值", async () => {
+  it("仅给无自身封面的 music 条目补专辑封面；已有封面与其它类型保留", async () => {
     const db = fakeDb((query) => {
       if (query.table === "album_tracks") {
-        return { data: [{ song_id: trackA, album_id: albumA }], error: null };
+        return {
+          data: [
+            { song_id: trackA, album_id: albumA },
+            { song_id: "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee", album_id: albumA },
+          ],
+          error: null,
+        };
       }
       if (query.table === "media_items") {
-        return { data: [{ id: albumA, cover_url: albumCover }], error: null };
+        return { data: [{ id: albumA, cover_url: albumCover, release_date: "2020-01-01" }], error: null };
       }
       return { data: [], error: null };
     });
 
     const rows = await withAlbumCoversForTracks(db, [
-      { id: trackA, type: "music", cover_url: trackOwnCover },
+      { id: trackA, type: "music", cover_url: null },
       { id: albumA, type: "album", cover_url: albumCover },
       { id: "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee", dbType: "music", cover_url: trackOwnCover },
     ]);
 
     expect(rows[0]?.cover_url).toBe(albumCover);
     expect(rows[1]?.cover_url).toBe(albumCover);
-    // 无 music 行时专辑封面映射缺失 → null，不回退自身封面
-    expect(rows[2]?.cover_url).toBeNull();
+    expect(rows[2]?.cover_url).toBe(trackOwnCover);
   });
 });

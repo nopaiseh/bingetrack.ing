@@ -22,6 +22,7 @@ function bookPayload(overrides: Partial<MediaInput> = {}): MediaInput {
     release_date: "2020-01-01",
     runtime: null,
     parent_id: null,
+    previous_parent_id: null,
     number: null,
     disc_number: null,
     status: "want_to_watch",

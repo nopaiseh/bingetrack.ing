@@ -19,6 +19,7 @@ const blank = {
   release_date: null,
   runtime: null,
   parent_id: null,
+  previous_parent_id: null,
   number: null,
   disc_number: null,
   status: "want_to_watch" as const,

@@ -127,9 +127,11 @@ export async function readEditableMedia(db: SupabaseClient, id: string): Promise
   }
   const personOnly = (role: "artist" | "lyricist" | "composer" | "author") =>
     people(credits.data, role).map(({ id, name, alternate_name }) => ({ id, name, alternate_name }));
+  const parentId = season.data?.series_id ?? episode.data?.season_id ?? track.data?.album_id ?? null;
   return {
     ...media.data,
-    parent_id: season.data?.series_id ?? episode.data?.season_id ?? track.data?.album_id ?? null,
+    parent_id: parentId,
+    previous_parent_id: media.data.type === "music" ? parentId : null,
     number: season.data?.season_number ?? episode.data?.episode_number ?? track.data?.track_number ?? null,
     disc_number: media.data.type === "music" && track.data?.disc_number != null ? Number(track.data.disc_number) : null,
     status,

@@ -1,7 +1,7 @@
 -- credit_roles 字典约束、共享曲统计、专辑删除保留共享曲、独立单曲、get_person_works 去重。
 
 begin;
-select plan(29);
+select plan(41);
 
 insert into auth.users(id,email) values
   ('c1000000-0000-4000-8000-000000000001','cr-owner@test.invalid');
@@ -155,6 +155,149 @@ select is(
   public.album_average_rating((select id from cr_ids where name='album_b')),
   8.5::numeric,
   'album B average is (8+9)/2 and excludes album-A-only tracks'
+);
+
+-- 共用歌经 admin_save_media 保存（previous_parent=当前 parent）：其它专辑关联不得被删
+select lives_ok(
+  $$select public.admin_save_media(jsonb_build_object(
+    'id', (select id from cr_ids where name='shared')::text,
+    'type','music','title','共享之歌','parent_id',(select id from cr_ids where name='album_a')::text,
+    'previous_parent_id',(select id from cr_ids where name='album_a')::text,
+    'number',1,'status','watched','rating',8,'runtime',100,
+    'credits',jsonb_build_array(jsonb_build_object('person',jsonb_build_object('name','共享艺人'),'role','artist','order',0)),
+    'genres','[]'::jsonb,'languages','[]'::jsonb,'collections','[]'::jsonb
+  ))$$,
+  'saving shared song with previous_parent=current parent succeeds'
+);
+
+select is(
+  (select count(*)::integer from public.album_tracks where song_id = (select id from cr_ids where name='shared')),
+  2,
+  'shared song still on two albums after admin_save_media edit'
+);
+
+-- 引用已有曲：状态预设为 watched，引用载荷给 want_to_watch 不得覆盖
+update public.tracking set status = 'watched', rating = 9.5
+where media_item_id = (select id from cr_ids where name='shared');
+
+select lives_ok(
+  $$select public.admin_save_album_with_tracks(
+    jsonb_build_object(
+      'id', (select id from cr_ids where name='album_b')::text,
+      'type','album','title','专辑B','status','want_to_watch','release_kind','compilation',
+      'credits',jsonb_build_array(jsonb_build_object('person',jsonb_build_object('name','共享艺人'),'role','artist','order',0)),
+      'genres','[]'::jsonb,'regions','[]'::jsonb,'collections','[]'::jsonb
+    ),
+    jsonb_build_array(
+      jsonb_build_object(
+        'id', (select id from cr_ids where name='shared'),
+        'title','共享之歌','number',1,'status','want_to_watch','rating',1,'runtime',100,
+        'credits',jsonb_build_array(jsonb_build_object('person',jsonb_build_object('name','其它人'),'role','artist','order',0)),
+        'genres','[]'::jsonb,'languages','[]'::jsonb,'collections','[]'::jsonb
+      ),
+      jsonb_build_object(
+        'id', (select id from cr_ids where name='b_only'),
+        'title','仅B评分曲','number',2,'status','watched','rating',9,'runtime',90,
+        'credits',jsonb_build_array(jsonb_build_object('person',jsonb_build_object('name','共享艺人'),'role','artist','order',0)),
+        'genres','[]'::jsonb,'languages','[]'::jsonb,'collections','[]'::jsonb
+      )
+    )
+  )$$,
+  're-save album B referencing shared song with different status/credits'
+);
+
+select is(
+  (select status::text from public.tracking where media_item_id = (select id from cr_ids where name='shared')),
+  'watched',
+  'referencing existing song does not overwrite its tracking status'
+);
+
+select is(
+  (select count(*)::integer from public.media_credits
+   where media_item_id = (select id from cr_ids where name='shared') and role = 'artist'),
+  1,
+  'referencing existing song does not overwrite its credits'
+);
+
+-- 换专辑：previous_parent 不同于新 parent → 只删旧链；双方 track_count 更新
+select lives_ok(
+  $$insert into cr_ids values ('move_song', (public.admin_save_media(jsonb_build_object(
+    'type','music','title','可挪曲','parent_id',(select id from cr_ids where name='album_a')::text,
+    'number',9,'disc_number',2,'status','want_to_watch','runtime',70,
+    'credits',jsonb_build_array(jsonb_build_object('person',jsonb_build_object('name','共享艺人'),'role','artist','order',0)),
+    'genres','[]'::jsonb,'languages','[]'::jsonb,'collections','[]'::jsonb
+  ))->>'id')::uuid)$$,
+  'create disc-2 track on album A for move test'
+);
+
+select is(
+  (select disc_number from public.album_tracks
+   where song_id = (select id from cr_ids where name='move_song')
+     and album_id = (select id from cr_ids where name='album_a')),
+  2,
+  'new track stores disc_number 2'
+);
+
+select lives_ok(
+  $$select public.admin_save_media(jsonb_build_object(
+    'id', (select id from cr_ids where name='move_song')::text,
+    'type','music','title','可挪曲',
+    'parent_id',(select id from cr_ids where name='album_b')::text,
+    'previous_parent_id',(select id from cr_ids where name='album_a')::text,
+    'number',9,'status','want_to_watch','runtime',70,
+    'credits',jsonb_build_array(jsonb_build_object('person',jsonb_build_object('name','共享艺人'),'role','artist','order',0)),
+    'genres','[]'::jsonb,'languages','[]'::jsonb,'collections','[]'::jsonb
+  ))$$,
+  'move track to album B without sending disc_number'
+);
+
+select is(
+  (select disc_number from public.album_tracks
+   where song_id = (select id from cr_ids where name='move_song')
+     and album_id = (select id from cr_ids where name='album_b')),
+  2,
+  'omitted disc_number preserves original disc when re-linking after move'
+);
+
+select ok(
+  not exists (
+    select 1 from public.album_tracks
+    where song_id = (select id from cr_ids where name='move_song')
+      and album_id = (select id from cr_ids where name='album_a')
+  )
+  and (select track_count from public.music_albums where media_item_id = (select id from cr_ids where name='album_a'))
+      = (select count(*)::integer from public.album_tracks where album_id = (select id from cr_ids where name='album_a'))
+  and (select track_count from public.music_albums where media_item_id = (select id from cr_ids where name='album_b'))
+      = (select count(*)::integer from public.album_tracks where album_id = (select id from cr_ids where name='album_b')),
+  'moving track updates both albums track_count and drops old link'
+);
+
+-- 解绑后删除孤儿曲目：完整清单不含仅 A 的曲 → 解绑并删除
+insert into cr_ids values ('orphan', (select id from public.media_items where title='仅A'));
+
+select lives_ok(
+  $$select public.admin_save_album_with_tracks(
+    jsonb_build_object(
+      'id', (select id from cr_ids where name='album_a')::text,
+      'type','album','title','专辑A','status','want_to_watch','release_kind','album',
+      'credits',jsonb_build_array(jsonb_build_object('person',jsonb_build_object('name','共享艺人'),'role','artist','order',0)),
+      'genres','[]'::jsonb,'regions','[]'::jsonb,'collections','[]'::jsonb
+    ),
+    jsonb_build_array(
+      jsonb_build_object(
+        'id', (select id from cr_ids where name='shared'),
+        'title','共享之歌','number',1,'status','watched','rating',8,'runtime',100,
+        'credits',jsonb_build_array(jsonb_build_object('person',jsonb_build_object('name','共享艺人'),'role','artist','order',0)),
+        'genres','[]'::jsonb,'languages','[]'::jsonb,'collections','[]'::jsonb
+      )
+    )
+  )$$,
+  'album A complete list unbinds A-only track'
+);
+
+select ok(
+  not exists (select 1 from public.media_items where id = (select id from cr_ids where name='orphan')),
+  'unbound orphan track is deleted'
 );
 
 -- 删专辑 B：共享曲应保留
@@ -340,9 +483,29 @@ begin
   if jsonb_typeof(detail->'related') is distinct from 'array' then
     raise exception 'related must be a flat array';
   end if;
+  -- 去重：同一首歌不得出现两次
+  if (
+    select count(*) from (
+      select value->>'id' as id from jsonb_array_elements(detail->'related')
+    ) r
+  ) is distinct from (
+    select count(distinct value->>'id') from jsonb_array_elements(detail->'related')
+  ) then
+    raise exception 'related songs must be deduped by id';
+  end if;
+  -- 排序：effective date desc then id（相关歌无自有日期时为 null，nulls last → 按 id）
+  if exists (
+    select 1
+    from generate_series(0, related_count - 2) as g(i)
+    where (detail->'related'->g.i->>'release_date') is not null
+      and (detail->'related'->(g.i+1)->>'release_date') is not null
+      and (detail->'related'->g.i->>'release_date') < (detail->'related'->(g.i+1)->>'release_date')
+  ) then
+    raise exception 'related songs must be ordered by release_date desc';
+  end if;
 end $$;
 
-select ok(true, 'get_song_detail caps other_tracks at 20 and related at 12');
+select ok(true, 'get_song_detail caps other_tracks at 20 and related at 12 with sort/dedupe');
 
 select * from finish();
 rollback;

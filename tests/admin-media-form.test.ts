@@ -230,8 +230,9 @@ describe("管理媒体输入", () => {
     expect(track).toMatchObject({
       type: "music",
       parent_id: albumId,
+      previous_parent_id: null,
       number: 3,
-      disc_number: 1,
+      disc_number: null,
       runtime: 215,
       status: "watched",
       rating: 8.5,
@@ -242,6 +243,34 @@ describe("管理媒体输入", () => {
       lyricists: [{ id: null, name: "作词人" }],
       composers: [{ id: null, name: "作曲人" }],
     });
+    expect(
+      parseMediaForm(
+        form({
+          type: "music",
+          title: "第二盘",
+          parent_id: albumId,
+          previous_parent_id: albumId,
+          number: "1",
+          disc_number: "2",
+          artists: "\t主唱",
+        }),
+      ),
+    ).toMatchObject({
+      disc_number: 2,
+      previous_parent_id: albumId,
+    });
+    expect(
+      parseMediaForm(
+        form({
+          type: "music",
+          title: "保留盘号",
+          parent_id: albumId,
+          previous_parent_id: albumId,
+          number: "1",
+          artists: "\t主唱",
+        }),
+      ).disc_number,
+    ).toBeNull();
     expect(
       parseMediaForm(
         form({

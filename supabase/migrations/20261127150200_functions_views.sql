@@ -786,8 +786,10 @@ declare
   item_id uuid := nullif(p_data->>'id', '')::uuid;
   item_type public.media_type := (p_data->>'type')::public.media_type;
   parent_id uuid := nullif(p_data->>'parent_id', '')::uuid;
+  previous_parent_id uuid := nullif(p_data->>'previous_parent_id', '')::uuid;
   item_number integer := (p_data->>'number')::integer;
-  disc_no integer := coalesce(nullif(p_data->>'disc_number', '')::integer, 1);
+  -- disc_number：显式传入用传入值；未传（null）时编辑保留原盘号，新建默认 1。
+  disc_no integer := nullif(p_data->>'disc_number', '')::integer;
   old_type public.media_type;
   target text;
   link_table text;
@@ -891,7 +893,15 @@ begin
       if parent_id is null or item_number is null or item_number < 0 or item_number > 100000 or parent_id = item_id then
         raise exception 'Invalid parent or number' using errcode = '22023';
       end if;
-      if disc_no is null or disc_no < 1 or disc_no > 100 then
+      -- 未传 disc_number：优先取 previous_parent（挪专辑）或当前 parent 上原盘号；新建默认 1
+      if disc_no is null and item_id is not null then
+        select at.disc_number into disc_no
+        from public.album_tracks at
+        where at.song_id = item_id
+          and at.album_id = coalesce(previous_parent_id, parent_id);
+      end if;
+      disc_no := coalesce(disc_no, 1);
+      if disc_no < 1 or disc_no > 100 then
         raise exception 'Invalid disc_number' using errcode = '22023';
       end if;
       if not exists(
@@ -979,15 +989,16 @@ begin
     insert into public.music(media_item_id) values(item_id)
     on conflict(media_item_id) do nothing;
     if link_album then
-      -- 表单单父级语义：改 parent 视为挪专辑，卸下其它专辑关联并刷新双方 track_count。
-      -- 多专辑挂载请走 admin_save_album_with_tracks 引用已有 song id（不经此路径清链）。
-      select coalesce(array_agg(at.album_id), '{}'::uuid[]) into old_album_ids
-      from public.album_tracks at
-      where at.song_id = item_id
-        and at.album_id is distinct from parent_id;
-      delete from public.album_tracks
-      where song_id = item_id
-        and album_id is distinct from parent_id;
+      -- 表单单父级语义：仅当 previous_parent_id 与新 parent 不同时，删除那一条旧关联；
+      -- 其它专辑关联（共用歌）保持不变。仅改标题／评分且 previous=parent 时不删任何关联。
+      -- 多专辑挂载请走 admin_save_album_with_tracks 引用已有 song id。
+      if previous_parent_id is not null
+         and previous_parent_id is distinct from parent_id then
+        delete from public.album_tracks
+        where song_id = item_id
+          and album_id = previous_parent_id;
+        old_album_ids := array[previous_parent_id];
+      end if;
 
       delete from public.album_tracks where album_id = parent_id and song_id = item_id;
       -- 曲位已被其它歌占用则拒绝（保留 23505，与旧 music.album_id/track_number 唯一约束一致）
@@ -1536,7 +1547,22 @@ begin
       mi.type,
       mi.title,
       mi.alternate_title,
-      mi.cover_url,
+      case
+        when mi.type = 'music'::public.media_type then coalesce(
+          nullif(mi.cover_url, ''),
+          (
+            select ai.cover_url
+            from public.album_tracks at
+            join public.media_items ai on ai.id = at.album_id
+            where at.song_id = mi.id
+              and ai.cover_url is not null
+              and nullif(ai.cover_url, '') is not null
+            order by ai.release_date asc nulls last, at.disc_number, at.track_number
+            limit 1
+          )
+        )
+        else mi.cover_url
+      end as cover_url,
       mi.release_date,
       case
         when mi.type = 'music'::public.media_type then coalesce(

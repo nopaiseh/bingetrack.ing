@@ -1,6 +1,6 @@
 begin;
 
-select plan(26);
+select plan(27);
 
 select ok(
   exists (select 1 from pg_type t join pg_namespace n on n.oid = t.typnamespace
@@ -229,13 +229,17 @@ select is(
   'song cover falls back to earliest-dated album cover'
 );
 
-select ok(
-  exists (
-    select 1 from public.release_year_stats
-    where release_year = '2024'
-      and (total_albums > 0 or total_tracks > 0)
-  ),
-  'shared track / albums participate in release_year_stats'
+-- 此刻夹具：2024 有专辑 A + 只想听专辑；曲目 002／003／004／012／013（共用歌 002 只计一次；021 归 2023）
+select is(
+  (select total_albums from public.release_year_stats where release_year = '2024'),
+  2::bigint,
+  'release_year_stats 2024 total_albums is exact'
+);
+
+select is(
+  (select total_tracks from public.release_year_stats where release_year = '2024'),
+  5::bigint,
+  'release_year_stats 2024 total_tracks counts shared song once'
 );
 
 set local role anon;
