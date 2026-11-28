@@ -168,4 +168,57 @@ describe("详情页窄屏布局", () => {
     expect(link.className).toContain("min-w-6");
     expect(link.className).toContain("inline-flex");
   });
+
+  it("事实区四个取值行共用同一高度与正文字号", () => {
+    const { container } = render(
+      <MediaInformation
+        media={{ ...media, directors: ["王家卫"], status: "watched" }}
+        seasons={null}
+        releaseDateLabel="2012-09-28"
+      />,
+    );
+    const values = container.querySelectorAll("dl.grid > div > dd");
+    expect(values).toHaveLength(4);
+    for (const value of values) {
+      expect(value).toHaveClass("min-h-11", "flex", "items-center", "text-sm", "leading-5");
+    }
+    expect(screen.getByText("7.4")).toHaveClass("font-mono", "text-sm");
+    expect(screen.getByText("7.4")).not.toHaveClass("text-base");
+  });
+
+  it("华语作品副标题与侧栏用又名，外语作品用原名", () => {
+    const { rerender } = render(
+      <MediaInformation
+        media={{
+          ...media,
+          title: "不能说的秘密",
+          alternate_title: "Secret",
+          languages: ["华语"],
+          regions: ["中国大陆"],
+          status: "watched",
+        }}
+        seasons={null}
+        releaseDateLabel="2007-07-31"
+      />,
+    );
+    expect(screen.getByRole("heading", { level: 1 }).parentElement).toHaveTextContent("又名 Secret");
+    expect(screen.getAllByText("又名")).toHaveLength(2);
+
+    rerender(
+      <MediaInformation
+        media={{
+          ...media,
+          title: "盗梦空间",
+          alternate_title: "Inception",
+          languages: ["英语"],
+          regions: ["美国"],
+          status: "watched",
+        }}
+        seasons={null}
+        releaseDateLabel="2010-07-16"
+      />,
+    );
+    expect(screen.getByRole("heading", { level: 1 }).parentElement).toHaveTextContent("原名 Inception");
+    expect(screen.getAllByText("原名")).toHaveLength(2);
+  });
 });
