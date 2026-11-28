@@ -11,6 +11,7 @@ import SeasonRow from "./SeasonRow";
 import ClampedCopy from "./ClampedCopy";
 import LetterTile from "./LetterTile";
 import { resolveWatchStatus, WATCH_STATUSES } from "./watch-status";
+import { alternateTitleLabel } from "@/lib/alternate-title-label";
 import { normalizeToPublicMediaType, publicMediaTypeLabel } from "@/lib/media-types";
 
 /** 页头时长写成「2 小时 45 分」，和事实区的完整分钟写法分开。 */
@@ -62,7 +63,7 @@ function Fact({ label, children }: { label: string; children: ReactNode }) {
   return (
     <div className="bg-[var(--surface-panel)] px-4 py-3.5 sm:px-5 sm:py-4">
       <dt className="text-sm text-fg-muted">{label}</dt>
-      <dd className="mt-1 text-sm text-fg">{children}</dd>
+      <dd className="mt-1 flex min-h-11 items-center text-sm leading-5 text-fg">{children}</dd>
     </div>
   );
 }
@@ -157,6 +158,7 @@ export default function MediaInformation({
   const score = media.rating == null ? null : Number(media.rating).toFixed(1);
   const tier = ratingTierLabel(media.rating);
   const alternate = media.alternate_title && media.alternate_title !== media.title ? media.alternate_title : null;
+  const altLabel = alternateTitleLabel({ languages: media.languages, regions: media.regions });
   const metaItems = [
     yearLabel ? (
       <span key="year" className="font-mono text-fg-secondary">
@@ -195,7 +197,11 @@ export default function MediaInformation({
             <h1 className="text-balance break-words text-3xl font-semibold tracking-tight text-fg sm:text-4xl">
               {media.title}
             </h1>
-            {alternate ? <p className="mt-1 text-sm text-fg-secondary">{alternate}</p> : null}
+            {alternate ? (
+              <p className="mt-1 text-sm text-fg-secondary">
+                <span className="text-fg-muted">{altLabel}</span> {alternate}
+              </p>
+            ) : null}
             <p className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-fg-muted">
               {metaItems.flatMap((item, index) =>
                 index === 0
@@ -244,7 +250,7 @@ export default function MediaInformation({
               <span className="text-fg-secondary">未评分</span>
             ) : (
               <span className="inline-flex items-baseline gap-2">
-                <span className="font-mono text-base">{score}</span>
+                <span className="font-mono text-sm">{score}</span>
                 {tier ? <span className="text-sm text-fg-muted">{tier}</span> : null}
               </span>
             )}
@@ -294,7 +300,7 @@ export default function MediaInformation({
                   <span className="pt-2 text-sm text-fg-muted">—</span>
                 )}
               </SideRow>
-              <SideRow label="原名">
+              <SideRow label={altLabel}>
                 <span className="pt-2 text-sm text-fg">{media.alternate_title?.trim() || media.title}</span>
               </SideRow>
             </dl>

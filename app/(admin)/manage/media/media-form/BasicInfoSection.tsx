@@ -149,7 +149,7 @@ export function BasicInfoSection({
         </div>
         <div className={type === "tv_episode" ? "span-2" : "span-3"}>
           <label htmlFor="field-alt-title" className="mb-1.5">
-            原名 / 外文名
+            又名 / 原名
           </label>
           <input
             id="field-alt-title"
@@ -157,7 +157,11 @@ export function BasicInfoSection({
             {...field("alternate_title", item?.alternate_title)}
             maxLength={300}
             placeholder="可留空"
+            aria-describedby="field-alt-title-hint"
           />
+          <p id="field-alt-title-hint" className="edit-hint mt-1">
+            华语片填英文名等别名；外语片填原文片名。
+          </p>
         </div>
         {hasReleaseDate ? (
           <div className={showTypeSelect || hasRuntime ? "span-2" : "span-3"}>
