@@ -26,9 +26,13 @@ test.describe("people / songs public pages", () => {
       "href",
       `/people/${ARTIST_ID}?from=${encodeURIComponent(`/music/${SONG_ID}`)}`,
     );
-    await expect(page.getByRole("heading", { level: 2, name: "收录于" })).toBeVisible();
+    await expect(page.getByRole("region", { name: "收录于" })).toBeVisible();
     // 封面链 aria-label 也含子串「测试专辑：夜航电台」；用 exact 命中标题链
     await expect(page.getByRole("link", { name: "测试专辑：夜航电台", exact: true })).toBeVisible();
+    // 种子曲可属多张专辑，每张面板各有「查看整张专辑」；按主专辑 href 定位
+    await expect(
+      page.getByRole("link", { name: /查看整张专辑/ }).and(page.locator(`[href*="/albums/${ALBUM_ID}"]`)),
+    ).toBeVisible();
     await expect(page.getByRole("heading", { level: 2, name: "相关歌曲" })).toBeVisible();
 
     await page.getByRole("link", { name: "测试词人" }).click();

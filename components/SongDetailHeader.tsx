@@ -1,13 +1,12 @@
 import Image from "next/image";
 import { Suspense } from "react";
 import { BackLink } from "@/components/MediaBackLink";
+import ClampedCopy from "@/components/ClampedCopy";
 import LetterTile from "@/components/LetterTile";
-import { ratingTierLabel } from "@/components/MediaRatingBadge";
 import SearchTag from "@/components/SearchTag";
-import { formatTrackDuration } from "@/lib/album-display";
-import { listenStatusLabel } from "@/lib/listen-status";
-import type { SongDetail } from "@/lib/types/song";
 import SongBackLink from "@/components/SongBackLink";
+import { alternateTitleLabel } from "@/lib/alternate-title-label";
+import type { SongDetail } from "@/lib/types/song";
 
 function SquarePoster({ title, coverUrl }: { title: string; coverUrl: string | null }) {
   return (
@@ -32,43 +31,16 @@ function SquarePoster({ title, coverUrl }: { title: string; coverUrl: string | n
   );
 }
 
-/** 歌曲详情页头：与专辑方案 C 同骨架（小方封面、标题、元信息、收听状态与评分）。 */
+/** 歌曲详情页头：小方封面／字块、标题、又名／原名、类型与语言芯片；有简介则短截断。 */
 export default function SongDetailHeader({ song }: { song: SongDetail }) {
-  const year = String(song.release_date ?? "").match(/\d{4}/)?.[0] ?? "";
-  const duration = formatTrackDuration(song.duration_seconds);
-  const status = listenStatusLabel(song.tracking?.status ?? null);
-  const rating = song.tracking?.rating ?? null;
-  const tier = ratingTierLabel(rating);
   const alternate = song.alternate_title && song.alternate_title !== song.title ? song.alternate_title : null;
+  const altLabel = alternateTitleLabel({ languages: song.languages });
   const genres = song.genres ?? [];
   const languages = song.languages ?? [];
-
-  const metaItems = [
-    year ? (
-      <span key="year" className="font-mono text-fg-secondary">
-        {year}
-      </span>
-    ) : null,
-    duration ? (
-      <span key="duration" className="font-mono">
-        {duration}
-      </span>
-    ) : null,
-    status ? (
-      <span key="status" className="font-medium text-fg-secondary">
-        {status}
-      </span>
-    ) : null,
-    rating != null ? (
-      <span key="rating" className="inline-flex items-baseline gap-1.5">
-        <span className="font-mono text-fg">{Number(rating).toFixed(1)}</span>
-        {tier ? <span className="text-fg-muted">{tier}</span> : null}
-      </span>
-    ) : null,
-  ].filter((item) => item != null);
+  const summary = song.summary?.trim() || null;
 
   return (
-    <header className="container mx-auto max-w-7xl px-4 pb-8 pt-24 sm:px-6 lg:px-8">
+    <header>
       <Suspense fallback={<BackLink href="/albums" label="返回音乐列表" />}>
         <SongBackLink />
       </Suspense>
@@ -81,19 +53,9 @@ export default function SongDetailHeader({ song }: { song: SongDetail }) {
           <h1 className="text-balance break-words text-3xl font-semibold tracking-tight text-fg sm:text-4xl">
             {song.title}
           </h1>
-          {alternate ? <p className="mt-1 text-sm text-fg-secondary">{alternate}</p> : null}
-          {metaItems.length > 0 ? (
-            <p className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-fg-muted">
-              {metaItems.flatMap((item, index) =>
-                index === 0
-                  ? [item]
-                  : [
-                      <span key={`dot-${index}`} aria-hidden="true" className="text-fg-subtle">
-                        ·
-                      </span>,
-                      item,
-                    ],
-              )}
+          {alternate ? (
+            <p className="mt-1 text-sm text-fg-secondary">
+              <span className="text-fg-muted">{altLabel}</span> {alternate}
             </p>
           ) : null}
           {genres.length > 0 || languages.length > 0 ? (
@@ -104,6 +66,11 @@ export default function SongDetailHeader({ song }: { song: SongDetail }) {
               {languages.map((name) => (
                 <SearchTag key={`language-${name}`} label={name} category="language" />
               ))}
+            </div>
+          ) : null}
+          {summary ? (
+            <div className="mt-4">
+              <ClampedCopy text={summary} persistClamp lines={3} expandLabel="展开 ↓" collapseLabel="收起 ↑" />
             </div>
           ) : null}
         </div>

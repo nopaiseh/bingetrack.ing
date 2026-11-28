@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import SongAlbumsSection from "@/components/SongAlbumsSection";
 import SongCreditsSection from "@/components/SongCreditsSection";
 import SongDetailHeader from "@/components/SongDetailHeader";
+import SongFactStrip from "@/components/SongFactStrip";
 import SongRelatedSection from "@/components/SongRelatedSection";
 import { getCachedSongDetail } from "@/lib/functions/cached-media";
 import { mediaDefaultDescription } from "@/lib/media-types";
@@ -37,19 +38,31 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
   };
 }
 
-/** 歌曲详情：页头 + 演职 + 收录于／同专曲目 + 相关歌曲。无短评。 */
+/** 歌曲详情方案 C：左栏页头／事实／演职／相关；右栏 sticky 专辑面板。无短评。 */
 export default async function SongDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const song = await getCachedSongDetail(id);
   if (!song) notFound();
 
+  const albumSong = { id: song.id, title: song.title, duration_seconds: song.duration_seconds };
+
   return (
     <div className="relative text-fg selection:bg-[var(--accent-soft)] selection:text-white font-sans">
-      <SongDetailHeader song={song} />
-      <div className="container mx-auto max-w-7xl px-4 pb-8 sm:px-6 md:pb-12 lg:px-8">
-        <SongCreditsSection credits={song.credits} currentSongId={song.id} />
-        <SongAlbumsSection albums={song.albums} currentSongId={song.id} />
-        <SongRelatedSection related={song.related} currentSongId={song.id} />
+      <div className="container mx-auto max-w-7xl px-4 pb-8 pt-24 sm:px-6 md:pb-12 lg:px-8">
+        {/* 窄屏纵向：页头→事实→演职→专辑→相关；宽屏两列，专辑 sticky 在右。 */}
+        <div className="flex flex-col gap-10 lg:grid lg:grid-cols-[minmax(0,1fr)_20rem] lg:items-start lg:gap-x-10 lg:gap-y-10">
+          <div className="min-w-0 space-y-10 lg:col-start-1 lg:row-start-1">
+            <SongDetailHeader song={song} />
+            <SongFactStrip song={song} />
+            <SongCreditsSection credits={song.credits} currentSongId={song.id} />
+          </div>
+          <aside className="lg:col-start-2 lg:row-span-2 lg:row-start-1 lg:sticky lg:top-24 lg:self-start">
+            <SongAlbumsSection albums={song.albums} song={albumSong} />
+          </aside>
+          <div className="min-w-0 lg:col-start-1 lg:row-start-2">
+            <SongRelatedSection related={song.related} currentSongId={song.id} />
+          </div>
+        </div>
       </div>
     </div>
   );
