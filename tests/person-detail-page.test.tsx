@@ -71,20 +71,17 @@ describe("人物详情页", () => {
     vi.mocked(getCachedPersonDetail).mockReset();
   });
 
-  it("音乐人只显示歌曲分区，隐藏空影视／专辑／图书", async () => {
+  it("仅有歌曲 credit 时不展示作品区，显示暂无公开作品", async () => {
     vi.mocked(getCachedPersonDetail).mockResolvedValue(lyricistOnly());
     render(await PersonDetailPage({ params: Promise.resolve({ id: personId }) }));
 
     expect(screen.getByRole("heading", { level: 1, name: "测试词人" })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { level: 2, name: "歌曲" })).toBeInTheDocument();
-    expect(screen.getByText("作词")).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: /夜航序曲/ })).toHaveAttribute(
-      "href",
-      expect.stringContaining(`/music/${songId}`),
-    );
+    expect(screen.getByText("暂无公开作品。")).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { level: 2, name: "歌曲" })).not.toBeInTheDocument();
     expect(screen.queryByRole("heading", { level: 2, name: "影视" })).not.toBeInTheDocument();
     expect(screen.queryByRole("heading", { level: 2, name: "专辑" })).not.toBeInTheDocument();
     expect(screen.queryByRole("heading", { level: 2, name: "图书" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: /夜航序曲/ })).not.toBeInTheDocument();
   });
 
   it("专辑作品副标题将 release_kind 译为中文，不露出英文枚举", async () => {

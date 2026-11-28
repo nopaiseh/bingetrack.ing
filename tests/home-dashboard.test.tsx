@@ -696,6 +696,9 @@ describe("HomeDashboard", () => {
             total_runtime: 100,
             watched_series_episodes: 132,
             total_series_episodes: 245,
+            total_albums: 5,
+            total_tracks: 42,
+            total_books: 9,
           } as Summary,
           {
             release_year: "2024",
@@ -707,6 +710,9 @@ describe("HomeDashboard", () => {
             total_runtime: 10,
             watched_series_episodes: 2,
             total_series_episodes: 10,
+            total_albums: 2,
+            total_tracks: 8,
+            total_books: 1,
           } as Summary,
         ]}
         topMovies={[]}
@@ -721,9 +727,17 @@ describe("HomeDashboard", () => {
     const intro = screen.getByRole("region", { name: "媒体全景" });
     expect(intro).toHaveTextContent("全时段档案");
     expect(intro).toHaveTextContent("67");
-    expect(intro).toHaveTextContent("电影总计");
-    expect(intro).toHaveTextContent("音乐总计");
-    expect(intro).toHaveTextContent("图书总计");
+    expect(intro).toHaveTextContent("电影");
+    expect(intro).toHaveTextContent("电视节目");
+    expect(intro).toHaveTextContent("音乐");
+    expect(intro).toHaveTextContent("图书");
+    expect(intro).not.toHaveTextContent("总计");
+    // 页头「音乐」按曲目数，不按专辑数；精确值在 aria-label／title。
+    const musicStat = Array.from(intro.querySelectorAll("dt")).find((dt) => dt.textContent === "音乐");
+    expect(musicStat?.parentElement).toHaveTextContent("42");
+    expect(musicStat?.parentElement).not.toHaveTextContent("5");
+    expect(screen.getByLabelText("42")).toHaveAttribute("title", "42");
+    expect(screen.getByLabelText("67")).toHaveTextContent("67");
 
     await act(async () => {
       fireEvent.click(screen.getByText("year-2024"));
@@ -733,5 +747,8 @@ describe("HomeDashboard", () => {
     expect(intro).toHaveTextContent("2024 年度档案");
     expect(intro).toHaveTextContent("3");
     expect(intro).not.toHaveTextContent("67");
+    const musicStatYear = Array.from(intro.querySelectorAll("dt")).find((dt) => dt.textContent === "音乐");
+    expect(musicStatYear?.parentElement).toHaveTextContent("8");
+    expect(screen.getByLabelText("8")).toHaveAttribute("title", "8");
   });
 });

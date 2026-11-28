@@ -41,7 +41,7 @@ test.describe("people / songs public pages", () => {
     await expect(page.getByRole("link", { name: /返回歌曲/ })).toBeVisible();
   });
 
-  test("person page shows song grid for music-only credit", async ({ page }, testInfo) => {
+  test("person page hides songs and shows empty state for song-only credit", async ({ page }, testInfo) => {
     await page.goto(`/people/${LYRICIST_ID}`);
     const ready = await page
       .getByRole("heading", { level: 1, name: "测试词人" })
@@ -49,9 +49,11 @@ test.describe("people / songs public pages", () => {
       .catch(() => false);
     testInfo.skip(!ready, "requires get_person_works + seed data");
 
-    await expect(page.getByRole("heading", { level: 2, name: "歌曲" })).toBeVisible();
+    await expect(page.getByText("暂无公开作品。")).toBeVisible();
+    await expect(page.getByRole("heading", { level: 2, name: "歌曲" })).toHaveCount(0);
     await expect(page.getByRole("heading", { level: 2, name: "影视" })).toHaveCount(0);
-    await expect(page.getByRole("link", { name: /夜航序曲/ })).toBeVisible();
+    await expect(page.getByRole("heading", { level: 2, name: "专辑" })).toHaveCount(0);
+    await expect(page.getByRole("link", { name: /夜航序曲/ })).toHaveCount(0);
   });
 
   test("album tracklist links into song detail when backend is ready", async ({ page }, testInfo) => {

@@ -4,13 +4,14 @@ import { useEffect, useRef, useState, type KeyboardEvent } from "react";
 import DashboardYearPicker from "@/components/DashboardYearPicker";
 import AnimatedNumber from "@/components/AnimatedNumber";
 import type { DashboardTab } from "@/components/dashboard/dashboard-url";
+import { formatCompactCount, normalizeCount } from "@/lib/format-compact-count";
 
-/** 展示看板标题、四类总计、影视完成进度、视图标签和年份选择器。 */
+/** 展示看板标题、四类数量（音乐为曲目数）、影视完成进度、视图标签和年份选择器。 */
 export default function DashboardIntro({
   selectedYear,
   totalMovies,
   totalSeries,
-  totalAlbums,
+  totalTracks,
   totalBooks,
   runtimePercent,
   tabs,
@@ -23,8 +24,8 @@ export default function DashboardIntro({
   selectedYear: string;
   totalMovies: number;
   totalSeries: number;
-  /** 与音乐标签卡片一致：按专辑数，不用曲目数。 */
-  totalAlbums: number;
+  /** 页头「音乐」按曲目数（total_tracks），与音乐标签卡片的专辑计数不同。 */
+  totalTracks: number;
   totalBooks: number;
   runtimePercent: number;
   tabs: readonly DashboardTab[];
@@ -35,12 +36,12 @@ export default function DashboardIntro({
   onSelectYear: (year: string) => void;
 }) {
   const totals = [
-    { label: "电影总计", value: totalMovies },
-    { label: "电视节目总计", value: totalSeries },
-    { label: "音乐总计", value: totalAlbums },
-    { label: "图书总计", value: totalBooks },
+    { label: "电影", value: totalMovies },
+    { label: "电视节目", value: totalSeries },
+    { label: "音乐", value: totalTracks },
+    { label: "图书", value: totalBooks },
     { label: "完成进度", value: runtimePercent, accent: true as const },
-  ];
+  ] as const;
 
   const tablistRef = useRef<HTMLDivElement>(null);
   const tabRefs = useRef<Partial<Record<DashboardTab, HTMLButtonElement | null>>>({});
@@ -102,19 +103,30 @@ export default function DashboardIntro({
           </div>
 
           <dl className="grid grid-cols-2 gap-x-3 gap-y-3 border-t border-white/10 pt-4 sm:grid-cols-3 lg:min-w-[28rem] lg:grid-cols-5 lg:border-l lg:border-t-0 lg:pl-8 lg:pt-0">
-            {totals.map((stat) => (
-              <div key={stat.label}>
-                <dt className="text-xs tracking-wide text-fg-secondary">{stat.label}</dt>
-                <dd
-                  className={`mt-1 font-mono text-2xl font-normal tracking-tight sm:text-3xl ${
-                    stat.accent ? "text-[var(--accent-light)]" : "text-white"
-                  }`}
-                >
-                  <AnimatedNumber value={Number.isFinite(stat.value) ? stat.value : 0} />
-                  {stat.accent ? "%" : null}
-                </dd>
-              </div>
-            ))}
+            {totals.map((stat) => {
+              const accent = "accent" in stat && stat.accent;
+              const exact = normalizeCount(stat.value);
+              return (
+                <div key={stat.label}>
+                  <dt className="text-xs tracking-wide text-fg-secondary">{stat.label}</dt>
+                  <dd
+                    className={`mt-1 font-mono text-2xl font-normal tracking-tight sm:text-3xl ${
+                      accent ? "text-[var(--accent-light)]" : "text-white"
+                    }`}
+                  >
+                    {accent ? (
+                      <>
+                        <AnimatedNumber value={Number.isFinite(stat.value) ? stat.value : 0} />%
+                      </>
+                    ) : (
+                      <span title={String(exact)} aria-label={String(exact)}>
+                        {formatCompactCount(exact)}
+                      </span>
+                    )}
+                  </dd>
+                </div>
+              );
+            })}
           </dl>
         </div>
       </div>

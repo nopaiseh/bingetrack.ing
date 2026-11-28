@@ -118,6 +118,8 @@ describe("DashboardPanels music and books tabs", () => {
         total_albums: 2,
         listened_albums: 1,
         want_albums: 1,
+        total_tracks: 12,
+        listened_tracks: 5,
         total_books: 3,
         read_books: 1,
         reading_books: 1,
@@ -150,6 +152,8 @@ describe("DashboardPanels music and books tabs", () => {
 
     expect(screen.getByRole("tabpanel")).toHaveAttribute("id", "dashboard-panel-music");
     expect(screen.getByText("已听")).toBeInTheDocument();
+    expect(screen.getByText(/共/).parentElement).toHaveTextContent("共 12 首");
+    expect(screen.getByLabelText("12")).toHaveAttribute("title", "12");
     expect(screen.queryByText("影史精选")).not.toBeInTheDocument();
 
     rerender(
