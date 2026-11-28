@@ -9,6 +9,7 @@ import { getSearchViewAllLink, getStatusSearchLink } from "@/components/dashboar
 import type { DashboardStats } from "@/components/dashboard/dashboard-stats";
 import TopMediaInlineError from "@/components/dashboard/TopMediaInlineError";
 import { WATCH_STATUSES } from "@/components/watch-status";
+import { formatCompactCount, normalizeCount } from "@/lib/format-compact-count";
 import type { MediaCard } from "@/lib/types";
 
 const DistributionTop5Cards = dynamic(() => import("@/components/dashboard/DistributionTop5Cards"), {
@@ -58,6 +59,8 @@ export default function MusicBookCategoryPanel({
   const searchType = mediaType;
   const allTimeTitle = isMusic ? "专辑精选" : "图书精选";
   const featuredItems = selectedYear === "All Time" ? allTimeItems : yearItems;
+  const exactTotal = normalizeCount(total);
+  const compactTotal = formatCompactCount(exactTotal);
 
   return (
     <div
@@ -84,7 +87,11 @@ export default function MusicBookCategoryPanel({
                   {yearLabel} {categoryName} {isMusic ? "收听进度" : "阅读进度"}
                 </h3>
                 <p className="font-mono text-xs text-fg-muted sm:text-sm">
-                  共 <AnimatedNumber value={total} /> {unit}
+                  共{" "}
+                  <span title={String(exactTotal)} aria-label={String(exactTotal)}>
+                    {compactTotal}
+                  </span>{" "}
+                  {unit}
                 </p>
               </div>
 

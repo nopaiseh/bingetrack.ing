@@ -153,6 +153,7 @@ describe("DashboardPanels music and books tabs", () => {
     expect(screen.getByRole("tabpanel")).toHaveAttribute("id", "dashboard-panel-music");
     expect(screen.getByText("已听")).toBeInTheDocument();
     expect(screen.getByText(/共/).parentElement).toHaveTextContent("共 12 首");
+    expect(screen.getByLabelText("12")).toHaveAttribute("title", "12");
     expect(screen.queryByText("影史精选")).not.toBeInTheDocument();
 
     rerender(
