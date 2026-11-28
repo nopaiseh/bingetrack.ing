@@ -325,7 +325,7 @@ describe("DashboardIntro tabs", () => {
         selectedYear="All Time"
         totalMovies={1}
         totalSeries={1}
-        totalAlbums={3}
+        totalTracks={12}
         totalBooks={1}
         runtimePercent={10}
         tabs={TABS}
@@ -345,8 +345,9 @@ describe("DashboardIntro tabs", () => {
     expect(screen.getByRole("tab", { name: "音乐" })).toHaveAttribute("tabindex", "-1");
     expect(screen.getByRole("tab", { name: "音乐" })).toHaveAttribute("aria-controls", "dashboard-panel-music");
     expect(screen.getByRole("tab", { name: "图书" })).toHaveAttribute("aria-controls", "dashboard-panel-books");
-    // 页头「音乐总计」按专辑数，不按曲目数。
-    expect(screen.getByText("音乐总计").parentElement).toHaveTextContent("3");
+    // 页头「音乐」按曲目数；音乐标签卡片仍按专辑数（见上方 MusicBookCategoryPanel 用例）。
+    const musicStat = Array.from(document.querySelectorAll("dt")).find((dt) => dt.textContent === "音乐");
+    expect(musicStat?.parentElement).toHaveTextContent("12");
 
     screen.getByRole("tab", { name: "总览" }).focus();
     await user.keyboard("{ArrowRight}");

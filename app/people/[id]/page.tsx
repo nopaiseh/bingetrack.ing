@@ -38,8 +38,8 @@ export default async function PersonDetailPage({ params }: { params: Promise<{ i
   if (!person) notFound();
 
   const { works } = person;
-  const hasAny =
-    works.film_tv.length > 0 || works.music.albums.length > 0 || works.music.songs.length > 0 || works.books.length > 0;
+  // 人物页音乐区只展示专辑；仅有歌曲 credit 时不计入有作品。
+  const hasAny = works.film_tv.length > 0 || works.music.albums.length > 0 || works.books.length > 0;
 
   return (
     <div className="relative text-fg selection:bg-[var(--accent-soft)] selection:text-white font-sans">
@@ -59,12 +59,6 @@ export default async function PersonDetailPage({ params }: { params: Promise<{ i
               heading="专辑"
               headingId="person-albums"
               groups={works.music.albums}
-              personId={person.id}
-            />
-            <PersonRoleWorksSection
-              heading="歌曲"
-              headingId="person-songs"
-              groups={works.music.songs}
               personId={person.id}
             />
             <PersonRoleWorksSection heading="图书" headingId="person-books" groups={works.books} personId={person.id} />

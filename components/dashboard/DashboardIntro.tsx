@@ -5,12 +5,12 @@ import DashboardYearPicker from "@/components/DashboardYearPicker";
 import AnimatedNumber from "@/components/AnimatedNumber";
 import type { DashboardTab } from "@/components/dashboard/dashboard-url";
 
-/** 展示看板标题、四类总计、影视完成进度、视图标签和年份选择器。 */
+/** 展示看板标题、四类数量（音乐为曲目数）、影视完成进度、视图标签和年份选择器。 */
 export default function DashboardIntro({
   selectedYear,
   totalMovies,
   totalSeries,
-  totalAlbums,
+  totalTracks,
   totalBooks,
   runtimePercent,
   tabs,
@@ -23,8 +23,8 @@ export default function DashboardIntro({
   selectedYear: string;
   totalMovies: number;
   totalSeries: number;
-  /** 与音乐标签卡片一致：按专辑数，不用曲目数。 */
-  totalAlbums: number;
+  /** 页头「音乐」按曲目数（total_tracks），与音乐标签卡片的专辑计数不同。 */
+  totalTracks: number;
   totalBooks: number;
   runtimePercent: number;
   tabs: readonly DashboardTab[];
@@ -35,10 +35,10 @@ export default function DashboardIntro({
   onSelectYear: (year: string) => void;
 }) {
   const totals = [
-    { label: "电影总计", value: totalMovies },
-    { label: "电视节目总计", value: totalSeries },
-    { label: "音乐总计", value: totalAlbums },
-    { label: "图书总计", value: totalBooks },
+    { label: "电影", value: totalMovies },
+    { label: "电视节目", value: totalSeries },
+    { label: "音乐", value: totalTracks },
+    { label: "图书", value: totalBooks },
     { label: "完成进度", value: runtimePercent, accent: true as const },
   ];
 
