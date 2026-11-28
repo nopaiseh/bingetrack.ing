@@ -1,16 +1,6 @@
 /** 华语／华人地区作品用「又名」，其余用「原名」。缺语言与地区时回退「原名」。 */
 
-const CHINESE_LANGUAGES = new Set([
-  "华语",
-  "普通话",
-  "粤语",
-  "闽南语",
-  "国语",
-  "zh",
-  "cmn",
-  "yue",
-  "nan",
-]);
+const CHINESE_LANGUAGES = new Set(["华语", "普通话", "粤语", "闽南语", "国语", "zh", "cmn", "yue", "nan"]);
 
 const CHINESE_REGIONS = new Set(["中国", "中国大陆", "台湾", "香港", "澳门"]);
 
