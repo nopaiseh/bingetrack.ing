@@ -45,8 +45,9 @@ export default function MusicBookCategoryPanel({
   const isMusic = kind === "music";
   const panelKey = isMusic ? "music" : "books";
   const categoryName = isMusic ? "音乐" : "图书";
-  const total = isMusic ? stats.totalAlbums : stats.totalBooks;
-  const unit = isMusic ? "张" : "本";
+  // 音乐面板抬头与首页 intro 一致：按曲目数；图书仍按本数。状态卡仍按专辑／图书计。
+  const total = isMusic ? stats.totalTracks : stats.totalBooks;
+  const unit = isMusic ? "首" : "本";
   const avgRating = isMusic ? stats.avgAlbumsRating : stats.avgBooksRating;
   const avgRatingPercent = isMusic ? stats.avgAlbumsRatingPercent : stats.avgBooksRatingPercent;
   const distribution = isMusic ? stats.albumDistribution : stats.bookDistribution;

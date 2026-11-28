@@ -108,6 +108,9 @@ describe("MusicBookCategoryPanel", () => {
     );
 
     expect(screen.getByText("全时段 音乐 收听进度")).toBeInTheDocument();
+    // 抬头「共 N 首」按曲目数，不按专辑数。
+    expect(screen.getByText(/共/).parentElement).toHaveTextContent("共 20 首");
+    expect(screen.getByText(/共/).parentElement).not.toHaveTextContent("5 张");
     expect(screen.getByText("已听")).toBeInTheDocument();
     expect(screen.getByText("想听")).toBeInTheDocument();
     expect(screen.getByRole("progressbar", { name: "已听 8 首，共 20 首" })).toBeInTheDocument();
@@ -172,7 +175,7 @@ describe("MusicBookCategoryPanel", () => {
     expect(screen.getByText("小说")).toBeInTheDocument();
   });
 
-  it("omits the track progress bar when track totals are unavailable", () => {
+  it("曲目总数为 0 时按空状态处理（抬头按曲目计）", () => {
     const summary = [
       {
         release_year: "All Time",
@@ -196,6 +199,7 @@ describe("MusicBookCategoryPanel", () => {
       />,
     );
 
+    expect(screen.getByRole("heading", { name: "暂无收听记录" })).toBeInTheDocument();
     expect(screen.queryByText("曲目收听进度")).not.toBeInTheDocument();
     expect(screen.queryByRole("progressbar")).not.toBeInTheDocument();
   });
@@ -207,6 +211,8 @@ describe("MusicBookCategoryPanel", () => {
         total_albums: 2,
         listened_albums: 1,
         want_albums: 1,
+        total_tracks: 10,
+        listened_tracks: 4,
         album_avg_rating: 8,
       } as Summary,
     ];
@@ -345,7 +351,7 @@ describe("DashboardIntro tabs", () => {
     expect(screen.getByRole("tab", { name: "音乐" })).toHaveAttribute("tabindex", "-1");
     expect(screen.getByRole("tab", { name: "音乐" })).toHaveAttribute("aria-controls", "dashboard-panel-music");
     expect(screen.getByRole("tab", { name: "图书" })).toHaveAttribute("aria-controls", "dashboard-panel-books");
-    // 页头「音乐」按曲目数；音乐标签卡片仍按专辑数（见上方 MusicBookCategoryPanel 用例）。
+    // 页头「音乐」与音乐标签抬头均按曲目数。
     const musicStat = Array.from(document.querySelectorAll("dt")).find((dt) => dt.textContent === "音乐");
     expect(musicStat?.parentElement).toHaveTextContent("12");
 
